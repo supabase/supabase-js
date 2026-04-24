@@ -6,6 +6,12 @@ import {
   ServerCredentialCreationOptions,
   ServerCredentialRequestOptions,
   WebAuthnApi,
+  WebAuthnError,
+} from './webauthn'
+import type {
+  RegistrationResponseJSON,
+  AuthenticationResponseJSON,
+  ServerCredentialResponse,
 } from './webauthn'
 import {
   AuthenticationCredential,
@@ -174,6 +180,27 @@ export type GoTrueClientOptions = {
    * @default false
    */
   skipAutoInitialize?: boolean
+
+  /**
+   * Opt-in flags for experimental features. These APIs may change without
+   * notice and are disabled by default.
+   *
+   * @experimental
+   */
+  experimental?: ExperimentalFeatureFlags
+}
+
+export type ExperimentalFeatureFlags = {
+  /**
+   * Enables passkey support:
+   *   - `auth.signInWithPasskey()`, `auth.registerPasskey()`
+   *   - `auth.passkey.*`
+   *   - `auth.admin.passkey.*`
+   *
+   * Defaults to `false`. Calling any passkey method while this flag is
+   * disabled throws a descriptive error at call time.
+   */
+  passkey?: boolean
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
@@ -2623,4 +2650,155 @@ export interface AuthOAuthServerApi {
    * @category Auth
    */
   revokeGrant(options: { clientId: string }): Promise<AuthOAuthRevokeGrantResponse>
+}
+
+// --- Passkey Types ---
+
+/** Response from POST /passkeys/registration/options */
+export type PasskeyRegistrationOptionsResponse = {
+  challenge_id: string
+  options: ServerCredentialCreationOptions
+  expires_at: number
+}
+
+/** Request body for POST /passkeys/registration/verify */
+export type PasskeyRegistrationVerifyParams = {
+  challenge_id: string
+  credential: RegistrationResponseJSON
+}
+
+/** Response from POST /passkeys/registration/verify */
+export type PasskeyMetadata = {
+  id: string
+  friendly_name?: string
+  created_at: string
+}
+
+/** Response from POST /passkeys/authentication/options */
+export type PasskeyAuthenticationOptionsResponse = {
+  challenge_id: string
+  options: ServerCredentialRequestOptions
+  expires_at: number
+}
+
+/** Request body for POST /passkeys/authentication/verify */
+export type PasskeyAuthenticationVerifyParams = {
+  challenge_id: string
+  credential: AuthenticationResponseJSON
+}
+
+/** Item in the passkeys list (GET /passkeys/ and admin list) */
+export type PasskeyListItem = {
+  id: string
+  friendly_name?: string
+  created_at: string
+  last_used_at?: string
+}
+
+// --- Passkey SDK Method Parameter/Response Types ---
+
+export type SignInWithPasskeyCredentials = {
+  options?: {
+    captchaToken?: string
+    signal?: AbortSignal
+  }
+}
+
+export type RegisterPasskeyCredentials = {
+  options?: {
+    signal?: AbortSignal
+  }
+}
+
+export type VerifyPasskeyRegistrationParams = {
+  /** Challenge ID from startRegistration */
+  challengeId: string
+  /** Serialized credential from navigator.credentials.create() */
+  credential: ServerCredentialResponse
+}
+
+export type StartPasskeyAuthenticationParams = {
+  options?: {
+    captchaToken?: string
+  }
+}
+
+export type VerifyPasskeyAuthenticationParams = {
+  /** Challenge ID from startAuthentication */
+  challengeId: string
+  /** Serialized credential from navigator.credentials.get() */
+  credential: ServerCredentialResponse
+}
+
+export type PasskeyUpdateParams = {
+  /** UUID of the passkey to update */
+  passkeyId: string
+  /** New friendly name (max 120 chars) */
+  friendlyName: string
+}
+
+export type PasskeyDeleteParams = {
+  /** UUID of the passkey to delete */
+  passkeyId: string
+}
+
+// --- Passkey Response Types ---
+
+export type AuthPasskeyRegistrationOptionsResponse =
+  RequestResult<PasskeyRegistrationOptionsResponse>
+export type AuthPasskeyRegistrationVerifyResponse = RequestResult<
+  PasskeyMetadata,
+  WebAuthnError | AuthError
+>
+export type AuthPasskeyAuthenticationOptionsResponse =
+  RequestResult<PasskeyAuthenticationOptionsResponse>
+export type AuthPasskeyAuthenticationVerifyResponse = RequestResult<
+  { session: Session | null; user: User | null },
+  WebAuthnError | AuthError
+>
+export type AuthPasskeyListResponse = RequestResult<PasskeyListItem[]>
+export type AuthPasskeyUpdateResponse = RequestResult<PasskeyListItem>
+export type AuthPasskeyDeleteResponse = RequestResult<null>
+
+// --- Passkey Admin Types ---
+
+export type AuthPasskeyAdminListParams = {
+  userId: string
+}
+
+export type AuthPasskeyAdminDeleteParams = {
+  userId: string
+  passkeyId: string
+}
+
+// --- Passkey Namespace Interfaces ---
+
+/**
+ * Lower-level two-step API and management methods for passkeys.
+ * Access via `supabase.auth.passkey`.
+ */
+export interface AuthPasskeyApi {
+  // Two-step registration
+  startRegistration(): Promise<AuthPasskeyRegistrationOptionsResponse>
+  verifyRegistration(
+    params: VerifyPasskeyRegistrationParams
+  ): Promise<AuthPasskeyRegistrationVerifyResponse>
+
+  // Two-step authentication
+  startAuthentication(
+    params?: StartPasskeyAuthenticationParams
+  ): Promise<AuthPasskeyAuthenticationOptionsResponse>
+  verifyAuthentication(
+    params: VerifyPasskeyAuthenticationParams
+  ): Promise<AuthPasskeyAuthenticationVerifyResponse>
+
+  // Management
+  list(): Promise<AuthPasskeyListResponse>
+  update(params: PasskeyUpdateParams): Promise<AuthPasskeyUpdateResponse>
+  delete(params: PasskeyDeleteParams): Promise<AuthPasskeyDeleteResponse>
+}
+
+export interface GoTrueAdminPasskeyApi {
+  listPasskeys(params: AuthPasskeyAdminListParams): Promise<AuthPasskeyListResponse>
+  deletePasskey(params: AuthPasskeyAdminDeleteParams): Promise<AuthPasskeyDeleteResponse>
 }

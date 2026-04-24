@@ -30,7 +30,7 @@ export interface FetchParameters {
   signal?: AbortSignal
 }
 
-export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE'
+export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 const _getErrorMessage = (err: any): string =>
   err.msg || err.message || err.error_description || err.error || JSON.stringify(err)

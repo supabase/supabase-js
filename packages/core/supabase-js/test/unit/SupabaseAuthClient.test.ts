@@ -51,3 +51,8 @@ test('createClient should accept auth.throwOnError and wire it to auth client', 
   })
   expect((supa.auth as any).isThrowOnErrorEnabled()).toBe(true)
 })
+
+test('createClient gates passkey methods when auth.experimental.passkey is not set', async () => {
+  const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey')
+  await expect(supa.auth.passkey.list()).rejects.toThrow(/experimental.*passkey/)
+})
