@@ -356,6 +356,7 @@ export default class SupabaseClient<
 
     if (!settings.accessToken) {
       this._listenForAuthEvents()
+      this._listenForVisibilityChange()
     }
   }
 
@@ -595,6 +596,33 @@ export default class SupabaseClient<
       this._handleTokenChanged(event, 'CLIENT', session?.access_token)
     })
     return data
+  }
+
+  /**
+   * Listens for browser visibility changes (tab resume after suspension).
+   * When the tab becomes visible again, force-syncs a fresh token to
+   * the realtime client. This handles the case where a token refresh
+   * during _recoverAndRefresh fails (e.g. network still reconnecting)
+   * and no TOKEN_REFRESHED event fires, leaving realtime with a stale token.
+   */
+  private _listenForVisibilityChange() {
+    if (typeof globalThis === 'undefined' || typeof document === 'undefined') {
+      return
+    }
+
+    const callback = async () => {
+      if (document.visibilityState === 'visible') {
+        // Tab just became visible — push fresh token to realtime.
+        // _getAccessToken reads from auth.getSession which will trigger
+        // a refresh if the session has expired.
+        const token = await this._getAccessToken()
+        if (token && token !== this.supabaseKey) {
+          this.realtime.setAuth(token)
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', callback)
   }
 
   private _handleTokenChanged(
