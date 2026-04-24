@@ -76,6 +76,22 @@ type ResolveFilterRelationshipValue<
 
 export type InvalidMethodError<S extends string> = { Error: S }
 
+type NonNullableColumn<T extends Record<string, unknown>, Col extends string> = Col extends keyof T
+  ? { [K in keyof T]: K extends Col ? NonNullable<T[K]> : T[K] }
+  : T
+
+type NarrowResultColumn<T, Col extends string> = T extends (infer Item)[]
+  ? Item extends Record<string, unknown>
+    ? Col extends keyof Item
+      ? { [K in keyof Item]: K extends Col ? NonNullable<Item[K]> : Item[K] }[]
+      : T
+    : T
+  : T extends Record<string, unknown>
+    ? Col extends keyof T
+      ? { [K in keyof T]: K extends Col ? NonNullable<T[K]> : T[K] }
+      : T
+    : T
+
 export default class PostgrestFilterBuilder<
   ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
@@ -1721,6 +1737,19 @@ export default class PostgrestFilterBuilder<
 
   not<ColumnName extends string & keyof Row>(
     column: ColumnName,
+    operator: 'is',
+    value: null
+  ): PostgrestFilterBuilder<
+    ClientOptions,
+    Schema,
+    NonNullableColumn<Row, ColumnName>,
+    NarrowResultColumn<Result, ColumnName>,
+    RelationName,
+    Relationships,
+    Method
+  >
+  not<ColumnName extends string & keyof Row>(
+    column: ColumnName,
     operator: FilterOperator,
     value: Row[ColumnName]
   ): this
@@ -1783,9 +1812,13 @@ export default class PostgrestFilterBuilder<
    *
    * ```
    */
-  not(column: string, operator: string, value: unknown): this {
+  not(
+    column: string,
+    operator: string,
+    value: unknown
+  ): PostgrestFilterBuilder<ClientOptions, Schema, any, any, RelationName, Relationships, Method> {
     this.url.searchParams.append(column, `not.${operator}.${value}`)
-    return this
+    return this as any
   }
 
   /**
