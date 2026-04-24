@@ -1206,5 +1206,80 @@ describe('StorageFileApi Edge Cases', () => {
       expect(headers['Content-Type']).toBeUndefined()
       expect(new Headers(headers).get('content-type')).toBe('image/png')
     })
+
+    test('uploadToSignedUrl with metadata (Blob body)', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+      const metadata = { customKey: 'customValue', author: 'test' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testBlob, { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect(body.constructor.name).toBe('FormData')
+      expect((body as FormData).get('metadata')).toBe(JSON.stringify(metadata))
+    })
+
+    test('uploadToSignedUrl with metadata (FormData body)', async () => {
+      const testFormData = new FormData()
+      testFormData.append('file', 'test content')
+      const metadata = { blah: 'abc213' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testFormData, { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
+      expect(body).toBe(testFormData)
+      expect(body.get('metadata')).toBe(JSON.stringify(metadata))
+    })
+
+    test('uploadToSignedUrl with metadata (raw body sends x-metadata header)', async () => {
+      const metadata = { blah: 'abc213' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', 'test content', { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , { headers }] = mockPut.mock.calls[0]
+      expect(headers['x-metadata']).toBeDefined()
+      expect(Buffer.from(headers['x-metadata'], 'base64').toString('utf8')).toBe(
+        JSON.stringify(metadata)
+      )
+    })
+
+    test('uploadToSignedUrl passes headers', async () => {
+      const testFormData = new FormData()
+      testFormData.append('file', 'test content')
+
+      const testHeaderKey = 'x-test-header'
+      const testHeaderValue = 'abc123'
+
+      await storage.from('test-bucket').uploadToSignedUrl('test-path', 'test-token', testFormData, {
+        headers: { [testHeaderKey]: testHeaderValue },
+      })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body, { headers }] = mockPut.mock.calls[0]
+      expect(body).toBe(testFormData)
+      expect(headers[testHeaderKey]).toBe(testHeaderValue)
+    })
+
+    test('uploadToSignedUrl does not duplicate cacheControl when caller FormData has one', async () => {
+      const testFormData = new FormData()
+      testFormData.append('cacheControl', '7200')
+      testFormData.append('file', 'test content')
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testFormData, { cacheControl: '3600' })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
+      expect(body.getAll('cacheControl')).toEqual(['7200'])
+    })
   })
 })
