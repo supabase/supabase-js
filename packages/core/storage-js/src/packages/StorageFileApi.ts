@@ -269,22 +269,41 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return this.handleOperation(async () => {
       let body
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
-      const headers: Record<string, string> = {
+      let headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
       }
 
+      const metadata = options.metadata
+
       if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
         body = new FormData()
         body.append('cacheControl', options.cacheControl as string)
+        if (metadata) {
+          body.append('metadata', this.encodeMetadata(metadata))
+        }
         body.append('', fileBody)
       } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
         body = fileBody
-        body.append('cacheControl', options.cacheControl as string)
+        if (!body.has('cacheControl')) {
+          body.append('cacheControl', options.cacheControl as string)
+        }
+        if (metadata && !body.has('metadata')) {
+          body.append('metadata', this.encodeMetadata(metadata))
+        }
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+        if (metadata) {
+          headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
+        }
+      }
+
+      if (fileOptions?.headers) {
+        for (const [key, value] of Object.entries(fileOptions.headers)) {
+          headers = setHeader(headers, key, value)
+        }
       }
 
       const data = await put(this.fetch, url.toString(), body as object, { headers })
