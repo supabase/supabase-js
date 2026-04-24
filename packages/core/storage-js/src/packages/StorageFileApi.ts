@@ -268,26 +268,60 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
-      const headers: Record<string, string> = {
+      const options = {
+        ...DEFAULT_FILE_OPTIONS,
+        ...fileOptions,
+      }
+      let headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
       }
 
+      const metadata = options.metadata
+
       if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
         body = new FormData()
         body.append('cacheControl', options.cacheControl as string)
+        if (metadata) {
+          body.append('metadata', this.encodeMetadata(metadata))
+        }
         body.append('', fileBody)
       } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
         body = fileBody
-        body.append('cacheControl', options.cacheControl as string)
+        if (!body.has('cacheControl')) {
+          body.append('cacheControl', options.cacheControl as string)
+        }
+        if (metadata && !body.has('metadata')) {
+          body.append('metadata', this.encodeMetadata(metadata))
+        }
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+
+        if (metadata) {
+          headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
+        }
+
+        // Node.js streams require duplex option for fetch in Node 20+
+        // Check for both web ReadableStream and Node.js streams
+        const isStream =
+          (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream) ||
+          (body && typeof body === 'object' && 'pipe' in body && typeof body.pipe === 'function')
+
+        if (isStream && !options.duplex) {
+          options.duplex = 'half'
+        }
       }
 
-      const data = await put(this.fetch, url.toString(), body as object, { headers })
+      if (fileOptions?.headers) {
+        headers = { ...headers, ...fileOptions.headers }
+      }
+
+      const data = await put(this.fetch, url.toString(), body as object, {
+        headers,
+        ...(options?.duplex ? { duplex: options.duplex } : {}),
+      })
 
       return { path: cleanPath, fullPath: data.Key }
     })
