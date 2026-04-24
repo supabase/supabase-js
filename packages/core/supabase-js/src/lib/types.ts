@@ -124,6 +124,13 @@ export type SupabaseClientOptions<SchemaName> = {
      * throwing the error instead of returning it as part of a successful response.
      */
     throwOnError?: SupabaseAuthClientOptions['throwOnError']
+    /**
+     * Opt-in flags for experimental features. These APIs may change without
+     * notice and are disabled by default.
+     *
+     * @experimental
+     */
+    experimental?: SupabaseAuthClientOptions['experimental']
   }
   /**
    * Options passed to the realtime-js instance
