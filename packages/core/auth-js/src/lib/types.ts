@@ -121,11 +121,19 @@ export type GoTrueClientOptions = {
   debug?: boolean | ((message: string, ...args: any[]) => void)
   /**
    * Provide your own locking mechanism based on the environment. By default,
-   * `navigatorLock` (Web Locks API) is used in browser environments when
-   * `persistSession` is true. Falls back to an in-process lock for non-browser
-   * environments (e.g. React Native).
+   * `processLock` (an in-process queue) is used in browser environments when
+   * `persistSession` is true. Falls back to a no-op for non-browser environments.
    *
-   * @experimental
+   * Cross-tab token refresh races are handled server-side: GoTrue allows
+   * concurrent refreshes of the same token (via reuse detection) so both tabs
+   * receive valid tokens without any client-side coordination.
+   *
+   * To opt back in to the Web Locks API for explicit cross-tab serialization
+   * (deprecated, scheduled for removal in the next major version):
+   * ```ts
+   * import { navigatorLock } from '@supabase/auth-js'
+   * createClient(url, key, { auth: { lock: navigatorLock } })
+   * ```
    */
   lock?: LockFunc
   /**
@@ -139,19 +147,18 @@ export type GoTrueClientOptions = {
    */
   throwOnError?: boolean
   /**
-   * The maximum time in milliseconds to wait for acquiring a cross-tab synchronization lock.
+   * The maximum time in milliseconds to wait for acquiring a lock.
    *
-   * When multiple browser tabs or windows use the auth client simultaneously, they coordinate
-   * via the Web Locks API to prevent race conditions during session refresh and other operations.
-   * This timeout controls how long to wait before attempting lock recovery.
+   * This is most impactful when using a custom `lock` implementation such as the
+   * opt-in `navigatorLock`. When using the default `processLock`, this controls
+   * how long to wait for the in-process queue to drain.
    *
-   * - **Positive value**: Wait up to this many milliseconds. If the lock is still held, attempt
-   *   automatic recovery by stealing it (the previous holder is evicted, its callback continues
-   *   to completion without exclusive access). This recovers from orphaned locks caused by
-   *   React Strict Mode double-mount, storage API hangs, or aborted operations.
+   * - **Positive value**: Wait up to this many milliseconds before giving up.
+   *   When using `navigatorLock`, a timeout triggers automatic recovery by stealing
+   *   the orphaned lock.
    * - **Zero (0)**: Fail immediately if the lock is unavailable; throws `LockAcquireTimeoutError`
    *   (check `error.isAcquireTimeout === true`).
-   * - **Negative value**: Wait indefinitely — can cause permanent deadlocks if the lock is orphaned.
+   * - **Negative value**: Wait indefinitely.
    *
    * @default 5000
    *
@@ -159,7 +166,7 @@ export type GoTrueClientOptions = {
    * ```ts
    * const client = createClient(url, key, {
    *   auth: {
-   *     lockAcquireTimeout: 5000, // 5 seconds, then steal orphaned lock
+   *     lockAcquireTimeout: 5000,
    *   },
    * })
    * ```
