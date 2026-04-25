@@ -279,6 +279,12 @@ export default class GoTrueClient {
    */
   protected broadcastChannel: BroadcastChannel | null = null
 
+  // Session/User deduplication caches (fixes issue #1966: redundant concurrent requests)
+  private inflightSessionPromise: Promise<{ data: { session: Session | null }; error: AuthError | null }> | undefined
+  private cachedSession: Session | null = null
+  private inflightUserPromise: Promise<UserResponse> | undefined
+  private cachedUser: User | null = null
+
   protected logDebugMessages: boolean
   protected logger: (message: string, ...args: any[]) => void = console.log
 
@@ -423,6 +429,14 @@ export default class GoTrueClient {
         this._debug('#initialize()', 'error', error)
       })
     }
+
+    // Set up cache invalidation on auth state changes (fixes issue #1966)
+    this.onAuthStateChange(() => {
+      this.cachedSession = null
+      this.cachedUser = null
+      this.inflightSessionPromise = undefined
+      this.inflightUserPromise = undefined
+    })
   }
 
   /**
@@ -2615,13 +2629,41 @@ export default class GoTrueClient {
   async getSession() {
     await this.initializePromise
 
-    const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return this._useSession(async (result) => {
-        return result
-      })
-    })
+    // Layer 1: Token-validity cache (fast path for already-fetched sessions)
+    if (this.isTokenValid(this.cachedSession)) {
+      return { data: { session: this.cachedSession }, error: null }
+    }
 
-    return result
+    // Layer 2: Promise coalescing (deduplicate concurrent requests)
+    if (this.inflightSessionPromise) {
+      return await this.inflightSessionPromise
+    }
+
+    // Start new fetch wrapped in promise coalescing
+    this.inflightSessionPromise = (async () => {
+      try {
+        const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
+          return this._useSession(async (result) => {
+            return result
+          })
+        })
+
+        // Cache the session for token-validity checks
+        if (result.data?.session) {
+          this.cachedSession = result.data.session
+        } else if (!result.error) {
+          // Explicitly clear cache if session is null and no error
+          this.cachedSession = null
+        }
+
+        return result
+      } finally {
+        // Clear the inflight promise so next call can fetch fresh
+        this.inflightSessionPromise = undefined
+      }
+    })()
+
+    return await this.inflightSessionPromise
   }
 
   /**
@@ -2848,6 +2890,19 @@ export default class GoTrueClient {
   }
 
   /**
+   * Checks if a session's access token is still valid (not expired within EXPIRY_MARGIN_MS).
+   * Used for token-validity-based caching in getSession() and getUser().
+   * @private
+   */
+  private isTokenValid(session: Session | null): boolean {
+    if (!session) return false
+    const hasExpired = session.expires_at
+      ? session.expires_at * 1000 - Date.now() < EXPIRY_MARGIN_MS
+      : false
+    return !hasExpired
+  }
+
+  /**
    * Gets the current user details if there is an existing session. This method
    * performs a network request to the Supabase Auth server, so the returned
    * value is authentic and can be used to base authorization rules on.
@@ -2930,15 +2985,44 @@ export default class GoTrueClient {
 
     await this.initializePromise
 
-    const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._getUser()
-    })
-
-    if (result.data.user) {
-      this.suppressGetSessionWarning = true
+    // Layer 1: Token-validity cache (fast path for already-fetched users)
+    // We check cachedSession because user data is only valid if the session is still valid
+    if (this.isTokenValid(this.cachedSession) && this.cachedUser) {
+      return { data: { user: this.cachedUser }, error: null }
     }
 
-    return result
+    // Layer 2: Promise coalescing (deduplicate concurrent requests)
+    if (this.inflightUserPromise) {
+      return await this.inflightUserPromise
+    }
+
+    // Start new fetch wrapped in promise coalescing
+    this.inflightUserPromise = (async () => {
+      try {
+        const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
+          return await this._getUser()
+        })
+
+        // Cache the user for token-validity checks
+        if (result.data?.user) {
+          this.cachedUser = result.data.user
+        } else if (!result.error) {
+          // Explicitly clear cache if user is null and no error
+          this.cachedUser = null
+        }
+
+        if (result.data.user) {
+          this.suppressGetSessionWarning = true
+        }
+
+        return result
+      } finally {
+        // Clear the inflight promise so next call can fetch fresh
+        this.inflightUserPromise = undefined
+      }
+    })()
+
+    return await this.inflightUserPromise
   }
 
   private async _getUser(jwt?: string): Promise<UserResponse> {
