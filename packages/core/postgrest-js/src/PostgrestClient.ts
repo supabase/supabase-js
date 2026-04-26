@@ -18,21 +18,21 @@ export default class PostgrestClient<
   ClientOptions extends ClientServerOptions = Database extends {
     __InternalSupabase: infer I extends ClientServerOptions
   }
-    ? I
-    : {},
+  ? I
+  : {},
   SchemaName extends string &
-    keyof Omit<Database, '__InternalSupabase'> = 'public' extends keyof Omit<
+  keyof Omit<Database, '__InternalSupabase'> = 'public' extends keyof Omit<
     Database,
     '__InternalSupabase'
   >
-    ? 'public'
-    : string & keyof Omit<Database, '__InternalSupabase'>,
+  ? 'public'
+  : string & keyof Omit<Database, '__InternalSupabase'>,
   Schema extends GenericSchema = Omit<
     Database,
     '__InternalSupabase'
   >[SchemaName] extends GenericSchema
-    ? Omit<Database, '__InternalSupabase'>[SchemaName]
-    : any,
+  ? Omit<Database, '__InternalSupabase'>[SchemaName]
+  : any,
 > {
   url: string
   headers: Headers
@@ -169,8 +169,9 @@ export default class PostgrestClient<
     if (!relation || typeof relation !== 'string' || relation.trim() === '') {
       throw new Error('Invalid relation name: relation must be a non-empty string.')
     }
-
-    const url = new URL(`${this.url}/${relation}`)
+    const _relation = relation.startsWith('/') ?
+      relation.substring(1) : relation
+    const url = new URL(`${this.url}/${_relation}`)
     return new PostgrestQueryBuilder(url, {
       headers: new Headers(this.headers),
       schema: this.schemaName,
@@ -401,11 +402,14 @@ export default class PostgrestClient<
     'RPC'
   > {
     let method: 'HEAD' | 'GET' | 'POST'
+    const _fn = fn.startsWith('/') ?
+      fn.substring(1) : fn
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
     // objects/arrays-of-objects can't be serialized to URL params, use POST + return=minimal instead
     const _isObject = (v: unknown): boolean =>
       v !== null && typeof v === 'object' && (!Array.isArray(v) || v.some(_isObject))
+
     const _hasObjectArg = head && Object.values(args as object).some(_isObject)
     if (_hasObjectArg) {
       method = 'POST'
