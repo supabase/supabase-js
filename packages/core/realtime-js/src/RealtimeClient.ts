@@ -15,7 +15,15 @@ import { httpEndpointURL } from './lib/transformers'
 import RealtimeChannel from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
 import SocketAdapter from './phoenix/socketAdapter'
-import type { Message, SocketOptions, HeartbeatCallback, Encode, Decode } from './phoenix/types'
+import type {
+  Message,
+  SocketOptions,
+  HeartbeatCallback,
+  Encode,
+  Decode,
+  Timer,
+  Vsn,
+} from './phoenix/types'
 
 type Fetch = typeof fetch
 
@@ -141,11 +149,11 @@ export default class RealtimeClient {
     return this.socketAdapter.pendingHeartbeatRef
   }
 
-  get reconnectTimer() {
+  get reconnectTimer(): Timer {
     return this.socketAdapter.reconnectTimer
   }
 
-  get vsn() {
+  get vsn(): Vsn {
     return this.socketAdapter.vsn
   }
 
