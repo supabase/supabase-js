@@ -349,6 +349,40 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 
 // `.not(col, 'is', null)` narrows nullable column to non-nullable in result (#1360)
 {
+  {
+    type Database = {
+      public: {
+        Tables: {
+          articles: {
+            Row: { id: string; published_at: string | null }
+            Insert: never
+            Update: never
+            Relationships: []
+          }
+        }
+        Views: {}
+        Functions: {}
+        Enums: {}
+        CompositeTypes: {}
+      }
+    }
+
+    const client = new PostgrestClient<Database>(REST_URL)
+    let query = client.from('articles').select('id, published_at')
+
+    const hasPublishedAt = true
+    if (hasPublishedAt) {
+      query = query.not('published_at', 'is', null)
+    }
+
+    const result = await query
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+
+    expectType<{ id: string; published_at: string | null }[]>(result.data)
+  }
+
   // Basic narrowing: message goes from `string | null` to `string`
   {
     const result = await postgrest.from('messages').select('id, message').not('message', 'is', null)
