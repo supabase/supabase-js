@@ -1,3 +1,13 @@
+## 2.105.0 (2026-04-27)
+
+### 🚀 Features
+
+- **realtime:** Realtime deferred disconnect ([#2282](https://github.com/supabase/supabase-js/pull/2282))
+
+### 🩹 Fixes
+
+- **realtime:** annotate Timer/Vsn getters to avoid deep phoenix imports ([#2284](https://github.com/supabase/supabase-js/pull/2284))
+
 ## 2.104.1 (2026-04-23)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

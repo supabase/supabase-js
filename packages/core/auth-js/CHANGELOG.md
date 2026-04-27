@@ -1,3 +1,9 @@
+## 2.105.0 (2026-04-27)
+
+### 🚀 Features
+
+- **auth:** add passkey support with WebAuthn registration, authentication, and management ([#2283](https://github.com/supabase/supabase-js/pull/2283))
+
 ## 2.104.1 (2026-04-23)
 
 ### 🩹 Fixes
