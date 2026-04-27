@@ -1,3 +1,22 @@
+## 2.105.0 (2026-04-27)
+
+### 🚀 Features
+
+- **auth:** add passkey support with WebAuthn registration, authentication, and management ([#2283](https://github.com/supabase/supabase-js/pull/2283))
+- **realtime:** Realtime deferred disconnect ([#2282](https://github.com/supabase/supabase-js/pull/2282))
+
+### 🩹 Fixes
+
+- **postgrest:** narrow column types after not(column, is, null) ([#2264](https://github.com/supabase/supabase-js/pull/2264))
+- **realtime:** annotate Timer/Vsn getters to avoid deep phoenix imports ([#2284](https://github.com/supabase/supabase-js/pull/2284))
+- **storage:** apply metadata, headers, and cacheControl dedupe to uploadToSignedUrl ([#2275](https://github.com/supabase/supabase-js/pull/2275))
+- **storage:** forward duplex option for stream uploads via uploadToSignedUrl ([#2289](https://github.com/supabase/supabase-js/pull/2289))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- oniani1
+
 ## 2.104.1 (2026-04-23)
 
 ### 🩹 Fixes
