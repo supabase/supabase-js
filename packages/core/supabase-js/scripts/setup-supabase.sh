@@ -31,14 +31,14 @@ echo "⏳ Waiting for Edge Runtime to initialize..."
 sleep 5
 
 echo "🔑 Exporting authentication keys..."
-export SUPABASE_ANON_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')"
-export SUPABASE_SERVICE_ROLE_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
+export SUPABASE_PUBLISHABLE_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')"
+export SUPABASE_SECRET_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
 echo "   Keys exported"
 
 echo "🧪 Testing edge function endpoint..."
 for i in {1..3}; do
   RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-    -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+    -H "Authorization: Bearer $SUPABASE_PUBLISHABLE_KEY" \
     -H "Content-Type: application/json" \
     -d '{"name":"Setup"}' \
     http://127.0.0.1:54321/functions/v1/hello 2>&1)
