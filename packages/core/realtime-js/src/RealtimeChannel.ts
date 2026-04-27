@@ -217,7 +217,7 @@ export default class RealtimeChannel {
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
    * const channel = supabase.channel('room1')
    * channel
    *   .on('broadcast', { event: 'cursor-pos' }, (payload) => console.log(payload))
@@ -229,7 +229,7 @@ export default class RealtimeChannel {
    * import RealtimeClient from '@supabase/realtime-js'
    *
    * const client = new RealtimeClient('https://xyzcompany.supabase.co/realtime/v1', {
-   *   params: { apikey: 'publishable-or-anon-key' },
+   *   params: { apikey: 'your-publishable-key' },
    * })
    * const channel = new RealtimeChannel('realtime:public:messages', { config: {} }, client)
    * ```

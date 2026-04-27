@@ -20,13 +20,13 @@ const content = `<html>
 
     <script type="text/babel" data-presets="env,react">
         const SUPABASE_URL = 'http://127.0.0.1:54321'
-        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+        const PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
         // Get vsn from query params
         const urlParams = new URLSearchParams(window.location.search)
         const vsn = urlParams.get('vsn') || '1.0.0'
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, ANON_KEY, {
+        const supabase = window.supabase.createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
             realtime: {
                 heartbeatIntervalMs: 500,
                 vsn: vsn

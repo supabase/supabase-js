@@ -323,7 +323,7 @@ export default class GoTrueClient {
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
    * const { data, error } = await supabase.auth.getUser()
    * ```
    *
@@ -333,7 +333,7 @@ export default class GoTrueClient {
    *
    * const auth = new GoTrueClient({
    *   url: 'https://xyzcompany.supabase.co/auth/v1',
-   *   headers: { apikey: 'publishable-or-anon-key' },
+   *   headers: { apikey: 'your-publishable-key' },
    *   storageKey: 'supabase-auth',
    * })
    * ```

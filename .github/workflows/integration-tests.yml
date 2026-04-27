@@ -101,8 +101,7 @@ jobs:
       - name: Export auth keys
         run: |
           cd packages/core/supabase-js
-          echo SUPABASE_ANON_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')" >> $GITHUB_ENV
-          echo SUPABASE_SERVICE_ROLE_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> $GITHUB_ENV
+          echo SUPABASE_PUBLISHABLE_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')" >> $GITHUB_ENV
           echo "✅ Keys exported"
 
       - name: Verify edge functions
@@ -120,7 +119,7 @@ jobs:
               --connect-timeout 5 \
               --max-time 10 \
               -X POST \
-              -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+              -H "Authorization: Bearer $SUPABASE_PUBLISHABLE_KEY" \
               -H "Content-Type: application/json" \
               -d '{"name":"CI"}' \
               http://127.0.0.1:54321/functions/v1/hello 2>/dev/null) || true
