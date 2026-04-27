@@ -1,3 +1,13 @@
+## 2.105.0 (2026-04-27)
+
+### 🩹 Fixes
+
+- **postgrest:** narrow column types after not(column, is, null) ([#2264](https://github.com/supabase/supabase-js/pull/2264))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.104.1 (2026-04-23)
 
 ### 🩹 Fixes

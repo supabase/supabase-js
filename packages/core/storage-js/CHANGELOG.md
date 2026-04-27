@@ -1,3 +1,14 @@
+## 2.105.0 (2026-04-27)
+
+### 🩹 Fixes
+
+- **storage:** forward duplex option for stream uploads via uploadToSignedUrl ([#2289](https://github.com/supabase/supabase-js/pull/2289))
+- **storage:** apply metadata, headers, and cacheControl dedupe to uploadToSignedUrl ([#2275](https://github.com/supabase/supabase-js/pull/2275))
+
+### ❤️ Thank You
+
+- oniani1
+
 ## 2.104.1 (2026-04-23)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
