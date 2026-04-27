@@ -39,5 +39,18 @@ describe('Object API', () => {
       expect(res.error).toBeNull()
       expect(res.data?.path).toEqual(uploadPathWithDuplex)
     })
+
+    test('uploadToSignedUrl auto-detects stream and sets duplex', async () => {
+      const uploadPath = `testpath/signed-stream-${Date.now()}.txt`
+
+      const signed = await storage.from(bucketName).createSignedUploadUrl(uploadPath)
+      expect(signed.error).toBeNull()
+      const token = signed.data!.token
+
+      const file = await fs.createReadStream(uploadFilePath('file.txt'))
+      const res = await storage.from(bucketName).uploadToSignedUrl(uploadPath, token, file)
+      expect(res.error).toBeNull()
+      expect(res.data?.path).toEqual(uploadPath)
+    })
   })
 })
