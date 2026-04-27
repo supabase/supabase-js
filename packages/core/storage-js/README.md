@@ -67,7 +67,7 @@ If you're already using `@supabase/supabase-js`, access storage through the clie
 ```js
 import { createClient } from '@supabase/supabase-js'
 
-// Use publishable/anon key for frontend applications
+// Use publishable key for frontend applications
 const supabase = createClient('https://<project_ref>.supabase.co', '<your-publishable-key>')
 
 // Access storage

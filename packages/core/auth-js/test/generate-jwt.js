@@ -25,7 +25,7 @@ const privateKeyObject = crypto.createPrivateKey({
 });
 const privateKey = privateKeyObject.export({ type: 'pkcs8', format: 'pem' });
 
-// Generate anon key
+// Generate publishable key
 const anonToken = jwt.sign(
   {
     iss: 'supabase-demo',
@@ -37,7 +37,7 @@ const anonToken = jwt.sign(
   { algorithm: 'RS256', keyid: rsaKey.kid }
 );
 
-// Generate service_role key
+// Generate secret key
 const serviceRoleToken = jwt.sign(
   {
     iss: 'supabase-demo',
