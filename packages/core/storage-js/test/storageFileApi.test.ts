@@ -1281,5 +1281,25 @@ describe('StorageFileApi Edge Cases', () => {
       const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
       expect(body.getAll('cacheControl')).toEqual(['7200'])
     })
+
+    test('uploadToSignedUrl auto-sets duplex to half when raw body is a stream', async () => {
+      const fakeStream = { pipe: () => {} } as unknown as NodeJS.ReadableStream
+
+      await storage.from('test-bucket').uploadToSignedUrl('test-path', 'test-token', fakeStream)
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , options] = mockPut.mock.calls[0]
+      expect(options.duplex).toBe('half')
+    })
+
+    test('uploadToSignedUrl forwards caller-provided duplex', async () => {
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', 'test content', { duplex: 'half' })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , options] = mockPut.mock.calls[0]
+      expect(options.duplex).toBe('half')
+    })
   })
 })

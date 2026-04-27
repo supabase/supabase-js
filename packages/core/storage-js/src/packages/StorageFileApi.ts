@@ -298,6 +298,14 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
         }
+
+        const isStream =
+          (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream) ||
+          (body && typeof body === 'object' && 'pipe' in body && typeof body.pipe === 'function')
+
+        if (isStream && !options.duplex) {
+          options.duplex = 'half'
+        }
       }
 
       if (fileOptions?.headers) {
@@ -306,7 +314,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         }
       }
 
-      const data = await put(this.fetch, url.toString(), body as object, { headers })
+      const data = await put(this.fetch, url.toString(), body as object, {
+        headers,
+        ...(options?.duplex ? { duplex: options.duplex } : {}),
+      })
 
       return { path: cleanPath, fullPath: data.Key }
     })
