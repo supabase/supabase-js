@@ -4,9 +4,6 @@ import { createClient } from '@supabase/supabase-js'
 const SUPABASE_URL = 'http://127.0.0.1:54321'
 const PUBLISHABLE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-const SECRET_KEY =
-  process.env.SUPABASE_SECRET_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
 
 const supabase = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
   realtime: { heartbeatIntervalMs: 500 },
@@ -141,21 +138,15 @@ test('should upload and list file in bucket', async () => {
   const filePath = 'test-file.txt'
   const fileContent = new Blob(['Hello, Supabase Storage!'], { type: 'text/plain' })
 
-  const supabaseWithServiceRole = createClient(SUPABASE_URL, SECRET_KEY, {
-    realtime: { heartbeatIntervalMs: 500 },
-  })
-
   // upload
-  const { data: uploadData, error: uploadError } = await supabaseWithServiceRole.storage
+  const { data: uploadData, error: uploadError } = await supabase.storage
     .from(bucket)
     .upload(filePath, fileContent, { upsert: true })
   expect(uploadError).toBeNull()
   expect(uploadData).toBeDefined()
 
   // list
-  const { data: listData, error: listError } = await supabaseWithServiceRole.storage
-    .from(bucket)
-    .list()
+  const { data: listData, error: listError } = await supabase.storage.from(bucket).list()
   expect(listError).toBeNull()
   expect(Array.isArray(listData)).toBe(true)
   if (!listData) throw new Error('listData is null')
@@ -163,8 +154,6 @@ test('should upload and list file in bucket', async () => {
   expect(fileNames).toContain('test-file.txt')
 
   // delete file
-  const { error: deleteError } = await supabaseWithServiceRole.storage
-    .from(bucket)
-    .remove([filePath])
+  const { error: deleteError } = await supabase.storage.from(bucket).remove([filePath])
   expect(deleteError).toBeNull()
 })

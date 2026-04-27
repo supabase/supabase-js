@@ -29,7 +29,7 @@ The setup command performs these steps automatically:
 2. ✅ Serves Edge Functions in the background (fixes 503 errors)
 3. ✅ Resets database and applies migrations
 4. ✅ Creates test storage bucket
-5. ✅ Exports `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` environment variables
+5. ✅ Exports the `SUPABASE_PUBLISHABLE_KEY` environment variable
 6. ✅ Verifies everything is working (database, storage, functions)
 
 **Important:** Tests do NOT automatically restart Supabase. You control when it starts and stops.
@@ -111,10 +111,9 @@ npx supabase start
 # Serve edge functions in background (if needed)
 npx supabase functions serve &
 
-# Export keys for tests
-# Note: the Supabase CLI still outputs these as ANON_KEY / SERVICE_ROLE_KEY in its JSON status
+# Export key for tests
+# Note: the Supabase CLI still outputs this as ANON_KEY in its JSON status
 export SUPABASE_PUBLISHABLE_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')"
-export SUPABASE_SECRET_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
 
 # Return to root and run tests
 cd ../../..

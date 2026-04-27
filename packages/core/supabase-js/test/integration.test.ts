@@ -335,27 +335,16 @@ describe('Storage API', () => {
   const filePath = 'test-file.txt'
   const fileContent = new Blob(['Hello, Supabase Storage!'], { type: 'text/plain' })
 
-  // use secret key for bypass RLS
-  const SECRET_KEY = process.env.SUPABASE_SECRET_KEY || 'use-secret-key'
-  const supabaseWithServiceRole = createClient(SUPABASE_URL, SECRET_KEY, {
-    realtime: {
-      heartbeatIntervalMs: 500,
-      ...(wsTransport && { transport: wsTransport }),
-    },
-  })
-
   test('upload and list file in bucket', async () => {
     // upload
-    const { data: uploadData, error: uploadError } = await supabaseWithServiceRole.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(filePath, fileContent, { upsert: true })
     expect(uploadError).toBeNull()
     expect(uploadData).toBeDefined()
 
     // list
-    const { data: listData, error: listError } = await supabaseWithServiceRole.storage
-      .from(bucket)
-      .list()
+    const { data: listData, error: listError } = await supabase.storage.from(bucket).list()
     expect(listError).toBeNull()
     expect(Array.isArray(listData)).toBe(true)
     if (!listData) throw new Error('listData is null')
@@ -363,9 +352,7 @@ describe('Storage API', () => {
     expect(fileNames).toContain('test-file.txt')
 
     // delete file
-    const { error: deleteError } = await supabaseWithServiceRole.storage
-      .from(bucket)
-      .remove([filePath])
+    const { error: deleteError } = await supabase.storage.from(bucket).remove([filePath])
     expect(deleteError).toBeNull()
   })
 })

@@ -32,7 +32,6 @@ sleep 5
 
 echo "🔑 Exporting authentication keys..."
 export SUPABASE_PUBLISHABLE_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')"
-export SUPABASE_SECRET_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
 echo "   Keys exported"
 
 echo "🧪 Testing edge function endpoint..."

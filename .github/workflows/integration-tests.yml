@@ -102,7 +102,6 @@ jobs:
         run: |
           cd packages/core/supabase-js
           echo SUPABASE_PUBLISHABLE_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')" >> $GITHUB_ENV
-          echo SUPABASE_SECRET_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> $GITHUB_ENV
           echo "✅ Keys exported"
 
       - name: Verify edge functions
