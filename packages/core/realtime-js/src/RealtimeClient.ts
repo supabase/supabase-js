@@ -72,6 +72,7 @@ export type RealtimeClientOptions = {
   worker?: boolean
   workerUrl?: string
   accessToken?: () => Promise<string | null>
+  disconnectOnEmptyChannelsAfterMs?: number
 }
 
 const WORKER_SCRIPT = `
@@ -177,6 +178,8 @@ export default class RealtimeClient {
   private _authPromise: Promise<void> | null = null
   private _workerHeartbeatTimer: HeartbeatTimer = undefined
   private _pendingWorkerHeartbeatRef: string | null = null
+  private _pendingDisconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private _disconnectOnEmptyChannelsAfterMs: number = 0
 
   /**
    * Initializes the Socket.
@@ -301,6 +304,7 @@ export default class RealtimeClient {
    * @category Realtime
    */
   async disconnect(code?: number, reason?: string) {
+    this._cancelPendingDisconnect()
     if (this.isDisconnecting()) {
       return 'ok'
     }
@@ -336,10 +340,6 @@ export default class RealtimeClient {
       channel.teardown()
     }
 
-    if (this.channels.length === 0) {
-      this.disconnect()
-    }
-
     return status
   }
 
@@ -356,7 +356,7 @@ export default class RealtimeClient {
     })
 
     const result = await Promise.all(promises)
-    this.disconnect()
+    await this.disconnect()
     return result
   }
 
@@ -422,6 +422,7 @@ export default class RealtimeClient {
 
     if (!exists) {
       const chan = new RealtimeChannel(`realtime:${topic}`, params, this)
+      this._cancelPendingDisconnect()
       this.channels.push(chan)
 
       return chan
@@ -530,6 +531,40 @@ export default class RealtimeClient {
    */
   _remove(channel: RealtimeChannel) {
     this.channels = this.channels.filter((c) => c.topic !== channel.topic)
+    if (this.channels.length === 0) {
+      this.log('transport', 'no channels remaining, scheduling disconnect')
+      this._schedulePendingDisconnect()
+    }
+  }
+
+  /** @internal */
+  private _schedulePendingDisconnect() {
+    this._cancelPendingDisconnect()
+    if (this._disconnectOnEmptyChannelsAfterMs === 0) {
+      this.log('transport', 'disconnecting immediately - no channels')
+      this.disconnect()
+      return
+    }
+    this._pendingDisconnectTimer = setTimeout(() => {
+      this._pendingDisconnectTimer = null
+      if (this.channels.length === 0) {
+        this.log('transport', 'deferred disconnect fired - no channels, disconnecting')
+        this.disconnect()
+      }
+    }, this._disconnectOnEmptyChannelsAfterMs)
+    this.log(
+      'transport',
+      `deferred disconnect scheduled in ${this._disconnectOnEmptyChannelsAfterMs}ms`
+    )
+  }
+
+  /** @internal */
+  private _cancelPendingDisconnect() {
+    if (this._pendingDisconnectTimer !== null) {
+      this.log('transport', 'pending disconnect cancelled - channel activity detected')
+      clearTimeout(this._pendingDisconnectTimer)
+      this._pendingDisconnectTimer = null
+    }
   }
 
   /**
@@ -711,6 +746,10 @@ export default class RealtimeClient {
     result.timeout = options?.timeout ?? DEFAULT_TIMEOUT
     result.heartbeatIntervalMs =
       options?.heartbeatIntervalMs ?? CONNECTION_TIMEOUTS.HEARTBEAT_INTERVAL
+
+    this._disconnectOnEmptyChannelsAfterMs =
+      options?.disconnectOnEmptyChannelsAfterMs ??
+      2 * (options?.heartbeatIntervalMs ?? CONNECTION_TIMEOUTS.HEARTBEAT_INTERVAL)
 
     // @ts-ignore - mismatch between phoenix and supabase
     result.transport = options?.transport ?? WebSocketFactory.getWebSocketConstructor()

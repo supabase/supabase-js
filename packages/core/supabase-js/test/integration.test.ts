@@ -327,6 +327,128 @@ describe('Supabase Integration Tests', () => {
       expect(receivedMessage).toBeDefined()
       expect(supabase.realtime.getChannels().length).toBe(1)
     }, 10000)
+
+    test('socket stays connected when switching channels (no race condition)', async () => {
+      const config = { broadcast: { ack: true, self: true }, private: true }
+
+      // Subscribe channel A and wait for it to be joined
+      const channelA = supabase.channel(`${channelName}-a`, { config })
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Timeout waiting for channelA')), 8000)
+        channelA.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            clearTimeout(timeout)
+            resolve()
+          }
+        })
+      })
+
+      // Remove channel A — should NOT disconnect immediately
+      await supabase.removeChannel(channelA)
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      // Immediately subscribe channel B — should reuse the open socket
+      const channelB = supabase.channel(`${channelName}-b`, { config })
+      let channelBSubscribed = false
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Timeout waiting for channelB')), 8000)
+        channelB
+          .on('broadcast', { event: 'ping' }, () => {})
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              channelBSubscribed = true
+              clearTimeout(timeout)
+              resolve()
+            }
+          })
+      })
+
+      expect(channelBSubscribed).toBe(true)
+      // Socket was never disconnected — channelB joined on the existing connection
+      expect(supabase.realtime.isConnected()).toBe(true)
+    }, 20000)
+
+    test('socket disconnects after removeChannel when no channels remain', async () => {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(
+          () => reject(new Error('Timeout waiting for subscription')),
+          8000
+        )
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            clearTimeout(timeout)
+            resolve()
+          }
+        })
+      })
+
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      await supabase.removeChannel(channel)
+      // Deferred disconnect is scheduled — socket still open
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      // Wait for deferred disconnect (2 * heartbeatIntervalMs = 1000 ms)
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+      expect(supabase.realtime.isConnected()).toBe(false)
+    }, 15000)
+
+    test('socket disconnects after channel.unsubscribe() when no channels remain', async () => {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(
+          () => reject(new Error('Timeout waiting for subscription')),
+          8000
+        )
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            clearTimeout(timeout)
+            resolve()
+          }
+        })
+      })
+
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      await channel.unsubscribe()
+      // Deferred disconnect is scheduled — socket still open
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      // Wait for deferred disconnect (2 * heartbeatIntervalMs = 1000 ms)
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+      expect(supabase.realtime.isConnected()).toBe(false)
+    }, 15000)
+
+    test('removeAllChannels disconnects socket immediately', async () => {
+      const channelA = supabase.channel(`${channelName}-a`)
+      const channelB = supabase.channel(`${channelName}-b`)
+
+      await Promise.all([
+        new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Timeout waiting for channelA')), 8000)
+          channelA.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              clearTimeout(timeout)
+              resolve()
+            }
+          })
+        }),
+        new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Timeout waiting for channelB')), 8000)
+          channelB.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              clearTimeout(timeout)
+              resolve()
+            }
+          })
+        }),
+      ])
+
+      expect(supabase.realtime.isConnected()).toBe(true)
+
+      await supabase.removeAllChannels()
+      // removeAllChannels is an explicit teardown — no deferred timer, disconnect is immediate
+      expect(supabase.realtime.isConnected()).toBe(false)
+    }, 20000)
   })
 })
 
