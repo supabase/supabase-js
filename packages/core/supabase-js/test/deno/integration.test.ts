@@ -13,10 +13,10 @@ Deno.test(
   async (t) => {
     // Default local dev credentials from Supabase CLI
     const SUPABASE_URL = 'http://127.0.0.1:54321'
-    const ANON_KEY =
+    const PUBLISHABLE_KEY =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
-    const supabase = createClient(SUPABASE_URL, ANON_KEY)
+    const supabase = createClient(SUPABASE_URL, PUBLISHABLE_KEY)
 
     // Cleanup function to be called after all tests
     const cleanup = async () => {
@@ -149,7 +149,7 @@ Deno.test(
       const versions = ['1.0.0', '2.0.0']
       for (const vsn of versions) {
         await t.step(`Realtime v${vsn} - is able to connect and broadcast`, async () => {
-          const supabaseRealtime = createClient(SUPABASE_URL, ANON_KEY, {
+          const supabaseRealtime = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
             realtime: { heartbeatIntervalMs: 500, vsn },
           })
 
@@ -206,11 +206,11 @@ Deno.test(
         const filePath = 'test-file.txt'
         const fileContent = new Blob(['Hello, Supabase Storage!'], { type: 'text/plain' })
 
-        // use service_role key for bypass RLS
-        const SERVICE_ROLE_KEY =
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ||
+        // use secret key for bypass RLS
+        const SECRET_KEY =
+          Deno.env.get('SUPABASE_SECRET_KEY') ||
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
-        const supabaseWithServiceRole = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+        const supabaseWithServiceRole = createClient(SUPABASE_URL, SECRET_KEY, {
           realtime: { heartbeatIntervalMs: 500 },
         })
 

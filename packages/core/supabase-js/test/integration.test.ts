@@ -5,7 +5,7 @@ import { sign } from 'jsonwebtoken'
 // Start a local Supabase instance with 'supabase start' before running these tests
 // Default local dev credentials from Supabase CLI
 const SUPABASE_URL = 'http://127.0.0.1:54321'
-const ANON_KEY =
+const PUBLISHABLE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 const JWT_SECRET = 'super-secret-jwt-token-with-at-least-32-characters-long'
 // For Node.js < 22, we need to provide a WebSocket implementation
@@ -19,7 +19,7 @@ if (typeof WebSocket === 'undefined' && typeof process !== 'undefined' && proces
   }
 }
 
-const supabase = createClient(SUPABASE_URL, ANON_KEY, {
+const supabase = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
   realtime: {
     heartbeatIntervalMs: 500,
     ...(wsTransport && { transport: wsTransport }),
@@ -274,7 +274,7 @@ describe('Supabase Integration Tests', () => {
 
     beforeEach(async () => {
       // Create client with specific version
-      supabase = createClient(SUPABASE_URL, ANON_KEY, {
+      supabase = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
         realtime: {
           heartbeatIntervalMs: 500,
           vsn,
@@ -335,9 +335,9 @@ describe('Storage API', () => {
   const filePath = 'test-file.txt'
   const fileContent = new Blob(['Hello, Supabase Storage!'], { type: 'text/plain' })
 
-  // use service_role key for bypass RLS
-  const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'use-service-role-key'
-  const supabaseWithServiceRole = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+  // use secret key for bypass RLS
+  const SECRET_KEY = process.env.SUPABASE_SECRET_KEY || 'use-secret-key'
+  const supabaseWithServiceRole = createClient(SUPABASE_URL, SECRET_KEY, {
     realtime: {
       heartbeatIntervalMs: 500,
       ...(wsTransport && { transport: wsTransport }),
@@ -372,7 +372,7 @@ describe('Storage API', () => {
 
 describe('PostgREST Timeout Configuration', () => {
   test('should accept timeout option through client configuration', () => {
-    const client = createClient(SUPABASE_URL, ANON_KEY, {
+    const client = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
       db: { timeout: 5000 },
     })
     expect(client).toBeDefined()
@@ -380,7 +380,7 @@ describe('PostgREST Timeout Configuration', () => {
   })
 
   test('should work without timeout option', () => {
-    const client = createClient(SUPABASE_URL, ANON_KEY, {
+    const client = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
       db: { schema: 'public' },
     })
     expect(client).toBeDefined()
@@ -388,7 +388,7 @@ describe('PostgREST Timeout Configuration', () => {
   })
 
   test('should allow timeout with other db options', () => {
-    const client = createClient(SUPABASE_URL, ANON_KEY, {
+    const client = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
       db: {
         schema: 'public',
         timeout: 10000,
@@ -411,7 +411,7 @@ describe('Custom JWT', () => {
         JWT_SECRET,
         { expiresIn: '1h' }
       )
-      const supabaseWithCustomJwt = createClient(SUPABASE_URL, ANON_KEY, {
+      const supabaseWithCustomJwt = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
         accessToken: () => Promise.resolve(jwtToken),
         realtime: {
           ...(wsTransport && { transport: wsTransport }),

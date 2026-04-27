@@ -2,13 +2,13 @@ import { test, expect, describe } from 'bun:test'
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'http://127.0.0.1:54321'
-const ANON_KEY =
+const PUBLISHABLE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-const SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+const SECRET_KEY =
+  process.env.SUPABASE_SECRET_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
 
-const supabase = createClient(SUPABASE_URL, ANON_KEY, {
+const supabase = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
   realtime: { heartbeatIntervalMs: 500 },
 })
 
@@ -16,7 +16,7 @@ const versions = ['1.0.0', '2.0.0']
 
 versions.forEach((vsn) => {
   describe(`Realtime v${vsn}`, () => {
-    const supabaseRealtime = createClient(SUPABASE_URL, ANON_KEY, {
+    const supabaseRealtime = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
       realtime: { heartbeatIntervalMs: 500, vsn },
     })
 
@@ -141,7 +141,7 @@ test('should upload and list file in bucket', async () => {
   const filePath = 'test-file.txt'
   const fileContent = new Blob(['Hello, Supabase Storage!'], { type: 'text/plain' })
 
-  const supabaseWithServiceRole = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+  const supabaseWithServiceRole = createClient(SUPABASE_URL, SECRET_KEY, {
     realtime: { heartbeatIntervalMs: 500 },
   })
 

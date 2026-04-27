@@ -29,7 +29,7 @@ The setup command performs these steps automatically:
 2. ✅ Serves Edge Functions in the background (fixes 503 errors)
 3. ✅ Resets database and applies migrations
 4. ✅ Creates test storage bucket
-5. ✅ Exports `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` environment variables
+5. ✅ Exports `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` environment variables
 6. ✅ Verifies everything is working (database, storage, functions)
 
 **Important:** Tests do NOT automatically restart Supabase. You control when it starts and stops.
@@ -112,8 +112,9 @@ npx supabase start
 npx supabase functions serve &
 
 # Export keys for tests
-export SUPABASE_ANON_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')"
-export SUPABASE_SERVICE_ROLE_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
+# Note: the Supabase CLI still outputs these as ANON_KEY / SERVICE_ROLE_KEY in its JSON status
+export SUPABASE_PUBLISHABLE_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')"
+export SUPABASE_SECRET_KEY="$(npx supabase status --output json | jq -r '.SERVICE_ROLE_KEY')"
 
 # Return to root and run tests
 cd ../../..
@@ -279,7 +280,7 @@ tail -f /tmp/supabase-functions.log
 
 # Test a function directly
 curl -X POST \
-  -H "Authorization: Bearer $(npx supabase status --output json | jq -r '.ANON_KEY')" \
+  -H "Authorization: Bearer $(npx supabase status --output json | jq -r '.ANON_KEY')" \  # CLI still uses ANON_KEY name
   -H "Content-Type: application/json" \
   -d '{"name":"Test"}' \
   http://127.0.0.1:54321/functions/v1/hello

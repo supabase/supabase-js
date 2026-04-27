@@ -37,8 +37,8 @@ const privateKeyObject = crypto.createPrivateKey({
 })
 const privateKey = privateKeyObject.export({ type: 'pkcs8', format: 'pem' })
 
-// Generate anon key dynamically from signing keys (RS256-signed, required for API gateway)
-const SUPABASE_ANON_KEY = jwt.sign(
+// Generate publishable key dynamically from signing keys (RS256-signed, required for API gateway)
+const SUPABASE_PUBLISHABLE_KEY = jwt.sign(
   {
     iss: 'supabase-demo',
     role: 'anon',
@@ -49,8 +49,8 @@ const SUPABASE_ANON_KEY = jwt.sign(
   { algorithm: 'RS256', keyid: rsaKey.kid }
 )
 
-// Generate service role key dynamically from signing keys (RS256-signed)
-const SUPABASE_SERVICE_ROLE_KEY = jwt.sign(
+// Generate secret key dynamically from signing keys (RS256-signed)
+const SUPABASE_SECRET_KEY = jwt.sign(
   {
     iss: 'supabase-demo',
     role: 'service_role',
@@ -73,7 +73,7 @@ const AUTH_ADMIN_JWT = jwt.sign(
 
 export const authClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-  headers: { apikey: SUPABASE_ANON_KEY },
+  headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
@@ -81,7 +81,7 @@ export const authClient = new GoTrueClient({
 
 export const authClientWithSession = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-  headers: { apikey: SUPABASE_ANON_KEY },
+  headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
@@ -89,7 +89,7 @@ export const authClientWithSession = new GoTrueClient({
 
 export const authSubscriptionClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-  headers: { apikey: SUPABASE_ANON_KEY },
+  headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
@@ -97,7 +97,7 @@ export const authSubscriptionClient = new GoTrueClient({
 
 export const clientApiAutoConfirmEnabledClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-  headers: { apikey: SUPABASE_ANON_KEY },
+  headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
@@ -105,7 +105,7 @@ export const clientApiAutoConfirmEnabledClient = new GoTrueClient({
 
 export const pkceClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-  headers: { apikey: SUPABASE_ANON_KEY },
+  headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
   autoRefreshToken: false,
   persistSession: true,
   storage: new MemoryStorage(),
@@ -114,7 +114,7 @@ export const pkceClient = new GoTrueClient({
 
 export const autoRefreshClient = new GoTrueClient({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-  headers: { apikey: SUPABASE_ANON_KEY },
+  headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
   autoRefreshToken: true,
   persistSession: true,
 })
@@ -122,7 +122,7 @@ export const autoRefreshClient = new GoTrueClient({
 export const authAdminApiAutoConfirmEnabledClient = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   headers: {
-    apikey: SUPABASE_SERVICE_ROLE_KEY,
+    apikey: SUPABASE_SECRET_KEY,
     Authorization: `Bearer ${AUTH_ADMIN_JWT}`,
   },
 })
@@ -130,15 +130,15 @@ export const authAdminApiAutoConfirmEnabledClient = new GoTrueAdminApi({
 export const serviceRoleApiClient = new GoTrueAdminApi({
   url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
   headers: {
-    apikey: SUPABASE_SERVICE_ROLE_KEY,
-    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    apikey: SUPABASE_SECRET_KEY,
+    Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
   },
 })
 
 export function getClientWithSpecificStorage(storage: SupportedStorage) {
   return new GoTrueClient({
     url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-    headers: { apikey: SUPABASE_ANON_KEY },
+    headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
     storageKey: 'test-specific-storage',
     autoRefreshToken: false,
     persistSession: true,
@@ -152,7 +152,7 @@ export function getClientWithSpecificStorageKey(
 ) {
   return new GoTrueClient({
     url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-    headers: { apikey: SUPABASE_ANON_KEY },
+    headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
     autoRefreshToken: false,
     persistSession: true,
     storageKey,

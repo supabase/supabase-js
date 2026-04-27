@@ -61,7 +61,7 @@ export default class GoTrueAdminApi {
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'secret-or-service-role-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-secret-key')
    * const { data, error } = await supabase.auth.admin.listUsers()
    * ```
    *
@@ -71,7 +71,7 @@ export default class GoTrueAdminApi {
    *
    * const admin = new GoTrueAdminApi({
    *   url: 'https://xyzcompany.supabase.co/auth/v1',
-   *   headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
+   *   headers: { Authorization: `Bearer ${process.env.SUPABASE_SECRET_KEY}` },
    * })
    * ```
    */
