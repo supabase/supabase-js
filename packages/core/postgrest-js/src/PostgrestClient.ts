@@ -170,7 +170,8 @@ export default class PostgrestClient<
       throw new Error('Invalid relation name: relation must be a non-empty string.')
     }
 
-    const url = new URL(`${this.url}/${relation}`)
+    const _relation = relation.startsWith('/') ? relation.substring(1) : relation
+    const url = new URL(`${this.url}/${_relation}`)
     return new PostgrestQueryBuilder(url, {
       headers: new Headers(this.headers),
       schema: this.schemaName,
@@ -401,7 +402,8 @@ export default class PostgrestClient<
     'RPC'
   > {
     let method: 'HEAD' | 'GET' | 'POST'
-    const url = new URL(`${this.url}/rpc/${fn}`)
+    const _fn = fn.startsWith('/') ? fn.substring(1) : fn
+    const url = new URL(`${this.url}/rpc/${_fn}`)
     let body: unknown | undefined
     // objects/arrays-of-objects can't be serialized to URL params, use POST + return=minimal instead
     const _isObject = (v: unknown): boolean =>
