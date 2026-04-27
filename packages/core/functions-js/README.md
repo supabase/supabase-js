@@ -53,11 +53,11 @@ npm install @supabase/functions-js
 import { FunctionsClient } from '@supabase/functions-js'
 
 const functionsUrl = 'https://<project_ref>.supabase.co/functions/v1'
-const anonKey = '<anon_key>'
+const publishableKey = '<publishable_key>'
 
 const functions = new FunctionsClient(functionsUrl, {
   headers: {
-    Authorization: `Bearer ${anonKey}`,
+    Authorization: `Bearer ${publishableKey}`,
   },
 })
 

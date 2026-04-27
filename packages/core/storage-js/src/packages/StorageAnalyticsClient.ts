@@ -35,7 +35,7 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    * ```typescript
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
    * const { data, error } = await supabase.storage.analytics.listBuckets()
    * ```
    *

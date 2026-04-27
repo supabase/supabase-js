@@ -110,7 +110,7 @@ export default class SupabaseClient<
    * import { createClient } from '@supabase/supabase-js'
    *
    * // Create a single supabase client for interacting with your database
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
    * ```
    *
    * @example With a custom domain
@@ -118,7 +118,7 @@ export default class SupabaseClient<
    * import { createClient } from '@supabase/supabase-js'
    *
    * // Use a custom domain as the supabase URL
-   * const supabase = createClient('https://my-custom-domain.com', 'publishable-or-anon-key')
+   * const supabase = createClient('https://my-custom-domain.com', 'your-publishable-key')
    * ```
    *
    * @example With additional parameters
@@ -138,7 +138,7 @@ export default class SupabaseClient<
    *     headers: { 'x-my-custom-header': 'my-app-name' },
    *   },
    * }
-   * const supabase = createClient("https://xyzcompany.supabase.co", "publishable-or-anon-key", options)
+   * const supabase = createClient("https://xyzcompany.supabase.co", "your-publishable-key", options)
    * ```
    *
    * @exampleDescription With custom schemas
@@ -151,7 +151,7 @@ export default class SupabaseClient<
    * ```js
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key', {
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key', {
    *   // Provide a custom schema. Defaults to "public".
    *   db: { schema: 'other_schema' }
    * })
@@ -166,7 +166,7 @@ export default class SupabaseClient<
    * ```js
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key', {
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key', {
    *   global: { fetch: fetch.bind(globalThis) }
    * })
    * ```
@@ -180,7 +180,7 @@ export default class SupabaseClient<
    * import { createClient } from '@supabase/supabase-js'
    * import AsyncStorage from "@react-native-async-storage/async-storage";
    *
-   * const supabase = createClient("https://xyzcompany.supabase.co", "publishable-or-anon-key", {
+   * const supabase = createClient("https://xyzcompany.supabase.co", "your-publishable-key", {
    *   auth: {
    *     storage: AsyncStorage,
    *     autoRefreshToken: true,
@@ -257,7 +257,7 @@ export default class SupabaseClient<
    *   }
    * }
    *
-   * const supabase = createClient("https://xyzcompany.supabase.co", "publishable-or-anon-key", {
+   * const supabase = createClient("https://xyzcompany.supabase.co", "your-publishable-key", {
    *   auth: {
    *     storage: new LargeSecureStore(),
    *     autoRefreshToken: true,
@@ -271,7 +271,7 @@ export default class SupabaseClient<
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
    *
    * const { data } = await supabase.from('profiles').select('*')
    * ```

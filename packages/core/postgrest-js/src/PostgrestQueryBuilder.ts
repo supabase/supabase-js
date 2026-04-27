@@ -48,7 +48,7 @@ export default class PostgrestQueryBuilder<
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'publishable-or-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
    * const { data, error } = await supabase.from('users').select('*')
    * ```
    *
@@ -58,7 +58,7 @@ export default class PostgrestQueryBuilder<
    *
    * const query = new PostgrestQueryBuilder(
    *   new URL('https://xyzcompany.supabase.co/rest/v1/users'),
-   *   { headers: { apikey: 'publishable-or-anon-key' }, retry: true }
+   *   { headers: { apikey: 'your-publishable-key' }, retry: true }
    * )
    * ```
    */
