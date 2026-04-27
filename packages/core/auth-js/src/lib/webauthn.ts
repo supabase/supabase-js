@@ -356,7 +356,7 @@ export function isValidDomain(hostname: string): boolean {
  * @returns {boolean} True if browser supports WebAuthn
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential#browser_compatibility MDN - PublicKeyCredential Browser Compatibility}
  */
-function browserSupportsWebAuthn(): boolean {
+export function browserSupportsWebAuthn(): boolean {
   return !!(
     isBrowser() &&
     'PublicKeyCredential' in window &&

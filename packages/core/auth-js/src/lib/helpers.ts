@@ -372,6 +372,14 @@ export function validateUUID(str: string) {
   }
 }
 
+export function assertPasskeyExperimentalEnabled(experimental: { passkey?: boolean }): void {
+  if (!experimental.passkey) {
+    throw new Error(
+      '@supabase/auth-js: the passkey API is experimental and disabled by default. Enable it by passing `auth: { experimental: { passkey: true } }` to createClient (or to the GoTrueClient constructor).'
+    )
+  }
+}
+
 export function userNotAvailableProxy(): User {
   const proxyTarget = {} as User
 
