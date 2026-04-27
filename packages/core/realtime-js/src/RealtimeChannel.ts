@@ -11,6 +11,7 @@ import * as Transformers from './lib/transformers'
 import { httpEndpointURL } from './lib/transformers'
 import ChannelAdapter from './phoenix/channelAdapter'
 import { ChannelBindingCallback, ChannelOnErrorCallback } from './phoenix/types'
+import type { Timer } from './phoenix/types'
 
 type ReplayOption = {
   since: number
@@ -200,7 +201,7 @@ export default class RealtimeChannel {
     return this.channelAdapter.joinPush
   }
 
-  get rejoinTimer() {
+  get rejoinTimer(): Timer {
     return this.channelAdapter.rejoinTimer
   }
 
