@@ -36,12 +36,12 @@ jobs:
           cache: 'npm'
 
       - name: Setup Deno
-        uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
+        uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
         with:
           deno-version: '2.x'
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3 # v2.1.2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest
 
@@ -52,7 +52,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Cache Supabase Docker images
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
@@ -66,14 +66,14 @@ jobs:
           done
 
       - name: Cache Puppeteer browsers
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: puppeteer-cache
         with:
           path: ${{ env.PUPPETEER_CACHE_DIR }}
           key: puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright

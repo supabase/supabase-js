@@ -136,7 +136,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Cache Supabase Docker images
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
@@ -193,7 +193,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Cache Supabase Docker images
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
@@ -248,7 +248,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Cache Supabase Docker images
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
@@ -299,7 +299,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Cache Supabase Docker images
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
@@ -377,7 +377,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Cache Supabase Docker images
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
