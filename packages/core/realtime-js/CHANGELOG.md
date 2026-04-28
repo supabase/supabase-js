@@ -1,3 +1,9 @@
+## 2.105.1 (2026-04-28)
+
+### 🩹 Fixes
+
+- **realtime:** surface real Error on transport-level CHANNEL_ERROR ([#2299](https://github.com/supabase/supabase-js/pull/2299))
+
 ## 2.105.0 (2026-04-27)
 
 ### 🚀 Features
