@@ -33,7 +33,7 @@ describe('constants', () => {
 
   test('DEFAULT_HEADERS should contain X-Client-Info', () => {
     expect(DEFAULT_HEADERS).toHaveProperty('X-Client-Info')
-    expect(DEFAULT_HEADERS['X-Client-Info']).toMatch(/^supabase-js-.*\/.*$/)
+    expect(DEFAULT_HEADERS['X-Client-Info']).toMatch(/^supabase-js\/.*; env=.*$/)
   })
 
   test('DEFAULT_GLOBAL_OPTIONS should contain headers', () => {
@@ -69,7 +69,7 @@ describe('constants', () => {
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('supabase-js-deno')
+      expect(newHeaders['X-Client-Info']).toContain('env=deno')
     })
 
     test('should detect web environment', () => {
@@ -79,7 +79,7 @@ describe('constants', () => {
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('supabase-js-web')
+      expect(newHeaders['X-Client-Info']).toContain('env=web')
     })
 
     test('should detect React Native environment', () => {
@@ -89,7 +89,7 @@ describe('constants', () => {
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('supabase-js-react-native')
+      expect(newHeaders['X-Client-Info']).toContain('env=react-native')
     })
 
     test('should default to node environment when no specific environment is detected', () => {
@@ -99,7 +99,7 @@ describe('constants', () => {
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('supabase-js-node')
+      expect(newHeaders['X-Client-Info']).toContain('env=node')
     })
   })
 })
