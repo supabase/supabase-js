@@ -889,7 +889,7 @@ export default class PostgrestQueryBuilder<
     columns?: Query,
     options?: {
       head?: boolean
-      count?: 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated' | (string & {})
     }
   ): PostgrestFilterBuilder<
     ClientOptions,
@@ -943,7 +943,7 @@ export default class PostgrestQueryBuilder<
       Row
     >,
     options?: {
-      count?: 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated' | (string & {})
     }
   ): PostgrestFilterBuilder<
     ClientOptions,
@@ -960,7 +960,7 @@ export default class PostgrestQueryBuilder<
       Row
     >[],
     options?: {
-      count?: 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated' | (string & {})
       defaultToNull?: boolean
     }
   ): PostgrestFilterBuilder<
@@ -1097,7 +1097,7 @@ export default class PostgrestQueryBuilder<
       count,
       defaultToNull = true,
     }: {
-      count?: 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated' | (string & {})
       defaultToNull?: boolean
     } = {}
   ): PostgrestFilterBuilder<
@@ -1148,7 +1148,7 @@ export default class PostgrestQueryBuilder<
     options?: {
       onConflict?: string
       ignoreDuplicates?: boolean
-      count?: 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated' | (string & {})
     }
   ): PostgrestFilterBuilder<
     ClientOptions,
@@ -1167,7 +1167,7 @@ export default class PostgrestQueryBuilder<
     options?: {
       onConflict?: string
       ignoreDuplicates?: boolean
-      count?: 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated' | (string & {})
       defaultToNull?: boolean
     }
   ): PostgrestFilterBuilder<
@@ -1406,7 +1406,7 @@ export default class PostgrestQueryBuilder<
     }: {
       onConflict?: string
       ignoreDuplicates?: boolean
-      count?: 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated' | (string & {})
       defaultToNull?: boolean
     } = {}
   ): PostgrestFilterBuilder<
@@ -1598,7 +1598,7 @@ export default class PostgrestQueryBuilder<
     {
       count,
     }: {
-      count?: 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated' | (string & {})
     } = {}
   ): PostgrestFilterBuilder<
     ClientOptions,
@@ -1749,7 +1749,7 @@ export default class PostgrestQueryBuilder<
   delete({
     count,
   }: {
-    count?: 'exact' | 'planned' | 'estimated'
+    count?: 'exact' | 'planned' | 'estimated' | (string & {})
   } = {}): PostgrestFilterBuilder<
     ClientOptions,
     Schema,
