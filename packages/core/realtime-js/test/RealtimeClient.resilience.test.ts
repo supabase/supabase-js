@@ -114,7 +114,10 @@ describe('socket close event', () => {
     testClient.mockServer.close({ code: 1000, reason: '', wasClean: true })
     await testClient.socketClosed()
 
-    expect(spy).toHaveBeenCalledWith(CHANNEL_EVENTS.error)
+    expect(spy).toHaveBeenCalledWith(
+      CHANNEL_EVENTS.error,
+      expect.objectContaining({ type: 'close', code: 1000, wasClean: true })
+    )
   })
 })
 
@@ -129,6 +132,9 @@ describe('_onConnError', () => {
     const spy = vi.spyOn(channel.channelAdapter.getChannel(), 'trigger')
     testClient.mockServer.simulate('error')
 
-    expect(spy).toHaveBeenCalledWith(CHANNEL_EVENTS.error)
+    expect(spy).toHaveBeenCalledWith(
+      CHANNEL_EVENTS.error,
+      expect.objectContaining({ type: 'error' })
+    )
   })
 })

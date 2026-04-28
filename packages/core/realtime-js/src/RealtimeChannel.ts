@@ -9,6 +9,7 @@ import type {
 } from './RealtimePresence'
 import * as Transformers from './lib/transformers'
 import { httpEndpointURL } from './lib/transformers'
+import { normalizeChannelError } from './lib/normalizeChannelError'
 import ChannelAdapter from './phoenix/channelAdapter'
 import { ChannelBindingCallback, ChannelOnErrorCallback } from './phoenix/types'
 import type { Timer } from './phoenix/types'
@@ -304,7 +305,7 @@ export default class RealtimeChannel {
       }
 
       this._onError((reason: unknown) => {
-        callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, reason as Error)
+        callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, normalizeChannelError(reason))
       })
 
       this._onClose(() => callback?.(REALTIME_SUBSCRIBE_STATES.CLOSED))
@@ -329,10 +330,8 @@ export default class RealtimeChannel {
         })
         .receive('error', (error: { [key: string]: any }) => {
           this.state = CHANNEL_STATES.errored
-          callback?.(
-            REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
-            new Error(JSON.stringify(Object.values(error).join(', ') || 'error'))
-          )
+          const message = Object.values(error).join(', ') || 'error'
+          callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, new Error(message, { cause: error }))
         })
         .receive('timeout', () => {
           callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
