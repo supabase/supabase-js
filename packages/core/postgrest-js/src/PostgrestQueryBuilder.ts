@@ -936,42 +936,6 @@ export default class PostgrestQueryBuilder<
     })
   }
 
-  // TODO(v3): Make `defaultToNull` consistent for both single & bulk inserts.
-  insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
-    values: RejectExcessProperties<
-      Relation extends { Insert: unknown } ? Relation['Insert'] : never,
-      Row
-    >,
-    options?: {
-      count?: 'exact' | 'planned' | 'estimated' | (string & {})
-    }
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Relation['Row'],
-    null,
-    RelationName,
-    Relationships,
-    'POST'
-  >
-  insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
-    values: RejectExcessProperties<
-      Relation extends { Insert: unknown } ? Relation['Insert'] : never,
-      Row
-    >[],
-    options?: {
-      count?: 'exact' | 'planned' | 'estimated' | (string & {})
-      defaultToNull?: boolean
-    }
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Relation['Row'],
-    null,
-    RelationName,
-    Relationships,
-    'POST'
-  >
   /**
    * Perform an INSERT into the table or view.
    *
@@ -1139,46 +1103,6 @@ export default class PostgrestQueryBuilder<
     })
   }
 
-  // TODO(v3): Make `defaultToNull` consistent for both single & bulk upserts.
-  upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
-    values: RejectExcessProperties<
-      Relation extends { Insert: unknown } ? Relation['Insert'] : never,
-      Row
-    >,
-    options?: {
-      onConflict?: string
-      ignoreDuplicates?: boolean
-      count?: 'exact' | 'planned' | 'estimated' | (string & {})
-    }
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Relation['Row'],
-    null,
-    RelationName,
-    Relationships,
-    'POST'
-  >
-  upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
-    values: RejectExcessProperties<
-      Relation extends { Insert: unknown } ? Relation['Insert'] : never,
-      Row
-    >[],
-    options?: {
-      onConflict?: string
-      ignoreDuplicates?: boolean
-      count?: 'exact' | 'planned' | 'estimated' | (string & {})
-      defaultToNull?: boolean
-    }
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Relation['Row'],
-    null,
-    RelationName,
-    Relationships,
-    'POST'
-  >
   /**
    * Perform an UPSERT on the table or view. Depending on the column(s) passed
    * to `onConflict`, `.upsert()` allows you to perform the equivalent of
