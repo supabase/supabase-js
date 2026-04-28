@@ -19,6 +19,6 @@ const config: Config.InitialOptions = {
       tsconfig: 'tsconfig.test.json',
     },
   },
-    snapshotSerializers: ['<rootDir>/test/postgrestErrorSerializer.js'],
+  snapshotSerializers: ['<rootDir>/test/postgrestErrorSerializer.js'],
 }
 export default config

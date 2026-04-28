@@ -937,13 +937,13 @@ test('throwOnError throws errors instead of returning them', async () => {
     // @ts-expect-error Argument of type '"missing_table"' is not assignable to parameter
     await postgrest.from('missing_table').select().throwOnError()
   } catch (error) {
-expect(error).toBeInstanceOf(PostgrestError)
-      expect(error).toMatchObject({
-        code: 'PGRST205',
-        details: null,
-        hint: null,
-        message: "Could not find the table 'public.missing_table' in the schema cache",
-      })
+    expect(error).toBeInstanceOf(PostgrestError)
+    expect(error).toMatchObject({
+      code: 'PGRST205',
+      details: null,
+      hint: null,
+      message: "Could not find the table 'public.missing_table' in the schema cache",
+    })
     isErrorCaught = true
   }
 
