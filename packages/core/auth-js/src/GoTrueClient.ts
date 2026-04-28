@@ -3747,24 +3747,35 @@ export default class GoTrueClient {
    *
    * If using `others` scope, no `SIGNED_OUT` event is fired!
    *
+   * **Warning:** the default `scope` is `'global'`. This signs the user out of
+   * **every device they are currently signed in on**, not just the current
+   * tab/session. If you only want to sign the user out of the current session
+   * (the behavior most other auth libraries default to), pass
+   * `{ scope: 'local' }` explicitly.
+   *
    * @category Auth
    *
    * @remarks
    * - In order to use the `signOut()` method, the user needs to be signed in first.
-   * - By default, `signOut()` uses the global scope, which signs out all other sessions that the user is logged into as well. Customize this behavior by passing a scope parameter.
+   * - By default, `signOut()` uses the **global** scope, which signs out the user
+   *   on every device they are signed in on (not just the current one). Pass
+   *   `{ scope: 'local' }` to only sign out the current session. This is
+   *   usually what apps want on a "Sign out" button, especially when users
+   *   sign in from multiple devices and do not expect signing out of one to
+   *   terminate the others.
    * - Since Supabase Auth uses JWTs for authentication, the access token JWT will be valid until it's expired. When the user signs out, Supabase revokes the refresh token and deletes the JWT from the client-side. This does not revoke the JWT and it will still be valid until it expires.
    *
-   * @example Sign out (all sessions)
+   * @example Sign out of every device (global – default)
    * ```js
    * const { error } = await supabase.auth.signOut()
    * ```
    *
-   * @example Sign out (current session)
+   * @example Sign out only the current session (recommended for most apps)
    * ```js
    * const { error } = await supabase.auth.signOut({ scope: 'local' })
    * ```
    *
-   * @example Sign out (other sessions)
+   * @example Sign out of all other sessions, keep the current one
    * ```js
    * const { error } = await supabase.auth.signOut({ scope: 'others' })
    * ```
