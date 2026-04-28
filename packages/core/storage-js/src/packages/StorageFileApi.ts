@@ -941,7 +941,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *
    * @category File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
-   * @returns `{ data: true, error: null }` when the file exists, `{ data: false, error: null }` when it does not (HTTP 404), or `{ data: false, error: StorageError }` for any other failure.
+   * @returns `{ data: true, error: null }` when the file exists, `{ data: false, error: null }` when it does not (HTTP 400 or 404), or throws/returns a `StorageError` for any other failure.
    *
    * @example Check file existence
    * ```js
@@ -982,7 +982,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
               ? (error.originalError as { status: number })?.status
               : undefined
 
-        if (status === 404) {
+        if (status !== undefined && [400, 404].includes(status)) {
           return { data: false, error: null }
         }
       }
