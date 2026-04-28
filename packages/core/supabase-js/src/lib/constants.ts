@@ -15,7 +15,7 @@ if (typeof Deno !== 'undefined') {
   JS_ENV = 'node'
 }
 
-export const DEFAULT_HEADERS = { 'X-Client-Info': `supabase-js-${JS_ENV}/${version}` }
+export const DEFAULT_HEADERS = { 'X-Client-Info': `supabase-js/${version}; env=${JS_ENV}` }
 
 export const DEFAULT_GLOBAL_OPTIONS = {
   headers: DEFAULT_HEADERS,
