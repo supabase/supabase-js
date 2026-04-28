@@ -1747,7 +1747,8 @@ export default class PostgrestFilterBuilder<
     RelationName,
     Relationships,
     Method
-  >
+  > &
+    this
   not<ColumnName extends string & keyof Row>(
     column: ColumnName,
     operator: FilterOperator,
@@ -1816,7 +1817,8 @@ export default class PostgrestFilterBuilder<
     column: string,
     operator: string,
     value: unknown
-  ): PostgrestFilterBuilder<ClientOptions, Schema, any, any, RelationName, Relationships, Method> {
+  ): PostgrestFilterBuilder<ClientOptions, Schema, any, any, RelationName, Relationships, Method> &
+    this {
     this.url.searchParams.append(column, `not.${operator}.${value}`)
     return this as any
   }
