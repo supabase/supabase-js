@@ -1,4 +1,10 @@
-declare type BeforeunloadReason = 'cpu' | 'memory' | 'wall_clock' | 'early_drop' | 'termination'
+declare type BeforeunloadReason =
+  | 'cpu'
+  | 'memory'
+  | 'wall_clock'
+  | 'early_drop'
+  | 'termination'
+  | (string & {})
 
 declare interface WindowEventMap {
   load: Event
@@ -201,8 +207,8 @@ declare namespace Deno {
        * Number of milliseconds until the rate-limit window resets.
        * `null` if the reset time could not be determined.
        */
-      retryAfterMs: number | null;
-      constructor(message: string, retryAfterMs?: number);
+      retryAfterMs: number | null
+      constructor(message: string, retryAfterMs?: number)
     }
   }
 }

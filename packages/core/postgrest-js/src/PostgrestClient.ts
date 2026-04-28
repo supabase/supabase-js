@@ -389,7 +389,7 @@ export default class PostgrestClient<
     }: {
       head?: boolean
       get?: boolean
-      count?: 'exact' | 'planned' | 'estimated'
+      count?: 'exact' | 'planned' | 'estimated' | (string & {})
     } = {}
   ): PostgrestFilterBuilder<
     ClientOptions,
