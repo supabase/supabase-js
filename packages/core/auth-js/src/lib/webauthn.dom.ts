@@ -575,7 +575,7 @@ export interface PublicKeyCredentialFuture<
  *
  * @see {@link https://w3c.github.io/webauthn/#sctn-authenticator-data W3C WebAuthn Spec - Authenticator Data}
  */
-export type CredentialDeviceType = 'singleDevice' | 'multiDevice'
+export type CredentialDeviceType = 'singleDevice' | 'multiDevice' | (string & {})
 
 /**
  * Categories of authenticators that Relying Parties can pass along to browsers during
@@ -591,7 +591,7 @@ export type CredentialDeviceType = 'singleDevice' | 'multiDevice'
  * @see {@link https://w3c.github.io/webauthn/#enumdef-publickeycredentialhint W3C WebAuthn Spec - PublicKeyCredentialHint}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredentialCreationOptions#hints MDN - hints}
  */
-export type PublicKeyCredentialHint = 'hybrid' | 'security-key' | 'client-device'
+export type PublicKeyCredentialHint = 'hybrid' | 'security-key' | 'client-device' | (string & {})
 
 /**
  * Values for an attestation object's `fmt`.
@@ -633,4 +633,4 @@ export type Uint8Array_ = ReturnType<Uint8Array['slice']>
  * @see {@link https://w3c.github.io/webauthn/#enum-attachment W3C WebAuthn Spec - AuthenticatorAttachment}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredentialCreationOptions/authenticatorSelection#authenticatorattachment MDN - authenticatorAttachment}
  */
-export type AuthenticatorAttachment = 'cross-platform' | 'platform'
+export type AuthenticatorAttachment = 'cross-platform' | 'platform' | (string & {})

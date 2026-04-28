@@ -693,7 +693,7 @@ export type SignInWithPasswordlessCredentials =
       }
     }
 
-export type AuthFlowType = 'implicit' | 'pkce'
+export type AuthFlowType = 'implicit' | 'pkce' | (string & {})
 export type SignInWithOAuthCredentials = {
   /** One of the providers supported by GoTrue. */
   provider: Provider
@@ -858,8 +858,15 @@ export interface VerifyTokenHashParams {
   type: EmailOtpType
 }
 
-export type MobileOtpType = 'sms' | 'phone_change'
-export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email'
+export type MobileOtpType = 'sms' | 'phone_change' | (string & {})
+export type EmailOtpType =
+  | 'signup'
+  | 'invite'
+  | 'magiclink'
+  | 'recovery'
+  | 'email_change'
+  | 'email'
+  | (string & {})
 
 export type ResendParams =
   | {
@@ -1238,7 +1245,7 @@ export type AuthMFAListFactorsResponse<T extends typeof FactorTypes = typeof Fac
     }
   >
 
-export type AuthenticatorAssuranceLevels = 'aal1' | 'aal2'
+export type AuthenticatorAssuranceLevels = 'aal1' | 'aal2' | (string & {})
 
 export type AuthMFAGetAuthenticatorAssuranceLevelResponse = RequestResult<{
   /** Current AAL level of the session. */
@@ -1932,7 +1939,7 @@ export type AuthMFAEnrollWebauthnResponse = RequestResult<
 >
 
 export type JwtHeader = {
-  alg: 'RS256' | 'ES256' | 'HS256'
+  alg: 'RS256' | 'ES256' | 'HS256' | (string & {})
   kid: string
   typ: string
 }
@@ -1983,7 +1990,7 @@ export interface JwtPayload extends RequiredClaims {
 }
 
 export interface JWK {
-  kty: 'RSA' | 'EC' | 'oct'
+  kty: 'RSA' | 'EC' | 'oct' | (string & {})
   key_ops: string[]
   alg?: string
   kid?: string
@@ -1997,7 +2004,7 @@ export type SignOutScope = (typeof SIGN_OUT_SCOPES)[number]
  * OAuth client grant types supported by the OAuth 2.1 server.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
-export type OAuthClientGrantType = 'authorization_code' | 'refresh_token'
+export type OAuthClientGrantType = 'authorization_code' | 'refresh_token' | (string & {})
 
 /**
  * OAuth client response types supported by the OAuth 2.1 server.
@@ -2009,13 +2016,13 @@ export type OAuthClientResponseType = 'code'
  * OAuth client type indicating whether the client can keep credentials confidential.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
-export type OAuthClientType = 'public' | 'confidential'
+export type OAuthClientType = 'public' | 'confidential' | (string & {})
 
 /**
  * OAuth client registration type.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
-export type OAuthClientRegistrationType = 'dynamic' | 'manual'
+export type OAuthClientRegistrationType = 'dynamic' | 'manual' | (string & {})
 
 /**
  * OAuth client token endpoint authentication method.
@@ -2191,7 +2198,7 @@ export interface GoTrueAdminOAuthApi {
 /**
  * Type of custom identity provider.
  */
-export type CustomProviderType = 'oauth2' | 'oidc'
+export type CustomProviderType = 'oauth2' | 'oidc' | (string & {})
 
 /**
  * OIDC discovery document fields.

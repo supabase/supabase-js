@@ -345,7 +345,7 @@ export function validateExp(exp: number) {
 }
 
 export function getAlgorithm(
-  alg: 'HS256' | 'RS256' | 'ES256'
+  alg: 'HS256' | 'RS256' | 'ES256' | (string & {})
 ): RsaHashedImportParams | EcKeyImportParams {
   switch (alg) {
     case 'RS256':

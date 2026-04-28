@@ -10,6 +10,7 @@ import {
   type RealtimeChannelOptions,
   RealtimeClient,
   type RealtimeClientOptions,
+  type RealtimeRemoveChannelResponse,
 } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import {
@@ -510,7 +511,7 @@ export default class SupabaseClient<
    * supabase.removeChannel(myChannel)
    * ```
    */
-  removeChannel(channel: RealtimeChannel): Promise<'ok' | 'timed out' | 'error'> {
+  removeChannel(channel: RealtimeChannel): Promise<RealtimeRemoveChannelResponse> {
     return this.realtime.removeChannel(channel)
   }
 
@@ -527,7 +528,7 @@ export default class SupabaseClient<
    * supabase.removeAllChannels()
    * ```
    */
-  removeAllChannels(): Promise<('ok' | 'timed out' | 'error')[]> {
+  removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
     return this.realtime.removeAllChannels()
   }
 
