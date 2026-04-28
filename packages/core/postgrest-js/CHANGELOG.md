@@ -1,3 +1,13 @@
+## 2.105.1 (2026-04-28)
+
+### 🩹 Fixes
+
+- **postgrest:** query reassignment regression ([#2292](https://github.com/supabase/supabase-js/pull/2292))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.105.0 (2026-04-27)
 
 ### 🩹 Fixes
