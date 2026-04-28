@@ -573,3 +573,72 @@ describe('Trigger Function Error Handling', () => {
     })
   })
 })
+
+describe('CHANNEL_ERROR callback receives a real Error', () => {
+  beforeEach(async () => {
+    testSetup.connect()
+    await testSetup.socketConnected()
+  })
+
+  test('transport phx_error with a CloseEvent payload yields a real Error with cause', () => {
+    const callback = vi.fn()
+    channel = testSetup.client.channel('test-transport-close')
+    channel.subscribe(callback)
+
+    const closeEvent = { code: 1006, reason: 'Network Failure' }
+    channel.channelAdapter.getChannel().trigger('phx_error', closeEvent)
+
+    expect(callback).toHaveBeenCalledWith('CHANNEL_ERROR', expect.any(Error))
+    const errorCall = callback.mock.calls.find((call) => call[0] === 'CHANNEL_ERROR')!
+    const err = errorCall[1] as Error
+    expect(err.message).toBe('socket closed: 1006 (Network Failure)')
+    expect(err.cause).toBe(closeEvent)
+  })
+
+  test('transport phx_error with an Error payload (heartbeat timeout) is forwarded as-is', () => {
+    const callback = vi.fn()
+    channel = testSetup.client.channel('test-heartbeat-timeout')
+    channel.subscribe(callback)
+
+    const heartbeatErr = new Error('heartbeat timeout')
+    channel.channelAdapter.getChannel().trigger('phx_error', heartbeatErr)
+
+    const errorCall = callback.mock.calls.find((call) => call[0] === 'CHANNEL_ERROR')!
+    expect(errorCall[1]).toBe(heartbeatErr)
+  })
+
+  test('transport phx_error with no payload still produces a real Error (defensive)', () => {
+    const callback = vi.fn()
+    channel = testSetup.client.channel('test-undefined-reason')
+    channel.subscribe(callback)
+
+    channel.channelAdapter.getChannel().trigger('phx_error')
+
+    const errorCall = callback.mock.calls.find((call) => call[0] === 'CHANNEL_ERROR')!
+    const err = errorCall[1] as Error
+    expect(err).toBeInstanceOf(Error)
+    expect(err.message).toBe('channel error: connection lost')
+  })
+
+  test('server-reply error path produces an Error with the joined message and cause', () => {
+    const callback = vi.fn()
+    channel = testSetup.client.channel('test-server-error')
+    channel.subscribe(callback)
+
+    channel.joinPush.trigger('error', {
+      reason: 'Authentication failed',
+      details: 'Invalid API key',
+    })
+
+    const errorCall = callback.mock.calls.find((call) => call[0] === 'CHANNEL_ERROR')!
+    const err = errorCall[1] as Error
+    expect(err).toBeInstanceOf(Error)
+    expect(err.message).toContain('Authentication failed')
+    expect(err.message).toContain('Invalid API key')
+    expect(err.message).not.toMatch(/^"/)
+    expect(err.cause).toEqual({
+      reason: 'Authentication failed',
+      details: 'Invalid API key',
+    })
+  })
+})
