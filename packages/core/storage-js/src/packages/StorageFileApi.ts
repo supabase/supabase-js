@@ -406,7 +406,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @category File Buckets
    * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to update.
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
+   * @param fileOptions Optional file upload options including cacheControl, contentType, and metadata.
+   * **Note:** The `upsert` option has no effect here. `update()` always replaces the
+   * file at the given path, so the `x-upsert` header is not sent. To control upsert
+   * behavior, use `upload()` instead.
    * @returns Promise with response containing file path, id, and fullPath or error
    *
    * @example Update file
@@ -416,8 +419,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   .storage
    *   .from('avatars')
    *   .update('public/avatar1.png', avatarFile, {
-   *     cacheControl: '3600',
-   *     upsert: true
+   *     cacheControl: '3600'
    *   })
    * ```
    *
@@ -448,6 +450,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * - RLS policy permissions required:
    *   - `buckets` table permissions: none
    *   - `objects` table permissions: `update` and `select`
+   * - `update()` always replaces the file at the given path regardless of the `upsert` option.
    * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    * - For React Native, using either `Blob`, `File` or `FormData` does not work as intended. Update file using `ArrayBuffer` from base64 file data instead, see example below.
    */
