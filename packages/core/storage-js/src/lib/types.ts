@@ -5,7 +5,7 @@ import { StorageError } from './common/errors'
  * - STANDARD: Regular file storage buckets
  * - ANALYTICS: Iceberg table-based buckets for analytical workloads
  */
-export type BucketType = 'STANDARD' | 'ANALYTICS'
+export type BucketType = 'STANDARD' | 'ANALYTICS' | (string & {})
 
 export interface Bucket {
   id: string
@@ -388,12 +388,12 @@ export interface MetadataConfiguration {
  * Supported data types for vectors
  * Currently only float32 is supported
  */
-export type VectorDataType = 'float32'
+export type VectorDataType = 'float32' | (string & {})
 
 /**
  * Distance metrics for vector similarity search
  */
-export type DistanceMetric = 'cosine' | 'euclidean' | 'dotproduct'
+export type DistanceMetric = 'cosine' | 'euclidean' | 'dotproduct' | (string & {})
 
 /**
  * Vector index configuration and metadata

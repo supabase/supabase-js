@@ -52,7 +52,7 @@ export const TRANSPORTS = {
   websocket: 'websocket',
 } as const
 
-export type ConnectionState = 'connecting' | 'open' | 'closing' | 'closed'
+export type ConnectionState = 'connecting' | 'open' | 'closing' | 'closed' | (string & {})
 
 export const CONNECTION_STATE = {
   connecting: 'connecting',

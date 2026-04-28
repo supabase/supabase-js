@@ -27,7 +27,7 @@ import type {
 
 type Fetch = typeof fetch
 
-export type LogLevel = 'info' | 'warn' | 'error'
+export type LogLevel = 'info' | 'warn' | 'error' | (string & {})
 
 export type RealtimeMessage = {
   topic: string
@@ -37,8 +37,8 @@ export type RealtimeMessage = {
   join_ref?: string
 }
 
-export type RealtimeRemoveChannelResponse = 'ok' | 'timed out' | 'error'
-export type HeartbeatStatus = 'sent' | 'ok' | 'error' | 'timeout' | 'disconnected'
+export type RealtimeRemoveChannelResponse = 'ok' | 'timed out' | 'error' | (string & {})
+export type HeartbeatStatus = 'sent' | 'ok' | 'error' | 'timeout' | 'disconnected' | (string & {})
 export type HeartbeatTimer = ReturnType<typeof setTimeout> | undefined
 
 // Connection-related constants

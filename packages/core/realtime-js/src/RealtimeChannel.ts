@@ -124,7 +124,7 @@ export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES
   filter?: string
 }
 
-export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'error'
+export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'error' | (string & {})
 
 export enum REALTIME_POSTGRES_CHANGES_LISTEN_EVENT {
   ALL = '*',
