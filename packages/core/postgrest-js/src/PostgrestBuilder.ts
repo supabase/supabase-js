@@ -446,7 +446,7 @@ export default abstract class PostgrestBuilder<
    */
   private async processResponse(res: Response): Promise<{
     success: boolean
-    error: any
+    error: PostgrestError | null
     data: any
     count: number | null
     status: number
