@@ -45,6 +45,18 @@ export class WebAuthnError extends Error {
     this.name = name ?? (cause instanceof Error ? cause.name : undefined) ?? 'Unknown Error'
     this.code = code
   }
+
+  toJSON(): {
+    name: string
+    message: string
+    code: WebAuthnErrorCode
+  } {
+    return {
+      name: this.name,
+      message: this.message,
+      code: this.code,
+    }
+  }
 }
 
 /**
