@@ -1,4 +1,4 @@
-import { StorageApiError, StorageUnknownError, ErrorNamespace } from './errors'
+import { StorageApiError, StorageError, StorageUnknownError, ErrorNamespace } from './errors'
 import { setHeader } from './headers'
 import { isPlainObject, resolveResponse } from './helpers'
 import { FetchParameters } from '../types'
@@ -50,7 +50,7 @@ const _getErrorMessage = (err: unknown): string => {
  */
 const handleError = async (
   error: unknown,
-  reject: (reason?: unknown) => void,
+  reject: (reason: StorageError) => void,
   options: FetchOptions | undefined,
   namespace: ErrorNamespace
 ) => {
@@ -64,11 +64,8 @@ const handleError = async (
     typeof (error as Record<string, unknown>).json === 'function'
 
   if (isResponseLike) {
-    const responseError = error as {
-      json: () => Promise<any>
-      status?: string | number
-      statusText?: string
-    }
+    const responseError = error as Response
+    // Defensive coercion: some fetch polyfills have historically returned status as a string.
     let status = parseInt(String(responseError.status), 10)
     if (!Number.isFinite(status)) {
       status = 500
@@ -76,10 +73,12 @@ const handleError = async (
 
     responseError
       .json()
-      .then((err: any) => {
-        const statusCode = err?.statusCode || err?.code || status + ''
-        reject(new StorageApiError(_getErrorMessage(err), status, statusCode, namespace))
-      })
+      .then(
+        (err: { statusCode?: string; code?: string; error?: string; message?: string } | null) => {
+          const statusCode = err?.statusCode || err?.code || status + ''
+          reject(new StorageApiError(_getErrorMessage(err), status, statusCode, namespace))
+        }
+      )
       .catch(() => {
         const statusCode = status + ''
         const message = responseError.statusText || `HTTP ${status} error`
