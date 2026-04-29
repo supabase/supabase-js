@@ -1,4 +1,4 @@
-import { StorageApiError, StorageUnknownError, ErrorNamespace } from './errors'
+import { StorageApiError, StorageError, StorageUnknownError, ErrorNamespace } from './errors'
 import { setHeader } from './headers'
 import { isPlainObject, resolveResponse } from './helpers'
 import { FetchParameters } from '../types'
@@ -26,12 +26,20 @@ export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD'
  * @param err - Error object from API
  * @returns Human-readable error message
  */
-const _getErrorMessage = (err: any): string =>
-  err.msg ||
-  err.message ||
-  err.error_description ||
-  (typeof err.error === 'string' ? err.error : err.error?.message) ||
-  JSON.stringify(err)
+const _getErrorMessage = (err: unknown): string => {
+  if (typeof err === 'object' && err !== null) {
+    const e = err as Record<string, unknown>
+    if (typeof e.msg === 'string') return e.msg
+    if (typeof e.message === 'string') return e.message
+    if (typeof e.error_description === 'string') return e.error_description
+    if (typeof e.error === 'string') return e.error
+    if (typeof e.error === 'object' && e.error !== null) {
+      const nested = e.error as Record<string, unknown>
+      if (typeof nested.message === 'string') return nested.message
+    }
+  }
+  return JSON.stringify(err)
+}
 
 /**
  * Handles fetch errors and converts them to Storage error types
@@ -42,7 +50,7 @@ const _getErrorMessage = (err: any): string =>
  */
 const handleError = async (
   error: unknown,
-  reject: (reason?: any) => void,
+  reject: (reason: StorageError) => void,
   options: FetchOptions | undefined,
   namespace: ErrorNamespace
 ) => {
@@ -50,21 +58,27 @@ const handleError = async (
   // (native, node-fetch, cross-fetch, undici) and absent from standard Error objects.
   // Checking 'ok' or 'status' via `in` is unreliable across fetch polyfills/realms.
   const isResponseLike =
-    error !== null && typeof error === 'object' && typeof (error as any).json === 'function'
+    error !== null &&
+    typeof error === 'object' &&
+    'json' in error &&
+    typeof (error as Record<string, unknown>).json === 'function'
 
   if (isResponseLike) {
-    const responseError = error as any
-    let status = parseInt(responseError.status, 10)
+    const responseError = error as Response
+    // Defensive coercion: some fetch polyfills have historically returned status as a string.
+    let status = parseInt(String(responseError.status), 10)
     if (!Number.isFinite(status)) {
       status = 500
     }
 
     responseError
       .json()
-      .then((err: any) => {
-        const statusCode = err?.statusCode || err?.code || status + ''
-        reject(new StorageApiError(_getErrorMessage(err), status, statusCode, namespace))
-      })
+      .then(
+        (err: { statusCode?: string; code?: string; error?: string; message?: string } | null) => {
+          const statusCode = err?.statusCode || err?.code || status + ''
+          reject(new StorageApiError(_getErrorMessage(err), status, statusCode, namespace))
+        }
+      )
       .catch(() => {
         const statusCode = status + ''
         const message = responseError.statusText || `HTTP ${status} error`

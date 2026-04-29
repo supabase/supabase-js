@@ -39,9 +39,20 @@ export interface WebSocketLike {
 
 export interface WebSocketEnvironment {
   type: 'native' | 'ws' | 'cloudflare' | 'unsupported'
-  constructor?: any
+  /** WebSocket constructor for this environment, if available. */
+  wsConstructor?: typeof WebSocket
   error?: string
   workaround?: string
+}
+
+/**
+ * Extended globalThis with optional runtime-specific properties
+ * that may or may not exist depending on the environment.
+ */
+interface RuntimeGlobals {
+  WebSocket?: { new (url: string, protocols?: string | string[]): WebSocketLike }
+  WebSocketPair?: unknown
+  EdgeRuntime?: unknown
 }
 
 /**
@@ -54,20 +65,23 @@ export class WebSocketFactory {
   private constructor() {}
   private static detectEnvironment(): WebSocketEnvironment {
     if (typeof WebSocket !== 'undefined') {
-      return { type: 'native', constructor: WebSocket }
+      return { type: 'native', wsConstructor: WebSocket }
     }
 
-    if (typeof globalThis !== 'undefined' && typeof (globalThis as any).WebSocket !== 'undefined') {
-      return { type: 'native', constructor: (globalThis as any).WebSocket }
+    const gt = globalThis as typeof globalThis & RuntimeGlobals
+    if (typeof globalThis !== 'undefined' && typeof gt.WebSocket !== 'undefined') {
+      return { type: 'native', wsConstructor: gt.WebSocket as typeof WebSocket }
     }
 
-    if (typeof global !== 'undefined' && typeof (global as any).WebSocket !== 'undefined') {
-      return { type: 'native', constructor: (global as any).WebSocket }
+    const gl =
+      typeof global !== 'undefined' ? (global as typeof global & RuntimeGlobals) : undefined
+    if (gl && typeof gl.WebSocket !== 'undefined') {
+      return { type: 'native', wsConstructor: gl.WebSocket as typeof WebSocket }
     }
 
     if (
       typeof globalThis !== 'undefined' &&
-      typeof (globalThis as any).WebSocketPair !== 'undefined' &&
+      typeof gt.WebSocketPair !== 'undefined' &&
       typeof globalThis.WebSocket === 'undefined'
     ) {
       return {
@@ -80,7 +94,7 @@ export class WebSocketFactory {
     }
 
     if (
-      (typeof globalThis !== 'undefined' && (globalThis as any).EdgeRuntime) ||
+      (typeof globalThis !== 'undefined' && gt.EdgeRuntime) ||
       (typeof navigator !== 'undefined' && navigator.userAgent?.includes('Vercel-Edge'))
     ) {
       return {
@@ -93,7 +107,9 @@ export class WebSocketFactory {
     }
 
     // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
-    const _process = (globalThis as any)['process']
+    const _process = (globalThis as Record<string, unknown>)['process'] as
+      | { versions?: { node?: string } }
+      | undefined
     if (_process) {
       const processVersions = _process['versions']
       if (processVersions && processVersions['node']) {
@@ -105,7 +121,7 @@ export class WebSocketFactory {
         if (nodeVersion >= 22) {
           // Check if native WebSocket is available (should be in Node.js 22+)
           if (typeof globalThis.WebSocket !== 'undefined') {
-            return { type: 'native', constructor: globalThis.WebSocket }
+            return { type: 'native', wsConstructor: globalThis.WebSocket }
           }
           // If not available, user needs to provide it
           return {
@@ -152,8 +168,8 @@ export class WebSocketFactory {
    */
   public static getWebSocketConstructor(): typeof WebSocket {
     const env = this.detectEnvironment()
-    if (env.constructor) {
-      return env.constructor
+    if (env.wsConstructor) {
+      return env.wsConstructor
     }
     let errorMessage = env.error || 'WebSocket not supported in this environment.'
     if (env.workaround) {
