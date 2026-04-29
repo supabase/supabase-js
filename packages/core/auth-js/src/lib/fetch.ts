@@ -3,11 +3,13 @@ import { expiresAt, looksLikeFetchResponse, parseResponseAPIVersion } from './he
 import {
   AuthResponse,
   AuthResponsePassword,
+  Session,
   SSOResponse,
   GenerateLinkProperties,
   GenerateLinkResponse,
   User,
   UserResponse,
+  WeakPassword,
 } from './types'
 import {
   AuthApiError,
@@ -18,6 +20,30 @@ import {
 } from './errors'
 
 export type Fetch = typeof fetch
+
+/** Raw session data from GoTrue server response. */
+interface GoTrueSessionData {
+  access_token?: string
+  refresh_token?: string
+  expires_in?: number
+  expires_at?: number
+  user?: User
+  [key: string]: any // server returns additional fields (token_type, provider_token, etc.) copied into Session
+}
+
+/** Raw session data that includes weak password info (password sign-in endpoints). */
+interface GoTrueSessionPasswordData extends GoTrueSessionData {
+  weak_password?: WeakPassword
+}
+
+/** Raw user data — either `{ user: User }` or the User object itself. */
+interface GoTrueUserData {
+  user?: User
+  [key: string]: any // data may BE the User directly (fallback path)
+}
+
+/** Raw generate-link data — link properties + User fields flattened into one object. */
+type GoTrueGenerateLinkData = GenerateLinkProperties & Record<string, any>
 
 export interface FetchOptions {
   headers?: {
@@ -32,8 +58,16 @@ export interface FetchParameters {
 
 export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
-const _getErrorMessage = (err: any): string =>
-  err.msg || err.message || err.error_description || err.error || JSON.stringify(err)
+const _getErrorMessage = (err: unknown): string => {
+  if (typeof err === 'object' && err !== null) {
+    const e = err as Record<string, unknown>
+    if (typeof e.msg === 'string') return e.msg
+    if (typeof e.message === 'string') return e.message
+    if (typeof e.error_description === 'string') return e.error_description
+    if (typeof e.error === 'string') return e.error
+  }
+  return JSON.stringify(err)
+}
 
 // 502, 503, 504: Standard server/gateway errors
 // 520-524, 530: Cloudflare-specific error codes (web server down, connection timed out, etc.)
@@ -53,7 +87,7 @@ export async function handleError(error: unknown) {
   let data: any
   try {
     data = await error.json()
-  } catch (e: any) {
+  } catch (e) {
     throw new AuthUnknownError(_getErrorMessage(e), e)
   }
 
@@ -181,7 +215,7 @@ async function _handleRequest(
 ): Promise<any> {
   const requestParams = _getRequestParams(method, options, parameters, body)
 
-  let result: any
+  let result: Response
 
   try {
     result = await fetcher(url, {
@@ -204,18 +238,18 @@ async function _handleRequest(
 
   try {
     return await result.json()
-  } catch (e: any) {
+  } catch (e) {
     await handleError(e)
   }
 }
 
-export function _sessionResponse(data: any): AuthResponse {
+export function _sessionResponse(data: GoTrueSessionData): AuthResponse {
   let session = null
   if (hasSession(data)) {
-    session = { ...data }
+    session = { ...data } as Session
 
     if (!data.expires_at) {
-      session.expires_at = expiresAt(data.expires_in)
+      session.expires_at = expiresAt(data.expires_in!)
     }
   }
 
@@ -223,7 +257,7 @@ export function _sessionResponse(data: any): AuthResponse {
   return { data: { session, user }, error: null }
 }
 
-export function _sessionResponsePassword(data: any): AuthResponsePassword {
+export function _sessionResponsePassword(data: GoTrueSessionPasswordData): AuthResponsePassword {
   const response = _sessionResponse(data) as AuthResponsePassword
 
   if (
@@ -234,7 +268,7 @@ export function _sessionResponsePassword(data: any): AuthResponsePassword {
     data.weak_password.reasons.length &&
     data.weak_password.message &&
     typeof data.weak_password.message === 'string' &&
-    data.weak_password.reasons.reduce((a: boolean, i: any) => a && typeof i === 'string', true)
+    data.weak_password.reasons.reduce((a: boolean, i: unknown) => a && typeof i === 'string', true)
   ) {
     response.data.weak_password = data.weak_password
   }
@@ -242,16 +276,16 @@ export function _sessionResponsePassword(data: any): AuthResponsePassword {
   return response
 }
 
-export function _userResponse(data: any): UserResponse {
+export function _userResponse(data: GoTrueUserData): UserResponse {
   const user: User = data.user ?? (data as User)
   return { data: { user }, error: null }
 }
 
-export function _ssoResponse(data: any): SSOResponse {
-  return { data, error: null }
+export function _ssoResponse(data: Record<string, any>): SSOResponse {
+  return { data, error: null } as SSOResponse
 }
 
-export function _generateLinkResponse(data: any): GenerateLinkResponse {
+export function _generateLinkResponse(data: GoTrueGenerateLinkData): GenerateLinkResponse {
   const { action_link, email_otp, hashed_token, redirect_to, verification_type, ...rest } = data
 
   const properties: GenerateLinkProperties = {
@@ -262,7 +296,7 @@ export function _generateLinkResponse(data: any): GenerateLinkResponse {
     verification_type,
   }
 
-  const user: User = { ...rest }
+  const user = { ...rest } as User
   return {
     data: {
       properties,
@@ -272,7 +306,7 @@ export function _generateLinkResponse(data: any): GenerateLinkResponse {
   }
 }
 
-export function _noResolveJsonResponse(data: any): Response {
+export function _noResolveJsonResponse(data: Response): Response {
   return data
 }
 
@@ -281,6 +315,6 @@ export function _noResolveJsonResponse(data: any): Response {
  * @param data A response object
  * @returns true if a session is in the response
  */
-function hasSession(data: any): boolean {
-  return data.access_token && data.refresh_token && data.expires_in
+function hasSession(data: GoTrueSessionData): boolean {
+  return !!data.access_token && !!data.refresh_token && !!data.expires_in
 }

@@ -443,7 +443,7 @@ export default class GoTrueClient {
     if (isBrowser() && globalThis.BroadcastChannel && this.persistSession && this.storageKey) {
       try {
         this.broadcastChannel = new globalThis.BroadcastChannel(this.storageKey)
-      } catch (e: any) {
+      } catch (e) {
         console.error(
           'Failed to create a new BroadcastChannel, multi-tab state changes will not be available',
           e
@@ -2691,7 +2691,7 @@ export default class GoTrueClient {
           (async () => {
             try {
               await result
-            } catch (e: any) {
+            } catch (_e) {
               // we just care if it finished
             }
           })()
@@ -4722,11 +4722,11 @@ export default class GoTrueClient {
         this.broadcastChannel.postMessage({ event, session })
       }
 
-      const errors: any[] = []
+      const errors: unknown[] = []
       const promises = Array.from(this.stateChangeEmitters.values()).map(async (x) => {
         try {
           await x.callback(event, session)
-        } catch (e: any) {
+        } catch (e) {
           errors.push(e)
         }
       })
@@ -5014,7 +5014,7 @@ export default class GoTrueClient {
                 await this._callRefreshToken(session.refresh_token)
               }
             })
-          } catch (e: any) {
+          } catch (e) {
             console.error(
               'Auto refresh tick failed with error. This is likely a transient error.',
               e
@@ -5024,8 +5024,8 @@ export default class GoTrueClient {
           this._debug('#_autoRefreshTokenTick()', 'end')
         }
       })
-    } catch (e: any) {
-      if (e.isAcquireTimeout || e instanceof LockAcquireTimeoutError) {
+    } catch (e) {
+      if (e instanceof LockAcquireTimeoutError) {
         this._debug('auto refresh token tick lock not available')
       } else {
         throw e
