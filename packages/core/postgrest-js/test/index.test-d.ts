@@ -175,7 +175,7 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 
 // reject excess properties on insert, update, and upsert (#1636)
 {
-  // @ts-expect-error No overload matches this call.
+  // @ts-expect-error Type 'string' is not assignable to type 'never'.
   postgrest.from('users').insert({ username: 'foo', nonexistent: 'bad' })
 }
 {
@@ -183,7 +183,7 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   postgrest.from('users').update({ username: 'foo', nonexistent: 'bad' })
 }
 {
-  // @ts-expect-error No overload matches this call.
+  // @ts-expect-error Type 'string' is not assignable to type 'never'.
   postgrest.from('users').upsert({ username: 'foo', nonexistent: 'bad' })
 }
 
