@@ -1,3 +1,17 @@
+## 2.105.2 (2026-05-04)
+
+### 🩹 Fixes
+
+- **auth:** forward lockAcquireTimeout to SupabaseAuthClient ([#2309](https://github.com/supabase/supabase-js/pull/2309))
+- **auth:** add toJSON to WebAuthnError for correct JSON serialization ([#2317](https://github.com/supabase/supabase-js/pull/2317))
+- **misc:** widen enum-like unions with (string & {}) for forward compat ([#2303](https://github.com/supabase/supabase-js/pull/2303))
+- **misc:** reduce any usage across packages ([#2314](https://github.com/supabase/supabase-js/pull/2314))
+- **postgrest:** unify insert/upsert signatures ([#2315](https://github.com/supabase/supabase-js/pull/2315))
+
+### ❤️ Thank You
+
+- Muzzaiyyan Hussain @MuzzaiyyanHussain
+
 ## 2.105.1 (2026-04-28)
 
 ### 🩹 Fixes
