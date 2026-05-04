@@ -24,6 +24,7 @@ export default class PostgrestTransformBuilder<
    * @param columns - The columns to retrieve, separated by commas
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @example With `upsert()`
    * ```ts
@@ -148,6 +149,7 @@ export default class PostgrestTransformBuilder<
    * instead
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @example With `select()`
    * ```ts
@@ -354,6 +356,7 @@ export default class PostgrestTransformBuilder<
    * instead
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @example With `select()`
    * ```ts
@@ -470,6 +473,7 @@ export default class PostgrestTransformBuilder<
    * instead
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @example With `select()`
    * ```ts
@@ -531,6 +535,7 @@ export default class PostgrestTransformBuilder<
    * @param signal - The AbortSignal to use for the fetch request
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @remarks
    * You can use this to set a timeout for the request.
@@ -602,6 +607,7 @@ export default class PostgrestTransformBuilder<
    * returns an error.
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @example With `select()`
    * ```ts
@@ -651,6 +657,7 @@ export default class PostgrestTransformBuilder<
    * this returns an error.
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @example With `select()`
    * ```ts
@@ -695,6 +702,7 @@ export default class PostgrestTransformBuilder<
    * Return `data` as a string in CSV format.
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @exampleDescription Return data as CSV
    * By default, the data is returned in JSON format, but can also be returned as Comma Separated Values.
@@ -770,6 +778,7 @@ export default class PostgrestTransformBuilder<
    * or `"json"`
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @exampleDescription Get the execution plan
    * By default, the data is returned in TEXT format, but can also be returned as JSON by using the `format` parameter.
@@ -895,6 +904,7 @@ export default class PostgrestTransformBuilder<
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @remarks
    * - Deprecated: use overrideTypes method instead

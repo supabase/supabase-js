@@ -118,6 +118,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The value to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example With `select()`
    * ```ts
@@ -179,6 +180,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The value to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example With `select()`
    * ```ts
@@ -246,6 +248,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The value to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @exampleDescription With `select()`
    * When using [reserved words](https://www.postgresql.org/docs/current/sql-keywords-appendix.html) for column names you need
@@ -300,6 +303,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The value to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example With `select()`
    * ```ts
@@ -354,6 +358,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The value to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example With `select()`
    * ```ts
@@ -404,6 +409,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The value to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example With `select()`
    * ```ts
@@ -458,6 +464,7 @@ export default class PostgrestFilterBuilder<
    * @param pattern - The pattern to match with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example With `select()`
    * ```ts
@@ -511,6 +518,7 @@ export default class PostgrestFilterBuilder<
    * @param patterns - The patterns to match with
    *
    * @category Database
+   * @subcategory Using filters
    */
   likeAllOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `like(all).{${patterns.join(',')}}`)
@@ -529,6 +537,7 @@ export default class PostgrestFilterBuilder<
    * @param patterns - The patterns to match with
    *
    * @category Database
+   * @subcategory Using filters
    */
   likeAnyOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `like(any).{${patterns.join(',')}}`)
@@ -544,6 +553,7 @@ export default class PostgrestFilterBuilder<
    * @param pattern - The pattern to match with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example With `select()`
    * ```ts
@@ -597,6 +607,7 @@ export default class PostgrestFilterBuilder<
    * @param patterns - The patterns to match with
    *
    * @category Database
+   * @subcategory Using filters
    */
   ilikeAllOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `ilike(all).{${patterns.join(',')}}`)
@@ -615,6 +626,7 @@ export default class PostgrestFilterBuilder<
    * @param patterns - The patterns to match with
    *
    * @category Database
+   * @subcategory Using filters
    */
   ilikeAnyOf(column: string, patterns: readonly string[]): this {
     this.url.searchParams.append(column, `ilike(any).{${patterns.join(',')}}`)
@@ -667,6 +679,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The value to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @exampleDescription Checking for nullness, true or false
    * Using the `eq()` filter doesn't work when filtering for `null`.
@@ -741,6 +754,7 @@ export default class PostgrestFilterBuilder<
    * @param values - The values array to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example With `select()`
    * ```ts
@@ -847,6 +861,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The jsonb, array, or range value to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example On array columns
    * ```ts
@@ -995,6 +1010,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The jsonb, array, or range value to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example On array columns
    * ```ts
@@ -1140,6 +1156,7 @@ export default class PostgrestFilterBuilder<
    * @param range - The range to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @exampleDescription With `select()`
    * Postgres supports a number of [range
@@ -1203,6 +1220,7 @@ export default class PostgrestFilterBuilder<
    * @param range - The range to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @exampleDescription With `select()`
    * Postgres supports a number of [range
@@ -1265,6 +1283,7 @@ export default class PostgrestFilterBuilder<
    * @param range - The range to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @exampleDescription With `select()`
    * Postgres supports a number of [range
@@ -1327,6 +1346,7 @@ export default class PostgrestFilterBuilder<
    * @param range - The range to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @exampleDescription With `select()`
    * Postgres supports a number of [range
@@ -1390,6 +1410,7 @@ export default class PostgrestFilterBuilder<
    * @param range - The range to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @exampleDescription With `select()`
    * Postgres supports a number of [range
@@ -1454,6 +1475,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The array or range value to filter with
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example On array columns
    * ```ts
@@ -1569,6 +1591,7 @@ export default class PostgrestFilterBuilder<
    * @param options.type - Change how the `query` text is interpreted
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @remarks
    * - For more information, see [Postgres full text search](/docs/guides/database/full-text-search).
@@ -1689,6 +1712,7 @@ export default class PostgrestFilterBuilder<
    * to their filter values
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @example With `select()`
    * ```ts
@@ -1769,6 +1793,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The value to filter with, following PostgREST syntax
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @remarks
    * not() expects you to use the raw PostgREST syntax for the filter values.
@@ -1839,6 +1864,7 @@ export default class PostgrestFilterBuilder<
    * @param options.foreignTable - Deprecated, use `referencedTable` instead
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @remarks
    * or() expects you to use the raw PostgREST syntax for the filter names and values.
@@ -2005,6 +2031,7 @@ export default class PostgrestFilterBuilder<
    * @param value - The value to filter with, following PostgREST syntax
    *
    * @category Database
+   * @subcategory Using filters
    *
    * @remarks
    * filter() expects you to use the raw PostgREST syntax for the filter values.
