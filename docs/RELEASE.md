@@ -211,7 +211,7 @@ flowchart TD
   B --> C["Cherry-pick merge commit"]
   C --> D{Conflict?}
   D -- No --> E["Push patchback/PR-NUMBER branch"]
-  E --> F["Open PR to master:<br/>[patchback] Original Title"]
+  E --> F["Open PR to master:<br/>Original Title (cherry-pick of #N)"]
   F --> G[Request review from original author]
   G --> H[Human reviews + merges]
   H --> I["Triggers canary on master"]

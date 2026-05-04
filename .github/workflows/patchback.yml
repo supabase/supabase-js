@@ -61,7 +61,7 @@ jobs:
             gh pr create \
               --base master \
               --head "$BRANCH" \
-              --title "[patchback] ${PR_TITLE}" \
+              --title "${PR_TITLE}" \
               --body "$(cat <<EOF
           Cherry-pick of #${PR_NUMBER} to \`master\` for patch release.
 
