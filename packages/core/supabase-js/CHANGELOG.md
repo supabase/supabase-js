@@ -1,3 +1,14 @@
+## 2.105.2 (2026-05-04)
+
+### 🩹 Fixes
+
+- **auth:** forward lockAcquireTimeout to SupabaseAuthClient ([#2309](https://github.com/supabase/supabase-js/pull/2309))
+- **misc:** widen enum-like unions with (string & {}) for forward compat ([#2303](https://github.com/supabase/supabase-js/pull/2303))
+
+### ❤️ Thank You
+
+- Muzzaiyyan Hussain @MuzzaiyyanHussain
+
 ## 2.105.1 (2026-04-28)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
