@@ -20,6 +20,10 @@ on:
       - '**/.gitignore'
       - '**/.gitattributes'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci-core:
     name: Core Packages CI
