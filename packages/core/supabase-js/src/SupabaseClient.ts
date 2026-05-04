@@ -556,6 +556,7 @@ export default class SupabaseClient<
       throwOnError,
       experimental,
       lockAcquireTimeout,
+      skipAutoInitialize,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
     fetch?: Fetch
@@ -580,6 +581,7 @@ export default class SupabaseClient<
       experimental,
       fetch,
       lockAcquireTimeout,
+      skipAutoInitialize,
       // auth checks if there is a custom authorizaiton header using this flag
       // so it knows whether to return an error when getUser is called with no session
       hasCustomAuthorizationHeader: Object.keys(this.headers).some(
