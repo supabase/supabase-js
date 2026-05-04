@@ -887,8 +887,8 @@ export default class RealtimeChannel {
 
         await response.body?.cancel()
         return response.ok ? 'ok' : 'error'
-      } catch (error: any) {
-        if (error.name === 'AbortError') {
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
           return 'timed out'
         } else {
           return 'error'

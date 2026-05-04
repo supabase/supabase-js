@@ -176,7 +176,7 @@ export async function navigatorLock<R>(
                   '@supabase/gotrue-js: Navigator LockManager state',
                   JSON.stringify(result, null, '  ')
                 )
-              } catch (e: any) {
+              } catch (e) {
                 console.warn(
                   '@supabase/gotrue-js: Error when querying Navigator LockManager state',
                   e
@@ -198,14 +198,21 @@ export async function navigatorLock<R>(
         }
       }
     )
-  } catch (e: any) {
+  } catch (e) {
     // Always clear the acquire timeout once the request settles, so it cannot
     // fire later and incorrectly abort/log after a rejection.
     if (acquireTimeout > 0) {
       clearTimeout(acquireTimeoutTimer)
     }
 
-    if (e?.name === 'AbortError' && acquireTimeout > 0) {
+    // DOMException does not extend Error in Node.js, so use structural check
+    if (
+      e !== null &&
+      typeof e === 'object' &&
+      'name' in e &&
+      e.name === 'AbortError' &&
+      acquireTimeout > 0
+    ) {
       if (abortController.signal.aborted) {
         // OUR timeout fired — the lock is genuinely orphaned. Steal it.
         //
@@ -370,14 +377,14 @@ export async function processLock<R>(
       if (timeoutId !== null) {
         clearTimeout(timeoutId)
       }
-    } catch (e: any) {
+    } catch (e) {
       // Clear the timeout on error path as well
       if (timeoutId !== null) {
         clearTimeout(timeoutId)
       }
 
       // Re-throw timeout errors, ignore others
-      if (e && e.isAcquireTimeout) {
+      if (e instanceof LockAcquireTimeoutError) {
         throw e
       }
       // Fall through to run fn() - previous operation finished with error
@@ -391,8 +398,8 @@ export async function processLock<R>(
   PROCESS_LOCKS[name] = (async () => {
     try {
       return await currentOperation
-    } catch (e: any) {
-      if (e && e.isAcquireTimeout) {
+    } catch (e) {
+      if (e instanceof LockAcquireTimeoutError) {
         // if the current operation timed out, it doesn't mean that the previous
         // operation finished, so we need continue waiting for it to finish
         try {
