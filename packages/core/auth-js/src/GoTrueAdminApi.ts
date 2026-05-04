@@ -137,6 +137,7 @@ export default class GoTrueAdminApi {
    * @param scope The logout sope.
    *
    * @category Auth
+   * @subcategory Auth Admin
    */
   async signOut(
     jwt: string,
@@ -170,6 +171,7 @@ export default class GoTrueAdminApi {
    * @param options Additional options to be included when inviting.
    *
    * @category Auth
+   * @subcategory Auth Admin
    *
    * @remarks
    * - Sends an invite link to the user's email address.
@@ -261,6 +263,7 @@ export default class GoTrueAdminApi {
    * @param options.redirectTo The redirect url which should be appended to the generated link
    *
    * @category Auth
+   * @subcategory Auth Admin
    *
    * @remarks
    * - The following types can be passed into `generateLink()`: `signup`, `magiclink`, `invite`, `recovery`, `email_change_current`, `email_change_new`, `phone_change`.
@@ -404,6 +407,7 @@ export default class GoTrueAdminApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
    * @category Auth
+   * @subcategory Auth Admin
    *
    * @remarks
    * - To confirm the user's email address or phone number, set `email_confirm` or `phone_confirm` to true. Both arguments default to false.
@@ -501,6 +505,7 @@ export default class GoTrueAdminApi {
    * @param params An object which supports `page` and `perPage` as numbers, to alter the paginated results.
    *
    * @category Auth
+   * @subcategory Auth Admin
    *
    * @remarks
    * - Defaults to return 50 users per page.
@@ -566,6 +571,7 @@ export default class GoTrueAdminApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
    * @category Auth
+   * @subcategory Auth Admin
    *
    * @remarks
    * - Fetches the user object from the database based on the user's id.
@@ -669,6 +675,7 @@ export default class GoTrueAdminApi {
    * @see {@link GoTrueClient.updateUser} for client-side user updates (triggers listeners automatically)
    *
    * @category Auth
+   * @subcategory Auth Admin
    *
    * @example Updates a user's email
    * ```js
@@ -807,6 +814,7 @@ export default class GoTrueAdminApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
    * @category Auth
+   * @subcategory Auth Admin
    *
    * @remarks
    * - The `deleteUser()` method requires the user's ID, which maps to the `auth.users.id` column.

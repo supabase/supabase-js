@@ -85,7 +85,8 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param url - Base URL of the Storage Vectors REST API.
    * @param options.headers - Optional headers (for example `Authorization`) applied to every request.
    * @param options.fetch - Optional custom `fetch` implementation for non-browser runtimes.
@@ -118,7 +119,8 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param vectorBucketName - Name of the vector bucket
    * @returns Bucket-scoped client with index and vector operations
    *
@@ -140,7 +142,8 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param vectorBucketName - Unique name for the vector bucket
    * @returns Promise with empty response on success or error
    *
@@ -164,7 +167,8 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param vectorBucketName - Name of the vector bucket
    * @returns Promise with bucket metadata or error
    *
@@ -190,7 +194,8 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param options - Optional filters (prefix, maxResults, nextToken)
    * @returns Promise with list of buckets or error
    *
@@ -221,7 +226,8 @@ export class StorageVectorsClient extends VectorBucketApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param vectorBucketName - Name of the vector bucket to delete
    * @returns Promise with empty response on success or error
    *
@@ -257,7 +263,8 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @example Creating a vector bucket scope
    * ```typescript
    * const bucket = supabase.storage.vectors.from('embeddings-prod')
@@ -282,7 +289,8 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param options - Index configuration (vectorBucketName is automatically set)
    * @returns Promise with empty response on success or error
    *
@@ -316,7 +324,8 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param options - Listing options (vectorBucketName is automatically set)
    * @returns Promise with response containing indexes array and pagination token or error
    *
@@ -342,7 +351,8 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param indexName - Name of the index to retrieve
    * @returns Promise with index metadata or error
    *
@@ -366,7 +376,8 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param indexName - Name of the index to delete
    * @returns Promise with empty response on success or error
    *
@@ -389,7 +400,8 @@ export class VectorBucketScope extends VectorIndexApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param indexName - Name of the index
    * @returns Index-scoped client with vector data operations
    *
@@ -443,7 +455,8 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @example Creating a vector index scope
    * ```typescript
    * const index = supabase.storage.vectors.from('embeddings-prod').index('documents-openai')
@@ -470,7 +483,8 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param options - Vector insertion options (bucket and index names automatically set)
    * @returns Promise with empty response on success or error
    *
@@ -505,7 +519,8 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param options - Vector retrieval options (bucket and index names automatically set)
    * @returns Promise with response containing vectors array or error
    *
@@ -535,7 +550,8 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param options - Listing options (bucket and index names automatically set)
    * @returns Promise with response containing vectors array and pagination token or error
    *
@@ -567,7 +583,8 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param options - Query options (bucket and index names automatically set)
    * @returns Promise with response containing matches array of similar vectors ordered by distance or error
    *
@@ -602,7 +619,8 @@ export class VectorIndexScope extends VectorDataApi {
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Vector Buckets
+   * @category Storage
+   * @subcategory Vector Buckets
    * @param options - Deletion options (bucket and index names automatically set)
    * @returns Promise with empty response on success or error
    *

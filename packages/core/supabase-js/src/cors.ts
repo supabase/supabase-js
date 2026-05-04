@@ -74,6 +74,8 @@ export type CorsHeaders = Record<string, string>
  *   )
  * })
  * ```
+ *
+ * @category Edge Functions
  */
 export const corsHeaders: CorsHeaders = {
   'Access-Control-Allow-Origin': '*',

@@ -168,6 +168,7 @@ export default abstract class PostgrestBuilder<
    * {@link https://docs.postgrest.org/en/stable/references/api/resource_representation.html#stripped-nulls}
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @example With `select()`
    * ```ts
@@ -589,6 +590,7 @@ export default abstract class PostgrestBuilder<
    * @returns A PostgrestBuilder instance with the new type
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @example Complete Override type of successful response
    * ```ts
@@ -644,7 +646,7 @@ export default abstract class PostgrestBuilder<
    * let x: typeof data // CountryRowProperties & { status: "A" | "B" } | null
    * ```
    *
-   * @example Example 5
+   * @example Merge vs replace existing types
    * ```typescript
    * // Merge with existing types (default behavior)
    * const query = supabase
