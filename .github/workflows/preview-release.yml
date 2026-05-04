@@ -20,6 +20,10 @@ on:
       - '!packages/core/**/.prettierrc'
       - '!packages/core/**/*ignore'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   preview:
     if: github.repository == 'supabase/supabase-js'
