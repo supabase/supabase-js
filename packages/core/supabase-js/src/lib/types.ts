@@ -131,6 +131,22 @@ export type SupabaseClientOptions<SchemaName> = {
      * @experimental
      */
     experimental?: SupabaseAuthClientOptions['experimental']
+    /**
+     * Maximum time in milliseconds to wait when acquiring the auth lock before
+     * stealing it from the previous holder. See `GoTrueClientOptions.lockAcquireTimeout`
+     * for full semantics (zero fails immediately, negative waits indefinitely).
+     *
+     * @default 5000
+     */
+    lockAcquireTimeout?: SupabaseAuthClientOptions['lockAcquireTimeout']
+    /**
+     * If true, skips automatic initialization in the auth client constructor.
+     * Useful for SSR contexts where initialization timing must be controlled to
+     * prevent race conditions with HTTP response generation.
+     *
+     * @default false
+     */
+    skipAutoInitialize?: SupabaseAuthClientOptions['skipAutoInitialize']
   }
   /**
    * Options passed to the realtime-js instance
