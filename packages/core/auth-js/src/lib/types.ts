@@ -2025,13 +2025,13 @@ export type OAuthClientResponseType = 'code'
  * OAuth client type indicating whether the client can keep credentials confidential.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
-export type OAuthClientType = 'public' | 'confidential' | (string & {})
+export type OAuthClientType = 'public' | 'confidential'
 
 /**
  * OAuth client registration type.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
-export type OAuthClientRegistrationType = 'dynamic' | 'manual' | (string & {})
+export type OAuthClientRegistrationType = 'dynamic' | 'manual'
 
 /**
  * OAuth client token endpoint authentication method.
@@ -2213,7 +2213,7 @@ export interface GoTrueAdminOAuthApi {
 /**
  * Type of custom identity provider.
  */
-export type CustomProviderType = 'oauth2' | 'oidc' | (string & {})
+export type CustomProviderType = 'oauth2' | 'oidc'
 
 /**
  * OIDC discovery document fields.
