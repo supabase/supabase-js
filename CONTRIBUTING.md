@@ -60,13 +60,17 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
 
 ### Making Changes
 
-1. **Create a new branch** from `master`:
+1. **Create a new branch** from `develop` (the default branch — features, fixes, and chores all start here). Branch from `master` only when fixing v2-only code that no longer exists on `develop`:
 
    ```bash
+   git checkout develop
+   git pull upstream develop
    git checkout -b feature/your-feature-name
    # or
    git checkout -b fix/your-bug-fix
    ```
+
+   Changes that should also ship in the v2 line will be cherry-picked to `master` after merge via the `patchback-master` label — no need to open a separate PR.
 
 2. **Make your changes** in the appropriate library under `packages/core/`
 
@@ -190,13 +194,13 @@ ci(release): add preview package generation
 
 ### Before Submitting
 
-1. **Ensure your branch is up to date** with `master`:
+1. **Ensure your branch is up to date** with the branch you're targeting (typically `develop`; `master` only for v2-only fixes):
 
    ```bash
-   git checkout master
-   git pull upstream master
+   git checkout <target-branch>     # develop or master
+   git pull upstream <target-branch>
    git checkout your-branch
-   git rebase master
+   git rebase <target-branch>
    ```
 
 2. **Run the full test suite**:
@@ -287,7 +291,7 @@ npx nx test <package> --coverage
 We automatically generate TypeScript API documentation that is used by the main [Supabase documentation site](https://supabase.com/docs). The process works as follows:
 
 1. **TypeDoc generates JSON specifications** from TypeScript source code
-2. **GitHub Actions publishes** these specs to GitHub Pages on every push to `master`
+2. **GitHub Actions publishes** these specs to GitHub Pages after every successful stable release from `master`
 3. **Main Supabase repository** uses these JSON files to generate the official API docs via `make` commands
 
 #### Available Documentation Commands
