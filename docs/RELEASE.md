@@ -1,6 +1,6 @@
 # Release Workflows
 
-**TL;DR:** Two branches — `develop` (default, v3 features, publishes `@next`) and `master` (v2 fixes, publishes `@canary` and `@latest`). Fixes on master auto-sync to develop. Features on develop can be cherry-picked to master via the `patchback-master` label. Stable releases are manual from master.
+**TL;DR:** Two branches — `develop` (default, all PRs land here, publishes `@next`) and `master` (v2 maintenance, publishes `@canary` and `@latest`). Fixes that apply to both v2 and v3 land on `develop`, then cherry-pick to `master` via the `patchback-master` label. Only v2-only fixes (code already removed in v3) go directly to `master`. Stable releases are manual from master.
 
 ---
 
@@ -8,12 +8,12 @@
 
 This repo uses a two-branch model to support parallel v2 maintenance and v3 development:
 
-| Branch    | Role                           | Default? | PR target for                     |
-| --------- | ------------------------------ | -------- | --------------------------------- |
-| `develop` | v3 features, next prereleases  | Yes      | All features (`feat:`, `feat!:`)  |
-| `master`  | v2 stable + canary prereleases | No       | Fixes (`fix:`), chores (`chore:`) |
+| Branch    | Role                                | Default? | PR target for                                   |
+| --------- | ----------------------------------- | -------- | ----------------------------------------------- |
+| `develop` | v3 active development, `@next`      | Yes      | All work (features, fixes, chores) by default   |
+| `master`  | v2 maintenance, `@canary`/`@latest` | No       | v2-only fixes; receives patchbacks from develop |
 
-> **Feature workflow:** Non-breaking features (`feat:`) land on `develop` and are patchbacked to `master` as needed for v2 minor releases. Breaking features (`feat!:`) stay on `develop` until v3 ships.
+> **Default flow:** All PRs target `develop`. Changes that should also ship in v2 (most non-breaking fixes, selected non-breaking features) get the `patchback-master` label, which cherry-picks them to `master`. Only fixes for code that no longer exists on `develop` go directly to `master`. Breaking changes (`feat!:`, `fix!:`) stay on `develop` until v3 ships.
 
 ```mermaid
 graph LR
@@ -37,14 +37,11 @@ graph LR
 
 ### How branches stay in sync
 
-Fixes merged to `master` are automatically merged into `develop` by the `sync-develop.yml` workflow (triggered on every push to `master`). This keeps v3 development up to date with all v2 fixes. The sync is **skipped** when the push comes from a patchback merge (detected by `[patchback]` in the commit message), since that commit already exists on develop.
-
-Features on `develop` that also need to ship as a v2 release can be cherry-picked to `master` using the **patchback** workflow (label a merged PR with `patchback-master`).
+Flow is **unidirectional**: `develop` is canonical and all PRs land there. When a change also needs to ship in v2, label the merged develop PR with `patchback-master` and the **patchback** workflow opens a cherry-pick PR against `master`. v2-only changes (touching code that no longer exists on develop) land directly on `master` with no propagation back to develop.
 
 ```mermaid
 graph LR
-  master -- "sync-develop.yml<br/>(auto merge)" --> develop
-  develop -- "patchback.yml<br/>(cherry-pick PR)" --> master
+  develop -- "patchback.yml<br/>(cherry-pick PR<br/>via patchback-master label)" --> master
 ```
 
 ---
@@ -200,34 +197,11 @@ npm install https://pkg.pr.new/@supabase/supabase-js@[commit-hash]
 
 ---
 
-## Branch Sync Workflows
-
-### sync-develop.yml (master -> develop)
-
-Keeps `develop` up to date with v2 fixes merged to `master`.
-
-**Trigger:** Every push to `master` + manual `workflow_dispatch`
-**Skipped when:** The commit message contains `[patchback]` (the commit already exists on develop)
-
-```mermaid
-flowchart TD
-  A[Push to master] --> B{"Commit message<br/>contains [patchback]?"}
-  B -- Yes --> C[Skip — already on develop]
-  B -- No --> D[Checkout develop]
-  D --> E{"master already<br/>ancestor of develop?"}
-  E -- Yes --> F[Already up to date]
-  E -- No --> G["git merge origin/master"]
-  G --> H{Conflict?}
-  H -- No --> I[Push to develop]
-  H -- Yes --> J["Slack #team-sdk<br/>with compare link"]
-  J --> K[Human resolves manually]
-```
-
-The workflow uses a GitHub App token to push directly to the protected `develop` branch.
+## Branch Sync Workflow
 
 ### patchback.yml (develop -> master)
 
-Cherry-picks merged PRs from `develop` to `master` when labeled `patchback-master`.
+Cherry-picks merged PRs from `develop` to `master` when labeled `patchback-master`. This is the only cross-branch flow — `master` does not propagate back to `develop`.
 
 **Trigger:** PR on `develop` closed (merged) or labeled, with `patchback-master` label
 
@@ -240,7 +214,7 @@ flowchart TD
   E --> F["Open PR to master:<br/>[patchback] Original Title"]
   F --> G[Request review from original author]
   G --> H[Human reviews + merges]
-  H --> I["Triggers canary (sync-develop skipped)"]
+  H --> I["Triggers canary on master"]
   D -- Yes --> J["Slack #team-sdk<br/>with conflict details"]
   J --> K[Human resolves manually]
 ```
@@ -249,22 +223,38 @@ flowchart TD
 
 ## Day-to-Day Scenarios
 
-### v2 bug fix
+### Bug fix that applies to both v2 and v3 (default)
+
+```mermaid
+flowchart LR
+  A["fix PR -> develop"] --> B["next 3.0.0-next.X"]
+  A -- "add patchback-master label" --> C["patchback PR -> master"]
+  C --> D["canary 2.x.x-canary.X"]
+  D --> E["release-stable --specifier=patch"]
+  E --> F["stable 2.x.x with latest tag"]
+```
+
+1. Open fix PR targeting `develop` (default)
+2. Review + merge — next prerelease auto-publishes
+3. Add `patchback-master` label → patchback opens cherry-pick PR to `master`
+4. Review + merge the patchback PR — canary auto-publishes
+5. When ready: trigger stable release with `patch`
+
+### v2-only bug fix
+
+Use only when the affected code no longer exists on `develop`.
 
 ```mermaid
 flowchart LR
   A["fix PR -> master"] --> B["canary 2.x.x-canary.X"]
-  A --> C["sync-develop merges to develop"]
-  C --> D["next 3.0.0-next.X"]
-  B --> E["release-stable --specifier=patch"]
-  E --> F["stable 2.x.x with latest tag"]
+  B --> C["release-stable --specifier=patch"]
+  C --> D["stable 2.x.x with latest tag"]
 ```
 
 1. Open fix PR targeting `master`
 2. Review + merge
 3. Canary auto-publishes from master
-4. sync-develop brings fix into develop (next prerelease auto-publishes)
-5. When ready: trigger stable release with `patch`
+4. When ready: trigger stable release with `patch`
 
 ### v3 feature
 
@@ -293,7 +283,7 @@ flowchart LR
 2. Reviewer/maintainer adds the **`v2-minor`** label as a staging marker (bookkeeping only, no automation)
 3. On the next batch day (see [Release cadence](#release-cadence)), a maintainer applies `patchback-master` to each `v2-minor`-labeled merged PR
 4. Patchback workflow opens one cherry-pick PR per labeled PR against `master`
-5. Review + merge each patchback PR (canary auto-publishes per merge; sync-develop skipped — commit already on develop)
+5. Review + merge each patchback PR (canary auto-publishes per merge)
 6. Once all patchbacks are merged and the last canary is green, trigger stable release with `minor` — one stable covering the whole batch
 
 ### Release cadence
@@ -311,7 +301,7 @@ The `v2-minor` label is the week-long staging marker; `patchback-master` is appl
 1. Open fix PR directly to `master`
 2. Merge (canary auto-publishes)
 3. Immediately trigger stable release with `patch`
-4. sync-develop brings fix into develop automatically
+4. If the bug also exists on `develop`, open a follow-up fix PR there (no auto-propagation)
 
 ### v3 ships
 
@@ -333,7 +323,7 @@ The `v2-minor` label is the week-long staging marker; `patchback-master` is appl
 
 ## Permissions & Security
 
-- Automated releases (canary, next, sync) use a **GitHub App token** — the app must be a **bypass actor** in branch protection for `develop` and `master`
+- Automated releases (canary, next) and the patchback workflow use a **GitHub App token** — the app must be a **bypass actor** in branch protection for `develop` and `master`
 - Manual releases (stable, beta) are restricted to **`@supabase/admin`** or **`@supabase/sdk`** team members
 - npm publishing uses **OIDC trusted publishing** (provenance)
 - Slack notifications go to **`#team-sdk`** on failures
@@ -344,16 +334,16 @@ The `v2-minor` label is the week-long staging marker; `patchback-master` is appl
 
 ### For contributors
 
-1. **Target the right branch**: features -> `develop`, fixes/chores -> `master`
+1. **Target `develop` by default** — features, fixes, and chores all land there. Only target `master` when fixing v2-only code that no longer exists on develop.
 2. **Use conventional commits** with scope: `fix(auth):`, `feat(realtime):`, `chore(repo):`
 3. **Preview releases** are automatic on every PR that touches package code
 
 ### For maintainers
 
-1. **v2 patch release**: merge fix to master, verify canary, trigger stable with `patch` (any weekday)
+1. **v2 patch release**: for fixes that apply to both v2 and v3, label the merged develop PR with `patchback-master`, merge the patchback PR on master, verify canary, trigger stable with `patch` (any weekday). For v2-only fixes, merge directly to master and trigger stable.
 2. **v2 minor release**: batch-apply `patchback-master` to all `v2-minor`-labeled develop PRs on Monday (or Wednesday), merge patchback PRs, then trigger stable with `minor` once — see [Release cadence](#release-cadence)
 3. **Staging label**: apply `v2-minor` at merge time to any non-breaking develop feat PR that should also ship in v2
-4. **Monitor sync-develop / patchback**: Slack alerts on conflict. If trivial, resolve same day. If not, drop from this week's minor and defer
+4. **Monitor patchback**: Slack alerts on cherry-pick conflict. If trivial, resolve same day. If not, drop from this week's minor and defer
 5. **Beta workflow**: use feature branches + beta releases for experimental work that isn't ready for develop yet
 
 ### For emergency releases
@@ -361,4 +351,4 @@ The `v2-minor` label is the week-long staging marker; `patchback-master` is appl
 1. Open fix PR directly to `master` (bypass develop)
 2. Merge (canary auto-publishes for immediate testing)
 3. Trigger stable release with `patch`
-4. sync-develop brings the fix to develop automatically
+4. If the bug also exists on develop, open a separate fix PR there (no auto-propagation)
