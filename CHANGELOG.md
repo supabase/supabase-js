@@ -1,3 +1,9 @@
+## 2.105.3 (2026-05-04)
+
+### 🩹 Fixes
+
+- **auth:** narrow OAuth/CustomProvider types to fix downstream consumer typecheck ([#2326](https://github.com/supabase/supabase-js/pull/2326))
+
 ## 2.105.2 (2026-05-04)
 
 ### 🩹 Fixes
