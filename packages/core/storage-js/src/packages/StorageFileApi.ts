@@ -152,7 +152,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Uploads a file to an existing bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
    * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
@@ -220,7 +221,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Upload a file with a token generated from `createSignedUploadUrl`.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param token The token generated from `createSignedUploadUrl`
    * @param fileBody The body of the file to be stored in the bucket.
@@ -328,7 +330,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * Signed upload URLs can be used to upload files to the bucket without further authentication.
    * They are valid for 2 hours.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the current file name. For example `folder/image.png`.
    * @param options.upsert If set to true, allows the file to be overwritten if it already exists.
    * @returns Promise with response containing signed upload URL, token, and path or error
@@ -403,7 +406,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Replaces an existing file at the specified path with a new one.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to update.
    * @param fileBody The body of the file to be stored in the bucket.
    * @param fileOptions Optional file upload options including cacheControl, contentType, and metadata.
@@ -484,7 +488,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Moves an existing file to a new path in the same bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
    * @param options The destination options.
@@ -546,7 +551,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Copies an existing file to a new path in the same bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    * @param options The destination options.
@@ -609,7 +615,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Creates a signed URL. Use a signed URL to share a file for a fixed amount of time.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the current file name. For example `folder/image.png`.
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
@@ -716,7 +723,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Creates multiple signed URLs. Use a signed URL to share a file for a fixed amount of time.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param paths The file paths to be downloaded, including the current file names. For example `['folder/image.png', 'folder2/image2.png']`.
    * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
@@ -800,7 +808,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Downloads a file from a private bucket. For public buckets, make a request to the URL returned from `getPublicUrl` instead.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    * @param options.transform Transform the asset before serving it to the client.
    * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
@@ -898,7 +907,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * Returns detailed file metadata including size, content type, and timestamps.
    * Note: The API returns `last_modified` field, not `updated_at`.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
    * @returns Promise with response containing file metadata or error
    *
@@ -939,7 +949,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Checks the existence of a file.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
    * @returns Promise with response containing boolean indicating file existence or error
    *
@@ -995,7 +1006,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * A simple convenience function to get the URL for an asset in a public bucket. If you do not want to use this function, you can construct the public URL by concatenating the bucket URL with the path to the asset.
    * This function does not verify if the bucket is public. If a public URL is created for a bucket which is not public, you will not be able to download the asset.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The path and name of the file to generate the public URL for. For example `folder/image.png`.
    * @param options.download Triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
@@ -1086,7 +1098,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * Returns an array of FileObject entries for the deleted files. Note that deprecated
    * fields like `bucket_id` may or may not be present in the response - do not rely on them.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param paths An array of files to delete, including the path and file name. For example [`'folder/image.png'`].
    * @returns Promise with response containing array of deleted file objects or error
    *
@@ -1203,7 +1216,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * Additionally, deprecated fields like `bucket_id`, `owner`, and `buckets` are NOT returned
    * by this method.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The folder path.
    * @param options Search options including limit (defaults to 100), offset, sortBy, and search
    * @param parameters Optional fetch parameters including signal for cancellation
@@ -1311,7 +1325,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *
    * @experimental this method signature might change in the future
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param options Search options including prefix, cursor for pagination, limit, with_delimiter
    * @param parameters Optional fetch parameters including signal for cancellation
    * @returns Promise with response containing folders/objects arrays with pagination info or error

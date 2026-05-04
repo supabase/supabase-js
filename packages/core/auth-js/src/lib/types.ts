@@ -1286,6 +1286,7 @@ export interface GoTrueMFAApi {
    * Upon verifying a factor, all other sessions are logged out and the current session's authenticator level is promoted to `aal2`.
    *
    * @category Auth
+   * @subcategory Auth MFA
    *
    * @remarks
    * - Use `totp` or `phone` as the `factorType` and use the returned `id` to create a challenge.
@@ -1366,6 +1367,7 @@ export interface GoTrueMFAApi {
    * factor.
    *
    * @category Auth
+   * @subcategory Auth MFA
    *
    * @remarks
    * - An [enrolled factor](/docs/reference/javascript/auth-mfa-enroll) is required before creating a challenge.
@@ -1439,6 +1441,7 @@ export interface GoTrueMFAApi {
    * provided by the user by entering a code seen in their authenticator app.
    *
    * @category Auth
+   * @subcategory Auth MFA
    *
    * @remarks
    * - To verify a challenge, please [create a challenge](/docs/reference/javascript/auth-mfa-challenge) first.
@@ -1522,6 +1525,7 @@ export interface GoTrueMFAApi {
    * A user has to have an `aal2` authenticator level in order to unenroll a `verified` factor.
    *
    * @category Auth
+   * @subcategory Auth MFA
    *
    * @example Unenroll a factor
    * ```js
@@ -1547,6 +1551,7 @@ export interface GoTrueMFAApi {
    * provided by the user by entering a code seen in their authenticator app.
    *
    * @category Auth
+   * @subcategory Auth MFA
    *
    * @remarks
    * - Intended for use with only TOTP factors.
@@ -1632,6 +1637,7 @@ export interface GoTrueMFAApi {
    *
    *
    * @category Auth
+   * @subcategory Auth MFA
    */
   listFactors(): Promise<AuthMFAListFactorsResponse>
 
@@ -1651,6 +1657,7 @@ export interface GoTrueMFAApi {
    * @param jwt Takes in an optional access token JWT. If no JWT is provided, the JWT from the current session is used.
    *
    * @category Auth
+   * @subcategory Auth MFA
    *
    * @remarks
    * - Authenticator Assurance Level (AAL) is the measure of the strength of an authentication mechanism.
@@ -1739,6 +1746,7 @@ export interface GoTrueAdminMFAApi {
    *
    *
    * @category Auth
+   * @subcategory Auth Admin
    *
    * @example List all factors for a user
    * ```js
@@ -1775,6 +1783,7 @@ export interface GoTrueAdminMFAApi {
    * @expermental
    *
    * @category Auth
+   * @subcategory Auth Admin
    *
    * @example Delete a factor for a user
    * ```js
@@ -2141,6 +2150,7 @@ export interface GoTrueAdminOAuthApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
    * @category Auth
+   * @subcategory OAuth Admin
    */
   listClients(params?: PageParams): Promise<OAuthClientListResponse>
 
@@ -2151,6 +2161,7 @@ export interface GoTrueAdminOAuthApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
    * @category Auth
+   * @subcategory OAuth Admin
    */
   createClient(params: CreateOAuthClientParams): Promise<OAuthClientResponse>
 
@@ -2161,6 +2172,7 @@ export interface GoTrueAdminOAuthApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
    * @category Auth
+   * @subcategory OAuth Admin
    */
   getClient(clientId: string): Promise<OAuthClientResponse>
 
@@ -2171,6 +2183,7 @@ export interface GoTrueAdminOAuthApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
    * @category Auth
+   * @subcategory OAuth Admin
    */
   updateClient(clientId: string, params: UpdateOAuthClientParams): Promise<OAuthClientResponse>
 
@@ -2181,6 +2194,7 @@ export interface GoTrueAdminOAuthApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
    * @category Auth
+   * @subcategory OAuth Admin
    */
   deleteClient(clientId: string): Promise<{ data: null; error: AuthError | null }>
 
@@ -2191,6 +2205,7 @@ export interface GoTrueAdminOAuthApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
    * @category Auth
+   * @subcategory OAuth Admin
    */
   regenerateClientSecret(clientId: string): Promise<OAuthClientResponse>
 }
@@ -2398,6 +2413,9 @@ export interface GoTrueAdminCustomProvidersApi {
    * Lists all custom providers with optional type filter.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
    */
   listProviders(params?: ListCustomProvidersParams): Promise<CustomProviderListResponse>
 
@@ -2411,6 +2429,9 @@ export interface GoTrueAdminCustomProvidersApi {
    * in the document does not match the expected issuer.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
    */
   createProvider(params: CreateCustomProviderParams): Promise<CustomProviderResponse>
 
@@ -2418,6 +2439,9 @@ export interface GoTrueAdminCustomProvidersApi {
    * Gets details of a specific custom provider by identifier.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
    */
   getProvider(identifier: string): Promise<CustomProviderResponse>
 
@@ -2430,6 +2454,9 @@ export interface GoTrueAdminCustomProvidersApi {
    * the issuer does not match.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
    */
   updateProvider(
     identifier: string,
@@ -2440,6 +2467,9 @@ export interface GoTrueAdminCustomProvidersApi {
    * Deletes a custom provider.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
    */
   deleteProvider(identifier: string): Promise<{ data: null; error: AuthError | null }>
 }
@@ -2592,6 +2622,7 @@ export interface AuthOAuthServerApi {
    * @returns Authorization details or redirect URL depending on consent status
    *
    * @category Auth
+   * @subcategory OAuth Server
    */
   getAuthorizationDetails(authorizationId: string): Promise<AuthOAuthAuthorizationDetailsResponse>
 
@@ -2608,6 +2639,7 @@ export interface AuthOAuthServerApi {
    * @returns Redirect URL to send the user back to the OAuth client with authorization code
    *
    * @category Auth
+   * @subcategory OAuth Server
    */
   approveAuthorization(
     authorizationId: string,
@@ -2627,6 +2659,7 @@ export interface AuthOAuthServerApi {
    * @returns Redirect URL to send the user back to the OAuth client with error information
    *
    * @category Auth
+   * @subcategory OAuth Server
    */
   denyAuthorization(
     authorizationId: string,
@@ -2640,6 +2673,7 @@ export interface AuthOAuthServerApi {
    * @returns Response with array of OAuth grants with client information and granted scopes
    *
    * @category Auth
+   * @subcategory OAuth Server
    */
   listGrants(): Promise<AuthOAuthGrantsResponse>
 
@@ -2655,6 +2689,7 @@ export interface AuthOAuthServerApi {
    * @returns Empty response on successful revocation
    *
    * @category Auth
+   * @subcategory OAuth Server
    */
   revokeGrant(options: { clientId: string }): Promise<AuthOAuthRevokeGrantResponse>
 }
@@ -2786,26 +2821,97 @@ export type AuthPasskeyAdminDeleteParams = {
  */
 export interface AuthPasskeyApi {
   // Two-step registration
+  /**
+   * Starts the passkey registration ceremony. Fetches a registration challenge
+   * and credential creation options from the server. Used as the first step of
+   * a two-step registration flow when the caller wants to handle
+   * `navigator.credentials.create()` themselves.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
   startRegistration(): Promise<AuthPasskeyRegistrationOptionsResponse>
+
+  /**
+   * Verifies a passkey registration credential against a previously issued
+   * challenge. Used as the second step of a two-step registration flow.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
   verifyRegistration(
     params: VerifyPasskeyRegistrationParams
   ): Promise<AuthPasskeyRegistrationVerifyResponse>
 
   // Two-step authentication
+  /**
+   * Starts the passkey authentication ceremony. Fetches an authentication
+   * challenge and credential request options from the server. Used as the
+   * first step of a two-step sign-in flow when the caller wants to handle
+   * `navigator.credentials.get()` themselves.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
   startAuthentication(
     params?: StartPasskeyAuthenticationParams
   ): Promise<AuthPasskeyAuthenticationOptionsResponse>
+
+  /**
+   * Verifies a passkey authentication credential against a previously issued
+   * challenge. Used as the second step of a two-step sign-in flow.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
   verifyAuthentication(
     params: VerifyPasskeyAuthenticationParams
   ): Promise<AuthPasskeyAuthenticationVerifyResponse>
 
   // Management
+  /**
+   * Lists all passkeys registered for the currently signed-in user.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
   list(): Promise<AuthPasskeyListResponse>
+
+  /**
+   * Updates a passkey's friendly name.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
   update(params: PasskeyUpdateParams): Promise<AuthPasskeyUpdateResponse>
+
+  /**
+   * Deletes a passkey for the currently signed-in user.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
   delete(params: PasskeyDeleteParams): Promise<AuthPasskeyDeleteResponse>
 }
 
 export interface GoTrueAdminPasskeyApi {
+  /**
+   * Lists all passkeys registered for a specific user.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Passkey Admin
+   */
   listPasskeys(params: AuthPasskeyAdminListParams): Promise<AuthPasskeyListResponse>
+
+  /**
+   * Deletes a specific passkey for a specific user.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Passkey Admin
+   */
   deletePasskey(params: AuthPasskeyAdminDeleteParams): Promise<AuthPasskeyDeleteResponse>
 }

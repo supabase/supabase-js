@@ -32,7 +32,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Retrieves the details of all Storage buckets within an existing project.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param options Query parameters for listing buckets
    * @param options.limit Maximum number of buckets to return
    * @param options.offset Number of buckets to skip
@@ -88,7 +89,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Retrieves the details of an existing Storage bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param id The unique identifier of the bucket you would like to retrieve.
    * @returns Promise with response containing bucket details or error
    *
@@ -142,7 +144,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Creates a new Storage bucket
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param id A unique identifier for the bucket you are creating.
    * @param options.public The visibility of the bucket. Public buckets don't require an authorization token to download objects, but still require a valid token for all other operations. By default, buckets are private.
    * @param options.fileSizeLimit specifies the max file size in bytes that can be uploaded to this bucket.
@@ -222,7 +225,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Updates a Storage bucket
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param id A unique identifier for the bucket you are updating.
    * @param options.public The visibility of the bucket. Public buckets don't require an authorization token to download objects, but still require a valid token for all other operations.
    * @param options.fileSizeLimit specifies the max file size in bytes that can be uploaded to this bucket.
@@ -296,7 +300,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Removes all objects inside a single bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param id The unique identifier of the bucket you would like to empty.
    * @returns Promise with success message or error
    *
@@ -342,7 +347,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    * Deletes an existing bucket. A bucket can't be deleted with existing objects inside it.
    * You must first `empty()` the bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param id The unique identifier of the bucket you would like to delete.
    * @returns Promise with success message or error
    *
