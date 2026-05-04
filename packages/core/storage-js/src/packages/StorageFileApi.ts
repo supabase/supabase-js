@@ -97,6 +97,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
         body = new FormData()
         body.append('cacheControl', options.cacheControl as string)
+        if (options.contentEncoding) {
+          body.append('contentEncoding', options.contentEncoding)
+        }
         if (metadata) {
           body.append('metadata', this.encodeMetadata(metadata))
         }
@@ -107,6 +110,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         if (!body.has('cacheControl')) {
           body.append('cacheControl', options.cacheControl as string)
         }
+        if (options.contentEncoding && !body.has('contentEncoding')) {
+          body.append('contentEncoding', options.contentEncoding)
+        }
         if (metadata && !body.has('metadata')) {
           body.append('metadata', this.encodeMetadata(metadata))
         }
@@ -114,6 +120,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+        if (options.contentEncoding) {
+          headers['content-encoding'] = options.contentEncoding
+        }
 
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
@@ -279,6 +288,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
         body = new FormData()
         body.append('cacheControl', options.cacheControl as string)
+        if (options.contentEncoding) {
+          body.append('contentEncoding', options.contentEncoding)
+        }
         if (metadata) {
           body.append('metadata', this.encodeMetadata(metadata))
         }
@@ -288,6 +300,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         if (!body.has('cacheControl')) {
           body.append('cacheControl', options.cacheControl as string)
         }
+        if (options.contentEncoding && !body.has('contentEncoding')) {
+          body.append('contentEncoding', options.contentEncoding)
+        }
         if (metadata && !body.has('metadata')) {
           body.append('metadata', this.encodeMetadata(metadata))
         }
@@ -295,6 +310,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+        if (options.contentEncoding) {
+          headers['content-encoding'] = options.contentEncoding
+        }
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
         }

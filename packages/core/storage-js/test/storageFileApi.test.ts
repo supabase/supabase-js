@@ -1188,6 +1188,28 @@ describe('StorageFileApi Edge Cases', () => {
       expect(new Headers(headers).get('content-type')).toBe('image/png')
     })
 
+    test('upload passes contentEncoding for raw bodies', async () => {
+      await storage.from('test-bucket').upload('test-path', 'test content', {
+        contentEncoding: 'gzip',
+      })
+
+      expect(mockPost).toHaveBeenCalled()
+      const [, , , { headers }] = mockPost.mock.calls[0]
+      expect(headers['content-encoding']).toBe('gzip')
+    })
+
+    test('upload passes contentEncoding in multipart bodies', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+
+      await storage.from('test-bucket').upload('test-path', testBlob, {
+        contentEncoding: 'gzip',
+      })
+
+      expect(mockPost).toHaveBeenCalled()
+      const [, , body] = mockPost.mock.calls[0]
+      expect((body as FormData).get('contentEncoding')).toBe('gzip')
+    })
+
     test('uploadToSignedUrl prefers file content type over existing content type header', async () => {
       const clientWithContentType = new StorageClient('http://localhost:8000/storage/v1', {
         apikey: 'test-token',
@@ -1206,6 +1228,32 @@ describe('StorageFileApi Edge Cases', () => {
       expect(headers['content-type']).toBe('image/png')
       expect(headers['Content-Type']).toBeUndefined()
       expect(new Headers(headers).get('content-type')).toBe('image/png')
+    })
+
+    test('uploadToSignedUrl passes contentEncoding for raw bodies', async () => {
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', 'test content', {
+          contentEncoding: 'gzip',
+        })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , { headers }] = mockPut.mock.calls[0]
+      expect(headers['content-encoding']).toBe('gzip')
+    })
+
+    test('uploadToSignedUrl passes contentEncoding in multipart bodies', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testBlob, {
+          contentEncoding: 'gzip',
+        })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect((body as FormData).get('contentEncoding')).toBe('gzip')
     })
 
     test('uploadToSignedUrl with metadata (Blob body)', async () => {
