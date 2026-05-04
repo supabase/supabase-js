@@ -29,7 +29,7 @@ export class FunctionsClient {
    * const { data, error } = await supabase.functions.invoke('hello-world')
    * ```
    *
-   * @category Functions
+   * @category Edge Functions
    *
    * @example Standalone import for bundle-sensitive environments
    * ```ts
@@ -63,7 +63,7 @@ export class FunctionsClient {
    * Updates the authorization header
    * @param token - the new jwt token sent in the authorisation header
    *
-   * @category Functions
+   * @category Edge Functions
    *
    * @example Setting the authorization header
    * ```ts
@@ -85,7 +85,7 @@ export class FunctionsClient {
    * })
    * ```
    *
-   * @category Functions
+   * @category Edge Functions
    *
    * @remarks
    * - Requires an Authorization header.
@@ -192,7 +192,7 @@ export class FunctionsClient {
    * })
    * ```
    *
-   * @example Example 7
+   * @example Standalone client invoke
    * ```ts
    * const { data, error } = await functions.invoke('hello-world', {
    *   body: { name: 'Ada' },

@@ -476,6 +476,7 @@ export default class SupabaseClient<
    * @param {string} name - The name of the Realtime channel.
    * @param {Object} opts - The options to pass to the Realtime channel.
    *
+   * @category Realtime
    */
   channel(name: string, opts: RealtimeChannelOptions = { config: {} }): RealtimeChannel {
     return this.realtime.channel(name, opts)
@@ -484,7 +485,7 @@ export default class SupabaseClient<
   /**
    * Returns all Realtime channels.
    *
-   * @category Initializing
+   * @category Realtime
    *
    * @example Get all channels
    * ```js
@@ -501,7 +502,7 @@ export default class SupabaseClient<
    * @param {RealtimeChannel} channel - The name of the Realtime channel.
    *
    *
-   * @category Initializing
+   * @category Realtime
    *
    * @remarks
    * - Removing a channel is a great way to maintain the performance of your project's Realtime service as well as your database if you're listening to Postgres changes. Supabase will automatically handle cleanup 30 seconds after a client is disconnected, but unused channels may cause degradation as more clients are simultaneously subscribed.
@@ -518,7 +519,7 @@ export default class SupabaseClient<
   /**
    * Unsubscribes and removes all Realtime channels from Realtime client.
    *
-   * @category Initializing
+   * @category Realtime
    *
    * @remarks
    * - Removing channels is a great way to maintain the performance of your project's Realtime service as well as your database if you're listening to Postgres changes. Supabase will automatically handle cleanup 30 seconds after a client is disconnected, but unused channels may cause degradation as more clients are simultaneously subscribed.

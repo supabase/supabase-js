@@ -26,7 +26,8 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @category Storage
+   * @subcategory Analytics Buckets
    * @param url - The base URL for the storage API
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
@@ -60,7 +61,8 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @category Storage
+   * @subcategory Analytics Buckets
    * @param name A unique name for the bucket you are creating
    * @returns Promise with response containing newly created analytics bucket or error
    *
@@ -113,7 +115,8 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @category Storage
+   * @subcategory Analytics Buckets
    * @param options Query parameters for listing buckets
    * @param options.limit Maximum number of buckets to return
    * @param options.offset Number of buckets to skip
@@ -196,7 +199,8 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @category Storage
+   * @subcategory Analytics Buckets
    * @param bucketName The unique identifier of the bucket you would like to delete
    * @returns Promise with response containing success message or error
    *
@@ -251,7 +255,8 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @category Storage
+   * @subcategory Analytics Buckets
    * @param bucketName - The name of the analytics bucket (warehouse) to connect to
    * @returns The wrapped Iceberg catalog client
    * @throws {StorageError} If the bucket name is invalid

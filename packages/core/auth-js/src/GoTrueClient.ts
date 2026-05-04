@@ -5979,6 +5979,8 @@ export default class GoTrueClient {
    * 3. Verifies credential with server and creates session
    *
    * Requires `auth.experimental.passkey: true`.
+   *
+   * @category Auth
    */
   async signInWithPasskey(
     credentials?: SignInWithPasskeyCredentials
@@ -6035,6 +6037,8 @@ export default class GoTrueClient {
    * 3. Verifies credential with server
    *
    * Requires an active session. Requires `auth.experimental.passkey: true`.
+   *
+   * @category Auth
    */
   async registerPasskey(
     credentials?: RegisterPasskeyCredentials
