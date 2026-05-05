@@ -1,3 +1,99 @@
+## 2.105.2 (2026-05-04)
+
+### 🩹 Fixes
+
+- **misc:** widen enum-like unions with (string & {}) for forward compat ([#2303](https://github.com/supabase/supabase-js/pull/2303))
+
+## 2.105.1 (2026-04-28)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.105.0 (2026-04-27)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.104.1 (2026-04-23)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.104.0 (2026-04-20)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.103.3 (2026-04-16)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.103.2 (2026-04-15)
+
+### 🩹 Fixes
+
+- **misc:** add explicit return types to toJSON methods for JSR compat ([#2252](https://github.com/supabase/supabase-js/pull/2252))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.103.1 (2026-04-15)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.103.0 (2026-04-09)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.102.1 (2026-04-07)
+
+### 🩹 Fixes
+
+- **functions:** add toJSON to FunctionsError for correct JSON serialization ([#2226](https://github.com/supabase/supabase-js/pull/2226))
+
+### ❤️ Thank You
+
+- oniani1
+
+## 2.102.0 (2026-04-07)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.101.1 (2026-03-31)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.101.0 (2026-03-30)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.100.1 (2026-03-26)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.100.0 (2026-03-23)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.99.2 (2026-03-16)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.99.1 (2026-03-11)
+
+### 🩹 Fixes
+
+- **functions:** add RateLimitError in `Deno.errors` namespace ([#2160](https://github.com/supabase/supabase-js/pull/2160))
+
+### ❤️ Thank You
+
+- 냥냐챠 @nyannyacha
+
+## 2.99.0 (2026-03-09)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.98.0 (2026-02-26)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
 ## 2.97.0 (2026-02-18)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.

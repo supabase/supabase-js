@@ -44,12 +44,17 @@ test('nested query with selective fields', async () => {
             "id": 4,
             "message": "Some message on channel without details",
           },
+          {
+            "id": 3,
+            "message": "Some message on channel without details",
+          },
         ],
         "username": "supabot",
       },
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -102,12 +107,21 @@ test('nested query with multiple levels and selective fields', async () => {
             "id": 4,
             "message": "Some message on channel without details",
           },
+          {
+            "channels": {
+              "id": 3,
+              "slug": "other",
+            },
+            "id": 3,
+            "message": "Some message on channel without details",
+          },
         ],
         "username": "supabot",
       },
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -149,6 +163,9 @@ test('query with multiple one-to-many relationships', async () => {
           {
             "id": 4,
           },
+          {
+            "id": 3,
+          },
         ],
         "user_profiles": [
           {
@@ -160,6 +177,7 @@ test('query with multiple one-to-many relationships', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -190,6 +208,7 @@ test('many-to-one relationship', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -229,11 +248,19 @@ test('one-to-many relationship', async () => {
             "message": "Some message on channel without details",
             "username": "supabot",
           },
+          {
+            "channel_id": 3,
+            "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
+            "username": "supabot",
+          },
         ],
       },
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -271,11 +298,15 @@ test('one-to-many relationship with selective columns', async () => {
           {
             "data": null,
           },
+          {
+            "data": null,
+          },
         ],
       },
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -303,6 +334,7 @@ test('one-to-one relationship', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -325,6 +357,7 @@ test('select with type casting query', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -345,6 +378,7 @@ test('multiple times the same column in selection', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -365,6 +399,7 @@ test('embed resource with no fields', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -393,6 +428,7 @@ test('select JSON accessor', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -435,6 +471,7 @@ test('self reference relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -477,6 +514,7 @@ test('self reference relation via column', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -529,6 +567,7 @@ test('many-to-many with join table', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>

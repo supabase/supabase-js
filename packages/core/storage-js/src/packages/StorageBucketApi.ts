@@ -32,7 +32,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Retrieves the details of all Storage buckets within an existing project.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param options Query parameters for listing buckets
    * @param options.limit Maximum number of buckets to return
    * @param options.offset Number of buckets to skip
@@ -60,6 +61,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *     search: 'prod'
    *   })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async listBuckets(options?: ListBucketOptions): Promise<
     | {
@@ -82,7 +89,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Retrieves the details of an existing Storage bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param id The unique identifier of the bucket you would like to retrieve.
    * @returns Promise with response containing bucket details or error
    *
@@ -111,6 +119,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async getBucket(id: string): Promise<
     | {
@@ -130,7 +144,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Creates a new Storage bucket
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param id A unique identifier for the bucket you are creating.
    * @param options.public The visibility of the bucket. Public buckets don't require an authorization token to download objects, but still require a valid token for all other operations. By default, buckets are private.
    * @param options.fileSizeLimit specifies the max file size in bytes that can be uploaded to this bucket.
@@ -163,6 +178,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `insert`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createBucket(
     id: string,
@@ -204,7 +225,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Updates a Storage bucket
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param id A unique identifier for the bucket you are updating.
    * @param options.public The visibility of the bucket. Public buckets don't require an authorization token to download objects, but still require a valid token for all other operations.
    * @param options.fileSizeLimit specifies the max file size in bytes that can be uploaded to this bucket.
@@ -235,6 +257,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select` and `update`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async updateBucket(
     id: string,
@@ -272,7 +300,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Removes all objects inside a single bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param id The unique identifier of the bucket you would like to empty.
    * @returns Promise with success message or error
    *
@@ -292,6 +321,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select`
+   *   - `objects` table permissions: `select` and `delete`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async emptyBucket(id: string): Promise<
     | {
@@ -312,7 +347,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    * Deletes an existing bucket. A bucket can't be deleted with existing objects inside it.
    * You must first `empty()` the bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param id The unique identifier of the bucket you would like to delete.
    * @returns Promise with success message or error
    *
@@ -332,6 +368,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select` and `delete`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async deleteBucket(id: string): Promise<
     | {

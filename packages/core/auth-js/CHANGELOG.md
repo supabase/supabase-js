@@ -1,3 +1,141 @@
+## 2.105.2 (2026-05-04)
+
+### 🩹 Fixes
+
+- **auth:** add toJSON to WebAuthnError for correct JSON serialization ([#2317](https://github.com/supabase/supabase-js/pull/2317))
+- **misc:** reduce any usage across packages ([#2314](https://github.com/supabase/supabase-js/pull/2314))
+- **misc:** widen enum-like unions with (string & {}) for forward compat ([#2303](https://github.com/supabase/supabase-js/pull/2303))
+
+## 2.105.1 (2026-04-28)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.105.0 (2026-04-27)
+
+### 🚀 Features
+
+- **auth:** add passkey support with WebAuthn registration, authentication, and management ([#2283](https://github.com/supabase/supabase-js/pull/2283))
+
+## 2.104.1 (2026-04-23)
+
+### 🩹 Fixes
+
+- **auth:** emit PASSWORD_RECOVERY event for PKCE recovery flows ([#2272](https://github.com/supabase/supabase-js/pull/2272))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.104.0 (2026-04-20)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.103.3 (2026-04-16)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.103.2 (2026-04-15)
+
+### 🩹 Fixes
+
+- **misc:** add explicit return types to toJSON methods for JSR compat ([#2252](https://github.com/supabase/supabase-js/pull/2252))
+- **auth:** remove Prettify wrapper from exported types for TypeDoc expansion ([#2250](https://github.com/supabase/supabase-js/pull/2250))
+- **auth:** include Cloudflare error codes in NETWORK_ERROR_CODES ([#2239](https://github.com/supabase/supabase-js/pull/2239))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vansh Sharma @Vansh1811
+
+## 2.103.1 (2026-04-15)
+
+### 🩹 Fixes
+
+- **auth:** add toJSON to AuthError for correct JSON serialization ([#2238](https://github.com/supabase/supabase-js/pull/2238))
+
+### ❤️ Thank You
+
+- oniani1
+
+## 2.103.0 (2026-04-09)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.102.1 (2026-04-07)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.102.0 (2026-04-07)
+
+### 🩹 Fixes
+
+- **auth:** downgrade console.error to console.warn for missing session ([#2214](https://github.com/supabase/supabase-js/pull/2214))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.101.1 (2026-03-31)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.101.0 (2026-03-30)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.100.1 (2026-03-26)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.100.0 (2026-03-23)
+
+### 🩹 Fixes
+
+- **auth:** guard navigator lock steal against cascade when lock is stolen by another request ([#2178](https://github.com/supabase/supabase-js/pull/2178))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.99.2 (2026-03-16)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.99.1 (2026-03-11)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.99.0 (2026-03-09)
+
+### 🚀 Features
+
+- **auth:** add custom OIDC/OAuth provider admin CRUD methods ([#2133](https://github.com/supabase/supabase-js/pull/2133))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+
+## 2.98.0 (2026-02-26)
+
+### 🚀 Features
+
+- **auth:** add currentPassword to UserAttributes type ([#2131](https://github.com/supabase/supabase-js/pull/2131))
+- **auth:** support custom providers via `custom:` prefix in Provider type ([#2134](https://github.com/supabase/supabase-js/pull/2134))
+- **auth:** add `token_endpoint_auth_method` to OAuth client create/update ([#2132](https://github.com/supabase/supabase-js/pull/2132))
+
+### 🩹 Fixes
+
+- **auth:** fixes userattributes type ([#2139](https://github.com/supabase/supabase-js/pull/2139))
+- **auth:** lower lockAcquireTimeout default to 5s and fix stale JSDoc ([#2125](https://github.com/supabase/supabase-js/pull/2125))
+- **auth:** recover from orphaned navigator locks via steal fallback ([#2106](https://github.com/supabase/supabase-js/pull/2106))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+- Elliot Padfield @ElliotPadfield
+- Etienne Stalmans @staaldraad
+- Katerina Skroumpelou @mandarini
+
 ## 2.97.0 (2026-02-18)
 
 ### 🚀 Features

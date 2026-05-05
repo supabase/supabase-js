@@ -87,7 +87,7 @@ export function parseParametersFromURL(href: string) {
       hashSearchParams.forEach((value, key) => {
         result[key] = value
       })
-    } catch (e: any) {
+    } catch (_e) {
       // hash is not a query string
     }
   }
@@ -235,7 +235,7 @@ export function retryable<T>(
             accept(result)
             return
           }
-        } catch (e: any) {
+        } catch (e) {
           if (!isRetryable(attempt, e)) {
             reject(e)
             return
@@ -304,7 +304,7 @@ export async function getCodeChallengeAndMethod(
   const codeVerifier = generatePKCEVerifier()
   let storedCodeVerifier = codeVerifier
   if (isPasswordRecovery) {
-    storedCodeVerifier += '/PASSWORD_RECOVERY'
+    storedCodeVerifier += '/recovery'
   }
   await setItemAsync(storage, `${storageKey}-code-verifier`, storedCodeVerifier)
   const codeChallenge = await generatePKCEChallenge(codeVerifier)
@@ -329,7 +329,7 @@ export function parseResponseAPIVersion(response: Response) {
   try {
     const date = new Date(`${apiVersion}T00:00:00.0Z`)
     return date
-  } catch (e: any) {
+  } catch (_e) {
     return null
   }
 }
@@ -345,7 +345,7 @@ export function validateExp(exp: number) {
 }
 
 export function getAlgorithm(
-  alg: 'HS256' | 'RS256' | 'ES256'
+  alg: 'HS256' | 'RS256' | 'ES256' | (string & {})
 ): RsaHashedImportParams | EcKeyImportParams {
   switch (alg) {
     case 'RS256':
@@ -369,6 +369,14 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 export function validateUUID(str: string) {
   if (!UUID_REGEX.test(str)) {
     throw new Error('@supabase/auth-js: Expected parameter to be UUID but is not')
+  }
+}
+
+export function assertPasskeyExperimentalEnabled(experimental: { passkey?: boolean }): void {
+  if (!experimental.passkey) {
+    throw new Error(
+      '@supabase/auth-js: the passkey API is experimental and disabled by default. Enable it by passing `auth: { experimental: { passkey: true } }` to createClient (or to the GoTrueClient constructor).'
+    )
   }
 }
 

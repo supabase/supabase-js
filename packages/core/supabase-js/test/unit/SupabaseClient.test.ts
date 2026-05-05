@@ -385,6 +385,10 @@ describe('SupabaseClient', () => {
         const expectedToken = 'test-fetch-token'
         const mockFetch = jest.fn().mockResolvedValue({
           ok: true,
+          status: 200,
+          statusText: 'OK',
+          text: () => Promise.resolve('{}'),
+          headers: new Headers(),
           json: () => Promise.resolve({}),
         })
 
@@ -408,7 +412,14 @@ describe('SupabaseClient', () => {
         const expectedToken = 'test-multi-service-token'
         const mockFetch = jest
           .fn()
-          .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) }) // rest
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: () => Promise.resolve('{}'),
+            headers: new Headers(),
+            json: () => Promise.resolve({}),
+          }) // rest
           .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ data: [] }) }) // storage
           .mockResolvedValueOnce({
             ok: true,
@@ -435,9 +446,30 @@ describe('SupabaseClient', () => {
         })
       })
 
+      test('should propagate custom fetch to realtime client', async () => {
+        const mockFetch = jest.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({}),
+        })
+
+        const client = createClient(URL, KEY, {
+          global: { fetch: mockFetch },
+        })
+
+        // Call realtime's fetch directly to verify custom fetch was propagated
+        // @ts-ignore accessing private property to verify fetch propagation
+        await client.realtime.fetch('http://example.com')
+
+        expect(mockFetch).toHaveBeenCalled()
+      })
+
       test('should use supabaseKey fallback in fetchWithAuth', async () => {
         const mockFetch = jest.fn().mockResolvedValue({
           ok: true,
+          status: 200,
+          statusText: 'OK',
+          text: () => Promise.resolve('{}'),
+          headers: new Headers(),
           json: () => Promise.resolve({}),
         })
 

@@ -1,5 +1,11 @@
-import { StorageError, StorageUnknownError, isStorageError } from '../lib/common/errors'
+import {
+  StorageApiError,
+  StorageError,
+  StorageUnknownError,
+  isStorageError,
+} from '../lib/common/errors'
 import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
+import { setHeader } from '../lib/common/headers'
 import { recursiveToCamel } from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
@@ -44,7 +50,7 @@ type FileBody =
   | string
 
 export default class StorageFileApi extends BaseApiClient<StorageError> {
-  protected bucketId?: string
+  protected bucketId: string | undefined
 
   constructor(
     url: string,
@@ -125,7 +131,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
 
       if (fileOptions?.headers) {
-        headers = { ...headers, ...fileOptions.headers }
+        for (const [key, value] of Object.entries(fileOptions.headers)) {
+          headers = setHeader(headers, key, value)
+        }
       }
 
       const cleanPath = this._removeEmptyFolders(path)
@@ -144,7 +152,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Uploads a file to an existing bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
    * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
@@ -184,6 +193,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     contentType: 'image/png'
    *   })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: only `insert` when you are uploading new files and `select`, `insert` and `update` when you are upserting files
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
+   * - For React Native, using either `Blob`, `File` or `FormData` does not work as intended. Upload file using `ArrayBuffer` from base64 file data instead, see example below.
    */
   async upload(
     path: string,
@@ -205,7 +221,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Upload a file with a token generated from `createSignedUploadUrl`.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param token The token generated from `createSignedUploadUrl`
    * @param fileBody The body of the file to be stored in the bucket.
@@ -232,6 +249,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async uploadToSignedUrl(
     path: string,
@@ -247,26 +270,56 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
     return this.handleOperation(async () => {
       let body
-      const options = { upsert: DEFAULT_FILE_OPTIONS.upsert, ...fileOptions }
-      const headers: Record<string, string> = {
+      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      let headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
       }
 
+      const metadata = options.metadata
+
       if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
         body = new FormData()
         body.append('cacheControl', options.cacheControl as string)
+        if (metadata) {
+          body.append('metadata', this.encodeMetadata(metadata))
+        }
         body.append('', fileBody)
       } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
         body = fileBody
-        body.append('cacheControl', options.cacheControl as string)
+        if (!body.has('cacheControl')) {
+          body.append('cacheControl', options.cacheControl as string)
+        }
+        if (metadata && !body.has('metadata')) {
+          body.append('metadata', this.encodeMetadata(metadata))
+        }
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+        if (metadata) {
+          headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
+        }
+
+        const isStream =
+          (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream) ||
+          (body && typeof body === 'object' && 'pipe' in body && typeof body.pipe === 'function')
+
+        if (isStream && !options.duplex) {
+          options.duplex = 'half'
+        }
       }
 
-      const data = await put(this.fetch, url.toString(), body as object, { headers })
+      if (fileOptions?.headers) {
+        for (const [key, value] of Object.entries(fileOptions.headers)) {
+          headers = setHeader(headers, key, value)
+        }
+      }
+
+      const data = await put(this.fetch, url.toString(), body as object, {
+        headers,
+        ...(options?.duplex ? { duplex: options.duplex } : {}),
+      })
 
       return { path: cleanPath, fullPath: data.Key }
     })
@@ -277,7 +330,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * Signed upload URLs can be used to upload files to the bucket without further authentication.
    * They are valid for 2 hours.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the current file name. For example `folder/image.png`.
    * @param options.upsert If set to true, allows the file to be overwritten if it already exists.
    * @returns Promise with response containing signed upload URL, token, and path or error
@@ -301,6 +355,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `insert`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createSignedUploadUrl(
     path: string,
@@ -346,10 +406,14 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Replaces an existing file at the specified path with a new one.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to update.
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
+   * @param fileOptions Optional file upload options including cacheControl, contentType, and metadata.
+   * **Note:** The `upsert` option has no effect here. `update()` always replaces the
+   * file at the given path, so the `x-upsert` header is not sent. To control upsert
+   * behavior, use `upload()` instead.
    * @returns Promise with response containing file path, id, and fullPath or error
    *
    * @example Update file
@@ -359,8 +423,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   .storage
    *   .from('avatars')
    *   .update('public/avatar1.png', avatarFile, {
-   *     cacheControl: '3600',
-   *     upsert: true
+   *     cacheControl: '3600'
    *   })
    * ```
    *
@@ -386,6 +449,14 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     contentType: 'image/png'
    *   })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `update` and `select`
+   * - `update()` always replaces the file at the given path regardless of the `upsert` option.
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
+   * - For React Native, using either `Blob`, `File` or `FormData` does not work as intended. Update file using `ArrayBuffer` from base64 file data instead, see example below.
    */
   async update(
     path: string,
@@ -417,7 +488,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Moves an existing file to a new path in the same bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
    * @param options The destination options.
@@ -440,6 +512,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `update` and `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async move(
     fromPath: string,
@@ -473,7 +551,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Copies an existing file to a new path in the same bucket.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    * @param options The destination options.
@@ -496,6 +575,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `insert` and `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async copy(
     fromPath: string,
@@ -530,11 +615,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Creates a signed URL. Use a signed URL to share a file for a fixed amount of time.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the current file name. For example `folder/image.png`.
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
    * @returns Promise with response containing signed URL or error
    *
    * @example Create Signed URL
@@ -577,11 +664,21 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     download: true,
    *   })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createSignedUrl(
     path: string,
     expiresIn: number,
-    options?: { download?: string | boolean; transform?: TransformOptions }
+    options?: {
+      download?: string | boolean
+      transform?: TransformOptions
+      cacheNonce?: string
+    }
   ): Promise<
     | {
         data: { signedUrl: string }
@@ -595,16 +692,30 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return this.handleOperation(async () => {
       let _path = this._getFinalPath(path)
 
+      const hasTransform =
+        typeof options?.transform === 'object' &&
+        options.transform !== null &&
+        Object.keys(options.transform).length > 0
+
       let data = await post(
         this.fetch,
         `${this.url}/object/sign/${_path}`,
-        { expiresIn, ...(options?.transform ? { transform: options.transform } : {}) },
+        { expiresIn, ...(hasTransform ? { transform: options!.transform } : {}) },
         { headers: this.headers }
       )
-      const downloadQueryParam = options?.download
-        ? `&download=${options.download === true ? '' : options.download}`
-        : ''
-      const signedUrl = encodeURI(`${this.url}${data.signedURL}${downloadQueryParam}`)
+
+      const query = new URLSearchParams()
+      if (options?.download)
+        query.set('download', options.download === true ? '' : options.download)
+      if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+      const queryString = query.toString()
+
+      // `data.signedURL` contains a `token` query parameter, so append extra params with `&`
+      // only when we actually have something to add.
+      const signedUrl = encodeURI(
+        `${this.url}${data.signedURL}${queryString ? `&${queryString}` : ''}`
+      )
+
       return { signedUrl }
     })
   }
@@ -612,10 +723,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Creates multiple signed URLs. Use a signed URL to share a file for a fixed amount of time.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param paths The file paths to be downloaded, including the current file names. For example `['folder/image.png', 'folder2/image2.png']`.
    * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
    * @returns Promise with response containing array of objects with signedUrl, path, and error or error
    *
    * @example Create Signed URLs
@@ -646,14 +759,20 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createSignedUrls(
     paths: string[],
     expiresIn: number,
-    options?: { download: string | boolean }
+    options?: { download?: string | boolean; cacheNonce?: string }
   ): Promise<
     | {
-        data: { error: string | null; path: string | null; signedUrl: string }[]
+        data: { error: string | null; path: string | null; signedUrl: string | null }[]
         error: null
       }
     | {
@@ -669,13 +788,18 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         { headers: this.headers }
       )
 
-      const downloadQueryParam = options?.download
-        ? `&download=${options.download === true ? '' : options.download}`
-        : ''
+      const query = new URLSearchParams()
+
+      if (options?.download)
+        query.set('download', options.download === true ? '' : options.download)
+      if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+
+      const queryString = query.toString()
+
       return data.map((datum: { signedURL: string }) => ({
         ...datum,
         signedUrl: datum.signedURL
-          ? encodeURI(`${this.url}${datum.signedURL}${downloadQueryParam}`)
+          ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
           : null,
       }))
     })
@@ -684,9 +808,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Downloads a file from a private bucket. For public buckets, make a request to the URL returned from `getPublicUrl` instead.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
    * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns BlobDownloadBuilder instance for downloading the file
    *
@@ -738,21 +864,34 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   .from('avatars')
    *   .download('folder/avatar1.png', {}, { signal: controller.signal })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
-  download<Options extends { transform?: TransformOptions }>(
+  download<Options extends { transform?: TransformOptions; cacheNonce?: string }>(
     path: string,
     options?: Options,
     parameters?: FetchParameters
   ): BlobDownloadBuilder {
-    const wantsTransformation = typeof options?.transform !== 'undefined'
+    const wantsTransformation =
+      typeof options?.transform === 'object' &&
+      options.transform !== null &&
+      Object.keys(options.transform).length > 0
     const renderPath = wantsTransformation ? 'render/image/authenticated' : 'object'
-    const transformationQuery = this.transformOptsToQueryString(options?.transform || {})
-    const queryString = transformationQuery ? `?${transformationQuery}` : ''
+
+    const query = new URLSearchParams()
+    if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
+    if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+    const queryString = query.toString()
+
     const _path = this._getFinalPath(path)
     const downloadFn = () =>
       get(
         this.fetch,
-        `${this.url}/${renderPath}/${_path}${queryString}`,
+        `${this.url}/${renderPath}/${_path}${queryString ? `?${queryString}` : ''}`,
         {
           headers: this.headers,
           noResolveJson: true,
@@ -765,7 +904,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Retrieves the details of an existing file.
    *
-   * @category File Buckets
+   * Returns detailed file metadata including size, content type, and timestamps.
+   * Note: The API returns `last_modified` field, not `updated_at`.
+   *
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
    * @returns Promise with response containing file metadata or error
    *
@@ -775,6 +918,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   .storage
    *   .from('avatars')
    *   .info('folder/avatar1.png')
+   *
+   * if (data) {
+   *   console.log('Last modified:', data.lastModified)
+   *   console.log('Size:', data.size)
+   * }
    * ```
    */
   async info(path: string): Promise<
@@ -801,7 +949,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Checks the existence of a file.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
    * @returns Promise with response containing boolean indicating file existence or error
    *
@@ -835,10 +984,16 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       if (this.shouldThrowOnError) {
         throw error
       }
-      if (isStorageError(error) && error instanceof StorageUnknownError) {
-        const originalError = error.originalError as unknown as { status: number }
+      if (isStorageError(error)) {
+        // HEAD requests produce StorageApiError (via handleError) or StorageUnknownError (legacy)
+        const status =
+          error instanceof StorageApiError
+            ? error.status
+            : error instanceof StorageUnknownError
+              ? (error.originalError as { status: number })?.status
+              : undefined
 
-        if ([400, 404].includes(originalError?.status)) {
+        if (status !== undefined && [400, 404].includes(status)) {
           return { data: false, error }
         }
       }
@@ -851,10 +1006,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * A simple convenience function to get the URL for an asset in a public bucket. If you do not want to use this function, you can construct the public URL by concatenating the bucket URL with the path to the asset.
    * This function does not verify if the bucket is public. If a public URL is created for a bucket which is not public, you will not be able to download the asset.
    *
-   * @category File Buckets
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The path and name of the file to generate the public URL for. For example `folder/image.png`.
    * @param options.download Triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
    * @returns Object with public URL
    *
    * @example Returns the URL for an asset in a public bucket
@@ -896,44 +1053,53 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     download: true,
    *   })
    * ```
+   *
+   * @remarks
+   * - The bucket needs to be set to public, either via [updateBucket()](/docs/reference/javascript/storage-updatebucket) or by going to Storage on [supabase.com/dashboard](https://supabase.com/dashboard), clicking the overflow menu on a bucket and choosing "Make public"
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   getPublicUrl(
     path: string,
-    options?: { download?: string | boolean; transform?: TransformOptions }
+    options?: {
+      download?: string | boolean
+      transform?: TransformOptions
+      cacheNonce?: string
+    }
   ): { data: { publicUrl: string } } {
     const _path = this._getFinalPath(path)
-    const _queryString: string[] = []
 
-    const downloadQueryParam = options?.download
-      ? `download=${options.download === true ? '' : options.download}`
-      : ''
+    const query = new URLSearchParams()
+    if (options?.download) query.set('download', options.download === true ? '' : options.download)
+    if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
+    if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+    const queryString = query.toString()
 
-    if (downloadQueryParam !== '') {
-      _queryString.push(downloadQueryParam)
-    }
-
-    const wantsTransformation = typeof options?.transform !== 'undefined'
+    const wantsTransformation =
+      typeof options?.transform === 'object' &&
+      options.transform !== null &&
+      Object.keys(options.transform).length > 0
     const renderPath = wantsTransformation ? 'render/image' : 'object'
-    const transformationQuery = this.transformOptsToQueryString(options?.transform || {})
-
-    if (transformationQuery !== '') {
-      _queryString.push(transformationQuery)
-    }
-
-    let queryString = _queryString.join('&')
-    if (queryString !== '') {
-      queryString = `?${queryString}`
-    }
 
     return {
-      data: { publicUrl: encodeURI(`${this.url}/${renderPath}/public/${_path}${queryString}`) },
+      data: {
+        publicUrl:
+          encodeURI(`${this.url}/${renderPath}/public/${_path}`) +
+          (queryString ? `?${queryString}` : ''),
+      },
     }
   }
 
   /**
    * Deletes files within the same bucket
    *
-   * @category File Buckets
+   * Returns an array of FileObject entries for the deleted files. Note that deprecated
+   * fields like `bucket_id` may or may not be present in the response - do not rely on them.
+   *
+   * @category Storage
+   * @subcategory File Buckets
    * @param paths An array of files to delete, including the path and file name. For example [`'folder/image.png'`].
    * @returns Promise with response containing array of deleted file objects or error
    *
@@ -952,6 +1118,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `delete` and `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async remove(paths: string[]): Promise<
     | {
@@ -1039,11 +1211,17 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Lists all the files and folders within a path of the bucket.
    *
-   * @category File Buckets
+   * **Important:** For folder entries, fields like `id`, `updated_at`, `created_at`,
+   * `last_accessed_at`, and `metadata` will be `null`. Only files have these fields populated.
+   * Additionally, deprecated fields like `bucket_id`, `owner`, and `buckets` are NOT returned
+   * by this method.
+   *
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The folder path.
    * @param options Search options including limit (defaults to 100), offset, sortBy, and search
    * @param parameters Optional fetch parameters including signal for cancellation
-   * @returns Promise with response containing array of files or error
+   * @returns Promise with response containing array of files/folders or error
    *
    * @example List files in a bucket
    * ```js
@@ -1055,6 +1233,17 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     offset: 0,
    *     sortBy: { column: 'name', order: 'asc' },
    *   })
+   *
+   * // Handle files vs folders
+   * data?.forEach(item => {
+   *   if (item.id !== null) {
+   *     // It's a file
+   *     console.log('File:', item.name, 'Size:', item.metadata?.size)
+   *   } else {
+   *     // It's a folder
+   *     console.log('Folder:', item.name)
+   *   }
+   * })
    * ```
    *
    * Response:
@@ -1094,6 +1283,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *     search: 'jon'
    *   })
    * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async list(
     path?: string,
@@ -1122,11 +1317,51 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   }
 
   /**
+   * Lists all the files and folders within a bucket using the V2 API with pagination support.
+   *
+   * **Important:** Folder entries in the `folders` array only contain `name` and optionally `key` —
+   * they have no `id`, timestamps, or `metadata` fields. Full file metadata is only available
+   * on entries in the `objects` array.
+   *
    * @experimental this method signature might change in the future
    *
-   * @category File Buckets
-   * @param options search options
-   * @param parameters
+   * @category Storage
+   * @subcategory File Buckets
+   * @param options Search options including prefix, cursor for pagination, limit, with_delimiter
+   * @param parameters Optional fetch parameters including signal for cancellation
+   * @returns Promise with response containing folders/objects arrays with pagination info or error
+   *
+   * @example List files with pagination
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .listV2({
+   *     prefix: 'folder/',
+   *     limit: 100,
+   *   })
+   *
+   * // Handle pagination
+   * if (data?.hasNext) {
+   *   const nextPage = await supabase
+   *     .storage
+   *     .from('avatars')
+   *     .listV2({
+   *       prefix: 'folder/',
+   *       cursor: data.nextCursor,
+   *     })
+   * }
+   *
+   * // Handle files vs folders
+   * data?.objects.forEach(file => {
+   *   if (file.id !== null) {
+   *     console.log('File:', file.name, 'Size:', file.metadata?.size)
+   *   }
+   * })
+   * data?.folders.forEach(folder => {
+   *   console.log('Folder:', folder.name)
+   * })
+   * ```
    */
   async listV2(
     options?: SearchV2Options,
@@ -1172,28 +1407,17 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return path.replace(/^\/|\/$/g, '').replace(/\/+/g, '/')
   }
 
-  private transformOptsToQueryString(transform: TransformOptions) {
-    const params: string[] = []
-    if (transform.width) {
-      params.push(`width=${transform.width}`)
-    }
+  /** Modifies the `query`, appending values the from `transform` */
+  private applyTransformOptsToQuery(
+    query: URLSearchParams,
+    transform: TransformOptions
+  ): URLSearchParams {
+    if (transform.width) query.set('width', transform.width.toString())
+    if (transform.height) query.set('height', transform.height.toString())
+    if (transform.resize) query.set('resize', transform.resize)
+    if (transform.format) query.set('format', transform.format)
+    if (transform.quality) query.set('quality', transform.quality.toString())
 
-    if (transform.height) {
-      params.push(`height=${transform.height}`)
-    }
-
-    if (transform.resize) {
-      params.push(`resize=${transform.resize}`)
-    }
-
-    if (transform.format) {
-      params.push(`format=${transform.format}`)
-    }
-
-    if (transform.quality) {
-      params.push(`quality=${transform.quality}`)
-    }
-
-    return params.join('&')
+    return query
   }
 }

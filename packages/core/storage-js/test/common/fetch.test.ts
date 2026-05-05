@@ -123,7 +123,7 @@ describe('Common Fetch', () => {
 
         expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(requestBody),
         })
         expect(result).toEqual(responseData)
@@ -146,8 +146,35 @@ describe('Common Fetch', () => {
         expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'content-type': 'application/json',
             Authorization: 'Bearer token',
+          },
+          body: JSON.stringify(requestBody),
+        })
+      })
+
+      it('should keep a single content-type header for JSON requests', async () => {
+        const requestBody = { data: 'test' }
+        const responseData = { result: 'created' }
+        mockFetch.mockResolvedValue(
+          new MockResponse(JSON.stringify(responseData), {
+            status: 201,
+            statusText: 'Created',
+          })
+        )
+
+        await post(mockFetch, 'http://test.com/api', requestBody, {
+          headers: {
+            Authorization: 'Bearer token',
+            'content-type': 'application/vnd.custom+json',
+          },
+        })
+
+        expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer token',
+            'content-type': 'application/vnd.custom+json',
           },
           body: JSON.stringify(requestBody),
         })
@@ -188,7 +215,7 @@ describe('Common Fetch', () => {
 
         expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(requestBody),
         })
         expect(result).toEqual(responseData)
@@ -228,7 +255,7 @@ describe('Common Fetch', () => {
 
         expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(requestBody),
         })
         expect(result).toEqual(responseData)
@@ -250,7 +277,7 @@ describe('Common Fetch', () => {
 
         expect(mockFetch).toHaveBeenCalledWith('http://test.com/api', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(requestBody),
           duplex: 'half',
         })
@@ -485,6 +512,32 @@ describe('Common Fetch', () => {
       await expect(vectorsApi.get(mockFetch, 'http://test.com/api')).rejects.toMatchObject({
         name: 'StorageVectorsApiError',
         status: 500,
+      })
+    })
+  })
+
+  describe('isResponseLike regression (undici/polyfill)', () => {
+    it('handles Response-like objects without ok property (undici/polyfill regression)', async () => {
+      // Simulates the production case: undici or a fetch wrapper returns a Response
+      // where 'ok' is not accessible via the `in` operator, causing isResponseLike to fail
+      const responseBody = {
+        statusCode: '409',
+        message: 'Unable to empty the bucket because it contains too many objects',
+      }
+      const mockResponse = {
+        status: 409,
+        statusText: 'Conflict',
+        json: async () => responseBody,
+        // Deliberately no `ok` property — this is what causes the bug in production
+      }
+      mockFetch.mockResolvedValue(mockResponse)
+
+      await expect(
+        post(mockFetch, 'http://example.com/bucket/test/empty', {})
+      ).rejects.toMatchObject({
+        name: 'StorageApiError',
+        message: 'Unable to empty the bucket because it contains too many objects',
+        status: 409,
       })
     })
   })

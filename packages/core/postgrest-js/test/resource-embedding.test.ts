@@ -36,6 +36,13 @@ test('embedded select', async () => {
               "message": "Some message on channel without details",
               "username": "supabot",
             },
+            {
+              "channel_id": 3,
+              "data": null,
+              "id": 3,
+              "message": "Some message on channel without details",
+              "username": "supabot",
+            },
           ],
         },
         {
@@ -54,6 +61,7 @@ test('embedded select', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -110,6 +118,14 @@ test('embedded select with computed field explicit selection', async () => {
               "message": "Some message on channel without details",
               "username": "supabot",
             },
+            {
+              "blurb_message": "Som",
+              "channel_id": 3,
+              "data": null,
+              "id": 3,
+              "message": "Some message on channel without details",
+              "username": "supabot",
+            },
           ],
         },
         {
@@ -128,6 +144,7 @@ test('embedded select with computed field explicit selection', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -190,6 +207,7 @@ describe('embedded filters', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -255,6 +273,7 @@ describe('embedded filters', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -322,6 +341,7 @@ describe('embedded filters', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -366,6 +386,13 @@ describe('embedded transforms', () => {
                 "username": "supabot",
               },
               {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -397,6 +424,7 @@ describe('embedded transforms', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -440,6 +468,13 @@ describe('embedded transforms', () => {
                 "username": "supabot",
               },
               {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -471,6 +506,7 @@ describe('embedded transforms', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -530,6 +566,7 @@ describe('embedded transforms', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -589,6 +626,7 @@ describe('embedded transforms', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>

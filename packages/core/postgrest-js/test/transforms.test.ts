@@ -57,6 +57,7 @@ test('order', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -79,6 +80,13 @@ test('order on multiple columns', async () => {
           "username": "supabot",
         },
         {
+          "channel_id": 3,
+          "data": null,
+          "id": 3,
+          "message": "Some message on channel without details",
+          "username": "supabot",
+        },
+        {
           "channel_id": 2,
           "data": null,
           "id": 2,
@@ -96,6 +104,7 @@ test('order on multiple columns', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -117,6 +126,7 @@ test('limit', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -159,6 +169,7 @@ test('range', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -178,6 +189,7 @@ test('single', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -197,6 +209,7 @@ test('single on insert', async () => {
       "error": null,
       "status": 201,
       "statusText": "Created",
+      "success": true,
     }
   `)
 
@@ -212,6 +225,7 @@ test('maybeSingle', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -228,14 +242,18 @@ test('maybeSingle', async () => {
       "data": null,
       "error": {
         "code": "PGRST116",
-        "details": "The result contains 2 rows",
+        "details": "Results contain 2 rows, application/vnd.pgrst.object+json requires 1 row",
         "hint": null,
-        "message": "Cannot coerce the result to a single JSON object",
+        "message": "JSON object requested, multiple (or no) rows returned",
       },
       "status": 406,
       "statusText": "Not Acceptable",
+      "success": false,
     }
   `)
+
+  // Clean up inserted users so they don't leak into other test files
+  await postgrest.from('users').delete().in('username', ['a', 'b'])
 })
 
 test('select on insert', async () => {
@@ -251,6 +269,7 @@ test('select on insert', async () => {
       "error": null,
       "status": 201,
       "statusText": "Created",
+      "success": true,
     }
   `)
 
@@ -272,6 +291,7 @@ test('select on rpc', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -290,8 +310,46 @@ test('csv', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
+})
+
+test('stripNulls', async () => {
+  const res = await postgrest.from('users').select().stripNulls()
+  // Null fields (data, age_range, catchphrase) should be stripped from rows where they are null
+  expect(res.error).toBeNull()
+  expect(res.status).toBe(200)
+  expect(Array.isArray(res.data)).toBe(true)
+  // Check that a row with null `data` does not have the `data` key
+  const supabot = (res.data as any[])?.find((u: any) => u.username === 'supabot')
+  expect(supabot).toBeDefined()
+  expect(supabot).not.toHaveProperty('data')
+  expect(supabot).toHaveProperty('username')
+  // Check that a row with non-null `data` still has it
+  const jsonuser = (res.data as any[])?.find((u: any) => u.username === 'jsonuser')
+  expect(jsonuser).toBeDefined()
+  expect(jsonuser).toHaveProperty('data')
+})
+
+test('stripNulls with single', async () => {
+  const res = await postgrest
+    .from('users')
+    .select()
+    .eq('username', 'supabot')
+    .limit(1)
+    .single()
+    .stripNulls()
+  expect(res.error).toBeNull()
+  expect(res.status).toBe(200)
+  expect(res.data).not.toHaveProperty('data')
+  expect((res.data as any)?.username).toBe('supabot')
+})
+
+test('stripNulls throws when used with csv', () => {
+  expect(() => postgrest.from('users').select().csv().stripNulls()).toThrow(
+    'stripNulls() cannot be used with csv()'
+  )
 })
 
 test('geojson', async () => {
@@ -321,6 +379,7 @@ test('geojson', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -349,6 +408,7 @@ test('abort signal', async () => {
       },
       "status": 0,
       "statusText": "",
+      "success": false,
     }
   `
   )
@@ -375,6 +435,7 @@ test('explain with json/text format', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `
   )
@@ -413,6 +474,7 @@ test('explain with options', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `
   )

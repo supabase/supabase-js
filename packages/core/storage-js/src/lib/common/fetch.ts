@@ -1,4 +1,5 @@
-import { StorageApiError, StorageUnknownError, ErrorNamespace } from './errors'
+import { StorageApiError, StorageError, StorageUnknownError, ErrorNamespace } from './errors'
+import { setHeader } from './headers'
 import { isPlainObject, resolveResponse } from './helpers'
 import { FetchParameters } from '../types'
 
@@ -25,12 +26,20 @@ export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD'
  * @param err - Error object from API
  * @returns Human-readable error message
  */
-const _getErrorMessage = (err: any): string =>
-  err.msg ||
-  err.message ||
-  err.error_description ||
-  (typeof err.error === 'string' ? err.error : err.error?.message) ||
-  JSON.stringify(err)
+const _getErrorMessage = (err: unknown): string => {
+  if (typeof err === 'object' && err !== null) {
+    const e = err as Record<string, unknown>
+    if (typeof e.msg === 'string') return e.msg
+    if (typeof e.message === 'string') return e.message
+    if (typeof e.error_description === 'string') return e.error_description
+    if (typeof e.error === 'string') return e.error
+    if (typeof e.error === 'object' && e.error !== null) {
+      const nested = e.error as Record<string, unknown>
+      if (typeof nested.message === 'string') return nested.message
+    }
+  }
+  return JSON.stringify(err)
+}
 
 /**
  * Handles fetch errors and converts them to Storage error types
@@ -41,49 +50,40 @@ const _getErrorMessage = (err: any): string =>
  */
 const handleError = async (
   error: unknown,
-  reject: (reason?: any) => void,
+  reject: (reason: StorageError) => void,
   options: FetchOptions | undefined,
   namespace: ErrorNamespace
 ) => {
-  // Check if error is a Response-like object (has status and ok properties)
-  // This is more reliable than instanceof which can fail across realms
+  // Structural detection of json() method, present in all Response implementations
+  // (native, node-fetch, cross-fetch, undici) and absent from standard Error objects.
+  // Checking 'ok' or 'status' via `in` is unreliable across fetch polyfills/realms.
   const isResponseLike =
-    error &&
+    error !== null &&
     typeof error === 'object' &&
-    'status' in error &&
-    'ok' in error &&
-    typeof (error as any).status === 'number'
+    'json' in error &&
+    typeof (error as Record<string, unknown>).json === 'function'
 
-  if (isResponseLike && !options?.noResolveJson) {
-    const responseError = error as any
-    const status = responseError.status || 500
+  if (isResponseLike) {
+    const responseError = error as Response
+    // Defensive coercion: some fetch polyfills have historically returned status as a string.
+    let status = parseInt(String(responseError.status), 10)
+    if (!Number.isFinite(status)) {
+      status = 500
+    }
 
-    // Try to parse JSON body if available
-    if (typeof responseError.json === 'function') {
-      responseError
-        .json()
-        .then((err: any) => {
+    responseError
+      .json()
+      .then(
+        (err: { statusCode?: string; code?: string; error?: string; message?: string } | null) => {
           const statusCode = err?.statusCode || err?.code || status + ''
           reject(new StorageApiError(_getErrorMessage(err), status, statusCode, namespace))
-        })
-        .catch(() => {
-          // If JSON parsing fails for vectors, create ApiError with HTTP status
-          if (namespace === 'vectors') {
-            const statusCode = status + ''
-            const message = responseError.statusText || `HTTP ${status} error`
-            reject(new StorageApiError(message, status, statusCode, namespace))
-          } else {
-            const statusCode = status + ''
-            const message = responseError.statusText || `HTTP ${status} error`
-            reject(new StorageApiError(message, status, statusCode, namespace))
-          }
-        })
-    } else {
-      // No json() method available, create error from status
-      const statusCode = status + ''
-      const message = responseError.statusText || `HTTP ${status} error`
-      reject(new StorageApiError(message, status, statusCode, namespace))
-    }
+        }
+      )
+      .catch(() => {
+        const statusCode = status + ''
+        const message = responseError.statusText || `HTTP ${status} error`
+        reject(new StorageApiError(message, status, statusCode, namespace))
+      })
   } else {
     reject(new StorageUnknownError(_getErrorMessage(error), error, namespace))
   }
@@ -110,7 +110,16 @@ const _getRequestParams = (
   }
 
   if (isPlainObject(body)) {
-    params.headers = { 'Content-Type': 'application/json', ...options?.headers }
+    const headers = options?.headers || {}
+    let contentType: string | undefined
+
+    for (const [key, value] of Object.entries(headers)) {
+      if (key.toLowerCase() === 'content-type') {
+        contentType = value
+      }
+    }
+
+    params.headers = setHeader(headers, 'Content-Type', contentType ?? 'application/json')
     params.body = JSON.stringify(body)
   } else {
     params.body = body

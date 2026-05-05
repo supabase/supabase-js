@@ -1,5 +1,6 @@
 import { ErrorNamespace, isStorageError, StorageError } from './errors'
 import { Fetch } from './fetch'
+import { normalizeHeaders, setHeader as setHeaderUtil } from './headers'
 import { resolveFetch } from './helpers'
 
 /**
@@ -30,7 +31,7 @@ export default abstract class BaseApiClient<TError extends StorageError = Storag
     namespace: ErrorNamespace = 'storage'
   ) {
     this.url = url
-    this.headers = headers
+    this.headers = normalizeHeaders(headers)
     this.fetch = resolveFetch(fetch)
     this.namespace = namespace
   }
@@ -55,7 +56,7 @@ export default abstract class BaseApiClient<TError extends StorageError = Storag
    * @returns this - For method chaining
    */
   public setHeader(name: string, value: string): this {
-    this.headers = { ...this.headers, [name]: value }
+    this.headers = setHeaderUtil(this.headers, name, value)
     return this
   }
 
@@ -73,7 +74,7 @@ export default abstract class BaseApiClient<TError extends StorageError = Storag
    * @param operation - Async function that performs the API call
    * @returns Promise with { data, error } tuple
    *
-   * @example
+   * @example Handling an operation
    * ```typescript
    * async listBuckets() {
    *   return this.handleOperation(async () => {

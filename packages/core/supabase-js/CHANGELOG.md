@@ -1,3 +1,109 @@
+## 2.105.2 (2026-05-04)
+
+### 🩹 Fixes
+
+- **auth:** forward lockAcquireTimeout to SupabaseAuthClient ([#2309](https://github.com/supabase/supabase-js/pull/2309))
+- **misc:** widen enum-like unions with (string & {}) for forward compat ([#2303](https://github.com/supabase/supabase-js/pull/2303))
+
+### ❤️ Thank You
+
+- Muzzaiyyan Hussain @MuzzaiyyanHussain
+
+## 2.105.1 (2026-04-28)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.105.0 (2026-04-27)
+
+### 🚀 Features
+
+- **auth:** add passkey support with WebAuthn registration, authentication, and management ([#2283](https://github.com/supabase/supabase-js/pull/2283))
+- **realtime:** Realtime deferred disconnect ([#2282](https://github.com/supabase/supabase-js/pull/2282))
+
+## 2.104.1 (2026-04-23)
+
+### 🩹 Fixes
+
+- **supabase:** propagate custom fetch to realtime client ([#2267](https://github.com/supabase/supabase-js/pull/2267))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.104.0 (2026-04-20)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.103.3 (2026-04-16)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.103.2 (2026-04-15)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.103.1 (2026-04-15)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.103.0 (2026-04-09)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.102.1 (2026-04-07)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.102.0 (2026-04-07)
+
+### 🚀 Features
+
+- **supabase:** export PostgrestFilterBuilder and StorageApiError from supabase-js ([#2222](https://github.com/supabase/supabase-js/pull/2222))
+- **postgrest:** add automatic retries for transient errors ([#2072](https://github.com/supabase/supabase-js/pull/2072))
+
+### ❤️ Thank You
+
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+
+## 2.101.1 (2026-03-31)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.101.0 (2026-03-30)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.100.1 (2026-03-26)
+
+### 🩹 Fixes
+
+- **postgrest:** narrow tstyche testFileMatch to only type test files ([#2193](https://github.com/supabase/supabase-js/pull/2193))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.100.0 (2026-03-23)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.99.2 (2026-03-16)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.99.1 (2026-03-11)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.99.0 (2026-03-09)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.98.0 (2026-02-26)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
 ## 2.97.0 (2026-02-18)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.

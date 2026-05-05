@@ -26,13 +26,24 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @category Storage
+   * @subcategory Analytics Buckets
    * @param url - The base URL for the storage API
    * @param headers - HTTP headers to include in requests
    * @param fetch - Optional custom fetch implementation
    *
-   * @example
+   * @example Using supabase-js (recommended)
    * ```typescript
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
+   * const { data, error } = await supabase.storage.analytics.listBuckets()
+   * ```
+   *
+   * @example Standalone import for bundle-sensitive environments
+   * ```typescript
+   * import { StorageAnalyticsClient } from '@supabase/storage-js'
+   *
    * const client = new StorageAnalyticsClient(url, headers)
    * ```
    */
@@ -50,7 +61,8 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @category Storage
+   * @subcategory Analytics Buckets
    * @param name A unique name for the bucket you are creating
    * @returns Promise with response containing newly created analytics bucket or error
    *
@@ -75,6 +87,10 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - Creates a new analytics bucket using Iceberg tables
+   * - Analytics buckets are optimized for analytical queries and data processing
    */
   async createBucket(name: string): Promise<
     | {
@@ -99,7 +115,8 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @category Storage
+   * @subcategory Analytics Buckets
    * @param options Query parameters for listing buckets
    * @param options.limit Maximum number of buckets to return
    * @param options.offset Number of buckets to skip
@@ -136,6 +153,10 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - Retrieves the details of all Analytics Storage buckets within an existing project
+   * - Only returns buckets of type 'ANALYTICS'
    */
   async listBuckets(options?: {
     limit?: number
@@ -178,7 +199,8 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @category Storage
+   * @subcategory Analytics Buckets
    * @param bucketName The unique identifier of the bucket you would like to delete
    * @returns Promise with response containing success message or error
    *
@@ -199,6 +221,9 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *   "error": null
    * }
    * ```
+   *
+   * @remarks
+   * - Deletes an analytics bucket
    */
   async deleteBucket(bucketName: string): Promise<
     | {
@@ -230,7 +255,8 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    *
    * **Public alpha:** This API is part of a public alpha release and may not be available to your account type.
    *
-   * @category Analytics Buckets
+   * @category Storage
+   * @subcategory Analytics Buckets
    * @param bucketName - The name of the analytics bucket (warehouse) to connect to
    * @returns The wrapped Iceberg catalog client
    * @throws {StorageError} If the bucket name is invalid

@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 // These tests are for integration testing with actual deployed edge functions
 // To run these tests, you need to:
 // 1. Deploy the edge functions to a Supabase project
-// 2. Set the SUPABASE_URL and SUPABASE_ANON_KEY environment variables
+// 2. Set the SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY environment variables
 // 3. Or use the local development credentials below
 
 Deno.test(
@@ -14,11 +14,11 @@ Deno.test(
   async (t) => {
     // Use environment variables or fall back to local development
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'http://127.0.0.1:54321'
-    const ANON_KEY =
-      Deno.env.get('SUPABASE_ANON_KEY') ||
+    const PUBLISHABLE_KEY =
+      Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ||
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
-    const supabase = createClient(SUPABASE_URL, ANON_KEY, {
+    const supabase = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
       realtime: { heartbeatIntervalMs: 500 },
     })
 

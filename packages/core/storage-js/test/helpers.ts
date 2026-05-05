@@ -27,9 +27,9 @@ export function createTestClient(): StorageVectorsClient {
     )
   }
 
-  return new StorageVectorsClient(config.apiUrl, {
-    headers: config.headers,
-  })
+  const options = config.headers ? { headers: config.headers } : {}
+
+  return new StorageVectorsClient(config.apiUrl, options)
 }
 
 /**

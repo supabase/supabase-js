@@ -7,8 +7,13 @@ export type {
   PostgrestResponse,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
+  PostgrestBuilder,
+  PostgrestFilterBuilder,
+  PostgrestTransformBuilder,
+  PostgrestQueryBuilder,
 } from '@supabase/postgrest-js'
 export { PostgrestError } from '@supabase/postgrest-js'
+export { StorageApiError } from '@supabase/storage-js'
 export type { FunctionInvokeOptions } from '@supabase/functions-js'
 export {
   FunctionsHttpError,
@@ -30,11 +35,11 @@ export type {
 /**
  * Creates a new Supabase Client.
  *
- * @example
+ * @example Creating a Supabase client
  * ```ts
  * import { createClient } from '@supabase/supabase-js'
  *
- * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+ * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
  * const { data, error } = await supabase.from('profiles').select('*')
  * ```
  */

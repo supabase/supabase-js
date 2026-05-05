@@ -28,4 +28,14 @@ export default class PostgrestError extends Error {
     this.hint = context.hint
     this.code = context.code
   }
+
+  toJSON(): { name: string; message: string; details: string; hint: string; code: string } {
+    return {
+      name: this.name,
+      message: this.message,
+      details: this.details,
+      hint: this.hint,
+      code: this.code,
+    }
+  }
 }

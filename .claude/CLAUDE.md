@@ -4,11 +4,11 @@ You are assisting with development in a unified Nx monorepo that consolidates al
 
 > **📚 Essential Documentation**: Always refer to these guides for detailed information:
 >
-> - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guidelines, commit format, PR process
-> - **[TESTING.md](docs/TESTING.md)** - Complete testing guide with Docker requirements
-> - **[RELEASE.md](docs/RELEASE.md)** - Release workflows and versioning strategy
-> - **[MIGRATION.md](docs/MIGRATION.md)** - Migration context from old repositories
-> - **[SECURITY.md](docs/SECURITY.md)** - Security policies and responsible disclosure
+> - **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Development guidelines, commit format, PR process
+> - **[TESTING.md](../docs/TESTING.md)** - Complete testing guide with Docker requirements
+> - **[RELEASE.md](../docs/RELEASE.md)** - Release workflows and versioning strategy
+> - **[MIGRATION.md](../docs/MIGRATION.md)** - Migration context from old repositories
+> - **[SECURITY.md](../docs/SECURITY.md)** - Security policies and responsible disclosure
 
 ## Repository Architecture
 
@@ -23,12 +23,13 @@ supabase-js/
 │   ├── realtime-js/      # @supabase/realtime-js - Real-time subscriptions client
 │   ├── storage-js/       # @supabase/storage-js - File storage client
 │   └── functions-js/     # @supabase/functions-js - Edge Functions client
+├── CONTRIBUTING.md       # Contribution guidelines
 ├── docs/                 # Comprehensive documentation guides
-│   ├── CONTRIBUTING.md   # Contribution guidelines
 │   ├── TESTING.md        # Testing guide
 │   ├── RELEASE.md        # Release workflows
 │   ├── MIGRATION.md      # Migration guide
-│   └── SECURITY.md       # Security policy
+│   ├── SECURITY.md       # Security policy
+│   └── JSR_PUBLISHING.md # JSR publishing guide
 ├── scripts/              # Automation scripts
 │   ├── release-canary.ts # Canary release automation
 │   ├── release-stable.ts # Stable release automation
@@ -68,7 +69,7 @@ Uses automated canary releases with batched stable releases:
 2. **Stable** (`.github/workflows/release-stable.yml`) - Manual by repository owners
 3. **Preview** (`.github/workflows/preview-release.yml`) - PR-based testing via pkg.pr.new
 
-> **📖 See [RELEASE.md](docs/RELEASE.md) for complete release documentation**
+> **📖 See [RELEASE.md](../docs/RELEASE.md) for complete release documentation**
 
 ### 3. Workspace Dependencies
 
@@ -108,7 +109,7 @@ Use conventional commit format for automated versioning:
 npm run commit
 ```
 
-> **📖 See [CONTRIBUTING.md](CONTRIBUTING.md#commit-guidelines) for complete commit guidelines**
+> **📖 See [CONTRIBUTING.md](../CONTRIBUTING.md#commit-guidelines) for complete commit guidelines**
 
 ## Essential Commands Reference
 
@@ -142,9 +143,9 @@ nx test:ci functions-js                 # Includes coverage
 
 | Package      | Docker Required | Infrastructure                  | Complete Test Command               | Individual Commands                                                                       |
 | ------------ | --------------- | ------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
-| auth-js      | ✅ Yes          | Auth Server + Postgres          | `nx test:auth auth-js`              | `nx test:suite auth-js`, `nx test:infra auth-js`, `nx test:clean auth-js`                 |
-| storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong | `nx test:storage storage-js`        | `nx test:suite storage-js`, `nx test:infra storage-js`, `nx test:clean storage-js`        |
-| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          | `nx test:ci:postgrest postgrest-js` | `nx test:run postgrest-js`, `nx test:update postgrest-js`, `nx test:types postgrest-js`   |
+| auth-js      | ✅ Yes          | Auth Server + Postgres          | `nx test:auth auth-js`              | `nx test:suite auth-js`, `nx test:infra auth-js`, `nx test:clean-post auth-js`            |
+| storage-js   | ✅ Yes          | Storage API + PostgreSQL + Kong | `nx test:storage storage-js`        | `nx test:suite storage-js`, `nx test:infra storage-js`, `nx test:clean-post storage-js`   |
+| postgrest-js | ✅ Yes          | PostgREST + PostgreSQL          | `nx test:ci:postgrest postgrest-js` | `nx test:run postgrest-js`, `nx test:types postgrest-js`                                  |
 | functions-js | ✅ Yes          | Deno relay (testcontainers)     | `nx test functions-js`              | `nx test:ci functions-js` (with coverage)                                                 |
 | realtime-js  | ❌ No           | Mock WebSockets                 | `nx test realtime-js`               | `nx test:coverage realtime-js`, `nx test:watch realtime-js`                               |
 | supabase-js  | ❌ No           | Unit tests only                 | `nx test supabase-js`               | `nx test:all`, `nx test:unit`, `nx test:integration`, `nx test:coverage`, `nx test:watch` |
@@ -167,7 +168,7 @@ nx test:coverage supabase-js            # Coverage report
 nx test:watch supabase-js               # Watch mode
 ```
 
-> **📖 See [TESTING.md](docs/TESTING.md) for complete testing guide and troubleshooting**
+> **📖 See [TESTING.md](../docs/TESTING.md) for complete testing guide and troubleshooting**
 
 ### Code Quality
 
@@ -327,19 +328,19 @@ nx test:ci:postgrest postgrest-js
 
 ```bash
 # Auth-js
-nx test:infra auth-js   # Start Docker containers
-nx test:suite auth-js   # Run tests (can run multiple times)
-nx test:clean auth-js   # Cleanup
+nx test:infra auth-js        # Start Supabase CLI infrastructure
+nx test:suite auth-js        # Run tests (can run multiple times)
+nx test:clean-post auth-js   # Cleanup
 
 # Storage-js
-nx test:infra storage-js   # Start Docker containers
-nx test:suite storage-js   # Run tests (can run multiple times)
-nx test:clean storage-js   # Cleanup
+nx test:infra storage-js        # Start Supabase CLI infrastructure
+nx test:suite storage-js        # Run tests (can run multiple times)
+nx test:clean-post storage-js   # Cleanup
 
 # Postgrest-js
-nx db:run postgrest-js      # Start containers
-nx test:run postgrest-js    # Run tests
-nx db:clean postgrest-js    # Cleanup
+nx test:infra postgrest-js        # Start Supabase CLI infrastructure
+nx test:run postgrest-js          # Run tests
+nx test:clean-post postgrest-js   # Cleanup
 ```
 
 ### Cross-Platform Tests (supabase-js)
@@ -361,39 +362,39 @@ Tests run against multiple environments:
 - Primary integration testing location
 - Most complex cross-platform test suite (Node.js, Next.js, Expo, Bun, Deno, Browser)
 - Users typically interact through this package
-- Default branch: **master**
+- Default branch: **develop**
 
 ### auth-js
 
 - Requires Docker for integration tests (GoTrue + PostgreSQL)
 - Complex session management logic
 - Security-critical - extra review care needed
-- See [auth-js README](packages/core/auth-js/README.md) for details
+- See [auth-js README](../packages/core/auth-js/README.md) for details
 
 ### realtime-js
 
 - WebSocket-based, timing-sensitive
 - Mock time in tests when possible
 - No Docker required (uses mock WebSockets)
-- See [realtime-js README](packages/core/realtime-js/README.md) for details
+- See [realtime-js README](../packages/core/realtime-js/README.md) for details
 
 ### storage-js
 
 - Requires Docker for integration tests (Storage API + PostgreSQL + Kong)
 - File handling varies by platform
-- See [storage-js README](packages/core/storage-js/README.md) for details
+- See [storage-js README](../packages/core/storage-js/README.md) for details
 
 ### postgrest-js
 
 - Pure HTTP client, easiest to test
 - Requires Docker for integration tests (PostgREST + PostgreSQL)
-- See [postgrest-js README](packages/core/postgrest-js/README.md) for details
+- See [postgrest-js README](../packages/core/postgrest-js/README.md) for details
 
 ### functions-js
 
 - Simplest library, minimal dependencies
 - Uses testcontainers for Deno relay
-- See [functions-js README](packages/core/functions-js/README.md) for details
+- See [functions-js README](../packages/core/functions-js/README.md) for details
 
 ## Code Style Guidelines
 
@@ -421,7 +422,8 @@ Tests run against multiple environments:
 
 **Current Repository:**
 
-- **Default branch**: `master` (confirmed current default)
+- **Default branch**: `develop` (v3 active development; all PRs land here by default)
+- **Maintenance branch**: `master` (v2 maintenance; receives patchbacks from `develop` via the `patchback-master` label, or direct PRs for v2-only fixes)
 - **Repository URL**: `github.com/supabase/supabase-js`
 
 **Original Repository Branches** (for historical reference):
@@ -447,7 +449,7 @@ Integration tests for auth-js, functions-js, postgrest-js, and storage-js requir
 - **Linux**: Ensure Docker daemon is running
 - **CI**: Docker is automatically available in GitHub Actions
 
-Check [TESTING.md](docs/TESTING.md) for port requirements and troubleshooting.
+Check [TESTING.md](../docs/TESTING.md) for port requirements and troubleshooting.
 
 ### Commit Message Validation
 
@@ -458,7 +460,7 @@ All commits are validated using commitlint with strict rules:
 - **Subject**: Required, imperative mood, no period at end, max 100 characters
 - **Interactive Tool**: Use `npm run commit` to ensure compliance
 
-See [CONTRIBUTING.md](CONTRIBUTING.md#commit-guidelines) for complete details.
+See [CONTRIBUTING.md](../CONTRIBUTING.md#commit-guidelines) for complete details.
 
 ## Common Pitfalls & Solutions
 
@@ -592,17 +594,17 @@ cat docs/TESTING.md
 
 ## Pull Request Best Practices
 
-> **📖 See [CONTRIBUTING.md](CONTRIBUTING.md#pull-request-process) for complete PR guidelines**
+> **📖 See [CONTRIBUTING.md](../CONTRIBUTING.md#pull-request-process) for complete PR guidelines**
 
 ### Before Creating PR
 
-1. **Ensure branch is up to date:**
+1. **Ensure branch is up to date** with the PR's target branch (typically `develop`; `master` only for v2-only fixes):
 
    ```bash
-   git checkout master
-   git pull upstream master
+   git checkout <target-branch>     # develop or master
+   git pull upstream <target-branch>
    git checkout your-feature-branch
-   git rebase master
+   git rebase <target-branch>
    ```
 
 2. **Run all necessary checks:**
@@ -740,12 +742,12 @@ nx test supabase-js --testFile=client.test.ts
 
 ## Additional Resources
 
-- **[README.md](README.md)** - Repository overview and quick start
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Complete contribution guide
-- **[TESTING.md](docs/TESTING.md)** - Comprehensive testing documentation
-- **[RELEASE.md](docs/RELEASE.md)** - Release workflows and automation
-- **[MIGRATION.md](docs/MIGRATION.md)** - Migration context and history
-- **[SECURITY.md](docs/SECURITY.md)** - Security policy and reporting
+- **[README.md](../README.md)** - Repository overview and quick start
+- **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Complete contribution guide
+- **[TESTING.md](../docs/TESTING.md)** - Comprehensive testing documentation
+- **[RELEASE.md](../docs/RELEASE.md)** - Release workflows and automation
+- **[MIGRATION.md](../docs/MIGRATION.md)** - Migration context and history
+- **[SECURITY.md](../docs/SECURITY.md)** - Security policy and reporting
 - **[Supabase Documentation](https://supabase.com/docs)** - Official Supabase docs
 - **[Nx Documentation](https://nx.dev)** - Nx monorepo documentation
 - **[Conventional Commits](https://www.conventionalcommits.org/)** - Commit format specification
@@ -905,3 +907,27 @@ _No user-facing changes in this release._
 - Single npm install updates entire SDK suite
 
 Remember: This monorepo optimizes for developer experience and maintenance efficiency while ensuring zero breaking changes for the millions of developers using Supabase SDKs.
+
+<!-- nx configuration start-->
+<!-- Leave the start & end comments to automatically receive updates. -->
+
+## General Guidelines for working with Nx
+
+- For navigating/exploring the workspace, invoke the `nx-workspace` skill first - it has patterns for querying projects, targets, and dependencies
+- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
+- Prefix nx commands with the workspace's package manager (e.g., `pnpm nx build`, `npm exec nx test`) - avoids using globally installed CLI
+- You have access to the Nx MCP server and its tools, use them to help the user
+- For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not all plugins have this file - proceed without it if unavailable.
+- NEVER guess CLI flags - always check nx_docs or `--help` first when unsure
+
+## Scaffolding & Generators
+
+- For scaffolding tasks (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate` skill FIRST before exploring or calling MCP tools
+
+## When to use nx_docs
+
+- USE for: advanced config options, unfamiliar flags, migration guides, plugin configuration, edge cases
+- DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
+- The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
+
+<!-- nx configuration end-->

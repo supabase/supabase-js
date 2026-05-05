@@ -44,7 +44,7 @@ Then you're able to import the library and establish the connection with the dat
 import { createClient } from '@supabase/supabase-js'
 
 // Create a single supabase client for interacting with your database
-const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
 ```
 
 ### UMD
@@ -66,7 +66,7 @@ Then you can use it from a global `supabase` variable:
 ```html
 <script>
   const { createClient } = supabase
-  const _supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+  const _supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
 
   console.log('Supabase Instance: ', _supabase)
   // ...
@@ -80,7 +80,7 @@ You can use `<script type="module">` to import supabase-js from CDNs, like:
 ```html
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-  const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+  const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
 
   console.log('Supabase Instance: ', supabase)
   // ...
@@ -103,7 +103,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { createClient } from '@supabase/supabase-js'
 
 // Provide a custom `fetch` implementation as an option
-const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
+const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key', {
   global: {
     fetch: (...args) => fetch(...args),
   },

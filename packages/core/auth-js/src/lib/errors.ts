@@ -31,6 +31,20 @@ export class AuthError extends Error {
     this.status = status
     this.code = code
   }
+
+  toJSON(): {
+    name: string
+    message: string
+    status: number | undefined
+    code: ErrorCode | (string & {}) | undefined
+  } {
+    return {
+      name: this.name,
+      message: this.message,
+      status: this.status,
+      code: this.code,
+    }
+  }
 }
 
 export function isAuthError(error: unknown): error is AuthError {
@@ -179,11 +193,15 @@ export class AuthImplicitGrantRedirectError extends CustomAuthError {
     this.details = details
   }
 
-  toJSON() {
+  toJSON(): {
+    name: string
+    message: string
+    status: number | undefined
+    code: ErrorCode | (string & {}) | undefined
+    details: { error: string; code: string } | null
+  } {
     return {
-      name: this.name,
-      message: this.message,
-      status: this.status,
+      ...super.toJSON(),
       details: this.details,
     }
   }
@@ -213,11 +231,15 @@ export class AuthPKCEGrantCodeExchangeError extends CustomAuthError {
     this.details = details
   }
 
-  toJSON() {
+  toJSON(): {
+    name: string
+    message: string
+    status: number | undefined
+    code: ErrorCode | (string & {}) | undefined
+    details: { error: string; code: string } | null
+  } {
     return {
-      name: this.name,
-      message: this.message,
-      status: this.status,
+      ...super.toJSON(),
       details: this.details,
     }
   }
@@ -300,6 +322,19 @@ export class AuthWeakPasswordError extends CustomAuthError {
     super(message, 'AuthWeakPasswordError', status, 'weak_password')
 
     this.reasons = reasons
+  }
+
+  toJSON(): {
+    name: string
+    message: string
+    status: number | undefined
+    code: ErrorCode | (string & {}) | undefined
+    reasons: WeakPasswordReasons[]
+  } {
+    return {
+      ...super.toJSON(),
+      reasons: this.reasons,
+    }
   }
 }
 

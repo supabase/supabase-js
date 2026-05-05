@@ -5,7 +5,7 @@ import {
   _request,
   _userResponse,
 } from './lib/fetch'
-import { resolveFetch, validateUUID } from './lib/helpers'
+import { assertPasskeyExperimentalEnabled, resolveFetch, validateUUID } from './lib/helpers'
 import {
   AdminUserAttributes,
   GenerateLinkParams,
@@ -26,6 +26,18 @@ import {
   UpdateOAuthClientParams,
   OAuthClientResponse,
   OAuthClientListResponse,
+  GoTrueAdminCustomProvidersApi,
+  CreateCustomProviderParams,
+  UpdateCustomProviderParams,
+  ListCustomProvidersParams,
+  CustomProviderResponse,
+  CustomProviderListResponse,
+  GoTrueAdminPasskeyApi,
+  AuthPasskeyAdminListParams,
+  AuthPasskeyAdminDeleteParams,
+  AuthPasskeyListResponse,
+  AuthPasskeyDeleteResponse,
+  ExperimentalFeatureFlags,
 } from './lib/types'
 import { AuthError, isAuthError } from './lib/errors'
 
@@ -39,22 +51,41 @@ export default class GoTrueAdminApi {
    */
   oauth: GoTrueAdminOAuthApi
 
+  /** Contains all custom OIDC/OAuth provider administration methods. */
+  customProviders: GoTrueAdminCustomProvidersApi
+
+  /**
+   * Contains all passkey administration methods.
+   *
+   * Requires `auth.experimental.passkey: true`; otherwise all methods throw.
+   */
+  passkey: GoTrueAdminPasskeyApi
+
   protected url: string
   protected headers: {
     [key: string]: string
   }
   protected fetch: Fetch
+  protected experimental: ExperimentalFeatureFlags
 
   /**
    * Creates an admin API client that can be used to manage users and OAuth clients.
    *
-   * @example
+   * @example Using supabase-js (recommended)
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-secret-key')
+   * const { data, error } = await supabase.auth.admin.listUsers()
+   * ```
+   *
+   * @example Standalone import for bundle-sensitive environments
    * ```ts
    * import { GoTrueAdminApi } from '@supabase/auth-js'
    *
    * const admin = new GoTrueAdminApi({
    *   url: 'https://xyzcompany.supabase.co/auth/v1',
-   *   headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` },
+   *   headers: { Authorization: `Bearer ${process.env.SUPABASE_SECRET_KEY}` },
    * })
    * ```
    */
@@ -62,16 +93,19 @@ export default class GoTrueAdminApi {
     url = '',
     headers = {},
     fetch,
+    experimental,
   }: {
     url: string
     headers?: {
       [key: string]: string
     }
     fetch?: Fetch
+    experimental?: ExperimentalFeatureFlags
   }) {
     this.url = url
     this.headers = headers
     this.fetch = resolveFetch(fetch)
+    this.experimental = experimental ?? {}
     this.mfa = {
       listFactors: this._listFactors.bind(this),
       deleteFactor: this._deleteFactor.bind(this),
@@ -84,12 +118,26 @@ export default class GoTrueAdminApi {
       deleteClient: this._deleteOAuthClient.bind(this),
       regenerateClientSecret: this._regenerateOAuthClientSecret.bind(this),
     }
+    this.customProviders = {
+      listProviders: this._listCustomProviders.bind(this),
+      createProvider: this._createCustomProvider.bind(this),
+      getProvider: this._getCustomProvider.bind(this),
+      updateProvider: this._updateCustomProvider.bind(this),
+      deleteProvider: this._deleteCustomProvider.bind(this),
+    }
+    this.passkey = {
+      listPasskeys: this._adminListPasskeys.bind(this),
+      deletePasskey: this._adminDeletePasskey.bind(this),
+    }
   }
 
   /**
    * Removes a logged-in session.
    * @param jwt A valid, logged-in JWT.
    * @param scope The logout sope.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
    */
   async signOut(
     jwt: string,
@@ -121,6 +169,65 @@ export default class GoTrueAdminApi {
    * Sends an invite link to an email address.
    * @param email The email address of the user.
    * @param options Additional options to be included when inviting.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @remarks
+   * - Sends an invite link to the user's email address.
+   * - The `inviteUserByEmail()` method is typically used by administrators to invite users to join the application.
+   * - Note that PKCE is not supported when using `inviteUserByEmail`. This is because the browser initiating the invite is often different from the browser accepting the invite which makes it difficult to provide the security guarantees required of the PKCE flow.
+   *
+   * @example Invite a user
+   * ```js
+   * const { data, error } = await supabase.auth.admin.inviteUserByEmail('email@example.com')
+   * ```
+   *
+   * @exampleResponse Invite a user
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "example@email.com",
+   *       "invited_at": "2024-01-01T00:00:00Z",
+   *       "phone": "",
+   *       "confirmation_sent_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {
+   *         "provider": "email",
+   *         "providers": [
+   *           "email"
+   *         ]
+   *       },
+   *       "user_metadata": {},
+   *       "identities": [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": false,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "example@email.com"
+   *         }
+   *       ],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z",
+   *       "is_anonymous": false
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async inviteUserByEmail(
     email: string,
@@ -154,6 +261,116 @@ export default class GoTrueAdminApi {
    * @param options.password User password. For signup only.
    * @param options.data Optional user metadata. For signup only.
    * @param options.redirectTo The redirect url which should be appended to the generated link
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @remarks
+   * - The following types can be passed into `generateLink()`: `signup`, `magiclink`, `invite`, `recovery`, `email_change_current`, `email_change_new`, `phone_change`.
+   * - `generateLink()` only generates the email link for `email_change_email` if the **Secure email change** is enabled in your project's [email auth provider settings](/dashboard/project/_/auth/providers).
+   * - `generateLink()` handles the creation of the user for `signup`, `invite` and `magiclink`.
+   *
+   * @example Generate a signup link
+   * ```js
+   * const { data, error } = await supabase.auth.admin.generateLink({
+   *   type: 'signup',
+   *   email: 'email@example.com',
+   *   password: 'secret'
+   * })
+   * ```
+   *
+   * @exampleResponse Generate a signup link
+   * ```json
+   * {
+   *   "data": {
+   *     "properties": {
+   *       "action_link": "<LINK_TO_SEND_TO_USER>",
+   *       "email_otp": "999999",
+   *       "hashed_token": "<HASHED_TOKEN",
+   *       "redirect_to": "<REDIRECT_URL>",
+   *       "verification_type": "signup"
+   *     },
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "email@example.com",
+   *       "phone": "",
+   *       "confirmation_sent_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {
+   *         "provider": "email",
+   *         "providers": [
+   *           "email"
+   *         ]
+   *       },
+   *       "user_metadata": {},
+   *       "identities": [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "email@example.com",
+   *             "email_verified": false,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "email@example.com"
+   *         }
+   *       ],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z",
+   *       "is_anonymous": false
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Generate an invite link
+   * ```js
+   * const { data, error } = await supabase.auth.admin.generateLink({
+   *   type: 'invite',
+   *   email: 'email@example.com'
+   * })
+   * ```
+   *
+   * @example Generate a magic link
+   * ```js
+   * const { data, error } = await supabase.auth.admin.generateLink({
+   *   type: 'magiclink',
+   *   email: 'email@example.com'
+   * })
+   * ```
+   *
+   * @example Generate a recovery link
+   * ```js
+   * const { data, error } = await supabase.auth.admin.generateLink({
+   *   type: 'recovery',
+   *   email: 'email@example.com'
+   * })
+   * ```
+   *
+   * @example Generate links to change current email address
+   * ```js
+   * // generate an email change link to be sent to the current email address
+   * const { data, error } = await supabase.auth.admin.generateLink({
+   *   type: 'email_change_current',
+   *   email: 'current.email@example.com',
+   *   newEmail: 'new.email@example.com'
+   * })
+   *
+   * // generate an email change link to be sent to the new email address
+   * const { data, error } = await supabase.auth.admin.generateLink({
+   *   type: 'email_change_new',
+   *   email: 'current.email@example.com',
+   *   newEmail: 'new.email@example.com'
+   * })
+   * ```
    */
   async generateLink(params: GenerateLinkParams): Promise<GenerateLinkResponse> {
     try {
@@ -188,6 +405,82 @@ export default class GoTrueAdminApi {
   /**
    * Creates a new user.
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @remarks
+   * - To confirm the user's email address or phone number, set `email_confirm` or `phone_confirm` to true. Both arguments default to false.
+   * - `createUser()` will not send a confirmation email to the user. You can use [`inviteUserByEmail()`](/docs/reference/javascript/auth-admin-inviteuserbyemail) if you want to send them an email invite instead.
+   * - If you are sure that the created user's email or phone number is legitimate and verified, you can set the `email_confirm` or `phone_confirm` param to `true`.
+   *
+   * @example With custom user metadata
+   * ```js
+   * const { data, error } = await supabase.auth.admin.createUser({
+   *   email: 'user@email.com',
+   *   password: 'password',
+   *   user_metadata: { name: 'Yoda' }
+   * })
+   * ```
+   *
+   * @exampleResponse With custom user metadata
+   * ```json
+   * {
+   *   data: {
+   *     user: {
+   *       id: '1',
+   *       aud: 'authenticated',
+   *       role: 'authenticated',
+   *       email: 'example@email.com',
+   *       email_confirmed_at: '2024-01-01T00:00:00Z',
+   *       phone: '',
+   *       confirmation_sent_at: '2024-01-01T00:00:00Z',
+   *       confirmed_at: '2024-01-01T00:00:00Z',
+   *       last_sign_in_at: '2024-01-01T00:00:00Z',
+   *       app_metadata: {},
+   *       user_metadata: {},
+   *       identities: [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "1",
+   *           "user_id": "1",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": true,
+   *             "phone_verified": false,
+   *             "sub": "1"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "email@example.com"
+   *         },
+   *       ],
+   *       created_at: '2024-01-01T00:00:00Z',
+   *       updated_at: '2024-01-01T00:00:00Z',
+   *       is_anonymous: false,
+   *     }
+   *   }
+   *   error: null
+   * }
+   * ```
+   *
+   * @example Auto-confirm the user's email
+   * ```js
+   * const { data, error } = await supabase.auth.admin.createUser({
+   *   email: 'user@email.com',
+   *   email_confirm: true
+   * })
+   * ```
+   *
+   * @example Auto-confirm the user's phone number
+   * ```js
+   * const { data, error } = await supabase.auth.admin.createUser({
+   *   phone: '1234567890',
+   *   phone_confirm: true
+   * })
+   * ```
    */
   async createUser(attributes: AdminUserAttributes): Promise<UserResponse> {
     try {
@@ -210,6 +503,25 @@ export default class GoTrueAdminApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    * @param params An object which supports `page` and `perPage` as numbers, to alter the paginated results.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @remarks
+   * - Defaults to return 50 users per page.
+   *
+   * @example Get a page of users
+   * ```js
+   * const { data: { users }, error } = await supabase.auth.admin.listUsers()
+   * ```
+   *
+   * @example Paginated list of users
+   * ```js
+   * const { data: { users }, error } = await supabase.auth.admin.listUsers({
+   *   page: 1,
+   *   perPage: 1000
+   * })
+   * ```
    */
   async listUsers(
     params?: PageParams
@@ -257,6 +569,61 @@ export default class GoTrueAdminApi {
    * @param uid The user's unique identifier
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @remarks
+   * - Fetches the user object from the database based on the user's id.
+   * - The `getUserById()` method requires the user's id which maps to the `auth.users.id` column.
+   *
+   * @example Fetch the user object using the access_token jwt
+   * ```js
+   * const { data, error } = await supabase.auth.admin.getUserById(1)
+   * ```
+   *
+   * @exampleResponse Fetch the user object using the access_token jwt
+   * ```json
+   * {
+   *   data: {
+   *     user: {
+   *       id: '1',
+   *       aud: 'authenticated',
+   *       role: 'authenticated',
+   *       email: 'example@email.com',
+   *       email_confirmed_at: '2024-01-01T00:00:00Z',
+   *       phone: '',
+   *       confirmation_sent_at: '2024-01-01T00:00:00Z',
+   *       confirmed_at: '2024-01-01T00:00:00Z',
+   *       last_sign_in_at: '2024-01-01T00:00:00Z',
+   *       app_metadata: {},
+   *       user_metadata: {},
+   *       identities: [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "1",
+   *           "user_id": "1",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": true,
+   *             "phone_verified": false,
+   *             "sub": "1"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "email@example.com"
+   *         },
+   *       ],
+   *       created_at: '2024-01-01T00:00:00Z',
+   *       updated_at: '2024-01-01T00:00:00Z',
+   *       is_anonymous: false,
+   *     }
+   *   }
+   *   error: null
+   * }
+   * ```
    */
   async getUserById(uid: string): Promise<UserResponse> {
     validateUUID(uid)
@@ -306,6 +673,118 @@ export default class GoTrueAdminApi {
    *
    * @see {@link GoTrueClient.refreshSession} for syncing admin changes to the client
    * @see {@link GoTrueClient.updateUser} for client-side user updates (triggers listeners automatically)
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @example Updates a user's email
+   * ```js
+   * const { data: user, error } = await supabase.auth.admin.updateUserById(
+   *   '11111111-1111-1111-1111-111111111111',
+   *   { email: 'new@email.com' }
+   * )
+   * ```
+   *
+   * @exampleResponse Updates a user's email
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {
+   *       "id": "11111111-1111-1111-1111-111111111111",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "new@email.com",
+   *       "email_confirmed_at": "2024-01-01T00:00:00Z",
+   *       "phone": "",
+   *       "confirmed_at": "2024-01-01T00:00:00Z",
+   *       "recovery_sent_at": "2024-01-01T00:00:00Z",
+   *       "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *       "app_metadata": {
+   *         "provider": "email",
+   *         "providers": [
+   *           "email"
+   *         ]
+   *       },
+   *       "user_metadata": {
+   *         "email": "example@email.com",
+   *         "email_verified": false,
+   *         "phone_verified": false,
+   *         "sub": "11111111-1111-1111-1111-111111111111"
+   *       },
+   *       "identities": [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": false,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "example@email.com"
+   *         }
+   *       ],
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z",
+   *       "is_anonymous": false
+   *     }
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Updates a user's password
+   * ```js
+   * const { data: user, error } = await supabase.auth.admin.updateUserById(
+   *   '6aa5d0d4-2a9f-4483-b6c8-0cf4c6c98ac4',
+   *   { password: 'new_password' }
+   * )
+   * ```
+   *
+   * @example Updates a user's metadata
+   * ```js
+   * const { data: user, error } = await supabase.auth.admin.updateUserById(
+   *   '6aa5d0d4-2a9f-4483-b6c8-0cf4c6c98ac4',
+   *   { user_metadata: { hello: 'world' } }
+   * )
+   * ```
+   *
+   * @example Updates a user's app_metadata
+   * ```js
+   * const { data: user, error } = await supabase.auth.admin.updateUserById(
+   *   '6aa5d0d4-2a9f-4483-b6c8-0cf4c6c98ac4',
+   *   { app_metadata: { plan: 'trial' } }
+   * )
+   * ```
+   *
+   * @example Confirms a user's email address
+   * ```js
+   * const { data: user, error } = await supabase.auth.admin.updateUserById(
+   *   '6aa5d0d4-2a9f-4483-b6c8-0cf4c6c98ac4',
+   *   { email_confirm: true }
+   * )
+   * ```
+   *
+   * @example Confirms a user's phone number
+   * ```js
+   * const { data: user, error } = await supabase.auth.admin.updateUserById(
+   *   '6aa5d0d4-2a9f-4483-b6c8-0cf4c6c98ac4',
+   *   { phone_confirm: true }
+   * )
+   * ```
+   *
+   * @example Ban a user for 100 years
+   * ```js
+   * const { data: user, error } = await supabase.auth.admin.updateUserById(
+   *   '6aa5d0d4-2a9f-4483-b6c8-0cf4c6c98ac4',
+   *   { ban_duration: '876000h' }
+   * )
+   * ```
    */
   async updateUserById(uid: string, attributes: AdminUserAttributes): Promise<UserResponse> {
     validateUUID(uid)
@@ -333,6 +812,29 @@ export default class GoTrueAdminApi {
    * Defaults to false for backward compatibility.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @remarks
+   * - The `deleteUser()` method requires the user's ID, which maps to the `auth.users.id` column.
+   *
+   * @example Removes a user
+   * ```js
+   * const { data, error } = await supabase.auth.admin.deleteUser(
+   *   '715ed5db-f090-4b8c-a067-640ecee36aa0'
+   * )
+   * ```
+   *
+   * @exampleResponse Removes a user
+   * ```json
+   * {
+   *   "data": {
+   *     "user": {}
+   *   },
+   *   "error": null
+   * }
+   * ```
    */
   async deleteUser(id: string, shouldSoftDelete = false): Promise<UserResponse> {
     validateUUID(id)
@@ -570,6 +1072,195 @@ export default class GoTrueAdminApi {
         return { data: null, error }
       }
 
+      throw error
+    }
+  }
+
+  /**
+   * Lists all custom providers with optional type filter.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _listCustomProviders(
+    params?: ListCustomProvidersParams
+  ): Promise<CustomProviderListResponse> {
+    try {
+      const query: Record<string, string> = {}
+      if (params?.type) {
+        query.type = params.type
+      }
+      return await _request(this.fetch, 'GET', `${this.url}/admin/custom-providers`, {
+        headers: this.headers,
+        query,
+        xform: (data: any) => {
+          return { data: { providers: data?.providers ?? [] }, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { providers: [] }, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Creates a new custom OIDC/OAuth provider.
+   *
+   * For OIDC providers, the server fetches and validates the OpenID Connect discovery document
+   * from the issuer's well-known endpoint (or the provided `discovery_url`) at creation time.
+   * This may return a validation error (`error_code: "validation_failed"`) if the discovery
+   * document is unreachable, not valid JSON, missing required fields, or if the issuer
+   * in the document does not match the expected issuer.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _createCustomProvider(
+    params: CreateCustomProviderParams
+  ): Promise<CustomProviderResponse> {
+    try {
+      return await _request(this.fetch, 'POST', `${this.url}/admin/custom-providers`, {
+        body: params,
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Gets details of a specific custom provider by identifier.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _getCustomProvider(identifier: string): Promise<CustomProviderResponse> {
+    try {
+      return await _request(this.fetch, 'GET', `${this.url}/admin/custom-providers/${identifier}`, {
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Updates an existing custom provider.
+   *
+   * When `issuer` or `discovery_url` is changed on an OIDC provider, the server re-fetches and
+   * validates the discovery document before persisting. This may return a validation error
+   * (`error_code: "validation_failed"`) if the discovery document is unreachable, invalid, or
+   * the issuer does not match.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _updateCustomProvider(
+    identifier: string,
+    params: UpdateCustomProviderParams
+  ): Promise<CustomProviderResponse> {
+    try {
+      return await _request(this.fetch, 'PUT', `${this.url}/admin/custom-providers/${identifier}`, {
+        body: params,
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Deletes a custom provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _deleteCustomProvider(
+    identifier: string
+  ): Promise<{ data: null; error: AuthError | null }> {
+    try {
+      await _request(this.fetch, 'DELETE', `${this.url}/admin/custom-providers/${identifier}`, {
+        headers: this.headers,
+        noResolveJson: true,
+      })
+      return { data: null, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Lists all passkeys for a user.
+   *
+   * This function should only be called on a server. Never expose your secret key in the browser.
+   *
+   * Requires `auth.experimental.passkey: true`.
+   */
+  private async _adminListPasskeys(
+    params: AuthPasskeyAdminListParams
+  ): Promise<AuthPasskeyListResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
+    validateUUID(params.userId)
+
+    try {
+      return await _request(
+        this.fetch,
+        'GET',
+        `${this.url}/admin/users/${params.userId}/passkeys`,
+        { headers: this.headers, xform: (data: any) => ({ data, error: null }) }
+      )
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Deletes a user's passkey.
+   *
+   * This function should only be called on a server. Never expose your secret key in the browser.
+   *
+   * Requires `auth.experimental.passkey: true`.
+   */
+  private async _adminDeletePasskey(
+    params: AuthPasskeyAdminDeleteParams
+  ): Promise<AuthPasskeyDeleteResponse> {
+    assertPasskeyExperimentalEnabled(this.experimental)
+    validateUUID(params.userId)
+    validateUUID(params.passkeyId)
+
+    try {
+      await _request(
+        this.fetch,
+        'DELETE',
+        `${this.url}/admin/users/${params.userId}/passkeys/${params.passkeyId}`,
+        { headers: this.headers, noResolveJson: true }
+      )
+      return { data: null, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
       throw error
     }
   }

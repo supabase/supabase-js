@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # needs more info / repro needed: 2 months stale, 1 month close
-      - uses: actions/stale@997185467fa4f803885201cee163a9f38240193d  # v10.1.1
+      - uses: actions/stale@997185467fa4f803885201cee163a9f38240193d # v10.1.1
         with:
           days-before-stale: 60
           days-before-close: 30
@@ -29,10 +29,10 @@ jobs:
           stale-issue-label: 'stale'
           close-issue-message: 'Closed due to missing information. Please open a new issue with the requested details if this is still relevant.'
           remove-stale-when-updated: true
-          operations-per-run: 30
+          operations-per-run: 150
 
       # retry with latest: 1 month stale, 1 month close
-      - uses: actions/stale@997185467fa4f803885201cee163a9f38240193d  # v10.1.1
+      - uses: actions/stale@997185467fa4f803885201cee163a9f38240193d # v10.1.1
         with:
           days-before-stale: 30
           days-before-close: 30
@@ -46,13 +46,13 @@ jobs:
           stale-issue-label: 'stale'
           close-issue-message: 'Closed due to inactivity. Please open a new issue if this still occurs with the latest SDK version.'
           remove-stale-when-updated: true
-          operations-per-run: 30
+          operations-per-run: 150
 
   # Standard stale handling for regular issues and PRs
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@997185467fa4f803885201cee163a9f38240193d  # v10.1.1
+      - uses: actions/stale@997185467fa4f803885201cee163a9f38240193d # v10.1.1
         with:
           days-before-stale: 180
           days-before-close: 30
@@ -77,4 +77,4 @@ jobs:
           exempt-pr-labels: 'security,p1,p2,p3,planned,v3,do-not-merge,needs server code'
           exempt-all-assignees: true
           remove-stale-when-updated: true
-          operations-per-run: 100
+          operations-per-run: 150

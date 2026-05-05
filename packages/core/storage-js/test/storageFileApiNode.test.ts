@@ -8,7 +8,7 @@ import * as path from 'path'
 
 // Supabase CLI local development defaults
 const URL = 'http://127.0.0.1:54321/storage/v1'
-// service_role key - bypasses RLS for testing
+// secret key - bypasses RLS for testing
 const KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
 
@@ -38,6 +38,19 @@ describe('Object API', () => {
       })
       expect(res.error).toBeNull()
       expect(res.data?.path).toEqual(uploadPathWithDuplex)
+    })
+
+    test('uploadToSignedUrl auto-detects stream and sets duplex', async () => {
+      const uploadPath = `testpath/signed-stream-${Date.now()}.txt`
+
+      const signed = await storage.from(bucketName).createSignedUploadUrl(uploadPath)
+      expect(signed.error).toBeNull()
+      const token = signed.data!.token
+
+      const file = await fs.createReadStream(uploadFilePath('file.txt'))
+      const res = await storage.from(bucketName).uploadToSignedUrl(uploadPath, token, file)
+      expect(res.error).toBeNull()
+      expect(res.data?.path).toEqual(uploadPath)
     })
   })
 })

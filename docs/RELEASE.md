@@ -1,219 +1,354 @@
 # Release Workflows
 
-- [.github/workflows/publish.yml](.github/workflows/publish.yml) - Canary and stable releases
-- [.github/workflows/preview-release.yml](.github/workflows/preview-release.yml) - PR preview releases
+**TL;DR:** Two branches — `develop` (default, all PRs land here, publishes `@next`) and `master` (v2 maintenance, publishes `@canary` and `@latest`). Fixes that apply to both v2 and v3 land on `develop`, then cherry-pick to `master` via the `patchback-master` label. Only v2-only fixes (code already removed in v3) go directly to `master`. Stable releases are manual from master.
 
-## Overview
+---
 
-This monorepo uses a fixed release model where all packages share a single version number and are released together. There are three types of releases:
+## Branch Model
 
-1. **Canary Releases** - Automated pre-releases on every conventional commit to `master`
-2. **Stable Releases** - Manual releases for production use (requires maintainer permission)
-3. **Preview Releases** - PR-specific releases for testing changes
+This repo uses a two-branch model to support parallel v2 maintenance and v3 development:
 
-## Workflows
+| Branch    | Role                                | Default? | PR target for                                   |
+| --------- | ----------------------------------- | -------- | ----------------------------------------------- |
+| `develop` | v3 active development, `@next`      | Yes      | All work (features, fixes, chores) by default   |
+| `master`  | v2 maintenance, `@canary`/`@latest` | No       | v2-only fixes; receives patchbacks from develop |
 
-### 🤖 Canary Releases (Automated)
+> **Default flow:** All PRs target `develop`. Changes that should also ship in v2 (most non-breaking fixes, selected non-breaking features) get the `patchback-master` label, which cherry-picks them to `master`. Only fixes for code that no longer exists on `develop` go directly to `master`. Breaking changes (`feat!:`, `fix!:`) stay on `develop` until v3 ships.
 
-**Workflow:** `publish.yml`  
-**Trigger:** Every push to `master` branch (after CI passes)  
-**Script:** `scripts/release-canary.ts`  
-**Purpose:** Immediate feedback with pre-release versions
+```mermaid
+graph LR
+  subgraph Branches
+    master["master (v2)"]
+    develop["develop (v3)"]
+  end
 
-#### What it does
+  subgraph "npm dist-tags"
+    latest["latest (stable)"]
+    canary["canary"]
+    next["next"]
+    beta["beta"]
+  end
 
-1. **Checks for conventional commits** - Only releases if commits warrant a version bump
-2. **Version Bump** - Creates a new pre-release version using `prerelease` specifier with `canary` preid
-3. **Build** - Rebuilds all packages with updated versions
-4. **Changelog** - Generates changelogs from conventional commits
-5. **NPM Publish** - Publishes all packages to npm with `canary` dist-tag (marked as prerelease)
-6. **Legacy Package** - Publishes `@supabase/gotrue-js` as legacy mirror of `auth-js`
-
-#### Example flow
-
-```bash
-# Commit with conventional format
-git commit -m "fix(auth): resolve token refresh issue"
-# Merge PR to master
-# → CI runs and passes
-# → Version bumped to e.g., 2.80.1-canary.0
-# → Published to npm with 'canary' dist-tag
-# → All packages versioned identically
+  master -- "auto on push" --> canary
+  master -- "manual workflow_dispatch" --> latest
+  develop -- "auto on push" --> next
+  feature["feature/*"] -- "manual workflow_dispatch" --> beta
 ```
 
-#### Install canary versions
+### How branches stay in sync
+
+Flow is **unidirectional**: `develop` is canonical and all PRs land there. When a change also needs to ship in v2, label the merged develop PR with `patchback-master` and the **patchback** workflow opens a cherry-pick PR against `master`. v2-only changes (touching code that no longer exists on develop) land directly on `master` with no propagation back to develop.
+
+```mermaid
+graph LR
+  develop -- "patchback.yml<br/>(cherry-pick PR<br/>via patchback-master label)" --> master
+```
+
+---
+
+## Release Types
+
+All packages share a single version number (fixed versioning) and are released together.
+
+| Type        | Trigger     | Branch      | npm tag  | Version format   | Script              |
+| ----------- | ----------- | ----------- | -------- | ---------------- | ------------------- |
+| **Next**    | Auto (push) | `develop`   | `next`   | `3.0.0-next.X`   | `release-canary.ts` |
+| **Canary**  | Auto (push) | `master`    | `canary` | `2.x.x-canary.X` | `release-canary.ts` |
+| **Stable**  | Manual      | `master`    | `latest` | `2.x.x`          | `release-stable.ts` |
+| **Beta**    | Manual      | `feature/*` | `beta`   | `x.x.x-beta.X`   | `release-beta.ts`   |
+| **Preview** | Auto (PR)   | any         | -        | -                | pkg.pr.new          |
+
+---
+
+## Automatic Releases
+
+### Next Prereleases (from `develop`)
+
+**Workflow:** `publish.yml`
+**Trigger:** Every push to `develop` (after CI passes)
+
+```mermaid
+flowchart TD
+  A[PR merged to develop] --> B[CI runs]
+  B --> C{CI passes?}
+  C -- No --> D[Slack notification]
+  C -- Yes --> E["Read .next-base-version (3.0.0)"]
+  E --> F["Find highest v3.0.0-next.X tag"]
+  F --> G["Publish 3.0.0-next.(X+1)"]
+  G --> H[npm: @supabase/supabase-js@next]
+  G --> I[JSR + gotrue-js legacy]
+```
+
+The base version for next prereleases is stored in **`.next-base-version`** at the repo root (currently `3.0.0`). The script always publishes — it does not check for conventional commits since every push to develop should produce a new prerelease.
 
 ```bash
+# Install next prerelease
+npm install @supabase/supabase-js@next
+```
+
+### Canary Prereleases (from `master`)
+
+**Workflow:** `publish.yml`
+**Trigger:** Every push to `master` (after CI passes)
+
+```mermaid
+flowchart TD
+  A[PR merged to master] --> B[CI runs]
+  B --> C{CI passes?}
+  C -- No --> D[Slack notification]
+  C -- Yes --> E{Conventional commits<br/>since last stable tag?}
+  E -- No --> F[Skip release]
+  E -- Yes --> G[Parse commit types]
+  G --> H["Determine bump: patch/minor/major"]
+  H --> I["Find highest canary tag for that base"]
+  I --> J["Publish 2.x.x-canary.(X+1)"]
+  J --> K[npm: @supabase/supabase-js@canary]
+  J --> L[JSR + gotrue-js legacy]
+```
+
+Canary versions respect conventional commits:
+
+| Commit type                  | Canary version             |
+| ---------------------------- | -------------------------- |
+| `fix:`                       | `2.104.1-canary.0` (patch) |
+| `feat:`                      | `2.105.0-canary.0` (minor) |
+| `feat!:` / `BREAKING CHANGE` | `3.0.0-canary.0` (major)   |
+
+Canary releases are **skipped** if no conventional commits are detected since the last stable tag.
+
+```bash
+# Install canary
 npm install @supabase/supabase-js@canary
-# or install specific packages
-npm install @supabase/auth-js@canary
-npm install @supabase/storage-js@canary
 ```
 
-**Note:** Canary releases are skipped if no conventional commits are detected that warrant a release.
+---
 
-### 👨‍💻 Stable Releases (Manual)
+## Manual Releases
 
-**Workflow:** `publish.yml` (manual trigger)  
-**Script:** `scripts/release-stable.ts`  
-**Trigger:** Manual workflow dispatch by maintainers  
-**Permission:** Members of `@supabase/admin` or `@supabase/sdk` teams only  
-**Purpose:** Production-ready releases for end users
+### Stable Releases (from `master`)
 
-#### How it works
+**Workflow:** `publish.yml` (manual trigger)
+**Script:** `scripts/release-stable.ts`
+**Permission:** `@supabase/admin` or `@supabase/sdk` team members only
 
-1. **Version Specification**: Maintainer provides a version specifier via workflow input
-2. **Version Bump**: Nx applies the version change to all packages
-3. **Build**: Rebuilds all packages with updated versions
-4. **Changelog Update**: Generates changelogs from conventional commits (since last stable tag)
-5. **NPM Publish**: Publishes all packages with `latest` dist-tag
-6. **Legacy Package**: Publishes `@supabase/gotrue-js` as legacy mirror
-7. **Release Branch**: Creates a release branch with changelog updates
-8. **PR Creation**: Automatically creates and auto-merges a PR with changelog updates
-9. **Documentation**: Triggers documentation update workflow
+```mermaid
+flowchart TD
+  A["Maintainer triggers workflow_dispatch<br/>on master with version_specifier"] --> B[Validate team membership]
+  B --> C[Validate version specifier]
+  C --> D[Bump version for all packages]
+  D --> E[Build all packages]
+  E --> F[Generate changelogs since last stable tag]
+  F --> G["Publish to npm with 'latest' tag"]
+  G --> H[Create release branch + PR with changelogs]
+  H --> I[Auto-merge PR]
+  I --> J[Generate TypeDoc documentation]
+  J --> K["Trigger supabase/supabase docs update"]
+  J --> L[Trigger dogfood workflow]
+  I --> M[Slack notification]
+```
 
-#### Version Specifiers
+#### Version specifiers
 
-You can specify the version in two ways:
+**Keywords:** `patch`, `minor`, `major`, `prepatch`, `preminor`, `premajor`, `prerelease`
 
-##### Semantic Version Keywords
+**Explicit:** `v2.105.0` or `2.105.0`
 
-- `patch` - Bump patch version (1.2.3 → 1.2.4)
-- `minor` - Bump minor version (1.2.3 → 1.3.0)
-- `major` - Bump major version (1.2.3 → 2.0.0)
-- `prepatch` - Create patch pre-release (1.2.3 → 1.2.4-0)
-- `preminor` - Create minor pre-release (1.2.3 → 1.3.0-0)
-- `premajor` - Create major pre-release (1.2.3 → 2.0.0-0)
-- `prerelease` - Bump pre-release version (1.2.3-0 → 1.2.3-1)
+#### How to run
 
-##### Explicit Version
+1. Go to **Actions** > **Publish releases** > **Run workflow**
+2. Select `master` branch
+3. Enter version specifier (e.g., `patch`)
+4. Leave beta_version empty
+5. Click **Run workflow**
 
-- `v2.3.4` or `2.3.4` - Set exact version number
+### Beta Releases (from `feature/*` branches)
 
-### 🔄 Preview Releases (PR-based)
+**Workflow:** `publish.yml` (manual trigger)
+**Script:** `scripts/release-beta.ts`
+**Permission:** `@supabase/admin` or `@supabase/sdk` team members only
 
-**Workflow:** `preview-release.yml`  
-**Trigger:** PR with `trigger: preview` label  
-**Purpose:** Test PR changes before merging
+Use beta releases to test features on a branch before merging. Each beta changelog is cumulative from the last stable tag.
 
-#### How it works
+#### How to run
 
-1. **Label Trigger**: Contributors request preview by asking maintainers to add `trigger: preview` label
-2. **Build**: Builds all affected packages
-3. **Publish**: Uses [pkg.pr.new](https://pkg.pr.new) to create preview packages
-4. **Comment**: Adds installation instructions to PR
-
-#### Example flow
+1. Go to **Actions** > **Publish releases** > **Run workflow**
+2. Select your **feature branch**
+3. Enter beta version (e.g., `2.105.0-beta.0`)
+4. Leave version_specifier empty
+5. Click **Run workflow**
 
 ```bash
-# 1. Contributor creates PR with changes
-# 2. Requests preview: "Can you add the preview label?"
-# 3. Maintainer adds 'trigger: preview' label
-# 4. Workflow publishes preview packages
-# 5. Install with:
-npm install https://pkg.pr.new/@supabase/supabase-js@[pr-number]
+# Install beta
+npm install @supabase/supabase-js@beta
 ```
 
-## Usage Instructions
+### Preview Releases (PR-based)
 
-### Running Canary Release
+**Workflow:** `preview-release.yml`
+**Trigger:** Every PR that touches package code (automatic, no label needed)
 
-Canary releases are **fully automated**. Simply:
+1. PR is opened or updated with changes to `packages/core/**`
+2. Workflow builds all packages and publishes via [pkg.pr.new](https://pkg.pr.new)
+3. Integration tests run against the preview packages
 
-1. Make changes in your feature branch
-2. Use conventional commits with type and scope (e.g., `fix(auth):`, `feat(realtime):`, `chore(repo):`)
-3. Create and merge PR to `master` branch
-4. Workflow automatically:
-   - Runs CI checks (`ci-core` and `ci-supabase-js`)
-   - Checks for conventional commits that warrant a release
-   - Creates pre-release version (skips if no commits warrant release)
-   - Publishes to npm with `canary` tag
-   - Creates GitHub changelog entries
+```bash
+npm install https://pkg.pr.new/@supabase/supabase-js@[commit-hash]
+```
 
-### Running Stable Release (maintainers only)
+---
 
-1. **Navigate to Actions tab** in GitHub repository
-2. **Select "Publish releases"** workflow
-3. **Click "Run workflow"**
-4. **Enter version specifier:**
-   - For patch release: `patch`
-   - For minor release: `minor`
-   - For major release: `major`
-   - For specific version: `v2.81.0` or `2.81.0`
-5. **Click "Run workflow"**
-6. **Workflow automatically:**
-   - Validates you're a member of `@supabase/admin` or `@supabase/sdk`
-   - Bumps version for all packages
-   - Generates changelogs since last stable tag
-   - Publishes to npm with `latest` tag
-   - Creates release branch and PR with changelog updates
-   - Enables auto-merge on PR
-   - Triggers documentation update workflow
-   - Sends Slack notifications
+## Branch Sync Workflow
 
-### Requesting Preview Release (contributors)
+### patchback.yml (develop -> master)
 
-1. **Create your PR** with changes
-2. **Request preview** in PR comment: "Can a maintainer add the preview label for testing?"
-3. **Wait for label** - Maintainer adds `trigger: preview` label
-4. **Install preview** - Follow instructions in automated PR comment
+Cherry-picks merged PRs from `develop` to `master` when labeled `patchback-master`. This is the only cross-branch flow — `master` does not propagate back to `develop`.
 
-## Workflow Features
+**Trigger:** PR on `develop` closed (merged) or labeled, with `patchback-master` label
 
-### 📦 Fixed Versioning
+```mermaid
+flowchart TD
+  A["Merged PR on develop<br/>labeled patchback-master"] --> B[Checkout master]
+  B --> C["Cherry-pick merge commit"]
+  C --> D{Conflict?}
+  D -- No --> E["Push patchback/PR-NUMBER branch"]
+  E --> F["Open PR to master:<br/>[patchback] Original Title"]
+  F --> G[Request review from original author]
+  G --> H[Human reviews + merges]
+  H --> I["Triggers canary on master"]
+  D -- Yes --> J["Slack #team-sdk<br/>with conflict details"]
+  J --> K[Human resolves manually]
+```
 
-- All packages share identical version numbers
-- Internal dependencies automatically updated using workspace protocol (`*`)
-- Version synchronization handled by Nx
-- Single source of truth for versioning
+---
 
-### 📝 Automatic Changelogs
+## Day-to-Day Scenarios
 
-- Generated from conventional commits
-- Per-package CHANGELOG.md files
-- Unchanged packages show "No user-facing changes in this release"
-- Stable releases generate changelogs from last stable tag
+### Bug fix that applies to both v2 and v3 (default)
 
-### 🔐 Security & Permissions
+```mermaid
+flowchart LR
+  A["fix PR -> develop"] --> B["next 3.0.0-next.X"]
+  A -- "add patchback-master label" --> C["patchback PR -> master"]
+  C --> D["canary 2.x.x-canary.X"]
+  D --> E["release-stable --specifier=patch"]
+  E --> F["stable 2.x.x with latest tag"]
+```
 
-- Canary releases use GitHub App token for automation
-- Stable releases restricted to `@supabase/admin` or `@supabase/sdk` team members
-- NPM publishing uses OIDC trusted publishing
-- All releases signed and traceable
+1. Open fix PR targeting `develop` (default)
+2. Review + merge — next prerelease auto-publishes
+3. Add `patchback-master` label → patchback opens cherry-pick PR to `master`
+4. Review + merge the patchback PR — canary auto-publishes
+5. When ready: trigger stable release with `patch`
 
-### Release Scripts
+### v2-only bug fix
 
-- **`scripts/release-canary.ts`** - Handles canary releases with `canary` preid, skips if no conventional commits
-- **`scripts/release-stable.ts`** - Handles stable releases with version specifier input, creates release branch and PR
+Use only when the affected code no longer exists on `develop`.
+
+```mermaid
+flowchart LR
+  A["fix PR -> master"] --> B["canary 2.x.x-canary.X"]
+  B --> C["release-stable --specifier=patch"]
+  C --> D["stable 2.x.x with latest tag"]
+```
+
+1. Open fix PR targeting `master`
+2. Review + merge
+3. Canary auto-publishes from master
+4. When ready: trigger stable release with `patch`
+
+### v3 feature
+
+```mermaid
+flowchart LR
+  A["feat PR -> develop"] --> B["next 3.0.0-next.X"]
+```
+
+1. Open feature PR targeting `develop` (default)
+2. Review + merge
+3. Next prerelease auto-publishes for dogfooding
+4. No effect on master or v2 releases
+
+### v3 feature that also ships as v2 minor
+
+```mermaid
+flowchart LR
+  A["feat PR -> develop"] --> B["next 3.0.0-next.X"]
+  A -- "add patchback-master label" --> C["patchback PR -> master"]
+  C --> D["canary 2.x.x-canary.X"]
+  D --> E["release-stable --specifier=minor"]
+  E --> F["stable 2.x.x with latest tag"]
+```
+
+1. Feature PR merged to `develop` (next prerelease publishes)
+2. Reviewer/maintainer adds the **`v2-minor`** label as a staging marker (bookkeeping only, no automation)
+3. On the next batch day (see [Release cadence](#release-cadence)), a maintainer applies `patchback-master` to each `v2-minor`-labeled merged PR
+4. Patchback workflow opens one cherry-pick PR per labeled PR against `master`
+5. Review + merge each patchback PR (canary auto-publishes per merge)
+6. Once all patchbacks are merged and the last canary is green, trigger stable release with `minor` — one stable covering the whole batch
+
+### Release cadence
+
+To keep v2 releases predictable:
+
+- **Patches** (v2 fixes on `master`): any weekday Mon–Fri, as fixes land
+- **Minor** (v2 feats batched via patchback): **Monday primary**, **Wednesday fallback** if enough features accumulated since Monday. **Never Thursday or Friday.**
+- **Major**: only when v3 ships
+
+The `v2-minor` label is the week-long staging marker; `patchback-master` is applied in batch on the release day. See the [SDK deployment playbook](https://github.com/supabase/playbooks/blob/main/playbooks/client-libs/deployment-playbook.md) for the full operational routine.
+
+### Emergency v2 fix
+
+1. Open fix PR directly to `master`
+2. Merge (canary auto-publishes)
+3. Immediately trigger stable release with `patch`
+4. If the bug also exists on `develop`, open a follow-up fix PR there (no auto-propagation)
+
+### v3 ships
+
+1. Open PR `develop` -> `master` (merge commit, not squash)
+2. Review + merge
+3. Trigger stable release with `major` -> publishes `3.0.0` with `latest`
+4. Update `.next-base-version` for whatever comes next
+
+---
+
+## Configuration
+
+- **`.next-base-version`** — contains `3.0.0`, read by `publish.yml` for next prereleases from `develop`
+- **`scripts/release-canary.ts`** — handles both canary and next prereleases (optional `--base-version`, `--preid`, `--tag` flags)
+- **`scripts/release-stable.ts`** — stable releases, creates changelog PR
+- **`scripts/release-beta.ts`** — beta releases from feature branches
+
+---
+
+## Permissions & Security
+
+- Automated releases (canary, next) and the patchback workflow use a **GitHub App token** — the app must be a **bypass actor** in branch protection for `develop` and `master`
+- Manual releases (stable, beta) are restricted to **`@supabase/admin`** or **`@supabase/sdk`** team members
+- npm publishing uses **OIDC trusted publishing** (provenance)
+- Slack notifications go to **`#team-sdk`** on failures
+
+---
 
 ## Best Practices
 
-### For Contributors
+### For contributors
 
-1. **Use conventional commits** with scope and type for automatic versioning
-   - `fix(auth):` for bug fixes (patch release)
-   - `feat(realtime):` for new features (minor release)
-   - `feat(repo)!:` or `BREAKING CHANGE:` for breaking changes (major release)
-2. **Request preview releases** for complex PRs
-3. **Monitor canary releases** to verify your changes work as expected
+1. **Target `develop` by default** — features, fixes, and chores all land there. Only target `master` when fixing v2-only code that no longer exists on develop.
+2. **Use conventional commits** with scope: `fix(auth):`, `feat(realtime):`, `chore(repo):`
+3. **Preview releases** are automatic on every PR that touches package code
 
-### For Maintainers
+### For maintainers
 
-1. **Release cadence**:
-   - Canary: Automatic on every `master` commit (if conventional commits present)
-   - Stable: Weekly or as needed based on canary feedback
-   - Major: Coordinate with team and users
-2. **Version strategy**:
-   - Use `patch` for bug fixes
-   - Use `minor` for new features
-   - Use `major` for breaking changes
-3. **Monitor package health** after releases
-4. **Review PR auto-merge** from release workflow (changelog updates)
-5. **Verify documentation** updates after stable releases
+1. **v2 patch release**: for fixes that apply to both v2 and v3, label the merged develop PR with `patchback-master`, merge the patchback PR on master, verify canary, trigger stable with `patch` (any weekday). For v2-only fixes, merge directly to master and trigger stable.
+2. **v2 minor release**: batch-apply `patchback-master` to all `v2-minor`-labeled develop PRs on Monday (or Wednesday), merge patchback PRs, then trigger stable with `minor` once — see [Release cadence](#release-cadence)
+3. **Staging label**: apply `v2-minor` at merge time to any non-breaking develop feat PR that should also ship in v2
+4. **Monitor patchback**: Slack alerts on cherry-pick conflict. If trivial, resolve same day. If not, drop from this week's minor and defer
+5. **Beta workflow**: use feature branches + beta releases for experimental work that isn't ready for develop yet
 
-### For Emergency Releases
+### For emergency releases
 
-1. **Fix in `master` first** - Apply fix and let canary release
-2. **Test canary** - Verify fix works in canary version
-3. **Release stable** - Use stable workflow with `patch` specifier
-4. **Document incident** - Update changelog with details if needed
+1. Open fix PR directly to `master` (bypass develop)
+2. Merge (canary auto-publishes for immediate testing)
+3. Trigger stable release with `patch`
+4. If the bug also exists on develop, open a separate fix PR there (no auto-propagation)

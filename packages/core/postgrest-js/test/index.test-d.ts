@@ -19,6 +19,19 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   postgrest.from('nonexistent_view')
 }
 
+// `.eq()` and `.neq()` reject invalid column name literals
+{
+  // @ts-expect-error Argument of type '"INVALID"' is not assignable to parameter
+  postgrest.from('users').select().eq('INVALID', 'test')
+  // @ts-expect-error Argument of type '"INVALID"' is not assignable to parameter
+  postgrest.from('users').select().neq('INVALID', 'test')
+
+  // Dynamic string variables should still work (falls through to string branch)
+  const col: string = 'username'
+  postgrest.from('users').select().eq(col, 'foo')
+  postgrest.from('users').select().neq(col, 'foo')
+}
+
 // `null` can't be used with `.eq()`
 {
   postgrest.from('users').select().eq('username', 'foo')
@@ -158,6 +171,20 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 {
   // @ts-expect-error Type 'number' is not assignable to type 'undefined'
   postgrest.from('updatable_view').update({ non_updatable_column: 0 })
+}
+
+// reject excess properties on insert, update, and upsert (#1636)
+{
+  // @ts-expect-error Type 'string' is not assignable to type 'never'.
+  postgrest.from('users').insert({ username: 'foo', nonexistent: 'bad' })
+}
+{
+  // @ts-expect-error Type 'string' is not assignable to type 'never'.
+  postgrest.from('users').update({ username: 'foo', nonexistent: 'bad' })
+}
+{
+  // @ts-expect-error Type 'string' is not assignable to type 'never'.
+  postgrest.from('users').upsert({ username: 'foo', nonexistent: 'bad' })
 }
 
 // spread resource with single column in select query
@@ -318,4 +345,139 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
       bar: string
     }[]
   >(result.data)
+}
+
+// `.not(col, 'is', null)` narrows nullable column to non-nullable in result (#1360)
+{
+  {
+    type Database = {
+      public: {
+        Tables: {
+          articles: {
+            Row: { id: string; published_at: string | null }
+            Insert: never
+            Update: never
+            Relationships: []
+          }
+        }
+        Views: {}
+        Functions: {}
+        Enums: {}
+        CompositeTypes: {}
+      }
+    }
+
+    const client = new PostgrestClient<Database>(REST_URL)
+    let query = client.from('articles').select('id, published_at')
+
+    const hasPublishedAt = true
+    if (hasPublishedAt) {
+      query = query.not('published_at', 'is', null)
+    }
+
+    const result = await query
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+
+    expectType<{ id: string; published_at: string | null }[]>(result.data)
+  }
+
+  // Basic narrowing: message goes from `string | null` to `string`
+  {
+    const result = await postgrest.from('messages').select('id, message').not('message', 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string }[]>>(true)
+  }
+
+  // Narrowing with .single()
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'is', null)
+      .single()
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string }>>(true)
+  }
+
+  // Narrowing with .maybeSingle()
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'is', null)
+      .maybeSingle()
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string } | null>>(true)
+  }
+
+  // Chaining multiple .not() calls narrows both columns
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message, blurb_message')
+      .not('message', 'is', null)
+      .not('blurb_message', 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    const item = result.data[0]
+    expectType<number>(item.id)
+    expectType<string>(item.message)
+    expectType<string>(item.blurb_message)
+  }
+
+  // Non-nullable column: type stays the same
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, username')
+      .not('username', 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; username: string }[]>>(true)
+  }
+
+  // Other operators do NOT narrow
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'eq', 'hello')
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string | null }[]>>(true)
+  }
+
+  // Dynamic string column: falls through to untyped overload, no narrowing
+  {
+    const col: string = 'message'
+    const result = await postgrest.from('messages').select('id, message').not(col, 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string | null }[]>>(true)
+  }
+
+  // Chaining filters after narrowing preserves narrowed type
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'is', null)
+      .eq('id', 1)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string }[]>>(true)
+  }
 }

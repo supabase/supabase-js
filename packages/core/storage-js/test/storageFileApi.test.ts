@@ -9,7 +9,7 @@ import StreamDownloadBuilder from '../src/packages/StreamDownloadBuilder'
 
 // Supabase CLI local development defaults
 const URL = 'http://127.0.0.1:54321/storage/v1'
-// service_role key - bypasses RLS for testing
+// secret key - bypasses RLS for testing
 const KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
 
@@ -89,6 +89,7 @@ describe('Object API', () => {
 
       expect(res.error).toBeNull()
       expect(res.data?.signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
+      expect(res.data?.signedUrl).not.toMatch(/&$/)
 
       // throws when .throwOnError is enabled
       await expect(
@@ -118,7 +119,18 @@ describe('Object API', () => {
       })
 
       expect(res.error).toBeNull()
-      expect(res.data?.signedUrl).toContain(`${URL}/render/image/sign/${bucketName}/${uploadPath}`)
+      expect(res.data?.signedUrl).toContain(`/${bucketName}/${uploadPath}`)
+      expect(res.data?.signedUrl).toContain('token=')
+    })
+
+    test('sign url with empty transform object uses object endpoint', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).createSignedUrl(uploadPath, 2000, {
+        transform: {},
+      })
+
+      expect(res.error).toBeNull()
+      expect(res.data?.signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
     })
 
     test('sign url with custom filename for download', async () => {
@@ -130,6 +142,17 @@ describe('Object API', () => {
       expect(res.error).toBeNull()
       expect(res.data?.signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
       expect(res.data?.signedUrl).toContain(`&download=test.jpg`)
+    })
+
+    test('sign urls without querystring', async () => {
+      await storage.from(bucketName).upload(uploadPath, file)
+      const res = await storage.from(bucketName).createSignedUrls([uploadPath], 2000)
+
+      expect(res.error).toBeNull()
+      expect(res.data).toHaveLength(1)
+      expect(res.data?.[0].error).toBeNull()
+      expect(res.data?.[0].signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
+      expect(res.data?.[0].signedUrl).not.toMatch(/&$/)
     })
   })
 
@@ -336,8 +359,18 @@ describe('Object API', () => {
       expect(res.data).toEqual([
         expect.objectContaining({
           name: uploadPath.replace('testpath/', ''),
+          id: expect.any(String), // Files should have non-null id
+          metadata: expect.any(Object), // Files should have metadata
         }),
       ])
+      assert(res.data)
+
+      // Verify files have non-null required fields
+      const fileObj = res.data[0]
+      expect(fileObj.id).not.toBeNull()
+      expect(fileObj.metadata).not.toBeNull()
+      expect(fileObj.updated_at).not.toBeNull()
+      expect(fileObj.created_at).not.toBeNull()
     })
 
     test('list objects V2', async () => {
@@ -402,13 +435,14 @@ describe('Object API', () => {
         let hasNext = true
         let pages = 0
         while (hasNext) {
-          const res = await storage.from(bucketName).listV2({
+          const options = {
             prefix: 'testpath/',
             with_delimiter: true,
             limit: 2,
-            cursor,
-            sortBy,
-          })
+            ...(cursor ? { cursor } : {}),
+            ...(sortBy ? { sortBy } : {}),
+          }
+          const res = await storage.from(bucketName).listV2(options)
 
           expect(res.error).toBeNull()
           expect(res.data?.objects).toHaveLength(2)
@@ -520,10 +554,17 @@ describe('Object API', () => {
       expect(res.error).toBeNull()
       expect(res.data).toEqual([
         expect.objectContaining({
-          bucket_id: bucketName,
           name: uploadPath,
+          id: expect.any(String), // Verify it's a file, not a folder
         }),
       ])
+      assert(res.data)
+
+      // bucket_id may be present in remove() responses (deprecated field)
+      // If present, verify it matches
+      if (res.data[0].bucket_id) {
+        expect(res.data[0].bucket_id).toBe(bucketName)
+      }
     })
 
     test('get object info', async () => {
@@ -545,6 +586,20 @@ describe('Object API', () => {
           version: expect.any(String),
         })
       )
+      assert(res.data)
+
+      // Verify FileObjectV2 required fields
+      expect(res.data.id).toBeDefined()
+      expect(res.data.bucketId).toBeDefined()
+      expect(res.data.lastModified).toBeDefined() // Should have this
+      expect(res.data.size).toBeGreaterThan(0)
+      expect(res.data.contentType).toBeDefined()
+      expect(res.data.cacheControl).toBeDefined()
+      expect(res.data.etag).toBeDefined()
+
+      // Verify updated_at does NOT exist (API returns camelCase, but the raw type shouldn't have it)
+      // Note: The info() method uses Camelize so we check the camelCase version
+      expect(res.data).not.toHaveProperty('updatedAt')
 
       // throws when .throwOnError is enabled
       await expect(storage.from(bucketName).throwOnError().info('non-existent')).rejects.toThrow()
@@ -581,6 +636,14 @@ describe('Object API', () => {
       )
     })
 
+    it('gets public url with empty transform object does not use render endpoint', () => {
+      const res = storage.from(bucketName).getPublicUrl(uploadPath, {
+        transform: {},
+      })
+      expect(res.data.publicUrl).toContain(`${URL}/object/public/${bucketName}/${uploadPath}`)
+      expect(res.data.publicUrl).not.toContain('/render/image/')
+    })
+
     it('will download an authenticated transformed file', async () => {
       const privateBucketName = 'my-private-bucket'
       await findOrCreateBucket(privateBucketName)
@@ -598,6 +661,19 @@ describe('Object API', () => {
       expect(res.error).toBeNull()
       expect(res.data?.size).toBeGreaterThan(0)
       expect(res.data?.type).toEqual('image/jpeg')
+    })
+
+    it('download with empty transform object does not use render endpoint', async () => {
+      const txtFile = await fsp.readFile(uploadFilePath('file.txt'))
+      const txtPath = `testpath/file-${Date.now()}.txt`
+      await storage.from(bucketName).upload(txtPath, txtFile)
+
+      const res = await storage.from(bucketName).download(txtPath, {
+        transform: {},
+      })
+
+      expect(res.error).toBeNull()
+      expect(res.data?.size).toBeGreaterThan(0)
     })
   })
 
@@ -663,6 +739,121 @@ describe('Object API', () => {
       'height:200,width:200,resizing_type:fill,quality:60'
     )
   })
+
+  it('will append a cacheNonce parameter', async () => {
+    const cacheNonce = Date.now().toString()
+    await storage.from(bucketName).upload(uploadPath, file)
+
+    // `createSignedUrl` with transform
+    {
+      const res = await storage.from(bucketName).createSignedUrl(uploadPath, 60000, {
+        transform: {
+          width: 200,
+          height: 200,
+          quality: 60,
+        },
+        cacheNonce,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.signedUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+    }
+
+    // `createSignedUrl` without transform
+    {
+      const res = await storage.from(bucketName).createSignedUrl(uploadPath, 60000, {
+        cacheNonce,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.signedUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+    }
+
+    // `getPublicUrl` with transform & download
+    {
+      const res = storage.from(bucketName).getPublicUrl(uploadPath, {
+        cacheNonce,
+        transform: {
+          width: 200,
+          height: 200,
+          quality: 60,
+        },
+        download: true,
+      })
+
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.publicUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+    }
+
+    // `getPublicUrl` without transform
+    {
+      const res = storage.from(bucketName).getPublicUrl(uploadPath, {
+        cacheNonce,
+      })
+
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.publicUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+    }
+
+    // `download` with cacheNonce
+    {
+      const res = await storage.from(bucketName).download(uploadPath, {
+        cacheNonce,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+    }
+
+    // `createSignedUrls` with cacheNonce
+    {
+      const res = await storage.from(bucketName).createSignedUrls([uploadPath], 60000, {
+        cacheNonce,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+      expect(res.data).toHaveLength(1)
+      expect(res.data[0].error).toBeNull()
+
+      const parsedUrl = global.URL.parse(res.data[0].signedUrl!)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+      assert(parsedUrl.searchParams.has('token'))
+    }
+
+    // `createSignedUrls` with download
+    {
+      const res = await storage.from(bucketName).createSignedUrls([uploadPath], 60000, {
+        cacheNonce,
+        download: true,
+      })
+
+      expect(res.error).toBeNull()
+      assert(res.data)
+      expect(res.data).toHaveLength(1)
+      expect(res.data[0].error).toBeNull()
+
+      const parsedUrl = global.URL.parse(res.data[0].signedUrl!)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('cacheNonce', cacheNonce))
+      assert(parsedUrl.searchParams.has('token'))
+    }
+  })
 })
 
 describe('download with fetch parameters', () => {
@@ -708,6 +899,31 @@ describe('download with fetch parameters', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining(uploadPath),
         expect.objectContaining({ cache: 'no-store' })
+      )
+    } finally {
+      global.fetch = originalFetch
+    }
+  })
+
+  it('download with cacheNonce querystring', async () => {
+    const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
+    expect(uploadRes.error).toBeNull()
+
+    const cacheNonce = Date.now().toString()
+    const originalFetch = global.fetch
+    const mockFetch = jest.fn(originalFetch)
+    global.fetch = mockFetch
+
+    try {
+      const { data, error } = await storage.from(bucketName).download(uploadPath, {
+        cacheNonce,
+      })
+
+      expect(error).toBeNull()
+      expect(data).not.toBeNull()
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(`/${bucketName}/${uploadPath}?cacheNonce=${cacheNonce}`),
+        expect.objectContaining({ method: 'GET' })
       )
     } finally {
       global.fetch = originalFetch
@@ -889,6 +1105,29 @@ describe('StorageFileApi Edge Cases', () => {
       expect(body).toBe(testFormData)
     })
 
+    test('uploadToSignedUrl uses default cacheControl when not provided', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+
+      await storage.from('test-bucket').uploadToSignedUrl('test-path', 'test-token', testBlob)
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect(body.get('cacheControl')).not.toBe('undefined')
+      expect(body.get('cacheControl')).toBe('3600')
+    })
+
+    test('uploadToSignedUrl respects custom cacheControl', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testBlob, { cacheControl: '7200' })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect(body.get('cacheControl')).toBe('7200')
+    })
+
     test('upload with metadata', async () => {
       const testBlob = new Blob(['test content'], { type: 'text/plain' })
       const metadata = { customKey: 'customValue', author: 'test' }
@@ -928,6 +1167,139 @@ describe('StorageFileApi Edge Cases', () => {
       const [, , body, { headers }] = mockPost.mock.calls[0]
       expect(body).toBe(testFormData)
       expect(headers[testHeaderKey]).toBe(testHeaderValue)
+    })
+
+    test('upload prefers file content type over existing content type header', async () => {
+      const clientWithContentType = new StorageClient('http://localhost:8000/storage/v1', {
+        apikey: 'test-token',
+        'Content-Type': 'application/json',
+      })
+
+      await clientWithContentType.from('test-bucket').upload('test-path', 'test content', {
+        contentType: 'image/png',
+      })
+
+      expect(mockPost).toHaveBeenCalled()
+      const [, , , { headers }] = mockPost.mock.calls[0]
+
+      expect(headers['content-type']).toBe('image/png')
+      expect(headers['Content-Type']).toBeUndefined()
+      expect(new Headers(headers).get('content-type')).toBe('image/png')
+    })
+
+    test('uploadToSignedUrl prefers file content type over existing content type header', async () => {
+      const clientWithContentType = new StorageClient('http://localhost:8000/storage/v1', {
+        apikey: 'test-token',
+        'Content-Type': 'application/json',
+      })
+
+      await clientWithContentType
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', 'test content', {
+          contentType: 'image/png',
+        })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , { headers }] = mockPut.mock.calls[0]
+
+      expect(headers['content-type']).toBe('image/png')
+      expect(headers['Content-Type']).toBeUndefined()
+      expect(new Headers(headers).get('content-type')).toBe('image/png')
+    })
+
+    test('uploadToSignedUrl with metadata (Blob body)', async () => {
+      const testBlob = new Blob(['test content'], { type: 'text/plain' })
+      const metadata = { customKey: 'customValue', author: 'test' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testBlob, { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0]
+      expect(body.constructor.name).toBe('FormData')
+      expect((body as FormData).get('metadata')).toBe(JSON.stringify(metadata))
+    })
+
+    test('uploadToSignedUrl with metadata (FormData body)', async () => {
+      const testFormData = new FormData()
+      testFormData.append('file', 'test content')
+      const metadata = { blah: 'abc213' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testFormData, { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
+      expect(body).toBe(testFormData)
+      expect(body.get('metadata')).toBe(JSON.stringify(metadata))
+    })
+
+    test('uploadToSignedUrl with metadata (raw body sends x-metadata header)', async () => {
+      const metadata = { blah: 'abc213' }
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', 'test content', { metadata })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , { headers }] = mockPut.mock.calls[0]
+      expect(headers['x-metadata']).toBeDefined()
+      expect(Buffer.from(headers['x-metadata'], 'base64').toString('utf8')).toBe(
+        JSON.stringify(metadata)
+      )
+    })
+
+    test('uploadToSignedUrl passes headers', async () => {
+      const testFormData = new FormData()
+      testFormData.append('file', 'test content')
+
+      const testHeaderKey = 'x-test-header'
+      const testHeaderValue = 'abc123'
+
+      await storage.from('test-bucket').uploadToSignedUrl('test-path', 'test-token', testFormData, {
+        headers: { [testHeaderKey]: testHeaderValue },
+      })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body, { headers }] = mockPut.mock.calls[0]
+      expect(body).toBe(testFormData)
+      expect(headers[testHeaderKey]).toBe(testHeaderValue)
+    })
+
+    test('uploadToSignedUrl does not duplicate cacheControl when caller FormData has one', async () => {
+      const testFormData = new FormData()
+      testFormData.append('cacheControl', '7200')
+      testFormData.append('file', 'test content')
+
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', testFormData, { cacheControl: '3600' })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
+      expect(body.getAll('cacheControl')).toEqual(['7200'])
+    })
+
+    test('uploadToSignedUrl auto-sets duplex to half when raw body is a stream', async () => {
+      const fakeStream = { pipe: () => {} } as unknown as NodeJS.ReadableStream
+
+      await storage.from('test-bucket').uploadToSignedUrl('test-path', 'test-token', fakeStream)
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , options] = mockPut.mock.calls[0]
+      expect(options.duplex).toBe('half')
+    })
+
+    test('uploadToSignedUrl forwards caller-provided duplex', async () => {
+      await storage
+        .from('test-bucket')
+        .uploadToSignedUrl('test-path', 'test-token', 'test content', { duplex: 'half' })
+
+      expect(mockPut).toHaveBeenCalled()
+      const [, , , options] = mockPut.mock.calls[0]
+      expect(options.duplex).toBe('half')
     })
   })
 })

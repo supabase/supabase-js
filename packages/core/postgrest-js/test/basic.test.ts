@@ -56,6 +56,7 @@ test('basic select table', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -112,6 +113,7 @@ test('basic select returns types override', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -136,6 +138,7 @@ test('basic select returns from builder', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -160,6 +163,7 @@ test('basic select overrideTypes from builder', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -178,6 +182,7 @@ test('basic select with maybeSingle yielding more than one result', async () => 
       },
       "status": 406,
       "statusText": "Not Acceptable",
+      "success": false,
     }
   `)
 })
@@ -196,6 +201,7 @@ test('basic select with single yielding more than one result', async () => {
       },
       "status": 406,
       "statusText": "Not Acceptable",
+      "success": false,
     }
   `)
 })
@@ -230,6 +236,7 @@ test('basic select view', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -243,6 +250,7 @@ test('rpc', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -256,6 +264,7 @@ test('rpc returns void', async () => {
       "error": null,
       "status": 204,
       "statusText": "No Content",
+      "success": true,
     }
   `)
 })
@@ -364,6 +373,7 @@ test('switch schema', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -409,6 +419,7 @@ test('dynamic schema', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -433,6 +444,7 @@ test('on_conflict insert', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -449,6 +461,7 @@ test('ignoreDuplicates upsert', async () => {
       "error": null,
       "status": 201,
       "statusText": "Created",
+      "success": true,
     }
   `)
 })
@@ -474,6 +487,7 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 201,
         "statusText": "Created",
+        "success": true,
       }
     `)
 
@@ -521,6 +535,7 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -545,6 +560,7 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
 
@@ -592,6 +608,7 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -626,6 +643,7 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 201,
         "statusText": "Created",
+        "success": true,
       }
     `)
 
@@ -687,6 +705,7 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -709,6 +728,7 @@ describe('basic insert, update, delete', () => {
         },
         "status": 409,
         "statusText": "Conflict",
+        "success": false,
       }
     `)
   })
@@ -755,6 +775,7 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
 
@@ -816,6 +837,7 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -858,6 +880,7 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
 
@@ -891,8 +914,19 @@ describe('basic insert, update, delete', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
+  })
+
+  afterAll(async () => {
+    // Restore message id 3 — the upsert test changes it to 'foo' and the delete test removes it
+    await postgrest.from('messages').upsert({
+      id: 3,
+      message: 'Some message on channel without details',
+      username: 'supabot',
+      channel_id: 3,
+    })
   })
 })
 
@@ -1076,6 +1110,7 @@ test('select with head:true', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1089,6 +1124,7 @@ test('select with head:true, count:exact', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1106,6 +1142,7 @@ test('select with head:true, count:planned', async () => {
       "error": null,
       "status": 206,
       "statusText": "Partial Content",
+      "success": true,
     }
   `
   )
@@ -1124,6 +1161,7 @@ test('select with head:true, count:estimated', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `
   )
@@ -1181,6 +1219,7 @@ test('select with count:exact', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1194,6 +1233,7 @@ test("rpc with count: 'exact'", async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1211,6 +1251,7 @@ test('rpc with head:true, count:exact', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1228,6 +1269,7 @@ test('rpc with get:true, count:exact', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1245,6 +1287,7 @@ test('rpc with get:true, optional param', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1262,6 +1305,7 @@ test('rpc with get:true, array param', async () => {
       "error": null,
       "status": 204,
       "statusText": "No Content",
+      "success": true,
     }
   `)
 })
@@ -1275,6 +1319,7 @@ test('rpc with dynamic schema', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1300,6 +1345,7 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 201,
         "statusText": "Created",
+        "success": true,
       }
     `)
 
@@ -1330,6 +1376,13 @@ describe("insert, update, delete with count: 'exact'", () => {
             "username": "supabot",
           },
           {
+            "channel_id": 3,
+            "data": null,
+            "id": 3,
+            "message": "Some message on channel without details",
+            "username": "supabot",
+          },
+          {
             "channel_id": 1,
             "data": null,
             "id": 8,
@@ -1340,6 +1393,7 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -1362,8 +1416,9 @@ describe("insert, update, delete with count: 'exact'", () => {
           },
         ],
         "error": null,
-        "status": 201,
-        "statusText": "Created",
+        "status": 200,
+        "statusText": "OK",
+        "success": true,
       }
     `)
 
@@ -1411,6 +1466,7 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -1448,6 +1504,7 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 201,
         "statusText": "Created",
+        "success": true,
       }
     `)
 
@@ -1509,6 +1566,7 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -1537,6 +1595,7 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 201,
         "statusText": "Created",
+        "success": true,
       }
     `)
   })
@@ -1565,6 +1624,7 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 201,
         "statusText": "Created",
+        "success": true,
       }
     `)
   })
@@ -1611,6 +1671,7 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
 
@@ -1672,6 +1733,7 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -1718,6 +1780,7 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
 
@@ -1751,8 +1814,19 @@ describe("insert, update, delete with count: 'exact'", () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
+  })
+
+  afterAll(async () => {
+    // Restore message id 3 — the upsert test changes it to 'foo' and the delete test removes it
+    await postgrest.from('messages').upsert({
+      id: 3,
+      message: 'Some message on channel without details',
+      username: 'supabot',
+      channel_id: 3,
+    })
   })
 })
 
@@ -1775,6 +1849,7 @@ test('select with no match', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1791,6 +1866,7 @@ test('update with no match - return=minimal', async () => {
       "error": null,
       "status": 204,
       "statusText": "No Content",
+      "success": true,
     }
   `)
 })
@@ -1808,6 +1884,7 @@ test('update with no match - return=representation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1828,6 +1905,7 @@ test('!left join on one to one relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1849,11 +1927,15 @@ test('!left join on one to many relation', async () => {
           {
             "username": "supabot",
           },
+          {
+            "username": "supabot",
+          },
         ],
       },
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1880,6 +1962,7 @@ test('!left join on one to 0-1 non-empty relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1905,6 +1988,7 @@ test('!left join on zero to one with null relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1933,6 +2017,7 @@ test('!left join on zero to one with valid relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1954,6 +2039,7 @@ test('!left join on zero to one empty relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1997,6 +2083,7 @@ test('join on 1-M relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -2047,6 +2134,7 @@ test('join on 1-1 relation with nullables', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -2125,6 +2213,7 @@ test('handles array error with 404 status', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -2153,33 +2242,13 @@ test('handles empty body with 404 status', async () => {
       "error": null,
       "status": 204,
       "statusText": "No Content",
+      "success": true,
     }
   `)
 })
 
-test('maybeSingle handles zero rows error', async () => {
-  const customFetch = jest.fn().mockImplementation(() =>
-    Promise.resolve({
-      ok: false,
-      status: 406,
-      statusText: 'Not Acceptable',
-      text: () =>
-        Promise.resolve(
-          JSON.stringify({
-            code: 'PGRST116',
-            details: '0 rows',
-            hint: null,
-            message: 'JSON object requested, multiple (or no) rows returned',
-          })
-        ),
-    })
-  )
-
-  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
-    fetch: customFetch,
-  })
-
-  const res = await postgrestWithCustomFetch.from('users').select().maybeSingle()
+test('maybeSingle returns null for zero rows (GET)', async () => {
+  const res = await postgrest.from('users').select().eq('username', 'does_not_exist').maybeSingle()
 
   expect(res).toMatchInlineSnapshot(`
     {
@@ -2188,6 +2257,7 @@ test('maybeSingle handles zero rows error', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })

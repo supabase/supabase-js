@@ -47,6 +47,13 @@ describe('embeded functions select', () => {
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
             ],
             "id": 3,
           },
@@ -54,6 +61,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -111,6 +119,10 @@ describe('embeded functions select', () => {
                 "id": 4,
                 "message": "Some message on channel without details",
               },
+              {
+                "id": 3,
+                "message": "Some message on channel without details",
+              },
             ],
             "id": 3,
           },
@@ -118,6 +130,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -167,6 +180,13 @@ describe('embeded functions select', () => {
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
             ],
             "username": "supabot",
           },
@@ -190,6 +210,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -235,6 +256,10 @@ describe('embeded functions select', () => {
                 "id": 4,
                 "message": "Some message on channel without details",
               },
+              {
+                "id": 3,
+                "message": "Some message on channel without details",
+              },
             ],
             "username": "supabot",
           },
@@ -258,6 +283,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -303,6 +329,11 @@ describe('embeded functions select', () => {
                 "id": 4,
                 "message": "Some message on channel without details",
               },
+              {
+                "blurb_message": "Som",
+                "id": 3,
+                "message": "Some message on channel without details",
+              },
             ],
             "username": "supabot",
           },
@@ -326,6 +357,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -382,6 +414,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -449,6 +482,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -488,6 +522,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -552,6 +587,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -613,6 +649,14 @@ describe('embeded functions select', () => {
                 "id": 4,
                 "message": "Some message on channel without details",
               },
+              {
+                "channels": {
+                  "id": 3,
+                  "slug": "other",
+                },
+                "id": 3,
+                "message": "Some message on channel without details",
+              },
             ],
             "id": 3,
           },
@@ -620,6 +664,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -673,6 +718,13 @@ describe('embeded functions select', () => {
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
             ],
             "username": "supabot",
           },
@@ -696,6 +748,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -750,6 +803,13 @@ describe('embeded functions select', () => {
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
             ],
             "username": "supabot",
           },
@@ -769,6 +829,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -810,6 +871,13 @@ describe('embeded functions select', () => {
                 "username": "supabot",
               },
               {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -846,6 +914,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -887,6 +956,13 @@ describe('embeded functions select', () => {
                 "username": "supabot",
               },
               {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -919,6 +995,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -967,6 +1044,11 @@ describe('embeded functions select', () => {
                 "id": 4,
                 "message": "Some message on channel without details",
               },
+              {
+                "blurb_message": "Som",
+                "id": 3,
+                "message": "Some message on channel without details",
+              },
             ],
             "username": "supabot",
           },
@@ -990,6 +1072,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1025,6 +1108,7 @@ describe('embeded functions select', () => {
         },
         "status": 400,
         "statusText": "Bad Request",
+        "success": false,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1061,10 +1145,18 @@ describe('embeded functions select', () => {
               "username": "supabot",
             },
           },
+          {
+            "id": 3,
+            "user": {
+              "status": "ONLINE",
+              "username": "supabot",
+            },
+          },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1099,6 +1191,7 @@ describe('embeded functions select', () => {
         },
         "status": 400,
         "statusText": "Bad Request",
+        "success": false,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1153,6 +1246,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1206,6 +1300,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1269,6 +1364,7 @@ describe('embeded functions select', () => {
         },
         "status": 404,
         "statusText": "Not Found",
+        "success": false,
       }
     `)
     let result_rpc: Exclude<typeof use_rpc_call.data, null>
@@ -1324,6 +1420,7 @@ describe('embeded functions select', () => {
         },
         "status": 404,
         "statusText": "Not Found",
+        "success": false,
       }
     `)
     let result_rpc: Exclude<typeof use_rpc_call.data, null>
@@ -1335,5 +1432,31 @@ describe('embeded functions select', () => {
         } & 'the function public.days_since_event with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
       >
     >(true)
+  })
+
+  test('scalar_computed_count - non-SETOF non-nullable scalar returns number (not null)', async () => {
+    const res = await postgrest.from('users').select('username, scalar_computed_count()')
+    let result: Exclude<typeof res.data, null>
+    const ExpectedSchema = z.array(
+      z.object({
+        username: z.string(),
+        scalar_computed_count: z.number(),
+      })
+    )
+    let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+  })
+
+  test('scalar_computed_ids - SETOF scalar returns string[] (not null)', async () => {
+    const res = await postgrest.from('users').select('username, scalar_computed_ids()')
+    let result: Exclude<typeof res.data, null>
+    const ExpectedSchema = z.array(
+      z.object({
+        username: z.string(),
+        scalar_computed_ids: z.array(z.string()),
+      })
+    )
+    let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 })

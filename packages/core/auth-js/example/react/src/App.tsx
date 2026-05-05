@@ -21,6 +21,8 @@ function App() {
   const [otp, setOtp] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
 
+  const [magicLinkStatus, setMagicLinkStatus] = useState<string>('')
+
   const modalRef = useRef<HTMLDialogElement>(null)
   const [showModal, setShowModal] = useState(false)
 
@@ -95,11 +97,19 @@ function App() {
       localStorage.removeItem('email')
     }
 
-    const { error, data } = password
-      ? await auth.signInWithPassword({ email, password })
-      : await auth.signInWithOtp({ email })
-    if (!error && !data) alert('Check your email for the login link!')
-    if (error) console.log('Error: ', error.message)
+    if (password) {
+      const { error } = await auth.signInWithPassword({ email, password })
+      if (error) console.log('Error: ', error.message)
+    } else {
+      setMagicLinkStatus('')
+      const { error } = await auth.signInWithOtp({ email })
+      if (error) {
+        console.log('Error: ', error.message)
+        setMagicLinkStatus(`error: ${error.message}`)
+      } else {
+        setMagicLinkStatus('sent')
+      }
+    }
   }
 
   async function handleEmailSignUp() {
@@ -384,6 +394,17 @@ function App() {
               </button>
             </span>
           </div>
+
+          {magicLinkStatus && (
+            <p
+              data-testid="magic-link-status"
+              className="mt-2 text-sm text-center text-gray-700"
+            >
+              {magicLinkStatus.startsWith('error:')
+                ? magicLinkStatus
+                : 'Magic link sent! Check your email.'}
+            </p>
+          )}
 
           <div className="mt-6">
             <div className="relative">

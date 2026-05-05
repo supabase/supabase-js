@@ -1201,6 +1201,30 @@ describe('The auth client can signin with third-party oAuth providers', () => {
     expect(data.url).toBeDefined()
   })
 
+  test('signIn() with custom OIDC provider', async () => {
+    const { error, data } = await auth.signInWithOAuth({
+      provider: 'custom:my-oidc-provider',
+    })
+    expect(error).toBeNull()
+    expect(data.url).toBeDefined()
+    expect(data.provider).toBe('custom:my-oidc-provider')
+  })
+
+  test('signIn() with custom OIDC provider and options', async () => {
+    const { error, data } = await auth.signInWithOAuth({
+      provider: 'custom:my-oidc-provider',
+      options: {
+        redirectTo: 'https://localhost:9000/callback',
+        scopes: 'openid profile email',
+      },
+    })
+    expect(error).toBeNull()
+    expect(data.url).toBeDefined()
+    expect(data.url).toContain('redirect_to=')
+    expect(data.url).toContain('scopes=')
+    expect(data.provider).toBe('custom:my-oidc-provider')
+  })
+
   describe('Developers can subscribe and unsubscribe', () => {
     const {
       data: { subscription },
@@ -2691,6 +2715,20 @@ describe('ID Token Authentication', () => {
     const { data, error } = await auth.signInWithIdToken(credentials)
 
     expect(error).not.toBeNull() // May fail due to test environment
+    expect(data.session).toBeNull()
+    expect(data.user).toBeNull()
+  })
+
+  test('should handle signInWithIdToken with custom OIDC provider', async () => {
+    const credentials = {
+      provider: 'custom:my-oidc-provider',
+      token: 'mock-id-token',
+      nonce: 'mock-nonce',
+    }
+
+    const { data, error } = await auth.signInWithIdToken(credentials)
+
+    expect(error).not.toBeNull() // Expected to fail in test environment
     expect(data.session).toBeNull()
     expect(data.user).toBeNull()
   })

@@ -1,3 +1,120 @@
+## 2.105.2 (2026-05-04)
+
+### 🩹 Fixes
+
+- **misc:** reduce any usage across packages ([#2314](https://github.com/supabase/supabase-js/pull/2314))
+- **misc:** widen enum-like unions with (string & {}) for forward compat ([#2303](https://github.com/supabase/supabase-js/pull/2303))
+
+## 2.105.1 (2026-04-28)
+
+### 🩹 Fixes
+
+- **realtime:** surface real Error on transport-level CHANNEL_ERROR ([#2299](https://github.com/supabase/supabase-js/pull/2299))
+
+## 2.105.0 (2026-04-27)
+
+### 🚀 Features
+
+- **realtime:** Realtime deferred disconnect ([#2282](https://github.com/supabase/supabase-js/pull/2282))
+
+### 🩹 Fixes
+
+- **realtime:** annotate Timer/Vsn getters to avoid deep phoenix imports ([#2284](https://github.com/supabase/supabase-js/pull/2284))
+
+## 2.104.1 (2026-04-23)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.104.0 (2026-04-20)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.103.3 (2026-04-16)
+
+### 🩹 Fixes
+
+- **realtime:** throw Error objects instead of bare strings ([#2256](https://github.com/supabase/supabase-js/pull/2256))
+
+### ❤️ Thank You
+
+- oniani1
+
+## 2.103.2 (2026-04-15)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.103.1 (2026-04-15)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.103.0 (2026-04-09)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.102.1 (2026-04-07)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.102.0 (2026-04-07)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.101.1 (2026-03-31)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.101.0 (2026-03-30)
+
+### 🚀 Features
+
+- **realtime:** block setting `postgres_changes` event listener after joining ([#2201](https://github.com/supabase/supabase-js/pull/2201))
+- **realtime:** add `copyBindings` functionality ([#2197](https://github.com/supabase/supabase-js/pull/2197))
+
+### ❤️ Thank You
+
+- Dominik Pilipczuk @snickerdoodle2
+
+## 2.100.1 (2026-03-26)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.100.0 (2026-03-23)
+
+### 🚀 Features
+
+- **realtime:** use phoenix's js lib inside realtime-js ([#2119](https://github.com/supabase/supabase-js/pull/2119))
+
+### 🩹 Fixes
+
+- **realtime:** revert `vsn` type to `string` ([#2170](https://github.com/supabase/supabase-js/pull/2170))
+
+### ❤️ Thank You
+
+- Alan Guzek @GuzekAlan
+- Dominik Pilipczuk @snickerdoodle2
+
+## 2.99.2 (2026-03-16)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.99.1 (2026-03-11)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.99.0 (2026-03-09)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.98.0 (2026-02-26)
+
+### 🩹 Fixes
+
+- **realtime:** patch channel join payloads with resolved access token before flushing send buffer ([#2136](https://github.com/supabase/supabase-js/pull/2136))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.97.0 (2026-02-18)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

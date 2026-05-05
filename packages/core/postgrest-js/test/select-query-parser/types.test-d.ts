@@ -164,3 +164,53 @@ import { Database } from '../types.generated'
   type expected = 'blurb_message' | 'blurb_message2' | 'blurb_message3'
   expectType<TypeEqual<result, expected>>(true)
 }
+
+// Test that a function with Args: never and same name as a column is NOT a computed field
+// Regression test for: https://github.com/supabase/supabase-js/issues/2190
+{
+  type Database = {
+    public: {
+      Tables: {
+        settings: {
+          Row: {
+            id: number
+            name: string
+            my_column: number
+          }
+          Insert: {
+            id?: never
+            name: string
+            my_column?: number
+          }
+          Update: {
+            id?: never
+            name?: string
+            my_column?: number
+          }
+          Relationships: []
+        }
+      }
+      Views: {
+        [_ in never]: never
+      }
+      Functions: {
+        my_column: {
+          Args: never
+          Returns: number
+        }
+      }
+      Enums: {
+        [_ in never]: never
+      }
+      CompositeTypes: {
+        [_ in never]: never
+      }
+    }
+  }
+
+  type Schema = Database['public']
+  type result = GetComputedFields<Schema, 'settings'>
+  // my_column should NOT be a computed field because its Args is never
+  type expected = never
+  expectType<TypeEqual<result, expected>>(true)
+}

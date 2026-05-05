@@ -13,7 +13,7 @@
   "ignorePatterns": ["*.md", "test/__snapshots__/**/*", "example/**/*"],
   "rules": {
     "comma-dangle": "off",
-    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/ban-types": "off"
   }
 }

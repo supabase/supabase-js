@@ -6,6 +6,12 @@ import {
   ServerCredentialCreationOptions,
   ServerCredentialRequestOptions,
   WebAuthnApi,
+  WebAuthnError,
+} from './webauthn'
+import type {
+  RegistrationResponseJSON,
+  AuthenticationResponseJSON,
+  ServerCredentialResponse,
 } from './webauthn'
 import {
   AuthenticationCredential,
@@ -14,7 +20,7 @@ import {
   RegistrationCredential,
 } from './webauthn.dom'
 
-/** One of the providers supported by GoTrue. */
+/** One of the providers supported by GoTrue. Use the `custom:` prefix for custom OIDC providers (e.g. `custom:my-oidc-provider`). */
 export type Provider =
   | 'apple'
   | 'azure'
@@ -41,6 +47,7 @@ export type Provider =
   | 'workos'
   | 'zoom'
   | 'fly'
+  | `custom:${string}`
 
 export type AuthChangeEventMFA = 'MFA_CHALLENGE_VERIFIED'
 
@@ -173,6 +180,27 @@ export type GoTrueClientOptions = {
    * @default false
    */
   skipAutoInitialize?: boolean
+
+  /**
+   * Opt-in flags for experimental features. These APIs may change without
+   * notice and are disabled by default.
+   *
+   * @experimental
+   */
+  experimental?: ExperimentalFeatureFlags
+}
+
+export type ExperimentalFeatureFlags = {
+  /**
+   * Enables passkey support:
+   *   - `auth.signInWithPasskey()`, `auth.registerPasskey()`
+   *   - `auth.passkey.*`
+   *   - `auth.admin.passkey.*`
+   *
+   * Defaults to `false`. Calling any passkey method while this flag is
+   * disabled throws a descriptive error at call time.
+   */
+  passkey?: boolean
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
@@ -464,6 +492,15 @@ export interface User {
 
 export interface UserAttributes {
   /**
+   * The user's current password
+   *
+   * This is only ever present when the user is resetting
+   * their password and GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD is true.
+   *
+   */
+  current_password?: string
+
+  /**
    * The user's email.
    */
   email?: string
@@ -599,16 +636,14 @@ export type SignInAnonymouslyCredentials = {
   }
 }
 
-export type SignUpWithPasswordCredentials = Prettify<
-  PasswordCredentialsBase & {
-    options?: {
-      emailRedirectTo?: string // only for email
-      data?: object
-      captchaToken?: string
-      channel?: 'sms' | 'whatsapp' // only for phone
-    }
+export type SignUpWithPasswordCredentials = PasswordCredentialsBase & {
+  options?: {
+    emailRedirectTo?: string // only for email
+    data?: object
+    captchaToken?: string
+    channel?: 'sms' | 'whatsapp' // only for phone
   }
->
+}
 
 type PasswordCredentialsBase =
   | { email: string; password: string }
@@ -658,7 +693,7 @@ export type SignInWithPasswordlessCredentials =
       }
     }
 
-export type AuthFlowType = 'implicit' | 'pkce'
+export type AuthFlowType = 'implicit' | 'pkce' | (string & {})
 export type SignInWithOAuthCredentials = {
   /** One of the providers supported by GoTrue. */
   provider: Provider
@@ -675,8 +710,8 @@ export type SignInWithOAuthCredentials = {
 }
 
 export type SignInWithIdTokenCredentials = {
-  /** Provider name or OIDC `iss` value identifying which provider should be used to verify the provided token. Supported names: `google`, `apple`, `azure`, `facebook`, `kakao`, `keycloak` (deprecated). */
-  provider: 'google' | 'apple' | 'azure' | 'facebook' | 'kakao' | (string & {})
+  /** Provider name or OIDC `iss` value identifying which provider should be used to verify the provided token. Supported names: `google`, `apple`, `azure`, `facebook`, `kakao`. Use the `custom:` prefix for custom OIDC providers (e.g. `custom:my-oidc-provider`). */
+  provider: 'google' | 'apple' | 'azure' | 'facebook' | 'kakao' | `custom:${string}` | (string & {})
   /** OIDC ID token issued by the specified provider. The `iss` claim in the ID token must match the supplied provider. Some ID tokens contain an `at_hash` which require that you provide an `access_token` value to be accepted properly. If the token contains a `nonce` claim you must supply the nonce used to obtain the ID token. */
   token: string
   /** If the ID token contains an `at_hash` claim, then the hash of this value is compared to the value in the ID token. */
@@ -823,8 +858,15 @@ export interface VerifyTokenHashParams {
   type: EmailOtpType
 }
 
-export type MobileOtpType = 'sms' | 'phone_change'
-export type EmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email'
+export type MobileOtpType = 'sms' | 'phone_change' | (string & {})
+export type EmailOtpType =
+  | 'signup'
+  | 'invite'
+  | 'magiclink'
+  | 'recovery'
+  | 'email_change'
+  | 'email'
+  | (string & {})
 
 export type ResendParams =
   | {
@@ -985,11 +1027,11 @@ type MFAVerifyTOTPParamFields = {
   code: string
 }
 
-export type MFAVerifyTOTPParams = Prettify<MFAVerifyParamsBase & MFAVerifyTOTPParamFields>
+export type MFAVerifyTOTPParams = MFAVerifyParamsBase & MFAVerifyTOTPParamFields
 
 type MFAVerifyPhoneParamFields = MFAVerifyTOTPParamFields
 
-export type MFAVerifyPhoneParams = Prettify<MFAVerifyParamsBase & MFAVerifyPhoneParamFields>
+export type MFAVerifyPhoneParams = MFAVerifyParamsBase & MFAVerifyPhoneParamFields
 
 type MFAVerifyWebauthnParamFieldsBase = {
   /** Relying party ID */
@@ -1022,7 +1064,7 @@ export type MFAVerifyWebauthnParamFields<T extends 'create' | 'request' = 'creat
  * @see {@link https://w3c.github.io/webauthn/#sctn-verifying-assertion W3C WebAuthn Spec - Verifying an Authentication Assertion}
  */
 export type MFAVerifyWebauthnParams<T extends 'create' | 'request' = 'create' | 'request'> =
-  Prettify<MFAVerifyParamsBase & MFAVerifyWebauthnParamFields<T>>
+  MFAVerifyParamsBase & MFAVerifyWebauthnParamFields<T>
 
 export type MFAVerifyParams = MFAVerifyTOTPParams | MFAVerifyPhoneParams | MFAVerifyWebauthnParams
 
@@ -1034,16 +1076,14 @@ type MFAChallengeParamsBase = {
 const MFATOTPChannels = ['sms', 'whatsapp'] as const
 export type MFATOTPChannel = (typeof MFATOTPChannels)[number]
 
-export type MFAChallengeTOTPParams = Prettify<MFAChallengeParamsBase>
+export type MFAChallengeTOTPParams = MFAChallengeParamsBase
 
 type MFAChallengePhoneParamFields<Channel extends MFATOTPChannel = MFATOTPChannel> = {
   /** Messaging channel to use (e.g. whatsapp or sms). Only relevant for phone factors */
   channel: Channel
 }
 
-export type MFAChallengePhoneParams = Prettify<
-  MFAChallengeParamsBase & MFAChallengePhoneParamFields
->
+export type MFAChallengePhoneParams = MFAChallengeParamsBase & MFAChallengePhoneParamFields
 
 /** WebAuthn parameters for WebAuthn factor challenge */
 type MFAChallengeWebauthnParamFields = {
@@ -1060,9 +1100,7 @@ type MFAChallengeWebauthnParamFields = {
  * Includes Relying Party information needed for WebAuthn ceremonies.
  * @see {@link https://w3c.github.io/webauthn/#sctn-rp-operations W3C WebAuthn Spec - Relying Party Operations}
  */
-export type MFAChallengeWebauthnParams = Prettify<
-  MFAChallengeParamsBase & MFAChallengeWebauthnParamFields
->
+export type MFAChallengeWebauthnParams = MFAChallengeParamsBase & MFAChallengeWebauthnParamFields
 
 export type MFAChallengeParams =
   | MFAChallengeTOTPParams
@@ -1073,9 +1111,8 @@ type MFAChallengeAndVerifyParamsBase = Omit<MFAVerifyParamsBase, 'challengeId'>
 
 type MFAChallengeAndVerifyTOTPParamFields = MFAVerifyTOTPParamFields
 
-type MFAChallengeAndVerifyTOTPParams = Prettify<
-  MFAChallengeAndVerifyParamsBase & MFAChallengeAndVerifyTOTPParamFields
->
+type MFAChallengeAndVerifyTOTPParams = MFAChallengeAndVerifyParamsBase &
+  MFAChallengeAndVerifyTOTPParamFields
 
 export type MFAChallengeAndVerifyParams = MFAChallengeAndVerifyTOTPParams
 
@@ -1132,7 +1169,7 @@ type AuthMFAChallengeTOTPResponseFields = {
 }
 
 export type AuthMFAChallengeTOTPResponse = RequestResult<
-  Prettify<AuthMFAChallengeResponseBase<'totp'> & AuthMFAChallengeTOTPResponseFields>
+  AuthMFAChallengeResponseBase<'totp'> & AuthMFAChallengeTOTPResponseFields
 >
 
 type AuthMFAChallengePhoneResponseFields = {
@@ -1140,7 +1177,7 @@ type AuthMFAChallengePhoneResponseFields = {
 }
 
 export type AuthMFAChallengePhoneResponse = RequestResult<
-  Prettify<AuthMFAChallengeResponseBase<'phone'> & AuthMFAChallengePhoneResponseFields>
+  AuthMFAChallengeResponseBase<'phone'> & AuthMFAChallengePhoneResponseFields
 >
 
 type AuthMFAChallengeWebauthnResponseFields = {
@@ -1161,7 +1198,7 @@ type AuthMFAChallengeWebauthnResponseFields = {
  * @see {@link https://w3c.github.io/webauthn/#sctn-credential-creation W3C WebAuthn Spec - Credential Creation}
  */
 export type AuthMFAChallengeWebauthnResponse = RequestResult<
-  Prettify<AuthMFAChallengeResponseBase<'webauthn'> & AuthMFAChallengeWebauthnResponseFields>
+  AuthMFAChallengeResponseBase<'webauthn'> & AuthMFAChallengeWebauthnResponseFields
 >
 
 type AuthMFAChallengeWebauthnResponseFieldsJSON = {
@@ -1180,9 +1217,8 @@ type AuthMFAChallengeWebauthnResponseFieldsJSON = {
  * JSON-serializable version of WebAuthn challenge response.
  * Used for server communication with base64url-encoded binary fields.
  */
-export type AuthMFAChallengeWebauthnResponseDataJSON = Prettify<
-  AuthMFAChallengeResponseBase<'webauthn'> & AuthMFAChallengeWebauthnResponseFieldsJSON
->
+export type AuthMFAChallengeWebauthnResponseDataJSON = AuthMFAChallengeResponseBase<'webauthn'> &
+  AuthMFAChallengeWebauthnResponseFieldsJSON
 
 /**
  * Server response type for WebAuthn MFA challenge.
@@ -1201,15 +1237,15 @@ export type AuthMFAListFactorsResponse<T extends typeof FactorTypes = typeof Fac
   RequestResult<
     {
       /** All available factors (verified and unverified). */
-      all: Prettify<Factor>[]
+      all: Factor[]
 
       // Dynamically create a property for each factor type with only verified factors
     } & {
-      [K in T[number]]: Prettify<Factor<K, 'verified'>>[]
+      [K in T[number]]: Factor<K, 'verified'>[]
     }
   >
 
-export type AuthenticatorAssuranceLevels = 'aal1' | 'aal2'
+export type AuthenticatorAssuranceLevels = 'aal1' | 'aal2' | (string & {})
 
 export type AuthMFAGetAuthenticatorAssuranceLevelResponse = RequestResult<{
   /** Current AAL level of the session. */
@@ -1248,6 +1284,78 @@ export interface GoTrueMFAApi {
    * The user has to enter the code from their authenticator app to verify it.
    *
    * Upon verifying a factor, all other sessions are logged out and the current session's authenticator level is promoted to `aal2`.
+   *
+   * @category Auth
+   * @subcategory Auth MFA
+   *
+   * @remarks
+   * - Use `totp` or `phone` as the `factorType` and use the returned `id` to create a challenge.
+   * - To create a challenge, see [`mfa.challenge()`](/docs/reference/javascript/auth-mfa-challenge).
+   * - To verify a challenge, see [`mfa.verify()`](/docs/reference/javascript/auth-mfa-verify).
+   * - To create and verify a TOTP challenge in a single step, see [`mfa.challengeAndVerify()`](/docs/reference/javascript/auth-mfa-challengeandverify).
+   * - To generate a QR code for the `totp` secret in Next.js, you can do the following:
+   * ```html
+   * <Image src={data.totp.qr_code} alt={data.totp.uri} layout="fill"></Image>
+   * ```
+   * - The `challenge` and `verify` steps are separated when using Phone factors as the user will need time to receive and input the code obtained from the SMS in challenge.
+   *
+   * @example Enroll a time-based, one-time password (TOTP) factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.enroll({
+   *   factorType: 'totp',
+   *   friendlyName: 'your_friendly_name'
+   * })
+   *
+   * // Use the id to create a challenge.
+   * // The challenge can be verified by entering the code generated from the authenticator app.
+   * // The code will be generated upon scanning the qr_code or entering the secret into the authenticator app.
+   * const { id, type, totp: { qr_code, secret, uri }, friendly_name } = data
+   * const challenge = await supabase.auth.mfa.challenge({ factorId: id });
+   * ```
+   *
+   * @exampleResponse Enroll a time-based, one-time password (TOTP) factor
+   * ```json
+   * {
+   *   data: {
+   *     id: '<ID>',
+   *     type: 'totp'
+   *     totp: {
+   *       qr_code: '<QR_CODE_AS_SVG_DATA>',
+   *       secret: '<SECRET>',
+   *       uri: '<URI>',
+   *     }
+   *     friendly_name?: 'Important app'
+   *   },
+   *   error: null
+   * }
+   * ```
+   *
+   * @example Enroll a Phone Factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.enroll({
+   *   factorType: 'phone',
+   *   friendlyName: 'your_friendly_name',
+   *   phone: '+12345678',
+   * })
+   *
+   * // Use the id to create a challenge and send an SMS with a code to the user.
+   * const { id, type, friendly_name, phone } = data
+   *
+   * const challenge = await supabase.auth.mfa.challenge({ factorId: id });
+   * ```
+   *
+   * @exampleResponse Enroll a Phone Factor
+   * ```json
+   * {
+   *   data: {
+   *     id: '<ID>',
+   *     type: 'phone',
+   *     friendly_name?: 'Important app',
+   *     phone: '+5787123456'
+   *   },
+   *   error: null
+   * }
+   * ```
    */
   enroll(params: MFAEnrollTOTPParams): Promise<AuthMFAEnrollTOTPResponse>
   enroll(params: MFAEnrollPhoneParams): Promise<AuthMFAEnrollPhoneResponse>
@@ -1257,6 +1365,71 @@ export interface GoTrueMFAApi {
   /**
    * Prepares a challenge used to verify that a user has access to a MFA
    * factor.
+   *
+   * @category Auth
+   * @subcategory Auth MFA
+   *
+   * @remarks
+   * - An [enrolled factor](/docs/reference/javascript/auth-mfa-enroll) is required before creating a challenge.
+   * - To verify a challenge, see [`mfa.verify()`](/docs/reference/javascript/auth-mfa-verify).
+   * - A phone factor sends a code to the user upon challenge. The channel defaults to `sms` unless otherwise specified.
+   *
+   * @example Create a challenge for a factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.challenge({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225'
+   * })
+   * ```
+   *
+   * @exampleResponse Create a challenge for a factor
+   * ```json
+   * {
+   *   data: {
+   *     id: '<ID>',
+   *     type: 'totp',
+   *     expires_at: 1700000000
+   *   },
+   *   error: null
+   * }
+   * ```
+   *
+   * @example Create a challenge for a phone factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.challenge({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   * })
+   * ```
+   *
+   * @exampleResponse Create a challenge for a phone factor
+   * ```json
+   * {
+   *   data: {
+   *     id: '<ID>',
+   *     type: 'phone',
+   *     expires_at: 1700000000
+   *   },
+   *   error: null
+   * }
+   * ```
+   *
+   * @example Create a challenge for a phone factor (WhatsApp)
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.challenge({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   *   channel: 'whatsapp',
+   * })
+   * ```
+   *
+   * @exampleResponse Create a challenge for a phone factor (WhatsApp)
+   * ```json
+   * {
+   *   data: {
+   *     id: '<ID>',
+   *     expires_at: 1700000000
+   *   },
+   *   error: null
+   * }
+   * ```
    */
   challenge(params: MFAChallengeTOTPParams): Promise<Prettify<AuthMFAChallengeTOTPResponse>>
   challenge(params: MFAChallengePhoneParams): Promise<Prettify<AuthMFAChallengePhoneResponse>>
@@ -1266,6 +1439,81 @@ export interface GoTrueMFAApi {
   /**
    * Verifies a code against a challenge. The verification code is
    * provided by the user by entering a code seen in their authenticator app.
+   *
+   * @category Auth
+   * @subcategory Auth MFA
+   *
+   * @remarks
+   * - To verify a challenge, please [create a challenge](/docs/reference/javascript/auth-mfa-challenge) first.
+   *
+   * @example Verify a challenge for a factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.verify({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   *   challengeId: '4034ae6f-a8ce-4fb5-8ee5-69a5863a7c15',
+   *   code: '123456'
+   * })
+   * ```
+   *
+   * @exampleResponse Verify a challenge for a factor
+   * ```json
+   * {
+   *   data: {
+   *     access_token: '<ACCESS_TOKEN>',
+   *     token_type: 'Bearer',
+   *     expires_in: 3600,
+   *     refresh_token: '<REFRESH_TOKEN>',
+   *     user: {
+   *       id: '11111111-1111-1111-1111-111111111111',
+   *       aud: 'authenticated',
+   *       role: 'authenticated',
+   *       email: 'example@email.com',
+   *       email_confirmed_at: '2024-01-01T00:00:00Z',
+   *       phone: '',
+   *       confirmation_sent_at: '2024-01-01T00:00:00Z',
+   *       confirmed_at: '2024-01-01T00:00:00Z',
+   *       last_sign_in_at: '2024-01-01T00:00:00Z',
+   *       app_metadata: {
+   *         provider: 'email',
+   *         providers: [
+   *           "email",
+   *         ]
+   *       },
+   *       user_metadata: {},
+   *       identities: [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": true,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "email@example.com"
+   *         },
+   *       ],
+   *       created_at: '2024-01-01T00:00:00Z',
+   *       updated_at: '2024-01-01T00:00:00Z',
+   *       is_anonymous: false,
+   *       factors: [
+   *         "id": '<ID>',
+   *         "friendly_name": 'Important Auth App',
+   *         "factor_type": 'totp',
+   *         "status": 'verified',
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z"
+   *       ]
+   *     }
+   *   }
+   *   error: null
+   * }
+   * ```
    */
   verify(params: MFAVerifyTOTPParams): Promise<AuthMFAVerifyResponse>
   verify(params: MFAVerifyPhoneParams): Promise<AuthMFAVerifyResponse>
@@ -1275,12 +1523,108 @@ export interface GoTrueMFAApi {
   /**
    * Unenroll removes a MFA factor.
    * A user has to have an `aal2` authenticator level in order to unenroll a `verified` factor.
+   *
+   * @category Auth
+   * @subcategory Auth MFA
+   *
+   * @example Unenroll a factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.unenroll({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   * })
+   * ```
+   *
+   * @exampleResponse Unenroll a factor
+   * ```json
+   * {
+   *   data: {
+   *     id: '<FACTOR_ID>'
+   *   },
+   *   error: null
+   * }
+   * ```
    */
   unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse>
 
   /**
    * Helper method which creates a challenge and immediately uses the given code to verify against it thereafter. The verification code is
    * provided by the user by entering a code seen in their authenticator app.
+   *
+   * @category Auth
+   * @subcategory Auth MFA
+   *
+   * @remarks
+   * - Intended for use with only TOTP factors.
+   * - An [enrolled factor](/docs/reference/javascript/auth-mfa-enroll) is required before invoking `challengeAndVerify()`.
+   * - Executes [`mfa.challenge()`](/docs/reference/javascript/auth-mfa-challenge) and [`mfa.verify()`](/docs/reference/javascript/auth-mfa-verify) in a single step.
+   *
+   * @example Create and verify a challenge for a factor
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.challengeAndVerify({
+   *   factorId: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   *   code: '123456'
+   * })
+   * ```
+   *
+   * @exampleResponse Create and verify a challenge for a factor
+   * ```json
+   * {
+   *   data: {
+   *     access_token: '<ACCESS_TOKEN>',
+   *     token_type: 'Bearer',
+   *     expires_in: 3600,
+   *     refresh_token: '<REFRESH_TOKEN>',
+   *     user: {
+   *       id: '11111111-1111-1111-1111-111111111111',
+   *       aud: 'authenticated',
+   *       role: 'authenticated',
+   *       email: 'example@email.com',
+   *       email_confirmed_at: '2024-01-01T00:00:00Z',
+   *       phone: '',
+   *       confirmation_sent_at: '2024-01-01T00:00:00Z',
+   *       confirmed_at: '2024-01-01T00:00:00Z',
+   *       last_sign_in_at: '2024-01-01T00:00:00Z',
+   *       app_metadata: {
+   *         provider: 'email',
+   *         providers: [
+   *           "email",
+   *         ]
+   *       },
+   *       user_metadata: {},
+   *       identities: [
+   *         {
+   *           "identity_id": "22222222-2222-2222-2222-222222222222",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
+   *           "identity_data": {
+   *             "email": "example@email.com",
+   *             "email_verified": true,
+   *             "phone_verified": false,
+   *             "sub": "11111111-1111-1111-1111-111111111111"
+   *           },
+   *           "provider": "email",
+   *           "last_sign_in_at": "2024-01-01T00:00:00Z",
+   *           "created_at": "2024-01-01T00:00:00Z",
+   *           "updated_at": "2024-01-01T00:00:00Z",
+   *           "email": "email@example.com"
+   *         },
+   *       ],
+   *       created_at: '2024-01-01T00:00:00Z',
+   *       updated_at: '2024-01-01T00:00:00Z',
+   *       is_anonymous: false,
+   *       factors: [
+   *         "id": '<ID>',
+   *         "friendly_name": 'Important Auth App',
+   *         "factor_type": 'totp',
+   *         "status": 'verified',
+   *         "created_at": "2024-01-01T00:00:00Z",
+   *         "updated_at": "2024-01-01T00:00:00Z"
+   *       ]
+   *     }
+   *   }
+   *   error: null
+   * }
+   * ```
    */
   challengeAndVerify(params: MFAChallengeAndVerifyParams): Promise<AuthMFAVerifyResponse>
 
@@ -1291,6 +1635,9 @@ export interface GoTrueMFAApi {
    * @see {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    * @see {@link GoTrueClient#getUser}
    *
+   *
+   * @category Auth
+   * @subcategory Auth MFA
    */
   listFactors(): Promise<AuthMFAListFactorsResponse>
 
@@ -1308,6 +1655,43 @@ export interface GoTrueMFAApi {
    * will make a network request to validate the user and fetch their MFA factors.
    *
    * @param jwt Takes in an optional access token JWT. If no JWT is provided, the JWT from the current session is used.
+   *
+   * @category Auth
+   * @subcategory Auth MFA
+   *
+   * @remarks
+   * - Authenticator Assurance Level (AAL) is the measure of the strength of an authentication mechanism.
+   * - In Supabase, having an AAL of `aal1` refers to having the 1st factor of authentication such as an email and password or OAuth sign-in while `aal2` refers to the 2nd factor of authentication such as a time-based, one-time-password (TOTP) or Phone factor.
+   * - If the user has a verified factor, the `nextLevel` field will return `aal2`, else, it will return `aal1`.
+   * - An optional `jwt` parameter can be passed to check the AAL level of a specific JWT instead of the current session.
+   *
+   * @example Get the AAL details of a session
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+   * const { currentLevel, nextLevel, currentAuthenticationMethods } = data
+   * ```
+   *
+   * @exampleResponse Get the AAL details of a session
+   * ```json
+   * {
+   *   data: {
+   *     currentLevel: 'aal1',
+   *     nextLevel: 'aal2',
+   *     currentAuthenticationMethods: [
+   *       {
+   *         method: 'password',
+   *         timestamp: 1700000000
+   *       }
+   *     ]
+   *   }
+   *   error: null
+   * }
+   * ```
+   *
+   * @example Get the AAL details for a specific JWT
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel(jwt)
+   * ```
    */
   getAuthenticatorAssuranceLevel(
     jwt?: string
@@ -1360,6 +1744,33 @@ export interface GoTrueAdminMFAApi {
   /**
    * Lists all factors associated to a user.
    *
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @example List all factors for a user
+   * ```js
+   * const { data, error } = await supabase.auth.admin.mfa.listFactors()
+   * ```
+   *
+   * @exampleResponse List all factors for a user
+   * ```json
+   * {
+   *   data: {
+   *     factors: Factor[
+   *       {
+   *         id: '<ID>',
+   *         friendly_name: 'Auth App Factor',
+   *         factor_type: 'totp',
+   *         status: 'verified',
+   *         created_at: '2024-01-01T00:00:00Z',
+   *         updated_at: '2024-01-01T00:00:00Z'
+   *       }
+   *     ]
+   *   },
+   *   error: null
+   * }
+   * ```
    */
   listFactors(params: AuthMFAAdminListFactorsParams): Promise<AuthMFAAdminListFactorsResponse>
 
@@ -1370,6 +1781,27 @@ export interface GoTrueAdminMFAApi {
    * @see {@link GoTrueMFAApi#unenroll}
    *
    * @expermental
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @example Delete a factor for a user
+   * ```js
+   * const { data, error } = await supabase.auth.admin.mfa.deleteFactor({
+   *   id: '34e770dd-9ff9-416c-87fa-43b31d7ef225',
+   *   userId: 'a89baba7-b1b7-440f-b4bb-91026967f66b',
+   * })
+   * ```
+   *
+   * @exampleResponse Delete a factor for a user
+   * ```json
+   * {
+   *   data: {
+   *     id: '34e770dd-9ff9-416c-87fa-43b31d7ef225'
+   *   },
+   *   error: null
+   * }
+   * ```
    */
   deleteFactor(params: AuthMFAAdminDeleteFactorParams): Promise<AuthMFAAdminDeleteFactorResponse>
 }
@@ -1440,15 +1872,13 @@ type MFAEnrollTOTPParamFields = {
   issuer?: string
 }
 
-export type MFAEnrollTOTPParams = Prettify<MFAEnrollParamsBase<'totp'> & MFAEnrollTOTPParamFields>
+export type MFAEnrollTOTPParams = MFAEnrollParamsBase<'totp'> & MFAEnrollTOTPParamFields
 
 type MFAEnrollPhoneParamFields = {
   /** Phone number associated with a factor. Number should conform to E.164 format */
   phone: string
 }
-export type MFAEnrollPhoneParams = Prettify<
-  MFAEnrollParamsBase<'phone'> & MFAEnrollPhoneParamFields
->
+export type MFAEnrollPhoneParams = MFAEnrollParamsBase<'phone'> & MFAEnrollPhoneParamFields
 
 type MFAEnrollWebauthnFields = {
   /** no extra fields for now, kept for consistency and for possible future changes  */
@@ -1459,9 +1889,7 @@ type MFAEnrollWebauthnFields = {
  * Creates an unverified WebAuthn factor that must be verified with a credential.
  * @see {@link https://w3c.github.io/webauthn/#sctn-registering-a-new-credential W3C WebAuthn Spec - Registering a New Credential}
  */
-export type MFAEnrollWebauthnParams = Prettify<
-  MFAEnrollParamsBase<'webauthn'> & MFAEnrollWebauthnFields
->
+export type MFAEnrollWebauthnParams = MFAEnrollParamsBase<'webauthn'> & MFAEnrollWebauthnFields
 
 type AuthMFAEnrollResponseBase<T extends FactorType> = {
   /** ID of the factor that was just enrolled (in an unverified state). */
@@ -1494,7 +1922,7 @@ type AuthMFAEnrollTOTPResponseFields = {
 }
 
 export type AuthMFAEnrollTOTPResponse = RequestResult<
-  Prettify<AuthMFAEnrollResponseBase<'totp'> & AuthMFAEnrollTOTPResponseFields>
+  AuthMFAEnrollResponseBase<'totp'> & AuthMFAEnrollTOTPResponseFields
 >
 
 type AuthMFAEnrollPhoneResponseFields = {
@@ -1503,7 +1931,7 @@ type AuthMFAEnrollPhoneResponseFields = {
 }
 
 export type AuthMFAEnrollPhoneResponse = RequestResult<
-  Prettify<AuthMFAEnrollResponseBase<'phone'> & AuthMFAEnrollPhoneResponseFields>
+  AuthMFAEnrollResponseBase<'phone'> & AuthMFAEnrollPhoneResponseFields
 >
 
 type AuthMFAEnrollWebauthnFields = {
@@ -1516,11 +1944,11 @@ type AuthMFAEnrollWebauthnFields = {
  * @see {@link https://w3c.github.io/webauthn/#sctn-registering-a-new-credential W3C WebAuthn Spec - Registering a New Credential}
  */
 export type AuthMFAEnrollWebauthnResponse = RequestResult<
-  Prettify<AuthMFAEnrollResponseBase<'webauthn'> & AuthMFAEnrollWebauthnFields>
+  AuthMFAEnrollResponseBase<'webauthn'> & AuthMFAEnrollWebauthnFields
 >
 
 export type JwtHeader = {
-  alg: 'RS256' | 'ES256' | 'HS256'
+  alg: 'RS256' | 'ES256' | 'HS256' | (string & {})
   kid: string
   typ: string
 }
@@ -1571,7 +1999,7 @@ export interface JwtPayload extends RequiredClaims {
 }
 
 export interface JWK {
-  kty: 'RSA' | 'EC' | 'oct'
+  kty: 'RSA' | 'EC' | 'oct' | (string & {})
   key_ops: string[]
   alg?: string
   kid?: string
@@ -1585,7 +2013,7 @@ export type SignOutScope = (typeof SIGN_OUT_SCOPES)[number]
  * OAuth client grant types supported by the OAuth 2.1 server.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
-export type OAuthClientGrantType = 'authorization_code' | 'refresh_token'
+export type OAuthClientGrantType = 'authorization_code' | 'refresh_token' | (string & {})
 
 /**
  * OAuth client response types supported by the OAuth 2.1 server.
@@ -1606,6 +2034,15 @@ export type OAuthClientType = 'public' | 'confidential'
 export type OAuthClientRegistrationType = 'dynamic' | 'manual'
 
 /**
+ * OAuth client token endpoint authentication method.
+ * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+ */
+export type OAuthClientTokenEndpointAuthMethod =
+  | 'none'
+  | 'client_secret_basic'
+  | 'client_secret_post'
+
+/**
  * OAuth client object returned from the OAuth 2.1 server.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */
@@ -1619,7 +2056,7 @@ export type OAuthClient = {
   /** Type of OAuth client */
   client_type: OAuthClientType
   /** Token endpoint authentication method */
-  token_endpoint_auth_method: string
+  token_endpoint_auth_method: OAuthClientTokenEndpointAuthMethod
   /** Registration type of the client */
   registration_type: OAuthClientRegistrationType
   /** URI of the OAuth client */
@@ -1657,6 +2094,8 @@ export type CreateOAuthClientParams = {
   response_types?: OAuthClientResponseType[]
   /** Scope of the OAuth client */
   scope?: string
+  /** Token endpoint authentication method (defaults to server default if not specified) */
+  token_endpoint_auth_method?: OAuthClientTokenEndpointAuthMethod
 }
 
 /**
@@ -1675,6 +2114,8 @@ export type UpdateOAuthClientParams = {
   redirect_uris?: string[]
   /** Array of allowed grant types */
   grant_types?: OAuthClientGrantType[]
+  /** Token endpoint authentication method */
+  token_endpoint_auth_method?: OAuthClientTokenEndpointAuthMethod
 }
 
 /**
@@ -1707,6 +2148,9 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory OAuth Admin
    */
   listClients(params?: PageParams): Promise<OAuthClientListResponse>
 
@@ -1715,6 +2159,9 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory OAuth Admin
    */
   createClient(params: CreateOAuthClientParams): Promise<OAuthClientResponse>
 
@@ -1723,6 +2170,9 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory OAuth Admin
    */
   getClient(clientId: string): Promise<OAuthClientResponse>
 
@@ -1731,6 +2181,9 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory OAuth Admin
    */
   updateClient(clientId: string, params: UpdateOAuthClientParams): Promise<OAuthClientResponse>
 
@@ -1739,6 +2192,9 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory OAuth Admin
    */
   deleteClient(clientId: string): Promise<{ data: null; error: AuthError | null }>
 
@@ -1747,8 +2203,275 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory OAuth Admin
    */
   regenerateClientSecret(clientId: string): Promise<OAuthClientResponse>
+}
+
+/**
+ * Type of custom identity provider.
+ */
+export type CustomProviderType = 'oauth2' | 'oidc'
+
+/**
+ * OIDC discovery document fields.
+ * Populated when the server successfully fetches and validates the
+ * provider's OpenID Connect discovery document.
+ */
+export type OIDCDiscoveryDocument = {
+  /** The issuer identifier */
+  issuer: string
+  /** URL of the authorization endpoint */
+  authorization_endpoint: string
+  /** URL of the token endpoint */
+  token_endpoint: string
+  /** URL of the JSON Web Key Set */
+  jwks_uri: string
+  /** URL of the userinfo endpoint */
+  userinfo_endpoint?: string
+  /** URL of the revocation endpoint */
+  revocation_endpoint?: string
+  /** List of supported scopes */
+  supported_scopes?: string[]
+  /** List of supported response types */
+  supported_response_types?: string[]
+  /** List of supported subject types */
+  supported_subject_types?: string[]
+  /** List of supported ID token signing algorithms */
+  supported_id_token_signing_algs?: string[]
+}
+
+/**
+ * Custom OAuth/OIDC provider object returned from the admin API.
+ */
+export type CustomOAuthProvider = {
+  /** Unique identifier (UUID) */
+  id: string
+  /** Provider type */
+  provider_type: CustomProviderType
+  /** Provider identifier (e.g. `custom:mycompany`) */
+  identifier: string
+  /** Human-readable name */
+  name: string
+  /** OAuth client ID */
+  client_id: string
+  /** Additional client IDs accepted during token validation */
+  acceptable_client_ids?: string[]
+  /** OAuth scopes requested during authorization */
+  scopes?: string[]
+  /** Whether PKCE is enabled */
+  pkce_enabled?: boolean
+  /** Mapping of provider attributes to Supabase user attributes */
+  attribute_mapping?: Record<string, any>
+  /** Additional parameters sent with the authorization request */
+  authorization_params?: Record<string, string>
+  /** Whether the provider is enabled */
+  enabled?: boolean
+  /** Whether email is optional for this provider */
+  email_optional?: boolean
+  /** OIDC issuer URL */
+  issuer?: string
+  /** OIDC discovery URL */
+  discovery_url?: string
+  /** Whether to skip nonce check (OIDC) */
+  skip_nonce_check?: boolean
+  /** OAuth2 authorization URL */
+  authorization_url?: string
+  /** OAuth2 token URL */
+  token_url?: string
+  /** OAuth2 userinfo URL */
+  userinfo_url?: string
+  /** JWKS URI for token verification */
+  jwks_uri?: string
+  /** OIDC discovery document (OIDC providers only) */
+  discovery_document?: OIDCDiscoveryDocument | null
+  /** Timestamp when the provider was created */
+  created_at: string
+  /** Timestamp when the provider was last updated */
+  updated_at: string
+}
+
+/**
+ * Parameters for creating a new custom provider.
+ */
+export type CreateCustomProviderParams = {
+  /** Provider type */
+  provider_type: CustomProviderType
+  /** Provider identifier (e.g. `custom:mycompany`) */
+  identifier: string
+  /** Human-readable name */
+  name: string
+  /** OAuth client ID */
+  client_id: string
+  /** OAuth client secret (write-only, not returned in responses) */
+  client_secret: string
+  /** Additional client IDs accepted during token validation */
+  acceptable_client_ids?: string[]
+  /** OAuth scopes requested during authorization */
+  scopes?: string[]
+  /** Whether PKCE is enabled */
+  pkce_enabled?: boolean
+  /** Mapping of provider attributes to Supabase user attributes */
+  attribute_mapping?: Record<string, any>
+  /** Additional parameters sent with the authorization request */
+  authorization_params?: Record<string, string>
+  /** Whether the provider is enabled */
+  enabled?: boolean
+  /** Whether email is optional for this provider */
+  email_optional?: boolean
+  /** OIDC issuer URL */
+  issuer?: string
+  /** OIDC discovery URL */
+  discovery_url?: string
+  /** Whether to skip nonce check (OIDC) */
+  skip_nonce_check?: boolean
+  /** OAuth2 authorization URL */
+  authorization_url?: string
+  /** OAuth2 token URL */
+  token_url?: string
+  /** OAuth2 userinfo URL */
+  userinfo_url?: string
+  /** JWKS URI for token verification */
+  jwks_uri?: string
+}
+
+/**
+ * Parameters for updating an existing custom provider.
+ * All fields are optional. Only provided fields will be updated.
+ * `provider_type` and `identifier` are immutable and cannot be changed.
+ */
+export type UpdateCustomProviderParams = {
+  /** Human-readable name */
+  name?: string
+  /** OAuth client ID */
+  client_id?: string
+  /** OAuth client secret (write-only, not returned in responses) */
+  client_secret?: string
+  /** Additional client IDs accepted during token validation */
+  acceptable_client_ids?: string[]
+  /** OAuth scopes requested during authorization */
+  scopes?: string[]
+  /** Whether PKCE is enabled */
+  pkce_enabled?: boolean
+  /** Mapping of provider attributes to Supabase user attributes */
+  attribute_mapping?: Record<string, any>
+  /** Additional parameters sent with the authorization request */
+  authorization_params?: Record<string, string>
+  /** Whether the provider is enabled */
+  enabled?: boolean
+  /** Whether email is optional for this provider */
+  email_optional?: boolean
+  /** OIDC issuer URL */
+  issuer?: string
+  /** OIDC discovery URL */
+  discovery_url?: string
+  /** Whether to skip nonce check (OIDC) */
+  skip_nonce_check?: boolean
+  /** OAuth2 authorization URL */
+  authorization_url?: string
+  /** OAuth2 token URL */
+  token_url?: string
+  /** OAuth2 userinfo URL */
+  userinfo_url?: string
+  /** JWKS URI for token verification */
+  jwks_uri?: string
+}
+
+/**
+ * Parameters for listing custom providers.
+ */
+export type ListCustomProvidersParams = {
+  /** Filter by provider type */
+  type?: CustomProviderType
+}
+
+/**
+ * Response type for custom provider operations.
+ */
+export type CustomProviderResponse = RequestResult<CustomOAuthProvider>
+
+/**
+ * Response type for listing custom providers.
+ */
+export type CustomProviderListResponse =
+  | {
+      data: { providers: CustomOAuthProvider[] }
+      error: null
+    }
+  | {
+      data: { providers: [] }
+      error: AuthError
+    }
+
+/**
+ * Contains all custom OIDC/OAuth provider administration methods.
+ */
+export interface GoTrueAdminCustomProvidersApi {
+  /**
+   * Lists all custom providers with optional type filter.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   */
+  listProviders(params?: ListCustomProvidersParams): Promise<CustomProviderListResponse>
+
+  /**
+   * Creates a new custom OIDC/OAuth provider.
+   *
+   * For OIDC providers, the server fetches and validates the OpenID Connect discovery document
+   * from the issuer's well-known endpoint (or the provided `discovery_url`) at creation time.
+   * This may return a validation error (`error_code: "validation_failed"`) if the discovery
+   * document is unreachable, not valid JSON, missing required fields, or if the issuer
+   * in the document does not match the expected issuer.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   */
+  createProvider(params: CreateCustomProviderParams): Promise<CustomProviderResponse>
+
+  /**
+   * Gets details of a specific custom provider by identifier.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   */
+  getProvider(identifier: string): Promise<CustomProviderResponse>
+
+  /**
+   * Updates an existing custom provider.
+   *
+   * When `issuer` or `discovery_url` is changed on an OIDC provider, the server re-fetches and
+   * validates the discovery document before persisting. This may return a validation error
+   * (`error_code: "validation_failed"`) if the discovery document is unreachable, invalid, or
+   * the issuer does not match.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   */
+  updateProvider(
+    identifier: string,
+    params: UpdateCustomProviderParams
+  ): Promise<CustomProviderResponse>
+
+  /**
+   * Deletes a custom provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   */
+  deleteProvider(identifier: string): Promise<{ data: null; error: AuthError | null }>
 }
 
 /**
@@ -1897,6 +2620,9 @@ export interface AuthOAuthServerApi {
    *
    * @param authorizationId - The authorization ID from the authorization request
    * @returns Authorization details or redirect URL depending on consent status
+   *
+   * @category Auth
+   * @subcategory OAuth Server
    */
   getAuthorizationDetails(authorizationId: string): Promise<AuthOAuthAuthorizationDetailsResponse>
 
@@ -1911,6 +2637,9 @@ export interface AuthOAuthServerApi {
    * @param options - Optional parameters
    * @param options.skipBrowserRedirect - If false (default), automatically redirects the browser to the OAuth client. If true, returns the redirect_url without automatic redirect (useful for custom handling).
    * @returns Redirect URL to send the user back to the OAuth client with authorization code
+   *
+   * @category Auth
+   * @subcategory OAuth Server
    */
   approveAuthorization(
     authorizationId: string,
@@ -1928,6 +2657,9 @@ export interface AuthOAuthServerApi {
    * @param options - Optional parameters
    * @param options.skipBrowserRedirect - If false (default), automatically redirects the browser to the OAuth client. If true, returns the redirect_url without automatic redirect (useful for custom handling).
    * @returns Redirect URL to send the user back to the OAuth client with error information
+   *
+   * @category Auth
+   * @subcategory OAuth Server
    */
   denyAuthorization(
     authorizationId: string,
@@ -1939,6 +2671,9 @@ export interface AuthOAuthServerApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * @returns Response with array of OAuth grants with client information and granted scopes
+   *
+   * @category Auth
+   * @subcategory OAuth Server
    */
   listGrants(): Promise<AuthOAuthGrantsResponse>
 
@@ -1952,6 +2687,231 @@ export interface AuthOAuthServerApi {
    * @param options - Revocation options
    * @param options.clientId - The OAuth client identifier (UUID) to revoke access for
    * @returns Empty response on successful revocation
+   *
+   * @category Auth
+   * @subcategory OAuth Server
    */
   revokeGrant(options: { clientId: string }): Promise<AuthOAuthRevokeGrantResponse>
+}
+
+// --- Passkey Types ---
+
+/** Response from POST /passkeys/registration/options */
+export type PasskeyRegistrationOptionsResponse = {
+  challenge_id: string
+  options: ServerCredentialCreationOptions
+  expires_at: number
+}
+
+/** Request body for POST /passkeys/registration/verify */
+export type PasskeyRegistrationVerifyParams = {
+  challenge_id: string
+  credential: RegistrationResponseJSON
+}
+
+/** Response from POST /passkeys/registration/verify */
+export type PasskeyMetadata = {
+  id: string
+  friendly_name?: string
+  created_at: string
+}
+
+/** Response from POST /passkeys/authentication/options */
+export type PasskeyAuthenticationOptionsResponse = {
+  challenge_id: string
+  options: ServerCredentialRequestOptions
+  expires_at: number
+}
+
+/** Request body for POST /passkeys/authentication/verify */
+export type PasskeyAuthenticationVerifyParams = {
+  challenge_id: string
+  credential: AuthenticationResponseJSON
+}
+
+/** Item in the passkeys list (GET /passkeys/ and admin list) */
+export type PasskeyListItem = {
+  id: string
+  friendly_name?: string
+  created_at: string
+  last_used_at?: string
+}
+
+// --- Passkey SDK Method Parameter/Response Types ---
+
+export type SignInWithPasskeyCredentials = {
+  options?: {
+    captchaToken?: string
+    signal?: AbortSignal
+  }
+}
+
+export type RegisterPasskeyCredentials = {
+  options?: {
+    signal?: AbortSignal
+  }
+}
+
+export type VerifyPasskeyRegistrationParams = {
+  /** Challenge ID from startRegistration */
+  challengeId: string
+  /** Serialized credential from navigator.credentials.create() */
+  credential: ServerCredentialResponse
+}
+
+export type StartPasskeyAuthenticationParams = {
+  options?: {
+    captchaToken?: string
+  }
+}
+
+export type VerifyPasskeyAuthenticationParams = {
+  /** Challenge ID from startAuthentication */
+  challengeId: string
+  /** Serialized credential from navigator.credentials.get() */
+  credential: ServerCredentialResponse
+}
+
+export type PasskeyUpdateParams = {
+  /** UUID of the passkey to update */
+  passkeyId: string
+  /** New friendly name (max 120 chars) */
+  friendlyName: string
+}
+
+export type PasskeyDeleteParams = {
+  /** UUID of the passkey to delete */
+  passkeyId: string
+}
+
+// --- Passkey Response Types ---
+
+export type AuthPasskeyRegistrationOptionsResponse =
+  RequestResult<PasskeyRegistrationOptionsResponse>
+export type AuthPasskeyRegistrationVerifyResponse = RequestResult<
+  PasskeyMetadata,
+  WebAuthnError | AuthError
+>
+export type AuthPasskeyAuthenticationOptionsResponse =
+  RequestResult<PasskeyAuthenticationOptionsResponse>
+export type AuthPasskeyAuthenticationVerifyResponse = RequestResult<
+  { session: Session | null; user: User | null },
+  WebAuthnError | AuthError
+>
+export type AuthPasskeyListResponse = RequestResult<PasskeyListItem[]>
+export type AuthPasskeyUpdateResponse = RequestResult<PasskeyListItem>
+export type AuthPasskeyDeleteResponse = RequestResult<null>
+
+// --- Passkey Admin Types ---
+
+export type AuthPasskeyAdminListParams = {
+  userId: string
+}
+
+export type AuthPasskeyAdminDeleteParams = {
+  userId: string
+  passkeyId: string
+}
+
+// --- Passkey Namespace Interfaces ---
+
+/**
+ * Lower-level two-step API and management methods for passkeys.
+ * Access via `supabase.auth.passkey`.
+ */
+export interface AuthPasskeyApi {
+  // Two-step registration
+  /**
+   * Starts the passkey registration ceremony. Fetches a registration challenge
+   * and credential creation options from the server. Used as the first step of
+   * a two-step registration flow when the caller wants to handle
+   * `navigator.credentials.create()` themselves.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
+  startRegistration(): Promise<AuthPasskeyRegistrationOptionsResponse>
+
+  /**
+   * Verifies a passkey registration credential against a previously issued
+   * challenge. Used as the second step of a two-step registration flow.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
+  verifyRegistration(
+    params: VerifyPasskeyRegistrationParams
+  ): Promise<AuthPasskeyRegistrationVerifyResponse>
+
+  // Two-step authentication
+  /**
+   * Starts the passkey authentication ceremony. Fetches an authentication
+   * challenge and credential request options from the server. Used as the
+   * first step of a two-step sign-in flow when the caller wants to handle
+   * `navigator.credentials.get()` themselves.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
+  startAuthentication(
+    params?: StartPasskeyAuthenticationParams
+  ): Promise<AuthPasskeyAuthenticationOptionsResponse>
+
+  /**
+   * Verifies a passkey authentication credential against a previously issued
+   * challenge. Used as the second step of a two-step sign-in flow.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
+  verifyAuthentication(
+    params: VerifyPasskeyAuthenticationParams
+  ): Promise<AuthPasskeyAuthenticationVerifyResponse>
+
+  // Management
+  /**
+   * Lists all passkeys registered for the currently signed-in user.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
+  list(): Promise<AuthPasskeyListResponse>
+
+  /**
+   * Updates a passkey's friendly name.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
+  update(params: PasskeyUpdateParams): Promise<AuthPasskeyUpdateResponse>
+
+  /**
+   * Deletes a passkey for the currently signed-in user.
+   *
+   * @category Auth
+   * @subcategory Auth Passkey
+   */
+  delete(params: PasskeyDeleteParams): Promise<AuthPasskeyDeleteResponse>
+}
+
+export interface GoTrueAdminPasskeyApi {
+  /**
+   * Lists all passkeys registered for a specific user.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Passkey Admin
+   */
+  listPasskeys(params: AuthPasskeyAdminListParams): Promise<AuthPasskeyListResponse>
+
+  /**
+   * Deletes a specific passkey for a specific user.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Passkey Admin
+   */
+  deletePasskey(params: AuthPasskeyAdminDeleteParams): Promise<AuthPasskeyDeleteResponse>
 }

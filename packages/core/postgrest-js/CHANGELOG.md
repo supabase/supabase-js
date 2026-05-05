@@ -1,3 +1,149 @@
+## 2.105.2 (2026-05-04)
+
+### 🩹 Fixes
+
+- **postgrest:** unify insert/upsert signatures ([#2315](https://github.com/supabase/supabase-js/pull/2315))
+- **misc:** reduce any usage across packages ([#2314](https://github.com/supabase/supabase-js/pull/2314))
+- **misc:** widen enum-like unions with (string & {}) for forward compat ([#2303](https://github.com/supabase/supabase-js/pull/2303))
+
+## 2.105.1 (2026-04-28)
+
+### 🩹 Fixes
+
+- **postgrest:** query reassignment regression ([#2292](https://github.com/supabase/supabase-js/pull/2292))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.105.0 (2026-04-27)
+
+### 🩹 Fixes
+
+- **postgrest:** narrow column types after not(column, is, null) ([#2264](https://github.com/supabase/supabase-js/pull/2264))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.104.1 (2026-04-23)
+
+### 🩹 Fixes
+
+- **postgrest:** restore runtime test files to tstyche scope ([#2266](https://github.com/supabase/supabase-js/pull/2266))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.104.0 (2026-04-20)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.103.3 (2026-04-16)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.103.2 (2026-04-15)
+
+### 🩹 Fixes
+
+- **misc:** add explicit return types to toJSON methods for JSR compat ([#2252](https://github.com/supabase/supabase-js/pull/2252))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.103.1 (2026-04-15)
+
+### 🩹 Fixes
+
+- **postgrest:** handle bigint rpc ([#2245](https://github.com/supabase/supabase-js/pull/2245))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.103.0 (2026-04-09)
+
+### 🚀 Features
+
+- **postgrest:** add stripNulls method for null value stripping ([#2189](https://github.com/supabase/supabase-js/pull/2189))
+
+### 🩹 Fixes
+
+- **postgrest:** fix scalar computed column type inference for isNotNullable and SETOF scalar ([#2224](https://github.com/supabase/supabase-js/pull/2224))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Seydi Charyyev @TheSeydiCharyyev
+
+## 2.102.1 (2026-04-07)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.102.0 (2026-04-07)
+
+### 🚀 Features
+
+- **postgrest:** add success discriminator field to PostgREST response types ([#2198](https://github.com/supabase/supabase-js/pull/2198))
+- **postgrest:** add automatic retries for transient errors ([#2072](https://github.com/supabase/supabase-js/pull/2072))
+
+### 🩹 Fixes
+
+- **postgrest:** reject excess properties in insert, update, and upsert ([#2186](https://github.com/supabase/supabase-js/pull/2186))
+- **postgrest:** add toJSON to PostgrestError for correct JSON serialization ([#2212](https://github.com/supabase/supabase-js/pull/2212))
+
+### ❤️ Thank You
+
+- Clay
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+- oniani1
+
+## 2.101.1 (2026-03-31)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.101.0 (2026-03-30)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.100.1 (2026-03-26)
+
+### 🩹 Fixes
+
+- **postgrest:** prevent Args: never functions from being classified as computed fields ([#2195](https://github.com/supabase/supabase-js/pull/2195))
+- **postgrest:** narrow tstyche testFileMatch to only type test files ([#2193](https://github.com/supabase/supabase-js/pull/2193))
+- **postgrest:** fix maybeSingle for all request methods by removing Accept header override ([#2182](https://github.com/supabase/supabase-js/pull/2182))
+- **postgrest:** add type safety for eq() and neq() column names ([#2175](https://github.com/supabase/supabase-js/pull/2175))
+
+### ❤️ Thank You
+
+- Ayush Baluni @aayushbaluni
+- Katerina Skroumpelou @mandarini
+
+## 2.100.0 (2026-03-23)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.99.2 (2026-03-16)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.99.1 (2026-03-11)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.99.0 (2026-03-09)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.98.0 (2026-02-26)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
 ## 2.97.0 (2026-02-18)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.

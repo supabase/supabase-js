@@ -1,3 +1,159 @@
+## 2.105.2 (2026-05-04)
+
+### 🩹 Fixes
+
+- **misc:** reduce any usage across packages ([#2314](https://github.com/supabase/supabase-js/pull/2314))
+- **misc:** widen enum-like unions with (string & {}) for forward compat ([#2303](https://github.com/supabase/supabase-js/pull/2303))
+
+## 2.105.1 (2026-04-28)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.105.0 (2026-04-27)
+
+### 🩹 Fixes
+
+- **storage:** forward duplex option for stream uploads via uploadToSignedUrl ([#2289](https://github.com/supabase/supabase-js/pull/2289))
+- **storage:** apply metadata, headers, and cacheControl dedupe to uploadToSignedUrl ([#2275](https://github.com/supabase/supabase-js/pull/2275))
+
+### ❤️ Thank You
+
+- oniani1
+
+## 2.104.1 (2026-04-23)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.104.0 (2026-04-20)
+
+### 🚀 Features
+
+- **storage:** extract shared header normalization utility ([#2251](https://github.com/supabase/supabase-js/pull/2251))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.103.3 (2026-04-16)
+
+### 🩹 Fixes
+
+- **storage:** correct signedUrl type to allow null in createSignedUrls ([#2254](https://github.com/supabase/supabase-js/pull/2254))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.103.2 (2026-04-15)
+
+### 🩹 Fixes
+
+- **misc:** add explicit return types to toJSON methods for JSR compat ([#2252](https://github.com/supabase/supabase-js/pull/2252))
+- **storage:** remove client-side signed URL render endpoint normalization ([#2249](https://github.com/supabase/supabase-js/pull/2249))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.103.1 (2026-04-15)
+
+### 🩹 Fixes
+
+- **storage:** apply empty transform check to download and getPublicUrl ([#2219](https://github.com/supabase/supabase-js/pull/2219))
+- **storage:** add toJSON to StorageError for correct JSON serialization ([#2246](https://github.com/supabase/supabase-js/pull/2246))
+
+### ❤️ Thank You
+
+- oniani1
+
+## 2.103.0 (2026-04-09)
+
+### 🚀 Features
+
+- **storage:** add cacheNonce parameter for download ([#2234](https://github.com/supabase/supabase-js/pull/2234))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.102.1 (2026-04-07)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.102.0 (2026-04-07)
+
+### 🩹 Fixes
+
+- **storage:** avoid duplicate content-type headers in vector requests ([#2220](https://github.com/supabase/supabase-js/pull/2220))
+- **storage:** set correct content-type for uploads ([#2211](https://github.com/supabase/supabase-js/pull/2211))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
+## 2.101.1 (2026-03-31)
+
+### 🩹 Fixes
+
+- **storage:** support exactOptionalPropertyTypes ([#2200](https://github.com/supabase/supabase-js/pull/2200))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.101.0 (2026-03-30)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.100.1 (2026-03-26)
+
+### 🩹 Fixes
+
+- **storage:** spread all DEFAULT_FILE_OPTIONS in uploadToSignedUrl ([#2194](https://github.com/supabase/supabase-js/pull/2194))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.100.0 (2026-03-23)
+
+### 🩹 Fixes
+
+- **storage:** structural detection on json() to detect Response-like errors ([#2179](https://github.com/supabase/supabase-js/pull/2179))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.99.2 (2026-03-16)
+
+### 🩹 Fixes
+
+- **storage:** do not rewrite signed URL to render endpoint for empty transform object ([#2162](https://github.com/supabase/supabase-js/pull/2162))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.99.1 (2026-03-11)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.99.0 (2026-03-09)
+
+### 🩹 Fixes
+
+- **storage:** improve FileObject type accuracy with nullable fields ([#2116](https://github.com/supabase/supabase-js/pull/2116))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.98.0 (2026-02-26)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
 ## 2.97.0 (2026-02-18)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.

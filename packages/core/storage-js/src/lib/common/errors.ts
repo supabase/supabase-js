@@ -11,8 +11,8 @@ export type ErrorNamespace = 'storage' | 'vectors'
 export class StorageError extends Error {
   protected __isStorageError = true
   protected namespace: ErrorNamespace
-  status?: number
-  statusCode?: string
+  status: number | undefined
+  statusCode: string | undefined
 
   constructor(
     message: string,
@@ -25,6 +25,20 @@ export class StorageError extends Error {
     this.name = namespace === 'vectors' ? 'StorageVectorsError' : 'StorageError'
     this.status = status
     this.statusCode = statusCode
+  }
+
+  toJSON(): {
+    name: string
+    message: string
+    status: number | undefined
+    statusCode: string | undefined
+  } {
+    return {
+      name: this.name,
+      message: this.message,
+      status: this.status,
+      statusCode: this.statusCode,
+    }
   }
 }
 
@@ -57,12 +71,14 @@ export class StorageApiError extends StorageError {
     this.statusCode = statusCode
   }
 
-  toJSON() {
+  toJSON(): {
+    name: string
+    message: string
+    status: number | undefined
+    statusCode: string | undefined
+  } {
     return {
-      name: this.name,
-      message: this.message,
-      status: this.status,
-      statusCode: this.statusCode,
+      ...super.toJSON(),
     }
   }
 }

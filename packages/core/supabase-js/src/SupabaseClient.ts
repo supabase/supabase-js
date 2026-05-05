@@ -10,6 +10,7 @@ import {
   type RealtimeChannelOptions,
   RealtimeClient,
   type RealtimeClientOptions,
+  type RealtimeRemoveChannelResponse,
 } from '@supabase/realtime-js'
 import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
 import {
@@ -91,6 +92,9 @@ export default class SupabaseClient<
 
   /**
    * Create a new client for use in the browser.
+   *
+   * @category Initializing
+   *
    * @param supabaseUrl The unique Supabase URL which is supplied when you create a new project in your project dashboard.
    * @param supabaseKey The unique Supabase Key which is supplied when you create a new project in your project dashboard.
    * @param options.db.schema You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
@@ -101,11 +105,175 @@ export default class SupabaseClient<
    * @param options.storage Options passed along to the storage-js constructor.
    * @param options.global.fetch A custom fetch implementation.
    * @param options.global.headers Any additional headers to send with each network request.
-   * @example
+   *
+   * @example Creating a client
+   * ```js
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * // Create a single supabase client for interacting with your database
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
+   * ```
+   *
+   * @example With a custom domain
+   * ```js
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * // Use a custom domain as the supabase URL
+   * const supabase = createClient('https://my-custom-domain.com', 'your-publishable-key')
+   * ```
+   *
+   * @example With additional parameters
+   * ```js
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const options = {
+   *   db: {
+   *     schema: 'public',
+   *   },
+   *   auth: {
+   *     autoRefreshToken: true,
+   *     persistSession: true,
+   *     detectSessionInUrl: true
+   *   },
+   *   global: {
+   *     headers: { 'x-my-custom-header': 'my-app-name' },
+   *   },
+   * }
+   * const supabase = createClient("https://xyzcompany.supabase.co", "your-publishable-key", options)
+   * ```
+   *
+   * @exampleDescription With custom schemas
+   * By default the API server points to the `public` schema. You can enable other database schemas within the Dashboard.
+   * Go to [Settings > API > Exposed schemas](/dashboard/project/_/settings/api) and add the schema which you want to expose to the API.
+   *
+   * Note: each client connection can only access a single schema, so the code above can access the `other_schema` schema but cannot access the `public` schema.
+   *
+   * @example With custom schemas
+   * ```js
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key', {
+   *   // Provide a custom schema. Defaults to "public".
+   *   db: { schema: 'other_schema' }
+   * })
+   * ```
+   *
+   * @exampleDescription Custom fetch implementation
+   * `supabase-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests,
+   * but an alternative `fetch` implementation can be provided as an option.
+   * This is most useful in environments where `cross-fetch` is not compatible (for instance Cloudflare Workers).
+   *
+   * @example Custom fetch implementation
+   * ```js
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key', {
+   *   global: { fetch: fetch.bind(globalThis) }
+   * })
+   * ```
+   *
+   * @exampleDescription React Native options with AsyncStorage
+   * For React Native we recommend using `AsyncStorage` as the storage implementation for Supabase Auth.
+   *
+   * @example React Native options with AsyncStorage
+   * ```js
+   * import 'react-native-url-polyfill/auto'
+   * import { createClient } from '@supabase/supabase-js'
+   * import AsyncStorage from "@react-native-async-storage/async-storage";
+   *
+   * const supabase = createClient("https://xyzcompany.supabase.co", "your-publishable-key", {
+   *   auth: {
+   *     storage: AsyncStorage,
+   *     autoRefreshToken: true,
+   *     persistSession: true,
+   *     detectSessionInUrl: false,
+   *   },
+   * });
+   * ```
+   *
+   * @exampleDescription React Native options with Expo SecureStore
+   * If you wish to encrypt the user's session information, you can use `aes-js` and store the encryption key in Expo SecureStore.
+   * The `aes-js` library, a reputable JavaScript-only implementation of the AES encryption algorithm in CTR mode.
+   * A new 256-bit encryption key is generated using the `react-native-get-random-values` library.
+   * This key is stored inside Expo's SecureStore, while the value is encrypted and placed inside AsyncStorage.
+   *
+   * Please make sure that:
+   * - You keep the `expo-secure-store`, `aes-js` and `react-native-get-random-values` libraries up-to-date.
+   * - Choose the correct [`SecureStoreOptions`](https://docs.expo.dev/versions/latest/sdk/securestore/#securestoreoptions) for your app's needs.
+   *   E.g. [`SecureStore.WHEN_UNLOCKED`](https://docs.expo.dev/versions/latest/sdk/securestore/#securestorewhen_unlocked) regulates when the data can be accessed.
+   * - Carefully consider optimizations or other modifications to the above example, as those can lead to introducing subtle security vulnerabilities.
+   *
+   * @example React Native options with Expo SecureStore
+   * ```ts
+   * import 'react-native-url-polyfill/auto'
+   * import { createClient } from '@supabase/supabase-js'
+   * import AsyncStorage from '@react-native-async-storage/async-storage';
+   * import * as SecureStore from 'expo-secure-store';
+   * import * as aesjs from 'aes-js';
+   * import 'react-native-get-random-values';
+   *
+   * // As Expo's SecureStore does not support values larger than 2048
+   * // bytes, an AES-256 key is generated and stored in SecureStore, while
+   * // it is used to encrypt/decrypt values stored in AsyncStorage.
+   * class LargeSecureStore {
+   *   private async _encrypt(key: string, value: string) {
+   *     const encryptionKey = crypto.getRandomValues(new Uint8Array(256 / 8));
+   *
+   *     const cipher = new aesjs.ModeOfOperation.ctr(encryptionKey, new aesjs.Counter(1));
+   *     const encryptedBytes = cipher.encrypt(aesjs.utils.utf8.toBytes(value));
+   *
+   *     await SecureStore.setItemAsync(key, aesjs.utils.hex.fromBytes(encryptionKey));
+   *
+   *     return aesjs.utils.hex.fromBytes(encryptedBytes);
+   *   }
+   *
+   *   private async _decrypt(key: string, value: string) {
+   *     const encryptionKeyHex = await SecureStore.getItemAsync(key);
+   *     if (!encryptionKeyHex) {
+   *       return encryptionKeyHex;
+   *     }
+   *
+   *     const cipher = new aesjs.ModeOfOperation.ctr(aesjs.utils.hex.toBytes(encryptionKeyHex), new aesjs.Counter(1));
+   *     const decryptedBytes = cipher.decrypt(aesjs.utils.hex.toBytes(value));
+   *
+   *     return aesjs.utils.utf8.fromBytes(decryptedBytes);
+   *   }
+   *
+   *   async getItem(key: string) {
+   *     const encrypted = await AsyncStorage.getItem(key);
+   *     if (!encrypted) { return encrypted; }
+   *
+   *     return await this._decrypt(key, encrypted);
+   *   }
+   *
+   *   async removeItem(key: string) {
+   *     await AsyncStorage.removeItem(key);
+   *     await SecureStore.deleteItemAsync(key);
+   *   }
+   *
+   *   async setItem(key: string, value: string) {
+   *     const encrypted = await this._encrypt(key, value);
+   *
+   *     await AsyncStorage.setItem(key, encrypted);
+   *   }
+   * }
+   *
+   * const supabase = createClient("https://xyzcompany.supabase.co", "your-publishable-key", {
+   *   auth: {
+   *     storage: new LargeSecureStore(),
+   *     autoRefreshToken: true,
+   *     persistSession: true,
+   *     detectSessionInUrl: false,
+   *   },
+   * });
+   * ```
+   *
+   * @example With a database query
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
    *
-   * const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
+   *
    * const { data } = await supabase.from('profiles').select('*')
    * ```
    */
@@ -161,6 +329,7 @@ export default class SupabaseClient<
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
       accessToken: this._getAccessToken.bind(this),
+      fetch: this.fetch,
       ...settings.realtime,
     })
     if (this.accessToken) {
@@ -307,6 +476,7 @@ export default class SupabaseClient<
    * @param {string} name - The name of the Realtime channel.
    * @param {Object} opts - The options to pass to the Realtime channel.
    *
+   * @category Realtime
    */
   channel(name: string, opts: RealtimeChannelOptions = { config: {} }): RealtimeChannel {
     return this.realtime.channel(name, opts)
@@ -314,6 +484,13 @@ export default class SupabaseClient<
 
   /**
    * Returns all Realtime channels.
+   *
+   * @category Realtime
+   *
+   * @example Get all channels
+   * ```js
+   * const channels = supabase.getChannels()
+   * ```
    */
   getChannels(): RealtimeChannel[] {
     return this.realtime.getChannels()
@@ -324,15 +501,35 @@ export default class SupabaseClient<
    *
    * @param {RealtimeChannel} channel - The name of the Realtime channel.
    *
+   *
+   * @category Realtime
+   *
+   * @remarks
+   * - Removing a channel is a great way to maintain the performance of your project's Realtime service as well as your database if you're listening to Postgres changes. Supabase will automatically handle cleanup 30 seconds after a client is disconnected, but unused channels may cause degradation as more clients are simultaneously subscribed.
+   *
+   * @example Removes a channel
+   * ```js
+   * supabase.removeChannel(myChannel)
+   * ```
    */
-  removeChannel(channel: RealtimeChannel): Promise<'ok' | 'timed out' | 'error'> {
+  removeChannel(channel: RealtimeChannel): Promise<RealtimeRemoveChannelResponse> {
     return this.realtime.removeChannel(channel)
   }
 
   /**
    * Unsubscribes and removes all Realtime channels from Realtime client.
+   *
+   * @category Realtime
+   *
+   * @remarks
+   * - Removing channels is a great way to maintain the performance of your project's Realtime service as well as your database if you're listening to Postgres changes. Supabase will automatically handle cleanup 30 seconds after a client is disconnected, but unused channels may cause degradation as more clients are simultaneously subscribed.
+   *
+   * @example Remove all channels
+   * ```js
+   * supabase.removeAllChannels()
+   * ```
    */
-  removeAllChannels(): Promise<('ok' | 'timed out' | 'error')[]> {
+  removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
     return this.realtime.removeAllChannels()
   }
 
@@ -358,6 +555,9 @@ export default class SupabaseClient<
       lock,
       debug,
       throwOnError,
+      experimental,
+      lockAcquireTimeout,
+      skipAutoInitialize,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
     fetch?: Fetch
@@ -379,7 +579,10 @@ export default class SupabaseClient<
       lock,
       debug,
       throwOnError,
+      experimental,
       fetch,
+      lockAcquireTimeout,
+      skipAutoInitialize,
       // auth checks if there is a custom authorizaiton header using this flag
       // so it knows whether to return an error when getUser is called with no session
       hasCustomAuthorizationHeader: Object.keys(this.headers).some(

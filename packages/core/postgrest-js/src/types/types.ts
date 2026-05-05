@@ -13,11 +13,13 @@ interface PostgrestResponseBase {
   statusText: string
 }
 export interface PostgrestResponseSuccess<T> extends PostgrestResponseBase {
+  success: true
   error: null
   data: T
   count: number | null
 }
 export interface PostgrestResponseFailure extends PostgrestResponseBase {
+  success: false
   error: PostgrestError
   data: null
   count: null
@@ -37,6 +39,12 @@ export type DatabaseWithOptions<Database, Options extends ClientServerOptions> =
 
 // https://twitter.com/mattpocockuk/status/1622730173446557697
 export type Prettify<T> = { [K in keyof T]: T[K] } & {}
+
+// Rejects excess properties that aren't in Base.
+// Works around TypeScript not checking excess properties on generic parameters.
+export type RejectExcessProperties<Base, Row> = Row & {
+  [K in Exclude<keyof Row, keyof Base>]: never
+}
 
 // https://github.com/sindresorhus/type-fest
 export type SimplifyDeep<Type, ExcludeType = never> = ConditionalSimplifyDeep<
