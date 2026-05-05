@@ -577,37 +577,41 @@ export default class RealtimeClient {
 
   /** @internal */
   private _onConnMessage(rawMessage: { data: any }) {
-    this.decode(rawMessage.data, (msg: RealtimeMessage) => {
-      // Handle heartbeat responses
-      if (
-        msg.topic === 'phoenix' &&
-        msg.event === 'phx_reply' &&
-        msg.ref &&
-        msg.ref === this.pendingHeartbeatRef
-      ) {
-        const latency = this._heartbeatSentAt ? Date.now() - this._heartbeatSentAt : undefined
-        try {
-          this.heartbeatCallback(msg.payload.status === 'ok' ? 'ok' : 'error', latency)
-        } catch (e) {
-          this.log('error', 'error in heartbeat callback', e)
+    this.decode(
+      rawMessage.data,
+      (msg: RealtimeMessage) => {
+        // Handle heartbeat responses
+        if (
+          msg.topic === 'phoenix' &&
+          msg.event === 'phx_reply' &&
+          msg.ref &&
+          msg.ref === this.pendingHeartbeatRef
+        ) {
+          const latency = this._heartbeatSentAt ? Date.now() - this._heartbeatSentAt : undefined
+          try {
+            this.heartbeatCallback(msg.payload.status === 'ok' ? 'ok' : 'error', latency)
+          } catch (e) {
+            this.log('error', 'error in heartbeat callback', e)
+          }
+          this._heartbeatSentAt = null
+          this.pendingHeartbeatRef = null
         }
-        this._heartbeatSentAt = null
-        this.pendingHeartbeatRef = null
-      }
 
-      // Log incoming message
-      const { topic, event, payload, ref } = msg
-      const refString = ref ? `(${ref})` : ''
-      const status = payload.status || ''
-      this.log('receive', `${status} ${topic} ${event} ${refString}`.trim(), payload)
+        // Log incoming message
+        const { topic, event, payload, ref } = msg
+        const refString = ref ? `(${ref})` : ''
+        const status = payload.status || ''
+        this.log('receive', `${status} ${topic} ${event} ${refString}`.trim(), payload)
 
-      // Route message to appropriate channels
-      this.channels
-        .filter((channel: RealtimeChannel) => channel._isMember(topic))
-        .forEach((channel: RealtimeChannel) => channel._trigger(event, payload, ref))
+        // Route message to appropriate channels
+        this.channels
+          .filter((channel: RealtimeChannel) => channel._isMember(topic))
+          .forEach((channel: RealtimeChannel) => channel._trigger(event, payload, ref))
 
-      this._triggerStateCallbacks('message', msg)
-    })
+        this._triggerStateCallbacks('message', msg)
+      },
+      this.log.bind(this)
+    )
   }
 
   /**

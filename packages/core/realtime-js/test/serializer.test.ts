@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import Serializer from '../src/lib/serializer'
 import type { Msg } from '../src/lib/serializer'
 
 let decoder = new TextDecoder()
+
+const noop = () => {}
 
 const encodeAsync = (
   serializer: Serializer,
@@ -17,12 +19,17 @@ const encodeAsync = (
 
 const decodeAsync = (
   serializer: Serializer,
-  buffer: ArrayBuffer | string
+  buffer: ArrayBuffer | string,
+  log: (kind: string, msg: string, data?: any) => void = noop
 ): Promise<Msg<{ [key: string]: any }>> => {
   return new Promise((resolve) => {
-    serializer.decode(buffer, (result: Msg<{ [key: string]: any }>) => {
-      resolve(result)
-    })
+    serializer.decode(
+      buffer,
+      (result: Msg<{ [key: string]: any }>) => {
+        resolve(result)
+      },
+      log
+    )
   })
 }
 
@@ -66,6 +73,33 @@ describe('JSON', () => {
     const serializer = new Serializer()
     const result = await decodeAsync(serializer, '[null,null,"t","e",{"foo":1}]')
     expect(result).toEqual(missingRefExampleMsg)
+  })
+
+  it('logs error and does not invoke callback for malformed JSON input', async () => {
+    const serializer = new Serializer()
+    const log = vi.fn()
+    const callback = vi.fn()
+    serializer.decode('this is not json{{{', callback, log)
+    expect(callback).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith('error', 'Error parsing Realtime message', expect.anything())
+  })
+
+  it('logs error and does not invoke callback for a valid JSON array with fewer than 5 elements', async () => {
+    const serializer = new Serializer()
+    const log = vi.fn()
+    const callback = vi.fn()
+    serializer.decode('["0","1","t"]', callback, log)
+    expect(callback).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith('error', 'Malformed Realtime message', ['0', '1', 't'])
+  })
+
+  it('logs error and does not invoke callback for a non-array JSON value', async () => {
+    const serializer = new Serializer()
+    const log = vi.fn()
+    const callback = vi.fn()
+    serializer.decode('{"key":"value"}', callback, log)
+    expect(callback).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith('error', 'Malformed Realtime message', { key: 'value' })
   })
 })
 

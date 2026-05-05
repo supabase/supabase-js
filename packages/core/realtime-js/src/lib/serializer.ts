@@ -123,11 +123,15 @@ export default class Serializer {
     return combined.buffer
   }
 
-  decode(rawPayload: ArrayBuffer | string, callback: Function) {
+  decode(
+    rawPayload: ArrayBuffer | string,
+    callback: Function,
+    log: (kind: string, msg: string, data?: any) => void
+  ) {
     if (this._isArrayBuffer(rawPayload)) {
-      let result = this._binaryDecode(rawPayload as ArrayBuffer)
+      let result = this._binaryDecode(rawPayload as ArrayBuffer, log)
       if (result === undefined) {
-        console.error('Failed to decode binary Realtime message')
+        log('error', 'Failed to decode binary Realtime message')
         return
       }
       return callback(result)
@@ -137,13 +141,13 @@ export default class Serializer {
       try {
         const jsonPayload = JSON.parse(rawPayload)
         if (!Array.isArray(jsonPayload) || jsonPayload.length < 5) {
-          console.error('Malformed Realtime message:', jsonPayload)
+          log('error', 'Malformed Realtime message', jsonPayload)
           return
         }
         const [join_ref, ref, topic, event, payload] = jsonPayload
         return callback({ join_ref, ref, topic, event, payload })
       } catch (error) {
-        console.error('Error parsing Realtime message:', error, rawPayload)
+        log('error', 'Error parsing Realtime message', { error, rawPayload })
         return
       }
     }
@@ -151,20 +155,21 @@ export default class Serializer {
     return
   }
 
-  private _binaryDecode(buffer: ArrayBuffer) {
+  private _binaryDecode(buffer: ArrayBuffer, log: (kind: string, msg: string, data?: any) => void) {
     const view = new DataView(buffer)
     const kind = view.getUint8(0)
     const decoder = new TextDecoder()
     switch (kind) {
       case this.KINDS.userBroadcast:
-        return this._decodeUserBroadcast(buffer, view, decoder)
+        return this._decodeUserBroadcast(buffer, view, decoder, log)
     }
   }
 
   private _decodeUserBroadcast(
     buffer: ArrayBuffer,
     view: DataView,
-    decoder: TextDecoder
+    decoder: TextDecoder,
+    log: (kind: string, msg: string, data?: any) => void
   ):
     | {
         join_ref: null
@@ -194,7 +199,7 @@ export default class Serializer {
       try {
         parsedPayload = JSON.parse(textPayload)
       } catch (error) {
-        console.error('Error decoding JSON payload:', error, textPayload)
+        log('error', 'Error decoding JSON payload', { error, textPayload })
         return undefined
       }
     } else {
@@ -209,7 +214,12 @@ export default class Serializer {
 
     // Metadata is optional and always JSON encoded
     if (metadataSize > 0) {
-      data['meta'] = JSON.parse(metadata)
+      try {
+        data['meta'] = JSON.parse(metadata)
+      } catch (error) {
+        log('error', 'Error decoding JSON metadata', { error, metadata })
+        return undefined
+      }
     }
 
     return { join_ref: null, ref: null, topic: topic, event: this.BROADCAST_EVENT, payload: data }
