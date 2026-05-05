@@ -8,6 +8,9 @@ export type Msg<T> = {
   payload: T
 }
 
+type LogFn = (kind: string, msg: string, data?: any) => void
+const noop: LogFn = () => {}
+
 export default class Serializer {
   HEADER_LENGTH = 1
   USER_BROADCAST_PUSH_META_LENGTH = 6
@@ -126,7 +129,7 @@ export default class Serializer {
   decode(
     rawPayload: ArrayBuffer | string,
     callback: Function,
-    log: (kind: string, msg: string, data?: any) => void
+    log: LogFn = noop
   ) {
     if (this._isArrayBuffer(rawPayload)) {
       let result = this._binaryDecode(rawPayload as ArrayBuffer, log)
@@ -155,7 +158,7 @@ export default class Serializer {
     return
   }
 
-  private _binaryDecode(buffer: ArrayBuffer, log: (kind: string, msg: string, data?: any) => void) {
+  private _binaryDecode(buffer: ArrayBuffer, log: LogFn) {
     const view = new DataView(buffer)
     const kind = view.getUint8(0)
     const decoder = new TextDecoder()
@@ -169,7 +172,7 @@ export default class Serializer {
     buffer: ArrayBuffer,
     view: DataView,
     decoder: TextDecoder,
-    log: (kind: string, msg: string, data?: any) => void
+    log: LogFn
   ):
     | {
         join_ref: null
