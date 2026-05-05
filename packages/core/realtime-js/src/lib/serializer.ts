@@ -126,11 +126,7 @@ export default class Serializer {
     return combined.buffer
   }
 
-  decode(
-    rawPayload: ArrayBuffer | string,
-    callback: Function,
-    log: LogFn = noop
-  ) {
+  decode(rawPayload: ArrayBuffer | string, callback: Function, log: LogFn = noop) {
     if (this._isArrayBuffer(rawPayload)) {
       let result = this._binaryDecode(rawPayload as ArrayBuffer, log)
       if (result === undefined) {
