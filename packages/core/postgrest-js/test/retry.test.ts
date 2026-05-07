@@ -427,6 +427,31 @@ describe('Automatic Retries', () => {
       expect(result.error?.message).toContain('AbortError')
       expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
     })
+
+    // Serverless / realm-crossing runtimes (Netlify Functions, AWS Lambda)
+    // can reject native fetch with values that do not pass `instanceof Error`
+    // against the consumer realm. The abort branch must still recognise them by
+    // their `name`/`code` shape.
+    it('should rethrow plain-object AbortError-shaped rejections without retrying', async () => {
+      fetchMock.mockRejectedValue({ name: 'AbortError', message: 'aborted' })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).not.toBeNull()
+      expect(result.error?.message).toContain('AbortError')
+      expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
+    })
+
+    it('should rethrow plain-object ABORT_ERR-coded rejections without retrying', async () => {
+      fetchMock.mockRejectedValue({ code: 'ABORT_ERR', message: 'aborted' })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).not.toBeNull()
+      expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
+    })
   })
 
   describe('shouldThrowOnError interaction', () => {
