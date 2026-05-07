@@ -3,6 +3,7 @@ import {
   decodeJWT,
   generateCallbackId,
   getAlgorithm,
+  getItemAsync,
   parseParametersFromURL,
   parseResponseAPIVersion,
   getCodeChallengeAndMethod,
@@ -338,5 +339,51 @@ describe('validateUUID', () => {
     } else {
       expect(() => validateUUID(input)).not.toThrow()
     }
+  })
+})
+
+describe('getItemAsync', () => {
+  const makeStorage = (initial: { [key: string]: string | null }) => {
+    const data: { [key: string]: string | null } = { ...initial }
+    return {
+      getItem: jest.fn(async (key: string) => data[key] ?? null),
+      setItem: jest.fn(async (key: string, value: string) => {
+        data[key] = value
+      }),
+      removeItem: jest.fn(async (key: string) => {
+        delete data[key]
+      }),
+    }
+  }
+
+  it('returns null when the storage value is missing', async () => {
+    const storage = makeStorage({})
+    expect(await getItemAsync(storage, 'session')).toBeNull()
+  })
+
+  it('returns null when the storage value is empty string', async () => {
+    const storage = makeStorage({ session: '' })
+    expect(await getItemAsync(storage, 'session')).toBeNull()
+  })
+
+  it('returns the parsed object for valid JSON', async () => {
+    const session = { access_token: 'a', refresh_token: 'b', expires_at: 1 }
+    const storage = makeStorage({ session: JSON.stringify(session) })
+    expect(await getItemAsync(storage, 'session')).toEqual(session)
+  })
+
+  it('returns null when the storage value is not valid JSON', async () => {
+    // Simulates corrupted chunked cookies: combined+decoded payload that is
+    // not parseable. Returning the raw string would cause _recoverAndRefresh
+    // to throw `TypeError: Cannot create property 'user' on string ...`.
+    const storage = makeStorage({ session: '{"access_token":"abc' })
+    expect(await getItemAsync(storage, 'session')).toBeNull()
+  })
+
+  it('returns null for a JSON-encoded primitive that auth callers do not expect', async () => {
+    // JSON.parse('"hello"') succeeds and returns the string "hello", which is
+    // valid behavior. We are only guarding against parse failures here.
+    const storage = makeStorage({ session: '"hello"' })
+    expect(await getItemAsync(storage, 'session')).toEqual('hello')
   })
 })
