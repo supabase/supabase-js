@@ -41,9 +41,7 @@
   },
   "dependencies": {
     "@supabase/phoenix": "^0.4.1",
-    "@types/ws": "^8.18.1",
-    "tslib": "2.8.1",
-    "ws": "^8.18.2"
+    "tslib": "2.8.1"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.1.4",
