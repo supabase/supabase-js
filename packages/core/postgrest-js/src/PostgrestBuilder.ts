@@ -322,13 +322,13 @@ export default abstract class PostgrestBuilder<
             ),
             signal: this.signal,
           })
-        } catch (fetchError) {
+          // JS allows throwing any value, and serverless or realm-crossing fetch
+          // implementations can reject with non-Error objects. `instanceof Error`
+          // is too narrow here; narrow at the use site with optional chaining.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (fetchError: any) {
           // Never retry aborted requests
-          if (
-            fetchError instanceof Error &&
-            (fetchError.name === 'AbortError' ||
-              ('code' in fetchError && (fetchError as { code?: string }).code === 'ABORT_ERR'))
-          ) {
+          if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
             throw fetchError
           }
 
