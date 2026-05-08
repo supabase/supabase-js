@@ -139,7 +139,12 @@ export const getItemAsync = async (storage: SupportedStorage, key: string): Prom
   try {
     return JSON.parse(value)
   } catch {
-    return value
+    // Storage values are always written as JSON via setItemAsync. A non-JSON
+    // value means the entry is corrupted (e.g. mismatched chunked cookies in
+    // SSR contexts). Treat as absent so callers do not mutate or re-save the
+    // garbage, which would otherwise trigger a TypeError downstream and
+    // leak the raw value into error logs.
+    return null
   }
 }
 
