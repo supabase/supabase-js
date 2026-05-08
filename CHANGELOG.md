@@ -1,3 +1,11 @@
+## 2.105.4 (2026-05-08)
+
+### 🩹 Fixes
+
+- **auth:** return null from getItemAsync on JSON parse failure ([#2336](https://github.com/supabase/supabase-js/pull/2336))
+- **postgrest:** restore non-Error abort detection in fetch catch ([#2335](https://github.com/supabase/supabase-js/pull/2335))
+- **realtime:** guard sessionStorage access in restricted-storage browsers ([#2339](https://github.com/supabase/supabase-js/pull/2339))
+
 ## 2.105.2 (2026-05-04)
 
 ### 🩹 Fixes

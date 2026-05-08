@@ -1,3 +1,9 @@
+## 2.105.4 (2026-05-08)
+
+### 🩹 Fixes
+
+- **auth:** return null from getItemAsync on JSON parse failure ([#2336](https://github.com/supabase/supabase-js/pull/2336))
+
 ## 2.105.2 (2026-05-04)
 
 ### 🩹 Fixes

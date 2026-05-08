@@ -1,3 +1,9 @@
+## 2.105.4 (2026-05-08)
+
+### 🩹 Fixes
+
+- **postgrest:** restore non-Error abort detection in fetch catch ([#2335](https://github.com/supabase/supabase-js/pull/2335))
+
 ## 2.105.2 (2026-05-04)
 
 ### 🩹 Fixes
