@@ -81,6 +81,48 @@ export type RealtimeClientOptions = {
   workerUrl?: string
   accessToken?: () => Promise<string | null>
   disconnectOnEmptyChannelsAfterMs?: number
+  /**
+   * Storage compatible object used by the underlying socket for longpoll fallback history.
+   * Provide a custom implementation in environments where reading `globalThis.sessionStorage`
+   * throws (sandboxed iframes, in-app webviews, "block third-party storage" privacy modes).
+   * Defaults to `globalThis.sessionStorage` when accessible, otherwise an in-memory store.
+   */
+  sessionStorage?: Storage
+}
+
+function createMemorySessionStorage(): Storage {
+  const store = new Map<string, string>()
+  return {
+    get length() {
+      return store.size
+    },
+    clear() {
+      store.clear()
+    },
+    getItem(key: string) {
+      return store.has(key) ? (store.get(key) as string) : null
+    },
+    key(index: number) {
+      return Array.from(store.keys())[index] ?? null
+    },
+    removeItem(key: string) {
+      store.delete(key)
+    },
+    setItem(key: string, value: string) {
+      store.set(key, String(value))
+    },
+  }
+}
+
+function resolveSessionStorage(): Storage {
+  try {
+    if (typeof globalThis !== 'undefined' && globalThis.sessionStorage) {
+      return globalThis.sessionStorage
+    }
+  } catch {
+    // Property access on `sessionStorage` itself throws in restricted-storage browsers.
+  }
+  return createMemorySessionStorage()
 }
 
 const WORKER_SCRIPT = `
@@ -764,6 +806,7 @@ export default class RealtimeClient {
     result.params = options?.params
     result.logger = options?.logger
     result.heartbeatCallback = this._wrapHeartbeatCallback(options?.heartbeatCallback)
+    result.sessionStorage = options?.sessionStorage ?? resolveSessionStorage()
     result.reconnectAfterMs =
       options?.reconnectAfterMs ??
       ((tries: number) => {
