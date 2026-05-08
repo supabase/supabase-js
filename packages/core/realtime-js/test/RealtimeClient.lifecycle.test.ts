@@ -84,6 +84,93 @@ describe('constructor', () => {
 
     cleanup()
   })
+
+  describe('sessionStorage handling', () => {
+    let originalDescriptor: PropertyDescriptor | undefined
+
+    function stubSessionStorageGetter(impl: () => Storage | undefined) {
+      originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage')
+      Object.defineProperty(globalThis, 'sessionStorage', {
+        configurable: true,
+        get: impl,
+      })
+    }
+
+    function restoreSessionStorage() {
+      if (originalDescriptor) {
+        Object.defineProperty(globalThis, 'sessionStorage', originalDescriptor)
+      } else {
+        delete (globalThis as any).sessionStorage
+      }
+      originalDescriptor = undefined
+    }
+
+    test('does not throw when sessionStorage getter throws SecurityError', () => {
+      stubSessionStorageGetter(() => {
+        throw new DOMException(
+          "Failed to read the 'sessionStorage' property from 'Window'",
+          'SecurityError'
+        )
+      })
+
+      try {
+        assert.doesNotThrow(() => {
+          const { cleanup } = setupRealtimeTest()
+          cleanup()
+        })
+      } finally {
+        restoreSessionStorage()
+      }
+    })
+
+    test('falls back to in-memory storage when sessionStorage getter throws', () => {
+      stubSessionStorageGetter(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      })
+
+      try {
+        const { client, cleanup } = setupRealtimeTest()
+        const sessionStore = (client.socketAdapter as any).socket.sessionStore as Storage
+
+        assert.ok(sessionStore, 'expected a sessionStore on the underlying phoenix socket')
+        sessionStore.setItem('rt-key', 'rt-value')
+        assert.equal(sessionStore.getItem('rt-key'), 'rt-value')
+        sessionStore.removeItem('rt-key')
+        assert.equal(sessionStore.getItem('rt-key'), null)
+
+        cleanup()
+      } finally {
+        restoreSessionStorage()
+      }
+    })
+
+    test('honors a consumer-provided sessionStorage', () => {
+      const stub: Storage = {
+        length: 0,
+        clear: () => {},
+        getItem: () => null,
+        key: () => null,
+        removeItem: () => {},
+        setItem: () => {},
+      }
+
+      const { client, cleanup } = setupRealtimeTest({ sessionStorage: stub })
+      const sessionStore = (client.socketAdapter as any).socket.sessionStore as Storage
+
+      assert.strictEqual(sessionStore, stub)
+
+      cleanup()
+    })
+
+    test('uses the real sessionStorage when accessible', () => {
+      const { client, cleanup } = setupRealtimeTest()
+      const sessionStore = (client.socketAdapter as any).socket.sessionStore as Storage
+
+      assert.strictEqual(sessionStore, globalThis.sessionStorage)
+
+      cleanup()
+    })
+  })
 })
 
 describe('connect with WebSocket', () => {
