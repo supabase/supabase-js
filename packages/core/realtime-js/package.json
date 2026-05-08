@@ -40,7 +40,7 @@
     "test:ci": "vitest run --coverage"
   },
   "dependencies": {
-    "@supabase/phoenix": "^0.4.1",
+    "@supabase/phoenix": "^0.4.2",
     "tslib": "2.8.1"
   },
   "devDependencies": {
