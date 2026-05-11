@@ -270,7 +270,8 @@
     "projects": ["packages/core/*"],
     "projectsRelationship": "fixed",
     "version": {
-      "conventionalCommits": true
+      "conventionalCommits": true,
+      "preserveMatchingDependencyRanges": false
     },
     "changelog": {
       "projectChangelogs": {
