@@ -109,7 +109,7 @@ describe('GoTrueClient', () => {
       expect(session!.access_token).not.toBeNull()
       expect(session!.refresh_token).not.toBeNull()
       expect(session!.token_type).toStrictEqual('bearer')
-      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+      expect(refreshAccessTokenSpy).toHaveBeenCalledTimes(1)
       // @ts-expect-error 'data.session and session should not be null because of the assertion above'
       expect(data.session.refresh_token).not.toEqual(session.refresh_token)
     })
@@ -141,7 +141,7 @@ describe('GoTrueClient', () => {
       expect(session!.access_token).not.toBeNull()
       expect(session!.refresh_token).not.toBeNull()
       expect(session!.token_type).toStrictEqual('bearer')
-      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+      expect(refreshAccessTokenSpy).toHaveBeenCalledTimes(1)
       // @ts-expect-error 'data.session and session should not be null because of the assertion above'
       expect(data.session.refresh_token).not.toEqual(session.refresh_token)
     })
@@ -237,7 +237,7 @@ describe('GoTrueClient', () => {
       // Error message varies between GoTrue versions
       expect(
         setSessionError?.message?.includes('Invalid Refresh Token') ||
-        setSessionError?.message?.includes('Refresh token is not valid')
+          setSessionError?.message?.includes('Refresh token is not valid')
       ).toBe(true)
       expect(session).toBeNull()
     })
@@ -321,7 +321,7 @@ describe('GoTrueClient', () => {
       expect(userError).toBeNull()
       expect(userSession.session).not.toBeNull()
       expect(userSession.session).toHaveProperty('access_token')
-      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+      expect(refreshAccessTokenSpy).toHaveBeenCalledTimes(1)
       expect(data.session?.access_token).not.toEqual(userSession.session?.access_token)
     })
 
@@ -365,7 +365,7 @@ describe('GoTrueClient', () => {
       // the result of the same refresh
       expect(session1?.access_token).toEqual(session2?.access_token)
 
-      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+      expect(refreshAccessTokenSpy).toHaveBeenCalledTimes(1)
     })
 
     test('_callRefreshToken() should resolve all pending refresh requests and reset deferred upon AuthError', async () => {
@@ -399,7 +399,7 @@ describe('GoTrueClient', () => {
       expect(session1).toBeNull()
       expect(session2).toBeNull()
 
-      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+      expect(refreshAccessTokenSpy).toHaveBeenCalledTimes(1)
 
       // verify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
@@ -441,7 +441,7 @@ describe('GoTrueClient', () => {
       expect((error1 as PromiseRejectedResult).reason).toEqual(mockError)
       expect((error1 as PromiseRejectedResult).reason).toEqual(mockError)
 
-      expect(refreshAccessTokenSpy).toBeCalledTimes(1)
+      expect(refreshAccessTokenSpy).toHaveBeenCalledTimes(1)
 
       // vreify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
@@ -1291,13 +1291,10 @@ describe('User management', () => {
 
   test('resetPasswordForEmail() if user does not exist, user details are not exposed', async () => {
     const redirectTo = 'http://localhost:9999/welcome'
-    const { error, data } = await auth.resetPasswordForEmail(
-      'this_user@does-not-exist.com',
-      {
-        redirectTo,
-        captchaToken: 'some_token',
-      }
-    )
+    const { error, data } = await auth.resetPasswordForEmail('this_user@does-not-exist.com', {
+      redirectTo,
+      captchaToken: 'some_token',
+    })
     expect(data).toEqual({})
     expect(error).toBeNull()
   })
@@ -1523,9 +1520,7 @@ describe('MFA', () => {
         data: {
           user: {
             id: 'test-user-id',
-            factors: [
-              { factor_type: 'totp', status: 'verified' },
-            ],
+            factors: [{ factor_type: 'totp', status: 'verified' }],
           },
         },
         error: null,
@@ -1718,7 +1713,7 @@ describe('WebAuthn MFA', () => {
       static parseRequestOptionsFromJSON = deserializeCredentialRequestOptions
     }
 
-    ; (global as any).PublicKeyCredential = PublicKeyCredentialMock
+    ;(global as any).PublicKeyCredential = PublicKeyCredentialMock
   })
 
   afterAll(() => {
@@ -2390,7 +2385,7 @@ describe('GoTrueClient with storageisServer = true', () => {
 
 describe('fetchJwk', () => {
   let fetchedUrls: any[] = []
-  let originalFetch: typeof authWithSession['fetch']
+  let originalFetch: (typeof authWithSession)['fetch']
 
   const cases = [
     {
@@ -3092,7 +3087,7 @@ describe('Session Management Edge Cases', () => {
     // Error message varies between GoTrue versions
     expect(
       error?.message?.includes('Invalid Refresh Token') ||
-      error?.message?.includes('Refresh token is not valid')
+        error?.message?.includes('Refresh token is not valid')
     ).toBe(true)
     expect(data.session).toBeNull()
   })
@@ -3121,8 +3116,8 @@ describe('Storage adapter edge cases', () => {
       getItem: async () => {
         throw new Error('getItem failed message')
       },
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     await expect(client.getSession()).rejects.toThrow('getItem failed message')
@@ -3134,7 +3129,7 @@ describe('Storage adapter edge cases', () => {
       setItem: async () => {
         throw new Error('setItem failed message')
       },
-      removeItem: async () => { },
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(brokenStorage)
     const session = {
@@ -3155,7 +3150,7 @@ describe('Storage adapter edge cases', () => {
   test('should handle storage removeItem failure in _removeSession', async () => {
     const brokenStorage = {
       getItem: async () => '{}',
-      setItem: async () => { },
+      setItem: async () => {},
       removeItem: async () => {
         throw new Error('removeItem failed message')
       },
@@ -3168,8 +3163,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle invalid JSON in storage', async () => {
     const invalidStorage = {
       getItem: async () => 'invalid-json',
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(invalidStorage)
     const { data, error } = await client.getSession()
@@ -3180,8 +3175,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle null storage value', async () => {
     const nullStorage = {
       getItem: async () => null,
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(nullStorage)
     const { data, error } = await client.getSession()
@@ -3192,8 +3187,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle empty storage value', async () => {
     const emptyStorage = {
       getItem: async () => '',
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(emptyStorage)
     const { data, error } = await client.getSession()
@@ -3204,8 +3199,8 @@ describe('Storage adapter edge cases', () => {
   test('should handle malformed session data', async () => {
     const malformedStorage = {
       getItem: async () => JSON.stringify({ access_token: 'test' }), // Missing required fields
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(malformedStorage)
     const { data, error } = await client.getSession()
@@ -3224,8 +3219,8 @@ describe('Storage adapter edge cases', () => {
           token_type: 'bearer',
           user: null,
         }),
-      setItem: async () => { },
-      removeItem: async () => { },
+      setItem: async () => {},
+      removeItem: async () => {},
     }
     const client = getClientWithSpecificStorage(expiredStorage)
     // @ts-expect-error private method

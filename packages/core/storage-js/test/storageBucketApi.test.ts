@@ -89,7 +89,7 @@ describe('Bucket API Error Handling', () => {
       expect(error?.message).toBe('Invalid Compact JWS')
 
       // throws when .throwOnError is enabled
-      await expect(storage.throwOnError().listBuckets()).rejects.toThrowError('Invalid Compact JWS')
+      await expect(storage.throwOnError().listBuckets()).rejects.toThrow('Invalid Compact JWS')
     })
 
     it('handles network errors', async () => {
@@ -103,7 +103,7 @@ describe('Bucket API Error Handling', () => {
       expect(error?.message).toBe('Network failure')
 
       // throws when .throwOnError is enabled
-      await expect(storage.throwOnError().listBuckets()).rejects.toThrowError('Network failure')
+      await expect(storage.throwOnError().listBuckets()).rejects.toThrow('Network failure')
     })
 
     it('wraps non-Response errors as StorageUnknownError', async () => {
@@ -120,7 +120,7 @@ describe('Bucket API Error Handling', () => {
       expect(error?.message).toBe('Invalid argument')
 
       // throws when .throwOnError is enabled
-      await expect(storage.throwOnError().listBuckets()).rejects.toThrowError('Invalid argument')
+      await expect(storage.throwOnError().listBuckets()).rejects.toThrow('Invalid argument')
     })
 
     it('throws non-StorageError exceptions', async () => {
