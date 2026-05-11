@@ -276,8 +276,10 @@ describe('Additional Coverage Tests', () => {
     })
 
     test('should handle worker errors', async () => {
-      // Mock window.Worker
-      global.Worker = vi.fn(() => mockWorker) as any
+      // Mock window.Worker — vitest 4 requires `function` (not arrow) for `new`-callable mocks
+      global.Worker = vi.fn(function () {
+        return mockWorker
+      }) as any
       // Mock URL.createObjectURL
       global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
 
@@ -310,8 +312,10 @@ describe('Additional Coverage Tests', () => {
     })
 
     test('should handle worker keepAlive messages', async () => {
-      // Mock window.Worker
-      global.Worker = vi.fn(() => mockWorker) as any
+      // Mock window.Worker — vitest 4 requires `function` (not arrow) for `new`-callable mocks
+      global.Worker = vi.fn(function () {
+        return mockWorker
+      }) as any
       // Mock URL.createObjectURL
       global.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
 

@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src", "test"],
+  "compilerOptions": {
+    "composite": false,
+    "outDir": "$$ts-jest$$",
+    "rootDir": "."
+  }
+}
