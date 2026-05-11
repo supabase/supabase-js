@@ -123,10 +123,8 @@ describe('parseResponseAPIVersion', () => {
 
 describe('decodeJWT', () => {
   it('should reject non-JWT strings', () => {
-    expect(() => decodeJWT('non-jwt')).toThrowError(
-      new AuthInvalidJwtError('Invalid JWT structure')
-    )
-    expect(() => decodeJWT('aHR0.cDovL.2V4YW1wbGUuY29t')).toThrowError(
+    expect(() => decodeJWT('non-jwt')).toThrow(new AuthInvalidJwtError('Invalid JWT structure'))
+    expect(() => decodeJWT('aHR0.cDovL.2V4YW1wbGUuY29t')).toThrow(
       new AuthInvalidJwtError('JWT not in base64url format')
     )
   })
@@ -265,7 +263,7 @@ describe('getAlgorithm', () => {
     })
   })
   it('should throw if invalid alg claim', () => {
-    expect(() => getAlgorithm('EdDSA' as any)).toThrowError(new Error('Invalid alg claim'))
+    expect(() => getAlgorithm('EdDSA' as any)).toThrow(new Error('Invalid alg claim'))
   })
 })
 

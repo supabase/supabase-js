@@ -28,4 +28,4 @@ const config: Config.InitialOptions = {
     'integration\.browser\.test\.ts', // Browser integration tests for Deno
   ],
 }
-export default config
+module.exports = config

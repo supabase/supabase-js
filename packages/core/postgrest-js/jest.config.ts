@@ -21,4 +21,4 @@ const config: Config.InitialOptions = {
   },
   snapshotSerializers: ['<rootDir>/test/postgrestErrorSerializer.js'],
 }
-export default config
+module.exports = config
