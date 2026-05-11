@@ -362,7 +362,7 @@ Tests run against multiple environments:
 - Primary integration testing location
 - Most complex cross-platform test suite (Node.js, Next.js, Expo, Bun, Deno, Browser)
 - Users typically interact through this package
-- Default branch: **develop**
+- Default branch: **master**
 
 ### auth-js
 
@@ -422,8 +422,8 @@ Tests run against multiple environments:
 
 **Current Repository:**
 
-- **Default branch**: `develop` (v3 active development; all PRs land here by default)
-- **Maintenance branch**: `master` (v2 maintenance; receives patchbacks from `develop` via the `patchback-master` label, or direct PRs for v2-only fixes)
+- **Default branch**: `master` (v2 active development; all PRs land here by default; auto-publishes `@canary` on every push, stable releases are manual `workflow_dispatch` from this branch)
+- **Long-lived feature branch**: `v3` (v3-only breaking changes; `@next` prereleases are **manual `workflow_dispatch` only** — never auto-published; kept in sync with `master` by periodic `git merge master`)
 - **Repository URL**: `github.com/supabase/supabase-js`
 
 **Original Repository Branches** (for historical reference):
@@ -598,10 +598,10 @@ cat docs/TESTING.md
 
 ### Before Creating PR
 
-1. **Ensure branch is up to date** with the PR's target branch (typically `develop`; `master` only for v2-only fixes):
+1. **Ensure branch is up to date** with the PR's target branch (typically `master`; `v3` only for v3-only breaking changes):
 
    ```bash
-   git checkout <target-branch>     # develop or master
+   git checkout <target-branch>     # master or v3
    git pull upstream <target-branch>
    git checkout your-feature-branch
    git rebase <target-branch>

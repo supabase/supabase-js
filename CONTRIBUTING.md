@@ -60,17 +60,17 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
 
 ### Making Changes
 
-1. **Create a new branch** from `develop` (the default branch — features, fixes, and chores all start here). Branch from `master` only when fixing v2-only code that no longer exists on `develop`:
+1. **Create a new branch** from `master` (the default branch — features, fixes, and chores all start here). Branch from `v3` only when working on v3-only breaking changes:
 
    ```bash
-   git checkout develop
-   git pull upstream develop
+   git checkout master
+   git pull upstream master
    git checkout -b feature/your-feature-name
    # or
    git checkout -b fix/your-bug-fix
    ```
 
-   Changes that should also ship in the v2 line will be cherry-picked to `master` after merge via the `patchback-master` label — no need to open a separate PR.
+   v3-only breaking changes target the `v3` branch directly. The `v3` branch is kept in sync with `master` periodically via a maintainer-run merge — no per-PR action needed from contributors.
 
 2. **Make your changes** in the appropriate library under `packages/core/`
 
@@ -194,10 +194,10 @@ ci(release): add preview package generation
 
 ### Before Submitting
 
-1. **Ensure your branch is up to date** with the branch you're targeting (typically `develop`; `master` only for v2-only fixes):
+1. **Ensure your branch is up to date** with the branch you're targeting (typically `master`; `v3` only for v3-only breaking changes):
 
    ```bash
-   git checkout <target-branch>     # develop or master
+   git checkout <target-branch>     # master or v3
    git pull upstream <target-branch>
    git checkout your-branch
    git rebase <target-branch>
