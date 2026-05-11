@@ -3,18 +3,7 @@ import type { Config } from '@jest/types'
 const config: Config.InitialOptions = {
   preset: 'ts-jest',
   transform: {
-    '^.+\\.ts?$': [
-      'ts-jest',
-      {
-        tsconfig: {
-          // Override tsconfig for tests without creating a separate file
-          composite: false,
-          outDir: '$$ts-jest$$', // Use ts-jest's internal temp directory
-          rootDir: '.',
-          // Inherit other settings from main tsconfig.json
-        },
-      },
-    ],
+    '^.+\\.ts?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
   },
   moduleFileExtensions: ['ts', 'js', 'cjs', 'json', 'node'],
   setupFilesAfterEnv: ['./test/utils/jest-custom-reporter.ts'],
@@ -40,4 +29,4 @@ const config: Config.InitialOptions = {
     },
   },
 }
-export default config
+module.exports = config

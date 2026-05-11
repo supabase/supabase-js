@@ -619,7 +619,7 @@ describe('Object API', () => {
       // should throw when .throwOnError is enabled
       await expect(
         storage.from(bucketName).throwOnError().exists('do-not-exists')
-      ).rejects.toThrowError()
+      ).rejects.toThrow()
     })
   })
 
