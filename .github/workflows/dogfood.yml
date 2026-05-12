@@ -44,14 +44,14 @@ jobs:
     steps:
       - name: Generate token for member check
         id: app-token-member-check
-        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
 
       - name: Generate token for dogfood
         id: app-token-dogfood
-        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
         with:
           app-id: ${{ secrets.DOGFOOD_APP_ID }}
           private-key: ${{ secrets.DOGFOOD_APP_PRIVATE_KEY }}
