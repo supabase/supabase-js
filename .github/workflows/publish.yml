@@ -4,7 +4,7 @@ name: Publish releases
 
 on:
   push:
-    branches: [develop, master]
+    branches: [master]
     paths-ignore:
       - '*.md'
       - 'docs/**'
@@ -19,6 +19,11 @@ on:
         description: 'Beta: explicit prerelease version (e.g. 2.101.0-beta.0). Select your feature branch above.'
         required: false
         type: string
+      next_prerelease:
+        description: 'Next: publish a v3 prerelease from the selected branch (must be v3).'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
@@ -51,7 +56,7 @@ jobs:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const org = 'supabase'
-            const { actor } = context
+            const actor = context.triggering_actor
 
             async function isTeamMember(team_slug) {
               try {
@@ -222,7 +227,7 @@ jobs:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const org = 'supabase'
-            const { actor } = context
+            const actor = context.triggering_actor
 
             async function isTeamMember(team_slug) {
               try {
@@ -307,6 +312,95 @@ jobs:
       status: 'success'
       version: ${{ github.event.inputs.beta_version }}
 
+  release-next:
+    # v3 next prerelease — manual dispatch only, must be run from the v3 branch.
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.next_prerelease == 'true' && github.ref == 'refs/heads/v3' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Check if actor is member of admin or sdk team
+        id: team-check
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const org = 'supabase'
+            const actor = context.triggering_actor
+
+            async function isTeamMember(team_slug) {
+              try {
+                const res = await github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug,
+                  username: actor,
+                })
+                return res && res.status === 200
+              } catch (_) {
+                return false
+              }
+            }
+            const isAdmin = await isTeamMember('admin')
+            const isSdk = await isTeamMember('sdk')
+            const isMember = isAdmin || isSdk
+            core.setOutput('is_team_member', isMember ? 'true' : 'false')
+
+      - name: Fail if not authorized
+        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
+        run: |
+          echo "You must be a member of @supabase/admin or @supabase/sdk."
+          exit 1
+
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm
+        run: corepack enable npm && corepack prepare npm@11 --activate
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git
+        run: |
+          git config --global user.name "supabase-releaser[bot]"
+          git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
+
+      - name: Release v3 next prerelease
+        env:
+          NPM_CONFIG_PROVENANCE: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          BASE_VERSION=$(cat .next-base-version | tr -d '[:space:]')
+          echo "Publishing v3 next prerelease (base: ${BASE_VERSION})..."
+          npm run release-canary -- --base-version "$BASE_VERSION" --preid next --tag next
+
+      - name: Summary
+        if: ${{ success() }}
+        run: |
+          echo "## ✅ Next Prerelease" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dist-tag:** \`next\`" >> $GITHUB_STEP_SUMMARY
+
   # preview jobs
   ci-core:
     if: ${{ github.event_name == 'push' }}
@@ -357,10 +451,10 @@ jobs:
     concurrency:
       group: release-${{ github.ref }}
       cancel-in-progress: false
-    # Run on develop or master branch pushes, only if all CI jobs succeeded
+    # Run on master branch pushes, only if all CI jobs succeeded
     if: |
       github.event_name == 'push' &&
-      (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') &&
+      github.ref == 'refs/heads/master' &&
       needs.ci-core.result == 'success' &&
       needs.ci-supabase-js.result == 'success'
     steps:
@@ -393,17 +487,9 @@ jobs:
           git config --global user.name "supabase-releaser[bot]"
           git config --global user.email "supabase-releaser[bot]@users.noreply.github.com"
 
-      - name: Release prerelease version
+      - name: Release canary version
         id: release
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            BASE_VERSION=$(cat .next-base-version | tr -d '[:space:]')
-            echo "Publishing v3 next prerelease (base: ${BASE_VERSION})..."
-            npm run release-canary -- --base-version "$BASE_VERSION" --preid next --tag next
-          else
-            echo "Publishing v2 canary prerelease..."
-            npm run release-canary
-          fi
+        run: npm run release-canary
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -439,3 +525,23 @@ jobs:
     with:
       title: 'Canary Release'
       status: 'failure'
+
+  notify-next-failure:
+    name: Notify Slack for Next failure
+    needs: release-next
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-next.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Next Prerelease'
+      status: 'failure'
+
+  notify-next-success:
+    name: Notify Slack for Next success
+    needs: release-next
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.release-next.result == 'success' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Next Prerelease'
+      status: 'success'
