@@ -31,7 +31,7 @@ jobs:
           node-version: 22
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
       - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
       - name: Detect affected packages
         id: affected
@@ -65,7 +65,7 @@ jobs:
           node-version: 22
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
       - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
       - name: Check common types are in sync
         run: npm run codegen:check
@@ -92,7 +92,7 @@ jobs:
           node-version: 22
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
       - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
       - name: Run test:ci for affected packages
         run: npx nx affected --target=test:ci
@@ -134,7 +134,7 @@ jobs:
           node-version: 22
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
@@ -191,7 +191,7 @@ jobs:
           node-version: 22
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
@@ -246,7 +246,7 @@ jobs:
           node-version: 22
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
@@ -297,7 +297,7 @@ jobs:
           node-version: 22
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
@@ -375,7 +375,7 @@ jobs:
           node-version: 22
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
