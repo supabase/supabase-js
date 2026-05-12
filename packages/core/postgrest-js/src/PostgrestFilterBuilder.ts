@@ -176,6 +176,9 @@ export default class PostgrestFilterBuilder<
   /**
    * Match only rows where `column` is not equal to `value`.
    *
+   * This filter does not include rows where `column` is `NULL`. To match null
+   * values, use `.is(column, null)` instead.
+   *
    * @param column - The column to filter on
    * @param value - The value to filter with
    *
