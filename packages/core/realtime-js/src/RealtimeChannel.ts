@@ -809,6 +809,8 @@ export default class RealtimeChannel {
    * @remarks
    * - When using REST you don't need to subscribe to the channel
    * - REST calls are only available from 2.37.0 onwards
+   * - If you create a channel only to send a REST broadcast, remove it from
+   *   the client when the send completes
    *
    * @example Send a message via websocket
    * ```js
@@ -832,9 +834,13 @@ export default class RealtimeChannel {
    *
    * @example Send a message via REST
    * ```js
-   * supabase
-   *   .channel('room1')
-   *   .httpSend('cursor-pos', { x: Math.random(), y: Math.random() })
+   * const channel = supabase.channel('room1')
+   *
+   * try {
+   *   await channel.httpSend('cursor-pos', { x: Math.random(), y: Math.random() })
+   * } finally {
+   *   await supabase.removeChannel(channel)
+   * }
    * ```
    */
   async send(
