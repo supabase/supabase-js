@@ -9,6 +9,33 @@ import {
 } from './types/common/common'
 import { RejectExcessProperties } from './types/types'
 
+const WHITESPACE_REGEX = /\s/
+
+function removeWhitespaceExceptQuoted(columns: string) {
+  let quoted = false
+  let cleanedColumns = ''
+  let lastKeptIndex = 0
+
+  for (let i = 0; i < columns.length; i++) {
+    const character = columns[i]
+
+    if (character === '"') {
+      quoted = !quoted
+    }
+
+    if (!quoted && WHITESPACE_REGEX.test(character)) {
+      cleanedColumns += columns.slice(lastKeptIndex, i)
+      lastKeptIndex = i + 1
+    }
+  }
+
+  if (lastKeptIndex === 0) {
+    return columns
+  }
+
+  return cleanedColumns + columns.slice(lastKeptIndex)
+}
+
 export default class PostgrestQueryBuilder<
   ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
@@ -904,19 +931,7 @@ export default class PostgrestQueryBuilder<
 
     const method = head ? 'HEAD' : 'GET'
     // Remove whitespaces except when quoted
-    let quoted = false
-    const cleanedColumns = (columns ?? '*')
-      .split('')
-      .map((c) => {
-        if (/\s/.test(c) && !quoted) {
-          return ''
-        }
-        if (c === '"') {
-          quoted = !quoted
-        }
-        return c
-      })
-      .join('')
+    const cleanedColumns = removeWhitespaceExceptQuoted(columns ?? '*')
 
     const { url, headers } = this.cloneRequestState()
     url.searchParams.set('select', cleanedColumns)
