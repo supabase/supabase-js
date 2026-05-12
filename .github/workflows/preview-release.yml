@@ -44,7 +44,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Set up Nx SHAs
         uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
@@ -65,6 +65,8 @@ jobs:
 
       - name: Get commit hash
         id: commit
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           # Extract the SHA from pkg.pr.new URLs in the output
           # Lines look like: npm i https://pkg.pr.new/@supabase/supabase-js@49b3c56
@@ -74,7 +76,7 @@ jobs:
           COMMIT_SHA=$(grep -oE 'pkg\.pr\.new/\S+@[a-f0-9]+' /tmp/pkg-pr-new-output.txt | head -1 | grep -oE '[a-f0-9]+$' || true)
           if [ -z "$COMMIT_SHA" ]; then
             echo "::warning::Failed to parse commit SHA from pkg-pr-new output, falling back to PR head SHA"
-            COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
+            COMMIT_SHA="$PR_HEAD_SHA"
           fi
           echo "sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
           echo "Commit SHA for pkg.pr.new URLs: $COMMIT_SHA"

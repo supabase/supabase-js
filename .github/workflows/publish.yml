@@ -97,7 +97,7 @@ jobs:
         run: corepack enable npm && corepack prepare npm@11 --activate
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Configure git
         run: |
@@ -127,8 +127,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION_SPECIFIER: ${{ github.event.inputs.version_specifier }}
         shell: bash
-        run: npm run release-stable -- --versionSpecifier "${{ github.event.inputs.version_specifier }}"
+        run: npm run release-stable -- --versionSpecifier "$VERSION_SPECIFIER"
 
       - name: Extract released version
         id: extract-version
@@ -268,7 +269,7 @@ jobs:
         run: corepack enable npm && corepack prepare npm@11 --activate
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Configure git
         run: |
@@ -281,14 +282,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: npm run release-beta -- --version "${{ github.event.inputs.beta_version }}"
+          BETA_VERSION: ${{ github.event.inputs.beta_version }}
+        run: npm run release-beta -- --version "$BETA_VERSION"
 
       - name: Summary
         if: ${{ success() }}
+        env:
+          BETA_VERSION: ${{ github.event.inputs.beta_version }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           echo "## ✅ Beta Release" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** \`${{ github.event.inputs.beta_version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** \`${BETA_VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${REF_NAME}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Dist-tag:** \`beta\`" >> $GITHUB_STEP_SUMMARY
 
   notify-beta-failure:
@@ -376,7 +381,7 @@ jobs:
         run: corepack enable npm && corepack prepare npm@11 --activate
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Configure git
         run: |
@@ -481,7 +486,7 @@ jobs:
       - name: Update npm
         run: corepack enable npm && corepack prepare npm@11 --activate
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Configure git
         run: |
           git config --global user.name "supabase-releaser[bot]"
