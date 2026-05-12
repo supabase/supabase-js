@@ -56,7 +56,7 @@ jobs:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const org = 'supabase'
-            const { actor } = context
+            const actor = context.triggering_actor
 
             async function isTeamMember(team_slug) {
               try {
@@ -227,7 +227,7 @@ jobs:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const org = 'supabase'
-            const { actor } = context
+            const actor = context.triggering_actor
 
             async function isTeamMember(team_slug) {
               try {
@@ -335,7 +335,7 @@ jobs:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const org = 'supabase'
-            const { actor } = context
+            const actor = context.triggering_actor
 
             async function isTeamMember(team_slug) {
               try {
