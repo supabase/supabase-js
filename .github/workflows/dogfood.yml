@@ -61,7 +61,7 @@ jobs:
       - name: Check if actor is member of admin or sdk team
         id: team-check
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ steps.app-token-member-check.outputs.token }}
           script: |
@@ -92,7 +92,7 @@ jobs:
           exit 1
 
       - name: Dispatch update workflows
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           VERSION: ${{ inputs.version }}
           SOURCE: ${{ inputs.source }}
