@@ -32,7 +32,7 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
+      - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
       - name: Detect affected packages
         id: affected
         run: |
@@ -66,7 +66,7 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
+      - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
       - name: Check common types are in sync
         run: npm run codegen:check
       - name: Build affected packages
@@ -93,7 +93,7 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
+      - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
       - name: Run test:ci for affected packages
         run: npx nx affected --target=test:ci
         timeout-minutes: 15
