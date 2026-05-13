@@ -87,7 +87,7 @@
     "@supabase/storage-js": "workspace:*"
   },
   "devDependencies": {
-    "@supabase/tracing": "*",
+    "@supabase/tracing": "workspace:*",
     "jsr": "^0.13.5",
     "puppeteer": "^24.9.0"
   },
