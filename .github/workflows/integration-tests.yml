@@ -158,12 +158,12 @@ jobs:
           echo ""
 
           cd packages/core/supabase-js/test/integration/next
-          pnpm install --no-frozen-lockfile --ignore-scripts
+          pnpm install --no-frozen-lockfile --ignore-scripts --ignore-workspace
           pnpm exec playwright install --with-deps
           cd "$GITHUB_WORKSPACE"
 
           cd packages/core/supabase-js/test/integration/expo
-          pnpm install --no-frozen-lockfile --ignore-scripts
+          pnpm install --no-frozen-lockfile --ignore-scripts --ignore-workspace
           cd "$GITHUB_WORKSPACE"
 
           cd packages/core/supabase-js/test/integration/bun
