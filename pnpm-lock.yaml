@@ -131,7 +131,7 @@ importers:
         specifier: ^3.6.2
         version: 3.8.3
       supabase:
-        specifier: ^2.81.2
+        specifier: 2.98.2
         version: 2.98.2
       ts-jest:
         specifier: ^29.4.2
