@@ -1,10 +1,15 @@
 packages:
   - 'packages/core/*'
 
-onlyBuiltDependencies:
-  - '@swc/core'
-  - esbuild
-  - napi-postinstall
-  - nx
-  - puppeteer
-  - supabase
+# Whitelist of packages allowed to run install scripts (preinstall/install/postinstall).
+# Everything not listed cannot run scripts, even transitively — the core supply-chain
+# defence this migration is for. Add new entries only after auditing the publisher.
+allowBuilds:
+  '@swc/core': true
+  cpu-features: true
+  esbuild: true
+  nx: true
+  puppeteer: true
+  ssh2: true
+  supabase: true
+  unrs-resolver: true

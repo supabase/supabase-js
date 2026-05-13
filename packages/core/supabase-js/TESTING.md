@@ -147,13 +147,13 @@ pnpm nx test:supabase:stop supabase-js
 
 **Common Issues and Solutions:**
 
-| Issue                                        | Solution                                                                      |
-| -------------------------------------------- | ----------------------------------------------------------------------------- |
-| "Port 54322 already allocated"               | Run `pnpm nx test:supabase:stop supabase-js` or `pnpm exec supabase stop`            |
+| Issue                                        | Solution                                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------------ |
+| "Port 54322 already allocated"               | Run `pnpm nx test:supabase:stop supabase-js` or `pnpm exec supabase stop`      |
 | "503 Service Unavailable" for Edge Functions | Run `pnpm nx test:supabase:setup supabase-js` (serves functions automatically) |
 | Integration tests fail with auth errors      | Run `pnpm nx test:supabase:setup supabase-js` (exports keys automatically)     |
-| "jq: command not found"                      | Install jq: `brew install jq` (macOS) or `apt-get install jq` (Linux)         |
-| Functions log filling up disk                | Logs are in `/tmp/supabase-functions.log`, cleanup removes them               |
+| "jq: command not found"                      | Install jq: `brew install jq` (macOS) or `apt-get install jq` (Linux)          |
+| Functions log filling up disk                | Logs are in `/tmp/supabase-functions.log`, cleanup removes them                |
 
 ## Platform-Specific Testing (CI Only)
 

@@ -1243,11 +1243,11 @@ The test infrastructure is managed via the Supabase CLI (`pnpm exec supabase sta
 
 #### Common Issues and Solutions
 
-| Issue                             | Solution                                                                                         |
-| --------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Issue                             | Solution                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Port conflicts                    | Another service is using a required port. Run `pnpm nx test:clean-post storage-js` then try again |
 | "request failed, reason:" errors  | Infrastructure isn't running. Run `pnpm nx test:infra storage-js` first                           |
-| Tests fail with connection errors | Ensure Docker is running (Supabase CLI requires Docker)                                          |
+| Tests fail with connection errors | Ensure Docker is running (Supabase CLI requires Docker)                                           |
 | Stack already running             | Run `pnpm nx test:clean-post storage-js` to stop it before restarting                             |
 
 #### Understanding Test Failures
