@@ -1,9 +1,33 @@
 import { execSync } from 'child_process'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { join } from 'path'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { dirname, join } from 'path'
 
 // Only publishing packages with explicit return types to JSR
 const packages = ['functions-js', 'supabase-js']
+
+// supabase-js imports `@supabase/tracing` (an internal, unpublished workspace
+// package). JSR rejects unpinned npm specifiers, so before publishing
+// supabase-js we copy the tracing source into the package and rely on
+// jsr.json's `imports` map to redirect `@supabase/tracing` → `./src/_internal/tracing/index.ts`.
+// The snapshot is removed in the publish loop's finally block.
+const TRACING_INTERNAL_SUBPATH = 'src/_internal'
+const TRACING_SNAPSHOT_SOURCES: Record<string, string | undefined> = {
+  'supabase-js': join('packages', 'shared', 'tracing', 'src'),
+}
+
+function copyTracingSnapshot(packagePath: string, pkg: string): void {
+  const src = TRACING_SNAPSHOT_SOURCES[pkg]
+  if (!src) return
+  const absoluteSrc = join(process.cwd(), src)
+  const dest = join(packagePath, TRACING_INTERNAL_SUBPATH, 'tracing')
+  mkdirSync(dirname(dest), { recursive: true })
+  cpSync(absoluteSrc, dest, { recursive: true })
+}
+
+function cleanupTracingSnapshot(packagePath: string, pkg: string): void {
+  if (!TRACING_SNAPSHOT_SOURCES[pkg]) return
+  rmSync(join(packagePath, TRACING_INTERNAL_SUBPATH), { recursive: true, force: true })
+}
 
 function getArg(name: string): string | undefined {
   const idx = process.argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`))
@@ -62,6 +86,10 @@ async function publishToJsr() {
     jsrConfig.version = version
     writeFileSync(jsrPath, JSON.stringify(jsrConfig, null, 2) + '\n')
 
+    // Snapshot any internal workspace deps that JSR would otherwise reject for
+    // missing version constraints. See TRACING_SNAPSHOT_SOURCES for details.
+    copyTracingSnapshot(packagePath, pkg)
+
     console.log(`\n📤 Publishing @supabase/${pkg}@${version} to JSR...`)
 
     try {
@@ -85,6 +113,8 @@ async function publishToJsr() {
     } finally {
       // Restore original jsr.json to keep working directory clean
       writeFileSync(jsrPath, originalJsrContent)
+      // Remove any internal snapshot copies created above
+      cleanupTracingSnapshot(packagePath, pkg)
     }
   }
 

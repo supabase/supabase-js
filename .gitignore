@@ -113,3 +113,7 @@ packages/**/supabase/.branches/*
 .claude/worktrees
 .nx/polygraph
 .nx/self-healing
+
+# Snapshot of internal workspace deps created at JSR publish time by
+# scripts/publish-to-jsr.ts. Generated and cleaned up per release run.
+packages/core/supabase-js/src/_internal/
