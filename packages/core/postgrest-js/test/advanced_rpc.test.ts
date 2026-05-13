@@ -1100,7 +1100,7 @@ describe('advanced rpc', () => {
         "error": {
           "code": "PGRST202",
           "details": "Searched for the function public.blurb_message without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
-          "hint": "Perhaps you meant to call the function public.get_messages",
+          "hint": null,
           "message": "Could not find the function public.blurb_message without parameters in the schema cache",
         },
         "status": 404,
@@ -1131,7 +1131,7 @@ describe('advanced rpc', () => {
         "error": {
           "code": "PGRST202",
           "details": "Searched for the function public.blurb_message with parameter  or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
-          "hint": "Perhaps you meant to call the function public.get_messages",
+          "hint": null,
           "message": "Could not find the function public.blurb_message() in the schema cache",
         },
         "status": 404,
