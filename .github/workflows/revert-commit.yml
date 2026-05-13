@@ -1,0 +1,217 @@
+name: Revert commit
+
+# Reverts a commit on master and opens a PR for review.
+# Triggered manually with a SHA + reason. On revert conflict, notifies Slack instead.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Full commit SHA to revert'
+        required: true
+        type: string
+      reason:
+        description: 'Why we are reverting'
+        required: true
+        type: string
+      scope:
+        description: 'Scope for the revert commit'
+        required: true
+        type: choice
+        default: 'supabase'
+        options:
+          - auth
+          - functions
+          - postgrest
+          - realtime
+          - storage
+          - supabase
+          - repo
+          - deps
+          - ci
+          - release
+          - docs
+          - scripts
+          - misc
+
+permissions:
+  contents: read
+
+concurrency:
+  group: revert-${{ inputs.sha }}
+  cancel-in-progress: false
+
+jobs:
+  revert:
+    name: Revert commit and open PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Check if actor is member of admin, sdk, or security team
+        id: team-check
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const org = 'supabase'
+            const actor = process.env.GITHUB_TRIGGERING_ACTOR
+
+            async function isTeamMember(team_slug) {
+              try {
+                const res = await github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug,
+                  username: actor,
+                })
+                return res && res.status === 200 && res.data && res.data.state === 'active'
+              } catch (_) {
+                return false
+              }
+            }
+
+            const isAdmin = await isTeamMember('admin')
+            const isSdk = await isTeamMember('sdk')
+            const isSecurity = await isTeamMember('security')
+            const isMember = isAdmin || isSdk || isSecurity
+            core.setOutput('is_team_member', isMember ? 'true' : 'false')
+
+      - name: Fail if not authorized
+        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
+        run: |
+          echo "You must be a member of @supabase/admin, @supabase/sdk, or @supabase/security to run this workflow."
+          exit 1
+
+      - name: Checkout master
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Verify SHA exists and is reachable from master
+        env:
+          SHA: ${{ inputs.sha }}
+        run: |
+          if [[ ! "${SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::sha input must be a 40-character commit SHA, got: ${SHA}"
+            exit 1
+          fi
+          if ! git cat-file -e "${SHA}^{commit}" 2>/dev/null; then
+            echo "::error::Commit ${SHA} does not exist in this repository."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "${SHA}" HEAD; then
+            echo "::error::Commit ${SHA} is not reachable from master. Refusing to revert."
+            exit 1
+          fi
+
+      - name: Revert and open PR
+        id: revert
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SHA: ${{ inputs.sha }}
+          SCOPE: ${{ inputs.scope }}
+          REASON: ${{ inputs.reason }}
+          ACTOR: ${{ github.triggering_actor }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          SHORT_SHA=$(git rev-parse --short=12 "${SHA}")
+          ORIGINAL_SUBJECT=$(git log -1 --pretty=%s "${SHA}")
+          BRANCH="revert/${SHORT_SHA}"
+
+          # Delete existing revert branch if a previous run left one behind
+          git push origin --delete "$BRANCH" 2>/dev/null || true
+
+          git checkout -b "$BRANCH"
+
+          if git revert --no-edit "${SHA}"; then
+            # Build conventional-commit subject. Cap at 100 chars (commitlint header-max-length).
+            PREFIX="fix(${SCOPE}): revert \""
+            SUFFIX="\""
+            MAX=$((100 - ${#PREFIX} - ${#SUFFIX}))
+            TRUNCATED="${ORIGINAL_SUBJECT}"
+            if [ ${#TRUNCATED} -gt ${MAX} ]; then
+              TRUNCATED="${TRUNCATED:0:$((MAX - 1))}…"
+            fi
+            NEW_SUBJECT="${PREFIX}${TRUNCATED}${SUFFIX}"
+
+            git commit --amend \
+              -m "${NEW_SUBJECT}" \
+              -m "Reverts commit ${SHA}." \
+              -m "Reason: ${REASON}"
+
+            git push -u origin "$BRANCH"
+
+            COMMIT_URL="https://github.com/${REPO}/commit/${SHA}"
+            RUN_URL="https://github.com/${REPO}/actions/runs/${RUN_ID}"
+
+            PR_BODY_FILE=$(mktemp)
+            printf 'Reverts [`%s`](%s) — _%s_.\n\n## Reason\n%s\n\n---\nOpened by @%s via the [revert-commit workflow](%s).\n' \
+              "$SHORT_SHA" "$COMMIT_URL" "$ORIGINAL_SUBJECT" "$REASON" "$ACTOR" "$RUN_URL" \
+              > "$PR_BODY_FILE"
+
+            gh pr create \
+              --repo "${REPO}" \
+              --base master \
+              --head "$BRANCH" \
+              --title "${NEW_SUBJECT}" \
+              --body-file "$PR_BODY_FILE"
+
+            # Request review from the workflow actor
+            gh pr edit "$BRANCH" --add-reviewer "$ACTOR" || true
+
+            echo "result=success" >> "$GITHUB_OUTPUT"
+          else
+            git revert --abort || true
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Notify on conflict
+        if: steps.revert.outputs.result == 'conflict'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
+          SHA: ${{ inputs.sha }}
+          REASON: ${{ inputs.reason }}
+          ACTOR: ${{ github.triggering_actor }}
+          REPO: ${{ github.repository }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT_URL: https://github.com/${{ github.repository }}/commit/${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg sha "$SHA" \
+            --arg reason "$REASON" \
+            --arg actor "$ACTOR" \
+            --arg commit_url "$COMMIT_URL" \
+            --arg run_url "$RUN_URL" \
+            '{
+              channel: "#team-sdk",
+              username: "gha-failures-notifier",
+              icon_emoji: ":warning:",
+              attachments: [{
+                color: "danger",
+                title: "Revert workflow failed: conflicts (supabase-js)",
+                text: "Could not automatically revert <\($commit_url)|\($sha)> on `master` — later commits touched the same lines, so manual resolution is needed.\n\n*Reason given:* \($reason)\n*Triggered by:* @\($actor)\n\n<\($run_url)|View logs>",
+                footer: "revert-commit.yml"
+              }]
+            }' \
+          | curl -sS --fail-with-body -X POST "$SLACK_WEBHOOK" \
+              -H 'Content-Type: application/json' \
+              -d @-
+          exit 1
