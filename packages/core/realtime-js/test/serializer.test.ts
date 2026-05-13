@@ -565,4 +565,84 @@ describe('binary', () => {
     expect(result.payload.meta).toStrictEqual({ replayed: true })
     expect(decoder.decode(result.payload.payload as ArrayBuffer)).toBe('\x01\x04')
   })
+
+  it('logs error and does not invoke callback for corrupt JSON payload', () => {
+    const serializer = new Serializer()
+    const log = vi.fn()
+    const callback = vi.fn()
+    // Build a userBroadcast buffer (kind=4) with JSON_ENCODING and corrupt payload
+    // 4 -> user_broadcast
+    // 3 for topic length
+    // 2 for user event length
+    // 0 for metadata length
+    // 1 for JSON encoding
+    // "top" topic
+    // "ev" user event
+    // corrupt JSON bytes as payload
+    const header = new Uint8Array([0x04, 3, 2, 0, 1])
+    const encoder = new TextEncoder()
+    const topic = encoder.encode('top')
+    const event = encoder.encode('ev')
+    const corruptPayload = encoder.encode('{{{not json')
+    const buffer = new Uint8Array(header.length + topic.length + event.length + corruptPayload.length)
+    buffer.set(header, 0)
+    buffer.set(topic, header.length)
+    buffer.set(event, header.length + topic.length)
+    buffer.set(corruptPayload, header.length + topic.length + event.length)
+
+    serializer.decode(buffer.buffer, callback, log)
+    expect(callback).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith('error', 'Error decoding JSON payload', expect.anything())
+  })
+
+  it('logs error and does not invoke callback for corrupt JSON metadata', () => {
+    const serializer = new Serializer()
+    const log = vi.fn()
+    const callback = vi.fn()
+    // Build a userBroadcast buffer (kind=4) with valid JSON payload but corrupt metadata
+    // 4 -> user_broadcast
+    // 3 for topic length
+    // 2 for user event length
+    // 7 for metadata length (corrupt)
+    // 1 for JSON encoding
+    // "top" topic
+    // "ev" user event
+    // corrupt metadata
+    // valid JSON payload
+    const header = new Uint8Array([0x04, 3, 2, 7, 1])
+    const encoder = new TextEncoder()
+    const topic = encoder.encode('top')
+    const event = encoder.encode('ev')
+    const corruptMeta = encoder.encode('{bad!!!') // 7 bytes, invalid JSON
+    const validPayload = encoder.encode('{"a":1}')
+    const buffer = new Uint8Array(
+      header.length + topic.length + event.length + corruptMeta.length + validPayload.length
+    )
+    let offset = 0
+    buffer.set(header, offset)
+    offset += header.length
+    buffer.set(topic, offset)
+    offset += topic.length
+    buffer.set(event, offset)
+    offset += event.length
+    buffer.set(corruptMeta, offset)
+    offset += corruptMeta.length
+    buffer.set(validPayload, offset)
+
+    serializer.decode(buffer.buffer, callback, log)
+    expect(callback).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith('error', 'Error decoding JSON metadata', expect.anything())
+  })
+
+  it('logs error and does not invoke callback for unknown binary kind', () => {
+    const serializer = new Serializer()
+    const log = vi.fn()
+    const callback = vi.fn()
+    // Build a buffer with an unknown kind byte (99)
+    const buffer = new Uint8Array([99, 0, 0, 0, 0]).buffer
+
+    serializer.decode(buffer, callback, log)
+    expect(callback).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith('error', 'Failed to decode binary Realtime message')
+  })
 })
