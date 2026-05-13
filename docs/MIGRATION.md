@@ -386,9 +386,9 @@ pnpm commit
 
 ### Quick Command Conversion Table
 
-| Purpose              | Old Command (in individual repo) | New Command (in monorepo)              |
-| -------------------- | -------------------------------- | -------------------------------------- |
-| **Install deps**     | `npm install`                    | `pnpm install` (at root)               |
+| Purpose              | Old Command (in individual repo) | New Command (in monorepo)               |
+| -------------------- | -------------------------------- | --------------------------------------- |
+| **Install deps**     | `npm install`                    | `pnpm install` (at root)                |
 | **Build library**    | `npm run build`                  | `pnpm nx build [library-name]`          |
 | **Test library**     | `npm test`                       | `pnpm nx test [library-name]`           |
 | **Test with watch**  | `npm test -- --watch`            | `pnpm nx test [library-name] --watch`   |

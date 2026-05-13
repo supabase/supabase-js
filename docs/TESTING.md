@@ -26,8 +26,8 @@ Each package has unique testing requirements. Please refer to the individual REA
 
 ### Core Packages
 
-| Package          | Docker Required                          | Test Command                            | Documentation                                                    |
-| ---------------- | ---------------------------------------- | --------------------------------------- | ---------------------------------------------------------------- |
+| Package          | Docker Required                          | Test Command                             | Documentation                                                    |
+| ---------------- | ---------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------- |
 | **auth-js**      | ✅ Yes (GoTrue + PostgreSQL)             | `pnpm nx test:auth auth-js`              | [Testing Guide](../packages/core/auth-js/README.md#testing)      |
 | **functions-js** | ✅ Yes (Deno relay via testcontainers)   | `pnpm nx test functions-js`              | [Testing Guide](../packages/core/functions-js/README.md#testing) |
 | **postgrest-js** | ✅ Yes (PostgREST + PostgreSQL)          | `pnpm nx test:ci:postgrest postgrest-js` | [Testing Guide](../packages/core/postgrest-js/README.md#testing) |
