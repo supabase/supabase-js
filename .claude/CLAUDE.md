@@ -615,7 +615,6 @@ cat docs/TESTING.md
    nx test:auth auth-js         # If auth-js changed
    nx test:storage storage-js   # If storage-js changed
    # ... etc for other packages
-   nx affected --target=lint    # Lint affected packages
    nx affected --target=build   # Build affected packages
    ```
 

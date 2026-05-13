@@ -34,8 +34,10 @@
       "{projectRoot}/src/**/*",
       "{projectRoot}/test/**/*",
       "{projectRoot}/.eslintrc*",
+      "{projectRoot}/eslint.config.mjs",
       "{projectRoot}/.prettierrc*",
       "{projectRoot}/tsconfig*.json",
+      "{workspaceRoot}/eslint.config.mjs",
       "sharedGlobals"
     ],
     "docs": [
