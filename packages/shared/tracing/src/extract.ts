@@ -1,55 +1,63 @@
 import type { TraceContext } from './types'
 
+// Cache the dynamic import across all calls. Resolved (or failed) once per
+// process; subsequent calls hit the resolved promise as a synchronous microtask
+// instead of re-entering the module resolver.
+//
+// `any` here intentionally avoids referencing @opentelemetry/api types at
+// compile time, since it's an optional peer dep that may not be installed.
+let otelModulePromise: Promise<any | null> | null = null
+
+function loadOtel(): Promise<any | null> {
+  if (otelModulePromise === null) {
+    // Dynamic import avoids bundling @opentelemetry/api and prevents bundlers
+    // from emitting a top-level createRequire(import.meta.url) shim that
+    // breaks Deno when the module is loaded via an https:// URL.
+    // @ts-ignore - @opentelemetry/api is an optional peer dependency
+    otelModulePromise = import('@opentelemetry/api').catch(() => null)
+  }
+  return otelModulePromise
+}
+
 /**
- * Extract trace context from OpenTelemetry API.
+ * For tests only. Resets the cached OpenTelemetry import.
  *
- * This function attempts to extract trace context from the OpenTelemetry API
- * if available.
+ * @internal
+ */
+export function _resetOtelCache(): void {
+  otelModulePromise = null
+}
+
+/**
+ * Extract trace context from the OpenTelemetry API.
+ *
+ * Returns null if `@opentelemetry/api` is not installed or there is no active
+ * trace context. The dynamic import is cached after the first call.
  *
  * @returns Trace context with traceparent, tracestate, and baggage headers, or null if unavailable
- *
- * @example
- * ```typescript
- * // Extract from OpenTelemetry API (if available)
- * const context = extractTraceContext()
- * ```
  */
 export async function extractTraceContext(): Promise<TraceContext | null> {
-  // Try OpenTelemetry API (dynamic import, fails gracefully if not available)
   try {
-    // Use dynamic import to avoid bundling @opentelemetry/api and to prevent
-    // bundlers from emitting a top-level createRequire(import.meta.url) shim,
-    // which breaks in Deno when the module is loaded via an https:// URL.
-    // @ts-ignore - @opentelemetry/api is an optional peer dependency
-    const otel = await import('@opentelemetry/api')
+    const otel = await loadOtel()
 
     if (!otel || !otel.propagation || !otel.context) {
       return null
     }
 
-    // Create a carrier object to receive propagated headers
     const carrier: Record<string, string> = {}
-
-    // Inject current context into carrier
     otel.propagation.inject(otel.context.active(), carrier)
 
-    // Extract W3C headers from carrier
     const traceparent = carrier['traceparent']
-    const tracestate = carrier['tracestate']
-    const baggage = carrier['baggage']
-
-    // Return null if no traceparent (required header)
     if (!traceparent) {
       return null
     }
 
     return {
       traceparent,
-      tracestate,
-      baggage,
+      tracestate: carrier['tracestate'],
+      baggage: carrier['baggage'],
     }
-  } catch (error) {
-    // OpenTelemetry API not available or no active context
+  } catch {
     return null
   }
 }

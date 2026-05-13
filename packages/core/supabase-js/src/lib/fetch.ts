@@ -4,6 +4,7 @@ import {
   shouldPropagateToTarget,
   getDefaultPropagationTargets,
   type TraceContext,
+  type TracePropagationTarget,
 } from '@supabase/tracing'
 import type { TracePropagationOptions } from './types'
 
@@ -30,11 +31,18 @@ export const fetchWithAuth = (
   const fetch = resolveFetch(customFetch)
   const HeadersConstructor = resolveHeadersConstructor()
 
+  // Pre-compute trace propagation state once. When disabled, the per-request
+  // path skips all tracing work with a single truthy check.
+  const traceEnabled = tracePropagationOptions?.enabled === true
+  const respectSampling = tracePropagationOptions?.respectSamplingDecision !== false
+  const traceTargets: TracePropagationTarget[] | null = traceEnabled
+    ? getDefaultPropagationTargets(supabaseUrl)
+    : null
+
   return async (input, init) => {
     const accessToken = (await getAccessToken()) ?? supabaseKey
     let headers = new HeadersConstructor(init?.headers)
 
-    // Inject auth headers
     if (!headers.has('apikey')) {
       headers.set('apikey', supabaseKey)
     }
@@ -43,18 +51,19 @@ export const fetchWithAuth = (
       headers.set('Authorization', `Bearer ${accessToken}`)
     }
 
-    // Inject trace headers
-    const traceHeaders = await getTraceHeaders(input, supabaseUrl, tracePropagationOptions)
+    if (traceTargets) {
+      const traceHeaders = await getTraceHeaders(input, traceTargets, respectSampling)
 
-    if (traceHeaders) {
-      if (traceHeaders.traceparent && !headers.has('traceparent')) {
-        headers.set('traceparent', traceHeaders.traceparent)
-      }
-      if (traceHeaders.tracestate && !headers.has('tracestate')) {
-        headers.set('tracestate', traceHeaders.tracestate)
-      }
-      if (traceHeaders.baggage && !headers.has('baggage')) {
-        headers.set('baggage', traceHeaders.baggage)
+      if (traceHeaders) {
+        if (traceHeaders.traceparent && !headers.has('traceparent')) {
+          headers.set('traceparent', traceHeaders.traceparent)
+        }
+        if (traceHeaders.tracestate && !headers.has('tracestate')) {
+          headers.set('tracestate', traceHeaders.tracestate)
+        }
+        if (traceHeaders.baggage && !headers.has('baggage')) {
+          headers.set('baggage', traceHeaders.baggage)
+        }
       }
     }
 
@@ -62,45 +71,25 @@ export const fetchWithAuth = (
   }
 }
 
-/**
- * Get trace headers to inject into outgoing requests.
- *
- * @param input - The request URL
- * @param supabaseUrl - The Supabase project URL
- * @param options - Trace propagation options
- * @returns Trace context headers, or null if trace propagation is disabled or unavailable
- */
 async function getTraceHeaders(
   input: RequestInfo | URL,
-  supabaseUrl: string,
-  options?: TracePropagationOptions
+  targets: TracePropagationTarget[],
+  respectSampling: boolean
 ): Promise<TraceContext | null> {
-  // Check if trace propagation is enabled
-  if (options?.enabled === false) {
-    return null
-  }
+  const targetUrl: string | URL =
+    typeof input === 'string' ? input : input instanceof URL ? input : input.url
 
-  // Get target URL
-  const targetUrl =
-    typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
-
-  // Get default propagation targets (Supabase domains only)
-  const targets = getDefaultPropagationTargets(supabaseUrl)
-
-  // Check if we should propagate to this target
   if (!shouldPropagateToTarget(targetUrl, targets)) {
     return null
   }
 
-  // Extract trace context
   const traceContext = await extractTraceContext()
 
   if (!traceContext || !traceContext.traceparent) {
     return null
   }
 
-  // Check sampling decision if respectSamplingDecision is enabled
-  if (options?.respectSamplingDecision !== false) {
+  if (respectSampling) {
     const parsed = parseTraceParent(traceContext.traceparent)
     if (parsed && !parsed.isSampled) {
       return null

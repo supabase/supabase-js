@@ -35,6 +35,6 @@ export const DEFAULT_AUTH_OPTIONS: SupabaseAuthClientOptions = {
 export const DEFAULT_REALTIME_OPTIONS: RealtimeClientOptions = {}
 
 export const DEFAULT_TRACE_PROPAGATION_OPTIONS: TracePropagationOptions = {
-  enabled: true,
+  enabled: false,
   respectSamplingDecision: true,
 }

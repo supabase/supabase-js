@@ -112,62 +112,47 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishabl
 
 ### Distributed Tracing with OpenTelemetry
 
-The Supabase JS SDK supports automatic W3C/OpenTelemetry trace context propagation for distributed tracing. When enabled, the SDK automatically attaches trace context headers (`traceparent`, `tracestate`, `baggage`) to all outgoing requests, enabling end-to-end request tracing from your client application through Supabase services.
+The Supabase JS SDK can attach W3C/OpenTelemetry trace context headers (`traceparent`, `tracestate`, `baggage`) to outgoing requests, enabling end-to-end request tracing from your client application through Supabase services.
 
-#### Auto-Detection (Default)
+Trace propagation is **opt-in** and disabled by default. When enabled, headers are only attached to requests targeting Supabase domains (`*.supabase.co`, `*.supabase.in`, `localhost`).
 
-By default, trace propagation is enabled and automatically detects and propagates active trace context from the OpenTelemetry API:
+#### Enable trace propagation
 
 ```js
 import { createClient } from '@supabase/supabase-js'
 import { trace } from '@opentelemetry/api'
 
-// Create client with default trace propagation (enabled: true)
-const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key')
+const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
+  tracePropagation: true,
+})
 
-// Create a traced operation
 const tracer = trace.getTracer('my-app')
 await tracer.startActiveSpan('fetch-users', async (span) => {
-  // This request will automatically include trace context headers
+  // This request now includes the active trace context.
   const { data, error } = await supabase.from('users').select('*')
   span.end()
 })
 ```
 
-#### Configuration Options
+If `@opentelemetry/api` is not installed or no active context exists, the SDK silently no-ops.
+
+#### Advanced configuration
 
 ```typescript
 interface TracePropagationOptions {
-  // Enable or disable trace propagation (default: true)
+  // Enable trace propagation (default: false).
   enabled?: boolean
 
-  // Respect upstream sampling decisions (default: true)
+  // Respect upstream sampling decisions (default: true).
+  // When true, headers are skipped if the upstream trace is not sampled.
   respectSamplingDecision?: boolean
 }
 ```
 
-Trace context is automatically propagated only to Supabase domains
-(_.supabase.co, _.supabase.in, localhost) for security.
-
-#### Disable Trace Propagation
-
 ```js
+// Always propagate, even for non-sampled traces.
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
-  tracePropagation: {
-    enabled: false,
-  },
-})
-```
-
-#### Sampling Decisions
-
-By default, the SDK respects upstream sampling decisions. If the trace is marked as non-sampled, trace context won't be propagated:
-
-```js
-const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
-  tracePropagation: {
-    respectSamplingDecision: false, // Always propagate, ignore sampling
-  },
+  tracePropagation: { enabled: true, respectSamplingDecision: false },
 })
 ```
 

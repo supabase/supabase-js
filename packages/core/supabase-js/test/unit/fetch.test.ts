@@ -148,6 +148,30 @@ describe('fetch module', () => {
     })
 
     describe('trace propagation', () => {
+      test('should not inject trace headers by default (no options)', async () => {
+        const mockResponse = { ok: true }
+        const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)
+        const mockSet = jest.fn()
+        const mockHeadersImpl = jest.fn().mockReturnValue({
+          has: jest.fn().mockReturnValue(false),
+          set: mockSet,
+        })
+
+        ;(global as any).fetch = mockFetchImpl
+        ;(global as any).Headers = mockHeadersImpl
+
+        const authFetch = fetchWithAuth(
+          'test-key',
+          'https://myproject.supabase.co',
+          jest.fn().mockResolvedValue('test-token')
+        )
+        await authFetch('https://myproject.supabase.co/rest/v1/table')
+
+        expect(mockSet).not.toHaveBeenCalledWith('traceparent', expect.anything())
+        expect(mockSet).not.toHaveBeenCalledWith('tracestate', expect.anything())
+        expect(mockSet).not.toHaveBeenCalledWith('baggage', expect.anything())
+      })
+
       test('should not inject trace headers when disabled', async () => {
         const mockResponse = { ok: true }
         const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)

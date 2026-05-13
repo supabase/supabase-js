@@ -1,5 +1,11 @@
 // helpers.ts
-import { SupabaseClientOptions } from './types'
+import { SupabaseClientOptions, TracePropagationOptions } from './types'
+
+function normalizeTracePropagation(
+  value: TracePropagationOptions | boolean | undefined
+): TracePropagationOptions | undefined {
+  return typeof value === 'boolean' ? { enabled: value } : value
+}
 
 export function uuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -15,6 +21,13 @@ export function ensureTrailingSlash(url: string): string {
 
 export const isBrowser = () => typeof window !== 'undefined'
 
+export type ResolvedSupabaseClientOptions<SchemaName> = Omit<
+  Required<SupabaseClientOptions<SchemaName>>,
+  'tracePropagation'
+> & {
+  tracePropagation: TracePropagationOptions
+}
+
 export function applySettingDefaults<
   Database = any,
   SchemaName extends string & keyof Database = 'public' extends keyof Database
@@ -23,23 +36,25 @@ export function applySettingDefaults<
 >(
   options: SupabaseClientOptions<SchemaName>,
   defaults: SupabaseClientOptions<any>
-): Required<SupabaseClientOptions<SchemaName>> {
+): ResolvedSupabaseClientOptions<SchemaName> {
   const {
     db: dbOptions,
     auth: authOptions,
     realtime: realtimeOptions,
     global: globalOptions,
-    tracePropagation: tracePropagationOptions,
   } = options
   const {
     db: DEFAULT_DB_OPTIONS,
     auth: DEFAULT_AUTH_OPTIONS,
     realtime: DEFAULT_REALTIME_OPTIONS,
     global: DEFAULT_GLOBAL_OPTIONS,
-    tracePropagation: DEFAULT_TRACE_PROPAGATION_OPTIONS,
   } = defaults
 
-  const result: Required<SupabaseClientOptions<SchemaName>> = {
+  // Accept either a boolean shorthand or an options object on both sides.
+  const tracePropagationOptions = normalizeTracePropagation(options.tracePropagation)
+  const DEFAULT_TRACE_PROPAGATION_OPTIONS = normalizeTracePropagation(defaults.tracePropagation)
+
+  const result: ResolvedSupabaseClientOptions<SchemaName> = {
     db: {
       ...DEFAULT_DB_OPTIONS,
       ...dbOptions,
@@ -63,7 +78,7 @@ export function applySettingDefaults<
     },
     tracePropagation: {
       enabled:
-        tracePropagationOptions?.enabled ?? DEFAULT_TRACE_PROPAGATION_OPTIONS?.enabled ?? true,
+        tracePropagationOptions?.enabled ?? DEFAULT_TRACE_PROPAGATION_OPTIONS?.enabled ?? false,
       respectSamplingDecision:
         tracePropagationOptions?.respectSamplingDecision ??
         DEFAULT_TRACE_PROPAGATION_OPTIONS?.respectSamplingDecision ??

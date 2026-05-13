@@ -30,31 +30,22 @@ export type Fetch = typeof fetch
  *
  * Enables distributed tracing across Supabase services using W3C Trace Context
  * and OpenTelemetry standards. When enabled, the SDK automatically attaches
- * trace context headers (traceparent, tracestate, baggage) to outgoing requests.
+ * trace context headers (traceparent, tracestate, baggage) to outgoing requests
+ * to Supabase domains.
  *
  * @see https://www.w3.org/TR/trace-context/
  * @see https://opentelemetry.io/docs/concepts/context-propagation/
  */
 export interface TracePropagationOptions {
   /**
-   * Enable or disable trace propagation. Defaults to true.
+   * Enable trace propagation. Disabled by default.
    *
    * When enabled, automatically detects and propagates active trace context
-   * from OpenTelemetry API to outgoing Supabase requests.
+   * from the OpenTelemetry API to outgoing Supabase requests. Trace context
+   * is only propagated to Supabase domains (*.supabase.co, *.supabase.in,
+   * localhost) for security.
    *
-   * Trace context is only propagated to Supabase domains (*.supabase.co,
-   * *.supabase.in, localhost) for security.
-   *
-   * @default true
-   *
-   * @example
-   * ```ts
-   * // Enable trace propagation (default)
-   * createClient(url, key, { tracePropagation: { enabled: true } })
-   *
-   * // Disable trace propagation
-   * createClient(url, key, { tracePropagation: { enabled: false } })
-   * ```
+   * @default false
    */
   enabled?: boolean
 
@@ -66,15 +57,6 @@ export interface TracePropagationOptions {
    * This helps reduce overhead when traces are not being collected.
    *
    * @default true
-   *
-   * @example
-   * ```ts
-   * createClient(url, key, {
-   *   tracePropagation: {
-   *     respectSamplingDecision: false // Always propagate, ignore sampling
-   *   }
-   * })
-   * ```
    */
   respectSamplingDecision?: boolean
 }
@@ -230,26 +212,27 @@ export type SupabaseClientOptions<SchemaName> = {
    */
   accessToken?: () => Promise<string | null>
   /**
-   * Trace propagation configuration for OpenTelemetry/W3C trace context.
-   * Enables distributed tracing across Supabase services.
+   * Enable OpenTelemetry / W3C trace context propagation to Supabase services.
+   *
+   * Disabled by default. Pass `true` for the common case (auto-detect an
+   * active OTel context and inject `traceparent` / `tracestate` / `baggage`
+   * headers) or an object for fine-grained control.
+   *
+   * Requires `@opentelemetry/api` to be installed in your application; if
+   * not present, the SDK silently no-ops.
    *
    * @example
    * ```ts
-   * // Auto-detect and propagate (default)
-   * createClient(url, key, { tracePropagation: { mode: 'auto' } })
+   * // Shorthand — opt in with defaults.
+   * createClient(url, key, { tracePropagation: true })
    *
-   * // Disable trace propagation
-   * createClient(url, key, { tracePropagation: { mode: 'off' } })
-   *
-   * // Custom targets
+   * // Advanced — always propagate, even for non-sampled traces.
    * createClient(url, key, {
-   *   tracePropagation: {
-   *     targets: ['myproject.supabase.co', /.*\.internal\.company\.com/]
-   *   }
+   *   tracePropagation: { enabled: true, respectSamplingDecision: false },
    * })
    * ```
    */
-  tracePropagation?: TracePropagationOptions
+  tracePropagation?: TracePropagationOptions | boolean
 }
 
 /**

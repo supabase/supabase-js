@@ -30,7 +30,7 @@ import type { TracePropagationTarget } from './types'
  * ```
  */
 export function shouldPropagateToTarget(
-  targetUrl: string,
+  targetUrl: string | URL,
   targets: TracePropagationTarget[]
 ): boolean {
   if (!targetUrl || !targets || targets.length === 0) {
@@ -38,11 +38,15 @@ export function shouldPropagateToTarget(
   }
 
   let url: URL
-  try {
-    url = new URL(targetUrl)
-  } catch (error) {
-    // Invalid URL
-    return false
+  if (targetUrl instanceof URL) {
+    url = targetUrl
+  } else {
+    try {
+      url = new URL(targetUrl)
+    } catch (error) {
+      // Invalid URL
+      return false
+    }
   }
 
   // Check each target

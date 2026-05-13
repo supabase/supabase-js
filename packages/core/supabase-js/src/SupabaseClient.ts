@@ -21,7 +21,11 @@ import {
   DEFAULT_TRACE_PROPAGATION_OPTIONS,
 } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
-import { applySettingDefaults, validateSupabaseUrl } from './lib/helpers'
+import {
+  applySettingDefaults,
+  validateSupabaseUrl,
+  type ResolvedSupabaseClientOptions,
+} from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import type {
   Fetch,
@@ -90,7 +94,7 @@ export default class SupabaseClient<
   protected accessToken?: () => Promise<string | null>
 
   protected headers: Record<string, string>
-  protected settings?: Required<SupabaseClientOptions<SchemaName>>
+  protected settings?: ResolvedSupabaseClientOptions<SchemaName>
 
   /**
    * Create a new client for use in the browser.
