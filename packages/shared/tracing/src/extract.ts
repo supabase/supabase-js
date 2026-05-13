@@ -8,13 +8,20 @@ import type { TraceContext } from './types'
 // compile time, since it's an optional peer dep that may not be installed.
 let otelModulePromise: Promise<any | null> | null = null
 
+// Indirect the specifier through a variable so static bundlers
+// (webpack, turbopack, rollup, vite, esbuild) do not attempt to resolve
+// @opentelemetry/api at build time. It's an optional peer dep that may not
+// be installed in the consumer app; we look it up purely at runtime.
+const OTEL_PKG = '@opentelemetry/api'
+
 function loadOtel(): Promise<any | null> {
   if (otelModulePromise === null) {
-    // Dynamic import avoids bundling @opentelemetry/api and prevents bundlers
-    // from emitting a top-level createRequire(import.meta.url) shim that
-    // breaks Deno when the module is loaded via an https:// URL.
-    // @ts-ignore - @opentelemetry/api is an optional peer dependency
-    otelModulePromise = import('@opentelemetry/api').catch(() => null)
+    // The variable specifier + magic comments together cover every common
+    // bundler. Webpack/Turbopack honor the ignore comments; bundlers that
+    // ignore the comments still bail out on the non-literal specifier.
+    otelModulePromise = import(
+      /* webpackIgnore: true */ /* @vite-ignore */ /* turbopackIgnore: true */ OTEL_PKG
+    ).catch(() => null)
   }
   return otelModulePromise
 }
