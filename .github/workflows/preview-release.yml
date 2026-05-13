@@ -58,7 +58,7 @@ jobs:
 
       - name: Publish preview packages
         run: |
-          pnpm dlx pkg-pr-new@latest publish --compact \
+          pnpm dlx pkg-pr-new@0.0.71 publish --compact \
             ./packages/core/auth-js \
             ./packages/core/functions-js \
             ./packages/core/postgrest-js \
