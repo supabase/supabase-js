@@ -80,7 +80,7 @@
     "packages/core/postgrest-js",
     "packages/core/realtime-js",
     "packages/core/storage-js",
-    "packages/core/supabase-js"
-  ],
-  "dependencies": {}
+    "packages/core/supabase-js",
+    "packages/shared/tracing"
+  ]
 }

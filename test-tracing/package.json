@@ -1,0 +1,28 @@
+{
+  "name": "test-tracing",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node test-final.js",
+    "test:simple": "node test-trace-simple.js",
+    "test:diagnostic": "node test-diagnostic.js",
+    "test:jaeger": "node test-with-jaeger.js",
+    "test:ts": "node --loader ts-node/esm test-trace.ts",
+    "test:live": "node test-live.js staging",
+    "test:live:staging": "node test-live.js staging",
+    "test:live:prod": "node test-live.js prod",
+    "test:live:all": "node test-live.js all"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.215.0",
+    "@opentelemetry/resources": "^2.7.0",
+    "@opentelemetry/sdk-node": "^0.215.0",
+    "@opentelemetry/sdk-trace-node": "^2.7.0",
+    "@opentelemetry/semantic-conventions": "^1.40.0",
+    "@supabase/supabase-js": "https://pkg.pr.new/@supabase/supabase-js@2163",
+    "dotenv": "^17.4.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

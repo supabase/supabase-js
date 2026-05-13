@@ -25,6 +25,42 @@ export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
 export type Fetch = typeof fetch
 
+/**
+ * Configuration options for trace context propagation.
+ *
+ * Enables distributed tracing across Supabase services using W3C Trace Context
+ * and OpenTelemetry standards. When enabled, the SDK automatically attaches
+ * trace context headers (traceparent, tracestate, baggage) to outgoing requests
+ * to Supabase domains.
+ *
+ * @see https://www.w3.org/TR/trace-context/
+ * @see https://opentelemetry.io/docs/concepts/context-propagation/
+ */
+export interface TracePropagationOptions {
+  /**
+   * Enable trace propagation. Disabled by default.
+   *
+   * When enabled, automatically detects and propagates active trace context
+   * from the OpenTelemetry API to outgoing Supabase requests. Trace context
+   * is only propagated to Supabase domains (*.supabase.co, *.supabase.in,
+   * localhost) for security.
+   *
+   * @default false
+   */
+  enabled?: boolean
+
+  /**
+   * Respect upstream sampling decisions.
+   *
+   * When true, trace context will not be propagated if the upstream trace
+   * indicates non-sampling (sampled flag = 0 in traceparent header).
+   * This helps reduce overhead when traces are not being collected.
+   *
+   * @default true
+   */
+  respectSamplingDecision?: boolean
+}
+
 export type SupabaseClientOptions<SchemaName> = {
   /**
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to `public`.
@@ -175,6 +211,28 @@ export type SupabaseClientOptions<SchemaName> = {
    * authentications concurrently in the same application.
    */
   accessToken?: () => Promise<string | null>
+  /**
+   * Enable OpenTelemetry / W3C trace context propagation to Supabase services.
+   *
+   * Disabled by default. Pass `true` for the common case (auto-detect an
+   * active OTel context and inject `traceparent` / `tracestate` / `baggage`
+   * headers) or an object for fine-grained control.
+   *
+   * Requires `@opentelemetry/api` to be installed in your application; if
+   * not present, the SDK silently no-ops.
+   *
+   * @example
+   * ```ts
+   * // Shorthand — opt in with defaults.
+   * createClient(url, key, { tracePropagation: true })
+   *
+   * // Advanced — always propagate, even for non-sampled traces.
+   * createClient(url, key, {
+   *   tracePropagation: { enabled: true, respectSamplingDecision: false },
+   * })
+   * ```
+   */
+  tracePropagation?: TracePropagationOptions | boolean
 }
 
 /**

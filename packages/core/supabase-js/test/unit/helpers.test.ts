@@ -70,6 +70,58 @@ test('applySettingDefaults without accessToken', () => {
   expect(settings).not.toHaveProperty('accessToken')
 })
 
+describe('applySettingDefaults — tracePropagation', () => {
+  const defaults = {
+    db: { schema: 'public' },
+    auth: { autoRefreshToken: true },
+    global: { headers: {} },
+    tracePropagation: { enabled: false, respectSamplingDecision: true },
+  }
+
+  test('defaults to disabled when no option provided', () => {
+    const settings = helpers.applySettingDefaults({}, defaults)
+    expect(settings.tracePropagation).toEqual({
+      enabled: false,
+      respectSamplingDecision: true,
+    })
+  })
+
+  test('boolean true is normalized to { enabled: true }', () => {
+    const settings = helpers.applySettingDefaults({ tracePropagation: true }, defaults)
+    expect(settings.tracePropagation).toEqual({
+      enabled: true,
+      respectSamplingDecision: true,
+    })
+  })
+
+  test('boolean false is normalized to { enabled: false }', () => {
+    const settings = helpers.applySettingDefaults({ tracePropagation: false }, defaults)
+    expect(settings.tracePropagation).toEqual({
+      enabled: false,
+      respectSamplingDecision: true,
+    })
+  })
+
+  test('object form is honored', () => {
+    const settings = helpers.applySettingDefaults(
+      { tracePropagation: { enabled: true, respectSamplingDecision: false } },
+      defaults
+    )
+    expect(settings.tracePropagation).toEqual({
+      enabled: true,
+      respectSamplingDecision: false,
+    })
+  })
+
+  test('partial object inherits other defaults', () => {
+    const settings = helpers.applySettingDefaults({ tracePropagation: { enabled: true } }, defaults)
+    expect(settings.tracePropagation).toEqual({
+      enabled: true,
+      respectSamplingDecision: true,
+    })
+  })
+})
+
 test('isBrowser function', () => {
   const originalWindow = global.window
 

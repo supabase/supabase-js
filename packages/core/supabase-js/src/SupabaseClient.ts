@@ -18,9 +18,14 @@ import {
   DEFAULT_DB_OPTIONS,
   DEFAULT_GLOBAL_OPTIONS,
   DEFAULT_REALTIME_OPTIONS,
+  DEFAULT_TRACE_PROPAGATION_OPTIONS,
 } from './lib/constants'
 import { fetchWithAuth } from './lib/fetch'
-import { applySettingDefaults, validateSupabaseUrl } from './lib/helpers'
+import {
+  applySettingDefaults,
+  validateSupabaseUrl,
+  type ResolvedSupabaseClientOptions,
+} from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import type {
   Fetch,
@@ -89,6 +94,7 @@ export default class SupabaseClient<
   protected accessToken?: () => Promise<string | null>
 
   protected headers: Record<string, string>
+  protected settings?: ResolvedSupabaseClientOptions<SchemaName>
 
   /**
    * Create a new client for use in the browser.
@@ -298,9 +304,11 @@ export default class SupabaseClient<
       realtime: DEFAULT_REALTIME_OPTIONS,
       auth: { ...DEFAULT_AUTH_OPTIONS, storageKey: defaultStorageKey },
       global: DEFAULT_GLOBAL_OPTIONS,
+      tracePropagation: DEFAULT_TRACE_PROPAGATION_OPTIONS,
     }
 
     const settings = applySettingDefaults(options ?? {}, DEFAULTS)
+    this.settings = settings
 
     this.storageKey = settings.auth.storageKey ?? ''
     this.headers = settings.global.headers ?? {}
@@ -325,7 +333,13 @@ export default class SupabaseClient<
       })
     }
 
-    this.fetch = fetchWithAuth(supabaseKey, this._getAccessToken.bind(this), settings.global.fetch)
+    this.fetch = fetchWithAuth(
+      supabaseKey,
+      supabaseUrl,
+      this._getAccessToken.bind(this),
+      settings.global.fetch,
+      settings.tracePropagation
+    )
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
       accessToken: this._getAccessToken.bind(this),
