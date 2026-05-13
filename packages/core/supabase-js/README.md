@@ -223,10 +223,10 @@ For major changes or if you're unsure about something, please open an issue firs
 
 ```bash
 # From the monorepo root
-npx nx build supabase-js
+pnpm nx build supabase-js
 
 # Or with watch mode for development
-npx nx build supabase-js --watch
+pnpm nx build supabase-js --watch
 ```
 
 ### Testing

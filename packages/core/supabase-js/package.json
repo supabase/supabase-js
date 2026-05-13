@@ -72,19 +72,19 @@
     "test:module-resolution": "npm run test:exports && npm run test:esm && npm run test:cjs",
     "docs": "typedoc --entryPoints src/index.ts --entryPoints src/cors.ts --out docs/v2",
     "docs:json": "typedoc --entryPoints src/index.ts --entryPoints src/cors.ts --json docs/v2/spec.json --excludeExternals",
-    "serve:coverage": "npx nx test:coverage supabase-js && npx --yes serve test/coverage",
-    "update:test-deps": "npm run update:test-deps:expo && npm run update:test-deps:next && npm run update:test-deps:deno && npm run update:test-deps:bun",
-    "update:test-deps:expo": "cd test/integration/expo && npm install",
-    "update:test-deps:next": "cd test/integration/next && npm install",
-    "update:test-deps:deno": "cd test/deno && npm install",
+    "serve:coverage": "pnpm nx test:coverage supabase-js && pnpm dlx serve test/coverage",
+    "update:test-deps": "pnpm run update:test-deps:expo && pnpm run update:test-deps:next && pnpm run update:test-deps:deno && pnpm run update:test-deps:bun",
+    "update:test-deps:expo": "cd test/integration/expo && pnpm install",
+    "update:test-deps:next": "cd test/integration/next && pnpm install",
+    "update:test-deps:deno": "cd test/deno && pnpm install",
     "update:test-deps:bun": "cd test/integration/bun && bun install"
   },
   "dependencies": {
-    "@supabase/auth-js": "*",
-    "@supabase/functions-js": "*",
-    "@supabase/postgrest-js": "*",
-    "@supabase/realtime-js": "*",
-    "@supabase/storage-js": "*"
+    "@supabase/auth-js": "workspace:*",
+    "@supabase/functions-js": "workspace:*",
+    "@supabase/postgrest-js": "workspace:*",
+    "@supabase/realtime-js": "workspace:*",
+    "@supabase/storage-js": "workspace:*"
   },
   "devDependencies": {
     "jsr": "^0.13.5",

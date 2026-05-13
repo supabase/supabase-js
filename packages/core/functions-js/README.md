@@ -75,19 +75,19 @@ This package is part of the [Supabase JavaScript monorepo](https://github.com/su
 
 ```bash
 # Complete build (from monorepo root)
-npx nx build functions-js
+pnpm nx build functions-js
 
 # Build with watch mode for development
-npx nx build functions-js --watch
+pnpm nx build functions-js --watch
 
 # Individual build targets
-npx nx build:main functions-js    # CommonJS build (dist/main/)
-npx nx build:module functions-js  # ES Modules build (dist/module/)
+pnpm nx build:main functions-js    # CommonJS build (dist/main/)
+pnpm nx build:module functions-js  # ES Modules build (dist/module/)
 
 # Other useful commands
-npx nx clean functions-js         # Clean build artifacts
-npx nx typecheck functions-js     # TypeScript type checking
-npx nx docs functions-js          # Generate documentation
+pnpm nx clean functions-js         # Clean build artifacts
+pnpm nx typecheck functions-js     # TypeScript type checking
+pnpm nx docs functions-js          # Generate documentation
 ```
 
 #### Build Outputs
@@ -102,16 +102,16 @@ npx nx docs functions-js          # Generate documentation
 
 ```bash
 # Run all tests (from monorepo root)
-npx nx test functions-js
+pnpm nx test functions-js
 
 # Run tests with coverage report
-npx nx test functions-js --coverage
+pnpm nx test functions-js --coverage
 
 # Run tests in watch mode during development
-npx nx test functions-js --watch
+pnpm nx test functions-js --watch
 
 # CI test command (runs with coverage)
-npx nx test:ci functions-js
+pnpm nx test:ci functions-js
 ```
 
 #### Test Requirements

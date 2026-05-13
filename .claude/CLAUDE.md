@@ -106,7 +106,7 @@ Use conventional commit format for automated versioning:
 **Always use the interactive commit tool:**
 
 ```bash
-npm run commit
+pnpm commit
 ```
 
 > **📖 See [CONTRIBUTING.md](../CONTRIBUTING.md#commit-guidelines) for complete commit guidelines**
@@ -458,7 +458,7 @@ All commits are validated using commitlint with strict rules:
 - **Type**: Required (feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert)
 - **Scope**: Required (auth, functions, postgrest, realtime, storage, supabase, repo, deps, ci, release, docs, scripts, misc)
 - **Subject**: Required, imperative mood, no period at end, max 100 characters
-- **Interactive Tool**: Use `npm run commit` to ensure compliance
+- **Interactive Tool**: Use `pnpm commit` to ensure compliance
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md#commit-guidelines) for complete details.
 
@@ -572,7 +572,7 @@ git commit -m "fix auth bug"  # Missing scope, will fail validation
 ✅ Correct: Use the interactive commit tool
 
 ```bash
-npm run commit  # Guides you through proper format
+pnpm commit  # Guides you through proper format
 ```
 
 ### Pitfall 7: Not Checking Documentation
@@ -622,7 +622,7 @@ cat docs/TESTING.md
 3. **Use interactive commit tool:**
 
    ```bash
-   npm run commit
+   pnpm commit
    ```
 
 ### PR Requirements
@@ -707,7 +707,7 @@ nx test [library] --watch
 nx format
 
 # 5. Commit with tool
-npm run commit
+pnpm commit
 
 # 6. Before pushing
 # Run complete test suite for the package you changed
@@ -730,7 +730,7 @@ nx run-many --target=build --all
 
 # Clean install
 rm -rf node_modules
-npm install
+pnpm install
 
 # Check for errors
 nx run-many --target=lint --all
