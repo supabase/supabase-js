@@ -47,7 +47,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
 
     steps:
       - name: Generate GitHub App token
@@ -103,6 +102,10 @@ jobs:
         env:
           SHA: ${{ inputs.sha }}
         run: |
+          if [[ ! "${SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::sha input must be a 40-character commit SHA, got: ${SHA}"
+            exit 1
+          fi
           if ! git cat-file -e "${SHA}^{commit}" 2>/dev/null; then
             echo "::error::Commit ${SHA} does not exist in this repository."
             exit 1
