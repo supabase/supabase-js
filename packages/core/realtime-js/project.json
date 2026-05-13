@@ -6,14 +6,19 @@
       "options": {
         "commands": [
           "cp .env.local.ci .env.local || true",
-          "pnpm install --no-frozen-lockfile",
           "pnpm exec playwright install chromium",
           "pnpm exec playwright test"
         ],
         "cwd": "{projectRoot}/example",
         "parallel": false
       },
-      "dependsOn": ["build"],
+      "dependsOn": [
+        "build",
+        {
+          "projects": ["supabase-js"],
+          "target": "build"
+        }
+      ],
       "metadata": {
         "description": "Run Playwright E2E tests against the realtime-js chat example app"
       }

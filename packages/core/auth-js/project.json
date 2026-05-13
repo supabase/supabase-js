@@ -105,7 +105,6 @@
       "options": {
         "commands": [
           "cp .env.local.ci .env.local || true",
-          "pnpm install --no-frozen-lockfile",
           "pnpm exec playwright install chromium",
           "pnpm exec playwright test"
         ],
