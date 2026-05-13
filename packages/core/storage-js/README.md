@@ -1159,13 +1159,13 @@ This package is part of the [Supabase JavaScript monorepo](https://github.com/su
 
 ```bash
 # Build the package
-npx nx build storage-js
+pnpm nx build storage-js
 
 # Watch mode for development
-npx nx build storage-js --watch
+pnpm nx build storage-js --watch
 
 # Generate documentation
-npx nx docs storage-js
+pnpm nx docs storage-js
 ```
 
 ### Testing
@@ -1175,7 +1175,7 @@ npx nx docs storage-js
 #### Prerequisites
 
 1. **Docker** must be installed and running (used by Supabase CLI internally)
-2. **Supabase CLI** — installed automatically via `npx supabase`
+2. **Supabase CLI** — installed automatically via `pnpm exec supabase`
 
 #### Test Scripts Overview
 
@@ -1194,7 +1194,7 @@ This handles everything automatically - starting infrastructure, running tests, 
 
 ```bash
 # From monorepo root
-npx nx test:storage storage-js
+pnpm nx test:storage storage-js
 ```
 
 This command will:
@@ -1212,14 +1212,14 @@ Useful for development when you want to run tests multiple times without restart
 ```bash
 # Step 1: Start the test infrastructure
 # From root
-npx nx test:infra storage-js
+pnpm nx test:infra storage-js
 # This starts: PostgreSQL, Storage API, Kong Gateway, and imgproxy
 
 # Step 2: Run tests (can run multiple times)
-npx nx test:suite storage-js
+pnpm nx test:suite storage-js
 
 # Step 3: When done, clean up the infrastructure
-npx nx test:clean-post storage-js
+pnpm nx test:clean-post storage-js
 ```
 
 ##### Option 3: Development Mode
@@ -1228,27 +1228,27 @@ For actively developing and debugging tests:
 
 ```bash
 # Start infrastructure once (from root)
-npx nx test:infra storage-js
+pnpm nx test:infra storage-js
 
 # Run tests in watch mode
-npx nx test:suite storage-js --watch
+pnpm nx test:suite storage-js --watch
 
 # Clean up when done
-npx nx test:clean-post storage-js
+pnpm nx test:clean-post storage-js
 ```
 
 #### Test Infrastructure Details
 
-The test infrastructure is managed via the Supabase CLI (`npx supabase start --workdir test`), which starts a local Supabase stack defined by the config in `test/`. This includes PostgreSQL, the Storage API, Kong Gateway, and supporting services.
+The test infrastructure is managed via the Supabase CLI (`pnpm exec supabase start --workdir test`), which starts a local Supabase stack defined by the config in `test/`. This includes PostgreSQL, the Storage API, Kong Gateway, and supporting services.
 
 #### Common Issues and Solutions
 
-| Issue                             | Solution                                                                                         |
-| --------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Port conflicts                    | Another service is using a required port. Run `npx nx test:clean-post storage-js` then try again |
-| "request failed, reason:" errors  | Infrastructure isn't running. Run `npx nx test:infra storage-js` first                           |
-| Tests fail with connection errors | Ensure Docker is running (Supabase CLI requires Docker)                                          |
-| Stack already running             | Run `npx nx test:clean-post storage-js` to stop it before restarting                             |
+| Issue                             | Solution                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Port conflicts                    | Another service is using a required port. Run `pnpm nx test:clean-post storage-js` then try again |
+| "request failed, reason:" errors  | Infrastructure isn't running. Run `pnpm nx test:infra storage-js` first                           |
+| Tests fail with connection errors | Ensure Docker is running (Supabase CLI requires Docker)                                           |
+| Stack already running             | Run `pnpm nx test:clean-post storage-js` to stop it before restarting                             |
 
 #### Understanding Test Failures
 

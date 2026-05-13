@@ -1,0 +1,32 @@
+packages:
+  - 'packages/core/*'
+  - 'packages/shared/*'
+  - 'packages/core/auth-js/example/react'
+  - 'packages/core/realtime-js/example'
+
+# Resolver / layout
+nodeLinker: hoisted # flat node_modules; core packages depend on hoisting (no explicit per-package devDep declarations yet)
+preferWorkspacePackages: true # prefer the in-tree version over the registry when both satisfy
+
+minimumReleaseAge: 10080 # 7 days
+minimumReleaseAgeExclude:
+  - '@supabase/*'
+blockExoticSubdeps: true
+
+# Whitelist of packages allowed to run install scripts (preinstall/install/postinstall).
+# Default-deny: only flip to `true` after auditing the publisher AND confirming the
+# postinstall is load-bearing (no JS/WASM fallback, no separate CLI install step).
+allowBuilds:
+  # Required — these do not function without their postinstall:
+  '@swc/core': true # nx + scripts load TS configs via @swc-node/register
+  esbuild: true # vite/vitest depend on the esbuild native binary
+  nx: true # platform-specific Nx daemon binding
+  supabase: true # downloads the supabase CLI binary used by auth/storage/postgrest tests
+
+  # Not allowed — has a working fallback or is installed explicitly elsewhere:
+  cpu-features: false # ssh2 falls back to pure-JS impl; testcontainers still works
+  puppeteer: false # CI runs `pnpm exec puppeteer browsers install chrome` after install;
+  # locally, run the same one-liner before `pnpm nx test:integration:browser supabase-js`
+  sharp: false # only pulled by next 16 in the realtime example; next falls back to its built-in resizer
+  ssh2: false # transitive via testcontainers; native bindings are an optional perf optimization
+  unrs-resolver: false # eslint-import-resolver-typescript + jest-resolve both have WASM/JS fallback

@@ -26,17 +26,18 @@ jobs:
         with:
           filter: tree:0
           fetch-depth: 0
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
       - name: Detect affected packages
         id: affected
         run: |
-          if ! AFFECTED=$(npx nx show projects --affected 2>&1); then
+          if ! AFFECTED=$(pnpm nx show projects --affected 2>&1); then
             echo "❌ Failed to detect affected projects:"
             echo "$AFFECTED"
             exit 1
@@ -60,19 +61,22 @@ jobs:
         with:
           filter: tree:0
           fetch-depth: 0
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+      - name: Audit production dependencies
+        run: pnpm audit --audit-level=high --prod
       - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
       - name: Check common types are in sync
-        run: npm run codegen:check
+        run: pnpm run codegen:check
       - name: Build affected packages
-        run: npx nx affected --target=build
+        run: pnpm nx affected --target=build
       - name: Generate docs json for affected packages
-        run: npx nx affected --target=docs:json
+        run: pnpm nx affected --target=docs:json
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Fast tests: functions-js and realtime-js (no Docker, runs in parallel)
@@ -87,15 +91,16 @@ jobs:
         with:
           filter: tree:0
           fetch-depth: 0
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
       - name: Run test:ci for affected packages
-        run: npx nx affected --target=test:ci
+        run: pnpm nx affected --target=test:ci
         timeout-minutes: 15
       - name: Upload coverage for functions-js
         uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
@@ -129,12 +134,13 @@ jobs:
         with:
           filter: tree:0
           fetch-depth: 0
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
@@ -150,7 +156,7 @@ jobs:
       - name: Generate RSA signing keys for auth-js tests
         run: node packages/core/auth-js/test/generate-signing-keys.js
       - name: Run auth-js tests with Supabase CLI
-        run: npx nx test:auth auth-js
+        run: pnpm nx test:auth auth-js
         timeout-minutes: 10
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
@@ -186,12 +192,13 @@ jobs:
         with:
           filter: tree:0
           fetch-depth: 0
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
@@ -205,7 +212,7 @@ jobs:
             [ -f "$f" ] && zstd -d --stdout "$f" | docker image load
           done
       - name: Run storage-js tests
-        run: npx nx test:storage storage-js
+        run: pnpm nx test:storage storage-js
         timeout-minutes: 15
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
@@ -241,12 +248,13 @@ jobs:
         with:
           filter: tree:0
           fetch-depth: 0
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
@@ -262,7 +270,7 @@ jobs:
       - name: Generate RSA signing keys for auth-js Docker tests
         run: node packages/core/auth-js/test/generate-signing-keys.js
       - name: Run auth-js Docker tests
-        run: npx nx test:docker auth-js
+        run: pnpm nx test:docker auth-js
         timeout-minutes: 10
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
@@ -292,12 +300,13 @@ jobs:
         with:
           filter: tree:0
           fetch-depth: 0
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
@@ -311,10 +320,10 @@ jobs:
             [ -f "$f" ] && zstd -d --stdout "$f" | docker image load
           done
       - name: Run postgrest-js integration tests
-        run: npx nx test:ci:postgrest postgrest-js
+        run: pnpm nx test:ci:postgrest postgrest-js
         timeout-minutes: 10
       - name: Run postgrest-js type tests
-        run: npx nx test:types:ci postgrest-js
+        run: pnpm nx test:types:ci postgrest-js
         timeout-minutes: 15
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
@@ -341,7 +350,7 @@ jobs:
           fi
       - name: Verify generated types are in sync
         if: steps.check_codegen.outputs.changed == 'true'
-        run: npm run codegen:check:postgrest
+        run: pnpm run codegen:check:postgrest
         timeout-minutes: 5
       - name: Skip codegen check
         if: steps.check_codegen.outputs.changed != 'true'
@@ -370,12 +379,13 @@ jobs:
         with:
           filter: tree:0
           fetch-depth: 0
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: docker-cache
@@ -389,7 +399,7 @@ jobs:
             [ -f "$f" ] && zstd -d --stdout "$f" | docker image load
           done
       - name: Run v12 compat tests
-        run: npx nx test:ci:v12 postgrest-js
+        run: pnpm nx test:ci:v12 postgrest-js
         timeout-minutes: 5
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()

@@ -5,7 +5,7 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
 > **Repository Structure Changed:** This repository has been restructured as a monorepo. **All libraries, including `supabase-js`, are now under `packages/core/`**. If you previously contributed to `supabase-js`, `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please read our **[Migration Guide](docs/MIGRATION.md)** to understand:
 >
 > - Where your code moved (everything is now in `packages/core/<library-name>/`)
-> - How commands changed (`npm test` → `npx nx test <library-name>`)
+> - How commands changed (`npm test` → `pnpm nx test <library-name>`)
 > - New workflow with Nx
 
 ## 📋 Table of Contents
@@ -24,7 +24,7 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
 ### Prerequisites
 
 - **Node.js** (version 20 or higher)
-- **npm** (comes with Node.js)
+- **pnpm** (enable via `corepack enable` — the workspace pins the version in `package.json`)
 - **Docker** (required for integration tests)
 - **Git**
 
@@ -41,20 +41,31 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
 3. **Install dependencies**:
 
    ```bash
-   npm install
+   corepack enable
+   pnpm install
    ```
 
 4. **Build all packages**:
 
    ```bash
-   npx nx run-many --target=build --all
+   pnpm nx run-many --target=build --all
    ```
 
 5. **Run tests** to ensure everything works:
 
    ```bash
-   npx nx affected --target=test
+   pnpm nx affected --target=test
    ```
+
+### Browser tests (optional)
+
+The `test:integration:browser` target for `supabase-js` uses Puppeteer. The workspace denies arbitrary install scripts by default, so Puppeteer does **not** download Chromium during `pnpm install`. If you want to run browser tests locally, install Chrome once:
+
+```bash
+pnpm exec puppeteer browsers install chrome
+```
+
+CI does this explicitly after `pnpm install`, so it's only a manual step for local browser testing.
 
 ## Development Workflow
 
@@ -84,10 +95,10 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
 
    ```bash
    # Run affected tests
-   npx nx affected --target=test
+   pnpm nx affected --target=test
 
    # Run specific library tests
-   npx nx test <package-name>
+   pnpm nx test <package-name>
    ```
 
    For detailed testing instructions, see [TESTING.md](./docs/TESTING.md) and the README in each package directory.
@@ -95,13 +106,13 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
 5. **Format your code**:
 
    ```bash
-   npx nx format
+   pnpm nx format
    ```
 
 6. **Build affected packages**:
 
    ```bash
-   npx nx affected --target=build
+   pnpm nx affected --target=build
    ```
 
 ## Commit Guidelines
@@ -113,7 +124,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) with automat
 **You can use the interactive commit tool** instead of `git commit` directly:
 
 ```bash
-npm run commit
+pnpm commit
 ```
 
 This command will:
@@ -188,7 +199,7 @@ ci(release): add preview package generation
 - **Use imperative mood** - "add feature" not "added feature"
 - **Keep subject line under 100 characters**
 - **No period at the end** of the subject line
-- **Use the interactive tool** - `npm run commit` ensures compliance
+- **Use the interactive tool** - `pnpm commit` ensures compliance
 
 ## Pull Request Process
 
@@ -206,13 +217,13 @@ ci(release): add preview package generation
 2. **Run the full test suite**:
 
    ```bash
-   npx nx affected --target=test
+   pnpm nx affected --target=test
    ```
 
 3. **Build all affected packages**:
 
    ```bash
-   npx nx affected --target=build
+   pnpm nx affected --target=build
    ```
 
 ### Submitting Your PR
@@ -262,13 +273,13 @@ Each package has its own testing requirements and infrastructure. For comprehens
 
 ```bash
 # Run tests for a specific package
-npx nx test <package-name>
+pnpm nx test <package-name>
 
 # Run affected tests only (recommended during development)
-npx nx affected --target=test
+pnpm nx affected --target=test
 
 # Run tests with coverage
-npx nx test <package> --coverage
+pnpm nx test <package> --coverage
 ```
 
 ### Test Requirements by Package
@@ -298,14 +309,14 @@ We automatically generate TypeScript API documentation that is used by the main 
 
 ```bash
 # Generate JSON specs for all libraries (used by main docs)
-npx nx run-many --target=docs:json --all
+pnpm nx run-many --target=docs:json --all
 
 # Generate HTML docs for all libraries (for local viewing)
-npx nx run-many --target=docs --all
+pnpm nx run-many --target=docs --all
 
 # Generate docs for a specific library
-npx nx docs:json auth-js
-npx nx docs postgrest-js
+pnpm nx docs:json auth-js
+pnpm nx docs postgrest-js
 ```
 
 #### Published API Specifications

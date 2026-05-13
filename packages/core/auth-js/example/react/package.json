@@ -12,7 +12,7 @@
     "test:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@supabase/auth-js": "file:../..",
+    "@supabase/auth-js": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

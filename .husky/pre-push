@@ -1,6 +1,6 @@
 # Check code formatting
 echo "🔍 Checking code formatting..."
-npx nx format:check --verbose
+pnpm nx format:check --verbose
 
 echo "✅ Code formatting check passed"
 
@@ -9,14 +9,14 @@ if git diff --name-only origin/master...HEAD 2>/dev/null | grep -q "packages/cor
   echo "📝 Detected changes in postgrest-js test database schema..."
   echo "🔍 Checking if generated types are in sync..."
 
-  npm run codegen:check:postgrest
+  pnpm run codegen:check:postgrest
 
   if [ $? -ne 0 ]; then
     echo ""
     echo "❌ Push blocked: Postgrest generated types are out of sync"
     echo ""
     echo "To fix this:"
-    echo "  1. Run: npm run codegen:postgrest"
+    echo "  1. Run: pnpm run codegen:postgrest"
     echo "  2. Commit the updated test/types.generated.ts"
     echo "  3. Push again"
     echo ""

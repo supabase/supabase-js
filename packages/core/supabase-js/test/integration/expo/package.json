@@ -58,7 +58,7 @@
       "./jest.setup.js"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!(isows|@supabase|@supabase/realtime-js|@react-native|react-native|expo-modules-core|expo)/)"
+      "node_modules/(?!(\\.pnpm/.+/node_modules/)?(isows|@supabase|@supabase/realtime-js|@react-native|react-native|expo-modules-core|expo)/)"
     ],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"

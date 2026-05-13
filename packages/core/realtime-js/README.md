@@ -256,19 +256,19 @@ This package is part of the [Supabase JavaScript monorepo](https://github.com/su
 
 ```bash
 # Complete build (from monorepo root)
-npx nx build realtime-js
+pnpm nx build realtime-js
 
 # Build with watch mode for development
-npx nx build realtime-js --watch
+pnpm nx build realtime-js --watch
 
 # Individual build targets
-npx nx build:main realtime-js    # CommonJS build (dist/main/)
-npx nx build:module realtime-js  # ES Modules build (dist/module/)
+pnpm nx build:main realtime-js    # CommonJS build (dist/main/)
+pnpm nx build:module realtime-js  # ES Modules build (dist/module/)
 
 # Other useful commands
-npx nx clean realtime-js         # Clean build artifacts
-npx nx lint realtime-js          # Run ESLint
-npx nx typecheck realtime-js     # TypeScript type checking
+pnpm nx clean realtime-js         # Clean build artifacts
+pnpm nx lint realtime-js          # Run ESLint
+pnpm nx typecheck realtime-js     # TypeScript type checking
 ```
 
 #### Build Outputs
@@ -283,7 +283,7 @@ Note: Unlike some other packages, realtime-js doesn't include a UMD build since 
 
 ```bash
 # Check if package exports are correctly configured
-npx nx check-exports realtime-js
+pnpm nx check-exports realtime-js
 ```
 
 This command uses ["Are the types wrong?"](https://github.com/arethetypeswrong/arethetypeswrong.github.io) to verify that the package exports work correctly in different environments. Run this before publishing to ensure your package can be imported correctly by all consumers.
@@ -294,13 +294,13 @@ This command uses ["Are the types wrong?"](https://github.com/arethetypeswrong/a
 
 ```bash
 # Run unit tests (from monorepo root)
-npx nx test realtime-js
+pnpm nx test realtime-js
 
 # Run tests with coverage report
-npx nx test:coverage realtime-js
+pnpm nx test:coverage realtime-js
 
 # Run tests in watch mode during development
-npx nx test:watch realtime-js
+pnpm nx test:watch realtime-js
 ```
 
 #### Test Scripts Explained

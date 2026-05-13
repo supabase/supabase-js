@@ -105,9 +105,8 @@
       "options": {
         "commands": [
           "cp .env.local.ci .env.local || true",
-          "npm i --legacy-peer-deps",
-          "npx playwright install chromium",
-          "npx playwright test"
+          "pnpm exec playwright install chromium",
+          "pnpm exec playwright test"
         ],
         "cwd": "{projectRoot}/example/react",
         "parallel": false

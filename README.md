@@ -112,8 +112,8 @@ We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md)
 1. **Fork the repository**
 2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
 3. **Make your changes** and add tests
-4. **Run tests** (`npx nx affected --target=test`)
-5. **Commit your changes** (`npm run commit`)
+4. **Run tests** (`pnpm nx affected --target=test`)
+5. **Commit your changes** (`pnpm commit`)
 6. **Push to your branch** (`git push origin feature/amazing-feature`)
 7. **Open a Pull Request**
 
@@ -122,8 +122,8 @@ We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md)
 - Follow [conventional commits](https://www.conventionalcommits.org/) for commit messages
 - Add tests for new functionality
 - Update documentation for API changes
-- Run `npx nx format` before committing
-- Ensure all tests pass with `npx nx affected --target=test`
+- Run `pnpm nx format` before committing
+- Ensure all tests pass with `pnpm nx affected --target=test`
 
 ## 🧪 Testing
 

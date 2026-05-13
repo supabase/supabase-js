@@ -236,10 +236,10 @@ github.com/supabase/supabase-js
 | Task                     | Old Workflow                     | New Workflow                                 |
 | ------------------------ | -------------------------------- | -------------------------------------------- |
 | **Clone & Setup**        | Clone each repo individually     | Clone once: `git clone supabase/supabase-js` |
-| **Install Dependencies** | `npm install` in each repo       | Single `npm install` at root                 |
-| **Build a Library**      | `npm run build` in specific repo | `npx nx build auth-js`                       |
-| **Test a Library**       | `npm test` in specific repo      | `npx nx test postgrest-js`                   |
-| **Format Code**          | Various tools per repo           | `npx nx format`                              |
+| **Install Dependencies** | `npm install` in each repo       | Single `pnpm install` at root                |
+| **Build a Library**      | `npm run build` in specific repo | `pnpm nx build auth-js`                      |
+| **Test a Library**       | `npm test` in specific repo      | `pnpm nx test postgrest-js`                  |
+| **Format Code**          | Various tools per repo           | `pnpm nx format`                             |
 | **Release**              | Individual releases per repo     | Single coordinated release                   |
 
 ### Versioning Strategy
@@ -285,7 +285,8 @@ If you have uncommitted changes or an active branch in an old repository, you'll
 # Fork github.com/supabase/supabase-js on GitHub, then:
 git clone https://github.com/YOUR_USERNAME/supabase-js.git
 cd supabase-js
-npm install
+corepack enable
+pnpm install
 
 # Add upstream remote
 git remote add upstream https://github.com/supabase/supabase-js.git
@@ -304,7 +305,7 @@ git checkout -b feature/your-feature-name
 3. **Commit using the interactive tool**:
 
    ```bash
-   npm run commit
+   pnpm commit
    ```
 
 ### For Active Pull Requests
@@ -335,7 +336,7 @@ Your application code, imports, and usage patterns remain unchanged. The monorep
 
 ```bash
 # make changes to packages/core/postgrest-js/src/PostgrestClient.ts
-npm run commit  # Use interactive commit tool
+pnpm commit  # Use interactive commit tool
 # Select: fix > postgrest > "resolve filter issue"
 ```
 
@@ -349,16 +350,16 @@ npm run commit  # Use interactive commit tool
 edit packages/core/auth-js/src/GoTrueClient.ts
 
 # Test auth-js alone
-npx nx test auth-js
+pnpm nx test auth-js
 
 # Test with supabase-js integration
-npx nx test supabase-js
+pnpm nx test supabase-js
 
 # Build both to ensure compatibility
-npx nx run-many --target=build --projects=auth-js,supabase-js
+pnpm nx run-many --target=build --projects=auth-js,supabase-js
 
 # Commit both changes atomically
-npm run commit
+pnpm commit
 # feat(auth): add new auth feature with supabase-js integration
 ```
 
@@ -374,10 +375,10 @@ edit packages/core/supabase-js/src/SupabaseClient.ts
 edit packages/core/realtime-js/src/RealtimeClient.ts
 
 # Build all affected packages
-npx nx affected --target=build
+pnpm nx affected --target=build
 
 # Commit with appropriate scope
-npm run commit
+pnpm commit
 # feat(supabase): add cross-package feature for X functionality
 ```
 
@@ -385,19 +386,19 @@ npm run commit
 
 ### Quick Command Conversion Table
 
-| Purpose              | Old Command (in individual repo) | New Command (in monorepo)              |
-| -------------------- | -------------------------------- | -------------------------------------- |
-| **Install deps**     | `npm install`                    | `npm install` (at root)                |
-| **Build library**    | `npm run build`                  | `npx nx build [library-name]`          |
-| **Test library**     | `npm test`                       | `npx nx test [library-name]`           |
-| **Test with watch**  | `npm test -- --watch`            | `npx nx test [library-name] --watch`   |
-| **Lint**             | `npm run lint`                   | `npx nx lint [library-name]`           |
-| **Format code**      | Various per repo                 | `npx nx format`                        |
-| **Type check**       | `npm run type-check`             | `npx nx build [library-name]`          |
-| **Build all**        | Run in each repo                 | `npx nx run-many --target=build --all` |
-| **Test all**         | Run in each repo                 | `npx nx run-many --target=test --all`  |
-| **Test affected**    | Not available                    | `npx nx affected --target=test`        |
-| **See dependencies** | Manual inspection                | `npx nx graph`                         |
+| Purpose              | Old Command (in individual repo) | New Command (in monorepo)               |
+| -------------------- | -------------------------------- | --------------------------------------- |
+| **Install deps**     | `npm install`                    | `pnpm install` (at root)                |
+| **Build library**    | `npm run build`                  | `pnpm nx build [library-name]`          |
+| **Test library**     | `npm test`                       | `pnpm nx test [library-name]`           |
+| **Test with watch**  | `npm test -- --watch`            | `pnpm nx test [library-name] --watch`   |
+| **Lint**             | `npm run lint`                   | `pnpm nx lint [library-name]`           |
+| **Format code**      | Various per repo                 | `pnpm nx format`                        |
+| **Type check**       | `npm run type-check`             | `pnpm nx build [library-name]`          |
+| **Build all**        | Run in each repo                 | `pnpm nx run-many --target=build --all` |
+| **Test all**         | Run in each repo                 | `pnpm nx run-many --target=test --all`  |
+| **Test affected**    | Not available                    | `pnpm nx affected --target=test`        |
+| **See dependencies** | Manual inspection                | `pnpm nx graph`                         |
 
 ### Library Name Reference
 
@@ -416,26 +417,26 @@ Commands that weren't available in separate repos:
 
 ```bash
 # Visualize project dependencies
-npx nx graph
+pnpm nx graph
 
 # Build only what changed since master
-npx nx affected --target=build --base=master
+pnpm nx affected --target=build --base=master
 
 # Test only what changed
-npx nx affected --target=test
+pnpm nx affected --target=test
 
 # Run test/build for a specific project
-npx nx test auth-js
-npx nx build auth-js
+pnpm nx test auth-js
+pnpm nx build auth-js
 
 # See what would be affected by your changes
-npx nx show projects --affected
+pnpm nx show projects --affected
 
 # Run multiple targets in parallel
-npx nx run-many --target=build,test --all --parallel=3
+pnpm nx run-many --target=build,test --all --parallel=3
 
 # Generate documentation
-npx nx run-many --target=docs --all
+pnpm nx run-many --target=docs --all
 ```
 
 ## FAQ
@@ -471,8 +472,8 @@ The **repository** absorbed other libraries. The **supabase-js package code** al
 **A:** Yes. The monorepo structure does not mean you have to work on everything. You can focus on a single library:
 
 ```bash
-npx nx build auth-js --watch
-npx nx test auth-js --watch
+pnpm nx build auth-js --watch
+pnpm nx test auth-js --watch
 ```
 
 ### Q: How do releases work now?

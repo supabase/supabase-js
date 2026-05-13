@@ -8,16 +8,16 @@ To run tests for any package:
 
 ```bash
 # Complete test suites (recommended - handles Docker automatically)
-npx nx test:auth auth-js                    # Complete auth-js test suite
-npx nx test:storage storage-js              # Complete storage-js test suite
-npx nx test:ci:postgrest postgrest-js      # Complete postgrest-js test suite
-npx nx test functions-js                    # Standard test (uses testcontainers)
-npx nx test realtime-js                     # Standard test (no Docker needed)
-npx nx test supabase-js                    # Standard test (unit tests only)
+pnpm nx test:auth auth-js                    # Complete auth-js test suite
+pnpm nx test:storage storage-js              # Complete storage-js test suite
+pnpm nx test:ci:postgrest postgrest-js      # Complete postgrest-js test suite
+pnpm nx test functions-js                    # Standard test (uses testcontainers)
+pnpm nx test realtime-js                     # Standard test (no Docker needed)
+pnpm nx test supabase-js                    # Standard test (unit tests only)
 
 # E2E tests (require local Supabase running — see E2E section below)
-npx nx test:e2e auth-js                     # Auth-js Playwright e2e tests
-npx nx test:e2e realtime-js                 # Realtime-js Playwright e2e tests
+pnpm nx test:e2e auth-js                     # Auth-js Playwright e2e tests
+pnpm nx test:e2e realtime-js                 # Realtime-js Playwright e2e tests
 ```
 
 ## Package-Specific Testing Guides
@@ -26,22 +26,22 @@ Each package has unique testing requirements. Please refer to the individual REA
 
 ### Core Packages
 
-| Package          | Docker Required                          | Test Command                            | Documentation                                                    |
-| ---------------- | ---------------------------------------- | --------------------------------------- | ---------------------------------------------------------------- |
-| **auth-js**      | ✅ Yes (GoTrue + PostgreSQL)             | `npx nx test:auth auth-js`              | [Testing Guide](../packages/core/auth-js/README.md#testing)      |
-| **functions-js** | ✅ Yes (Deno relay via testcontainers)   | `npx nx test functions-js`              | [Testing Guide](../packages/core/functions-js/README.md#testing) |
-| **postgrest-js** | ✅ Yes (PostgREST + PostgreSQL)          | `npx nx test:ci:postgrest postgrest-js` | [Testing Guide](../packages/core/postgrest-js/README.md#testing) |
-| **realtime-js**  | ❌ No (uses mock WebSockets)             | `npx nx test realtime-js`               | [Testing Guide](../packages/core/realtime-js/README.md#testing)  |
-| **storage-js**   | ✅ Yes (Storage API + PostgreSQL + Kong) | `npx nx test:storage storage-js`        | [Testing Guide](../packages/core/storage-js/README.md#testing)   |
-| **supabase-js**  | ❌ No (unit tests only)                  | `npx nx test supabase-js`               | [Testing Guide](../packages/core/supabase-js/TESTING.md)         |
+| Package          | Docker Required                          | Test Command                             | Documentation                                                    |
+| ---------------- | ---------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------- |
+| **auth-js**      | ✅ Yes (GoTrue + PostgreSQL)             | `pnpm nx test:auth auth-js`              | [Testing Guide](../packages/core/auth-js/README.md#testing)      |
+| **functions-js** | ✅ Yes (Deno relay via testcontainers)   | `pnpm nx test functions-js`              | [Testing Guide](../packages/core/functions-js/README.md#testing) |
+| **postgrest-js** | ✅ Yes (PostgREST + PostgreSQL)          | `pnpm nx test:ci:postgrest postgrest-js` | [Testing Guide](../packages/core/postgrest-js/README.md#testing) |
+| **realtime-js**  | ❌ No (uses mock WebSockets)             | `pnpm nx test realtime-js`               | [Testing Guide](../packages/core/realtime-js/README.md#testing)  |
+| **storage-js**   | ✅ Yes (Storage API + PostgreSQL + Kong) | `pnpm nx test:storage storage-js`        | [Testing Guide](../packages/core/storage-js/README.md#testing)   |
+| **supabase-js**  | ❌ No (unit tests only)                  | `pnpm nx test supabase-js`               | [Testing Guide](../packages/core/supabase-js/TESTING.md)         |
 
 ### Coverage Commands
 
 ```bash
 # Run tests with coverage
-npx nx test supabase-js --coverage
-npx nx test:coverage realtime-js
-npx nx test:ci functions-js                 # Includes coverage
+pnpm nx test supabase-js --coverage
+pnpm nx test:coverage realtime-js
+pnpm nx test:ci functions-js                 # Includes coverage
 ```
 
 ## E2E Tests (Playwright)
@@ -52,7 +52,7 @@ The `auth-js` and `realtime-js` packages include Playwright end-to-end tests tha
 
 - **Supabase running locally** — Start the local Supabase stack via the `supabase-js` setup target:
   ```bash
-  npx nx test:supabase:setup supabase-js
+  pnpm nx test:supabase:setup supabase-js
   ```
 - **Playwright Chromium** — Installed automatically by the `test:e2e` target (no separate install needed).
 
@@ -71,11 +71,11 @@ If you're using a custom local Supabase setup, create `.env.local` manually in t
 
 ```bash
 # Run individually
-npx nx test:e2e auth-js
-npx nx test:e2e realtime-js
+pnpm nx test:e2e auth-js
+pnpm nx test:e2e realtime-js
 
 # Run both sequentially (avoids port conflicts)
-npx nx run-many --target=test:e2e --projects=auth-js,realtime-js --parallel=1
+pnpm nx run-many --target=test:e2e --projects=auth-js,realtime-js --parallel=1
 ```
 
 > **Note:** Run with `--parallel=1` when running both together — the apps use different ports (5173 and 3000) but share the same local Supabase, and sequential execution avoids potential resource conflicts.
@@ -114,7 +114,7 @@ For package-specific issues, consult the troubleshooting section in each package
 
 - **Port conflicts**: Check if required ports are already in use
 - **Docker not running**: Ensure Docker Desktop is started
-- **Container cleanup**: Use `npx nx test:clean-post <package>` if containers weren't properly removed
+- **Container cleanup**: Use `pnpm nx test:clean-post <package>` if containers weren't properly removed
 
 ## Contributing Tests
 
