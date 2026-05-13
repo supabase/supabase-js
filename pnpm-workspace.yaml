@@ -9,8 +9,8 @@ preferWorkspacePackages: true # prefer the in-tree version over the registry whe
 
 minimumReleaseAge: 10080 # 7 days
 minimumReleaseAgeExclude:
-  - '@supabase/*'   
-blockExoticSubdeps: true 
+  - '@supabase/*'
+blockExoticSubdeps: true
 
 # Whitelist of packages allowed to run install scripts (preinstall/install/postinstall).
 # Default-deny: only flip to `true` after auditing the publisher AND confirming the
