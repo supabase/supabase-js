@@ -230,6 +230,36 @@ jobs:
           echo "=== Mailpit container logs (last 20 lines) ==="
           docker logs $(docker ps -q --filter "name=supabase_mail") --tail=20 2>&1 || echo "Could not get Mailpit logs"
 
+      - name: Debug e2e module resolution on failure
+        if: failure()
+        run: |
+          echo "=== root node_modules/@supabase ==="
+          ls -la node_modules/@supabase 2>&1 || true
+          echo ""
+          echo "=== realtime-js/example node_modules/@supabase ==="
+          ls -la packages/core/realtime-js/example/node_modules/@supabase 2>&1 || true
+          echo ""
+          echo "=== auth-js/example/react node_modules/@supabase ==="
+          ls -la packages/core/auth-js/example/react/node_modules/@supabase 2>&1 || true
+          echo ""
+          echo "=== supabase-js dist (entry points the workspace symlink resolves to) ==="
+          ls packages/core/supabase-js/dist 2>&1 | head -20 || true
+          echo ""
+          echo "=== auth-js dist ==="
+          ls packages/core/auth-js/dist 2>&1 | head -20 || true
+          echo ""
+          echo "=== Ports listening (3000 = realtime example, 5173 = auth example) ==="
+          ss -tlnp 2>&1 | grep -E ":3000|:5173" || netstat -tlnp 2>&1 | grep -E ":3000|:5173" || true
+          echo ""
+          echo "=== Node / dev-server processes ==="
+          ps -eo pid,etime,cmd | grep -E "next|vite|node " | grep -v grep | head -10 || true
+          echo ""
+          echo "=== pnpm version ==="
+          pnpm --version
+          echo ""
+          echo "=== realtime-js example/package.json ==="
+          cat packages/core/realtime-js/example/package.json | head -30
+
       - name: Upload Playwright reports
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
