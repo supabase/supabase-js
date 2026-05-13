@@ -10,15 +10,15 @@
 
 ```bash
 # 1. Setup Supabase ONCE (includes database, storage, AND edge functions)
-npx nx test:supabase:setup supabase-js
+pnpm nx test:supabase:setup supabase-js
 
 # 2. Run any tests (in any order, multiple times)
-npx nx test:integration supabase-js
-npx nx test:deno:all supabase-js
-npx nx test:edge-functions supabase-js
+pnpm nx test:integration supabase-js
+pnpm nx test:deno:all supabase-js
+pnpm nx test:edge-functions supabase-js
 
 # 3. Cleanup when done
-npx nx test:supabase:stop supabase-js
+pnpm nx test:supabase:stop supabase-js
 ```
 
 ### What `test:supabase:setup` Does
@@ -68,13 +68,13 @@ Run these from the root of the repo:
 
 ```bash
 # Run only unit tests in test/unit directory
-npx nx test:unit supabase-js
+pnpm nx test:unit supabase-js
 
 # Run tests in watch mode during development
-npx nx test supabase-js --watch
+pnpm nx test supabase-js --watch
 
 # Run tests with coverage report
-npx nx test:coverage supabase-js
+pnpm nx test:coverage supabase-js
 ```
 
 ## Integration Testing
@@ -85,16 +85,16 @@ Use the single Supabase instance workflow:
 
 ```bash
 # 1. Setup once (exports keys automatically)
-npx nx test:supabase:setup supabase-js
+pnpm nx test:supabase:setup supabase-js
 
 # 2. Run integration tests (keys already exported)
-npx nx test:integration supabase-js
+pnpm nx test:integration supabase-js
 
 # 3. Run browser tests
-npx nx test:integration:browser supabase-js
+pnpm nx test:integration:browser supabase-js
 
 # 4. Cleanup when done
-npx nx test:supabase:stop supabase-js
+pnpm nx test:supabase:stop supabase-js
 ```
 
 ### Manual Setup (Alternative)
@@ -106,21 +106,21 @@ If you need manual control or want to export keys in your shell:
 cd packages/core/supabase-js
 
 # Start Supabase
-npx supabase start
+pnpm exec supabase start
 
 # Serve edge functions in background (if needed)
-npx supabase functions serve &
+pnpm exec supabase functions serve &
 
 # Export key for tests
 # Note: the Supabase CLI still outputs this as ANON_KEY in its JSON status
-export SUPABASE_PUBLISHABLE_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')"
+export SUPABASE_PUBLISHABLE_KEY="$(pnpm exec supabase status --output json | jq -r '.ANON_KEY')"
 
 # Return to root and run tests
 cd ../../..
-npx nx test:integration supabase-js
+pnpm nx test:integration supabase-js
 
 # Cleanup
-npx supabase stop
+pnpm exec supabase stop
 ```
 
 ## Running All Local Tests
@@ -129,13 +129,13 @@ npx supabase stop
 
 ```bash
 # 1. Setup Supabase once
-npx nx test:supabase:setup supabase-js
+pnpm nx test:supabase:setup supabase-js
 
 # 2. Run all local tests (unit + integration + browser)
-npx nx test:all supabase-js
+pnpm nx test:all supabase-js
 
 # 3. Cleanup
-npx nx test:supabase:stop supabase-js
+pnpm nx test:supabase:stop supabase-js
 ```
 
 **Checklist:**
@@ -149,9 +149,9 @@ npx nx test:supabase:stop supabase-js
 
 | Issue                                        | Solution                                                                      |
 | -------------------------------------------- | ----------------------------------------------------------------------------- |
-| "Port 54322 already allocated"               | Run `npx nx test:supabase:stop supabase-js` or `npx supabase stop`            |
-| "503 Service Unavailable" for Edge Functions | Run `npx nx test:supabase:setup supabase-js` (serves functions automatically) |
-| Integration tests fail with auth errors      | Run `npx nx test:supabase:setup supabase-js` (exports keys automatically)     |
+| "Port 54322 already allocated"               | Run `pnpm nx test:supabase:stop supabase-js` or `pnpm exec supabase stop`            |
+| "503 Service Unavailable" for Edge Functions | Run `pnpm nx test:supabase:setup supabase-js` (serves functions automatically) |
+| Integration tests fail with auth errors      | Run `pnpm nx test:supabase:setup supabase-js` (exports keys automatically)     |
 | "jq: command not found"                      | Install jq: `brew install jq` (macOS) or `apt-get install jq` (Linux)         |
 | Functions log filling up disk                | Logs are in `/tmp/supabase-functions.log`, cleanup removes them               |
 
@@ -244,8 +244,8 @@ If you need to test locally, you can temporarily replace the placeholder with a 
 ./scripts/update-pkg-pr-urls.sh abc123def456
 
 # 3. Setup and run tests
-npx nx test:supabase:setup supabase-js
-npx nx test:edge-functions supabase-js
+pnpm nx test:supabase:setup supabase-js
+pnpm nx test:edge-functions supabase-js
 
 # 4. IMPORTANT: Don't commit the updated deno.json files!
 git checkout packages/core/supabase-js/supabase/deno.json
@@ -260,7 +260,7 @@ git checkout packages/core/supabase-js/test/deno/deno.json
 - ✅ Functions are served on `http://127.0.0.1:54321/functions/v1/<function-name>`
 - ✅ Function logs are written to `/tmp/supabase-functions.log`
 - ❌ Edge Functions tests will fail with 503 errors if setup hasn't been run
-- ❌ Running `npx supabase start` alone does NOT serve edge functions
+- ❌ Running `pnpm exec supabase start` alone does NOT serve edge functions
 
 **Available Edge Functions:**
 
@@ -279,7 +279,7 @@ tail -f /tmp/supabase-functions.log
 
 # Test a function directly
 curl -X POST \
-  -H "Authorization: Bearer $(npx supabase status --output json | jq -r '.ANON_KEY')" \  # CLI still uses ANON_KEY name
+  -H "Authorization: Bearer $(pnpm exec supabase status --output json | jq -r '.ANON_KEY')" \  # CLI still uses ANON_KEY name
   -H "Content-Type: application/json" \
   -d '{"name":"Test"}' \
   http://127.0.0.1:54321/functions/v1/hello
@@ -321,8 +321,8 @@ Same as edge functions - you can use a commit hash from an existing PR, but this
 ./scripts/update-pkg-pr-urls.sh abc123def456
 
 # Run tests
-npx nx test:supabase:setup supabase-js
-npx nx test:deno:all supabase-js
+pnpm nx test:supabase:setup supabase-js
+pnpm nx test:deno:all supabase-js
 
 # Don't commit the changes
 git checkout packages/core/supabase-js/test/deno/deno.json
@@ -334,10 +334,10 @@ git checkout packages/core/supabase-js/test/deno/deno.json
 
 ```bash
 # Generate coverage report
-npx nx test:coverage supabase-js
+pnpm nx test:coverage supabase-js
 
 # Serve coverage report locally (opens interactive HTML report)
-npx nx serve:coverage supabase-js
+pnpm nx serve:coverage supabase-js
 # This starts a local server at http://localhost:3000 with the coverage report
 ```
 

@@ -70,8 +70,8 @@ async function publishToJsr() {
       // Provenance is automatically enabled when using OIDC (no flag needed)
       // Local publishing will prompt for interactive browser authentication
       const publishCmd = dryRun
-        ? `cd "${packagePath}" && npx jsr publish --dry-run --allow-dirty`
-        : `cd "${packagePath}" && npx jsr publish --allow-dirty`
+        ? `cd "${packagePath}" && pnpm exec jsr publish --dry-run --allow-dirty`
+        : `cd "${packagePath}" && pnpm exec jsr publish --allow-dirty`
 
       safeExec(publishCmd)
 

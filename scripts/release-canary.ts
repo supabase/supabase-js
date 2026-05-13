@@ -96,11 +96,11 @@ const tagArg = getArg('tag') ?? 'canary'
 
   // Update version.ts files with the new versions
   console.log('\n📦 Updating version.ts files...')
-  execSync('npx tsx scripts/update-version-files.ts', { stdio: 'inherit' })
+  execSync('pnpm exec tsx scripts/update-version-files.ts', { stdio: 'inherit' })
 
   // Rebuild packages with correct versions
   console.log('\n🔨 Rebuilding packages with new versions...')
-  execSync('npx nx run-many --target=build --all', { stdio: 'inherit' })
+  execSync('pnpm nx run-many --target=build --all', { stdio: 'inherit' })
   console.log('✅ Build complete\n')
 
   // releaseChangelog should use the GitHub token with permission for tagging
@@ -149,7 +149,7 @@ const tagArg = getArg('tag') ?? 'canary'
   // Publish gotrue-js as legacy mirror of auth-js
   console.log('\n📦 Publishing @supabase/gotrue-js (legacy mirror)...')
   try {
-    execSync(`npx tsx scripts/publish-gotrue-legacy.ts --tag=${tagArg}`, { stdio: 'inherit' })
+    execSync(`pnpm exec tsx scripts/publish-gotrue-legacy.ts --tag=${tagArg}`, { stdio: 'inherit' })
   } catch (error) {
     console.error('❌ Failed to publish gotrue-js legacy package:', error)
     // Don't fail the entire release if gotrue-js fails
@@ -159,7 +159,7 @@ const tagArg = getArg('tag') ?? 'canary'
   // Publish all packages to JSR
   console.log(`\n📦 Publishing packages to JSR (${tagArg})...`)
   try {
-    execSync(`npx tsx scripts/publish-to-jsr.ts --tag=${tagArg}`, { stdio: 'inherit' })
+    execSync(`pnpm exec tsx scripts/publish-to-jsr.ts --tag=${tagArg}`, { stdio: 'inherit' })
   } catch (error) {
     console.error('❌ Failed to publish to JSR:', error)
     // Don't fail the entire release if JSR publishing fails

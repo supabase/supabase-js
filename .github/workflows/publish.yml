@@ -87,16 +87,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Update npm
-        run: corepack enable npm && corepack prepare npm@11 --activate
-
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: pnpm install --frozen-lockfile
 
       - name: Configure git
         run: |
@@ -128,7 +128,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION_SPECIFIER: ${{ github.event.inputs.version_specifier }}
         shell: bash
-        run: npm run release-stable -- --versionSpecifier "$VERSION_SPECIFIER"
+        run: pnpm run release-stable -- --versionSpecifier "$VERSION_SPECIFIER"
 
       - name: Extract released version
         id: extract-version
@@ -258,16 +258,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Update npm
-        run: corepack enable npm && corepack prepare npm@11 --activate
-
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: pnpm install --frozen-lockfile
 
       - name: Configure git
         run: |
@@ -281,7 +281,7 @@ jobs:
           RELEASE_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           BETA_VERSION: ${{ github.event.inputs.beta_version }}
-        run: npm run release-beta -- --version "$BETA_VERSION"
+        run: pnpm run release-beta -- --version "$BETA_VERSION"
 
       - name: Summary
         if: ${{ success() }}
@@ -369,16 +369,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Update npm
-        run: corepack enable npm && corepack prepare npm@11 --activate
-
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: pnpm install --frozen-lockfile
 
       - name: Configure git
         run: |
@@ -394,7 +394,7 @@ jobs:
         run: |
           BASE_VERSION=$(cat .next-base-version | tr -d '[:space:]')
           echo "Publishing v3 next prerelease (base: ${BASE_VERSION})..."
-          npm run release-canary -- --base-version "$BASE_VERSION" --preid next --tag next
+          pnpm run release-canary -- --base-version "$BASE_VERSION" --preid next --tag next
 
       - name: Summary
         if: ${{ success() }}
@@ -473,16 +473,18 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Update npm
-        run: corepack enable npm && corepack prepare npm@11 --activate
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: pnpm install --frozen-lockfile
       - name: Configure git
         run: |
           git config --global user.name "supabase-releaser[bot]"
@@ -490,7 +492,7 @@ jobs:
 
       - name: Release canary version
         id: release
-        run: npm run release-canary
+        run: pnpm run release-canary
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

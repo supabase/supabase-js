@@ -6,7 +6,7 @@ const version = getArg('version')
 
 if (!version) {
   console.error(
-    `Usage: npm run release-beta -- --version <prerelease-version>\n` +
+    `Usage: pnpm run release-beta -- --version <prerelease-version>\n` +
       `Examples:\n` +
       `  --version 2.101.0-beta.0\n` +
       `  --version 2.101.0-beta.1\n`
@@ -46,11 +46,11 @@ function safeExec(cmd: string, opts = {}) {
 
   // Update version.ts files with the new versions
   console.log('\n📦 Updating version.ts files...')
-  safeExec('npx tsx scripts/update-version-files.ts')
+  safeExec('pnpm exec tsx scripts/update-version-files.ts')
 
   // Rebuild packages with correct versions
   console.log('\n🔨 Rebuilding packages with new versions...')
-  safeExec('npx nx run-many --target=build --all')
+  safeExec('pnpm nx run-many --target=build --all')
   console.log('✅ Build complete\n')
 
   // --- GIT AUTH SETUP FOR TAGGING/CHANGELOG ---

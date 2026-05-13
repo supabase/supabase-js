@@ -29,11 +29,14 @@ jobs:
       - name: Update pkg.pr.new URLs with commit hash
         run: ./scripts/update-pkg-pr-urls.sh "${{ inputs.commit_hash }}"
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Setup Deno
         uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
@@ -46,7 +49,7 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install jq for JSON parsing
         run: sudo apt-get update && sudo apt-get install -y jq
@@ -70,14 +73,14 @@ jobs:
         id: puppeteer-cache
         with:
           path: ${{ env.PUPPETEER_CACHE_DIR }}
-          key: puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: puppeteer-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Cache Playwright browsers
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install browser dependencies
         run: |
@@ -86,22 +89,22 @@ jobs:
           # Install Puppeteer Chrome for integration.browser.test.ts
           # Only download if not already cached
           if [ "${{ steps.puppeteer-cache.outputs.cache-hit }}" != "true" ]; then
-            npx puppeteer browsers install chrome
+            pnpm exec puppeteer browsers install chrome
           fi
           # Install Playwright browsers for WebSocket tests
           if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
-            npx playwright install --with-deps
+            pnpm exec playwright install --with-deps
           else
-            npx playwright install-deps
+            pnpm exec playwright install-deps
           fi
 
       - name: Setup Supabase
-        run: npx nx test:supabase:setup supabase-js
+        run: pnpm nx test:supabase:setup supabase-js
 
       - name: Export auth keys
         run: |
           cd packages/core/supabase-js
-          echo SUPABASE_PUBLISHABLE_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')" >> $GITHUB_ENV
+          echo SUPABASE_PUBLISHABLE_KEY="$(pnpm exec supabase status --output json | jq -r '.ANON_KEY')" >> $GITHUB_ENV
           echo "✅ Keys exported"
 
       - name: Verify edge functions
@@ -150,17 +153,17 @@ jobs:
       - name: Prepare platform test dependencies
         run: |
           echo "📦 Installing dependencies for platform tests..."
-          echo "   Using --legacy-peer-deps because preview packages have version 0.0.0-automated"
-          echo "   which doesn't satisfy peer dependency requirements like ^2.76.1"
+          echo "   Using --no-frozen-lockfile because preview packages bump versions on each run"
+          echo "   and the standalone sub-app lockfiles do not match the patched URLs."
           echo ""
 
           cd packages/core/supabase-js/test/integration/next
-          npm install --legacy-peer-deps --ignore-scripts
-          npx playwright install --with-deps
+          pnpm install --no-frozen-lockfile --ignore-scripts
+          pnpm exec playwright install --with-deps
           cd "$GITHUB_WORKSPACE"
 
           cd packages/core/supabase-js/test/integration/expo
-          npm install --legacy-peer-deps --ignore-scripts
+          pnpm install --no-frozen-lockfile --ignore-scripts
           cd "$GITHUB_WORKSPACE"
 
           cd packages/core/supabase-js/test/integration/bun
@@ -180,7 +183,7 @@ jobs:
           # Core tests: Deno, Node integration, Browser integration
           # Using run-many coordinates builds properly (no race conditions)
           echo "🧪 Running core tests..."
-          npx nx run-many \
+          pnpm nx run-many \
             -t test:deno:all,test:integration,test:integration:browser \
             -p supabase-js \
             --parallel=3 \
@@ -188,7 +191,7 @@ jobs:
 
           # Platform tests: Next.js, Expo, Bun
           echo "🧪 Running platform tests..."
-          npx nx run-many \
+          pnpm nx run-many \
             -t test:next,test:expo,test:bun \
             -p supabase-js \
             --parallel=3 \
@@ -196,13 +199,13 @@ jobs:
 
           # WebSocket tests (requires completed platforms)
           echo "🧪 Running WebSocket tests..."
-          npx nx test:node:playwright supabase-js
+          pnpm nx test:node:playwright supabase-js
 
           echo "✅ All tests passed"
 
       - name: Run E2E tests
         run: |
-          npx nx run-many \
+          pnpm nx run-many \
             --target=test:e2e \
             --projects=auth-js,realtime-js \
             --parallel=1 \
@@ -246,4 +249,4 @@ jobs:
 
       - name: Stop Supabase
         if: always()
-        run: npx nx test:supabase:stop supabase-js
+        run: pnpm nx test:supabase:stop supabase-js

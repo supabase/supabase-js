@@ -73,16 +73,16 @@ This package is part of the [Supabase JavaScript monorepo](https://github.com/su
 
 ```bash
 # Build (from monorepo root)
-npx nx build postgrest-js
+pnpm nx build postgrest-js
 
 # Build with watch mode for development
-npx nx build:watch postgrest-js
+pnpm nx build:watch postgrest-js
 
 # TypeScript type checking
-npx nx type-check postgrest-js
+pnpm nx type-check postgrest-js
 
 # Generate documentation
-npx nx docs postgrest-js
+pnpm nx docs postgrest-js
 ```
 
 ### Testing
@@ -93,7 +93,7 @@ npx nx docs postgrest-js
 
 ```bash
 # Run all tests (from monorepo root)
-npx nx test:ci:postgrest postgrest-js
+pnpm nx test:ci:postgrest postgrest-js
 ```
 
 This single command automatically:
@@ -108,19 +108,19 @@ This single command automatically:
 
 ```bash
 # Run Jest tests with coverage (requires infrastructure running)
-npx nx test:run postgrest-js
+pnpm nx test:run postgrest-js
 
 # Run type tests with tstyche
-npx nx test:types postgrest-js
+pnpm nx test:types postgrest-js
 
 # Run smoke tests (CommonJS and ESM imports)
-npx nx test:smoke postgrest-js
+pnpm nx test:smoke postgrest-js
 
 # Format code
-npx nx format postgrest-js
+pnpm nx format postgrest-js
 
 # Check formatting
-npx nx format:check postgrest-js
+pnpm nx format:check postgrest-js
 ```
 
 #### Test Infrastructure
@@ -132,8 +132,8 @@ The tests use Supabase CLI to spin up:
 
 ```bash
 # Manually manage test infrastructure (from monorepo root)
-npx nx test:infra postgrest-js      # Start containers
-npx nx test:clean-pre postgrest-js  # Stop and remove containers
+pnpm nx test:infra postgrest-js      # Start containers
+pnpm nx test:clean-pre postgrest-js  # Stop and remove containers
 ```
 
 Or directly via Supabase CLI:
@@ -151,7 +151,7 @@ When the database schema changes, regenerate TypeScript types from the actual da
 
 ```bash
 # From the monorepo root
-npm run codegen:postgrest
+pnpm run codegen:postgrest
 ```
 
 This command automatically:
@@ -167,9 +167,9 @@ The generated types are written to `test/types.generated.ts`.
 
 #### Test Types Explained
 
-- **Unit Tests** - Jest tests covering all client functionality (`npx nx test:run postgrest-js`)
-- **Type Tests** - Validates TypeScript types using tstyche (`npx nx test:types postgrest-js`)
-- **Smoke Tests** - Basic import/require tests for CommonJS and ESM (`npx nx test:smoke postgrest-js`)
+- **Unit Tests** - Jest tests covering all client functionality (`pnpm nx test:run postgrest-js`)
+- **Type Tests** - Validates TypeScript types using tstyche (`pnpm nx test:types postgrest-js`)
+- **Smoke Tests** - Basic import/require tests for CommonJS and ESM (`pnpm nx test:smoke postgrest-js`)
 
 #### Prerequisites
 
@@ -185,7 +185,7 @@ We maintain backward compatibility tests for PostgREST v12 (the current Supabase
 
 ```bash
 # Run v12 compatibility tests (requires Docker)
-npx nx test:ci:v12 postgrest-js
+pnpm nx test:ci:v12 postgrest-js
 ```
 
 This command:
@@ -197,7 +197,7 @@ This command:
 **Type-only tests** for v12 compatibility also run as part of the regular type tests:
 
 ```bash
-npx nx test:types postgrest-js  # Includes v12-compat.test-d.ts
+pnpm nx test:types postgrest-js  # Includes v12-compat.test-d.ts
 ```
 
 **Note:** These v12 tests will be removed when v3 ships (sometime in 2026).

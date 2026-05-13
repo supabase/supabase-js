@@ -3,7 +3,7 @@ name: Fix Dependabot lockfile
 on:
   pull_request:
     paths:
-      - 'package-lock.json'
+      - 'pnpm-lock.yaml'
 
 permissions:
   contents: write
@@ -18,20 +18,19 @@ jobs:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d # v6.0.5
+
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
 
-      # This is needed to match the npm version used when publishing
-      - name: Update npm
-        run: corepack enable npm && corepack prepare npm@11 --activate
       - name: Regenerate lockfile
-        run: npm install --package-lock-only --ignore-scripts
+        run: pnpm install --lockfile-only --ignore-scripts
 
       - name: Commit fixed lockfile
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git diff --staged --quiet || git commit -m "chore(deps): regenerate lockfile with latest npm"
+          git add pnpm-lock.yaml
+          git diff --staged --quiet || git commit -m "chore(deps): regenerate pnpm-lock.yaml"
           git push

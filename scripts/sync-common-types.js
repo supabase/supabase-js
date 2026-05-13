@@ -24,7 +24,7 @@ const HEADER_COMMENT = `/**
  * Source: packages/core/postgrest-js/src/types/common/
  *
  * To update this file, modify the source in postgrest-js and run:
- *   npm run codegen
+ *   pnpm run codegen
  */
 
 `

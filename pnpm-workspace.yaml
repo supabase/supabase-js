@@ -1,0 +1,11 @@
+packages:
+  - 'packages/core/*'
+  - 'packages/shared/*'
+
+onlyBuiltDependencies:
+  - '@swc/core'
+  - esbuild
+  - napi-postinstall
+  - nx
+  - puppeteer
+  - supabase

@@ -43,18 +43,18 @@ function main() {
 
   // Clean up any existing containers
   console.log('🧹 Cleaning up existing containers...')
-  // When running `npx` with workspaces enabled, the cwd is changed to the directory of the package.json file.
+  // When running `pnpm exec` with workspaces enabled, the cwd is changed to the directory of the package.json file.
   // So we need to pass the workdir relative to the package.json file to supabase cli.
-  execAllowFail(`npx supabase --workdir ${TEST_DIR_NAME} stop --no-backup`, { cwd: TEST_DIR })
+  execAllowFail(`pnpm exec supabase --workdir ${TEST_DIR_NAME} stop --no-backup`, { cwd: TEST_DIR })
 
   // Start Supabase (blocks until ready)
   console.log('📦 Starting Supabase...')
-  exec(`npx supabase --workdir ${TEST_DIR_NAME} start`, { cwd: TEST_DIR })
+  exec(`pnpm exec supabase --workdir ${TEST_DIR_NAME} start`, { cwd: TEST_DIR })
 
   // Generate types from database using Supabase CLI
   console.log('🔧 Generating types from database...')
   exec(
-    `npx supabase --workdir ${TEST_DIR_NAME} gen types typescript --local --schema public,personal > ${OUTPUT_FILE}`,
+    `pnpm exec supabase --workdir ${TEST_DIR_NAME} gen types typescript --local --schema public,personal > ${OUTPUT_FILE}`,
     {
       cwd: TEST_DIR,
       shell: true,
@@ -67,11 +67,11 @@ function main() {
 
   // Format the generated file with Prettier
   console.log('💅 Formatting generated types with Prettier...')
-  exec(`npx nx format`, { cwd: path.join(__dirname, '..') })
+  exec(`pnpm nx format`, { cwd: path.join(__dirname, '..') })
 
   // Clean up Supabase containers
   console.log('🧹 Cleaning up Supabase...')
-  execAllowFail(`npx supabase --workdir ${TEST_DIR_NAME} stop --no-backup`, { cwd: TEST_DIR })
+  execAllowFail(`pnpm exec supabase --workdir ${TEST_DIR_NAME} stop --no-backup`, { cwd: TEST_DIR })
 
   console.log('\n✅ Type generation complete!')
   console.log(`   Output: ${OUTPUT_FILE}`)
