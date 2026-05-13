@@ -27,7 +27,7 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/cz-commitlint": "^19.8.1",
     "@eslint/js": "^10.0.1",
-    "@faker-js/faker": "^10.4.0",
+    "@faker-js/faker": "^9.9.0",
     "@nx/eslint": "22.7.1",
     "@nx/eslint-plugin": "22.7.1",
     "@nx/jest": "22.7.1",
@@ -44,13 +44,10 @@
     "@types/node": "20.19.9",
     "@typescript-eslint/eslint-plugin": "^8.21.0",
     "@typescript-eslint/parser": "^8.21.0",
-    "@vitest/ui": "4.1.5",
+    "@vitest/ui": "4.1.6",
     "commitizen": "^4.3.1",
     "eslint": "^10.0.1",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-n": "^17.21.3",
-    "eslint-plugin-promise": "^7.2.1",
     "globals": "^16.4.0",
     "husky": "^9.1.7",
     "jest": "30.4.2",
@@ -64,7 +61,7 @@
     "nx": "22.7.1",
     "prettier": "^3.6.2",
     "supabase": "2.98.2",
-    "ts-jest": "^29.4.2",
+    "ts-jest": "^29.4.9",
     "ts-node": "^10.9.1",
     "tsd": "^0.33.0",
     "tsdown": "^0.18.0",
@@ -74,7 +71,12 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.21.0",
     "vite": "7.3.2",
-    "vitest": "4.1.5"
+    "vitest": "4.1.6"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "pnpm": {
+    "overrides": {
+      "unrun": ">=0.2.39 <0.3.0"
+    }
+  }
 }
