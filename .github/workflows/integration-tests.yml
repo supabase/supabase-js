@@ -157,13 +157,18 @@ jobs:
           echo "   and the standalone sub-app lockfiles do not match the patched URLs."
           echo ""
 
+          # --config.block-exotic-subdeps=false: these apps install supabase-js from
+          # pkg.pr.new URL tarballs whose published manifest references siblings by URL.
+          # The root workspace enables blockExoticSubdeps; we override via CLI here
+          # because pnpm-workspace.yaml settings win over per-dir .npmrc even with
+          # --ignore-workspace.
           cd packages/core/supabase-js/test/integration/next
-          pnpm install --no-frozen-lockfile --ignore-scripts --ignore-workspace
+          pnpm install --no-frozen-lockfile --ignore-scripts --ignore-workspace --config.block-exotic-subdeps=false
           pnpm exec playwright install --with-deps
           cd "$GITHUB_WORKSPACE"
 
           cd packages/core/supabase-js/test/integration/expo
-          pnpm install --no-frozen-lockfile --ignore-scripts --ignore-workspace
+          pnpm install --no-frozen-lockfile --ignore-scripts --ignore-workspace --config.block-exotic-subdeps=false
           cd "$GITHUB_WORKSPACE"
 
           cd packages/core/supabase-js/test/integration/bun
