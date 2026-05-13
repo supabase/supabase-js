@@ -36,7 +36,7 @@ jobs:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const org = 'supabase'
-            const { actor } = context
+            const actor = process.env.GITHUB_TRIGGERING_ACTOR
 
             async function isTeamMember(team_slug) {
               try {
