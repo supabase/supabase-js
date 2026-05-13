@@ -584,7 +584,9 @@ describe('binary', () => {
     const topic = encoder.encode('top')
     const event = encoder.encode('ev')
     const corruptPayload = encoder.encode('{{{not json')
-    const buffer = new Uint8Array(header.length + topic.length + event.length + corruptPayload.length)
+    const buffer = new Uint8Array(
+      header.length + topic.length + event.length + corruptPayload.length
+    )
     buffer.set(header, 0)
     buffer.set(topic, header.length)
     buffer.set(event, header.length + topic.length)
