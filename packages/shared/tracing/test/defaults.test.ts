@@ -1,4 +1,5 @@
 import { getDefaultPropagationTargets } from '../src/defaults'
+import { shouldPropagateToTarget } from '../src/validate'
 
 describe('getDefaultPropagationTargets', () => {
   it('should include exact project hostname', () => {
@@ -7,18 +8,16 @@ describe('getDefaultPropagationTargets', () => {
     expect(targets).toContain('myproject.supabase.co')
   })
 
-  it('should include Supabase cloud domain patterns', () => {
+  it('should include Supabase cloud wildcard targets', () => {
     const targets = getDefaultPropagationTargets('https://myproject.supabase.co')
 
-    // Check for RegExp patterns
-    const regexTargets = targets.filter((t) => t instanceof RegExp)
-    expect(regexTargets).toHaveLength(2)
+    expect(targets).toContain('*.supabase.co')
+    expect(targets).toContain('*.supabase.in')
+  })
 
-    const supabaseCoPattern = regexTargets.find((r) => r.test('project.supabase.co'))
-    const supabaseInPattern = regexTargets.find((r) => r.test('project.supabase.in'))
-
-    expect(supabaseCoPattern).toBeDefined()
-    expect(supabaseInPattern).toBeDefined()
+  it('should not use regex targets (avoids ReDoS surface)', () => {
+    const targets = getDefaultPropagationTargets('https://myproject.supabase.co')
+    expect(targets.some((t) => t instanceof RegExp)).toBe(false)
   })
 
   it('should include localhost and loopback addresses', () => {
@@ -51,23 +50,19 @@ describe('getDefaultPropagationTargets', () => {
     expect(targets).toContain('myproject.supabase.co')
   })
 
-  it('should match supabase.co subdomains with RegExp', () => {
+  it('should match supabase.co subdomains via wildcard', () => {
     const targets = getDefaultPropagationTargets('https://myproject.supabase.co')
-    const pattern = targets.find((t) => t instanceof RegExp && t.test('project.supabase.co'))
 
-    expect(pattern).toBeDefined()
-    expect((pattern as RegExp).test('myproject.supabase.co')).toBe(true)
-    expect((pattern as RegExp).test('another.supabase.co')).toBe(true)
-    expect((pattern as RegExp).test('evil.com')).toBe(false)
+    expect(shouldPropagateToTarget('https://myproject.supabase.co/x', targets)).toBe(true)
+    expect(shouldPropagateToTarget('https://another.supabase.co/x', targets)).toBe(true)
+    expect(shouldPropagateToTarget('https://evil.com/x', targets)).toBe(false)
   })
 
-  it('should match supabase.in subdomains with RegExp', () => {
+  it('should match supabase.in subdomains via wildcard', () => {
     const targets = getDefaultPropagationTargets('https://myproject.supabase.in')
-    const pattern = targets.find((t) => t instanceof RegExp && t.test('project.supabase.in'))
 
-    expect(pattern).toBeDefined()
-    expect((pattern as RegExp).test('myproject.supabase.in')).toBe(true)
-    expect((pattern as RegExp).test('another.supabase.in')).toBe(true)
-    expect((pattern as RegExp).test('evil.com')).toBe(false)
+    expect(shouldPropagateToTarget('https://myproject.supabase.in/x', targets)).toBe(true)
+    expect(shouldPropagateToTarget('https://another.supabase.in/x', targets)).toBe(true)
+    expect(shouldPropagateToTarget('https://evil.com/x', targets)).toBe(false)
   })
 })
