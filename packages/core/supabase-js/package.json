@@ -74,9 +74,9 @@
     "docs:json": "typedoc --entryPoints src/index.ts --entryPoints src/cors.ts --json docs/v2/spec.json --excludeExternals",
     "serve:coverage": "pnpm nx test:coverage supabase-js && pnpm dlx serve test/coverage",
     "update:test-deps": "pnpm run update:test-deps:expo && pnpm run update:test-deps:next && pnpm run update:test-deps:deno && pnpm run update:test-deps:bun",
-    "update:test-deps:expo": "cd test/integration/expo && pnpm install",
-    "update:test-deps:next": "cd test/integration/next && pnpm install",
-    "update:test-deps:deno": "cd test/deno && pnpm install",
+    "update:test-deps:expo": "cd test/integration/expo && pnpm install --ignore-workspace",
+    "update:test-deps:next": "cd test/integration/next && pnpm install --ignore-workspace",
+    "update:test-deps:deno": "cd test/deno && pnpm install --ignore-workspace",
     "update:test-deps:bun": "cd test/integration/bun && bun install"
   },
   "dependencies": {

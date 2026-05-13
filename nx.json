@@ -61,7 +61,6 @@
       "{workspaceRoot}/package.json",
       "{workspaceRoot}/pnpm-lock.yaml",
       "{workspaceRoot}/pnpm-workspace.yaml",
-      "{workspaceRoot}/.npmrc",
       "{workspaceRoot}/tsconfig.base.json",
       "{workspaceRoot}/tsconfig.json",
       "{workspaceRoot}/.prettierrc*",

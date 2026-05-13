@@ -57,6 +57,16 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
    pnpm nx affected --target=test
    ```
 
+### Browser tests (optional)
+
+The `test:integration:browser` target for `supabase-js` uses Puppeteer. The workspace denies arbitrary install scripts by default, so Puppeteer does **not** download Chromium during `pnpm install`. If you want to run browser tests locally, install Chrome once:
+
+```bash
+pnpm exec puppeteer browsers install chrome
+```
+
+CI does this explicitly after `pnpm install`, so it's only a manual step for local browser testing.
+
 ## Development Workflow
 
 ### Making Changes
