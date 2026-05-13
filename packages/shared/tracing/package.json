@@ -1,7 +1,8 @@
 {
   "name": "@supabase/tracing",
   "version": "0.0.0-automated",
-  "description": "W3C/OpenTelemetry trace context propagation utilities for Supabase JS SDK",
+  "private": true,
+  "description": "Internal W3C/OpenTelemetry trace context propagation utilities for the Supabase JS SDK. Not published — bundled into @supabase/supabase-js.",
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",
   "types": "dist/module/index.d.ts",

@@ -5,5 +5,11 @@
     ".": "./src/index.ts",
     "./cors": "./src/cors.ts"
   },
-  "exclude": ["examples"]
+  "imports": {
+    "@supabase/tracing": "./src/_internal/tracing/index.ts"
+  },
+  "exclude": ["examples"],
+  "publish": {
+    "exclude": ["!src/_internal"]
+  }
 }
