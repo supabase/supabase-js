@@ -12,15 +12,6 @@ module.exports = {
     },
   },
   transform: {
-    '^.+\\.ts$': [
-      'ts-jest',
-      {
-        tsconfig: {
-          composite: false,
-          outDir: '$$ts-jest$$',
-          rootDir: '.',
-        },
-      },
-    ],
+    '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
   },
 }
