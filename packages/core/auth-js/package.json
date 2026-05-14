@@ -1,6 +1,6 @@
 {
   "name": "@supabase/auth-js",
-  "version": "0.0.0",
+  "version": "0.0.0-automated",
   "private": false,
   "description": "Official SDK for Supabase Auth",
   "keywords": [

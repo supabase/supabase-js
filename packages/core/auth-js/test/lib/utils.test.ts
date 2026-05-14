@@ -44,7 +44,7 @@ describe('useful helper utilities when using the auth clients', () => {
 
       expect(userMetadata).not.toBeNull()
       expect(userMetadata?.profile_image).not.toBeUndefined()
-      expect(userMetadata?.profile_image).toMatch(/^https.*avatars.*(jpg|png)$/g)
+      expect(userMetadata?.profile_image).toMatch(/^https:\/\/avatars\..+/)
     })
   })
 
