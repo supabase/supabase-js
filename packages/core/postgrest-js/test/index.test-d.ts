@@ -299,6 +299,20 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   error
 }
 
+{
+  postgrest
+    .from('messages')
+    .select('id')
+    .eq('id', 1)
+    .single()
+    .throwOnError()
+    .then(({ data, error }) => {
+      expectType<TypeEqual<typeof data, { id: number }>>(true)
+      expectType<TypeEqual<typeof error, null>>(true)
+      return data
+    })
+}
+
 // Json Accessor with custom types overrides
 {
   const result = await postgrest

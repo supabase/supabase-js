@@ -154,9 +154,9 @@ export default abstract class PostgrestBuilder<
    *
    * @category Database
    */
-  throwOnError(): this & PostgrestBuilder<ClientOptions, Result, true> {
+  throwOnError(): Omit<this, 'then'> & PostgrestBuilder<ClientOptions, Result, true> {
     this.shouldThrowOnError = true
-    return this as this & PostgrestBuilder<ClientOptions, Result, true>
+    return this as Omit<this, 'then'> & PostgrestBuilder<ClientOptions, Result, true>
   }
 
   /**
