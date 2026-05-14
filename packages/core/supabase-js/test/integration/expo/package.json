@@ -58,7 +58,7 @@
       "./jest.setup.js"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!(isows|@supabase|@react-native|react-native|expo-modules-core|expo)/)"
+      "node_modules/(?!(?:.*node_modules/)?(isows|@supabase|@react-native|react-native|expo-modules-core|expo)/)"
     ],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
