@@ -39,7 +39,7 @@ export const mockVerificationOTP = (): string => {
 
 export const mockUserMetadata = () => {
   return {
-    profile_image: faker.image.avatar(),
+    profile_image: faker.image.avatarGitHub(),
   }
 }
 

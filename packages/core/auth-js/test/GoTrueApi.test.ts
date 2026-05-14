@@ -43,7 +43,7 @@ describe('GoTrueAdminApi', () => {
       expect(data.user?.email).toEqual(email)
       expect(data.user?.user_metadata).toEqual(user_metadata)
       expect(data.user?.user_metadata).toHaveProperty('profile_image')
-      expect(data.user?.user_metadata?.profile_image).toMatch(/https.*avatars.*(jpg|png)/)
+      expect(data.user?.user_metadata?.profile_image).toMatch(/^https:\/\/avatars\..+/)
     })
 
     test('createUser() with app metadata', async () => {
@@ -78,7 +78,7 @@ describe('GoTrueAdminApi', () => {
       expect(error).toBeNull()
       expect(data.user?.email).toEqual(email)
       expect(data.user?.user_metadata).toHaveProperty('profile_image')
-      expect(data.user?.user_metadata?.profile_image).toMatch(/https.*avatars.*(jpg|png)/)
+      expect(data.user?.user_metadata?.profile_image).toMatch(/^https:\/\/avatars\..+/)
       expect(data.user?.app_metadata).toHaveProperty('provider')
       expect(data.user?.app_metadata).toHaveProperty('providers')
     })
