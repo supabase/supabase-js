@@ -8,6 +8,9 @@ export type Msg<T> = {
   payload: T
 }
 
+type LogFn = (kind: string, msg: string, data?: any) => void
+const noop: LogFn = () => {}
+
 export default class Serializer {
   HEADER_LENGTH = 1
   USER_BROADCAST_PUSH_META_LENGTH = 6
@@ -123,42 +126,58 @@ export default class Serializer {
     return combined.buffer
   }
 
-  decode(rawPayload: ArrayBuffer | string, callback: Function) {
+  decode(rawPayload: ArrayBuffer | string, callback: Function, log: LogFn = noop) {
     if (this._isArrayBuffer(rawPayload)) {
-      let result = this._binaryDecode(rawPayload as ArrayBuffer)
+      let result = this._binaryDecode(rawPayload as ArrayBuffer, log)
+      if (result === undefined) {
+        log('error', 'Failed to decode binary Realtime message')
+        return
+      }
       return callback(result)
     }
 
     if (typeof rawPayload === 'string') {
-      const jsonPayload = JSON.parse(rawPayload)
-      const [join_ref, ref, topic, event, payload] = jsonPayload
-      return callback({ join_ref, ref, topic, event, payload })
+      try {
+        const jsonPayload = JSON.parse(rawPayload)
+        if (!Array.isArray(jsonPayload) || jsonPayload.length < 5) {
+          log('error', 'Malformed Realtime message', jsonPayload)
+          return
+        }
+        const [join_ref, ref, topic, event, payload] = jsonPayload
+        return callback({ join_ref, ref, topic, event, payload })
+      } catch (error) {
+        log('error', 'Error parsing Realtime message', { error, rawPayload })
+        return
+      }
     }
 
-    return callback({})
+    return
   }
 
-  private _binaryDecode(buffer: ArrayBuffer) {
+  private _binaryDecode(buffer: ArrayBuffer, log: LogFn) {
     const view = new DataView(buffer)
     const kind = view.getUint8(0)
     const decoder = new TextDecoder()
     switch (kind) {
       case this.KINDS.userBroadcast:
-        return this._decodeUserBroadcast(buffer, view, decoder)
+        return this._decodeUserBroadcast(buffer, view, decoder, log)
     }
   }
 
   private _decodeUserBroadcast(
     buffer: ArrayBuffer,
     view: DataView,
-    decoder: TextDecoder
-  ): {
-    join_ref: null
-    ref: null
-    topic: string
-    event: string
-    payload: { [key: string]: any }
-  } {
+    decoder: TextDecoder,
+    log: LogFn
+  ):
+    | {
+        join_ref: null
+        ref: null
+        topic: string
+        event: string
+        payload: { [key: string]: any }
+      }
+    | undefined {
     const topicSize = view.getUint8(1)
     const userEventSize = view.getUint8(2)
     const metadataSize = view.getUint8(3)
@@ -173,8 +192,18 @@ export default class Serializer {
     offset = offset + metadataSize
 
     const payload = buffer.slice(offset, buffer.byteLength)
-    const parsedPayload =
-      payloadEncoding === this.JSON_ENCODING ? JSON.parse(decoder.decode(payload)) : payload
+    let parsedPayload
+    if (payloadEncoding === this.JSON_ENCODING) {
+      const textPayload = decoder.decode(payload)
+      try {
+        parsedPayload = JSON.parse(textPayload)
+      } catch (error) {
+        log('error', 'Error decoding JSON payload', { error, textPayload })
+        return undefined
+      }
+    } else {
+      parsedPayload = payload
+    }
 
     const data: { [key: string]: any } = {
       type: this.BROADCAST_EVENT,
@@ -184,7 +213,12 @@ export default class Serializer {
 
     // Metadata is optional and always JSON encoded
     if (metadataSize > 0) {
-      data['meta'] = JSON.parse(metadata)
+      try {
+        data['meta'] = JSON.parse(metadata)
+      } catch (error) {
+        log('error', 'Error decoding JSON metadata', { error, metadata })
+        return undefined
+      }
     }
 
     return { join_ref: null, ref: null, topic: topic, event: this.BROADCAST_EVENT, payload: data }
