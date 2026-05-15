@@ -1,6 +1,11 @@
 import { MockServer } from 'jest-mock-server'
 import { API_VERSION_HEADER_NAME } from '../src/lib/constants'
-import { AuthUnknownError, AuthApiError, AuthRetryableFetchError } from '../src/lib/errors'
+import {
+  AuthUnknownError,
+  AuthApiError,
+  AuthRetryableFetchError,
+  AuthSessionMissingError,
+} from '../src/lib/errors'
 import { _request, handleError } from '../src/lib/fetch'
 
 describe('fetch', () => {
@@ -193,6 +198,24 @@ describe('handleError', () => {
         {
           status: 400,
           statusText: 'Bad Request',
+          headers: {
+            [API_VERSION_HEADER_NAME]: '2024-01-01',
+          },
+        }
+      ),
+    },
+    {
+      name: 'with API version 2024-01-01 and session_not_found error code',
+      code: undefined,
+      ename: 'AuthSessionMissingError',
+      response: new Response(
+        JSON.stringify({
+          code: 'session_not_found',
+          message: 'Session from session_id claim in JWT does not exist',
+        }),
+        {
+          status: 403,
+          statusText: 'Forbidden',
           headers: {
             [API_VERSION_HEADER_NAME]: '2024-01-01',
           },
