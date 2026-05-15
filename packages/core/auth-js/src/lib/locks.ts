@@ -42,12 +42,11 @@ export abstract class LockAcquireTimeoutError extends Error {
 /**
  * Error thrown when the browser Navigator Lock API fails to acquire a lock.
  *
- * @example
- * ```ts
- * import { NavigatorLockAcquireTimeoutError } from '@supabase/auth-js'
+ * @deprecated Only thrown by the deprecated {@link navigatorLock}. Scheduled
+ * for removal in the next major version. Use {@link ProcessLockAcquireTimeoutError}
+ * or catch {@link LockAcquireTimeoutError} instead.
  *
- * throw new NavigatorLockAcquireTimeoutError('Lock timed out')
- * ```
+ * TODO(v3): remove along with navigatorLock.
  */
 export class NavigatorLockAcquireTimeoutError extends LockAcquireTimeoutError {}
 /**
@@ -68,6 +67,14 @@ export class ProcessLockAcquireTimeoutError extends LockAcquireTimeoutError {}
  * last one to release support. If the API is not available, this function will
  * throw. Make sure you check availablility before configuring {@link
  * GoTrueClient}.
+ *
+ * @deprecated `navigatorLock` is no longer the default browser lock and is kept
+ * only for opt-in use. It is scheduled for removal in the next major version.
+ * The default `processLock` handles within-tab serialization, and cross-tab
+ * refresh races are handled server-side by GoTrue's refresh token reuse
+ * detection. To opt in: `createClient(url, key, { auth: { lock: navigatorLock } })`
+ *
+ * TODO(v3): remove navigatorLock export and all steal-based recovery logic.
  *
  * You can turn on debugging by setting the `supabase.gotrue-js.locks.debug`
  * local storage item to `true`.
@@ -312,7 +319,8 @@ const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
  * Useful for environments like React Native or other non-browser
  * single-process (i.e. no concept of "tabs") environments.
  *
- * Use {@link #navigatorLock} in browser environments.
+ * This is the default lock for all environments. Use {@link navigatorLock} only
+ * if you need opt-in cross-tab serialization via the Web Locks API.
  *
  * @param name Name of the lock to be acquired.
  * @param acquireTimeout If negative, no timeout. If 0 an error is thrown if

@@ -54,7 +54,7 @@ import {
   validateExp,
 } from './lib/helpers'
 import { memoryLocalStorageAdapter } from './lib/local-storage'
-import { LockAcquireTimeoutError, navigatorLock } from './lib/locks'
+import { LockAcquireTimeoutError, processLock } from './lib/locks'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { version } from './lib/version'
 
@@ -380,8 +380,8 @@ export default class GoTrueClient {
 
     if (settings.lock) {
       this.lock = settings.lock
-    } else if (this.persistSession && isBrowser() && globalThis?.navigator?.locks) {
-      this.lock = navigatorLock
+    } else if (this.persistSession && isBrowser()) {
+      this.lock = processLock
     } else {
       this.lock = lockNoOp
     }
@@ -2593,7 +2593,7 @@ export default class GoTrueClient {
    * - If the session's access token is expired or is about to expire, this method will use the refresh token to refresh the session.
    * - When using in a browser, or you've called `startAutoRefresh()` in your environment (React Native, etc.) this function always returns a valid access token without refreshing the session itself, as this is done in the background. This function returns very fast.
    * - **IMPORTANT SECURITY NOTICE:** If using an insecure storage medium, such as cookies or request headers, the user object returned by this function **must not be trusted**. Always verify the JWT using `getClaims()` or your own JWT verification library to securely establish the user's identity and access. You can also use `getUser()` to fetch the user object directly from the Auth server for this purpose.
-   * - When using in a browser, this function is synchronized across all tabs using the [LockManager](https://developer.mozilla.org/en-US/docs/Web/API/LockManager) API. In other environments make sure you've defined a proper `lock` property, if necessary, to make sure there are no race conditions while the session is being refreshed.
+   * - This function is synchronized within the current process using an in-process lock. Cross-tab refresh races are handled server-side by GoTrue's refresh token reuse detection. You can opt in to cross-tab serialization via the Web Locks API by passing `lock: navigatorLock` (deprecated) in the client options.
    *
    * @example Get the session data
    * ```js

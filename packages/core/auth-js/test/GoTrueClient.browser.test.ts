@@ -9,6 +9,7 @@ import {
   getClientWithSpecificStorageKey,
   pkceClient,
 } from './lib/clients'
+import { navigatorLock, processLock } from '../src/lib/locks'
 import { mockUserCredentials } from './lib/utils'
 import {
   supportsLocalStorage,
@@ -651,26 +652,38 @@ describe('GoTrueClient BroadcastChannel', () => {
 })
 
 describe('Browser locks functionality', () => {
-  it('should use navigator locks when available', () => {
-    // Mock navigator.locks
-    const mockLock = { name: 'test-lock' }
+  it('should use processLock even when navigator.locks is available', () => {
+    // Mock navigator.locks to confirm it is no longer selected as the default
     const mockRequest = jest
       .fn()
-      .mockImplementation((_, __, callback) => Promise.resolve(callback(mockLock)))
+      .mockImplementation((_, __, callback) => Promise.resolve(callback({ name: 'test-lock' })))
 
     Object.defineProperty(navigator, 'locks', {
       value: { request: mockRequest },
       writable: true,
     })
 
-    // Test navigator locks usage in GoTrueClient
     const client = getClientWithSpecificStorage({
       getItem: jest.fn(),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     })
 
-    expect(client).toBeDefined()
+    expect((client as any).lock).toBe(processLock)
+  })
+
+  it('should use navigatorLock when explicitly configured via lock option', () => {
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      headers: { apikey: 'test-key' },
+      storageKey: 'test-lock-opt-in',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage: { getItem: jest.fn(), setItem: jest.fn(), removeItem: jest.fn() },
+      lock: navigatorLock,
+    })
+
+    expect((client as any).lock).toBe(navigatorLock)
   })
 
   it('should handle _acquireLock with empty pendingInLock', async () => {
@@ -678,17 +691,6 @@ describe('Browser locks functionality', () => {
       getItem: jest.fn(),
       setItem: jest.fn(),
       removeItem: jest.fn(),
-    })
-
-    // Mock navigator.locks
-    const mockLock = { name: 'test-lock' }
-    const mockRequest = jest
-      .fn()
-      .mockImplementation((_, __, callback) => Promise.resolve(callback(mockLock)))
-
-    Object.defineProperty(navigator, 'locks', {
-      value: { request: mockRequest },
-      writable: true,
     })
 
     // Initialize client to trigger lock acquisition
