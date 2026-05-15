@@ -4692,10 +4692,6 @@ export default class GoTrueClient {
       if (isAuthError(error)) {
         const result = { data: null, error }
 
-        if (!isAuthRetryableFetchError(error)) {
-          await this._removeSession()
-        }
-
         this.refreshingDeferred?.resolve(result)
 
         return result
