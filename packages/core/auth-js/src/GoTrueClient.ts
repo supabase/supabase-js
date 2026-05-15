@@ -4615,6 +4615,17 @@ export default class GoTrueClient {
                 error
               )
               await this._removeSession()
+            } else {
+              // The refresh failed with a retryable error (e.g. network still
+              // reconnecting after tab suspension). Emit SIGNED_IN with the
+              // current session so downstream listeners (realtime, functions)
+              // can re-sync with the existing token. The auto-refresh ticker
+              // will retry the actual refresh on its next tick.
+              this._debug(
+                debugName,
+                'refresh failed with a retryable error, notifying subscribers with current session'
+              )
+              await this._notifyAllSubscribers('SIGNED_IN', currentSession)
             }
           }
         }
@@ -5104,6 +5115,14 @@ export default class GoTrueClient {
           // recover the session
           await this._recoverAndRefresh()
         })
+
+        // After lock-based recovery, if the session is still expired
+        // (e.g. network was not yet available when _recoverAndRefresh ran),
+        // trigger an immediate auto-refresh tick so we don't wait up to
+        // AUTO_REFRESH_TICK_DURATION_MS (30s) for the next scheduled tick.
+        if (this.autoRefreshToken) {
+          await this._autoRefreshTokenTick()
+        }
       }
     } else if (document.visibilityState === 'hidden') {
       if (this.autoRefreshToken) {
