@@ -2305,7 +2305,7 @@ export default class GoTrueClient {
       }
 
       const session: Session | null = data.session
-      const user: User = data.user
+      const user: User | null = data.user
 
       if (session?.access_token) {
         await this._saveSession(session as Session)
