@@ -253,7 +253,9 @@ export function _sessionResponse(data: GoTrueSessionData): AuthResponse {
     }
   }
 
-  const user: User = data.user ?? (data as User)
+  // Some /verify responses (e.g. secure email_change first-confirmation) return
+  // only `{ msg, code }` with no user and no session. Treat those as null user.
+  const user: User | null = data.user ?? null
   return { data: { session, user }, error: null }
 }
 

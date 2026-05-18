@@ -687,6 +687,39 @@ describe('GoTrueClient', () => {
       expect(data.user).toBeNull()
       expect(data.session).toBeNull()
     })
+
+    test('verifyOtp() returns null user and session for email_change single-confirmation response', async () => {
+      // When secure email change is enabled, gotrue's POST /verify returns
+      // `{ msg, code }` (200 OK) after the first of two confirmations succeeds.
+      // The SDK must not surface that object as `data.user`.
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: () =>
+          Promise.resolve({
+            code: '200',
+            msg: 'Confirmation link accepted. Please proceed to confirm link sent to the other email',
+          }),
+      })
+
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: false,
+        storage: memoryLocalStorageAdapter(),
+        fetch: mockFetch as unknown as typeof fetch,
+      })
+
+      const { data, error } = await client.verifyOtp({
+        token_hash: 'token-hash',
+        type: 'email_change',
+      })
+
+      expect(error).toBeNull()
+      expect(data.user).toBeNull()
+      expect(data.session).toBeNull()
+    })
   })
 
   describe('signInWithOtp', () => {
