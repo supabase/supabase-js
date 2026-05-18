@@ -1,3 +1,13 @@
+## 2.106.0 (2026-05-18)
+
+### 🩹 Fixes
+
+- **storage:** make StreamDownloadBuilder implement Promise and memoize executor ([#2367](https://github.com/supabase/supabase-js/pull/2367))
+
+### ❤️ Thank You
+
+- oniani1
+
 ## 2.105.4 (2026-05-08)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.

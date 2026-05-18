@@ -1,3 +1,19 @@
+## 2.106.0 (2026-05-18)
+
+### 🚀 Features
+
+- **supabase:** W3C/OpenTelemetry trace context propagation ([#2163](https://github.com/supabase/supabase-js/pull/2163))
+
+### 🩹 Fixes
+
+- **release:** mark @supabase/tracing private and snapshot it for JSR ([#2370](https://github.com/supabase/supabase-js/pull/2370))
+
+### ❤️ Thank You
+
+- Claude Sonnet 4.5
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+
 ## 2.105.4 (2026-05-08)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.

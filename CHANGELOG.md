@@ -1,3 +1,22 @@
+## 2.106.0 (2026-05-18)
+
+### 🚀 Features
+
+- **supabase:** W3C/OpenTelemetry trace context propagation ([#2163](https://github.com/supabase/supabase-js/pull/2163))
+
+### 🩹 Fixes
+
+- **auth:** return null user and session for email_change single-confirmation verifyOtp ([#2378](https://github.com/supabase/supabase-js/pull/2378))
+- **release:** mark @supabase/tracing private and snapshot it for JSR ([#2370](https://github.com/supabase/supabase-js/pull/2370))
+- **storage:** make StreamDownloadBuilder implement Promise and memoize executor ([#2367](https://github.com/supabase/supabase-js/pull/2367))
+
+### ❤️ Thank You
+
+- Claude Sonnet 4.5
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+- oniani1
+
 ## 2.105.4 (2026-05-08)
 
 ### 🩹 Fixes

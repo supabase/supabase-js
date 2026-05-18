@@ -1,3 +1,13 @@
+## 2.106.0 (2026-05-18)
+
+### 🩹 Fixes
+
+- **auth:** return null user and session for email_change single-confirmation verifyOtp ([#2378](https://github.com/supabase/supabase-js/pull/2378))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.105.4 (2026-05-08)
 
 ### 🩹 Fixes
