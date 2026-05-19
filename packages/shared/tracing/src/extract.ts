@@ -21,9 +21,7 @@ const OTEL_PKG = '@opentelemetry/api'
 // absent from the bundle. new Function() bodies are opaque strings to all
 // static parsers, including hermesc.
 // eslint-disable-next-line no-new-func
-const _dynamicImport = new Function('p', 'return import(p)') as (
-  pkg: string
-) => Promise<any>
+const _dynamicImport = new Function('p', 'return import(p)') as (pkg: string) => Promise<any>
 
 function loadOtel(): Promise<any | null> {
   if (otelModulePromise === null) {
