@@ -16,7 +16,18 @@ const OTEL_PKG = '@opentelemetry/api'
 
 function loadOtel(): Promise<any | null> {
   if (otelModulePromise === null) {
-    otelModulePromise = (import(OTEL_PKG) as Promise<any>).catch(() => null)
+    // Magic comments tell each major SSR/Edge bundler to skip static
+    // resolution of this dynamic import — `@opentelemetry/api` is an
+    // optional peer dep, so it may not be installed in the consumer app.
+    // Without these, Turbopack (Next.js Edge), webpack, and Vite each
+    // error with `Module not found: Can't resolve '@opentelemetry/api'`
+    // when the peer dep is absent. The variable specifier (OTEL_PKG)
+    // also helps for bundlers that don't honor the comments.
+    otelModulePromise = (
+      import(
+        /* webpackIgnore: true */ /* @vite-ignore */ /* turbopackIgnore: true */ OTEL_PKG
+      ) as Promise<any>
+    ).catch(() => null)
   }
   return otelModulePromise
 }
