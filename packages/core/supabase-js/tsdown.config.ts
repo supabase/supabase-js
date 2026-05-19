@@ -1,5 +1,4 @@
 import { defineConfig } from 'tsdown'
-import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
@@ -29,17 +28,21 @@ export default defineConfig([
     target: 'es2017',
     inputOptions: (_options, format) => {
       if (format === 'cjs') {
-        // Rolldown always resolves @supabase/tracing via its 'import' export
-        // condition (ESM source) even for CJS output — so import() ends up in
-        // index.cjs. hermesc (Hermes bytecode compiler for React Native) rejects
-        // import() at parse time; browser strict CSP blocks new Function() at
-        // runtime. Aliasing to the package's 'main' field (dist/main/) gives us
-        // TypeScript's CJS-compiled require() — safe for both constraints.
+        // Rolldown defaults to the 'import' export condition even when emitting
+        // CJS, so @supabase/tracing's ESM source (with native `import()`) ends
+        // up inlined into dist/index.cjs. hermesc (Hermes bytecode compiler for
+        // React Native release builds) rejects `import()` at parse time, before
+        // dead-code elimination — so the syntax has to be physically absent
+        // from the CJS bundle.
+        //
+        // Tell Rolldown to honor the 'require' export condition for this build.
+        // For @supabase/tracing that resolves to dist/main/index.js — tsc's
+        // CJS output, where dynamic `import()` has been lowered to require().
+        // dist/index.mjs intentionally keeps native `import()` (valid ESM,
+        // not blocked by browser CSP, and Hermes never sees the ESM bundle).
         return {
           resolve: {
-            alias: {
-              '@supabase/tracing': createRequire(import.meta.url).resolve('@supabase/tracing'),
-            },
+            conditionNames: ['require', 'node', 'default'],
           },
         }
       }
