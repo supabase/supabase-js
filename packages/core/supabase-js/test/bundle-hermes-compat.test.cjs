@@ -7,10 +7,10 @@
  *   - No new Function() calls  -> browsers with a strict Content-Security-Policy
  *     (no 'unsafe-eval') block new Function() identically to eval() at runtime.
  *
- * Both constraints are satisfied by telling Rolldown to honor the `require`
- * export condition when building dist/index.cjs (see tsdown.config.ts).
- * @supabase/tracing's `require` condition points at its tsc-built CJS output
- * (dist/main/), where dynamic `import()` has already been lowered to require().
+ * Both constraints are satisfied by aliasing @supabase/tracing to its
+ * `main`-field file (dist/main/index.js) for the CJS bundle — see
+ * tsdown.config.ts. That file is tsc's CJS output, where the dynamic
+ * `import()` has already been lowered to a runtime `require()`.
  *
  * Run with: node test/bundle-hermes-compat.test.cjs
  */

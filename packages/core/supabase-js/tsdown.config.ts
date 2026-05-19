@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsdown'
+import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
@@ -28,21 +29,27 @@ export default defineConfig([
     target: 'es2017',
     inputOptions: (_options, format) => {
       if (format === 'cjs') {
-        // Rolldown defaults to the 'import' export condition even when emitting
-        // CJS, so @supabase/tracing's ESM source (with native `import()`) ends
-        // up inlined into dist/index.cjs. hermesc (Hermes bytecode compiler for
-        // React Native release builds) rejects `import()` at parse time, before
-        // dead-code elimination — so the syntax has to be physically absent
-        // from the CJS bundle.
+        // Rolldown inlines @supabase/tracing's ESM source (with native
+        // `import()`) into dist/index.cjs even when emitting CJS — its
+        // `import` export condition wins because Rolldown prefers ESM
+        // source for tree-shaking, regardless of `resolve.conditionNames`.
+        // hermesc (Hermes bytecode compiler for React Native release
+        // builds) rejects `import()` at parse time, before dead-code
+        // elimination, so the syntax has to be physically absent from the
+        // CJS bundle.
         //
-        // Tell Rolldown to honor the 'require' export condition for this build.
-        // For @supabase/tracing that resolves to dist/main/index.js — tsc's
-        // CJS output, where dynamic `import()` has been lowered to require().
-        // dist/index.mjs intentionally keeps native `import()` (valid ESM,
-        // not blocked by browser CSP, and Hermes never sees the ESM bundle).
+        // Alias @supabase/tracing directly to its `main`-field file. This
+        // bypasses exports-conditions resolution entirely and pins the CJS
+        // bundle to tsc's CJS output (dist/main/index.js), where the
+        // dynamic `import()` has been lowered to a runtime `require()`.
+        // dist/index.mjs intentionally keeps the native `import()` — it's
+        // valid ESM, isn't blocked by browser CSP, and Hermes never sees
+        // the ESM bundle (Metro pulls the `require` condition).
         return {
           resolve: {
-            conditionNames: ['require', 'node', 'default'],
+            alias: {
+              '@supabase/tracing': createRequire(import.meta.url).resolve('@supabase/tracing'),
+            },
           },
         }
       }
