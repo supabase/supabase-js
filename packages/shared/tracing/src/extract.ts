@@ -14,14 +14,20 @@ let otelModulePromise: Promise<any | null> | null = null
 // be installed in the consumer app; we look it up purely at runtime.
 const OTEL_PKG = '@opentelemetry/api'
 
+// Wrap import() in a Function constructor so the import() expression is
+// never present as syntax in the bundled output. hermesc (the Hermes bytecode
+// compiler used by React Native release builds) rejects import() at parse
+// time — before any dead-code elimination — so the syntax must be physically
+// absent from the bundle. new Function() bodies are opaque strings to all
+// static parsers, including hermesc.
+// eslint-disable-next-line no-new-func
+const _dynamicImport = new Function('p', 'return import(p)') as (
+  pkg: string
+) => Promise<any>
+
 function loadOtel(): Promise<any | null> {
   if (otelModulePromise === null) {
-    // The variable specifier + magic comments together cover every common
-    // bundler. Webpack/Turbopack honor the ignore comments; bundlers that
-    // ignore the comments still bail out on the non-literal specifier.
-    otelModulePromise = import(
-      /* webpackIgnore: true */ /* @vite-ignore */ /* turbopackIgnore: true */ OTEL_PKG
-    ).catch(() => null)
+    otelModulePromise = _dynamicImport(OTEL_PKG).catch(() => null)
   }
   return otelModulePromise
 }
