@@ -129,3 +129,6 @@ jobs:
 
       - name: Test CJS requires
         run: pnpm nx test:cjs supabase-js
+
+      - name: Test Hermes (React Native) compatibility
+        run: pnpm nx test:hermes-compat supabase-js
