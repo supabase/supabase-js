@@ -23,9 +23,16 @@ function loadOtel(): Promise<any | null> {
     // error with `Module not found: Can't resolve '@opentelemetry/api'`
     // when the peer dep is absent. The variable specifier (OTEL_PKG)
     // also helps for bundlers that don't honor the comments.
+    //
+    // All three directives live in one block because rolldown's printer
+    // only preserves block comments containing `@__PURE__`,
+    // `@__NO_SIDE_EFFECTS__`, or `@vite-ignore`; standalone
+    // `/* webpackIgnore */` / `/* turbopackIgnore */` blocks get stripped
+    // from dist/index.mjs. Webpack and Turbopack both scan for their
+    // keyword anywhere in adjacent comments, so a shared block is honored.
     otelModulePromise = (
       import(
-        /* webpackIgnore: true */ /* @vite-ignore */ /* turbopackIgnore: true */ OTEL_PKG
+        /* @vite-ignore webpackIgnore: true turbopackIgnore: true */ OTEL_PKG
       ) as Promise<any>
     ).catch(() => null)
   }
