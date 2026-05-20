@@ -36,6 +36,7 @@ jobs:
   release-stable: # stable releases can only be manually triggered
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version_specifier != '' }}
     runs-on: ubuntu-latest
+    environment: npm-publish
     outputs:
       released_version: ${{ steps.extract-version.outputs.version }}
     permissions:
@@ -208,6 +209,7 @@ jobs:
   release-beta:
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.beta_version != '' }}
     runs-on: ubuntu-latest
+    environment: npm-publish
     permissions:
       contents: read
       id-token: write
@@ -319,6 +321,7 @@ jobs:
     # v3 next prerelease — manual dispatch only, must be run from the v3 branch.
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.next_prerelease == 'true' && github.ref == 'refs/heads/v3' }}
     runs-on: ubuntu-latest
+    environment: npm-publish
     permissions:
       contents: read
       id-token: write
@@ -446,6 +449,7 @@ jobs:
   release-canary:
     name: Release Prerelease
     runs-on: ubuntu-latest
+    environment: npm-publish
     needs: [ci-core, ci-supabase-js]
     permissions:
       contents: read

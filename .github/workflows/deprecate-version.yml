@@ -18,6 +18,7 @@ env:
 jobs:
   deprecate:
     runs-on: ubuntu-latest
+    environment: npm-deprecate
     permissions:
       contents: read
 
