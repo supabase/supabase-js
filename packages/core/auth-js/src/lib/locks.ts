@@ -1,6 +1,17 @@
+/**
+ * Lock primitives retained for backwards-compatible imports. The auth client
+ * coordinates refreshes itself (deduping in-instance callers onto a shared
+ * in-flight promise) and lets the GoTrue server resolve cross-instance races,
+ * so it does not invoke any primitive from this module. The functions still
+ * work for direct callers that need a navigator.locks-backed or in-process
+ * exclusive lock of their own.
+ */
+
 import { supportsLocalStorage } from './helpers'
 
 /**
+ * @deprecated Debug flag for `navigatorLock` / `processLock`. The auth
+ * client ignores both, so this has no client-side effect.
  * @experimental
  */
 export const internals = {
@@ -18,18 +29,9 @@ export const internals = {
 /**
  * An error thrown when a lock cannot be acquired after some amount of time.
  *
- * Use the {@link #isAcquireTimeout} property instead of checking with `instanceof`.
- *
- * @example
- * ```ts
- * import { LockAcquireTimeoutError } from '@supabase/auth-js'
- *
- * class CustomLockError extends LockAcquireTimeoutError {
- *   constructor() {
- *     super('Lock timed out')
- *   }
- * }
- * ```
+ * @deprecated The auth client doesn't acquire locks around auth operations,
+ * so this error never originates from `supabase.auth.*` calls. Direct callers
+ * of `navigatorLock` / `processLock` still receive it on acquire timeout.
  */
 export abstract class LockAcquireTimeoutError extends Error {
   public readonly isAcquireTimeout = true
@@ -40,25 +42,15 @@ export abstract class LockAcquireTimeoutError extends Error {
 }
 
 /**
- * Error thrown when the browser Navigator Lock API fails to acquire a lock.
- *
- * @example
- * ```ts
- * import { NavigatorLockAcquireTimeoutError } from '@supabase/auth-js'
- *
- * throw new NavigatorLockAcquireTimeoutError('Lock timed out')
- * ```
+ * @deprecated The auth client doesn't call `navigator.locks`, so this error
+ * never originates from `supabase.auth.*` calls. Direct callers of
+ * `navigatorLock` still receive it on acquire timeout.
  */
 export class NavigatorLockAcquireTimeoutError extends LockAcquireTimeoutError {}
 /**
- * Error thrown when the process-level lock helper cannot acquire a lock.
- *
- * @example
- * ```ts
- * import { ProcessLockAcquireTimeoutError } from '@supabase/auth-js'
- *
- * throw new ProcessLockAcquireTimeoutError('Lock timed out')
- * ```
+ * @deprecated The auth client doesn't run `processLock`, so this error
+ * never originates from `supabase.auth.*` calls. Direct callers of
+ * `processLock` still receive it on acquire timeout.
  */
 export class ProcessLockAcquireTimeoutError extends LockAcquireTimeoutError {}
 
@@ -86,12 +78,10 @@ export class ProcessLockAcquireTimeoutError extends LockAcquireTimeoutError {}
  *                       will time out after so many milliseconds. An error is
  *                       a timeout if it has `isAcquireTimeout` set to true.
  * @param fn The operation to run once the lock is acquired.
- * @example
- * ```ts
- * await navigatorLock('sync-user', 1000, async () => {
- *   await refreshSession()
- * })
- * ```
+ *
+ * @deprecated The auth client coordinates refreshes itself and the server
+ * resolves concurrent refresh races, so passing `{ lock: navigatorLock }`
+ * to it has no effect. You can safely drop the import from your client setup.
  */
 export async function navigatorLock<R>(
   name: string,
@@ -320,6 +310,11 @@ const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
  *                       will time out after so many milliseconds. An error is
  *                       a timeout if it has `isAcquireTimeout` set to true.
  * @param fn The operation to run once the lock is acquired.
+ *
+ * @deprecated The auth client coordinates refreshes itself and the server
+ * resolves concurrent refresh races, so passing `{ lock: processLock }`
+ * to it has no effect. You can safely drop the import from your client setup.
+ *
  * @example
  * ```ts
  * await processLock('migrate', 5000, async () => {

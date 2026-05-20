@@ -591,6 +591,7 @@ export default class SupabaseClient<
       throwOnError,
       experimental,
       lockAcquireTimeout,
+      suppressLockOptionWarning,
       skipAutoInitialize,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
@@ -616,6 +617,7 @@ export default class SupabaseClient<
       experimental,
       fetch,
       lockAcquireTimeout,
+      suppressLockOptionWarning,
       skipAutoInitialize,
       // auth checks if there is a custom authorizaiton header using this flag
       // so it knows whether to return an error when getUser is called with no session

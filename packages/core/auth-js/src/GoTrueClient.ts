@@ -16,11 +16,13 @@ import {
   AuthInvalidTokenResponseError,
   AuthPKCECodeVerifierMissingError,
   AuthPKCEGrantCodeExchangeError,
+  AuthRefreshDiscardedError,
   AuthSessionMissingError,
   AuthUnknownError,
   isAuthApiError,
   isAuthError,
   isAuthImplicitGrantRedirectError,
+  isAuthRefreshDiscardedError,
   isAuthRetryableFetchError,
   isAuthSessionMissingError,
 } from './lib/errors'
@@ -54,7 +56,6 @@ import {
   validateExp,
 } from './lib/helpers'
 import { memoryLocalStorageAdapter } from './lib/local-storage'
-import { LockAcquireTimeoutError, navigatorLock } from './lib/locks'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { version } from './lib/version'
 
@@ -91,7 +92,6 @@ import type {
   JWK,
   JwtHeader,
   JwtPayload,
-  LockFunc,
   MFAChallengeAndVerifyParams,
   MFAChallengeParams,
   MFAChallengePhoneParams,
@@ -183,7 +183,7 @@ polyfillGlobalThis() // Make "globalThis" available
 
 const DEFAULT_OPTIONS: Omit<
   Required<GoTrueClientOptions>,
-  'fetch' | 'storage' | 'userStorage' | 'lock'
+  'fetch' | 'storage' | 'userStorage' | 'lock' | 'lockAcquireTimeout' | 'suppressLockOptionWarning'
 > = {
   url: GOTRUE_URL,
   storageKey: STORAGE_KEY,
@@ -195,13 +195,8 @@ const DEFAULT_OPTIONS: Omit<
   debug: false,
   hasCustomAuthorizationHeader: false,
   throwOnError: false,
-  lockAcquireTimeout: 5000, // 5 seconds
   skipAutoInitialize: false,
   experimental: {},
-}
-
-async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
-  return await fn()
 }
 
 /**
@@ -297,11 +292,7 @@ export default class GoTrueClient {
   protected hasCustomAuthorizationHeader = false
   protected suppressGetSessionWarning = false
   protected fetch: Fetch
-  protected lock: LockFunc
-  protected lockAcquired = false
-  protected pendingInLock: Promise<any>[] = []
   protected throwOnError: boolean
-  protected lockAcquireTimeout: number
   /**
    * Opt-in flags for experimental features. Defaults to an empty object.
    * See `GoTrueClientOptions.experimental`.
@@ -371,19 +362,28 @@ export default class GoTrueClient {
     this.url = settings.url
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
-    this.lock = settings.lock || lockNoOp
     this.detectSessionInUrl = settings.detectSessionInUrl
     this.flowType = settings.flowType
     this.hasCustomAuthorizationHeader = settings.hasCustomAuthorizationHeader
     this.throwOnError = settings.throwOnError
-    this.lockAcquireTimeout = settings.lockAcquireTimeout
 
-    if (settings.lock) {
-      this.lock = settings.lock
-    } else if (this.persistSession && isBrowser() && globalThis?.navigator?.locks) {
-      this.lock = navigatorLock
-    } else {
-      this.lock = lockNoOp
+    // settings.lock and settings.lockAcquireTimeout are typed for backwards
+    // compatibility and have no effect at runtime. Warn once at construction
+    // when a non-null `lock` is supplied so callers who relied on a custom
+    // lock (typically React Native `processLock` or Node multi-process
+    // setups) discover the change instead of racing silently. Opt-out via
+    // `suppressLockOptionWarning: true`.
+    if (settings.lock != null && !settings.suppressLockOptionWarning) {
+      const lockWarning =
+        `${this._logPrefix()} The \`lock\` option is accepted for backwards ` +
+        `compatibility but is not invoked by the client. The auth client ` +
+        `coordinates refreshes itself and the server resolves cross-instance ` +
+        `races. Code that depended on a custom lock being called will not run. ` +
+        `Pass \`suppressLockOptionWarning: true\` to silence this warning.`
+      console.warn(lockWarning)
+      if (this.logDebugMessages) {
+        console.trace(lockWarning)
+      }
     }
 
     if (!this.jwks) {
@@ -518,9 +518,7 @@ export default class GoTrueClient {
     }
 
     this.initializePromise = (async () => {
-      return await this._acquireLock(this.lockAcquireTimeout, async () => {
-        return await this._initialize()
-      })
+      return await this._initialize()
     })()
 
     return await this.initializePromise
@@ -1405,9 +1403,7 @@ export default class GoTrueClient {
   async exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
     await this.initializePromise
 
-    return this._acquireLock(this.lockAcquireTimeout, async () => {
-      return this._exchangeCodeForSession(authCode)
-    })
+    return this._exchangeCodeForSession(authCode)
   }
 
   /**
@@ -2444,9 +2440,7 @@ export default class GoTrueClient {
   async reauthenticate(): Promise<AuthResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._reauthenticate()
-    })
+    return await this._reauthenticate()
   }
 
   private async _reauthenticate(): Promise<AuthResponse> {
@@ -2593,7 +2587,7 @@ export default class GoTrueClient {
    * - If the session's access token is expired or is about to expire, this method will use the refresh token to refresh the session.
    * - When using in a browser, or you've called `startAutoRefresh()` in your environment (React Native, etc.) this function always returns a valid access token without refreshing the session itself, as this is done in the background. This function returns very fast.
    * - **IMPORTANT SECURITY NOTICE:** If using an insecure storage medium, such as cookies or request headers, the user object returned by this function **must not be trusted**. Always verify the JWT using `getClaims()` or your own JWT verification library to securely establish the user's identity and access. You can also use `getUser()` to fetch the user object directly from the Auth server for this purpose.
-   * - When using in a browser, this function is synchronized across all tabs using the [LockManager](https://developer.mozilla.org/en-US/docs/Web/API/LockManager) API. In other environments make sure you've defined a proper `lock` property, if necessary, to make sure there are no race conditions while the session is being refreshed.
+   * - Cross-tab refresh races are handled by the GoTrue server (the rotated token from the first tab is returned to subsequent tabs via the parent-of-active mechanism), so no client-side serialization is needed.
    *
    * @example Get the session data
    * ```js
@@ -2661,91 +2655,15 @@ export default class GoTrueClient {
   async getSession() {
     await this.initializePromise
 
-    const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return this._useSession(async (result) => {
-        return result
-      })
+    return await this._useSession(async (result) => {
+      return result
     })
-
-    return result
   }
 
   /**
-   * Acquires a global lock based on the storage key.
-   */
-  private async _acquireLock<R>(acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
-    this._debug('#_acquireLock', 'begin', acquireTimeout)
-
-    try {
-      if (this.lockAcquired) {
-        const last = this.pendingInLock.length
-          ? this.pendingInLock[this.pendingInLock.length - 1]
-          : Promise.resolve()
-
-        const result = (async () => {
-          await last
-          return await fn()
-        })()
-
-        this.pendingInLock.push(
-          (async () => {
-            try {
-              await result
-            } catch (_e) {
-              // we just care if it finished
-            }
-          })()
-        )
-
-        return result
-      }
-
-      return await this.lock(`lock:${this.storageKey}`, acquireTimeout, async () => {
-        this._debug('#_acquireLock', 'lock acquired for storage key', this.storageKey)
-
-        try {
-          this.lockAcquired = true
-
-          const result = fn()
-
-          this.pendingInLock.push(
-            (async () => {
-              try {
-                await result
-              } catch (e: any) {
-                // we just care if it finished
-              }
-            })()
-          )
-
-          await result
-
-          // keep draining the queue until there's nothing to wait on
-          while (this.pendingInLock.length) {
-            const waitOn = [...this.pendingInLock]
-
-            await Promise.all(waitOn)
-
-            this.pendingInLock.splice(0, waitOn.length)
-          }
-
-          return await result
-        } finally {
-          this._debug('#_acquireLock', 'lock released for storage key', this.storageKey)
-
-          this.lockAcquired = false
-        }
-      })
-    } finally {
-      this._debug('#_acquireLock', 'end')
-    }
-  }
-
-  /**
-   * Use instead of {@link #getSession} inside the library. It is
-   * semantically usually what you want, as getting a session involves some
-   * processing afterwards that requires only one client operating on the
-   * session at once across multiple tabs or processes.
+   * Use instead of {@link #getSession} inside the library. Loads the session
+   * via `__loadSession` (which may trigger a refresh if the access token is
+   * within the expiry margin) and runs `fn` with the result.
    */
   private async _useSession<R>(
     fn: (
@@ -2808,10 +2726,6 @@ export default class GoTrueClient {
       }
   > {
     this._debug('#__loadSession()', 'begin')
-
-    if (!this.lockAcquired) {
-      this._debug('#__loadSession()', 'used outside of an acquired lock!', new Error().stack)
-    }
 
     try {
       let currentSession: Session | null = null
@@ -2976,9 +2890,7 @@ export default class GoTrueClient {
 
     await this.initializePromise
 
-    const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._getUser()
-    })
+    const result = await this._getUser()
 
     if (result.data.user) {
       this.suppressGetSessionWarning = true
@@ -3153,9 +3065,7 @@ export default class GoTrueClient {
   ): Promise<UserResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._updateUser(attributes, options)
-    })
+    return await this._updateUser(attributes, options)
   }
 
   protected async _updateUser(
@@ -3342,9 +3252,7 @@ export default class GoTrueClient {
   }): Promise<AuthResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._setSession(currentSession)
-    })
+    return await this._setSession(currentSession)
   }
 
   protected async _setSession(currentSession: {
@@ -3533,9 +3441,7 @@ export default class GoTrueClient {
   async refreshSession(currentSession?: { refresh_token: string }): Promise<AuthResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._refreshSession(currentSession)
-    })
+    return await this._refreshSession(currentSession)
   }
 
   protected async _refreshSession(currentSession?: {
@@ -3783,9 +3689,7 @@ export default class GoTrueClient {
   async signOut(options: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
     await this.initializePromise
 
-    return await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._signOut(options)
-    })
+    return await this._signOut(options)
   }
 
   protected async _signOut(
@@ -3832,16 +3736,19 @@ export default class GoTrueClient {
   }
 
   /**
-   * Avoid using an async function inside `onAuthStateChange` as you might end
-   * up with a deadlock. The callback function runs inside an exclusive lock,
-   * so calling other Supabase Client APIs that also try to acquire the
-   * exclusive lock, might cause a deadlock. This behavior is observable across
-   * tabs. In the next major library version, this behavior will not be supported.
-   *
-   * Receive a notification every time an auth event happens.
+   * Receive a notification every time an auth event happens. Common reentry
+   * patterns (`getUser`, `setSession`, reading the session from inside a
+   * handler) complete normally. One hazard remains: calling `refreshSession`
+   * (or anything that routes through `_callRefreshToken`) from inside a
+   * `TOKEN_REFRESHED` handler. `refreshingDeferred` resolves only after
+   * `_notifyAllSubscribers` returns, so the inner refresh dedupes onto the
+   * outer's unresolved promise and the two wait on each other.
    *
    * @param callback A callback function to be invoked when an auth event happens.
-   * @deprecated Due to the possibility of deadlocks with async functions as callbacks, use the version without an async function.
+   *
+   * @deprecated Async callbacks can deadlock when they trigger a nested
+   * refresh from a `TOKEN_REFRESHED` event. Prefer the sync overload, or move
+   * refresh-triggering work outside the callback.
    */
   onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => Promise<void>): {
     data: { subscription: Subscription }
@@ -3854,18 +3761,8 @@ export default class GoTrueClient {
    * - Subscribes to important events occurring on the user's session.
    * - Use on the frontend/client. It is less useful on the server.
    * - Events are emitted across tabs to keep your application's UI up-to-date. Some events can fire very frequently, based on the number of tabs open. Use a quick and efficient callback function, and defer or debounce as many operations as you can to be performed outside of the callback.
-   * - **Important:** A callback can be an `async` function and it runs synchronously during the processing of the changes causing the event. You can easily create a dead-lock by using `await` on a call to another method of the Supabase library.
-   *   - Avoid using `async` functions as callbacks.
-   *   - Limit the number of `await` calls in `async` callbacks.
-   *   - Do not use other Supabase functions in the callback function. If you must, dispatch the functions once the callback has finished executing. Use this as a quick way to achieve this:
-   *     ```js
-   *     supabase.auth.onAuthStateChange((event, session) => {
-   *       setTimeout(async () => {
-   *         // await on other Supabase function here
-   *         // this runs right after the callback has finished
-   *       }, 0)
-   *     })
-   *     ```
+   * - Callbacks can be `async` and can safely call other Supabase auth methods (`getUser`, `setSession`, etc.) from inside the callback.
+   * - Keep callbacks quick. Events are awaited in order, so a slow callback delays subsequent events to subscribers in this tab.
    * - Emitted events:
    *   - `INITIAL_SESSION`
    *     - Emitted right after the Supabase client is constructed and the initial session from storage is loaded.
@@ -4055,10 +3952,7 @@ export default class GoTrueClient {
     this.stateChangeEmitters.set(id, subscription)
     ;(async () => {
       await this.initializePromise
-
-      await this._acquireLock(this.lockAcquireTimeout, async () => {
-        this._emitInitialSession(id)
-      })
+      await this._emitInitialSession(id)
     })()
 
     return { data: { subscription } }
@@ -4606,15 +4500,22 @@ export default class GoTrueClient {
           const { error } = await this._callRefreshToken(currentSession.refresh_token)
 
           if (error) {
-            console.error(error)
+            // AuthRefreshDiscardedError means a concurrent signOut already
+            // cleared storage and fired SIGNED_OUT. Don't run _removeSession
+            // again here, or we'll emit a duplicate SIGNED_OUT.
+            if (isAuthRefreshDiscardedError(error)) {
+              this._debug(debugName, 'refresh discarded by commit guard', error)
+            } else {
+              console.error(error)
 
-            if (!isAuthRetryableFetchError(error)) {
-              this._debug(
-                debugName,
-                'refresh failed with a non-retryable error, removing the session',
-                error
-              )
-              await this._removeSession()
+              if (!isAuthRetryableFetchError(error)) {
+                this._debug(
+                  debugName,
+                  'refresh failed with a non-retryable error, removing the session',
+                  error
+                )
+                await this._removeSession()
+              }
             }
           }
         }
@@ -4674,9 +4575,43 @@ export default class GoTrueClient {
     try {
       this.refreshingDeferred = new Deferred<CallRefreshTokenResult>()
 
+      // Snapshot storage before the fetch. The commit guard discards the
+      // rotated tokens only when a non-null pre-fetch snapshot changed under
+      // us — typical case: a concurrent `signOut` ran `_removeSession`, or
+      // another tab's refresh rewrote the slot. Callers passing
+      // externally-sourced tokens (SSR cookie handoff, multi-account
+      // switching, `setSession`/`refreshSession({ refresh_token })`) may
+      // start from a null snapshot OR from a non-null snapshot whose
+      // refresh_token differs from the one they're hydrating; in both
+      // cases the guard fires only when storage was *modified between
+      // snapshots*, not when the input token disagrees with what's stored.
+      const storedAtStart = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+
       const { data, error } = await this._refreshAccessToken(refreshToken)
       if (error) throw error
       if (!data.session) throw new AuthSessionMissingError()
+
+      const storedAfter = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+      const storageChangedUnderUs =
+        storedAtStart !== null &&
+        (storedAfter === null || storedAfter.refresh_token !== storedAtStart.refresh_token)
+
+      if (storageChangedUnderUs) {
+        this._debug(
+          debugName,
+          'commit guard: storage changed since refresh started, discarding rotated tokens',
+          {
+            startedWith: `${storedAtStart.refresh_token?.substring(0, 5)}...`,
+            nowHolds: storedAfter ? `${storedAfter.refresh_token?.substring(0, 5)}...` : null,
+          }
+        )
+        const discarded: CallRefreshTokenResult = {
+          data: null,
+          error: new AuthRefreshDiscardedError(),
+        }
+        this.refreshingDeferred.resolve(discarded)
+        return discarded
+      }
 
       await this._saveSession(data.session)
       await this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
@@ -4979,57 +4914,82 @@ export default class GoTrueClient {
   }
 
   /**
+   * Tears down the client's background work: stops the auto-refresh interval,
+   * removes the `visibilitychange` listener, closes the cross-tab
+   * `BroadcastChannel`, and clears registered `onAuthStateChange` subscribers.
+   *
+   * Call this from cleanup hooks when the client is being replaced before
+   * its JS realm is destroyed. React Strict Mode and HMR are the common
+   * cases. Any in-flight `fetch` calls continue to completion and may still
+   * write to storage; dispose doesn't abort them or erase storage.
+   *
+   * Safe to call repeatedly.
+   *
+   * @category Auth
+   *
+   * @example Cleanup on React unmount
+   * ```ts
+   * useEffect(() => {
+   *   const client = createClient(...)
+   *   return () => { client.auth.dispose() }
+   * }, [])
+   * ```
+   */
+  async dispose(): Promise<void> {
+    this._removeVisibilityChangedCallback()
+    await this._stopAutoRefresh()
+    this.broadcastChannel?.close()
+    this.broadcastChannel = null
+    this.stateChangeEmitters.clear()
+  }
+
+  /**
    * Runs the auto refresh token tick.
    */
   private async _autoRefreshTokenTick() {
     this._debug('#_autoRefreshTokenTick()', 'begin')
 
+    // Skip if a refresh is already in flight. `_callRefreshToken` also
+    // dedupes via the same field, so this is just a fast-path skip to
+    // avoid an unnecessary storage read.
+    if (this.refreshingDeferred !== null) {
+      this._debug('#_autoRefreshTokenTick()', 'refresh already in flight, skipping')
+      return
+    }
+
     try {
-      await this._acquireLock(0, async () => {
-        try {
-          const now = Date.now()
+      const now = Date.now()
 
-          try {
-            return await this._useSession(async (result) => {
-              const {
-                data: { session },
-              } = result
+      try {
+        await this._useSession(async (result) => {
+          const {
+            data: { session },
+          } = result
 
-              if (!session || !session.refresh_token || !session.expires_at) {
-                this._debug('#_autoRefreshTokenTick()', 'no session')
-                return
-              }
-
-              // session will expire in this many ticks (or has already expired if <= 0)
-              const expiresInTicks = Math.floor(
-                (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION_MS
-              )
-
-              this._debug(
-                '#_autoRefreshTokenTick()',
-                `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION_MS}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
-              )
-
-              if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-                await this._callRefreshToken(session.refresh_token)
-              }
-            })
-          } catch (e) {
-            console.error(
-              'Auto refresh tick failed with error. This is likely a transient error.',
-              e
-            )
+          if (!session || !session.refresh_token || !session.expires_at) {
+            this._debug('#_autoRefreshTokenTick()', 'no session')
+            return
           }
-        } finally {
-          this._debug('#_autoRefreshTokenTick()', 'end')
-        }
-      })
-    } catch (e) {
-      if (e instanceof LockAcquireTimeoutError) {
-        this._debug('auto refresh token tick lock not available')
-      } else {
-        throw e
+
+          // session will expire in this many ticks (or has already expired if <= 0)
+          const expiresInTicks = Math.floor(
+            (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION_MS
+          )
+
+          this._debug(
+            '#_autoRefreshTokenTick()',
+            `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION_MS}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
+          )
+
+          if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
+            await this._callRefreshToken(session.refresh_token)
+          }
+        })
+      } catch (e) {
+        console.error('Auto refresh tick failed with error. This is likely a transient error.', e)
       }
+    } finally {
+      this._debug('#_autoRefreshTokenTick()', 'end')
     }
   }
 
@@ -5086,24 +5046,16 @@ export default class GoTrueClient {
       if (!calledFromInitialize) {
         // called when the visibility has changed, i.e. the browser
         // transitioned from hidden -> visible so we need to see if the session
-        // should be recovered immediately... but to do that we need to acquire
-        // the lock first asynchronously
+        // should be recovered
         await this.initializePromise
 
-        await this._acquireLock(this.lockAcquireTimeout, async () => {
-          if (document.visibilityState !== 'visible') {
-            this._debug(
-              methodName,
-              'acquired the lock to recover the session, but the browser visibilityState is no longer visible, aborting'
-            )
+        if (document.visibilityState !== 'visible') {
+          this._debug(methodName, 'visibilityState is no longer visible, skipping recovery')
+          return
+        }
 
-            // visibility has changed while waiting for the lock, abort
-            return
-          }
-
-          // recover the session
-          await this._recoverAndRefresh()
-        })
+        // recover the session
+        await this._recoverAndRefresh()
       }
     } else if (document.visibilityState === 'hidden') {
       if (this.autoRefreshToken) {
@@ -5235,78 +5187,76 @@ export default class GoTrueClient {
     params: MFAVerifyWebauthnParams<T>
   ): Promise<AuthMFAVerifyResponse>
   private async _verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse> {
-    return this._acquireLock(this.lockAcquireTimeout, async () => {
-      try {
-        return await this._useSession(async (result) => {
-          const { data: sessionData, error: sessionError } = result
-          if (sessionError) {
-            return this._returnResult({ data: null, error: sessionError })
+    try {
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        const body: StrictOmit<
+          | Exclude<MFAVerifyParams, MFAVerifyWebauthnParams>
+          /** Exclude out the webauthn params from here because we're going to need to serialize them in the response */
+          | Prettify<
+              StrictOmit<MFAVerifyWebauthnParams, 'webauthn'> & {
+                webauthn: Prettify<
+                  StrictOmit<MFAVerifyWebauthnParamFields['webauthn'], 'credential_response'> & {
+                    credential_response: PublicKeyCredentialJSON
+                  }
+                >
+              }
+            >,
+          /*  Exclude challengeId because the backend expects snake_case, and exclude factorId since it's passed in the path params */
+          'challengeId' | 'factorId'
+        > & {
+          challenge_id: string
+        } = {
+          challenge_id: params.challengeId,
+          ...('webauthn' in params
+            ? {
+                webauthn: {
+                  ...params.webauthn,
+                  credential_response:
+                    params.webauthn.type === 'create'
+                      ? serializeCredentialCreationResponse(
+                          params.webauthn.credential_response as RegistrationCredential
+                        )
+                      : serializeCredentialRequestResponse(
+                          params.webauthn.credential_response as AuthenticationCredential
+                        ),
+                },
+              }
+            : { code: params.code }),
+        }
+
+        const { data, error } = await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/factors/${params.factorId}/verify`,
+          {
+            body,
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
           }
-
-          const body: StrictOmit<
-            | Exclude<MFAVerifyParams, MFAVerifyWebauthnParams>
-            /** Exclude out the webauthn params from here because we're going to need to serialize them in the response */
-            | Prettify<
-                StrictOmit<MFAVerifyWebauthnParams, 'webauthn'> & {
-                  webauthn: Prettify<
-                    StrictOmit<MFAVerifyWebauthnParamFields['webauthn'], 'credential_response'> & {
-                      credential_response: PublicKeyCredentialJSON
-                    }
-                  >
-                }
-              >,
-            /*  Exclude challengeId because the backend expects snake_case, and exclude factorId since it's passed in the path params */
-            'challengeId' | 'factorId'
-          > & {
-            challenge_id: string
-          } = {
-            challenge_id: params.challengeId,
-            ...('webauthn' in params
-              ? {
-                  webauthn: {
-                    ...params.webauthn,
-                    credential_response:
-                      params.webauthn.type === 'create'
-                        ? serializeCredentialCreationResponse(
-                            params.webauthn.credential_response as RegistrationCredential
-                          )
-                        : serializeCredentialRequestResponse(
-                            params.webauthn.credential_response as AuthenticationCredential
-                          ),
-                  },
-                }
-              : { code: params.code }),
-          }
-
-          const { data, error } = await _request(
-            this.fetch,
-            'POST',
-            `${this.url}/factors/${params.factorId}/verify`,
-            {
-              body,
-              headers: this.headers,
-              jwt: sessionData?.session?.access_token,
-            }
-          )
-          if (error) {
-            return this._returnResult({ data: null, error })
-          }
-
-          await this._saveSession({
-            expires_at: Math.round(Date.now() / 1000) + data.expires_in,
-            ...data,
-          })
-          await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
-
-          return this._returnResult({ data, error })
-        })
-      } catch (error) {
-        if (isAuthError(error)) {
+        )
+        if (error) {
           return this._returnResult({ data: null, error })
         }
-        throw error
+
+        await this._saveSession({
+          expires_at: Math.round(Date.now() / 1000) + data.expires_in,
+          ...data,
+        })
+        await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
+
+        return this._returnResult({ data, error })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
       }
-    })
+      throw error
+    }
   }
 
   /**
@@ -5322,80 +5272,78 @@ export default class GoTrueClient {
     params: MFAChallengeWebauthnParams
   ): Promise<Prettify<AuthMFAChallengeWebauthnResponse>>
   private async _challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse> {
-    return this._acquireLock(this.lockAcquireTimeout, async () => {
-      try {
-        return await this._useSession(async (result) => {
-          const { data: sessionData, error: sessionError } = result
-          if (sessionError) {
-            return this._returnResult({ data: null, error: sessionError })
-          }
-
-          const response = (await _request(
-            this.fetch,
-            'POST',
-            `${this.url}/factors/${params.factorId}/challenge`,
-            {
-              body: params,
-              headers: this.headers,
-              jwt: sessionData?.session?.access_token,
-            }
-          )) as
-            | Exclude<AuthMFAChallengeResponse, AuthMFAChallengeWebauthnResponse>
-            /** The server will send `serialized` data, so we assert the serialized response */
-            | AuthMFAChallengeWebauthnServerResponse
-
-          if (response.error) {
-            return response
-          }
-
-          const { data } = response
-
-          if (data.type !== 'webauthn') {
-            return { data, error: null }
-          }
-
-          switch (data.webauthn.type) {
-            case 'create':
-              return {
-                data: {
-                  ...data,
-                  webauthn: {
-                    ...data.webauthn,
-                    credential_options: {
-                      ...data.webauthn.credential_options,
-                      publicKey: deserializeCredentialCreationOptions(
-                        data.webauthn.credential_options.publicKey
-                      ),
-                    },
-                  },
-                },
-                error: null,
-              }
-            case 'request':
-              return {
-                data: {
-                  ...data,
-                  webauthn: {
-                    ...data.webauthn,
-                    credential_options: {
-                      ...data.webauthn.credential_options,
-                      publicKey: deserializeCredentialRequestOptions(
-                        data.webauthn.credential_options.publicKey
-                      ),
-                    },
-                  },
-                },
-                error: null,
-              }
-          }
-        })
-      } catch (error) {
-        if (isAuthError(error)) {
-          return this._returnResult({ data: null, error })
+    try {
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
         }
-        throw error
+
+        const response = (await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/factors/${params.factorId}/challenge`,
+          {
+            body: params,
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )) as
+          | Exclude<AuthMFAChallengeResponse, AuthMFAChallengeWebauthnResponse>
+          /** The server will send `serialized` data, so we assert the serialized response */
+          | AuthMFAChallengeWebauthnServerResponse
+
+        if (response.error) {
+          return response
+        }
+
+        const { data } = response
+
+        if (data.type !== 'webauthn') {
+          return { data, error: null }
+        }
+
+        switch (data.webauthn.type) {
+          case 'create':
+            return {
+              data: {
+                ...data,
+                webauthn: {
+                  ...data.webauthn,
+                  credential_options: {
+                    ...data.webauthn.credential_options,
+                    publicKey: deserializeCredentialCreationOptions(
+                      data.webauthn.credential_options.publicKey
+                    ),
+                  },
+                },
+              },
+              error: null,
+            }
+          case 'request':
+            return {
+              data: {
+                ...data,
+                webauthn: {
+                  ...data.webauthn,
+                  credential_options: {
+                    ...data.webauthn.credential_options,
+                    publicKey: deserializeCredentialRequestOptions(
+                      data.webauthn.credential_options.publicKey
+                    ),
+                  },
+                },
+              },
+              error: null,
+            }
+        }
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
       }
-    })
+      throw error
+    }
   }
 
   /**
@@ -5404,9 +5352,6 @@ export default class GoTrueClient {
   private async _challengeAndVerify(
     params: MFAChallengeAndVerifyParams
   ): Promise<AuthMFAVerifyResponse> {
-    // both _challenge and _verify independently acquire the lock, so no need
-    // to acquire it here
-
     const { data: challengeData, error: challengeError } = await this._challenge({
       factorId: params.factorId,
     })
@@ -5425,7 +5370,6 @@ export default class GoTrueClient {
    * {@see GoTrueMFAApi#listFactors}
    */
   private async _listFactors(): Promise<AuthMFAListFactorsResponse> {
-    // use #getUser instead of #_getUser as the former acquires a lock
     const {
       data: { user },
       error: userError,
