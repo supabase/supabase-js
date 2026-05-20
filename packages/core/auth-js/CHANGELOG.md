@@ -1,3 +1,13 @@
+## 2.106.1 (2026-05-20)
+
+### 🩹 Fixes
+
+- **auth:** encode client-id in oauth requests ([#2383](https://github.com/supabase/supabase-js/pull/2383))
+
+### ❤️ Thank You
+
+- Etienne Stalmans @staaldraad
+
 ## 2.106.0 (2026-05-18)
 
 ### 🩹 Fixes
