@@ -8,6 +8,9 @@ jobs:
   docs:
     name: Generate and Publish Documentation
     runs-on: ubuntu-latest
+    environment: docs-publish
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
