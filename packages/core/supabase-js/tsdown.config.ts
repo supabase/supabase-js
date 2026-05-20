@@ -18,8 +18,12 @@ const injectBundlerIgnoreComments = (): Plugin => ({
   generateBundle(_options, bundle) {
     for (const [fileName, chunk] of Object.entries(bundle)) {
       if (chunk.type !== 'chunk' || !fileName.endsWith('.mjs')) continue
+      // Source-side `import()` calls in @supabase/tracing are bare
+      // `import(OTEL_PKG)` (no inline comments — rolldown strips them).
+      // Match the identifier directly with a bounded character class —
+      // no nested quantifiers, no backtracking surface.
       chunk.code = chunk.code.replace(
-        /import\(\s*(?:\/\*[\s\S]*?\*\/\s*)*?(\w+)\s*\)/g,
+        /import\(\s*([A-Za-z_$][\w$]*)\s*\)/g,
         'import(/* webpackIgnore: true */ /* turbopackIgnore: true */ /* @vite-ignore */ $1)'
       )
     }
