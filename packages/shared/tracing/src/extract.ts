@@ -2,15 +2,15 @@ import type { TraceContext } from './types'
 
 let otelModulePromise: Promise<any | null> | null = null
 
-// Variable specifier + single magic-comment block: required to keep this
-// import optional through webpack / turbopack / vite / rolldown. See PR #2381.
+// Variable specifier keeps `@opentelemetry/api` from being statically resolved
+// by bundlers. supabase-js's tsdown build also post-processes its ESM output
+// to inject /* webpackIgnore */ /* turbopackIgnore */ /* @vite-ignore */ on
+// this expression — rolldown strips magic comments from source. See PR #2381.
 const OTEL_PKG = '@opentelemetry/api'
 
 function loadOtel(): Promise<any | null> {
   if (otelModulePromise === null) {
-    otelModulePromise = (
-      import(/* @vite-ignore webpackIgnore: true turbopackIgnore: true */ OTEL_PKG) as Promise<any>
-    ).catch(() => null)
+    otelModulePromise = (import(OTEL_PKG) as Promise<any>).catch(() => null)
   }
   return otelModulePromise
 }

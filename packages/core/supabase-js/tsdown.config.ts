@@ -2,8 +2,29 @@ import { defineConfig } from 'tsdown'
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import type { Plugin } from 'rolldown'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// Rolldown's printer drops standalone /* webpackIgnore */ and /* turbopackIgnore */
+// blocks (it only preserves comments containing @__PURE__, @__NO_SIDE_EFFECTS__,
+// or @vite-ignore). Turbopack only honors /* turbopackIgnore: true */ when it's
+// alone in its own block — every Next.js internal usage is that form. We can't
+// satisfy both from source, so we inject the canonical single-purpose blocks
+// post-print, into the ESM output only (CJS has no `import()` after the alias
+// in inputOptions below). See PR #2381 and issue #2380.
+const injectBundlerIgnoreComments = (): Plugin => ({
+  name: 'inject-bundler-ignore-comments',
+  generateBundle(_options, bundle) {
+    for (const [fileName, chunk] of Object.entries(bundle)) {
+      if (chunk.type !== 'chunk' || !fileName.endsWith('.mjs')) continue
+      chunk.code = chunk.code.replace(
+        /import\(\s*(?:\/\*[\s\S]*?\*\/\s*)*?(\w+)\s*\)/g,
+        'import(/* webpackIgnore: true */ /* turbopackIgnore: true */ /* @vite-ignore */ $1)'
+      )
+    }
+  },
+})
 
 export default defineConfig([
   // CJS and ESM builds - keep @supabase/* external
@@ -27,6 +48,7 @@ export default defineConfig([
     fixedExtension: true,
     hash: false,
     target: 'es2017',
+    plugins: [injectBundlerIgnoreComments()],
     inputOptions: (_options, format) => {
       if (format === 'cjs') {
         // Rolldown inlines @supabase/tracing's ESM source (with native

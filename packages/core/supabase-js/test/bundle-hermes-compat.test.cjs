@@ -14,12 +14,19 @@
  *    Browsers with a strict Content-Security-Policy (no `'unsafe-eval'`)
  *    block `new Function()` identically to `eval()` at runtime.
  *
- * 3. Every `import(` in `dist/index.mjs` is flanked by bundler-ignore
- *    magic comments (`webpackIgnore`, `@vite-ignore`, `turbopackIgnore`).
- *    Without these, Turbopack (Next.js Edge), webpack, and Vite each
- *    fail to build downstream consumers with
- *    `Module not found: Can't resolve '@opentelemetry/api'` when the
- *    optional peer dep is not installed.
+ * 3. Every `import(` in `dist/index.mjs` is immediately preceded by three
+ *    distinct single-purpose magic-comment blocks, in this order:
+ *      /* webpackIgnore: true *\/ /* turbopackIgnore: true *\/ /* @vite-ignore *\/
+ *    Turbopack only honors /* turbopackIgnore: true *\/ when it occupies its
+ *    own block (every Next.js internal usage is single-purpose); multi-keyword
+ *    blocks are silently ignored. Without all three directives in this exact
+ *    shape, Turbopack (Next.js Edge), webpack, and Vite each fail to build
+ *    downstream consumers with `Module not found: Can't resolve
+ *    '@opentelemetry/api'` when the optional peer dep is not installed.
+ *
+ *    Comments are injected by the `inject-bundler-ignore-comments` rolldown
+ *    plugin in tsdown.config.ts — source-side magic comments don't survive
+ *    rolldown's printer.
  *
  * Run with: node test/bundle-hermes-compat.test.cjs
  */
@@ -51,26 +58,34 @@ assert.ok(
 console.log('2. No new Function() in dist/index.cjs')
 console.log('   CSP-safe (no unsafe-eval required)\n')
 
-// Check 3: every import() in dist/index.mjs has the bundler-ignore magic
-// comments so downstream SSR/Edge bundlers (Turbopack, webpack, Vite) don't
-// try to statically resolve the optional `@opentelemetry/api` peer dep.
-const requiredIgnoreTags = ['webpackIgnore', '@vite-ignore', 'turbopackIgnore']
-const importMatches = [...mjs.matchAll(/import\s*\(([\s\S]{0,400}?)\)/g)]
+// Check 3: every import() in dist/index.mjs is preceded by the three
+// single-purpose magic-comment blocks Turbopack/webpack/Vite each expect.
+// Multi-keyword blocks (e.g. `/* webpackIgnore: true turbopackIgnore: true */`)
+// are NOT honored by Turbopack — Next.js's own internal usage is always
+// single-purpose. The `inject-bundler-ignore-comments` plugin in
+// tsdown.config.ts rewrites every import() into this canonical shape.
+const canonicalImport =
+  /import\(\s*\/\*\s*webpackIgnore:\s*true\s*\*\/\s*\/\*\s*turbopackIgnore:\s*true\s*\*\/\s*\/\*\s*@vite-ignore\s*\*\/\s*\w+\s*\)/
+const importMatches = [...mjs.matchAll(/import\s*\([\s\S]{0,400}?\)/g)]
 assert.ok(
   importMatches.length > 0,
   'Expected at least one import() in dist/index.mjs (sanity check — if the bundle was refactored to remove all dynamic imports, this test needs updating)'
 )
 for (const m of importMatches) {
-  const body = m[1]
-  for (const tag of requiredIgnoreTags) {
-    assert.ok(
-      body.includes(tag),
-      `dist/index.mjs has an import() expression missing /* ${tag} */ — downstream bundlers will try to statically resolve it (e.g. Next.js Edge fails with "Module not found: Can't resolve '@opentelemetry/api'"). Expression: ${m[0].slice(0, 200)}`
-    )
-  }
+  assert.ok(
+    canonicalImport.test(m[0]),
+    `dist/index.mjs has an import() expression not in the canonical form ` +
+      `\`import(/* webpackIgnore: true */ /* turbopackIgnore: true */ /* @vite-ignore */ <ident>)\` — ` +
+      `Turbopack ignores multi-keyword comment blocks (it only honors single-purpose blocks). ` +
+      `Check the inject-bundler-ignore-comments plugin in tsdown.config.ts. Expression: ${m[0].slice(0, 200)}`
+  )
 }
-console.log(`3. All ${importMatches.length} import() expressions in dist/index.mjs carry`)
-console.log(`   /* ${requiredIgnoreTags.join(' */ /* ')} */`)
-console.log('   SSR/Edge bundlers will not try to statically resolve them\n')
+console.log(
+  `3. All ${importMatches.length} import() expressions in dist/index.mjs are in canonical form`
+)
+console.log('   /* webpackIgnore: true */ /* turbopackIgnore: true */ /* @vite-ignore */ <ident>')
+console.log(
+  '   Each bundler (webpack / turbopack / vite) sees its directive in a single-purpose block\n'
+)
 
 console.log('All bundle compatibility checks passed.')
