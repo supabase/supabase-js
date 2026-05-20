@@ -114,9 +114,10 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     debug?: SupabaseAuthClientOptions['debug']
     /**
-     * Provide your own locking mechanism based on the environment. By default no locking is done at this time.
-     *
-     * @experimental
+     * @deprecated In v3 the auth client coordinates refreshes itself and the
+     * server resolves cross-tab races, so any value forwarded through this
+     * option has no effect. You can safely remove it from your `createClient`
+     * options.
      */
     lock?: SupabaseAuthClientOptions['lock']
     /**
@@ -132,11 +133,9 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     experimental?: SupabaseAuthClientOptions['experimental']
     /**
-     * Maximum time in milliseconds to wait when acquiring the auth lock before
-     * stealing it from the previous holder. See `GoTrueClientOptions.lockAcquireTimeout`
-     * for full semantics (zero fails immediately, negative waits indefinitely).
-     *
-     * @default 5000
+     * @deprecated The v3 auth client doesn't acquire a lock around auth
+     * operations, so this timeout has nothing to bound. You can safely
+     * remove it from your `createClient` options.
      */
     lockAcquireTimeout?: SupabaseAuthClientOptions['lockAcquireTimeout']
     /**

@@ -126,12 +126,9 @@ export type GoTrueClientOptions = {
   /* If debug messages are emitted. Can be used to inspect the behavior of the library. If set to a function, the provided function will be used instead of `console.log()` to perform the logging. */
   debug?: boolean | ((message: string, ...args: any[]) => void)
   /**
-   * Provide your own locking mechanism based on the environment. By default,
-   * `navigatorLock` (Web Locks API) is used in browser environments when
-   * `persistSession` is true. Falls back to an in-process lock for non-browser
-   * environments (e.g. React Native).
-   *
-   * @experimental
+   * @deprecated Ignored in v3. The client coordinates refreshes itself and
+   * the server handles cross-tab races, so you can safely remove this from
+   * your constructor options.
    */
   lock?: LockFunc
   /**
@@ -145,30 +142,9 @@ export type GoTrueClientOptions = {
    */
   throwOnError?: boolean
   /**
-   * The maximum time in milliseconds to wait for acquiring a cross-tab synchronization lock.
-   *
-   * When multiple browser tabs or windows use the auth client simultaneously, they coordinate
-   * via the Web Locks API to prevent race conditions during session refresh and other operations.
-   * This timeout controls how long to wait before attempting lock recovery.
-   *
-   * - **Positive value**: Wait up to this many milliseconds. If the lock is still held, attempt
-   *   automatic recovery by stealing it (the previous holder is evicted, its callback continues
-   *   to completion without exclusive access). This recovers from orphaned locks caused by
-   *   React Strict Mode double-mount, storage API hangs, or aborted operations.
-   * - **Zero (0)**: Fail immediately if the lock is unavailable; throws `LockAcquireTimeoutError`
-   *   (check `error.isAcquireTimeout === true`).
-   * - **Negative value**: Wait indefinitely — can cause permanent deadlocks if the lock is orphaned.
-   *
-   * @default 5000
-   *
-   * @example
-   * ```ts
-   * const client = createClient(url, key, {
-   *   auth: {
-   *     lockAcquireTimeout: 5000, // 5 seconds, then steal orphaned lock
-   *   },
-   * })
-   * ```
+   * @deprecated The v3 client doesn't acquire a lock around auth operations,
+   * so this timeout has nothing to bound. You can safely remove it from your
+   * constructor options.
    */
   lockAcquireTimeout?: number
 

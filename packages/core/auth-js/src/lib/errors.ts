@@ -298,6 +298,38 @@ export function isAuthRetryableFetchError(error: unknown): error is AuthRetryabl
 }
 
 /**
+ * Returned when the server rotated a refresh token successfully but the
+ * client chose not to persist the rotated tokens because the local session
+ * changed mid-flight. Usually means a concurrent `signOut` cleared storage
+ * between when the refresh started and when it came back.
+ *
+ * Set on the `error` field of the refresh result so callers can tell "we
+ * got rotated tokens but threw them away" apart from "the refresh failed."
+ * The rotated session on the server will be picked up on the next refresh
+ * via GoTrue's parent-of-active path.
+ *
+ * @example
+ * ```ts
+ * import { isAuthRefreshDiscardedError } from '@supabase/auth-js'
+ *
+ * if (isAuthRefreshDiscardedError(error)) {
+ *   // Concurrent signOut/sign-in raced our refresh. Treat as a no-op.
+ * }
+ * ```
+ */
+export class AuthRefreshDiscardedError extends CustomAuthError {
+  constructor(
+    message = 'Refresh result discarded: session state changed mid-flight (e.g., concurrent signOut)'
+  ) {
+    super(message, 'AuthRefreshDiscardedError', 409, undefined)
+  }
+}
+
+export function isAuthRefreshDiscardedError(error: unknown): error is AuthRefreshDiscardedError {
+  return isAuthError(error) && error.name === 'AuthRefreshDiscardedError'
+}
+
+/**
  * This error is thrown on certain methods when the password used is deemed
  * weak. Inspect the reasons to identify what password strength rules are
  * inadequate.
