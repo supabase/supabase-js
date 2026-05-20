@@ -19,14 +19,19 @@ type ReplayOption = {
   limit?: number
 }
 
+export type RealtimeAiAgentConfig = {
+  enabled: boolean
+  agent: string
+  session_id?: string
+}
+
 export type RealtimeChannelOptions = {
   config: {
     /**
      * self option enables client to receive message it broadcast
      * ack option instructs server to acknowledge that broadcast message was received
-     * replay option instructs server to replay broadcast messages
      */
-    broadcast?: { self?: boolean; ack?: boolean; replay?: ReplayOption }
+    broadcast?: { self?: boolean; ack?: boolean }
     /**
      * key option is used to track presence payload across clients
      */
@@ -35,6 +40,14 @@ export type RealtimeChannelOptions = {
      * defines if the channel is private or not and if RLS policies will be used to check data
      */
     private?: boolean
+    /**
+     * ai option enables AI agent interaction on the channel
+     */
+    ai?: RealtimeAiAgentConfig
+    /**
+     * replay option instructs server to replay broadcast messages; requires a private channel
+     */
+    replay?: ReplayOption
   }
 }
 
@@ -139,6 +152,50 @@ export enum REALTIME_LISTEN_TYPES {
   PRESENCE = 'presence',
   POSTGRES_CHANGES = 'postgres_changes',
   SYSTEM = 'system',
+  AI_AGENT = 'ai_agent',
+}
+
+export enum REALTIME_AI_AGENT_EVENTS {
+  SESSION_STARTED = 'agent_session_started',
+  INPUT = 'agent_input',
+  TEXT_DELTA = 'agent_text_delta',
+  THINKING_DELTA = 'agent_thinking_delta',
+  TOOL_CALL_DELTA = 'agent_tool_call_delta',
+  TOOL_CALL_DONE = 'agent_tool_call_done',
+  USAGE = 'agent_usage',
+  DONE = 'agent_done',
+  ERROR = 'agent_error',
+  RATE_LIMIT = 'agent_rate_limit',
+}
+
+export type RealtimeAiAgentSessionStartedPayload = { session_id: string }
+export type RealtimeAiAgentInputPayload = {
+  text: string
+  _meta?: { replayed?: boolean; id: string }
+}
+export type RealtimeAiAgentTextDeltaPayload = { delta: string }
+export type RealtimeAiAgentThinkingDeltaPayload = { delta: string }
+export type RealtimeAiAgentToolCallDeltaPayload = {
+  tool_call_id: string
+  name: string
+  arguments_delta: string
+}
+export type RealtimeAiAgentToolCallDonePayload = {
+  tool_call_id: string
+  name: string
+  arguments: string
+}
+export type RealtimeAiAgentUsagePayload = { input_tokens: number; output_tokens: number }
+export type RealtimeAiAgentDonePayload =
+  | { stop_reason: string }
+  | { text: string; _meta: { replayed: true; id: string } }
+export type RealtimeAiAgentErrorPayload = {
+  reason: 'stream_failed' | 'input_too_large' | 'rate_limit_exceeded'
+}
+
+export type RealtimeAiAgentTextInput = { text: string }
+export type RealtimeAiAgentToolResultInput = {
+  tool_result: { tool_call_id: string; content: string }
 }
 
 export enum REALTIME_SUBSCRIBE_STATES {
@@ -251,6 +308,10 @@ export default class RealtimeChannel {
       ...params.config,
     }
 
+    if (this.params.config.ai?.enabled) {
+      this.params.config.private = true
+    }
+
     this.channelAdapter = new ChannelAdapter(this.socket.socketAdapter, topic, this.params)
     this.presence = new RealtimePresence(this)
 
@@ -263,7 +324,7 @@ export default class RealtimeChannel {
     this.broadcastEndpointURL = httpEndpointURL(this.socket.socketAdapter.endPointURL())
     this.private = this.params.config.private || false
 
-    if (!this.private && this.params.config?.broadcast?.replay) {
+    if (!this.private && this.params.config?.replay) {
       throw new Error(
         `tried to use replay on public channel '${this.topic}'. It must be a private channel.`
       )
@@ -283,7 +344,7 @@ export default class RealtimeChannel {
     }
     if (this.channelAdapter.isClosed()) {
       const {
-        config: { broadcast, presence, private: isPrivate },
+        config: { broadcast, presence, private: isPrivate, ai, replay },
       } = this.params
 
       const postgres_changes = this.bindings.postgres_changes?.map((r) => r.filter) ?? []
@@ -293,11 +354,22 @@ export default class RealtimeChannel {
           this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0) ||
         this.params.config.presence?.enabled === true
       const accessTokenPayload: { access_token?: string } = {}
-      const config = {
+      const config: Record<string, unknown> = {
         broadcast,
         presence: { ...presence, enabled: presence_enabled },
         postgres_changes,
         private: isPrivate,
+      }
+
+      if (ai) {
+        config.ai = ai
+      }
+
+      if (replay) {
+        config.broadcast = { ...broadcast, replay }
+        if (config.ai) {
+          config.ai = { ...(config.ai as object), replay }
+        }
       }
 
       if (this.socket.accessTokenValue) {
@@ -433,6 +505,27 @@ export default class RealtimeChannel {
   }
 
   /**
+   * Sends a text prompt or tool result to the AI agent on this channel.
+   *
+   * @category Realtime
+   */
+  async sendAgentInput(
+    payload: RealtimeAiAgentTextInput | RealtimeAiAgentToolResultInput,
+    opts: { timeout?: number } = {}
+  ): Promise<RealtimeChannelSendResponse> {
+    return this.send({ type: 'broadcast', event: 'agent_input', payload }, opts)
+  }
+
+  /**
+   * Cancels the AI agent's current in-flight response on this channel.
+   *
+   * @category Realtime
+   */
+  async cancelAgent(opts: { timeout?: number } = {}): Promise<RealtimeChannelSendResponse> {
+    return this.send({ type: 'broadcast', event: 'agent_cancel', payload: {} }, opts)
+  }
+
+  /**
    * Creates an event handler that listens to changes.
    */
   on(
@@ -551,6 +644,58 @@ export default class RealtimeChannel {
   on<T extends { [key: string]: any }>(
     type: `${REALTIME_LISTEN_TYPES.SYSTEM}`,
     filter: {},
+    callback: (payload: any) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.AI_AGENT}`,
+    filter: { event: `${REALTIME_AI_AGENT_EVENTS.SESSION_STARTED}` },
+    callback: (payload: RealtimeAiAgentSessionStartedPayload) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.AI_AGENT}`,
+    filter: { event: `${REALTIME_AI_AGENT_EVENTS.INPUT}` },
+    callback: (payload: RealtimeAiAgentInputPayload) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.AI_AGENT}`,
+    filter: { event: `${REALTIME_AI_AGENT_EVENTS.TEXT_DELTA}` },
+    callback: (payload: RealtimeAiAgentTextDeltaPayload) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.AI_AGENT}`,
+    filter: { event: `${REALTIME_AI_AGENT_EVENTS.THINKING_DELTA}` },
+    callback: (payload: RealtimeAiAgentThinkingDeltaPayload) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.AI_AGENT}`,
+    filter: { event: `${REALTIME_AI_AGENT_EVENTS.TOOL_CALL_DELTA}` },
+    callback: (payload: RealtimeAiAgentToolCallDeltaPayload) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.AI_AGENT}`,
+    filter: { event: `${REALTIME_AI_AGENT_EVENTS.TOOL_CALL_DONE}` },
+    callback: (payload: RealtimeAiAgentToolCallDonePayload) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.AI_AGENT}`,
+    filter: { event: `${REALTIME_AI_AGENT_EVENTS.USAGE}` },
+    callback: (payload: RealtimeAiAgentUsagePayload) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.AI_AGENT}`,
+    filter: { event: `${REALTIME_AI_AGENT_EVENTS.DONE}` },
+    callback: (payload: RealtimeAiAgentDonePayload) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.AI_AGENT}`,
+    filter: { event: `${REALTIME_AI_AGENT_EVENTS.ERROR}` },
+    callback: (payload: RealtimeAiAgentErrorPayload) => void
+  ): RealtimeChannel
+  on(
+    type: `${REALTIME_LISTEN_TYPES.AI_AGENT}`,
+    filter: {
+      event: `${REALTIME_AI_AGENT_EVENTS.RATE_LIMIT}` | '*' | `${REALTIME_AI_AGENT_EVENTS}`
+    },
     callback: (payload: any) => void
   ): RealtimeChannel
   /**
@@ -967,13 +1112,29 @@ export default class RealtimeChannel {
   /** @internal */
   _on(type: string, filter: { [key: string]: any }, callback: ChannelBindingCallback) {
     const typeLower = type.toLocaleLowerCase()
+    const isAiAgent = typeLower === REALTIME_LISTEN_TYPES.AI_AGENT
 
-    const ref = this.channelAdapter.on(type, callback)
+    const filterEvent = filter?.event
+    const channelType =
+      isAiAgent && filterEvent && filterEvent !== '*'
+        ? filterEvent
+        : isAiAgent
+          ? REALTIME_LISTEN_TYPES.BROADCAST
+          : type
+    const wrappedCallback: ChannelBindingCallback = isAiAgent
+      ? (rawPayload: any) => {
+          const data = rawPayload?.payload ?? rawPayload
+          const meta = rawPayload?.meta
+          callback(meta ? { ...data, _meta: meta } : data)
+        }
+      : callback
+
+    const ref = this.channelAdapter.on(channelType, wrappedCallback)
 
     const binding: Binding = {
       type: typeLower,
       filter: filter,
-      callback: callback,
+      callback: wrappedCallback,
       ref: ref,
     }
 
@@ -981,6 +1142,16 @@ export default class RealtimeChannel {
       this.bindings[typeLower].push(binding)
     } else {
       this.bindings[typeLower] = [binding]
+    }
+
+    if (isAiAgent) {
+      const replayRef = this.channelAdapter.on('ai_event', wrappedCallback)
+      this.bindings[typeLower].push({
+        type: typeLower,
+        filter,
+        callback: wrappedCallback,
+        ref: replayRef,
+      })
     }
 
     this._updateFilterMessage()
@@ -1015,13 +1186,22 @@ export default class RealtimeChannel {
         return false
       }
 
-      const bind = this.bindings[typeLower]?.find((bind) => bind.ref === binding.ref)
+      // Look up the binding by ref. ai_agent bindings are registered under their specific
+      // event name (e.g. "agent_text_delta") but stored in this.bindings['ai_agent'],
+      // so fall back to that lookup when the normal lookup fails.
+      let bind = this.bindings[typeLower]?.find((bind) => bind.ref === binding.ref)
+      if (!bind) {
+        bind = this.bindings[REALTIME_LISTEN_TYPES.AI_AGENT]?.find((b) => b.ref === binding.ref)
+      }
 
       if (!bind) {
         return true
       }
 
-      if (['broadcast', 'presence', 'postgres_changes'].includes(typeLower)) {
+      if (
+        ['broadcast', 'presence', 'postgres_changes'].includes(typeLower) ||
+        bind.type === REALTIME_LISTEN_TYPES.AI_AGENT
+      ) {
         if ('id' in bind) {
           const bindId = bind.id
           const bindEvent = bind.filter?.event
@@ -1033,7 +1213,11 @@ export default class RealtimeChannel {
           )
         } else {
           const bindEvent = bind?.filter?.event?.toLocaleLowerCase()
-          return bindEvent === '*' || bindEvent === payload?.event?.toLocaleLowerCase()
+          // For direct ai_agent dispatch the event name is the Phoenix event itself,
+          // not inside payload — use the binding event name as fallback.
+          const payloadEvent = payload?.event?.toLocaleLowerCase() ?? typeLower
+
+          return bindEvent === '*' || bindEvent === payloadEvent
         }
       } else {
         return bind.type.toLocaleLowerCase() === typeLower

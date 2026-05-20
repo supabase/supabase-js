@@ -16,7 +16,7 @@ describe('channel', () => {
   test('throws error on replay for a public channel', () => {
     expect(() => {
       testSetup.client.channel('topic', {
-        config: { broadcast: { replay: { since: 0 } } },
+        config: { replay: { since: 0 } },
       })
     }).toThrow(
       "tried to use replay on public channel 'realtime:topic'. It must be a private channel."
@@ -25,14 +25,15 @@ describe('channel', () => {
 
   test('returns channel with private channel using replay', () => {
     const channel = testSetup.client.channel('topic', {
-      config: { private: true, broadcast: { replay: { since: 0 } } },
+      config: { private: true, replay: { since: 0 } },
     })
 
     expect(channel.socket).toBe(testSetup.client)
     expect(channel.topic).toBe('realtime:topic')
     expect(channel.params).toStrictEqual({
       config: {
-        broadcast: { replay: { since: 0 } },
+        broadcast: { ack: false, self: false },
+        replay: { since: 0 },
         presence: { key: '', enabled: false },
         private: true,
       },

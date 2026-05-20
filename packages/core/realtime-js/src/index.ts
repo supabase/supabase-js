@@ -1,10 +1,18 @@
-import RealtimeClient, {
+import RealtimeClient from './RealtimeClient'
+import type {
   RealtimeClientOptions,
   RealtimeMessage,
   RealtimeRemoveChannelResponse,
   WebSocketLikeConstructor,
 } from './RealtimeClient'
 import RealtimeChannel, {
+  REALTIME_LISTEN_TYPES,
+  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
+  REALTIME_SUBSCRIBE_STATES,
+  REALTIME_CHANNEL_STATES,
+  REALTIME_AI_AGENT_EVENTS,
+} from './RealtimeChannel'
+import type {
   RealtimeChannelOptions,
   RealtimeChannelSendResponse,
   RealtimePostgresChangesFilter,
@@ -12,25 +20,44 @@ import RealtimeChannel, {
   RealtimePostgresInsertPayload,
   RealtimePostgresUpdatePayload,
   RealtimePostgresDeletePayload,
-  REALTIME_LISTEN_TYPES,
-  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
-  REALTIME_SUBSCRIBE_STATES,
-  REALTIME_CHANNEL_STATES,
+  RealtimeAiAgentConfig,
+  RealtimeAiAgentSessionStartedPayload,
+  RealtimeAiAgentInputPayload,
+  RealtimeAiAgentTextDeltaPayload,
+  RealtimeAiAgentThinkingDeltaPayload,
+  RealtimeAiAgentToolCallDeltaPayload,
+  RealtimeAiAgentToolCallDonePayload,
+  RealtimeAiAgentUsagePayload,
+  RealtimeAiAgentDonePayload,
+  RealtimeAiAgentErrorPayload,
+  RealtimeAiAgentTextInput,
+  RealtimeAiAgentToolResultInput,
 } from './RealtimeChannel'
-import RealtimePresence, {
+import RealtimePresence, { REALTIME_PRESENCE_LISTEN_EVENTS } from './RealtimePresence'
+import type {
   RealtimePresenceState,
   RealtimePresenceJoinPayload,
   RealtimePresenceLeavePayload,
-  REALTIME_PRESENCE_LISTEN_EVENTS,
 } from './RealtimePresence'
-import WebSocketFactory, { WebSocketLike } from './lib/websocket-factory'
+import WebSocketFactory from './lib/websocket-factory'
+import type { WebSocketLike } from './lib/websocket-factory'
 
 export {
   RealtimePresence,
   RealtimeChannel,
+  RealtimeClient,
+  REALTIME_LISTEN_TYPES,
+  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
+  REALTIME_SUBSCRIBE_STATES,
+  REALTIME_CHANNEL_STATES,
+  REALTIME_AI_AGENT_EVENTS,
+  REALTIME_PRESENCE_LISTEN_EVENTS,
+  WebSocketFactory,
+}
+
+export type {
   RealtimeChannelOptions,
   RealtimeChannelSendResponse,
-  RealtimeClient,
   RealtimeClientOptions,
   RealtimeMessage,
   RealtimePostgresChangesFilter,
@@ -42,12 +69,18 @@ export {
   RealtimePresenceLeavePayload,
   RealtimePresenceState,
   RealtimeRemoveChannelResponse,
-  REALTIME_LISTEN_TYPES,
-  REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
-  REALTIME_PRESENCE_LISTEN_EVENTS,
-  REALTIME_SUBSCRIBE_STATES,
-  REALTIME_CHANNEL_STATES,
-  WebSocketFactory,
+  RealtimeAiAgentConfig,
+  RealtimeAiAgentSessionStartedPayload,
+  RealtimeAiAgentInputPayload,
+  RealtimeAiAgentTextDeltaPayload,
+  RealtimeAiAgentThinkingDeltaPayload,
+  RealtimeAiAgentToolCallDeltaPayload,
+  RealtimeAiAgentToolCallDonePayload,
+  RealtimeAiAgentUsagePayload,
+  RealtimeAiAgentDonePayload,
+  RealtimeAiAgentErrorPayload,
+  RealtimeAiAgentTextInput,
+  RealtimeAiAgentToolResultInput,
   WebSocketLike,
   WebSocketLikeConstructor,
 }
