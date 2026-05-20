@@ -31,9 +31,7 @@ function loadOtel(): Promise<any | null> {
     // from dist/index.mjs. Webpack and Turbopack both scan for their
     // keyword anywhere in adjacent comments, so a shared block is honored.
     otelModulePromise = (
-      import(
-        /* @vite-ignore webpackIgnore: true turbopackIgnore: true */ OTEL_PKG
-      ) as Promise<any>
+      import(/* @vite-ignore webpackIgnore: true turbopackIgnore: true */ OTEL_PKG) as Promise<any>
     ).catch(() => null)
   }
   return otelModulePromise
