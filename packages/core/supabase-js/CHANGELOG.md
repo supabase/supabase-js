@@ -1,3 +1,13 @@
+## 2.106.1 (2026-05-20)
+
+### 🩹 Fixes
+
+- **misc:** hide dynamic import from hermesc ([#2381](https://github.com/supabase/supabase-js/pull/2381))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.106.0 (2026-05-18)
 
 ### 🚀 Features
