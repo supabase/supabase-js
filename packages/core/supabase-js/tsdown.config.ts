@@ -1,8 +1,34 @@
 import { defineConfig } from 'tsdown'
+import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import type { Plugin } from 'rolldown'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// Rolldown's printer drops standalone /* webpackIgnore */ and /* turbopackIgnore */
+// blocks (it only preserves comments containing @__PURE__, @__NO_SIDE_EFFECTS__,
+// or @vite-ignore). Turbopack only honors /* turbopackIgnore: true */ when it's
+// alone in its own block — every Next.js internal usage is that form. We can't
+// satisfy both from source, so we inject the canonical single-purpose blocks
+// post-print, into the ESM output only (CJS has no `import()` after the alias
+// in inputOptions below). See PR #2381 and issue #2380.
+const injectBundlerIgnoreComments = (): Plugin => ({
+  name: 'inject-bundler-ignore-comments',
+  generateBundle(_options, bundle) {
+    for (const [fileName, chunk] of Object.entries(bundle)) {
+      if (chunk.type !== 'chunk' || !fileName.endsWith('.mjs')) continue
+      // Source-side `import()` calls in @supabase/tracing are bare
+      // `import(OTEL_PKG)` (no inline comments — rolldown strips them).
+      // Match the identifier directly with a bounded character class —
+      // no nested quantifiers, no backtracking surface.
+      chunk.code = chunk.code.replace(
+        /import\(\s*([A-Za-z_$][\w$]*)\s*\)/g,
+        'import(/* webpackIgnore: true */ /* turbopackIgnore: true */ /* @vite-ignore */ $1)'
+      )
+    }
+  },
+})
 
 export default defineConfig([
   // CJS and ESM builds - keep @supabase/* external
@@ -26,6 +52,34 @@ export default defineConfig([
     fixedExtension: true,
     hash: false,
     target: 'es2017',
+    plugins: [injectBundlerIgnoreComments()],
+    inputOptions: (_options, format) => {
+      if (format === 'cjs') {
+        // Rolldown inlines @supabase/tracing's ESM source (with native
+        // `import()`) into dist/index.cjs even when emitting CJS — its
+        // `import` export condition wins because Rolldown prefers ESM
+        // source for tree-shaking, regardless of `resolve.conditionNames`.
+        // hermesc (Hermes bytecode compiler for React Native release
+        // builds) rejects `import()` at parse time, before dead-code
+        // elimination, so the syntax has to be physically absent from the
+        // CJS bundle.
+        //
+        // Alias @supabase/tracing directly to its `main`-field file. This
+        // bypasses exports-conditions resolution entirely and pins the CJS
+        // bundle to tsc's CJS output (dist/main/index.js), where the
+        // dynamic `import()` has been lowered to a runtime `require()`.
+        // dist/index.mjs intentionally keeps the native `import()` — it's
+        // valid ESM, isn't blocked by browser CSP, and Hermes never sees
+        // the ESM bundle (Metro pulls the `require` condition).
+        return {
+          resolve: {
+            alias: {
+              '@supabase/tracing': createRequire(import.meta.url).resolve('@supabase/tracing'),
+            },
+          },
+        }
+      }
+    },
   },
   // IIFE build for CDN (jsdelivr/unpkg) - bundles EVERYTHING
   {
