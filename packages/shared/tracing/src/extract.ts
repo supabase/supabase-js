@@ -1,35 +1,13 @@
 import type { TraceContext } from './types'
 
-// Cache the dynamic import across all calls. Resolved (or failed) once per
-// process; subsequent calls hit the resolved promise as a synchronous microtask
-// instead of re-entering the module resolver.
-//
-// `any` here intentionally avoids referencing @opentelemetry/api types at
-// compile time, since it's an optional peer dep that may not be installed.
 let otelModulePromise: Promise<any | null> | null = null
 
-// Indirect the specifier through a variable so static bundlers
-// (webpack, turbopack, rollup, vite, esbuild) do not attempt to resolve
-// @opentelemetry/api at build time. It's an optional peer dep that may not
-// be installed in the consumer app; we look it up purely at runtime.
+// Variable specifier + single magic-comment block: required to keep this
+// import optional through webpack / turbopack / vite / rolldown. See PR #2381.
 const OTEL_PKG = '@opentelemetry/api'
 
 function loadOtel(): Promise<any | null> {
   if (otelModulePromise === null) {
-    // Magic comments tell each major SSR/Edge bundler to skip static
-    // resolution of this dynamic import — `@opentelemetry/api` is an
-    // optional peer dep, so it may not be installed in the consumer app.
-    // Without these, Turbopack (Next.js Edge), webpack, and Vite each
-    // error with `Module not found: Can't resolve '@opentelemetry/api'`
-    // when the peer dep is absent. The variable specifier (OTEL_PKG)
-    // also helps for bundlers that don't honor the comments.
-    //
-    // All three directives live in one block because rolldown's printer
-    // only preserves block comments containing `@__PURE__`,
-    // `@__NO_SIDE_EFFECTS__`, or `@vite-ignore`; standalone
-    // `/* webpackIgnore */` / `/* turbopackIgnore */` blocks get stripped
-    // from dist/index.mjs. Webpack and Turbopack both scan for their
-    // keyword anywhere in adjacent comments, so a shared block is honored.
     otelModulePromise = (
       import(/* @vite-ignore webpackIgnore: true turbopackIgnore: true */ OTEL_PKG) as Promise<any>
     ).catch(() => null)
