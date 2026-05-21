@@ -50,13 +50,12 @@ export default class SupabaseClient<
     | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
     ? 'public'
     : string & keyof Omit<Database, '__InternalSupabase'>,
-  SchemaName extends string &
-    keyof Omit<Database, '__InternalSupabase'> = SchemaNameOrClientOptions extends string &
-    keyof Omit<Database, '__InternalSupabase'>
-    ? SchemaNameOrClientOptions
-    : 'public' extends keyof Omit<Database, '__InternalSupabase'>
-      ? 'public'
-      : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
+  SchemaName extends string & keyof Omit<Database, '__InternalSupabase'> =
+    SchemaNameOrClientOptions extends string & keyof Omit<Database, '__InternalSupabase'>
+      ? SchemaNameOrClientOptions
+      : 'public' extends keyof Omit<Database, '__InternalSupabase'>
+        ? 'public'
+        : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
   Schema extends Omit<Database, '__InternalSupabase'>[SchemaName] extends GenericSchema
     ? Omit<Database, '__InternalSupabase'>[SchemaName]
     : never = Omit<Database, '__InternalSupabase'>[SchemaName] extends GenericSchema
@@ -282,6 +281,30 @@ export default class SupabaseClient<
    *
    * const { data } = await supabase.from('profiles').select('*')
    * ```
+   *
+   * @exampleDescription With OpenTelemetry tracing
+   * Opt in to W3C trace context propagation so the `trace_id` from your
+   * client-side spans is attached to Supabase requests and appears in API
+   * Gateway and Edge Function logs. Requires `@opentelemetry/api` to be
+   * installed in your application. See [Tracing with the JS SDK](https://supabase.com/docs/guides/telemetry/client-side-tracing).
+   *
+   * @example With OpenTelemetry tracing
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   * import { trace } from '@opentelemetry/api'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key', {
+   *   tracePropagation: true,
+   * })
+   *
+   * const tracer = trace.getTracer('my-app')
+   *
+   * await tracer.startActiveSpan('fetch-users', async (span) => {
+   *   // Outgoing request carries the active trace context.
+   *   const { data, error } = await supabase.from('users').select('*')
+   *   span.end()
+   * })
+   * ```
    */
   constructor(
     protected supabaseUrl: string,
@@ -447,11 +470,8 @@ export default class SupabaseClient<
   rpc<
     FnName extends string & keyof Schema['Functions'],
     Args extends Schema['Functions'][FnName]['Args'] = never,
-    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<
-      Schema,
-      FnName,
-      Args
-    > = GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
+    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args> =
+      GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
   >(
     fn: FnName,
     args: Args = {} as Args,
