@@ -15,7 +15,7 @@ The good news: most of the impact is preventable from the consumer side, regardl
 1. **Commit your lockfile** and install with `--frozen-lockfile` (pnpm/yarn) or `npm ci` (npm) in CI.
 2. **Quarantine new versions.** Set a minimum release age (≥ 7 days) so installs won't pick up a brand-new version while attackers are still in their detection window. npm, pnpm, yarn, and bun all support this natively now.
 3. **Block exotic transitive deps.** Refuse `github:`, `git+`, and `file:` refs that didn't come from the npm registry.
-4. **Verify provenance.** Run `npm audit signatures` after install. Supabase packages publish with sigstore attestations.
+4. **Verify provenance.** Run `npm audit signatures` after install. Supabase packages publish with [sigstore attestations](https://www.sigstore.dev/) (cryptographic proof tying each tarball to the workflow run, commit, and repo it was built from).
 5. **Constrain lifecycle scripts.** Default-deny `postinstall` / `preinstall` / `prepare`; allow per-package.
 6. **Pin a single source of truth for your package manager** (`packageManager` field in `package.json` with a sha512 hash).
 7. **Have a rollback plan.** Know which packages, which versions, and which credentials to rotate if a compromise is announced upstream.
@@ -166,12 +166,16 @@ always-auth=true
 Notes:
 
 - Never commit the token. Use `${NPM_TOKEN}` from your CI environment (npm 7+ expands env vars in `.npmrc`).
+- **Use short token lifetimes.** It means rotating more often, but it limits the blast radius if a token leaks undetected. Granular Access Tokens with an `expires` window are preferable to long-lived classic tokens.
+- **If you host on GitHub, turn on [secret protection / secret scanning](https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning)** for your repos. Free on public repos and on private repos under GitHub Advanced Security — catches the case where a token (or anything else sensitive) ends up committed by mistake.
 - Scoped registry lines let you point specific scopes at a different upstream.
 - For a per-project `.npmrc`, put it next to `package.json`. For a per-user one, `~/.npmrc`.
 
 ## Verify package provenance
 
 `@supabase/supabase-js`, `@supabase/auth-js`, `@supabase/postgrest-js`, `@supabase/realtime-js`, `@supabase/storage-js`, and `@supabase/functions-js` publish with [sigstore provenance attestations](https://docs.npmjs.com/generating-provenance-statements) via npm OIDC trusted publishing. The attestations cryptographically tie each published tarball to the workflow run, commit, and repository it was built from.
+
+A valid Supabase attestation will always resolve to a repository under the [`supabase` GitHub organisation](https://github.com/supabase). If `npm audit signatures` reports a verified attestation pointing anywhere else for an `@supabase/*` package, treat that as a red flag.
 
 To verify after install:
 
