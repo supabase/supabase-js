@@ -30,11 +30,25 @@ export type Fetch = typeof fetch
  *
  * Enables distributed tracing across Supabase services using W3C Trace Context
  * and OpenTelemetry standards. When enabled, the SDK automatically attaches
- * trace context headers (traceparent, tracestate, baggage) to outgoing requests
- * to Supabase domains.
+ * trace context headers (`traceparent`, `tracestate`, `baggage`) to outgoing
+ * requests to Supabase domains. The resulting `trace_id` appears in API
+ * Gateway and Edge Function logs, so logs forwarded through Log Drains can
+ * be correlated back to the originating client-side span.
+ *
+ * Requires `@opentelemetry/api` to be installed in the consuming application.
+ * If it is not installed, or there is no active context at request time,
+ * propagation silently no-ops.
+ *
+ * @example Enable with defaults
+ * ```ts
+ * const supabase = createClient(url, key, {
+ *   tracePropagation: { enabled: true },
+ * })
+ * ```
  *
  * @see https://www.w3.org/TR/trace-context/
  * @see https://opentelemetry.io/docs/concepts/context-propagation/
+ * @see https://supabase.com/docs/guides/telemetry/client-side-tracing
  */
 export interface TracePropagationOptions {
   /**
@@ -42,21 +56,39 @@ export interface TracePropagationOptions {
    *
    * When enabled, automatically detects and propagates active trace context
    * from the OpenTelemetry API to outgoing Supabase requests. Trace context
-   * is only propagated to Supabase domains (*.supabase.co, *.supabase.in,
-   * localhost) for security.
+   * is only propagated to Supabase domains (`*.supabase.co`, `*.supabase.in`,
+   * `localhost`) for security — third-party hosts never receive trace headers.
    *
    * @default false
+   *
+   * @example
+   * ```ts
+   * const supabase = createClient(url, key, {
+   *   tracePropagation: { enabled: true },
+   * })
+   * ```
    */
   enabled?: boolean
 
   /**
    * Respect upstream sampling decisions.
    *
-   * When true, trace context will not be propagated if the upstream trace
-   * indicates non-sampling (sampled flag = 0 in traceparent header).
-   * This helps reduce overhead when traces are not being collected.
+   * When true (the default), trace context is not propagated if the upstream
+   * trace indicates non-sampling (sampled flag = `0` in the `traceparent`
+   * header). This avoids overhead when traces are being recorded but dropped.
+   *
+   * Set to `false` to always propagate, regardless of the sampling decision
+   * — useful when you want every Supabase request tagged with a `trace_id`
+   * for log correlation, even if the trace itself will not be exported.
    *
    * @default true
+   *
+   * @example Always propagate, ignore sampling
+   * ```ts
+   * const supabase = createClient(url, key, {
+   *   tracePropagation: { enabled: true, respectSamplingDecision: false },
+   * })
+   * ```
    */
   respectSamplingDecision?: boolean
 }
@@ -215,22 +247,49 @@ export type SupabaseClientOptions<SchemaName> = {
    * Enable OpenTelemetry / W3C trace context propagation to Supabase services.
    *
    * Disabled by default. Pass `true` for the common case (auto-detect an
-   * active OTel context and inject `traceparent` / `tracestate` / `baggage`
-   * headers) or an object for fine-grained control.
+   * active OpenTelemetry context and inject `traceparent` / `tracestate` /
+   * `baggage` headers) or an object for fine-grained control.
    *
    * Requires `@opentelemetry/api` to be installed in your application; if
-   * not present, the SDK silently no-ops.
+   * not present, the SDK silently no-ops. Trace headers are only attached
+   * to requests targeting Supabase domains, so third-party hosts called
+   * through a custom `fetch` are never tagged.
    *
-   * @example
+   * The resulting `trace_id` appears in Supabase logs (API Gateway, Edge
+   * Functions), letting you correlate client-side spans with server-side
+   * log entries — including logs forwarded via Log Drains.
+   *
+   * @example Shorthand — opt in with defaults
    * ```ts
-   * // Shorthand — opt in with defaults.
-   * createClient(url, key, { tracePropagation: true })
+   * import { createClient } from '@supabase/supabase-js'
    *
-   * // Advanced — always propagate, even for non-sampled traces.
-   * createClient(url, key, {
+   * const supabase = createClient(url, key, { tracePropagation: true })
+   * ```
+   *
+   * @example With an active OpenTelemetry span
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   * import { trace } from '@opentelemetry/api'
+   *
+   * const supabase = createClient(url, key, { tracePropagation: true })
+   * const tracer = trace.getTracer('my-app')
+   *
+   * await tracer.startActiveSpan('fetch-users', async (span) => {
+   *   // Request carries the active trace context.
+   *   const { data, error } = await supabase.from('users').select('*')
+   *   span.end()
+   * })
+   * ```
+   *
+   * @example Advanced — always propagate, even for non-sampled traces
+   * ```ts
+   * const supabase = createClient(url, key, {
    *   tracePropagation: { enabled: true, respectSamplingDecision: false },
    * })
    * ```
+   *
+   * @see https://supabase.com/docs/guides/telemetry/client-side-tracing
+   * @see https://www.w3.org/TR/trace-context/
    */
   tracePropagation?: TracePropagationOptions | boolean
 }
