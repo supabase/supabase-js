@@ -69,8 +69,10 @@ export default defineConfig([
         // bundle to tsc's CJS output (dist/main/index.js), where the
         // dynamic `import()` has been lowered to a runtime `require()`.
         // dist/index.mjs intentionally keeps the native `import()` — it's
-        // valid ESM, isn't blocked by browser CSP, and Hermes never sees
-        // the ESM bundle (Metro pulls the `require` condition).
+        // valid ESM and isn't blocked by browser CSP. React Native bundlers
+        // (Metro) avoid the ESM bundle via the `react-native` export
+        // condition in supabase-js's package.json, which points to
+        // dist/index.cjs (Hermes-safe). See issue #2380.
         return {
           resolve: {
             alias: {

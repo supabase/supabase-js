@@ -20,6 +20,10 @@
   "types": "dist/index.d.cts",
   "exports": {
     ".": {
+      "react-native": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
       "import": {
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
@@ -30,6 +34,10 @@
       }
     },
     "./cors": {
+      "react-native": {
+        "types": "./dist/cors.d.cts",
+        "default": "./dist/cors.cjs"
+      },
       "import": {
         "types": "./dist/cors.d.mts",
         "default": "./dist/cors.mjs"
