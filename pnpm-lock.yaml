@@ -4,6 +4,45 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@arethetypeswrong/cli':
+      specifier: ^0.18.2
+      version: 0.18.2
+    '@jest/types':
+      specifier: ^30.0.0
+      version: 30.4.1
+    '@types/jest':
+      specifier: 30.0.0
+      version: 30.0.0
+    '@types/node':
+      specifier: 20.19.9
+      version: 20.19.9
+    jest:
+      specifier: 30.4.2
+      version: 30.4.2
+    prettier:
+      specifier: ^3.6.2
+      version: 3.8.3
+    ts-jest:
+      specifier: ^29.4.9
+      version: 29.4.9
+    tsd:
+      specifier: ^0.33.0
+      version: 0.33.0
+    tsdown:
+      specifier: ^0.18.0
+      version: 0.18.4
+    typedoc:
+      specifier: ^0.27.9
+      version: 0.27.9
+    typescript:
+      specifier: ~5.8.3
+      version: 5.8.3
+    vitest:
+      specifier: 4.1.4
+      version: 4.1.4
+
 importers:
 
   .:
@@ -161,6 +200,28 @@ importers:
       tslib:
         specifier: 2.8.1
         version: 2.8.1
+    devDependencies:
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.9
+      jest:
+        specifier: 'catalog:'
+        version: 30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3))
+      prettier:
+        specifier: 'catalog:'
+        version: 3.8.3
+      ts-jest:
+        specifier: 'catalog:'
+        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.0))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3)))(typescript@5.8.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.27.9(typescript@5.8.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
 
   packages/core/auth-js/example/react:
     dependencies:
@@ -226,6 +287,18 @@ importers:
         specifier: 2.8.1
         version: 2.8.1
     devDependencies:
+      '@jest/types':
+        specifier: 'catalog:'
+        version: 30.4.1
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.9
+      jest:
+        specifier: 'catalog:'
+        version: 30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3))
       nanoid:
         specifier: ^3.3.1
         version: 3.3.12
@@ -235,6 +308,15 @@ importers:
       testcontainers:
         specifier: ^8.5.1
         version: 8.16.0
+      ts-jest:
+        specifier: 'catalog:'
+        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.0))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3)))(typescript@5.8.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.27.9(typescript@5.8.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
 
   packages/core/postgrest-js:
     dependencies:
@@ -242,15 +324,42 @@ importers:
         specifier: 2.8.1
         version: 2.8.1
     devDependencies:
+      '@jest/types':
+        specifier: 'catalog:'
+        version: 30.4.1
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.9
       chokidar-cli:
         specifier: ^3.0.0
         version: 3.0.0
+      jest:
+        specifier: 'catalog:'
+        version: 30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3))
+      prettier:
+        specifier: 'catalog:'
+        version: 3.8.3
+      ts-jest:
+        specifier: 'catalog:'
+        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.0))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3)))(typescript@5.8.3)
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.4(@arethetypeswrong/core@0.18.2)(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(oxc-resolver@11.19.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(synckit@0.11.12)(typescript@5.8.3)
       tstyche:
         specifier: ^4.3.0
-        version: 4.3.0(typescript@5.9.3)
+        version: 4.3.0(typescript@5.8.3)
       type-fest:
         specifier: ^4.32.0
         version: 4.41.0
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.27.9(typescript@5.8.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
       zod:
         specifier: ^3.25.76
         version: 3.25.76
@@ -264,6 +373,9 @@ importers:
         specifier: 2.8.1
         version: 2.8.1
     devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: 'catalog:'
+        version: 0.18.2
       '@vitest/coverage-v8':
         specifier: ^4.1.5
         version: 4.1.6(vitest@4.1.4)
@@ -273,6 +385,15 @@ importers:
       mock-socket:
         specifier: ^9.3.1
         version: 9.3.1
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.27.9(typescript@5.8.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.4(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(@vitest/coverage-v8@4.1.6)(@vitest/ui@4.1.4)(jsdom@26.1.0)(vite@7.3.2(@types/node@24.12.4)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.9.0))
       web-worker:
         specifier: 1.2.0
         version: 1.2.0
@@ -364,6 +485,28 @@ importers:
       tslib:
         specifier: 2.8.1
         version: 2.8.1
+    devDependencies:
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.9
+      jest:
+        specifier: 'catalog:'
+        version: 30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3))
+      ts-jest:
+        specifier: 'catalog:'
+        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.0))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3)))(typescript@5.8.3)
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.4(@arethetypeswrong/core@0.18.2)(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(oxc-resolver@11.19.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(synckit@0.11.12)(typescript@5.8.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.27.9(typescript@5.8.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
 
   packages/core/supabase-js:
     dependencies:
@@ -383,15 +526,45 @@ importers:
         specifier: workspace:*
         version: link:../storage-js
     devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: 'catalog:'
+        version: 0.18.2
+      '@jest/types':
+        specifier: 'catalog:'
+        version: 30.4.1
       '@supabase/tracing':
         specifier: workspace:*
         version: link:../../shared/tracing
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.9
+      jest:
+        specifier: 'catalog:'
+        version: 30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3))
       jsr:
         specifier: ^0.13.5
         version: 0.13.5
       puppeteer:
         specifier: ^24.9.0
-        version: 24.43.1(typescript@5.9.3)
+        version: 24.43.1(typescript@5.8.3)
+      ts-jest:
+        specifier: 'catalog:'
+        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.0))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3)))(typescript@5.8.3)
+      tsd:
+        specifier: 'catalog:'
+        version: 0.33.0
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.4(@arethetypeswrong/core@0.18.2)(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(oxc-resolver@11.19.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(synckit@0.11.12)(typescript@5.8.3)
+      typedoc:
+        specifier: 'catalog:'
+        version: 0.27.9(typescript@5.8.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
 
   packages/shared/tracing:
     dependencies:
@@ -401,6 +574,22 @@ importers:
       tslib:
         specifier: 2.8.1
         version: 2.8.1
+    devDependencies:
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 30.0.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.9
+      jest:
+        specifier: 'catalog:'
+        version: 30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3))
+      ts-jest:
+        specifier: 'catalog:'
+        version: 29.4.9(@babel/core@7.29.0)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.0))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.21))(@types/node@20.19.9)(typescript@5.8.3)))(typescript@5.8.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
 
 packages:
 
@@ -12134,15 +12323,6 @@ snapshots:
     optionalDependencies:
       typescript: 5.8.3
 
-  cosmiconfig@9.0.1(typescript@5.9.3):
-    dependencies:
-      env-paths: 2.2.1
-      import-fresh: 3.3.1
-      js-yaml: 4.1.1
-      parse-json: 5.2.0
-    optionalDependencies:
-      typescript: 5.9.3
-
   cpu-features@0.0.10:
     dependencies:
       buildcheck: 0.0.7
@@ -15175,11 +15355,11 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  puppeteer@24.43.1(typescript@5.9.3):
+  puppeteer@24.43.1(typescript@5.8.3):
     dependencies:
       '@puppeteer/browsers': 2.13.2
       chromium-bidi: 14.0.0(devtools-protocol@0.0.1608973)
-      cosmiconfig: 9.0.1(typescript@5.9.3)
+      cosmiconfig: 9.0.1(typescript@5.8.3)
       devtools-protocol: 0.0.1608973
       puppeteer-core: 24.43.1
       typed-query-selector: 2.12.2
@@ -16197,9 +16377,9 @@ snapshots:
 
   tsscmp@1.0.6: {}
 
-  tstyche@4.3.0(typescript@5.9.3):
+  tstyche@4.3.0(typescript@5.8.3):
     optionalDependencies:
-      typescript: 5.9.3
+      typescript: 5.8.3
 
   tsx@4.21.0:
     dependencies:

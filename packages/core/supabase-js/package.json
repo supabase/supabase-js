@@ -88,9 +88,19 @@
     "@supabase/storage-js": "workspace:*"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@jest/types": "catalog:",
     "@supabase/tracing": "workspace:*",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "jest": "catalog:",
     "jsr": "^0.13.5",
-    "puppeteer": "^24.9.0"
+    "puppeteer": "^24.9.0",
+    "ts-jest": "catalog:",
+    "tsd": "catalog:",
+    "tsdown": "catalog:",
+    "typedoc": "catalog:",
+    "typescript": "catalog:"
   },
   "jsdelivr": "dist/umd/supabase.js",
   "unpkg": "dist/umd/supabase.js",

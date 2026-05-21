@@ -4,8 +4,23 @@ packages:
   - 'packages/core/auth-js/example/react'
   - 'packages/core/realtime-js/example'
 
+# Shared tooling versions referenced as `catalog:` in per-package devDependencies.
+# Keep aligned with the root devDependencies entries.
+catalog:
+  typescript: ~5.8.3
+  typedoc: ^0.27.9
+  tsdown: ^0.18.0
+  jest: 30.4.2
+  ts-jest: ^29.4.9
+  '@jest/types': ^30.0.0
+  '@types/jest': 30.0.0
+  '@types/node': 20.19.9
+  vitest: 4.1.4
+  tsd: ^0.33.0
+  '@arethetypeswrong/cli': ^0.18.2
+  prettier: ^3.6.2
+
 # Resolver / layout
-nodeLinker: hoisted # flat node_modules; core packages depend on hoisting (no explicit per-package devDep declarations yet)
 preferWorkspacePackages: true # prefer the in-tree version over the registry when both satisfy
 
 minimumReleaseAge: 10080 # 7 days
