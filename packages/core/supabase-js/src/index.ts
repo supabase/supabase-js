@@ -26,6 +26,7 @@ export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
 export type {
   SupabaseClientOptions,
+  TracePropagationOptions,
   QueryResult,
   QueryData,
   QueryError,
@@ -50,13 +51,12 @@ export const createClient = <
     | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
     ? 'public'
     : string & keyof Omit<Database, '__InternalSupabase'>,
-  SchemaName extends string &
-    keyof Omit<Database, '__InternalSupabase'> = SchemaNameOrClientOptions extends string &
-    keyof Omit<Database, '__InternalSupabase'>
-    ? SchemaNameOrClientOptions
-    : 'public' extends keyof Omit<Database, '__InternalSupabase'>
-      ? 'public'
-      : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
+  SchemaName extends string & keyof Omit<Database, '__InternalSupabase'> =
+    SchemaNameOrClientOptions extends string & keyof Omit<Database, '__InternalSupabase'>
+      ? SchemaNameOrClientOptions
+      : 'public' extends keyof Omit<Database, '__InternalSupabase'>
+        ? 'public'
+        : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
 >(
   supabaseUrl: string,
   supabaseKey: string,
