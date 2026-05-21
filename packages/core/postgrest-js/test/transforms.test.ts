@@ -401,7 +401,7 @@ test('abort signal', async () => {
       "error": {
         "code": Any<String>,
         "details": Any<String>,
-        "hint": "",
+        "hint": "Request was aborted (timeout or manual cancellation)",
         "message": StringMatching /AbortError/,
       },
       "status": 0,
