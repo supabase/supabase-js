@@ -48,9 +48,6 @@
     "iceberg-js": "^0.8.1",
     "tslib": "2.8.1"
   },
-  "devDependencies": {
-    "form-data": "^4.0.0"
-  },
   "jsdelivr": "dist/umd/supabase.js",
   "unpkg": "dist/umd/supabase.js",
   "publishConfig": {

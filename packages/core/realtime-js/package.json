@@ -45,11 +45,8 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.5",
-    "esm": "^3.2.25",
-    "jsdom": "^29.0.0",
-    "jsdom-global": "3.0.0",
+    "jsdom": "^26.0.0",
     "mock-socket": "^9.3.1",
-    "nyc": "^15.1.0",
     "web-worker": "1.2.0"
   },
   "engines": {

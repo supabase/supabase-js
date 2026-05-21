@@ -35,9 +35,6 @@
   "dependencies": {
     "tslib": "2.8.1"
   },
-  "devDependencies": {
-    "prettier": "^2.8.8"
-  },
   "engines": {
     "node": ">=20.0.0"
   }
