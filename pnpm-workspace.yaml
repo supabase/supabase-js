@@ -16,7 +16,7 @@ catalog:
   '@jest/types': ^30.0.0
   '@types/jest': 30.0.0
   '@types/node': 20.19.9
-  vitest: 4.1.4
+  vitest: 4.1.6
   tsd: ^0.33.0
   '@arethetypeswrong/cli': ^0.18.2
   prettier: ^3.6.2
