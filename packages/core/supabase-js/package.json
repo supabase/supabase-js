@@ -89,6 +89,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@jest/globals": "catalog:",
     "@jest/types": "catalog:",
     "@supabase/tracing": "workspace:*",
     "@types/jest": "catalog:",

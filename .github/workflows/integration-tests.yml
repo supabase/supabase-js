@@ -88,14 +88,16 @@ jobs:
           mkdir -p "$PUPPETEER_CACHE_DIR"
           # Install Puppeteer Chrome for integration.browser.test.ts
           # Only download if not already cached
+          # puppeteer is a devDep of @supabase/supabase-js (isolated pnpm mode).
           if [ "${{ steps.puppeteer-cache.outputs.cache-hit }}" != "true" ]; then
-            pnpm exec puppeteer browsers install chrome
+            pnpm --filter @supabase/supabase-js exec puppeteer browsers install chrome
           fi
-          # Install Playwright browsers for WebSocket tests
+          # Install Playwright browsers for WebSocket tests.
+          # @playwright/test is a devDep of the auth-js-example-react workspace package.
           if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
-            pnpm exec playwright install --with-deps
+            pnpm --filter auth-js-example-react exec playwright install --with-deps
           else
-            pnpm exec playwright install-deps
+            pnpm --filter auth-js-example-react exec playwright install-deps
           fi
 
       - name: Setup Supabase

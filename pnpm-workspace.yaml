@@ -12,6 +12,7 @@ catalog:
   tsdown: ^0.18.0
   jest: 30.4.2
   ts-jest: ^29.4.9
+  '@jest/globals': ^30.0.0
   '@jest/types': ^30.0.0
   '@types/jest': 30.0.0
   '@types/node': 20.19.9
