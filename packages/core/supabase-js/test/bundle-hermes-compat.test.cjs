@@ -28,6 +28,13 @@
  *    plugin in tsdown.config.ts — source-side magic comments don't survive
  *    rolldown's printer.
  *
+ * 4. `package.json` `exports` has a `"react-native"` condition for both `.`
+ *    and `./cors`, resolving to the Hermes-safe CJS bundle. Metro (React
+ *    Native's bundler) checks `"react-native"` before `"import"`/`"require"`
+ *    by default. Without this condition, Metro with `unstable_enablePackageExports`
+ *    enabled (the default on Expo SDK 55+) resolves the ESM bundle and ships
+ *    its `import()` to hermesc, which fails at parse time. See issue #2380.
+ *
  * Run with: node test/bundle-hermes-compat.test.cjs
  */
 
@@ -87,5 +94,40 @@ console.log('   /* webpackIgnore: true */ /* turbopackIgnore: true */ /* @vite-i
 console.log(
   '   Each bundler (webpack / turbopack / vite) sees its directive in a single-purpose block\n'
 )
+
+// Check 4: package.json `exports` has a `"react-native"` condition that
+// resolves to the Hermes-safe CJS bundle. Without this, Metro on Expo SDK 55+
+// (with unstable_enablePackageExports enabled by default) resolves the ESM
+// bundle and ships its `import()` to hermesc, which fails at parse time.
+const pkg = require('../package.json')
+for (const entry of ['.', './cors']) {
+  const conds = pkg.exports[entry]
+  assert.ok(
+    conds && typeof conds === 'object',
+    `package.json exports["${entry}"] must be a conditions object`
+  )
+  assert.ok(
+    conds['react-native'],
+    `package.json exports["${entry}"] is missing the "react-native" condition — ` +
+      `Metro resolves the ESM bundle by default, which contains import() and breaks hermesc. See issue #2380.`
+  )
+  const rnKeys = Object.keys(conds)
+  const rnIdx = rnKeys.indexOf('react-native')
+  const importIdx = rnKeys.indexOf('import')
+  const requireIdx = rnKeys.indexOf('require')
+  assert.ok(
+    rnIdx < importIdx && rnIdx < requireIdx,
+    `package.json exports["${entry}"]: "react-native" must appear before "import" and "require" — ` +
+      `Node-style conditional exports resolve in key order.`
+  )
+  const rnTarget = conds['react-native'].default || conds['react-native']
+  assert.ok(
+    typeof rnTarget === 'string' && rnTarget.endsWith('.cjs'),
+    `package.json exports["${entry}"]["react-native"] must resolve to a .cjs file (Hermes-safe). ` +
+      `Got: ${JSON.stringify(rnTarget)}`
+  )
+}
+console.log('4. package.json exports has "react-native" condition for "." and "./cors"')
+console.log('   Metro resolves dist/*.cjs (Hermes-safe) instead of dist/*.mjs\n')
 
 console.log('All bundle compatibility checks passed.')
