@@ -2074,7 +2074,11 @@ describe('getClaims', () => {
 
     await storage.setItem(storageKey, JSON.stringify(invalidSession))
 
-    await expect(authWithSession.getClaims()).rejects.toThrow('JWT has expired')
+    const { data, error } = await authWithSession.getClaims()
+    expect(data).toBeNull()
+    expect(error).not.toBeNull()
+    expect(error?.name).toBe('AuthInvalidJwtError')
+    expect(error?.message).toBe('JWT has expired')
   })
 
   // Asymmetric JWT signature tests moved to docker-tests/asymmetric-jwt.test.ts
