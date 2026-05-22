@@ -567,6 +567,38 @@ describe('GoTrueClient', () => {
       expect(data?.user?.user_metadata).toMatchObject(TEST_USER_DATA)
     })
 
+    test('signUp() returns the bare user payload when signup requires confirmation', async () => {
+      const user = {
+        id: 'user-id',
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: 'user@example.com',
+        created_at: '2026-05-21T12:00:00.000Z',
+      }
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: () => Promise.resolve(user),
+      })
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: false,
+        storage: memoryLocalStorageAdapter(),
+        fetch: mockFetch as unknown as typeof fetch,
+      })
+
+      const { data, error } = await client.signUp({
+        email: user.email,
+        password: 'password123',
+      })
+
+      expect(error).toBeNull()
+      expect(data.session).toBeNull()
+      expect(data.user).toEqual(user)
+    })
+
     test('fail to signUp() with invalid password', async () => {
       const { error, data } = await auth.signUp({ email: 'asd@a.aa', password: '123' })
 
