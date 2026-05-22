@@ -1,8 +1,6 @@
 import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
 
-import { AbortController } from 'node-abort-controller'
-
 const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')
 
 test('order', async () => {
@@ -385,7 +383,7 @@ test('geojson', async () => {
 })
 
 test('abort signal', async () => {
-  const ac = new AbortController() as globalThis.AbortController
+  const ac = new AbortController()
   ac.abort()
   const res = await postgrest.from('users').select().abortSignal(ac.signal)
   expect(res).toMatchInlineSnapshot(
@@ -403,7 +401,7 @@ test('abort signal', async () => {
       "error": {
         "code": Any<String>,
         "details": Any<String>,
-        "hint": "",
+        "hint": "Request was aborted (timeout or manual cancellation)",
         "message": StringMatching /AbortError/,
       },
       "status": 0,

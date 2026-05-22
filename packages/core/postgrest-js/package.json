@@ -55,13 +55,19 @@
     "tslib": "2.8.1"
   },
   "devDependencies": {
+    "@jest/types": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
     "chokidar-cli": "^3.0.0",
-    "node-abort-controller": "^3.0.1",
+    "jest": "catalog:",
+    "prettier": "catalog:",
+    "ts-jest": "catalog:",
+    "tsdown": "catalog:",
     "tstyche": "^4.3.0",
     "type-fest": "^4.32.0",
-    "wait-for-localhost-cli": "^4.0.0",
-    "zod": "^3.25.76",
-    "prettier": "^2.6.2"
+    "typedoc": "catalog:",
+    "typescript": "catalog:",
+    "zod": "^3.25.76"
   },
   "engines": {
     "node": ">=20.0.0"

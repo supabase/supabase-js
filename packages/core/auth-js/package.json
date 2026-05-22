@@ -36,7 +36,18 @@
     "tslib": "2.8.1"
   },
   "devDependencies": {
-    "prettier": "^2.8.8"
+    "@faker-js/faker": "^9.9.0",
+    "@types/jest": "catalog:",
+    "@types/jsonwebtoken": "^8.5.8",
+    "@types/node": "catalog:",
+    "jest": "catalog:",
+    "jest-environment-jsdom": "30.4.1",
+    "jest-mock-server": "^0.1.0",
+    "jsonwebtoken": "^9.0.0",
+    "prettier": "catalog:",
+    "ts-jest": "catalog:",
+    "typedoc": "catalog:",
+    "typescript": "catalog:"
   },
   "engines": {
     "node": ">=20.0.0"
