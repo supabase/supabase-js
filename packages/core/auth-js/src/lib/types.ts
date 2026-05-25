@@ -126,20 +126,19 @@ export type GoTrueClientOptions = {
   /* If debug messages are emitted. Can be used to inspect the behavior of the library. If set to a function, the provided function will be used instead of `console.log()` to perform the logging. */
   debug?: boolean | ((message: string, ...args: any[]) => void)
   /**
-   * @deprecated Ignored. The client coordinates refreshes itself and the
-   * server handles cross-tab races, so you can safely remove this from your
-   * constructor options. Passing a non-null value emits a one-time
-   * `console.warn` at construction; suppress with `suppressLockOptionWarning`.
+   * Provide your own locking mechanism based on the environment. By default
+   * the client coordinates refreshes itself (single-flight via
+   * `refreshingDeferred` + commit guard) and relies on the GoTrue server to
+   * resolve cross-tab refresh races. Passing a custom lock opts into a
+   * legacy path that wraps every auth operation in your supplied lock — this
+   * path is preserved for backwards compatibility (typically React Native
+   * `processLock` or Node multi-process setups).
+   *
+   * @deprecated Custom locks still work in v2.x for backwards compatibility.
+   * The legacy lock path will be removed in v3 — drop this option from your
+   * constructor options before upgrading.
    */
   lock?: LockFunc
-  /**
-   * Silence the construction-time `console.warn` emitted when a custom
-   * `lock` is passed. Set this only after confirming the auth client's
-   * built-in refresh coordination is sufficient for your runtime (typical
-   * web/RN/Node setups) and that no code path depends on the custom lock
-   * being invoked.
-   */
-  suppressLockOptionWarning?: boolean
   /**
    * Set to "true" if there is a custom authorization header set globally.
    * @experimental
@@ -151,9 +150,14 @@ export type GoTrueClientOptions = {
    */
   throwOnError?: boolean
   /**
-   * @deprecated The client doesn't acquire a lock around auth operations, so
-   * this timeout has nothing to bound. You can safely remove it from your
-   * constructor options.
+   * The maximum time in milliseconds to wait for acquiring the custom lock
+   * supplied via the `lock` option. Only consulted when a custom `lock` is
+   * passed — the default lockless path doesn't use this timeout.
+   *
+   * @default 5000
+   *
+   * @deprecated Only used by the legacy lock path. Will be removed in v3
+   * along with the `lock` option.
    */
   lockAcquireTimeout?: number
 

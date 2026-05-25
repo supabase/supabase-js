@@ -56,6 +56,7 @@ import {
   validateExp,
 } from './lib/helpers'
 import { memoryLocalStorageAdapter } from './lib/local-storage'
+import { LockAcquireTimeoutError, navigatorLock } from './lib/locks'
 import { polyfillGlobalThis } from './lib/polyfills'
 import { version } from './lib/version'
 
@@ -92,6 +93,7 @@ import type {
   JWK,
   JwtHeader,
   JwtPayload,
+  LockFunc,
   MFAChallengeAndVerifyParams,
   MFAChallengeParams,
   MFAChallengePhoneParams,
@@ -183,7 +185,7 @@ polyfillGlobalThis() // Make "globalThis" available
 
 const DEFAULT_OPTIONS: Omit<
   Required<GoTrueClientOptions>,
-  'fetch' | 'storage' | 'userStorage' | 'lock' | 'lockAcquireTimeout' | 'suppressLockOptionWarning'
+  'fetch' | 'storage' | 'userStorage' | 'lock'
 > = {
   url: GOTRUE_URL,
   storageKey: STORAGE_KEY,
@@ -195,8 +197,19 @@ const DEFAULT_OPTIONS: Omit<
   debug: false,
   hasCustomAuthorizationHeader: false,
   throwOnError: false,
+  lockAcquireTimeout: 5000, // 5 seconds. Only used when a custom `lock` is supplied. TODO(v3): remove.
   skipAutoInitialize: false,
   experimental: {},
+}
+
+/**
+ * No-op lock used internally as a placeholder. Kept so older test setups that
+ * inject this exact reference do not break; new code never sees it because
+ * `this.lock` stays `null` when no custom lock is supplied (lockless path).
+ * TODO(v3): remove with the legacy lock path.
+ */
+async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
+  return await fn()
 }
 
 /**
@@ -292,7 +305,20 @@ export default class GoTrueClient {
   protected hasCustomAuthorizationHeader = false
   protected suppressGetSessionWarning = false
   protected fetch: Fetch
+  /**
+   * Custom lock function passed via `settings.lock`. When non-null, every auth
+   * operation runs inside `_acquireLock`. When null (the default), the client
+   * uses its lockless coordination (refresh single-flight + commit guard).
+   * TODO(v3): remove along with the legacy lock path.
+   */
+  protected lock: LockFunc | null = null
+  protected lockAcquired = false
+  protected pendingInLock: Promise<any>[] = []
   protected throwOnError: boolean
+  /**
+   * Only consulted when a custom `lock` is supplied. TODO(v3): remove.
+   */
+  protected lockAcquireTimeout: number
   /**
    * Opt-in flags for experimental features. Defaults to an empty object.
    * See `GoTrueClientOptions.experimental`.
@@ -367,23 +393,18 @@ export default class GoTrueClient {
     this.hasCustomAuthorizationHeader = settings.hasCustomAuthorizationHeader
     this.throwOnError = settings.throwOnError
 
-    // settings.lock and settings.lockAcquireTimeout are typed for backwards
-    // compatibility and have no effect at runtime. Warn once at construction
-    // when a non-null `lock` is supplied so callers who relied on a custom
-    // lock (typically React Native `processLock` or Node multi-process
-    // setups) discover the change instead of racing silently. Opt-out via
-    // `suppressLockOptionWarning: true`.
-    if (settings.lock != null && !settings.suppressLockOptionWarning) {
-      const lockWarning =
-        `${this._logPrefix()} The \`lock\` option is accepted for backwards ` +
-        `compatibility but is not invoked by the client. The auth client ` +
-        `coordinates refreshes itself and the server resolves cross-instance ` +
-        `races. Code that depended on a custom lock being called will not run. ` +
-        `Pass \`suppressLockOptionWarning: true\` to silence this warning.`
-      console.warn(lockWarning)
-      if (this.logDebugMessages) {
-        console.trace(lockWarning)
-      }
+    // Always wire `lockAcquireTimeout` even on the lockless path: consumers
+    // (including supabase-js tests) read it off the client to verify option
+    // flow-through.
+    this.lockAcquireTimeout = settings.lockAcquireTimeout
+
+    // TODO(v3): remove. Legacy opt-in path preserved for backwards
+    // compatibility with callers passing a custom `lock` (typically React
+    // Native `processLock` or Node multi-process setups). When `settings.lock`
+    // is null the client uses its lockless coordination — no `navigator.locks`
+    // by default, no implicit `processLock`.
+    if (settings.lock != null) {
+      this.lock = settings.lock
     }
 
     if (!this.jwks) {
@@ -518,6 +539,12 @@ export default class GoTrueClient {
     }
 
     this.initializePromise = (async () => {
+      if (this.lock != null) {
+        // TODO(v3): remove legacy lock path
+        return await this._acquireLock(this.lockAcquireTimeout, async () => {
+          return await this._initialize()
+        })
+      }
       return await this._initialize()
     })()
 
@@ -1402,6 +1429,13 @@ export default class GoTrueClient {
    */
   async exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
     await this.initializePromise
+
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return this._acquireLock(this.lockAcquireTimeout, async () => {
+        return this._exchangeCodeForSession(authCode)
+      })
+    }
 
     return this._exchangeCodeForSession(authCode)
   }
@@ -2440,6 +2474,13 @@ export default class GoTrueClient {
   async reauthenticate(): Promise<AuthResponse> {
     await this.initializePromise
 
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._reauthenticate()
+      })
+    }
+
     return await this._reauthenticate()
   }
 
@@ -2655,9 +2696,93 @@ export default class GoTrueClient {
   async getSession() {
     await this.initializePromise
 
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return this._useSession(async (result) => {
+          return result
+        })
+      })
+    }
+
     return await this._useSession(async (result) => {
       return result
     })
+  }
+
+  /**
+   * Acquires a global lock based on the storage key.
+   *
+   * TODO(v3): remove along with the legacy lock path. Only called when
+   * `this.lock` is non-null (custom lock supplied via constructor). The
+   * default lockless path bypasses this entirely.
+   */
+  private async _acquireLock<R>(acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
+    this._debug('#_acquireLock', 'begin', acquireTimeout)
+
+    try {
+      if (this.lockAcquired) {
+        const last = this.pendingInLock.length
+          ? this.pendingInLock[this.pendingInLock.length - 1]
+          : Promise.resolve()
+
+        const result = (async () => {
+          await last
+          return await fn()
+        })()
+
+        this.pendingInLock.push(
+          (async () => {
+            try {
+              await result
+            } catch (_e) {
+              // we just care if it finished
+            }
+          })()
+        )
+
+        return result
+      }
+
+      return await this.lock!(`lock:${this.storageKey}`, acquireTimeout, async () => {
+        this._debug('#_acquireLock', 'lock acquired for storage key', this.storageKey)
+
+        try {
+          this.lockAcquired = true
+
+          const result = fn()
+
+          this.pendingInLock.push(
+            (async () => {
+              try {
+                await result
+              } catch (e: any) {
+                // we just care if it finished
+              }
+            })()
+          )
+
+          await result
+
+          // keep draining the queue until there's nothing to wait on
+          while (this.pendingInLock.length) {
+            const waitOn = [...this.pendingInLock]
+
+            await Promise.all(waitOn)
+
+            this.pendingInLock.splice(0, waitOn.length)
+          }
+
+          return await result
+        } finally {
+          this._debug('#_acquireLock', 'lock released for storage key', this.storageKey)
+
+          this.lockAcquired = false
+        }
+      })
+    } finally {
+      this._debug('#_acquireLock', 'end')
+    }
   }
 
   /**
@@ -2729,6 +2854,11 @@ export default class GoTrueClient {
       }
   > {
     this._debug('#__loadSession()', 'begin')
+
+    if (this.lock != null && !this.lockAcquired) {
+      // TODO(v3): remove. Only meaningful on the legacy lock path.
+      this._debug('#__loadSession()', 'used outside of an acquired lock!', new Error().stack)
+    }
 
     try {
       let currentSession: Session | null = null
@@ -2893,7 +3023,15 @@ export default class GoTrueClient {
 
     await this.initializePromise
 
-    const result = await this._getUser()
+    let result: UserResponse
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      result = await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._getUser()
+      })
+    } else {
+      result = await this._getUser()
+    }
 
     if (result.data.user) {
       this.suppressGetSessionWarning = true
@@ -3067,6 +3205,13 @@ export default class GoTrueClient {
     } = {}
   ): Promise<UserResponse> {
     await this.initializePromise
+
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._updateUser(attributes, options)
+      })
+    }
 
     return await this._updateUser(attributes, options)
   }
@@ -3254,6 +3399,13 @@ export default class GoTrueClient {
     refresh_token: string
   }): Promise<AuthResponse> {
     await this.initializePromise
+
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._setSession(currentSession)
+      })
+    }
 
     return await this._setSession(currentSession)
   }
@@ -3443,6 +3595,13 @@ export default class GoTrueClient {
    */
   async refreshSession(currentSession?: { refresh_token: string }): Promise<AuthResponse> {
     await this.initializePromise
+
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._refreshSession(currentSession)
+      })
+    }
 
     return await this._refreshSession(currentSession)
   }
@@ -3691,6 +3850,13 @@ export default class GoTrueClient {
    */
   async signOut(options: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
     await this.initializePromise
+
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._signOut(options)
+      })
+    }
 
     return await this._signOut(options)
   }
@@ -3955,7 +4121,15 @@ export default class GoTrueClient {
     this.stateChangeEmitters.set(id, subscription)
     ;(async () => {
       await this.initializePromise
-      await this._emitInitialSession(id)
+
+      if (this.lock != null) {
+        // TODO(v3): remove legacy lock path
+        await this._acquireLock(this.lockAcquireTimeout, async () => {
+          this._emitInitialSession(id)
+        })
+      } else {
+        await this._emitInitialSession(id)
+      }
     })()
 
     return { data: { subscription } }
@@ -4960,9 +5134,62 @@ export default class GoTrueClient {
   private async _autoRefreshTokenTick() {
     this._debug('#_autoRefreshTokenTick()', 'begin')
 
-    // Skip if a refresh is already in flight. `_callRefreshToken` also
-    // dedupes via the same field, so this is just a fast-path skip to
-    // avoid an unnecessary storage read.
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path. Uses `_acquireLock(0, ...)` which
+      // throws `LockAcquireTimeoutError` immediately if the lock is held —
+      // that's the fail-fast skip path that lets the tick bail out instead
+      // of queuing behind a long-running operation.
+      try {
+        await this._acquireLock(0, async () => {
+          try {
+            const now = Date.now()
+            try {
+              return await this._useSession(async (result) => {
+                const {
+                  data: { session },
+                } = result
+
+                if (!session || !session.refresh_token || !session.expires_at) {
+                  this._debug('#_autoRefreshTokenTick()', 'no session')
+                  return
+                }
+
+                const expiresInTicks = Math.floor(
+                  (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION_MS
+                )
+
+                this._debug(
+                  '#_autoRefreshTokenTick()',
+                  `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION_MS}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
+                )
+
+                if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
+                  await this._callRefreshToken(session.refresh_token)
+                }
+              })
+            } catch (e) {
+              console.error(
+                'Auto refresh tick failed with error. This is likely a transient error.',
+                e
+              )
+            }
+          } finally {
+            this._debug('#_autoRefreshTokenTick()', 'end')
+          }
+        })
+      } catch (e) {
+        if (e instanceof LockAcquireTimeoutError) {
+          this._debug('auto refresh token tick lock not available')
+        } else {
+          throw e
+        }
+      }
+      return
+    }
+
+    // Lockless default: skip if a refresh is already in flight.
+    // `_callRefreshToken` also dedupes via the same field; this is just a
+    // fast-path skip to avoid an unnecessary storage read.
     if (this.refreshingDeferred !== null) {
       this._debug('#_autoRefreshTokenTick()', 'refresh already in flight, skipping')
       return
@@ -5060,13 +5287,26 @@ export default class GoTrueClient {
         // should be recovered
         await this.initializePromise
 
-        if (document.visibilityState !== 'visible') {
-          this._debug(methodName, 'visibilityState is no longer visible, skipping recovery')
-          return
+        if (this.lock != null) {
+          // TODO(v3): remove legacy lock path
+          await this._acquireLock(this.lockAcquireTimeout, async () => {
+            if (document.visibilityState !== 'visible') {
+              this._debug(
+                methodName,
+                'acquired the lock to recover the session, but the browser visibilityState is no longer visible, aborting'
+              )
+              return
+            }
+            await this._recoverAndRefresh()
+          })
+        } else {
+          if (document.visibilityState !== 'visible') {
+            this._debug(methodName, 'visibilityState is no longer visible, skipping recovery')
+            return
+          }
+          // recover the session
+          await this._recoverAndRefresh()
         }
-
-        // recover the session
-        await this._recoverAndRefresh()
       }
     } else if (document.visibilityState === 'hidden') {
       if (this.autoRefreshToken) {
@@ -5198,76 +5438,84 @@ export default class GoTrueClient {
     params: MFAVerifyWebauthnParams<T>
   ): Promise<AuthMFAVerifyResponse>
   private async _verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse> {
-    try {
-      return await this._useSession(async (result) => {
-        const { data: sessionData, error: sessionError } = result
-        if (sessionError) {
-          return this._returnResult({ data: null, error: sessionError })
-        }
-
-        const body: StrictOmit<
-          | Exclude<MFAVerifyParams, MFAVerifyWebauthnParams>
-          /** Exclude out the webauthn params from here because we're going to need to serialize them in the response */
-          | Prettify<
-              StrictOmit<MFAVerifyWebauthnParams, 'webauthn'> & {
-                webauthn: Prettify<
-                  StrictOmit<MFAVerifyWebauthnParamFields['webauthn'], 'credential_response'> & {
-                    credential_response: PublicKeyCredentialJSON
-                  }
-                >
-              }
-            >,
-          /*  Exclude challengeId because the backend expects snake_case, and exclude factorId since it's passed in the path params */
-          'challengeId' | 'factorId'
-        > & {
-          challenge_id: string
-        } = {
-          challenge_id: params.challengeId,
-          ...('webauthn' in params
-            ? {
-                webauthn: {
-                  ...params.webauthn,
-                  credential_response:
-                    params.webauthn.type === 'create'
-                      ? serializeCredentialCreationResponse(
-                          params.webauthn.credential_response as RegistrationCredential
-                        )
-                      : serializeCredentialRequestResponse(
-                          params.webauthn.credential_response as AuthenticationCredential
-                        ),
-                },
-              }
-            : { code: params.code }),
-        }
-
-        const { data, error } = await _request(
-          this.fetch,
-          'POST',
-          `${this.url}/factors/${params.factorId}/verify`,
-          {
-            body,
-            headers: this.headers,
-            jwt: sessionData?.session?.access_token,
+    const run = async (): Promise<AuthMFAVerifyResponse> => {
+      try {
+        return await this._useSession(async (result) => {
+          const { data: sessionData, error: sessionError } = result
+          if (sessionError) {
+            return this._returnResult({ data: null, error: sessionError })
           }
-        )
-        if (error) {
+
+          const body: StrictOmit<
+            | Exclude<MFAVerifyParams, MFAVerifyWebauthnParams>
+            /** Exclude out the webauthn params from here because we're going to need to serialize them in the response */
+            | Prettify<
+                StrictOmit<MFAVerifyWebauthnParams, 'webauthn'> & {
+                  webauthn: Prettify<
+                    StrictOmit<MFAVerifyWebauthnParamFields['webauthn'], 'credential_response'> & {
+                      credential_response: PublicKeyCredentialJSON
+                    }
+                  >
+                }
+              >,
+            /*  Exclude challengeId because the backend expects snake_case, and exclude factorId since it's passed in the path params */
+            'challengeId' | 'factorId'
+          > & {
+            challenge_id: string
+          } = {
+            challenge_id: params.challengeId,
+            ...('webauthn' in params
+              ? {
+                  webauthn: {
+                    ...params.webauthn,
+                    credential_response:
+                      params.webauthn.type === 'create'
+                        ? serializeCredentialCreationResponse(
+                            params.webauthn.credential_response as RegistrationCredential
+                          )
+                        : serializeCredentialRequestResponse(
+                            params.webauthn.credential_response as AuthenticationCredential
+                          ),
+                  },
+                }
+              : { code: params.code }),
+          }
+
+          const { data, error } = await _request(
+            this.fetch,
+            'POST',
+            `${this.url}/factors/${params.factorId}/verify`,
+            {
+              body,
+              headers: this.headers,
+              jwt: sessionData?.session?.access_token,
+            }
+          )
+          if (error) {
+            return this._returnResult({ data: null, error })
+          }
+
+          await this._saveSession({
+            expires_at: Math.round(Date.now() / 1000) + data.expires_in,
+            ...data,
+          })
+          await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
+
+          return this._returnResult({ data, error })
+        })
+      } catch (error) {
+        if (isAuthError(error)) {
           return this._returnResult({ data: null, error })
         }
-
-        await this._saveSession({
-          expires_at: Math.round(Date.now() / 1000) + data.expires_in,
-          ...data,
-        })
-        await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', data)
-
-        return this._returnResult({ data, error })
-      })
-    } catch (error) {
-      if (isAuthError(error)) {
-        return this._returnResult({ data: null, error })
+        throw error
       }
-      throw error
     }
+
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return this._acquireLock(this.lockAcquireTimeout, run)
+    }
+    return run()
   }
 
   /**
@@ -5283,78 +5531,86 @@ export default class GoTrueClient {
     params: MFAChallengeWebauthnParams
   ): Promise<Prettify<AuthMFAChallengeWebauthnResponse>>
   private async _challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse> {
-    try {
-      return await this._useSession(async (result) => {
-        const { data: sessionData, error: sessionError } = result
-        if (sessionError) {
-          return this._returnResult({ data: null, error: sessionError })
-        }
-
-        const response = (await _request(
-          this.fetch,
-          'POST',
-          `${this.url}/factors/${params.factorId}/challenge`,
-          {
-            body: params,
-            headers: this.headers,
-            jwt: sessionData?.session?.access_token,
+    const run = async (): Promise<AuthMFAChallengeResponse> => {
+      try {
+        return await this._useSession(async (result) => {
+          const { data: sessionData, error: sessionError } = result
+          if (sessionError) {
+            return this._returnResult({ data: null, error: sessionError })
           }
-        )) as
-          | Exclude<AuthMFAChallengeResponse, AuthMFAChallengeWebauthnResponse>
-          /** The server will send `serialized` data, so we assert the serialized response */
-          | AuthMFAChallengeWebauthnServerResponse
 
-        if (response.error) {
-          return response
-        }
+          const response = (await _request(
+            this.fetch,
+            'POST',
+            `${this.url}/factors/${params.factorId}/challenge`,
+            {
+              body: params,
+              headers: this.headers,
+              jwt: sessionData?.session?.access_token,
+            }
+          )) as
+            | Exclude<AuthMFAChallengeResponse, AuthMFAChallengeWebauthnResponse>
+            /** The server will send `serialized` data, so we assert the serialized response */
+            | AuthMFAChallengeWebauthnServerResponse
 
-        const { data } = response
+          if (response.error) {
+            return response
+          }
 
-        if (data.type !== 'webauthn') {
-          return { data, error: null }
-        }
+          const { data } = response
 
-        switch (data.webauthn.type) {
-          case 'create':
-            return {
-              data: {
-                ...data,
-                webauthn: {
-                  ...data.webauthn,
-                  credential_options: {
-                    ...data.webauthn.credential_options,
-                    publicKey: deserializeCredentialCreationOptions(
-                      data.webauthn.credential_options.publicKey
-                    ),
+          if (data.type !== 'webauthn') {
+            return { data, error: null }
+          }
+
+          switch (data.webauthn.type) {
+            case 'create':
+              return {
+                data: {
+                  ...data,
+                  webauthn: {
+                    ...data.webauthn,
+                    credential_options: {
+                      ...data.webauthn.credential_options,
+                      publicKey: deserializeCredentialCreationOptions(
+                        data.webauthn.credential_options.publicKey
+                      ),
+                    },
                   },
                 },
-              },
-              error: null,
-            }
-          case 'request':
-            return {
-              data: {
-                ...data,
-                webauthn: {
-                  ...data.webauthn,
-                  credential_options: {
-                    ...data.webauthn.credential_options,
-                    publicKey: deserializeCredentialRequestOptions(
-                      data.webauthn.credential_options.publicKey
-                    ),
+                error: null,
+              }
+            case 'request':
+              return {
+                data: {
+                  ...data,
+                  webauthn: {
+                    ...data.webauthn,
+                    credential_options: {
+                      ...data.webauthn.credential_options,
+                      publicKey: deserializeCredentialRequestOptions(
+                        data.webauthn.credential_options.publicKey
+                      ),
+                    },
                   },
                 },
-              },
-              error: null,
-            }
+                error: null,
+              }
+          }
+        })
+      } catch (error) {
+        if (isAuthError(error)) {
+          return this._returnResult({ data: null, error })
         }
-      })
-    } catch (error) {
-      if (isAuthError(error)) {
-        return this._returnResult({ data: null, error })
+        throw error
       }
-      throw error
     }
+
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return this._acquireLock(this.lockAcquireTimeout, run)
+    }
+    return run()
   }
 
   /**

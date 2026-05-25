@@ -56,17 +56,19 @@ describe('GoTrueClient', () => {
     expect(debugSpy).toHaveBeenCalled()
   })
 
-  test('accepts a custom lock implementation but never invokes it (deprecated)', async () => {
-    const customLock = jest.fn().mockResolvedValue(undefined)
+  test('should handle custom lock implementation', async () => {
+    const customLock = jest
+      .fn()
+      .mockImplementation(async (_name: string, _timeout: number, fn: () => Promise<unknown>) =>
+        fn()
+      )
     const client = new GoTrueClient({
       url: 'http://localhost:9999',
       lock: customLock,
     })
 
     await client.initialize()
-    // The `lock` option is accepted for backwards compatibility but the
-    // client doesn't invoke it.
-    expect(customLock).not.toHaveBeenCalled()
+    expect(customLock).toHaveBeenCalled()
   })
 
   test('should handle userStorage configuration', async () => {
@@ -3420,11 +3422,29 @@ describe('SSO Authentication', () => {
   })
 })
 
-describe('Lockless coordination', () => {
-  test('`lock` option is accepted but not invoked by the client', async () => {
+describe('Lockless coordination (default) and legacy lock opt-in', () => {
+  test('default path: no custom `lock` supplied, _acquireLock is not invoked', async () => {
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      autoRefreshToken: false,
+      persistSession: false,
+    })
+    // @ts-expect-error access private _acquireLock for verification
+    const acquireSpy = jest.spyOn(client, '_acquireLock')
+
+    await client.initialize()
+    await client.getSession()
+
+    // No lock supplied → lockless coordination → _acquireLock is never called
+    expect(acquireSpy).not.toHaveBeenCalled()
+  })
+
+  test('legacy path: custom `lock` is invoked when supplied', async () => {
     const mockLock = jest
       .fn()
-      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => fn())
+      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) =>
+        fn()
+      )
 
     const client = new GoTrueClient({
       url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
@@ -3436,12 +3456,11 @@ describe('Lockless coordination', () => {
     await client.initialize()
     await client.getSession()
 
-    // The `lock` option is accepted for backwards compatibility; the client
-    // doesn't route auth operations through it.
-    expect(mockLock).not.toHaveBeenCalled()
+    // Custom lock supplied → legacy path → mockLock IS called.
+    expect(mockLock).toHaveBeenCalled()
   })
 
-  test('`lockAcquireTimeout` option is accepted but ignored', async () => {
+  test('`lockAcquireTimeout` option is accepted (lockless path ignores it; legacy uses it)', async () => {
     expect(
       () =>
         new GoTrueClient({

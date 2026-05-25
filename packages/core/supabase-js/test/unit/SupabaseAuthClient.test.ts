@@ -58,26 +58,32 @@ test('createClient gates passkey methods when auth.experimental.passkey is not s
   await expect(supa.auth.passkey.list()).rejects.toThrow(/experimental.*passkey/)
 })
 
-test('_initSupabaseAuthClient accepts the deprecated lockAcquireTimeout option without error', () => {
+// The two tests below verify that `lockAcquireTimeout` flows from
+// `createClient({ auth: { lockAcquireTimeout: ... }})` through to the
+// constructed `GoTrueClient` instance. The field is `protected`, so we
+// cast through `unknown` to a precise shape rather than using `as any`.
+// The targeted cast is deliberate: when the legacy lock path is removed in
+// v3 (see `// TODO(v3): remove …` markers in `GoTrueClient.ts` and the
+// SDK Linear ticket for the v3 cleanup), `grep -rn "lockAcquireTimeout"`
+// surfaces both the production code AND these tests together so the
+// removal is mechanical.
+
+test('_initSupabaseAuthClient should pass through lockAcquireTimeout option', () => {
   const client = new SupabaseClient('https://example.supabase.com', 'supabaseKey')
-  expect(() =>
-    client['_initSupabaseAuthClient'](
-      { ...authSettings, lockAcquireTimeout: 30_000 },
-      undefined,
-      undefined
-    )
-  ).not.toThrow()
+  const authClient = client['_initSupabaseAuthClient'](
+    { ...authSettings, lockAcquireTimeout: 30_000 },
+    undefined,
+    undefined
+  )
+
+  expect((authClient as unknown as { lockAcquireTimeout: number }).lockAcquireTimeout).toBe(30_000)
 })
 
-test('createClient accepts auth.lockAcquireTimeout for backwards compatibility but does not store it on the auth client', () => {
+test('createClient should accept auth.lockAcquireTimeout and wire it to auth client', () => {
   const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey', {
     auth: { lockAcquireTimeout: 30_000 },
   })
-  // The deprecated option is accepted by the type for backwards compatibility,
-  // but the auth client no longer acquires a lock around auth operations and
-  // therefore does not store this value as a runtime field.
-  expect((supa.auth as any).lockAcquireTimeout).toBeUndefined()
-  expect(supa.auth).toBeInstanceOf(SupabaseAuthClient)
+  expect((supa.auth as unknown as { lockAcquireTimeout: number }).lockAcquireTimeout).toBe(30_000)
 })
 
 test('createClient should accept auth.skipAutoInitialize and wire it to auth client', async () => {

@@ -1196,9 +1196,13 @@ describe('Storage and User Storage Combinations', () => {
   })
 })
 
-describe('Lockless backwards-compatibility: deprecated `lock` option', () => {
-  it('a custom `lock` function passed to the constructor is never invoked', async () => {
-    const customLock = jest.fn()
+describe('Legacy lock opt-in: custom `lock` function is invoked when supplied', () => {
+  it('a custom `lock` function passed to the constructor IS invoked (legacy path)', async () => {
+    const customLock = jest
+      .fn()
+      .mockImplementation(async (_name: string, _timeout: number, fn: () => Promise<unknown>) =>
+        fn()
+      )
 
     const client = new (require('../src/GoTrueClient').default)({
       url: 'http://localhost:9999',
@@ -1207,7 +1211,7 @@ describe('Lockless backwards-compatibility: deprecated `lock` option', () => {
     })
 
     await client.initialize()
-    expect(customLock).not.toHaveBeenCalled()
+    expect(customLock).toHaveBeenCalled()
   })
 })
 

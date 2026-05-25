@@ -182,10 +182,14 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     debug?: SupabaseAuthClientOptions['debug']
     /**
-     * @deprecated The auth client coordinates refreshes itself and the server
-     * resolves cross-tab races, so any value forwarded through this option
-     * has no effect. You can safely remove it from your `createClient`
-     * options.
+     * Provide your own locking mechanism based on the environment. By default
+     * the auth client coordinates refreshes itself and the server resolves
+     * cross-tab races. Passing a custom `lock` opts into a legacy path that
+     * wraps every auth operation in your supplied lock.
+     *
+     * @deprecated Custom locks still work in v2.x for backwards compatibility.
+     * The legacy lock path will be removed in v3 — drop this option from your
+     * `createClient` options before upgrading.
      */
     lock?: SupabaseAuthClientOptions['lock']
     /**
@@ -201,16 +205,15 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     experimental?: SupabaseAuthClientOptions['experimental']
     /**
-     * @deprecated The auth client doesn't acquire a lock around auth
-     * operations, so this timeout has nothing to bound. You can safely remove
-     * it from your `createClient` options.
+     * Maximum time in milliseconds to wait for acquiring the custom lock
+     * supplied via `lock`. Only consulted when a custom `lock` is passed.
+     *
+     * @default 5000
+     *
+     * @deprecated Only used by the legacy lock path. Will be removed in v3
+     * along with the `lock` option.
      */
     lockAcquireTimeout?: SupabaseAuthClientOptions['lockAcquireTimeout']
-    /**
-     * Silence the construction-time `console.warn` emitted when a custom
-     * `lock` is passed. Forwarded to the underlying auth client.
-     */
-    suppressLockOptionWarning?: SupabaseAuthClientOptions['suppressLockOptionWarning']
     /**
      * If true, skips automatic initialization in the auth client constructor.
      * Useful for SSR contexts where initialization timing must be controlled to
