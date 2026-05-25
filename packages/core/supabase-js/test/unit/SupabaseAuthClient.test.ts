@@ -58,22 +58,26 @@ test('createClient gates passkey methods when auth.experimental.passkey is not s
   await expect(supa.auth.passkey.list()).rejects.toThrow(/experimental.*passkey/)
 })
 
-test('_initSupabaseAuthClient should pass through lockAcquireTimeout option', () => {
+test('_initSupabaseAuthClient accepts the deprecated lockAcquireTimeout option without error', () => {
   const client = new SupabaseClient('https://example.supabase.com', 'supabaseKey')
-  const authClient = client['_initSupabaseAuthClient'](
-    { ...authSettings, lockAcquireTimeout: 30_000 },
-    undefined,
-    undefined
-  )
-
-  expect((authClient as any).lockAcquireTimeout).toBe(30_000)
+  expect(() =>
+    client['_initSupabaseAuthClient'](
+      { ...authSettings, lockAcquireTimeout: 30_000 },
+      undefined,
+      undefined
+    )
+  ).not.toThrow()
 })
 
-test('createClient should accept auth.lockAcquireTimeout and wire it to auth client', () => {
+test('createClient accepts auth.lockAcquireTimeout for backwards compatibility but does not store it on the auth client', () => {
   const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey', {
     auth: { lockAcquireTimeout: 30_000 },
   })
-  expect((supa.auth as any).lockAcquireTimeout).toBe(30_000)
+  // The deprecated option is accepted by the type for backwards compatibility,
+  // but the auth client no longer acquires a lock around auth operations and
+  // therefore does not store this value as a runtime field.
+  expect((supa.auth as any).lockAcquireTimeout).toBeUndefined()
+  expect(supa.auth).toBeInstanceOf(SupabaseAuthClient)
 })
 
 test('createClient should accept auth.skipAutoInitialize and wire it to auth client', async () => {
