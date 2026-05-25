@@ -2691,7 +2691,10 @@ export default class GoTrueClient {
     this._debug('#_useSession', 'begin')
 
     try {
-      // the use of __loadSession here is the only correct use of the function!
+      // Concurrent callers may both reach __loadSession; storage reads are
+      // idempotent, and the only write path inside it (refresh) is
+      // single-flighted downstream by `refreshingDeferred` in
+      // `_callRefreshToken`. No serialization is needed at this layer.
       const result = await this.__loadSession()
 
       return await fn(result)
@@ -4922,6 +4925,14 @@ export default class GoTrueClient {
    * its JS realm is destroyed. React Strict Mode and HMR are the common
    * cases. Any in-flight `fetch` calls continue to completion and may still
    * write to storage; dispose doesn't abort them or erase storage.
+   *
+   * Lifecycle caveat: because in-flight refreshes are not aborted, a
+   * disposed instance can still persist a rotated session to storage after
+   * `dispose()` returns. A subsequent `createClient` against the same
+   * `storageKey` will pick up that session on its next read. If you need
+   * strict isolation between client lifecycles, await any pending auth
+   * operation before calling `dispose()` (or change the `storageKey` for
+   * the replacement client).
    *
    * Safe to call repeatedly.
    *
