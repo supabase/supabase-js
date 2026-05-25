@@ -12,7 +12,8 @@
   "author": "Supabase",
   "files": [
     "dist",
-    "src"
+    "src",
+    "migrations"
   ],
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
