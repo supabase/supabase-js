@@ -28,7 +28,8 @@
   "files": [
     "dist",
     "src",
-    "migrations"
+    "migrations",
+    "AGENTS.md"
   ],
   "license": "MIT",
   "bugs": {

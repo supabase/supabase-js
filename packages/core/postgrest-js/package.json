@@ -13,7 +13,8 @@
   "files": [
     "dist",
     "src",
-    "migrations"
+    "migrations",
+    "AGENTS.md"
   ],
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

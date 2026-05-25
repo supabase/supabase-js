@@ -29,14 +29,33 @@ Each package has its own README with usage examples and API notes:
 - [`packages/core/storage-js/README.md`](./packages/core/storage-js/README.md) — `@supabase/storage-js`
 - [`packages/core/functions-js/README.md`](./packages/core/functions-js/README.md) — `@supabase/functions-js`
 
+## Helping users of a published `@supabase/*` package
+
+The published npm tarball for each package ships everything an agent needs to give a correct, version-pinned answer. After `npm install @supabase/<package>`, an agent helping with that package should look inside `node_modules/@supabase/<package>/`:
+
+- `AGENTS.md` — per-package agent entry point (read this first; it points at the resources below).
+- `README.md` — usage and quick-start.
+- `src/` — full API source with TSDoc. Every public method and type has JSDoc, most have `@example` blocks. Read source here for the canonical, version-pinned answer instead of guessing from training data.
+- `migrations/` — per-theme migration notes for changes that need caller action.
+
+Source files ship via npm because every package's `files` array in `package.json` includes `"src"`. Migration notes ship via `"migrations"`. Per-package `AGENTS.md` ships via `"AGENTS.md"`. All three are version-pinned by virtue of being inside the installed package.
+
+We deliberately do NOT ship per-package skills or duplicate docs-site content. The TSDoc-in-source IS the canonical API documentation for the SDK packages.
+
+For higher-level Supabase guidance (the documentation site, MCP tools, schema management workflows, project setup), use the centralized [Supabase agent skills](https://github.com/supabase/agent-skills):
+
+```bash
+npx skills add supabase/agent-skills
+```
+
+Or use the [Supabase Plugin for AI Coding Agents](https://supabase.com/docs/guides/getting-started/plugins) to install the agent skills together with the Supabase MCP server in one step. See also: [Agent Skills documentation](https://agentskills.io/home).
+
 ## Migration notes
 
 Migration notes live close to the code they describe, so they ship via npm alongside the package.
 
 - **Per-package migrations**: `packages/core/<package>/migrations/<theme>.md` — one file per migration theme (e.g. `<new-feature-adoption>.md`). Each file describes what changed, who is affected, and what callers need to do.
 - **Cross-cutting migrations** (affecting the whole repo or all packages): [`docs/MIGRATION.md`](./docs/MIGRATION.md) — one H2 section per theme (e.g. Node.js version drops). Low-frequency by design; split into a directory only if the file grows past a handful of themes.
-
-When helping a user upgrade a `@supabase/*` package, check `node_modules/@supabase/<package>/migrations/` for migration notes shipped with the installed version. They are version-pinned by virtue of being inside the package.
 
 ## Other documentation
 
