@@ -1,3 +1,7 @@
+## 2.106.2 (2026-05-25)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
 ## 2.106.1 (2026-05-20)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
