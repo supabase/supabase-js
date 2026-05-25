@@ -27,7 +27,9 @@
   "author": "Supabase",
   "files": [
     "dist",
-    "src"
+    "src",
+    "migrations",
+    "AGENTS.md"
   ],
   "license": "MIT",
   "bugs": {

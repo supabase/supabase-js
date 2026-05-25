@@ -15,7 +15,9 @@
   "author": "Supabase",
   "files": [
     "dist",
-    "src"
+    "src",
+    "migrations",
+    "AGENTS.md"
   ],
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",

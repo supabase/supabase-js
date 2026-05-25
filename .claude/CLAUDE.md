@@ -7,7 +7,7 @@ You are assisting with development in a unified Nx monorepo that consolidates al
 > - **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Development guidelines, commit format, PR process
 > - **[TESTING.md](../docs/TESTING.md)** - Complete testing guide with Docker requirements
 > - **[RELEASE.md](../docs/RELEASE.md)** - Release workflows and versioning strategy
-> - **[MIGRATION.md](../docs/MIGRATION.md)** - Migration context from old repositories
+> - **[MIGRATION.md](../docs/MIGRATION.md)** - Cross-cutting migration notes (one H2 per theme). Per-package migrations live at `packages/core/<package>/migrations/`.
 > - **[SECURITY.md](../docs/SECURITY.md)** - Security policies and responsible disclosure
 
 ## Repository Architecture
@@ -745,7 +745,7 @@ nx test supabase-js --testFile=client.test.ts
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Complete contribution guide
 - **[TESTING.md](../docs/TESTING.md)** - Comprehensive testing documentation
 - **[RELEASE.md](../docs/RELEASE.md)** - Release workflows and automation
-- **[MIGRATION.md](../docs/MIGRATION.md)** - Migration context and history
+- **[MIGRATION.md](../docs/MIGRATION.md)** - Cross-cutting migration notes; per-package migrations live at `packages/core/<package>/migrations/`
 - **[SECURITY.md](../docs/SECURITY.md)** - Security policy and reporting
 - **[Supabase Documentation](https://supabase.com/docs)** - Official Supabase docs
 - **[Nx Documentation](https://nx.dev)** - Nx monorepo documentation

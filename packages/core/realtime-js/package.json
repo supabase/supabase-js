@@ -15,7 +15,9 @@
   "bugs": "https://github.com/supabase/supabase-js/issues",
   "files": [
     "dist",
-    "src"
+    "src",
+    "migrations",
+    "AGENTS.md"
   ],
   "main": "dist/main/index.js",
   "module": "dist/module/index.js",

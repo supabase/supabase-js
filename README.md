@@ -26,17 +26,6 @@
 
 </div>
 
-> **For contributors: Repository Structure Changed**
->
-> This repository has been restructured as a monorepo. All libraries, including `supabase-js` itself, have moved to `packages/core/`:
->
-> | What You're Looking For | Where It Is Now              |
-> | ----------------------- | ---------------------------- |
-> | Main supabase-js code   | `packages/core/supabase-js/` |
-> | Other libraries         | `packages/core/*/`           |
->
-> Read the **[Migration Guide](./docs/MIGRATION.md)** to learn more.
-
 ## 📦 Libraries
 
 This monorepo contains the complete suite of Supabase JavaScript SDK:
@@ -144,7 +133,7 @@ Testing varies per package. See the top-level [TESTING.md](docs/TESTING.md) for 
 
 - **[Contributing](./CONTRIBUTING.md)** - Development guidelines
 - **[Release Workflows](./docs/RELEASE.md)** - Release and publishing process
-- **[Migration Guide](./docs/MIGRATION.md)** - Migrating to the monorepo structure
+- **[Migration Guide](./docs/MIGRATION.md)** - Cross-cutting migration notes (per-package migrations live alongside each package under `packages/core/<package>/migrations/`)
 - **[Security Policy](./docs/SECURITY.md)** - Vulnerability reporting and disclosure policy
 - **[Securing your npm installs](./docs/NPM_PACKAGE_SECURITY.md)** - Consumer-side guide to defending your install against npm supply-chain attacks
 
