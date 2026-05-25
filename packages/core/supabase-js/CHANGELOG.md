@@ -1,3 +1,13 @@
+## 2.106.2 (2026-05-25)
+
+### 🩹 Fixes
+
+- **misc:** add react-native export condition for Hermes-safe resolution ([#2393](https://github.com/supabase/supabase-js/pull/2393))
+
+### ❤️ Thank You
+
+- Myroslav Hryhschenko @BLOCKMATERIAL
+
 ## 2.106.1 (2026-05-20)
 
 ### 🩹 Fixes

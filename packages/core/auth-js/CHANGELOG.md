@@ -1,3 +1,13 @@
+## 2.106.2 (2026-05-25)
+
+### 🩹 Fixes
+
+- **auth:** restore signup user response ([#2391](https://github.com/supabase/supabase-js/pull/2391))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.106.1 (2026-05-20)
 
 ### 🩹 Fixes

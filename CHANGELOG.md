@@ -1,3 +1,15 @@
+## 2.106.2 (2026-05-25)
+
+### 🩹 Fixes
+
+- **auth:** restore signup user response ([#2391](https://github.com/supabase/supabase-js/pull/2391))
+- **misc:** add react-native export condition for Hermes-safe resolution ([#2393](https://github.com/supabase/supabase-js/pull/2393))
+
+### ❤️ Thank You
+
+- Myroslav Hryhschenko @BLOCKMATERIAL
+- Vaibhav @7ttp
+
 ## 2.106.1 (2026-05-20)
 
 ### 🩹 Fixes
