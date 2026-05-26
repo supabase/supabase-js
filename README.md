@@ -135,7 +135,7 @@ Testing varies per package. See the top-level [TESTING.md](docs/TESTING.md) for 
 - **[Release Workflows](./docs/RELEASE.md)** - Release and publishing process
 - **[Migration Guide](./docs/MIGRATION.md)** - Cross-cutting migration notes (per-package migrations live alongside each package under `packages/core/<package>/migrations/`)
 - **[Security Policy](./docs/SECURITY.md)** - Vulnerability reporting and disclosure policy
-- **[Securing your npm installs](./docs/NPM_PACKAGE_SECURITY.md)** - Consumer-side guide to defending your install against npm supply-chain attacks
+- **[Securing your npm installs](https://supabase.com/docs/guides/security/npm-security)** - Consumer-side guide to defending your install against npm supply-chain attacks
 
 ## 🔐 Verifying provenance attestations
 
@@ -162,7 +162,7 @@ audited 1 package in 0s
 
 Because provenance attestations are a new capability, security features may evolve over time. Ensure you are using the latest npm CLI to verify attestation signatures reliably. This may require updating npm beyond the version bundled with Node.js.
 
-For a broader checklist — minimum release age, lockfile hygiene, blocking exotic transitive deps, lifecycle script controls, and what to do if you suspect a compromise — see [Securing your npm installs](./docs/NPM_PACKAGE_SECURITY.md).
+For a broader checklist — minimum release age, lockfile hygiene, blocking exotic transitive deps, lifecycle script controls, and what to do if you suspect a compromise — see [Securing your npm installs](https://supabase.com/docs/guides/security/npm-security).
 
 ## 📄 License
 
