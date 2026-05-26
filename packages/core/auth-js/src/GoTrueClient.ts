@@ -289,6 +289,14 @@ export default class GoTrueClient {
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
+   * Monotonic counter incremented at the top of `_removeSession`, before any
+   * `await`. The commit guard inside `_callRefreshToken` captures this value
+   * before `_saveSession` and re-checks it after, so a `signOut` that
+   * interleaves inside `_saveSession`'s storage-write awaits is still caught
+   * (the post-fetch storage snapshot alone misses that window).
+   */
+  protected _sessionRemovalEpoch = 0
+  /**
    * Keeps track of the async client initialization.
    * When null or not yet resolved the auth state is `unknown`
    * Once resolved the auth state is known and it's safe to call any further client methods.
@@ -4524,7 +4532,10 @@ export default class GoTrueClient {
    * @param refreshToken A valid refresh token that was returned on login.
    */
   private async _refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
-    const debugName = `#_refreshAccessToken(${refreshToken.substring(0, 5)}...)`
+    // Refresh tokens are long-lived bearer credentials; do NOT include any
+    // fragment of the token in the debug tag, even when `debug: true` is
+    // enabled (logs may be forwarded to third-party services).
+    const debugName = `#_refreshAccessToken()`
     this._debug(debugName, 'begin')
 
     try {
@@ -4745,7 +4756,10 @@ export default class GoTrueClient {
       return this.refreshingDeferred.promise
     }
 
-    const debugName = `#_callRefreshToken(${refreshToken.substring(0, 5)}...)`
+    // Refresh tokens are long-lived bearer credentials; do NOT include any
+    // fragment of the token in the debug tag, even when `debug: true` is
+    // enabled (logs may be forwarded to third-party services).
+    const debugName = `#_callRefreshToken()`
 
     this._debug(debugName, 'begin')
 
@@ -4778,8 +4792,10 @@ export default class GoTrueClient {
           debugName,
           'commit guard: storage changed since refresh started, discarding rotated tokens',
           {
-            startedWith: `${storedAtStart.refresh_token?.substring(0, 5)}...`,
-            nowHolds: storedAfter ? `${storedAfter.refresh_token?.substring(0, 5)}...` : null,
+            // Presence indicators only — never log refresh token fragments,
+            // even partial. Logs may be forwarded to third-party services.
+            startedWith: 'present',
+            nowHolds: storedAfter ? 'replaced' : 'cleared',
           }
         )
         const discarded: CallRefreshTokenResult = {
@@ -4790,7 +4806,35 @@ export default class GoTrueClient {
         return discarded
       }
 
+      // Second leg of the commit guard: close the TOCTOU window between the
+      // synchronous `storageChangedUnderUs` check and the actual storage
+      // writes inside `_saveSession`. A concurrent `signOut → _removeSession`
+      // can land inside `_saveSession`'s `await setItemAsync(...)` yields and
+      // clear storage just before we overwrite it. Capture the epoch BEFORE
+      // the save and re-check after; if it advanced, undo the write directly
+      // (do NOT call `_removeSession` — that would emit a duplicate
+      // SIGNED_OUT for the concurrent signOut that already fired one).
+      const epochBeforeSave = this._sessionRemovalEpoch
+
       await this._saveSession(data.session)
+
+      if (this._sessionRemovalEpoch !== epochBeforeSave) {
+        this._debug(
+          debugName,
+          'commit guard (post-save): _removeSession ran during _saveSession, undoing write'
+        )
+        await removeItemAsync(this.storage, this.storageKey)
+        if (this.userStorage) {
+          await removeItemAsync(this.userStorage, this.storageKey + '-user')
+        }
+        const discarded: CallRefreshTokenResult = {
+          data: null,
+          error: new AuthRefreshDiscardedError(),
+        }
+        this.refreshingDeferred.resolve(discarded)
+        return discarded
+      }
+
       await this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
 
       const result = { data: data.session, error: null }
@@ -4902,6 +4946,11 @@ export default class GoTrueClient {
   }
 
   private async _removeSession() {
+    // Bump synchronously, BEFORE any `await`, so that `_callRefreshToken`'s
+    // post-save check sees the increment whenever this method has started —
+    // even if it hasn't finished. Pairs with the epoch check in
+    // `_callRefreshToken`. See `_sessionRemovalEpoch` field doc.
+    this._sessionRemovalEpoch += 1
     this._debug('#_removeSession()')
 
     this.suppressGetSessionWarning = false
