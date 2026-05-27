@@ -736,6 +736,9 @@ export default class RealtimeChannel {
    * This method always uses the REST API endpoint regardless of WebSocket connection state.
    * Useful when you want to guarantee REST delivery or when gradually migrating from implicit REST fallback.
    *
+   * Payloads that are `ArrayBuffer` or `ArrayBufferView` (e.g. `Uint8Array`) are sent as
+   * `application/octet-stream`; all other payloads are JSON-encoded.
+   *
    * @param event The name of the broadcast event
    * @param payload Payload to be sent (required)
    * @param opts Options including timeout
@@ -752,32 +755,31 @@ export default class RealtimeChannel {
       return Promise.reject(new Error('Payload is required for httpSend()'))
     }
 
+    const isBinary = payload instanceof ArrayBuffer || ArrayBuffer.isView(payload)
+
     const headers: Record<string, string> = {
       apikey: this.socket.apiKey ? this.socket.apiKey : '',
-      'Content-Type': 'application/json',
+      'Content-Type': isBinary ? 'application/octet-stream' : 'application/json',
     }
 
     if (this.socket.accessTokenValue) {
       headers['Authorization'] = `Bearer ${this.socket.accessTokenValue}`
     }
 
+    const url = new URL(this.broadcastEndpointURL)
+    url.pathname += `/${encodeURIComponent(this.subTopic)}/events/${encodeURIComponent(event)}`
+    if (this.private) {
+      url.searchParams.set('private', 'true')
+    }
+
     const options = {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        messages: [
-          {
-            topic: this.subTopic,
-            event,
-            payload: payload,
-            private: this.private,
-          },
-        ],
-      }),
+      body: isBinary ? (payload as ArrayBuffer | ArrayBufferView) : JSON.stringify(payload),
     }
 
     const response = await this._fetchWithTimeout(
-      this.broadcastEndpointURL,
+      url.toString(),
       options,
       opts.timeout ?? this.timeout
     )

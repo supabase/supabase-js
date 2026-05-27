@@ -449,6 +449,98 @@ describe('Supabase Integration Tests', () => {
       // removeAllChannels is an explicit teardown — no deferred timer, disconnect is immediate
       expect(supabase.realtime.isConnected()).toBe(false)
     }, 20000)
+
+    test('httpSend delivers JSON broadcast to a public channel', async () => {
+      const publicChannelName = `public-${crypto.randomUUID()}`
+      const publicChannel = supabase.channel(publicChannelName, {
+        config: { broadcast: { self: true } },
+      })
+
+      let received: any
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('subscribe timeout')), 8000)
+        publicChannel
+          .on('broadcast', { event: 'json' }, (payload) => {
+            received = payload
+          })
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              clearTimeout(timeout)
+              resolve()
+            }
+          })
+      })
+
+      const result = await publicChannel.httpSend('json', { hello: 'public' })
+      expect(result).toEqual({ success: true })
+
+      let attempts = 0
+      while (!received) {
+        if (attempts++ > 50) throw new Error('Timeout waiting for broadcast')
+        await new Promise((r) => setTimeout(r, 100))
+      }
+      expect(received.payload).toEqual({ hello: 'public' })
+    }, 15000)
+
+    test('httpSend delivers JSON broadcast to a private channel', async () => {
+      let received: any
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('subscribe timeout')), 8000)
+        channel
+          .on('broadcast', { event: 'json-private' }, (payload) => {
+            received = payload
+          })
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              clearTimeout(timeout)
+              resolve()
+            }
+          })
+      })
+
+      const result = await channel.httpSend('json-private', { hello: 'private' })
+      expect(result).toEqual({ success: true })
+
+      let attempts = 0
+      while (!received) {
+        if (attempts++ > 50) throw new Error('Timeout waiting for broadcast')
+        await new Promise((r) => setTimeout(r, 100))
+      }
+      expect(received.payload).toEqual({ hello: 'private' })
+    }, 15000)
+
+    const binaryBroadcastTest = vsn === '2.0.0' ? test : test.skip
+    binaryBroadcastTest(
+      'httpSend delivers a binary broadcast to a private channel',
+      async () => {
+        let received: any
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('subscribe timeout')), 8000)
+          channel
+            .on('broadcast', { event: 'binary' }, (payload) => {
+              received = payload
+            })
+            .subscribe((status) => {
+              if (status === 'SUBSCRIBED') {
+                clearTimeout(timeout)
+                resolve()
+              }
+            })
+        })
+
+        const bytes = new Uint8Array([1, 2, 3, 4, 5])
+        const result = await channel.httpSend('binary', bytes)
+        expect(result).toEqual({ success: true })
+
+        let attempts = 0
+        while (!received) {
+          if (attempts++ > 50) throw new Error('Timeout waiting for broadcast')
+          await new Promise((r) => setTimeout(r, 100))
+        }
+        expect(new Uint8Array(received.payload)).toEqual(bytes)
+      },
+      15000
+    )
   })
 })
 
