@@ -2676,6 +2676,11 @@ export default class GoTrueClient {
   private async _acquireLock<R>(acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
     this._debug('#_acquireLock', 'begin', acquireTimeout)
 
+    // Safety mechanism: Prevent infinite deadlocks by capping the wait time to 15 seconds.
+    // If the lock cannot be acquired, it will throw a LockAcquireTimeoutError, allowing 
+    // the application to catch the error and recover gracefully instead of hanging forever.
+    const safeTimeout = acquireTimeout === -1 ? 15000 : acquireTimeout
+
     try {
       if (this.lockAcquired) {
         const last = this.pendingInLock.length
@@ -2700,7 +2705,7 @@ export default class GoTrueClient {
         return result
       }
 
-      return await this.lock(`lock:${this.storageKey}`, acquireTimeout, async () => {
+      return await this.lock(`lock:${this.storageKey}`, safeTimeout, async () => {
         this._debug('#_acquireLock', 'lock acquired for storage key', this.storageKey)
 
         try {
