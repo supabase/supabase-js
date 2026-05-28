@@ -5905,8 +5905,13 @@ export default class GoTrueClient {
       } = decodeJWT(token)
 
       if (!options?.allowExpired) {
-        // Reject expired JWTs should only happen if jwt argument was passed
-        validateExp(payload.exp)
+        // Reject expired JWTs should only happen if jwt argument was passed.
+        // Rethrow as AuthInvalidJwtError so the outer catch converts it to { data, error }.
+        try {
+          validateExp(payload.exp)
+        } catch (e) {
+          throw new AuthInvalidJwtError(e instanceof Error ? e.message : 'JWT validation failed')
+        }
       }
 
       const signingKey =
