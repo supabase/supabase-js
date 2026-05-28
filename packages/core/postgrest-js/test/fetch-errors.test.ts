@@ -203,4 +203,62 @@ describe('Fetch error handling', () => {
     expect(serialized.hint).toBe('check policies')
     expect(serialized.name).toBe('PostgrestError')
   })
+
+  const mockOkResponseWithBody = (body: string) =>
+    jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+      text: async () => body,
+    })
+
+  test('returns a structured error when a successful response has a non-JSON body', async () => {
+    const htmlBody = '<html><body>502 Bad Gateway</body></html>'
+    const postgrest = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockOkResponseWithBody(htmlBody) as any,
+    })
+
+    const res = await postgrest.from('users').select()
+
+    expect(res.data).toBeNull()
+    expect(res.error).toBeTruthy()
+    expect(res.error!.message).toBe(htmlBody)
+  })
+
+  test('preserves the real HTTP status instead of reporting a status: 0 network failure', async () => {
+    const postgrest = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockOkResponseWithBody('upstream connect error') as any,
+    })
+
+    const res = await postgrest.from('users').select()
+
+    // The request reached the server and returned 200, so the response must not
+    // be mislabeled as a client-side network failure (status 0).
+    expect(res.status).toBe(200)
+    expect(res.statusText).toBe('OK')
+  })
+
+  test('handles a truncated JSON body on a successful response', async () => {
+    const postgrest = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockOkResponseWithBody('[{"id":1,"name":"tru') as any,
+    })
+
+    const res = await postgrest.from('users').select()
+
+    expect(res.data).toBeNull()
+    expect(res.error).toBeTruthy()
+    expect(res.error!.message).toBe('[{"id":1,"name":"tru')
+  })
+
+  test('rejects with a PostgrestError (not a raw SyntaxError) when throwOnError is set', async () => {
+    const postgrest = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockOkResponseWithBody('not json') as any,
+    })
+
+    await expect(postgrest.from('users').select().throwOnError()).rejects.toBeInstanceOf(
+      PostgrestError
+    )
+    await expect(postgrest.from('users').select().throwOnError()).rejects.toThrow('not json')
+  })
 })

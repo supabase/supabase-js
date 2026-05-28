@@ -69,11 +69,9 @@ export default abstract class PostgrestBuilder<
   ClientOptions extends ClientServerOptions,
   Result,
   ThrowOnError extends boolean = false,
-> implements
-    PromiseLike<
-      ThrowOnError extends true ? PostgrestResponseSuccess<Result> : PostgrestSingleResponse<Result>
-    >
-{
+> implements PromiseLike<
+  ThrowOnError extends true ? PostgrestResponseSuccess<Result> : PostgrestSingleResponse<Result>
+> {
   protected method: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
   protected url: URL
   protected headers: Headers
@@ -476,7 +474,17 @@ export default abstract class PostgrestBuilder<
         ) {
           data = body
         } else {
-          data = JSON.parse(body)
+          try {
+            data = JSON.parse(body)
+          } catch {
+            // A 2xx status doesn't guarantee a JSON body; mirror the non-2xx fallback below.
+            error = { message: body }
+            data = null
+
+            if (this.shouldThrowOnError) {
+              throw new PostgrestError({ message: body, details: '', hint: '', code: '' })
+            }
+          }
         }
       }
 
