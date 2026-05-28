@@ -476,31 +476,13 @@ export default abstract class PostgrestBuilder<
         } else {
           try {
             data = JSON.parse(body)
-          } catch (parseError) {
-            // A 2xx response is not a guarantee of a valid JSON body. A proxy,
-            // gateway, or CDN in front of PostgREST can return a non-JSON body
-            // (e.g. an HTML error page) with a success status, and a dropped
-            // connection can yield a truncated body. Mirror the non-2xx branch
-            // below (which already tolerates non-JSON bodies) by surfacing a
-            // structured error instead of letting a raw `SyntaxError` escape —
-            // which otherwise either rejects `.throwOnError()` with a
-            // `SyntaxError` (breaking its documented `PostgrestError` contract)
-            // or is swallowed by the network-error handler and mislabeled as a
-            // `status: 0` failure even though the request reached the server.
-            const snippet =
-              body.length > 500 ? `${body.slice(0, 500)}… (truncated, ${body.length} bytes)` : body
-            error = {
-              message: `Failed to parse successful response body as JSON: ${
-                parseError instanceof Error ? parseError.message : String(parseError)
-              }`,
-              details: `Response body: ${snippet}`,
-              hint: 'The server returned a successful status but a body that is not valid JSON. This usually means a proxy, gateway, or CDN returned a non-JSON response, or the response was truncated.',
-              code: '',
-            }
+          } catch {
+            // A 2xx status doesn't guarantee a JSON body; mirror the non-2xx fallback below.
+            error = { message: body }
             data = null
 
             if (this.shouldThrowOnError) {
-              throw new PostgrestError(error)
+              throw new PostgrestError({ message: body, details: '', hint: '', code: '' })
             }
           }
         }

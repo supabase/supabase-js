@@ -223,10 +223,7 @@ describe('Fetch error handling', () => {
 
     expect(res.data).toBeNull()
     expect(res.error).toBeTruthy()
-    expect(res.error!.message).toContain('Failed to parse successful response body as JSON')
-    expect(res.error!.details).toContain(htmlBody)
-    expect(res.error!.hint).toContain('proxy, gateway, or CDN')
-    expect(res.error!.code).toBe('')
+    expect(res.error!.message).toBe(htmlBody)
   })
 
   test('preserves the real HTTP status instead of reporting a status: 0 network failure', async () => {
@@ -251,20 +248,7 @@ describe('Fetch error handling', () => {
 
     expect(res.data).toBeNull()
     expect(res.error).toBeTruthy()
-    expect(res.error!.message).toContain('Failed to parse successful response body as JSON')
-  })
-
-  test('truncates an oversized non-JSON body in the error details', async () => {
-    const hugeBody = 'x'.repeat(5000)
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
-      fetch: mockOkResponseWithBody(hugeBody) as any,
-    })
-
-    const res = await postgrest.from('users').select()
-
-    expect(res.error).toBeTruthy()
-    expect(res.error!.details).toContain('truncated, 5000 bytes')
-    expect(res.error!.details!.length).toBeLessThan(hugeBody.length)
+    expect(res.error!.message).toBe('[{"id":1,"name":"tru')
   })
 
   test('rejects with a PostgrestError (not a raw SyntaxError) when throwOnError is set', async () => {
@@ -275,8 +259,6 @@ describe('Fetch error handling', () => {
     await expect(postgrest.from('users').select().throwOnError()).rejects.toBeInstanceOf(
       PostgrestError
     )
-    await expect(postgrest.from('users').select().throwOnError()).rejects.toThrow(
-      'Failed to parse successful response body as JSON'
-    )
+    await expect(postgrest.from('users').select().throwOnError()).rejects.toThrow('not json')
   })
 })
