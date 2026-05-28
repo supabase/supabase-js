@@ -3305,6 +3305,20 @@ describe('Storage adapter edge cases', () => {
     const client = getClientWithSpecificStorage(memoryLocalStorageAdapter())
     // @ts-expect-error private method
     expect(client._isImplicitGrantCallback({})).toBe(false)
+    // @ts-expect-error private method
+    expect(client._isImplicitGrantCallback({ foo: 'bar' })).toBe(false)
+  })
+
+  test('should return true for _isImplicitGrantCallback when auth params are present', () => {
+    const client = getClientWithSpecificStorage(memoryLocalStorageAdapter())
+    // @ts-expect-error private method
+    expect(client._isImplicitGrantCallback({ access_token: 'token' })).toBe(true)
+    // @ts-expect-error private method
+    expect(client._isImplicitGrantCallback({ error: 'access_denied' })).toBe(true)
+    // @ts-expect-error private method
+    expect(client._isImplicitGrantCallback({ error_description: 'expired' })).toBe(true)
+    // @ts-expect-error private method
+    expect(client._isImplicitGrantCallback({ error_code: 'otp_expired' })).toBe(true)
   })
 
   test('should return false for _isPKCECallback with missing params', async () => {
