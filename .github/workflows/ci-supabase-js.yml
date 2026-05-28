@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         node: [22]
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-2025-vs2026]
       fail-fast: false
     steps:
       - name: Checkout code
