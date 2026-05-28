@@ -3724,7 +3724,9 @@ export default class GoTrueClient {
     if (typeof this.detectSessionInUrl === 'function') {
       return this.detectSessionInUrl(new URL(window.location.href), params)
     }
-    return Boolean(params.access_token || params.error_description)
+    return Boolean(
+      params.access_token || params.error || params.error_description || params.error_code
+    )
   }
 
   /**
