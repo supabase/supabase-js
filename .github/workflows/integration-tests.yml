@@ -25,9 +25,12 @@ jobs:
         with:
           filter: tree:0
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Update pkg.pr.new URLs with commit hash
-        run: ./scripts/update-pkg-pr-urls.sh "${{ inputs.commit_hash }}"
+        run: ./scripts/update-pkg-pr-urls.sh "${INPUTS_COMMIT_HASH}"
+        env:
+          INPUTS_COMMIT_HASH: ${{ inputs.commit_hash }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
@@ -89,16 +92,19 @@ jobs:
           # Install Puppeteer Chrome for integration.browser.test.ts
           # Only download if not already cached
           # puppeteer is a devDep of @supabase/supabase-js (isolated pnpm mode).
-          if [ "${{ steps.puppeteer-cache.outputs.cache-hit }}" != "true" ]; then
+          if [ "${STEPS_PUPPETEER_CACHE_OUTPUTS_CACHE_HIT}" != "true" ]; then
             pnpm --filter @supabase/supabase-js exec puppeteer browsers install chrome
           fi
           # Install Playwright browsers for WebSocket tests.
           # @playwright/test is a devDep of the auth-js-example-react workspace package.
-          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+          if [ "${STEPS_PLAYWRIGHT_CACHE_OUTPUTS_CACHE_HIT}" != "true" ]; then
             pnpm --filter auth-js-example-react exec playwright install --with-deps
           else
             pnpm --filter auth-js-example-react exec playwright install-deps
           fi
+        env:
+          STEPS_PUPPETEER_CACHE_OUTPUTS_CACHE_HIT: ${{ steps.puppeteer-cache.outputs.cache-hit }}
+          STEPS_PLAYWRIGHT_CACHE_OUTPUTS_CACHE_HIT: ${{ steps.playwright-cache.outputs.cache-hit }}
 
       - name: Setup Supabase
         run: pnpm nx test:supabase:setup supabase-js

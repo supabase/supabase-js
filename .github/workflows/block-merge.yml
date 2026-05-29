@@ -4,6 +4,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
 
+permissions: {}
+
 jobs:
   block-merge:
     uses: supabase/actions/.github/workflows/block-merge.yml@659b3cd74a64ee2f1ca0a527922f134707e54671
