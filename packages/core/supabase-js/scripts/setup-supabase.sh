@@ -6,6 +6,13 @@ cd "$(dirname "$0")/.."
 echo "🚀 Stop supabase if it is running"
 npx supabase stop
 
+# Pin realtime to a version that includes the per-event broadcast endpoint
+# (supabase/realtime#1864, first released in realtime v2.97.0). The Supabase CLI
+# bundled with this repo still defaults to an older realtime image; the CLI
+# reads supabase/.temp/realtime-version and overrides the image tag from it.
+mkdir -p supabase/.temp
+echo "v2.97.3" > supabase/.temp/realtime-version
+
 echo "🚀 Starting Supabase (migrations applied, seed data skipped)..."
 npx supabase start
 

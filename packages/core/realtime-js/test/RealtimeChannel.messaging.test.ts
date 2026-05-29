@@ -611,11 +611,12 @@ describe('httpSend', () => {
 
         expect(result).toEqual({ success: true })
         expect(fetchStub).toHaveBeenCalledTimes(1)
-        const [, options] = fetchStub.mock.calls[0]
+        const [url, options] = fetchStub.mock.calls[0]
         expect(options.headers.Authorization).toBe(expectedAuth)
-        expect(options.body).toBe(
-          '{"messages":[{"topic":"topic","event":"test-payload","payload":{"data":"value"},"private":false}]}'
-        )
+        expect(options.headers['Content-Type']).toBe('application/json')
+        expect(url).toContain('/api/broadcast/topic/events/test-payload')
+        expect(url).not.toContain('private=true')
+        expect(options.body).toBe('{"data":"value"}')
       })
     })
   })
@@ -635,7 +636,9 @@ describe('httpSend', () => {
       const expectedUrl = testSetup.wssUrl
         .replace('/websocket', '')
         .replace('wss', 'https')
-        .concat(`/api/broadcast?apikey=${expectedApiKey}&vsn=${VSN_2_0_0}`)
+        .concat(
+          `/api/broadcast/topic/events/test-explicit?apikey=${expectedApiKey}&vsn=${VSN_2_0_0}&private=true`
+        )
 
       expect(fetchStub).toHaveBeenCalledTimes(1)
       const [url, options] = fetchStub.mock.calls[0]
@@ -643,9 +646,8 @@ describe('httpSend', () => {
       expect(options.method).toBe('POST')
       expect(options.headers.Authorization).toBe('Bearer token123')
       expect(options.headers.apikey).toBe(expectedApiKey)
-      expect(options.body).toBe(
-        '{"messages":[{"topic":"topic","event":"test-explicit","payload":{"data":"explicit"},"private":true}]}'
-      )
+      expect(options.headers['Content-Type']).toBe('application/json')
+      expect(options.body).toBe('{"data":"explicit"}')
     })
 
     test('uses default timeout when not specified', async () => {
@@ -700,6 +702,59 @@ describe('httpSend', () => {
       await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
         'Service Unavailable'
       )
+    })
+  })
+
+  describe('binary payloads', () => {
+    test('sends ArrayBuffer payload as application/octet-stream', async () => {
+      const mockResponse = createMockResponse(202)
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic')
+
+      const buffer = new ArrayBuffer(4)
+      new Uint8Array(buffer).set([1, 2, 3, 4])
+
+      const result = await channel.httpSend('bin', buffer)
+
+      expect(result).toEqual({ success: true })
+      expect(fetchStub).toHaveBeenCalledTimes(1)
+      const [url, options] = fetchStub.mock.calls[0]
+      expect(url).toContain('/api/broadcast/topic/events/bin')
+      expect(options.headers['Content-Type']).toBe('application/octet-stream')
+      expect(options.body).toBe(buffer)
+    })
+
+    test('sends Uint8Array payload as application/octet-stream', async () => {
+      const mockResponse = createMockResponse(202)
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic')
+
+      const bytes = new Uint8Array([10, 20, 30])
+
+      const result = await channel.httpSend('bin', bytes)
+
+      expect(result).toEqual({ success: true })
+      expect(fetchStub).toHaveBeenCalledTimes(1)
+      const [, options] = fetchStub.mock.calls[0]
+      expect(options.headers['Content-Type']).toBe('application/octet-stream')
+      expect(options.body).toBe(bytes)
+    })
+  })
+
+  describe('URL encoding', () => {
+    test('URL-encodes topic and event names with special characters', async () => {
+      const mockResponse = createMockResponse(202)
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('room:42')
+
+      const result = await channel.httpSend('user/joined', { id: 1 })
+
+      expect(result).toEqual({ success: true })
+      const [url] = fetchStub.mock.calls[0]
+      expect(url).toContain('/api/broadcast/room%3A42/events/user%2Fjoined')
     })
   })
 })
