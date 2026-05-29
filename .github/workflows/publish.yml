@@ -301,7 +301,8 @@ jobs:
     needs: release-beta
     if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-beta.result == 'failure' }}
     uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
     with:
       title: 'Beta Release'
       status: 'failure'
@@ -311,7 +312,8 @@ jobs:
     needs: release-beta
     if: ${{ github.event_name == 'workflow_dispatch' && needs.release-beta.result == 'success' }}
     uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
     with:
       title: 'Beta Release'
       status: 'success'
@@ -403,7 +405,7 @@ jobs:
         if: ${{ success() }}
         run: |
           echo "## ✅ Next Prerelease" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${GITHUB_REF_NAME}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Dist-tag:** \`next\`" >> $GITHUB_STEP_SUMMARY
 
   # preview jobs
@@ -507,7 +509,8 @@ jobs:
     needs: release-stable
     if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'failure' }}
     uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
     with:
       title: 'Stable Release'
       status: 'failure'
@@ -517,7 +520,8 @@ jobs:
     needs: release-stable
     if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
     uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
     with:
       title: 'Stable Release'
       status: 'success'
@@ -528,7 +532,8 @@ jobs:
     needs: release-canary
     if: ${{ always() && github.event_name == 'push' && needs.release-canary.result == 'failure' }}
     uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
     with:
       title: 'Canary Release'
       status: 'failure'
@@ -538,7 +543,8 @@ jobs:
     needs: release-next
     if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.release-next.result == 'failure' }}
     uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
     with:
       title: 'Next Prerelease'
       status: 'failure'
@@ -548,7 +554,8 @@ jobs:
     needs: release-next
     if: ${{ github.event_name == 'workflow_dispatch' && needs.release-next.result == 'success' }}
     uses: ./.github/workflows/slack-notify.yml
-    secrets: inherit
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
     with:
       title: 'Next Prerelease'
       status: 'success'

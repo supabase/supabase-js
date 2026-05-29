@@ -16,6 +16,9 @@ on:
         description: 'Version string to display (e.g., v1.2.3 or 1.2.3-canary.1)'
         required: false
         type: string
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK:
+        required: true
 
 jobs:
   notify:

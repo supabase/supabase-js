@@ -42,6 +42,10 @@ jobs:
   coveralls-finish:
     name: Coveralls Finished
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
     needs: [ci-core, ci-supabase-js]
     steps:
       - name: Coveralls Finished
