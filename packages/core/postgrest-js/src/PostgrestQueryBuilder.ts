@@ -170,7 +170,7 @@ export default class PostgrestQueryBuilder<
      * ```
      *
      * @exampleDescription Handling errors
-     * Log the full `error` object so fields like `hint` and `code` aren't hidden — `error.message` alone often omits the actionable part. For example, a permission-denied error (`code: '42501'`) arrives with a `hint` like `"Grant the required privileges to the current role with: GRANT SELECT ON public.characters TO anon;"` that tells you exactly which grant is missing.
+     * The most useful field on a Postgres error is usually `hint` — when the database knows the fix, it puts the literal SQL there. For example, a permission-denied error (`code: '42501'`) arrives with a `hint` like `"Grant the required privileges to the current role with: GRANT SELECT ON public.characters TO anon;"`. Log the full `error` object so the hint isn't hidden behind `error.message`.
      *
      * @example Handling errors
      * ```js
@@ -1013,7 +1013,7 @@ export default class PostgrestQueryBuilder<
    * ```
    *
    * @exampleDescription Handling errors
-   * Log the full `error` object — `error.hint` from the database often contains the actionable next step (e.g. `"Grant the required privileges to the current role with: GRANT INSERT ON public.countries TO anon;"` for a `42501` permission-denied error). Logging only `error.message` hides that.
+   * `error.hint` from Postgres often contains the actionable fix (e.g. `"Grant the required privileges to the current role with: GRANT INSERT ON public.countries TO anon;"` for a `42501` permission-denied error). Log the full `error` object so it isn't hidden behind `error.message`.
    *
    * @example Handling errors
    * ```js
@@ -1263,7 +1263,7 @@ export default class PostgrestQueryBuilder<
    * ```
    *
    * @exampleDescription Handling errors
-   * Log the full `error` object — `error.hint` from the database often contains the actionable next step (e.g. `"Grant the required privileges to the current role with: GRANT INSERT, UPDATE ON public.instruments TO anon;"` for a `42501` permission-denied error). Logging only `error.message` hides that.
+   * `error.hint` from Postgres often contains the actionable fix (e.g. `"Grant the required privileges to the current role with: GRANT INSERT, UPDATE ON public.instruments TO anon;"` for a `42501` permission-denied error). Log the full `error` object so it isn't hidden behind `error.message`.
    *
    * @example Handling errors
    * ```js
@@ -1474,7 +1474,7 @@ export default class PostgrestQueryBuilder<
    * ```
    *
    * @exampleDescription Handling errors
-   * Log the full `error` object — `error.hint` from the database often contains the actionable next step (e.g. `"Grant the required privileges to the current role with: GRANT UPDATE ON public.instruments TO anon;"` for a `42501` permission-denied error). Logging only `error.message` hides that.
+   * `error.hint` from Postgres often contains the actionable fix (e.g. `"Grant the required privileges to the current role with: GRANT UPDATE ON public.instruments TO anon;"` for a `42501` permission-denied error). Log the full `error` object so it isn't hidden behind `error.message`.
    *
    * @example Handling errors
    * ```js
@@ -1664,7 +1664,7 @@ export default class PostgrestQueryBuilder<
    * ```
    *
    * @exampleDescription Handling errors
-   * Log the full `error` object — `error.hint` from the database often contains the actionable next step (e.g. `"Grant the required privileges to the current role with: GRANT DELETE ON public.countries TO anon;"` for a `42501` permission-denied error). Logging only `error.message` hides that.
+   * `error.hint` from Postgres often contains the actionable fix (e.g. `"Grant the required privileges to the current role with: GRANT DELETE ON public.countries TO anon;"` for a `42501` permission-denied error). Log the full `error` object so it isn't hidden behind `error.message`.
    *
    * @example Handling errors
    * ```js

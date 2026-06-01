@@ -1,17 +1,24 @@
 /**
  * Error format
  *
- * Returned by every PostgREST request that fails. When handling errors, prefer
- * logging the full object (e.g. `console.error(error)`) rather than just
- * `error.message` — the other fields often contain the actionable part.
+ * Returned by every PostgREST request that fails. When something fails, the
+ * single most useful field is usually `hint` — Postgres often returns the
+ * actionable fix there, not in `message`. Always log the full object (e.g.
+ * `console.error(error)`); logging only `error.message` hides the hint.
  *
- * - `message` — human-readable summary, usually from PostgreSQL or PostgREST.
- * - `code` — error code from PostgREST (e.g. `PGRST301`) or PostgreSQL (e.g. `42501`).
- * - `details` — extra context about what went wrong.
- * - `hint` — actionable guidance from the database when available. For example,
- *   permission-denied errors (`42501`) now arrive with hints like
- *   `"Grant the required privileges to the current role with: GRANT SELECT ON public.users TO anon;"`
- *   — the rest of the error message alone wouldn't tell you which role or grant is missing.
+ * Read the fields in roughly this order of usefulness:
+ *
+ * - `hint` — actionable guidance from the database when available. For
+ *   permission-denied errors (`42501`), this is the literal SQL to fix the
+ *   problem, e.g.
+ *   `"Grant the required privileges to the current role with: GRANT SELECT ON public.users TO anon;"`.
+ *   Missing column? `hint` suggests the column you probably meant. Whenever
+ *   Postgres knows the fix, it puts it in `hint`.
+ * - `code` — stable error code from PostgREST (e.g. `PGRST301`) or Postgres
+ *   (e.g. `42501`). Branch on this rather than on `message` text.
+ * - `details` — extra context, often the offending value, key, or row.
+ * - `message` — human-readable summary. Useful in UI strings; less useful
+ *   for debugging.
  *
  * {@link https://postgrest.org/en/stable/api.html?highlight=options#errors-and-http-status-codes}
  */
