@@ -101,7 +101,7 @@ export class FunctionsClient {
    * ```
    *
    * @exampleDescription Error handling
-   * A `FunctionsHttpError` error is returned if your function throws an error, `FunctionsRelayError` if the Supabase Relay has an error processing your function and `FunctionsFetchError` if there is a network error in calling your function.
+   * A `FunctionsHttpError` error is returned if your function throws an error, `FunctionsRelayError` if the Supabase Relay has an error processing your function and `FunctionsFetchError` if there is a network error in calling your function. Log the full error object so fields like `name`, `context`, and any structured body aren't hidden.
    *
    * @example Error handling
    * ```js
@@ -116,11 +116,11 @@ export class FunctionsClient {
    *
    * if (error instanceof FunctionsHttpError) {
    *   const errorMessage = await error.context.json()
-   *   console.log('Function returned an error', errorMessage)
+   *   console.error('Function returned an error', errorMessage)
    * } else if (error instanceof FunctionsRelayError) {
-   *   console.log('Relay error:', error.message)
+   *   console.error('Relay error:', error)
    * } else if (error instanceof FunctionsFetchError) {
-   *   console.log('Fetch error:', error.message)
+   *   console.error('Fetch error:', error)
    * }
    * ```
    *
