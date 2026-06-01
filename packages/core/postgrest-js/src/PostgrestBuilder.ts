@@ -304,9 +304,16 @@ export default abstract class PostgrestBuilder<
       let attemptCount = 0
 
       while (true) {
-        const requestHeaders = new Headers(this.headers)
+        // Serialize headers as a plain object rather than a Headers instance.
+        // Some fetch implementations (notably React Native's whatwg-fetch polyfill)
+        // mishandle Headers instances and silently drop Content-Type, which causes
+        // PostgREST to misinterpret the request body. See supabase/supabase-js#1562.
+        const headers: Record<string, string> = {}
+        this.headers.forEach((value, key) => {
+          headers[key] = value
+        })
         if (attemptCount > 0) {
-          requestHeaders.set('X-Retry-Count', String(attemptCount))
+          headers['X-Retry-Count'] = String(attemptCount)
         }
 
         // Only wrap the fetch call itself — processResponse errors must never trigger retries
@@ -314,7 +321,7 @@ export default abstract class PostgrestBuilder<
         try {
           res = await _fetch(this.url.toString(), {
             method: this.method,
-            headers: requestHeaders,
+            headers,
             body: JSON.stringify(this.body, (_, value) =>
               typeof value === 'bigint' ? value.toString() : value
             ),
