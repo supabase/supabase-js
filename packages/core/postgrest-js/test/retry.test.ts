@@ -74,12 +74,12 @@ describe('Automatic Retries', () => {
 
       // Verify X-Retry-Count header was sent on retries
       const [, firstRetryCall] = fetchMock.mock.calls
-      const firstRetryHeaders = firstRetryCall[1].headers as Headers
-      expect(firstRetryHeaders.get('X-Retry-Count')).toBe('1')
+      const firstRetryHeaders = firstRetryCall[1].headers as Record<string, string>
+      expect(firstRetryHeaders['X-Retry-Count']).toBe('1')
 
       const [, , secondRetryCall] = fetchMock.mock.calls
-      const secondRetryHeaders = secondRetryCall[1].headers as Headers
-      expect(secondRetryHeaders.get('X-Retry-Count')).toBe('2')
+      const secondRetryHeaders = secondRetryCall[1].headers as Record<string, string>
+      expect(secondRetryHeaders['X-Retry-Count']).toBe('2')
     })
 
     it('should NOT retry POST requests even on 520 errors', async () => {

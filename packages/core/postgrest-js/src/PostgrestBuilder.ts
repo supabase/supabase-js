@@ -305,9 +305,10 @@ export default abstract class PostgrestBuilder<
 
       while (true) {
         // Serialize headers as a plain object rather than a Headers instance.
-        // Some fetch implementations (notably React Native's whatwg-fetch polyfill)
-        // mishandle Headers instances and silently drop Content-Type, which causes
-        // PostgREST to misinterpret the request body. See supabase/supabase-js#1562.
+        // React Native's XHR-based fetch silently drops headers (notably Content-Type)
+        // when given a Headers instance, causing PGRST202 on parameter-less RPC calls.
+        // See supabase/supabase-js#1562 and facebook/react-native#33933.
+        // All sibling packages (auth-js, storage-js, functions-js) already pass plain objects.
         const headers: Record<string, string> = {}
         this.headers.forEach((value, key) => {
           headers[key] = value
