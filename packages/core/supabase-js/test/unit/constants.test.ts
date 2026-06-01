@@ -33,7 +33,7 @@ describe('constants', () => {
 
   test('DEFAULT_HEADERS should contain X-Client-Info', () => {
     expect(DEFAULT_HEADERS).toHaveProperty('X-Client-Info')
-    expect(DEFAULT_HEADERS['X-Client-Info']).toMatch(/^supabase-js\/.*; env=.*$/)
+    expect(DEFAULT_HEADERS['X-Client-Info']).toMatch(/^supabase-js\/.*; runtime=.*$/)
   })
 
   test('DEFAULT_GLOBAL_OPTIONS should contain headers', () => {
@@ -63,13 +63,25 @@ describe('constants', () => {
 
   describe('JS_ENV detection', () => {
     test('should detect Deno environment', () => {
+      ;(global as any).Deno = { version: { deno: '1.37.0' } }
+
+      // Re-import to trigger the detection logic
+      jest.resetModules()
+      const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
+
+      expect(newHeaders['X-Client-Info']).toContain('runtime=deno')
+      expect(newHeaders['X-Client-Info']).toContain('runtime-version=1.37.0')
+    })
+
+    test('should detect Deno environment without version', () => {
       ;(global as any).Deno = {}
 
       // Re-import to trigger the detection logic
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('env=deno')
+      expect(newHeaders['X-Client-Info']).toContain('runtime=deno')
+      expect(newHeaders['X-Client-Info']).not.toContain('runtime-version=')
     })
 
     test('should detect web environment', () => {
@@ -79,7 +91,8 @@ describe('constants', () => {
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('env=web')
+      expect(newHeaders['X-Client-Info']).toContain('runtime=web')
+      expect(newHeaders['X-Client-Info']).not.toContain('runtime-version=')
     })
 
     test('should detect React Native environment', () => {
@@ -89,17 +102,19 @@ describe('constants', () => {
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('env=react-native')
+      expect(newHeaders['X-Client-Info']).toContain('runtime=react-native')
+      expect(newHeaders['X-Client-Info']).not.toContain('runtime-version=')
     })
 
-    test('should default to node environment when no specific environment is detected', () => {
-      // No globals set
+    test('should default to node environment with process version', () => {
+      // No globals set - falls through to node branch
 
       // Re-import to trigger the detection logic
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('env=node')
+      expect(newHeaders['X-Client-Info']).toContain('runtime=node')
+      expect(newHeaders['X-Client-Info']).toMatch(/runtime-version=\d+\.\d+\.\d+/)
     })
   })
 })
