@@ -16,11 +16,13 @@ import {
   AuthInvalidTokenResponseError,
   AuthPKCECodeVerifierMissingError,
   AuthPKCEGrantCodeExchangeError,
+  AuthRefreshDiscardedError,
   AuthSessionMissingError,
   AuthUnknownError,
   isAuthApiError,
   isAuthError,
   isAuthImplicitGrantRedirectError,
+  isAuthRefreshDiscardedError,
   isAuthRetryableFetchError,
   isAuthSessionMissingError,
 } from './lib/errors'
@@ -195,11 +197,17 @@ const DEFAULT_OPTIONS: Omit<
   debug: false,
   hasCustomAuthorizationHeader: false,
   throwOnError: false,
-  lockAcquireTimeout: 5000, // 5 seconds
+  lockAcquireTimeout: 5000, // 5 seconds. Only used when a custom `lock` is supplied. TODO(v3): remove.
   skipAutoInitialize: false,
   experimental: {},
 }
 
+/**
+ * No-op lock used internally as a placeholder. Kept so older test setups that
+ * inject this exact reference do not break; new code never sees it because
+ * `this.lock` stays `null` when no custom lock is supplied (lockless path).
+ * TODO(v3): remove with the legacy lock path.
+ */
 async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
   return await fn()
 }
@@ -281,6 +289,14 @@ export default class GoTrueClient {
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
+   * Monotonic counter incremented at the top of `_removeSession`, before any
+   * `await`. The commit guard inside `_callRefreshToken` captures this value
+   * before `_saveSession` and re-checks it after, so a `signOut` that
+   * interleaves inside `_saveSession`'s storage-write awaits is still caught
+   * (the post-fetch storage snapshot alone misses that window).
+   */
+  protected _sessionRemovalEpoch = 0
+  /**
    * Keeps track of the async client initialization.
    * When null or not yet resolved the auth state is `unknown`
    * Once resolved the auth state is known and it's safe to call any further client methods.
@@ -297,10 +313,19 @@ export default class GoTrueClient {
   protected hasCustomAuthorizationHeader = false
   protected suppressGetSessionWarning = false
   protected fetch: Fetch
-  protected lock: LockFunc
+  /**
+   * Custom lock function passed via `settings.lock`. When non-null, every auth
+   * operation runs inside `_acquireLock`. When null (the default), the client
+   * uses its lockless coordination (refresh single-flight + commit guard).
+   * TODO(v3): remove along with the legacy lock path.
+   */
+  protected lock: LockFunc | null = null
   protected lockAcquired = false
   protected pendingInLock: Promise<any>[] = []
   protected throwOnError: boolean
+  /**
+   * Only consulted when a custom `lock` is supplied. TODO(v3): remove.
+   */
   protected lockAcquireTimeout: number
   /**
    * Opt-in flags for experimental features. Defaults to an empty object.
@@ -371,19 +396,23 @@ export default class GoTrueClient {
     this.url = settings.url
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
-    this.lock = settings.lock || lockNoOp
     this.detectSessionInUrl = settings.detectSessionInUrl
     this.flowType = settings.flowType
     this.hasCustomAuthorizationHeader = settings.hasCustomAuthorizationHeader
     this.throwOnError = settings.throwOnError
+
+    // Always wire `lockAcquireTimeout` even on the lockless path: consumers
+    // (including supabase-js tests) read it off the client to verify option
+    // flow-through.
     this.lockAcquireTimeout = settings.lockAcquireTimeout
 
-    if (settings.lock) {
+    // TODO(v3): remove. Legacy opt-in path preserved for backwards
+    // compatibility with callers passing a custom `lock` (typically React
+    // Native `processLock` or Node multi-process setups). When `settings.lock`
+    // is null the client uses its lockless coordination — no `navigator.locks`
+    // by default, no implicit `processLock`.
+    if (settings.lock != null) {
       this.lock = settings.lock
-    } else if (this.persistSession && isBrowser() && globalThis?.navigator?.locks) {
-      this.lock = navigatorLock
-    } else {
-      this.lock = lockNoOp
     }
 
     if (!this.jwks) {
@@ -518,9 +547,13 @@ export default class GoTrueClient {
     }
 
     this.initializePromise = (async () => {
-      return await this._acquireLock(this.lockAcquireTimeout, async () => {
-        return await this._initialize()
-      })
+      if (this.lock != null) {
+        // TODO(v3): remove legacy lock path
+        return await this._acquireLock(this.lockAcquireTimeout, async () => {
+          return await this._initialize()
+        })
+      }
+      return await this._initialize()
     })()
 
     return await this.initializePromise
@@ -1405,9 +1438,14 @@ export default class GoTrueClient {
   async exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
     await this.initializePromise
 
-    return this._acquireLock(this.lockAcquireTimeout, async () => {
-      return this._exchangeCodeForSession(authCode)
-    })
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return this._acquireLock(this.lockAcquireTimeout, async () => {
+        return this._exchangeCodeForSession(authCode)
+      })
+    }
+
+    return this._exchangeCodeForSession(authCode)
   }
 
   /**
@@ -2444,9 +2482,14 @@ export default class GoTrueClient {
   async reauthenticate(): Promise<AuthResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._reauthenticate()
-    })
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._reauthenticate()
+      })
+    }
+
+    return await this._reauthenticate()
   }
 
   private async _reauthenticate(): Promise<AuthResponse> {
@@ -2593,7 +2636,7 @@ export default class GoTrueClient {
    * - If the session's access token is expired or is about to expire, this method will use the refresh token to refresh the session.
    * - When using in a browser, or you've called `startAutoRefresh()` in your environment (React Native, etc.) this function always returns a valid access token without refreshing the session itself, as this is done in the background. This function returns very fast.
    * - **IMPORTANT SECURITY NOTICE:** If using an insecure storage medium, such as cookies or request headers, the user object returned by this function **must not be trusted**. Always verify the JWT using `getClaims()` or your own JWT verification library to securely establish the user's identity and access. You can also use `getUser()` to fetch the user object directly from the Auth server for this purpose.
-   * - When using in a browser, this function is synchronized across all tabs using the [LockManager](https://developer.mozilla.org/en-US/docs/Web/API/LockManager) API. In other environments make sure you've defined a proper `lock` property, if necessary, to make sure there are no race conditions while the session is being refreshed.
+   * - Cross-tab refresh races are handled by the GoTrue server (the rotated token from the first tab is returned to subsequent tabs via the parent-of-active mechanism), so no client-side serialization is needed.
    *
    * @example Get the session data
    * ```js
@@ -2661,17 +2704,26 @@ export default class GoTrueClient {
   async getSession() {
     await this.initializePromise
 
-    const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return this._useSession(async (result) => {
-        return result
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return this._useSession(async (result) => {
+          return result
+        })
       })
-    })
+    }
 
-    return result
+    return await this._useSession(async (result) => {
+      return result
+    })
   }
 
   /**
    * Acquires a global lock based on the storage key.
+   *
+   * TODO(v3): remove along with the legacy lock path. Only called when
+   * `this.lock` is non-null (custom lock supplied via constructor). The
+   * default lockless path bypasses this entirely.
    */
   private async _acquireLock<R>(acquireTimeout: number, fn: () => Promise<R>): Promise<R> {
     this._debug('#_acquireLock', 'begin', acquireTimeout)
@@ -2700,7 +2752,7 @@ export default class GoTrueClient {
         return result
       }
 
-      return await this.lock(`lock:${this.storageKey}`, acquireTimeout, async () => {
+      return await this.lock!(`lock:${this.storageKey}`, acquireTimeout, async () => {
         this._debug('#_acquireLock', 'lock acquired for storage key', this.storageKey)
 
         try {
@@ -2742,10 +2794,9 @@ export default class GoTrueClient {
   }
 
   /**
-   * Use instead of {@link #getSession} inside the library. It is
-   * semantically usually what you want, as getting a session involves some
-   * processing afterwards that requires only one client operating on the
-   * session at once across multiple tabs or processes.
+   * Use instead of {@link #getSession} inside the library. Loads the session
+   * via `__loadSession` (which may trigger a refresh if the access token is
+   * within the expiry margin) and runs `fn` with the result.
    */
   private async _useSession<R>(
     fn: (
@@ -2773,7 +2824,10 @@ export default class GoTrueClient {
     this._debug('#_useSession', 'begin')
 
     try {
-      // the use of __loadSession here is the only correct use of the function!
+      // Concurrent callers may both reach __loadSession; storage reads are
+      // idempotent, and the only write path inside it (refresh) is
+      // single-flighted downstream by `refreshingDeferred` in
+      // `_callRefreshToken`. No serialization is needed at this layer.
       const result = await this.__loadSession()
 
       return await fn(result)
@@ -2809,7 +2863,8 @@ export default class GoTrueClient {
   > {
     this._debug('#__loadSession()', 'begin')
 
-    if (!this.lockAcquired) {
+    if (this.lock != null && !this.lockAcquired) {
+      // TODO(v3): remove. Only meaningful on the legacy lock path.
       this._debug('#__loadSession()', 'used outside of an acquired lock!', new Error().stack)
     }
 
@@ -2976,9 +3031,15 @@ export default class GoTrueClient {
 
     await this.initializePromise
 
-    const result = await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._getUser()
-    })
+    let result: UserResponse
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      result = await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._getUser()
+      })
+    } else {
+      result = await this._getUser()
+    }
 
     if (result.data.user) {
       this.suppressGetSessionWarning = true
@@ -3153,9 +3214,14 @@ export default class GoTrueClient {
   ): Promise<UserResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._updateUser(attributes, options)
-    })
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._updateUser(attributes, options)
+      })
+    }
+
+    return await this._updateUser(attributes, options)
   }
 
   protected async _updateUser(
@@ -3342,9 +3408,14 @@ export default class GoTrueClient {
   }): Promise<AuthResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._setSession(currentSession)
-    })
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._setSession(currentSession)
+      })
+    }
+
+    return await this._setSession(currentSession)
   }
 
   protected async _setSession(currentSession: {
@@ -3533,9 +3604,14 @@ export default class GoTrueClient {
   async refreshSession(currentSession?: { refresh_token: string }): Promise<AuthResponse> {
     await this.initializePromise
 
-    return await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._refreshSession(currentSession)
-    })
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._refreshSession(currentSession)
+      })
+    }
+
+    return await this._refreshSession(currentSession)
   }
 
   protected async _refreshSession(currentSession?: {
@@ -3785,9 +3861,14 @@ export default class GoTrueClient {
   async signOut(options: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
     await this.initializePromise
 
-    return await this._acquireLock(this.lockAcquireTimeout, async () => {
-      return await this._signOut(options)
-    })
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return await this._acquireLock(this.lockAcquireTimeout, async () => {
+        return await this._signOut(options)
+      })
+    }
+
+    return await this._signOut(options)
   }
 
   protected async _signOut(
@@ -3834,16 +3915,19 @@ export default class GoTrueClient {
   }
 
   /**
-   * Avoid using an async function inside `onAuthStateChange` as you might end
-   * up with a deadlock. The callback function runs inside an exclusive lock,
-   * so calling other Supabase Client APIs that also try to acquire the
-   * exclusive lock, might cause a deadlock. This behavior is observable across
-   * tabs. In the next major library version, this behavior will not be supported.
-   *
-   * Receive a notification every time an auth event happens.
+   * Receive a notification every time an auth event happens. Common reentry
+   * patterns (`getUser`, `setSession`, reading the session from inside a
+   * handler) complete normally. One hazard remains: calling `refreshSession`
+   * (or anything that routes through `_callRefreshToken`) from inside a
+   * `TOKEN_REFRESHED` handler. `refreshingDeferred` resolves only after
+   * `_notifyAllSubscribers` returns, so the inner refresh dedupes onto the
+   * outer's unresolved promise and the two wait on each other.
    *
    * @param callback A callback function to be invoked when an auth event happens.
-   * @deprecated Due to the possibility of deadlocks with async functions as callbacks, use the version without an async function.
+   *
+   * @deprecated Async callbacks can deadlock when they trigger a nested
+   * refresh from a `TOKEN_REFRESHED` event. Prefer the sync overload, or move
+   * refresh-triggering work outside the callback.
    */
   onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => Promise<void>): {
     data: { subscription: Subscription }
@@ -3856,18 +3940,8 @@ export default class GoTrueClient {
    * - Subscribes to important events occurring on the user's session.
    * - Use on the frontend/client. It is less useful on the server.
    * - Events are emitted across tabs to keep your application's UI up-to-date. Some events can fire very frequently, based on the number of tabs open. Use a quick and efficient callback function, and defer or debounce as many operations as you can to be performed outside of the callback.
-   * - **Important:** A callback can be an `async` function and it runs synchronously during the processing of the changes causing the event. You can easily create a dead-lock by using `await` on a call to another method of the Supabase library.
-   *   - Avoid using `async` functions as callbacks.
-   *   - Limit the number of `await` calls in `async` callbacks.
-   *   - Do not use other Supabase functions in the callback function. If you must, dispatch the functions once the callback has finished executing. Use this as a quick way to achieve this:
-   *     ```js
-   *     supabase.auth.onAuthStateChange((event, session) => {
-   *       setTimeout(async () => {
-   *         // await on other Supabase function here
-   *         // this runs right after the callback has finished
-   *       }, 0)
-   *     })
-   *     ```
+   * - Callbacks can be `async` and can safely call other Supabase auth methods (`getUser`, `setSession`, etc.) from inside the callback.
+   * - Keep callbacks quick. Events are awaited in order, so a slow callback delays subsequent events to subscribers in this tab.
    * - Emitted events:
    *   - `INITIAL_SESSION`
    *     - Emitted right after the Supabase client is constructed and the initial session from storage is loaded.
@@ -4058,9 +4132,14 @@ export default class GoTrueClient {
     ;(async () => {
       await this.initializePromise
 
-      await this._acquireLock(this.lockAcquireTimeout, async () => {
-        this._emitInitialSession(id)
-      })
+      if (this.lock != null) {
+        // TODO(v3): remove legacy lock path
+        await this._acquireLock(this.lockAcquireTimeout, async () => {
+          this._emitInitialSession(id)
+        })
+      } else {
+        await this._emitInitialSession(id)
+      }
     })()
 
     return { data: { subscription } }
@@ -4455,7 +4534,10 @@ export default class GoTrueClient {
    * @param refreshToken A valid refresh token that was returned on login.
    */
   private async _refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
-    const debugName = `#_refreshAccessToken(${refreshToken.substring(0, 5)}...)`
+    // Refresh tokens are long-lived bearer credentials; do NOT include any
+    // fragment of the token in the debug tag, even when `debug: true` is
+    // enabled (logs may be forwarded to third-party services).
+    const debugName = `#_refreshAccessToken()`
     this._debug(debugName, 'begin')
 
     try {
@@ -4608,15 +4690,22 @@ export default class GoTrueClient {
           const { error } = await this._callRefreshToken(currentSession.refresh_token)
 
           if (error) {
-            console.error(error)
+            // AuthRefreshDiscardedError means a concurrent signOut already
+            // cleared storage and fired SIGNED_OUT. Don't run _removeSession
+            // again here, or we'll emit a duplicate SIGNED_OUT.
+            if (isAuthRefreshDiscardedError(error)) {
+              this._debug(debugName, 'refresh discarded by commit guard', error)
+            } else {
+              console.error(error)
 
-            if (!isAuthRetryableFetchError(error)) {
-              this._debug(
-                debugName,
-                'refresh failed with a non-retryable error, removing the session',
-                error
-              )
-              await this._removeSession()
+              if (!isAuthRetryableFetchError(error)) {
+                this._debug(
+                  debugName,
+                  'refresh failed with a non-retryable error, removing the session',
+                  error
+                )
+                await this._removeSession()
+              }
             }
           }
         }
@@ -4669,18 +4758,85 @@ export default class GoTrueClient {
       return this.refreshingDeferred.promise
     }
 
-    const debugName = `#_callRefreshToken(${refreshToken.substring(0, 5)}...)`
+    // Refresh tokens are long-lived bearer credentials; do NOT include any
+    // fragment of the token in the debug tag, even when `debug: true` is
+    // enabled (logs may be forwarded to third-party services).
+    const debugName = `#_callRefreshToken()`
 
     this._debug(debugName, 'begin')
 
     try {
       this.refreshingDeferred = new Deferred<CallRefreshTokenResult>()
 
+      // Snapshot storage before the fetch. The commit guard discards the
+      // rotated tokens only when a non-null pre-fetch snapshot changed under
+      // us — typical case: a concurrent `signOut` ran `_removeSession`, or
+      // another tab's refresh rewrote the slot. Callers passing
+      // externally-sourced tokens (SSR cookie handoff, multi-account
+      // switching, `setSession`/`refreshSession({ refresh_token })`) may
+      // start from a null snapshot OR from a non-null snapshot whose
+      // refresh_token differs from the one they're hydrating; in both
+      // cases the guard fires only when storage was *modified between
+      // snapshots*, not when the input token disagrees with what's stored.
+      const storedAtStart = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+
       const { data, error } = await this._refreshAccessToken(refreshToken)
       if (error) throw error
       if (!data.session) throw new AuthSessionMissingError()
 
+      const storedAfter = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+      const storageChangedUnderUs =
+        storedAtStart !== null &&
+        (storedAfter === null || storedAfter.refresh_token !== storedAtStart.refresh_token)
+
+      if (storageChangedUnderUs) {
+        this._debug(
+          debugName,
+          'commit guard: storage changed since refresh started, discarding rotated tokens',
+          {
+            // Presence indicators only — never log refresh token fragments,
+            // even partial. Logs may be forwarded to third-party services.
+            startedWith: 'present',
+            nowHolds: storedAfter ? 'replaced' : 'cleared',
+          }
+        )
+        const discarded: CallRefreshTokenResult = {
+          data: null,
+          error: new AuthRefreshDiscardedError(),
+        }
+        this.refreshingDeferred.resolve(discarded)
+        return discarded
+      }
+
+      // Second leg of the commit guard: close the TOCTOU window between the
+      // synchronous `storageChangedUnderUs` check and the actual storage
+      // writes inside `_saveSession`. A concurrent `signOut → _removeSession`
+      // can land inside `_saveSession`'s `await setItemAsync(...)` yields and
+      // clear storage just before we overwrite it. Capture the epoch BEFORE
+      // the save and re-check after; if it advanced, undo the write directly
+      // (do NOT call `_removeSession` — that would emit a duplicate
+      // SIGNED_OUT for the concurrent signOut that already fired one).
+      const epochBeforeSave = this._sessionRemovalEpoch
+
       await this._saveSession(data.session)
+
+      if (this._sessionRemovalEpoch !== epochBeforeSave) {
+        this._debug(
+          debugName,
+          'commit guard (post-save): _removeSession ran during _saveSession, undoing write'
+        )
+        await removeItemAsync(this.storage, this.storageKey)
+        if (this.userStorage) {
+          await removeItemAsync(this.userStorage, this.storageKey + '-user')
+        }
+        const discarded: CallRefreshTokenResult = {
+          data: null,
+          error: new AuthRefreshDiscardedError(),
+        }
+        this.refreshingDeferred.resolve(discarded)
+        return discarded
+      }
+
       await this._notifyAllSubscribers('TOKEN_REFRESHED', data.session)
 
       const result = { data: data.session, error: null }
@@ -4792,6 +4948,11 @@ export default class GoTrueClient {
   }
 
   private async _removeSession() {
+    // Bump synchronously, BEFORE any `await`, so that `_callRefreshToken`'s
+    // post-save check sees the increment whenever this method has started —
+    // even if it hasn't finished. Pairs with the epoch check in
+    // `_callRefreshToken`. See `_sessionRemovalEpoch` field doc.
+    this._sessionRemovalEpoch += 1
     this._debug('#_removeSession()')
 
     this.suppressGetSessionWarning = false
@@ -4981,57 +5142,143 @@ export default class GoTrueClient {
   }
 
   /**
+   * Tears down the client's background work: stops the auto-refresh interval,
+   * removes the `visibilitychange` listener, closes the cross-tab
+   * `BroadcastChannel`, and clears registered `onAuthStateChange` subscribers.
+   *
+   * Call this from cleanup hooks when the client is being replaced before
+   * its JS realm is destroyed. React Strict Mode and HMR are the common
+   * cases. Any in-flight `fetch` calls continue to completion and may still
+   * write to storage; dispose doesn't abort them or erase storage.
+   *
+   * Lifecycle caveat: because in-flight refreshes are not aborted, a
+   * disposed instance can still persist a rotated session to storage after
+   * `dispose()` returns. A subsequent `createClient` against the same
+   * `storageKey` will pick up that session on its next read. If you need
+   * strict isolation between client lifecycles, await any pending auth
+   * operation before calling `dispose()` (or change the `storageKey` for
+   * the replacement client).
+   *
+   * Safe to call repeatedly.
+   *
+   * @category Auth
+   *
+   * @example Cleanup on React unmount
+   * ```ts
+   * useEffect(() => {
+   *   const client = createClient(...)
+   *   return () => { client.auth.dispose() }
+   * }, [])
+   * ```
+   */
+  async dispose(): Promise<void> {
+    this._removeVisibilityChangedCallback()
+    await this._stopAutoRefresh()
+    this.broadcastChannel?.close()
+    this.broadcastChannel = null
+    this.stateChangeEmitters.clear()
+  }
+
+  /**
    * Runs the auto refresh token tick.
    */
   private async _autoRefreshTokenTick() {
     this._debug('#_autoRefreshTokenTick()', 'begin')
 
-    try {
-      await this._acquireLock(0, async () => {
-        try {
-          const now = Date.now()
-
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path. Uses `_acquireLock(0, ...)` which
+      // throws `LockAcquireTimeoutError` immediately if the lock is held —
+      // that's the fail-fast skip path that lets the tick bail out instead
+      // of queuing behind a long-running operation.
+      try {
+        await this._acquireLock(0, async () => {
           try {
-            return await this._useSession(async (result) => {
-              const {
-                data: { session },
-              } = result
+            const now = Date.now()
+            try {
+              return await this._useSession(async (result) => {
+                const {
+                  data: { session },
+                } = result
 
-              if (!session || !session.refresh_token || !session.expires_at) {
-                this._debug('#_autoRefreshTokenTick()', 'no session')
-                return
-              }
+                if (!session || !session.refresh_token || !session.expires_at) {
+                  this._debug('#_autoRefreshTokenTick()', 'no session')
+                  return
+                }
 
-              // session will expire in this many ticks (or has already expired if <= 0)
-              const expiresInTicks = Math.floor(
-                (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION_MS
+                const expiresInTicks = Math.floor(
+                  (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION_MS
+                )
+
+                this._debug(
+                  '#_autoRefreshTokenTick()',
+                  `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION_MS}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
+                )
+
+                if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
+                  await this._callRefreshToken(session.refresh_token)
+                }
+              })
+            } catch (e) {
+              console.error(
+                'Auto refresh tick failed with error. This is likely a transient error.',
+                e
               )
-
-              this._debug(
-                '#_autoRefreshTokenTick()',
-                `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION_MS}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
-              )
-
-              if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-                await this._callRefreshToken(session.refresh_token)
-              }
-            })
-          } catch (e) {
-            console.error(
-              'Auto refresh tick failed with error. This is likely a transient error.',
-              e
-            )
+            }
+          } finally {
+            this._debug('#_autoRefreshTokenTick()', 'end')
           }
-        } finally {
-          this._debug('#_autoRefreshTokenTick()', 'end')
+        })
+      } catch (e) {
+        if (e instanceof LockAcquireTimeoutError) {
+          this._debug('auto refresh token tick lock not available')
+        } else {
+          throw e
         }
-      })
-    } catch (e) {
-      if (e instanceof LockAcquireTimeoutError) {
-        this._debug('auto refresh token tick lock not available')
-      } else {
-        throw e
       }
+      return
+    }
+
+    // Lockless default: skip if a refresh is already in flight.
+    // `_callRefreshToken` also dedupes via the same field; this is just a
+    // fast-path skip to avoid an unnecessary storage read.
+    if (this.refreshingDeferred !== null) {
+      this._debug('#_autoRefreshTokenTick()', 'refresh already in flight, skipping')
+      return
+    }
+
+    try {
+      const now = Date.now()
+
+      try {
+        await this._useSession(async (result) => {
+          const {
+            data: { session },
+          } = result
+
+          if (!session || !session.refresh_token || !session.expires_at) {
+            this._debug('#_autoRefreshTokenTick()', 'no session')
+            return
+          }
+
+          // session will expire in this many ticks (or has already expired if <= 0)
+          const expiresInTicks = Math.floor(
+            (session.expires_at * 1000 - now) / AUTO_REFRESH_TICK_DURATION_MS
+          )
+
+          this._debug(
+            '#_autoRefreshTokenTick()',
+            `access token expires in ${expiresInTicks} ticks, a tick lasts ${AUTO_REFRESH_TICK_DURATION_MS}ms, refresh threshold is ${AUTO_REFRESH_TICK_THRESHOLD} ticks`
+          )
+
+          if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
+            await this._callRefreshToken(session.refresh_token)
+          }
+        })
+      } catch (e) {
+        console.error('Auto refresh tick failed with error. This is likely a transient error.', e)
+      }
+    } finally {
+      this._debug('#_autoRefreshTokenTick()', 'end')
     }
   }
 
@@ -5088,24 +5335,29 @@ export default class GoTrueClient {
       if (!calledFromInitialize) {
         // called when the visibility has changed, i.e. the browser
         // transitioned from hidden -> visible so we need to see if the session
-        // should be recovered immediately... but to do that we need to acquire
-        // the lock first asynchronously
+        // should be recovered
         await this.initializePromise
 
-        await this._acquireLock(this.lockAcquireTimeout, async () => {
+        if (this.lock != null) {
+          // TODO(v3): remove legacy lock path
+          await this._acquireLock(this.lockAcquireTimeout, async () => {
+            if (document.visibilityState !== 'visible') {
+              this._debug(
+                methodName,
+                'acquired the lock to recover the session, but the browser visibilityState is no longer visible, aborting'
+              )
+              return
+            }
+            await this._recoverAndRefresh()
+          })
+        } else {
           if (document.visibilityState !== 'visible') {
-            this._debug(
-              methodName,
-              'acquired the lock to recover the session, but the browser visibilityState is no longer visible, aborting'
-            )
-
-            // visibility has changed while waiting for the lock, abort
+            this._debug(methodName, 'visibilityState is no longer visible, skipping recovery')
             return
           }
-
           // recover the session
           await this._recoverAndRefresh()
-        })
+        }
       }
     } else if (document.visibilityState === 'hidden') {
       if (this.autoRefreshToken) {
@@ -5237,7 +5489,7 @@ export default class GoTrueClient {
     params: MFAVerifyWebauthnParams<T>
   ): Promise<AuthMFAVerifyResponse>
   private async _verify(params: MFAVerifyParams): Promise<AuthMFAVerifyResponse> {
-    return this._acquireLock(this.lockAcquireTimeout, async () => {
+    const run = async (): Promise<AuthMFAVerifyResponse> => {
       try {
         return await this._useSession(async (result) => {
           const { data: sessionData, error: sessionError } = result
@@ -5308,7 +5560,13 @@ export default class GoTrueClient {
         }
         throw error
       }
-    })
+    }
+
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return this._acquireLock(this.lockAcquireTimeout, run)
+    }
+    return run()
   }
 
   /**
@@ -5324,7 +5582,7 @@ export default class GoTrueClient {
     params: MFAChallengeWebauthnParams
   ): Promise<Prettify<AuthMFAChallengeWebauthnResponse>>
   private async _challenge(params: MFAChallengeParams): Promise<AuthMFAChallengeResponse> {
-    return this._acquireLock(this.lockAcquireTimeout, async () => {
+    const run = async (): Promise<AuthMFAChallengeResponse> => {
       try {
         return await this._useSession(async (result) => {
           const { data: sessionData, error: sessionError } = result
@@ -5397,7 +5655,13 @@ export default class GoTrueClient {
         }
         throw error
       }
-    })
+    }
+
+    if (this.lock != null) {
+      // TODO(v3): remove legacy lock path
+      return this._acquireLock(this.lockAcquireTimeout, run)
+    }
+    return run()
   }
 
   /**
@@ -5406,9 +5670,6 @@ export default class GoTrueClient {
   private async _challengeAndVerify(
     params: MFAChallengeAndVerifyParams
   ): Promise<AuthMFAVerifyResponse> {
-    // both _challenge and _verify independently acquire the lock, so no need
-    // to acquire it here
-
     const { data: challengeData, error: challengeError } = await this._challenge({
       factorId: params.factorId,
     })
@@ -5427,7 +5688,6 @@ export default class GoTrueClient {
    * {@see GoTrueMFAApi#listFactors}
    */
   private async _listFactors(): Promise<AuthMFAListFactorsResponse> {
-    // use #getUser instead of #_getUser as the former acquires a lock
     const {
       data: { user },
       error: userError,

@@ -3,7 +3,7 @@ import { JWK, Session } from '../src'
 import GoTrueClient from '../src/GoTrueClient'
 import { base64UrlToUint8Array } from '../src/lib/base64url'
 import { STORAGE_KEY } from '../src/lib/constants'
-import { setItemAsync } from '../src/lib/helpers'
+import { getItemAsync, setItemAsync } from '../src/lib/helpers'
 import { memoryLocalStorageAdapter } from '../src/lib/local-storage'
 import {
   deserializeCredentialCreationOptions,
@@ -57,7 +57,11 @@ describe('GoTrueClient', () => {
   })
 
   test('should handle custom lock implementation', async () => {
-    const customLock = jest.fn().mockResolvedValue(undefined)
+    const customLock = jest
+      .fn()
+      .mockImplementation(async (_name: string, _timeout: number, fn: () => Promise<unknown>) =>
+        fn()
+      )
     const client = new GoTrueClient({
       url: 'http://localhost:9999',
       lock: customLock,
@@ -3436,23 +3440,29 @@ describe('SSO Authentication', () => {
   })
 })
 
-describe('Lock functionality', () => {
-  test('_acquireLock should execute function when lock is acquired', async () => {
-    const mockFn = jest.fn().mockResolvedValue('success')
-    // @ts-expect-error 'Allow access to private _acquireLock'
-    const result = await authWithSession._acquireLock(1000, mockFn)
-    expect(result).toBe('success')
-    expect(mockFn).toHaveBeenCalled()
+describe('Lockless coordination (default) and legacy lock opt-in', () => {
+  test('default path: no custom `lock` supplied, _acquireLock is not invoked', async () => {
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      autoRefreshToken: false,
+      persistSession: false,
+    })
+    // @ts-expect-error access private _acquireLock for verification
+    const acquireSpy = jest.spyOn(client, '_acquireLock')
+
+    await client.initialize()
+    await client.getSession()
+
+    // No lock supplied → lockless coordination → _acquireLock is never called
+    expect(acquireSpy).not.toHaveBeenCalled()
   })
 
-  test('_acquireLock should throw error when lock acquisition times out', async () => {
-    let shouldFail = false
-    const mockLock = jest.fn().mockImplementation(async (name, timeout, fn) => {
-      if (shouldFail) {
-        throw new Error('Lock acquisition timeout')
-      }
-      return fn()
-    })
+  test('legacy path: custom `lock` is invoked when supplied', async () => {
+    const mockLock = jest
+      .fn()
+      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) =>
+        fn()
+      )
 
     const client = new GoTrueClient({
       url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
@@ -3461,90 +3471,320 @@ describe('Lock functionality', () => {
       persistSession: false,
     })
 
-    // Wait for initialization to complete
+    await client.initialize()
+    await client.getSession()
+
+    // Custom lock supplied → legacy path → mockLock IS called.
+    expect(mockLock).toHaveBeenCalled()
+  })
+
+  test('`lockAcquireTimeout` option is accepted (lockless path ignores it; legacy uses it)', async () => {
+    expect(
+      () =>
+        new GoTrueClient({
+          url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+          autoRefreshToken: false,
+          persistSession: false,
+          lockAcquireTimeout: 12345,
+        })
+    ).not.toThrow()
+  })
+
+  test('subscriber callback may call other auth methods without deadlock', async () => {
+    // Auth methods invoked from inside an onAuthStateChange callback complete
+    // without re-entering a held lock, because notification is not gated by
+    // one.
+    const observed: string[] = []
+
+    const {
+      data: { subscription },
+    } = authWithSession.onAuthStateChange(async (event) => {
+      observed.push(event)
+      if (event === 'INITIAL_SESSION') {
+        const { data } = await authWithSession.getSession()
+        observed.push(`got-session:${data.session ? 'present' : 'null'}`)
+      }
+    })
+
+    // Allow the initial-session emit to flush.
     await new Promise((resolve) => setTimeout(resolve, 100))
 
-    // Now make the lock fail
-    shouldFail = true
+    subscription.unsubscribe()
 
-    const mockFn = jest.fn()
-    // @ts-expect-error 'Allow access to private _acquireLock'
-    await expect(client._acquireLock(1000, mockFn)).rejects.toThrow('Lock acquisition timeout')
-    expect(mockFn).not.toHaveBeenCalled()
+    expect(observed).toContain('INITIAL_SESSION')
+    expect(observed.some((s) => s.startsWith('got-session:'))).toBe(true)
   })
+})
 
-  test('should use custom lockAcquireTimeout when provided', async () => {
-    const capturedTimeouts: number[] = []
-    const mockLock = jest
-      .fn()
-      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => {
-        capturedTimeouts.push(timeout)
-        return fn()
-      })
-
-    const customTimeout = 20000 // 20 seconds (different from default 10s)
-
+describe('dispose() lifecycle', () => {
+  test('idempotent: safe to call repeatedly', async () => {
     const client = new GoTrueClient({
       url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-      lock: mockLock,
       autoRefreshToken: false,
       persistSession: false,
-      lockAcquireTimeout: customTimeout,
     })
-
     await client.initialize()
 
-    // Verify that the custom timeout was passed to the lock function
-    expect(mockLock).toHaveBeenCalled()
-    expect(capturedTimeouts).toContain(customTimeout)
+    await expect(client.dispose()).resolves.toBeUndefined()
+    await expect(client.dispose()).resolves.toBeUndefined()
   })
 
-  test('should use default lockAcquireTimeout (10000ms) when not provided', async () => {
-    const capturedTimeouts: number[] = []
-    const mockLock = jest
-      .fn()
-      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => {
-        capturedTimeouts.push(timeout)
-        return fn()
-      })
-
+  test('clears registered onAuthStateChange subscribers', async () => {
     const client = new GoTrueClient({
       url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-      lock: mockLock,
       autoRefreshToken: false,
       persistSession: false,
-      // lockAcquireTimeout not provided, should default to 5000
     })
-
     await client.initialize()
 
-    // Verify that the default timeout (5000 = 5 seconds) was used
-    expect(mockLock).toHaveBeenCalled()
-    expect(capturedTimeouts).toContain(5000)
+    const cb = jest.fn()
+    client.onAuthStateChange(cb)
+
+    // @ts-expect-error access protected field for verification
+    expect(client.stateChangeEmitters.size).toBeGreaterThan(0)
+
+    await client.dispose()
+
+    // @ts-expect-error access protected field for verification
+    expect(client.stateChangeEmitters.size).toBe(0)
   })
 
-  test('should pass negative timeout to lock for indefinite wait', async () => {
-    const capturedTimeouts: number[] = []
-    const mockLock = jest
-      .fn()
-      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => {
-        capturedTimeouts.push(timeout)
-        return fn()
-      })
-
+  test('stops the auto-refresh ticker', async () => {
     const client = new GoTrueClient({
       url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
-      lock: mockLock,
-      autoRefreshToken: false,
+      autoRefreshToken: true,
       persistSession: false,
-      lockAcquireTimeout: -1, // Indefinite wait (not recommended)
     })
+    await client.initialize()
+    await client.startAutoRefresh()
 
+    // @ts-expect-error access protected field for verification
+    expect(client.autoRefreshTicker).not.toBeNull()
+
+    await client.dispose()
+
+    // @ts-expect-error access protected field for verification
+    expect(client.autoRefreshTicker).toBeNull()
+  })
+})
+
+describe('Refresh commit guard (signOut-during-refresh race)', () => {
+  test('discards rotated tokens when storage was cleared mid-flight', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storage,
+      autoRefreshToken: false,
+      persistSession: true,
+    })
     await client.initialize()
 
-    // Verify that negative timeout was passed through
-    expect(mockLock).toHaveBeenCalled()
-    expect(capturedTimeouts).toContain(-1)
+    // Plant a session in storage with refresh_token R1.
+    const R1 = 'refresh-token-r1'
+    await setItemAsync(storage, STORAGE_KEY, {
+      access_token: 'jwt.accesstoken.signature',
+      refresh_token: R1,
+      token_type: 'bearer',
+      expires_in: 1000,
+      expires_at: Math.floor(Date.now() / 1000) + 1000,
+      user: { id: 'user-1', email: 'u@example.com' } as any,
+    } as Session)
+
+    // Simulate a successful refresh that returns rotated tokens (R2) while
+    // storage was cleared between fetch start and continuation.
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => {
+      // Concurrent signOut clears storage before our refresh continuation runs.
+      // @ts-expect-error access protected for test
+      await client._removeSession()
+      return {
+        data: {
+          session: {
+            access_token: 'jwt.new.signature',
+            refresh_token: 'refresh-token-r2',
+            token_type: 'bearer',
+            expires_in: 1000,
+            expires_at: Math.floor(Date.now() / 1000) + 1000,
+            user: { id: 'user-1', email: 'u@example.com' },
+          } as any,
+          user: { id: 'user-1', email: 'u@example.com' } as any,
+        },
+        error: null,
+      } as any
+    })
+
+    // @ts-expect-error access protected for test
+    const result = await client._callRefreshToken(R1)
+
+    // Commit guard discards the rotated tokens.
+    expect(result.error).not.toBeNull()
+    expect((result.error as Error).name).toBe('AuthRefreshDiscardedError')
+
+    // Storage stays cleared; rotated tokens were NOT written back.
+    const stored = await storage.getItem(STORAGE_KEY)
+    expect(stored).toBeNull()
+  })
+
+  test('accepts rotated tokens when storage was empty at fetch start', async () => {
+    // Regression for the false-positive guard: snapshotting "current storage"
+    // *after* the fetch and comparing to the input refresh_token would treat
+    // empty-storage as "cleared mid-flight" and reject. That broke
+    // setSession/refreshSession({ refresh_token }) for any caller supplying
+    // externally-sourced tokens against empty storage (SSR cookie-handoff,
+    // external-token hydration).
+    const storage = memoryLocalStorageAdapter()
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storage,
+      autoRefreshToken: false,
+      persistSession: true,
+    })
+    await client.initialize()
+
+    // Storage starts empty — no signOut ever ran.
+    expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+
+    const rotatedSession = {
+      access_token: 'jwt.new.signature',
+      refresh_token: 'refresh-token-r2',
+      token_type: 'bearer',
+      expires_in: 1000,
+      expires_at: Math.floor(Date.now() / 1000) + 1000,
+      user: { id: 'user-1', email: 'u@example.com' },
+    }
+
+    // Refresh succeeds against externally-supplied refresh_token; doesn't
+    // touch storage itself. The guard must NOT treat the still-empty
+    // pre-snapshot as a mid-flight clear.
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => ({
+      data: { session: rotatedSession, user: rotatedSession.user },
+      error: null,
+    }))
+
+    // @ts-expect-error access protected for test
+    const result = await client._callRefreshToken('R-external')
+
+    expect(result.error).toBeNull()
+    expect(result.data?.refresh_token).toBe('refresh-token-r2')
+
+    // Rotated tokens are persisted because storage wasn't cleared under us.
+    // Read via `getItemAsync` to JSON-parse the stringified Session that
+    // `_saveSession` wrote through `setItemAsync`.
+    const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+    expect(stored?.refresh_token).toBe('refresh-token-r2')
+  })
+
+  test('accepts rotated tokens when storage holds a different session than the input refresh_token', async () => {
+    // Covers the SSR-hydration / multi-account-switch path: storage already
+    // holds session A, caller invokes setSession (or refreshSession) with an
+    // externally-sourced refresh_token that doesn't match A. The guard must
+    // not interpret "input token differs from stored token" as a mid-flight
+    // race — nothing was modified between snapshots, so the rotated tokens
+    // should persist and replace A.
+    const storage = memoryLocalStorageAdapter()
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storage,
+      autoRefreshToken: false,
+      persistSession: true,
+    })
+    await client.initialize()
+
+    // Plant session A (refresh_token RA) — represents "user already signed in".
+    const RA = 'refresh-token-a'
+    await setItemAsync(storage, STORAGE_KEY, {
+      access_token: 'jwt.a.signature',
+      refresh_token: RA,
+      token_type: 'bearer',
+      expires_in: 1000,
+      expires_at: Math.floor(Date.now() / 1000) + 1000,
+      user: { id: 'user-a', email: 'a@example.com' } as any,
+    } as Session)
+
+    // Caller hydrates a different session (refresh_token RB, e.g. from SSR cookie).
+    // Mock the refresh to return rotated tokens for RB without touching storage.
+    const rotatedB = {
+      access_token: 'jwt.b.signature',
+      refresh_token: 'refresh-token-b-rotated',
+      token_type: 'bearer',
+      expires_in: 1000,
+      expires_at: Math.floor(Date.now() / 1000) + 1000,
+      user: { id: 'user-b', email: 'b@example.com' },
+    }
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => ({
+      data: { session: rotatedB, user: rotatedB.user },
+      error: null,
+    }))
+
+    // @ts-expect-error access protected for test
+    const result = await client._callRefreshToken('refresh-token-b')
+
+    // The rotated tokens were accepted, not discarded by the commit guard.
+    expect(result.error).toBeNull()
+    expect(result.data?.refresh_token).toBe('refresh-token-b-rotated')
+
+    // Storage now holds the rotated B session (replaces A).
+    const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+    expect(stored?.refresh_token).toBe('refresh-token-b-rotated')
+  })
+
+  test('discards rotated tokens when a different session was written to storage mid-flight', async () => {
+    // Stronger guard test: storage holds session A at fetch start; while the
+    // refresh is in flight, *another* tab writes session B to storage; the
+    // refresh result for A's token must be discarded because storage no
+    // longer represents the state we were operating on.
+    const storage = memoryLocalStorageAdapter()
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storage,
+      autoRefreshToken: false,
+      persistSession: true,
+    })
+    await client.initialize()
+
+    const RA = 'refresh-token-a'
+    const sessionA: Session = {
+      access_token: 'jwt.a.signature',
+      refresh_token: RA,
+      token_type: 'bearer',
+      expires_in: 1000,
+      expires_at: Math.floor(Date.now() / 1000) + 1000,
+      user: { id: 'user-a', email: 'a@example.com' } as any,
+    }
+    await setItemAsync(storage, STORAGE_KEY, sessionA)
+
+    // Simulate another tab writing session B mid-flight.
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => {
+      await setItemAsync(storage, STORAGE_KEY, {
+        ...sessionA,
+        refresh_token: 'refresh-token-b-from-other-tab',
+      })
+      return {
+        data: {
+          session: {
+            ...sessionA,
+            access_token: 'jwt.a-rotated.signature',
+            refresh_token: 'refresh-token-a-rotated',
+          } as any,
+          user: sessionA.user as any,
+        },
+        error: null,
+      } as any
+    })
+
+    // @ts-expect-error access protected for test
+    const result = await client._callRefreshToken(RA)
+
+    expect(result.error).not.toBeNull()
+    expect((result.error as Error).name).toBe('AuthRefreshDiscardedError')
+
+    // Storage still holds B (what the other tab wrote); A's rotated tokens
+    // were correctly discarded.
+    const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+    expect(stored?.refresh_token).toBe('refresh-token-b-from-other-tab')
   })
 })
 

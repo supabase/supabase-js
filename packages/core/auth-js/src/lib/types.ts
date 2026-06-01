@@ -126,12 +126,17 @@ export type GoTrueClientOptions = {
   /* If debug messages are emitted. Can be used to inspect the behavior of the library. If set to a function, the provided function will be used instead of `console.log()` to perform the logging. */
   debug?: boolean | ((message: string, ...args: any[]) => void)
   /**
-   * Provide your own locking mechanism based on the environment. By default,
-   * `navigatorLock` (Web Locks API) is used in browser environments when
-   * `persistSession` is true. Falls back to an in-process lock for non-browser
-   * environments (e.g. React Native).
+   * Provide your own locking mechanism based on the environment. By default
+   * the client coordinates refreshes itself (single-flight via
+   * `refreshingDeferred` + commit guard) and relies on the GoTrue server to
+   * resolve cross-tab refresh races. Passing a custom lock opts into a
+   * legacy path that wraps every auth operation in your supplied lock — this
+   * path is preserved for backwards compatibility (typically React Native
+   * `processLock` or Node multi-process setups).
    *
-   * @experimental
+   * @deprecated Custom locks still work in v2.x for backwards compatibility.
+   * The legacy lock path will be removed in v3 — drop this option from your
+   * constructor options before upgrading.
    */
   lock?: LockFunc
   /**
@@ -145,30 +150,14 @@ export type GoTrueClientOptions = {
    */
   throwOnError?: boolean
   /**
-   * The maximum time in milliseconds to wait for acquiring a cross-tab synchronization lock.
-   *
-   * When multiple browser tabs or windows use the auth client simultaneously, they coordinate
-   * via the Web Locks API to prevent race conditions during session refresh and other operations.
-   * This timeout controls how long to wait before attempting lock recovery.
-   *
-   * - **Positive value**: Wait up to this many milliseconds. If the lock is still held, attempt
-   *   automatic recovery by stealing it (the previous holder is evicted, its callback continues
-   *   to completion without exclusive access). This recovers from orphaned locks caused by
-   *   React Strict Mode double-mount, storage API hangs, or aborted operations.
-   * - **Zero (0)**: Fail immediately if the lock is unavailable; throws `LockAcquireTimeoutError`
-   *   (check `error.isAcquireTimeout === true`).
-   * - **Negative value**: Wait indefinitely — can cause permanent deadlocks if the lock is orphaned.
+   * The maximum time in milliseconds to wait for acquiring the custom lock
+   * supplied via the `lock` option. Only consulted when a custom `lock` is
+   * passed — the default lockless path doesn't use this timeout.
    *
    * @default 5000
    *
-   * @example
-   * ```ts
-   * const client = createClient(url, key, {
-   *   auth: {
-   *     lockAcquireTimeout: 5000, // 5 seconds, then steal orphaned lock
-   *   },
-   * })
-   * ```
+   * @deprecated Only used by the legacy lock path. Will be removed in v3
+   * along with the `lock` option.
    */
   lockAcquireTimeout?: number
 

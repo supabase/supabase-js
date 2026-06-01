@@ -182,9 +182,14 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     debug?: SupabaseAuthClientOptions['debug']
     /**
-     * Provide your own locking mechanism based on the environment. By default no locking is done at this time.
+     * Provide your own locking mechanism based on the environment. By default
+     * the auth client coordinates refreshes itself and the server resolves
+     * cross-tab races. Passing a custom `lock` opts into a legacy path that
+     * wraps every auth operation in your supplied lock.
      *
-     * @experimental
+     * @deprecated Custom locks still work in v2.x for backwards compatibility.
+     * The legacy lock path will be removed in v3 — drop this option from your
+     * `createClient` options before upgrading.
      */
     lock?: SupabaseAuthClientOptions['lock']
     /**
@@ -200,11 +205,13 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     experimental?: SupabaseAuthClientOptions['experimental']
     /**
-     * Maximum time in milliseconds to wait when acquiring the auth lock before
-     * stealing it from the previous holder. See `GoTrueClientOptions.lockAcquireTimeout`
-     * for full semantics (zero fails immediately, negative waits indefinitely).
+     * Maximum time in milliseconds to wait for acquiring the custom lock
+     * supplied via `lock`. Only consulted when a custom `lock` is passed.
      *
      * @default 5000
+     *
+     * @deprecated Only used by the legacy lock path. Will be removed in v3
+     * along with the `lock` option.
      */
     lockAcquireTimeout?: SupabaseAuthClientOptions['lockAcquireTimeout']
     /**

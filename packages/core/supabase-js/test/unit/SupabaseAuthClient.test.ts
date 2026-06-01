@@ -58,6 +58,16 @@ test('createClient gates passkey methods when auth.experimental.passkey is not s
   await expect(supa.auth.passkey.list()).rejects.toThrow(/experimental.*passkey/)
 })
 
+// The two tests below verify that `lockAcquireTimeout` flows from
+// `createClient({ auth: { lockAcquireTimeout: ... }})` through to the
+// constructed `GoTrueClient` instance. The field is `protected`, so we
+// cast through `unknown` to a precise shape rather than using `as any`.
+// The targeted cast is deliberate: when the legacy lock path is removed in
+// v3 (see `// TODO(v3): remove …` markers in `GoTrueClient.ts` and the
+// SDK Linear ticket for the v3 cleanup), `grep -rn "lockAcquireTimeout"`
+// surfaces both the production code AND these tests together so the
+// removal is mechanical.
+
 test('_initSupabaseAuthClient should pass through lockAcquireTimeout option', () => {
   const client = new SupabaseClient('https://example.supabase.com', 'supabaseKey')
   const authClient = client['_initSupabaseAuthClient'](
@@ -66,14 +76,14 @@ test('_initSupabaseAuthClient should pass through lockAcquireTimeout option', ()
     undefined
   )
 
-  expect((authClient as any).lockAcquireTimeout).toBe(30_000)
+  expect((authClient as unknown as { lockAcquireTimeout: number }).lockAcquireTimeout).toBe(30_000)
 })
 
 test('createClient should accept auth.lockAcquireTimeout and wire it to auth client', () => {
   const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey', {
     auth: { lockAcquireTimeout: 30_000 },
   })
-  expect((supa.auth as any).lockAcquireTimeout).toBe(30_000)
+  expect((supa.auth as unknown as { lockAcquireTimeout: number }).lockAcquireTimeout).toBe(30_000)
 })
 
 test('createClient should accept auth.skipAutoInitialize and wire it to auth client', async () => {

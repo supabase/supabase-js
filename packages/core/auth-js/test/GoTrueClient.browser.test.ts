@@ -650,51 +650,22 @@ describe('GoTrueClient BroadcastChannel', () => {
   })
 })
 
-describe('Browser locks functionality', () => {
-  it('should use navigator locks when available', () => {
-    // Mock navigator.locks
-    const mockLock = { name: 'test-lock' }
-    const mockRequest = jest
-      .fn()
-      .mockImplementation((_, __, callback) => Promise.resolve(callback(mockLock)))
-
+describe('Lockless coordination: navigator.locks should NOT be invoked', () => {
+  it('initializes without touching navigator.locks', async () => {
+    const mockRequest = jest.fn()
     Object.defineProperty(navigator, 'locks', {
       value: { request: mockRequest },
       writable: true,
     })
 
-    // Test navigator locks usage in GoTrueClient
     const client = getClientWithSpecificStorage({
       getItem: jest.fn(),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     })
-
-    expect(client).toBeDefined()
-  })
-
-  it('should handle _acquireLock with empty pendingInLock', async () => {
-    const client = getClientWithSpecificStorage({
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-    })
-
-    // Mock navigator.locks
-    const mockLock = { name: 'test-lock' }
-    const mockRequest = jest
-      .fn()
-      .mockImplementation((_, __, callback) => Promise.resolve(callback(mockLock)))
-
-    Object.defineProperty(navigator, 'locks', {
-      value: { request: mockRequest },
-      writable: true,
-    })
-
-    // Initialize client to trigger lock acquisition
     await client.initialize()
 
-    expect(client).toBeDefined()
+    expect(mockRequest).not.toHaveBeenCalled()
   })
 })
 
@@ -1225,36 +1196,22 @@ describe('Storage and User Storage Combinations', () => {
   })
 })
 
-describe('Lock Mechanism Branches', () => {
-  it('should handle lock acquisition timeout', async () => {
-    const slowLock = jest
+describe('Legacy lock opt-in: custom `lock` function is invoked when supplied', () => {
+  it('a custom `lock` function passed to the constructor IS invoked (legacy path)', async () => {
+    const customLock = jest
       .fn()
-      .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)))
+      .mockImplementation(async (_name: string, _timeout: number, fn: () => Promise<unknown>) =>
+        fn()
+      )
 
     const client = new (require('../src/GoTrueClient').default)({
       url: 'http://localhost:9999',
       autoRefreshToken: false,
-      lock: slowLock,
+      lock: customLock,
     })
 
     await client.initialize()
-    expect(client).toBeDefined()
-  })
-
-  it('should handle lock release errors', async () => {
-    const errorLock = jest.fn().mockImplementation(() => ({
-      acquire: jest.fn().mockResolvedValue(undefined),
-      release: jest.fn().mockRejectedValue(new Error('Lock release error')),
-    }))
-
-    const client = new (require('../src/GoTrueClient').default)({
-      url: 'http://localhost:9999',
-      autoRefreshToken: false,
-      lock: errorLock,
-    })
-
-    await client.initialize()
-    expect(client).toBeDefined()
+    expect(customLock).toHaveBeenCalled()
   })
 })
 
