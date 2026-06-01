@@ -2,13 +2,15 @@ import { PostgrestClient } from '../src/index'
 import { Database } from './types.override'
 
 // Simulates the JSON body PostgREST returns when supautils injects a hint
-// for a 42501 (permission denied) error at the PostgreSQL executor level.
+// for a 42501 (permission denied) error at the Postgres executor level.
+// The hint string here matches what's observed end-to-end against a project
+// running supautils >= 3.2.0.
 // See: https://github.com/supabase/supautils (enhanced hints feature)
 const SUPAUTILS_42501_BODY = {
   code: '42501',
   message: 'permission denied for table users',
   details: null,
-  hint: 'GRANT SELECT ON public.users TO anon;',
+  hint: 'Grant the required privileges to the current role with: GRANT SELECT ON public.users TO anon;',
 }
 
 function mockFetch(body: object, status: number) {
@@ -33,7 +35,7 @@ describe('postgres hint passthrough', () => {
       {
         "code": "42501",
         "details": null,
-        "hint": "GRANT SELECT ON public.users TO anon;",
+        "hint": "Grant the required privileges to the current role with: GRANT SELECT ON public.users TO anon;",
         "message": "permission denied for table users",
       }
     `)
@@ -45,7 +47,7 @@ describe('postgres hint passthrough', () => {
     })
 
     await expect(postgrest.from('users').select().throwOnError()).rejects.toMatchObject({
-      hint: 'GRANT SELECT ON public.users TO anon;',
+      hint: 'Grant the required privileges to the current role with: GRANT SELECT ON public.users TO anon;',
     })
   })
 
