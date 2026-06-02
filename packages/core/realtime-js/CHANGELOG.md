@@ -1,3 +1,13 @@
+## 2.107.0 (2026-06-02)
+
+### 🚀 Features
+
+- **realtime:** allow httpSend to send binary payload ([#2400](https://github.com/supabase/supabase-js/pull/2400))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
 ## 2.106.2 (2026-05-25)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

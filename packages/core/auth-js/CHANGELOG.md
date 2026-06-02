@@ -1,3 +1,20 @@
+## 2.107.0 (2026-06-02)
+
+### 🚀 Features
+
+- **auth:** remove navigator.locks-based mutex; introduce commit guard + dispose() ([#2392](https://github.com/supabase/supabase-js/pull/2392))
+
+### 🩹 Fixes
+
+- **auth): revert fix(auth:** encode client-id in oauth requests ([#2383](https://github.com/supabase/supabase-js/pull/2383), [#2417](https://github.com/supabase/supabase-js/pull/2417))
+- **auth:** recognize ?error= redirects in implicit grant gate ([#2407](https://github.com/supabase/supabase-js/pull/2407))
+- **auth:** return AuthInvalidJwtError from getClaims for expired JWT ([#2395](https://github.com/supabase/supabase-js/pull/2395))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Omar Al Matar @Bewinxed
+
 ## 2.106.2 (2026-05-25)
 
 ### 🩹 Fixes

@@ -1,3 +1,15 @@
+## 2.107.0 (2026-06-02)
+
+### 🩹 Fixes
+
+- **postgrest:** return a structured error for non-JSON body on successful responses ([#2398](https://github.com/supabase/supabase-js/pull/2398))
+
+### ❤️ Thank You
+
+- Claude Opus 4.7 (1M context)
+- youcef zr @youcefzemmar
+- youcefzemmar
+
 ## 2.106.2 (2026-05-25)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
