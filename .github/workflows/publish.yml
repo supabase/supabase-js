@@ -167,7 +167,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && needs.release-stable.result == 'success' }}
     uses: ./.github/workflows/dogfood.yml
     secrets:
-      APP_ID: ${{ secrets.APP_ID }}
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
       DOGFOOD_APP_ID: ${{ secrets.DOGFOOD_APP_ID }}
       DOGFOOD_APP_PRIVATE_KEY: ${{ secrets.DOGFOOD_APP_PRIVATE_KEY }}
