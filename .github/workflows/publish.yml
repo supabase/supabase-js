@@ -459,6 +459,9 @@ jobs:
     concurrency:
       group: release-${{ github.ref }}
       cancel-in-progress: false
+    outputs:
+      partial_failure: ${{ steps.release.outputs.partial_failure }}
+      partial_failure_reason: ${{ steps.release.outputs.partial_failure_reason }}
     # Run on master branch pushes, only if all CI jobs succeeded
     if: |
       github.event_name == 'push' &&
@@ -536,6 +539,20 @@ jobs:
       SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
     with:
       title: 'Canary Release'
+      status: 'failure'
+
+  # Fires when the canary job exits green but JSR or the gotrue-js legacy mirror
+  # publish failed. release-canary.ts swallows those errors so npm canary still
+  # ships; this notification ensures the breakage doesn't go silent for weeks.
+  notify-canary-partial-failure:
+    name: Notify Slack for Canary partial failure
+    needs: release-canary
+    if: ${{ always() && github.event_name == 'push' && needs.release-canary.result == 'success' && needs.release-canary.outputs.partial_failure == 'true' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
+    with:
+      title: 'Canary Release (partial failure: ${{ needs.release-canary.outputs.partial_failure_reason }})'
       status: 'failure'
 
   notify-next-failure:

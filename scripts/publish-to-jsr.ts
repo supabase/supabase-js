@@ -29,6 +29,35 @@ function cleanupTracingSnapshot(packagePath: string, pkg: string): void {
   rmSync(join(packagePath, TRACING_INTERNAL_SUBPATH), { recursive: true, force: true })
 }
 
+// JSR rejects pnpm's `workspace:*` protocol as an unpinned npm specifier. Before
+// publishing, swap every `workspace:<range>` entry in package.json for the
+// package's own version (fixed-release mode means all siblings share it), then
+// restore the original file in the finally block.
+function rewriteWorkspaceDeps(packagePath: string, version: string): string {
+  const pkgJsonPath = join(packagePath, 'package.json')
+  const original = readFileSync(pkgJsonPath, 'utf-8')
+  const pkgJson = JSON.parse(original)
+  let touched = false
+  for (const section of ['dependencies', 'devDependencies'] as const) {
+    const deps = pkgJson[section]
+    if (!deps) continue
+    for (const [name, value] of Object.entries(deps)) {
+      if (typeof value === 'string' && value.startsWith('workspace:')) {
+        deps[name] = version
+        touched = true
+      }
+    }
+  }
+  if (touched) {
+    writeFileSync(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + '\n')
+  }
+  return original
+}
+
+function restorePackageJson(packagePath: string, original: string): void {
+  writeFileSync(join(packagePath, 'package.json'), original)
+}
+
 function getArg(name: string): string | undefined {
   const idx = process.argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`))
   if (idx === -1) return undefined
@@ -86,6 +115,9 @@ async function publishToJsr() {
     jsrConfig.version = version
     writeFileSync(jsrPath, JSON.stringify(jsrConfig, null, 2) + '\n')
 
+    // Pin workspace:* sibling deps so JSR sees a real version constraint.
+    const originalPackageJson = rewriteWorkspaceDeps(packagePath, version)
+
     // Snapshot any internal workspace deps that JSR would otherwise reject for
     // missing version constraints. See TRACING_SNAPSHOT_SOURCES for details.
     copyTracingSnapshot(packagePath, pkg)
@@ -113,6 +145,8 @@ async function publishToJsr() {
     } finally {
       // Restore original jsr.json to keep working directory clean
       writeFileSync(jsrPath, originalJsrContent)
+      // Restore package.json (workspace:* sibling deps)
+      restorePackageJson(packagePath, originalPackageJson)
       // Remove any internal snapshot copies created above
       cleanupTracingSnapshot(packagePath, pkg)
     }

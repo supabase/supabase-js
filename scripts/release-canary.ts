@@ -1,5 +1,6 @@
 import { releaseVersion, releaseChangelog, releasePublish } from 'nx/release'
 import { execSync } from 'child_process'
+import { appendFileSync } from 'fs'
 import { getLastStableTag, getArg } from './utils'
 
 // Optional CLI flags for overriding default behavior (used by develop branch for v3 prereleases):
@@ -146,6 +147,10 @@ const tagArg = getArg('tag') ?? 'canary'
     verbose: true,
   })
 
+  // Track non-fatal publish failures (legacy mirror + JSR) so the workflow can
+  // notify Slack instead of letting them disappear into a green job log.
+  const partialFailures: string[] = []
+
   // Publish gotrue-js as legacy mirror of auth-js
   console.log('\n📦 Publishing @supabase/gotrue-js (legacy mirror)...')
   try {
@@ -154,6 +159,7 @@ const tagArg = getArg('tag') ?? 'canary'
     console.error('❌ Failed to publish gotrue-js legacy package:', error)
     // Don't fail the entire release if gotrue-js fails
     console.log('⚠️  Continuing with release despite gotrue-js publish failure')
+    partialFailures.push('gotrue-js')
   }
 
   // Publish all packages to JSR
@@ -164,6 +170,14 @@ const tagArg = getArg('tag') ?? 'canary'
     console.error('❌ Failed to publish to JSR:', error)
     // Don't fail the entire release if JSR publishing fails
     console.log('⚠️  Continuing with release despite JSR publish failure')
+    partialFailures.push('jsr')
+  }
+
+  if (partialFailures.length > 0 && process.env.GITHUB_OUTPUT) {
+    appendFileSync(
+      process.env.GITHUB_OUTPUT,
+      `partial_failure=true\npartial_failure_reason=${partialFailures.join(',')}\n`
+    )
   }
 
   process.exit(Object.values(publishResult).every((result) => result.code === 0) ? 0 : 1)
