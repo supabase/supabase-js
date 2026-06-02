@@ -169,6 +169,33 @@ export default class PostgrestQueryBuilder<
      * }
      * ```
      *
+     * @exampleDescription Handling errors
+     * The most useful field on a Postgres error is usually `hint` — when the database knows the fix, it puts the literal SQL there. For example, a permission-denied error (`code: '42501'`) arrives with a `hint` like `"Grant the required privileges to the current role with: GRANT SELECT ON public.characters TO anon;"`. Log the full `error` object so the hint isn't hidden behind `error.message`.
+     *
+     * @example Handling errors
+     * ```js
+     * const { data, error } = await supabase.from('characters').select()
+     * if (error) {
+     *   // Logs the full error: message, code, details, and hint.
+     *   console.error(error)
+     *   return
+     * }
+     * ```
+     *
+     * @exampleResponse Handling errors
+     * ```json
+     * {
+     *   "error": {
+     *     "code": "42501",
+     *     "details": null,
+     *     "hint": "Grant the required privileges to the current role with: GRANT SELECT ON public.characters TO anon;",
+     *     "message": "permission denied for table characters"
+     *   },
+     *   "status": 401,
+     *   "statusText": "Unauthorized"
+     * }
+     * ```
+     *
      * @example Selecting specific columns
      * ```js
      * const { data, error } = await supabase
@@ -985,6 +1012,15 @@ export default class PostgrestQueryBuilder<
    * }
    * ```
    *
+   * @exampleDescription Handling errors
+   * `error.hint` from Postgres often contains the actionable fix (e.g. `"Grant the required privileges to the current role with: GRANT INSERT ON public.countries TO anon;"` for a `42501` permission-denied error). Log the full `error` object so it isn't hidden behind `error.message`.
+   *
+   * @example Handling errors
+   * ```js
+   * const { error } = await supabase.from('countries').insert({ id: 1, name: 'Mordor' })
+   * if (error) console.error(error)
+   * ```
+   *
    * @example Create a record and return it
    * ```ts
    * const { data, error } = await supabase
@@ -1226,6 +1262,15 @@ export default class PostgrestQueryBuilder<
    * }
    * ```
    *
+   * @exampleDescription Handling errors
+   * `error.hint` from Postgres often contains the actionable fix (e.g. `"Grant the required privileges to the current role with: GRANT INSERT, UPDATE ON public.instruments TO anon;"` for a `42501` permission-denied error). Log the full `error` object so it isn't hidden behind `error.message`.
+   *
+   * @example Handling errors
+   * ```js
+   * const { data, error } = await supabase.from('instruments').upsert({ id: 1, name: 'piano' }).select()
+   * if (error) console.error(error)
+   * ```
+   *
    * @example Bulk Upsert your data
    * ```ts
    * const { data, error } = await supabase
@@ -1428,6 +1473,15 @@ export default class PostgrestQueryBuilder<
    * }
    * ```
    *
+   * @exampleDescription Handling errors
+   * `error.hint` from Postgres often contains the actionable fix (e.g. `"Grant the required privileges to the current role with: GRANT UPDATE ON public.instruments TO anon;"` for a `42501` permission-denied error). Log the full `error` object so it isn't hidden behind `error.message`.
+   *
+   * @example Handling errors
+   * ```js
+   * const { error } = await supabase.from('instruments').update({ name: 'piano' }).eq('id', 1)
+   * if (error) console.error(error)
+   * ```
+   *
    * @example Update a record and return it
    * ```ts
    * const { data, error } = await supabase
@@ -1607,6 +1661,15 @@ export default class PostgrestQueryBuilder<
    *   "status": 204,
    *   "statusText": "No Content"
    * }
+   * ```
+   *
+   * @exampleDescription Handling errors
+   * `error.hint` from Postgres often contains the actionable fix (e.g. `"Grant the required privileges to the current role with: GRANT DELETE ON public.countries TO anon;"` for a `42501` permission-denied error). Log the full `error` object so it isn't hidden behind `error.message`.
+   *
+   * @example Handling errors
+   * ```js
+   * const { error } = await supabase.from('countries').delete().eq('id', 1)
+   * if (error) console.error(error)
    * ```
    *
    * @example Delete a record and return it

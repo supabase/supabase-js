@@ -194,6 +194,21 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   })
    * ```
    *
+   * @example Handling errors
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .upload('public/avatar1.png', avatarFile)
+   *
+   * if (error) {
+   *   // Log the full error so fields like `statusCode` and `error` (the
+   *   // Storage error name, e.g. "Duplicate") aren't hidden behind `error.message`.
+   *   console.error(error)
+   *   return
+   * }
+   * ```
+   *
    * @remarks
    * - RLS policy permissions required:
    *   - `buckets` table permissions: none

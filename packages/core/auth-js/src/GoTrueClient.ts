@@ -1116,6 +1116,21 @@ export default class GoTrueClient {
    *   password: 'some-password',
    * })
    * ```
+   *
+   * @exampleDescription Handling errors
+   * Log the full `error` object so fields like `code`, `status`, and `name` aren't hidden. The `error.code` (e.g. `'invalid_credentials'`, `'email_not_confirmed'`) is often more useful for branching than `error.message`, and the full object surfaces both.
+   *
+   * @example Handling errors
+   * ```js
+   * const { data, error } = await supabase.auth.signInWithPassword({
+   *   email: 'example@email.com',
+   *   password: 'example-password',
+   * })
+   * if (error) {
+   *   console.error(error)
+   *   return
+   * }
+   * ```
    */
   async signInWithPassword(
     credentials: SignInWithPasswordCredentials
