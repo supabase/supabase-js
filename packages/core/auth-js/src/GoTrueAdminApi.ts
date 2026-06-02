@@ -65,14 +65,6 @@ export default class GoTrueAdminApi {
   protected headers: {
     [key: string]: string
   }
-
-  private _encodePathSegment(segment: string): string {
-    if (segment === '.' || segment === '..') {
-      throw new AuthError('Invalid path segment')
-    }
-
-    return encodeURIComponent(segment)
-  }
   protected fetch: Fetch
   protected experimental: ExperimentalFeatureFlags
 
@@ -990,18 +982,12 @@ export default class GoTrueAdminApi {
    */
   private async _getOAuthClient(clientId: string): Promise<OAuthClientResponse> {
     try {
-      const encodedClientId = this._encodePathSegment(clientId)
-      return await _request(
-        this.fetch,
-        'GET',
-        `${this.url}/admin/oauth/clients/${encodedClientId}`,
-        {
-          headers: this.headers,
-          xform: (client: any) => {
-            return { data: client, error: null }
-          },
-        }
-      )
+      return await _request(this.fetch, 'GET', `${this.url}/admin/oauth/clients/${clientId}`, {
+        headers: this.headers,
+        xform: (client: any) => {
+          return { data: client, error: null }
+        },
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -1022,19 +1008,13 @@ export default class GoTrueAdminApi {
     params: UpdateOAuthClientParams
   ): Promise<OAuthClientResponse> {
     try {
-      const encodedClientId = this._encodePathSegment(clientId)
-      return await _request(
-        this.fetch,
-        'PUT',
-        `${this.url}/admin/oauth/clients/${encodedClientId}`,
-        {
-          body: params,
-          headers: this.headers,
-          xform: (client: any) => {
-            return { data: client, error: null }
-          },
-        }
-      )
+      return await _request(this.fetch, 'PUT', `${this.url}/admin/oauth/clients/${clientId}`, {
+        body: params,
+        headers: this.headers,
+        xform: (client: any) => {
+          return { data: client, error: null }
+        },
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -1054,8 +1034,7 @@ export default class GoTrueAdminApi {
     clientId: string
   ): Promise<{ data: null; error: AuthError | null }> {
     try {
-      const encodedClientId = this._encodePathSegment(clientId)
-      await _request(this.fetch, 'DELETE', `${this.url}/admin/oauth/clients/${encodedClientId}`, {
+      await _request(this.fetch, 'DELETE', `${this.url}/admin/oauth/clients/${clientId}`, {
         headers: this.headers,
         noResolveJson: true,
       })
@@ -1077,11 +1056,10 @@ export default class GoTrueAdminApi {
    */
   private async _regenerateOAuthClientSecret(clientId: string): Promise<OAuthClientResponse> {
     try {
-      const encodedClientId = this._encodePathSegment(clientId)
       return await _request(
         this.fetch,
         'POST',
-        `${this.url}/admin/oauth/clients/${encodedClientId}/regenerate_secret`,
+        `${this.url}/admin/oauth/clients/${clientId}/regenerate_secret`,
         {
           headers: this.headers,
           xform: (client: any) => {
@@ -1163,18 +1141,12 @@ export default class GoTrueAdminApi {
    */
   private async _getCustomProvider(identifier: string): Promise<CustomProviderResponse> {
     try {
-      const encodedIdentifier = this._encodePathSegment(identifier)
-      return await _request(
-        this.fetch,
-        'GET',
-        `${this.url}/admin/custom-providers/${encodedIdentifier}`,
-        {
-          headers: this.headers,
-          xform: (provider: any) => {
-            return { data: provider, error: null }
-          },
-        }
-      )
+      return await _request(this.fetch, 'GET', `${this.url}/admin/custom-providers/${identifier}`, {
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -1198,19 +1170,13 @@ export default class GoTrueAdminApi {
     params: UpdateCustomProviderParams
   ): Promise<CustomProviderResponse> {
     try {
-      const encodedIdentifier = this._encodePathSegment(identifier)
-      return await _request(
-        this.fetch,
-        'PUT',
-        `${this.url}/admin/custom-providers/${encodedIdentifier}`,
-        {
-          body: params,
-          headers: this.headers,
-          xform: (provider: any) => {
-            return { data: provider, error: null }
-          },
-        }
-      )
+      return await _request(this.fetch, 'PUT', `${this.url}/admin/custom-providers/${identifier}`, {
+        body: params,
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -1228,16 +1194,10 @@ export default class GoTrueAdminApi {
     identifier: string
   ): Promise<{ data: null; error: AuthError | null }> {
     try {
-      const encodedIdentifier = this._encodePathSegment(identifier)
-      await _request(
-        this.fetch,
-        'DELETE',
-        `${this.url}/admin/custom-providers/${encodedIdentifier}`,
-        {
-          headers: this.headers,
-          noResolveJson: true,
-        }
-      )
+      await _request(this.fetch, 'DELETE', `${this.url}/admin/custom-providers/${identifier}`, {
+        headers: this.headers,
+        noResolveJson: true,
+      })
       return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
