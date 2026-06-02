@@ -58,6 +58,72 @@ if (isAuthRefreshDiscardedError(error)) {
 - **`onAuthStateChange` async callbacks** that call `getUser`, `setSession`, or read the session from inside the callback are now safe on the default path (previously deadlocked through the lock). One residual hazard remains: calling `refreshSession` (or anything routing through `_callRefreshToken`) from inside a `TOKEN_REFRESHED` handler still deadlocks via `refreshingDeferred`. The `@deprecated` marker on the async overload is kept with its reason updated to point at this specific case.
 - **Subscriber timing on the default path:** subscribers stay awaited; same as before. What changes is that `signOut` no longer waits for an in-flight refresh's HTTP and continuation to finish before its own fetch goes out. Both fetches now run concurrently, and the commit guard keeps storage consistent.
 
+## Timing & concurrency notes for downstream consumers
+
+Removing the default `_acquireLock(...)` wrapper changes the _microtask shape_ of `getSession`, `getUser`, `refreshSession`, `setSession`, `signOut`, `_initialize`, and `_reauthenticate`. Application behavior is unchanged — these methods still return the same values — but the await chain is shorter.
+
+### What changed in the await chain
+
+Previously, each of those methods looked like:
+
+```ts
+return await this._acquireLock(this.lockAcquireTimeout, async () => {
+  return await this._getUser()
+})
+```
+
+`_acquireLock` awaited `navigator.locks.request` (browser) or the in-process `processLock` (Node). That added a handful of microtasks before the inner operation ran. On the lockless default path, the wrapper is skipped and the inner operation runs directly:
+
+```ts
+if (this.lock) {
+  return await this._acquireLock(this.lockAcquireTimeout, async () => {
+    return await this._getUser()
+  })
+}
+return await this._getUser()
+```
+
+### Downstream impact via `fetchWithAuth`
+
+`supabase-js` wraps the user's `fetch` via `fetchWithAuth` (in `packages/core/supabase-js/src/SupabaseClient.ts`), which awaits `_getAccessToken()` before every PostgREST, Storage, and Functions request. With the shorter pre-fetch await chain, concurrent client calls — for example `Promise.all([supabase.rpc(...), supabase.rpc(...)])` or `Promise.all(rows.map((r) => supabase.from(...).insert(...)))` — may reach the network layer in a different micro-order than they did on v2.106 and earlier.
+
+### What this can surface as
+
+Tests that use order-sensitive mocks (nock, MSW, or any interceptor that matches requests in registration order) against parallel client calls may flip. A concrete example from the wild: a downstream worker repo registered two `nock(URL).post('/rest/v1/rpc/queue_job', body => expect(body).toMatchInlineSnapshot(...)).reply(200)` interceptors back-to-back, one expecting database `333`, the other expecting database `222`, and relied on the calls arriving in that order. The application code dispatched both via `Promise.all(replicas.map((r) => supabase.rpc('queue_job', ...)))`. On v2.107 the arrival order flipped, the first interceptor's body matcher ran against the wrong payload, vitest raised `toMatchInlineSnapshot with different snapshots cannot be called at the same location`, and the unmatched interceptor caused a "pending mocks left" failure at teardown.
+
+The application behavior was correct in both versions: both RPCs completed, both rows ended up in the queue. Only the _test_ depended on an ordering that was never guaranteed.
+
+### Recommended fix pattern
+
+Make mocks order-independent. Two common shapes:
+
+1. **Branch the body matcher on a discriminator field.** Register one interceptor with `.times(N)`; inside the body matcher, look at a field on the request body (e.g. an `id`) and assert against the expected payload for that id.
+
+   ```ts
+   const expected: Record<number, unknown> = {
+     222: {
+       /* expected body for replica 222 */
+     },
+     333: {
+       /* expected body for replica 333 */
+     },
+   }
+
+   nock(URL)
+     .post('/path', (body) => {
+       expect(body).toStrictEqual(expected[body.id])
+       return true
+     })
+     .times(2)
+     .reply(200)
+   ```
+
+2. **Capture and assert as a set.** Push each received body into an array from the matcher, return `true` to accept, then after the parallel block resolves assert the array's _contents_ (e.g. via `expect(received).toEqual(expect.arrayContaining([...]))`) without pinning order.
+
+Do not pin behavior to lock-induced delays. They were incidental, not a guarantee — and they may shift again in future patch releases as internal awaits are refactored.
+
+The custom-`lock` opt-in path retains the old await shape and is unaffected by this section.
+
 ## Migration steps
 
 ### If you do not pass a custom `lock` (most users)
