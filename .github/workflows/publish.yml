@@ -552,8 +552,8 @@ jobs:
     secrets:
       SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
     with:
-      title: 'Canary Release (partial failure: ${{ needs.release-canary.outputs.partial_failure_reason }})'
-      status: 'failure'
+      title: 'Canary Release: partial publish failure (${{ needs.release-canary.outputs.partial_failure_reason }})'
+      status: 'partial'
 
   notify-next-failure:
     name: Notify Slack for Next failure
