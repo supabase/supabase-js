@@ -26,7 +26,7 @@ on:
         type: string
         default: 'supabase-js-stable-release'
     secrets:
-      APP_CLIENT_ID:
+      APP_ID:
         required: true
       PRIVATE_KEY:
         required: true
