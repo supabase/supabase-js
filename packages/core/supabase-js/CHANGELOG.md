@@ -1,3 +1,19 @@
+## 2.107.0 (2026-06-02)
+
+### 🚀 Features
+
+- **auth:** remove navigator.locks-based mutex; introduce commit guard + dispose() ([#2392](https://github.com/supabase/supabase-js/pull/2392))
+- **supabase:** update X-Client-Info to structured metadata format ([#2359](https://github.com/supabase/supabase-js/pull/2359))
+- **realtime:** allow httpSend to send binary payload ([#2400](https://github.com/supabase/supabase-js/pull/2400))
+
+### ❤️ Thank You
+
+- Claude Sonnet 4.6
+- Eduardo Gurgel
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+- Omar Al Matar @Bewinxed
+
 ## 2.106.2 (2026-05-25)
 
 ### 🩹 Fixes

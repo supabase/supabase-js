@@ -1,3 +1,31 @@
+## 2.107.0 (2026-06-02)
+
+### 🚀 Features
+
+- **auth:** remove navigator.locks-based mutex; introduce commit guard + dispose() ([#2392](https://github.com/supabase/supabase-js/pull/2392))
+- **realtime:** allow httpSend to send binary payload ([#2400](https://github.com/supabase/supabase-js/pull/2400))
+- **supabase:** update X-Client-Info to structured metadata format ([#2359](https://github.com/supabase/supabase-js/pull/2359))
+
+### 🩹 Fixes
+
+- **auth:** return AuthInvalidJwtError from getClaims for expired JWT ([#2395](https://github.com/supabase/supabase-js/pull/2395))
+- **auth:** recognize ?error= redirects in implicit grant gate ([#2407](https://github.com/supabase/supabase-js/pull/2407))
+- **auth): revert fix(auth:** encode client-id in oauth requests ([#2383](https://github.com/supabase/supabase-js/pull/2383), [#2417](https://github.com/supabase/supabase-js/pull/2417))
+- **postgrest:** return a structured error for non-JSON body on successful responses ([#2398](https://github.com/supabase/supabase-js/pull/2398))
+- **release:** pin workspace:* sibling deps before JSR publish ([#2418](https://github.com/supabase/supabase-js/pull/2418))
+- **release:** publish gotrue-js legacy mirror via pnpm ([#2419](https://github.com/supabase/supabase-js/pull/2419))
+
+### ❤️ Thank You
+
+- Claude Opus 4.7 (1M context)
+- Claude Sonnet 4.6
+- Eduardo Gurgel
+- Guilherme Souza
+- Katerina Skroumpelou @mandarini
+- Omar Al Matar @Bewinxed
+- youcef zr @youcefzemmar
+- youcefzemmar
+
 ## 2.106.2 (2026-05-25)
 
 ### 🩹 Fixes
