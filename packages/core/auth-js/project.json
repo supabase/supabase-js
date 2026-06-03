@@ -14,14 +14,14 @@
     "test:clean-pre": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npx supabase stop --no-backup --workdir test || true",
+        "command": "npx supabase@beta stop --no-backup --workdir test || true",
         "cwd": "{projectRoot}"
       }
     },
     "test:infra": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npx supabase start --workdir test",
+        "command": "npx supabase@beta start --workdir test",
         "cwd": "{projectRoot}"
       },
       "dependsOn": ["test:generate-keys", "test:clean-pre"]
@@ -38,7 +38,7 @@
     "test:clean-post": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npx supabase stop --no-backup --workdir test || true",
+        "command": "npx supabase@beta stop --no-backup --workdir test || true",
         "cwd": "{projectRoot}"
       },
       "dependsOn": ["test:suite"]

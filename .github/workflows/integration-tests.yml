@@ -112,7 +112,7 @@ jobs:
       - name: Export auth keys
         run: |
           cd packages/core/supabase-js
-          echo SUPABASE_PUBLISHABLE_KEY="$(pnpm exec supabase status --output json | jq -r '.ANON_KEY')" >> $GITHUB_ENV
+          echo SUPABASE_PUBLISHABLE_KEY="$(npx supabase@beta status --output json | jq -r '.ANON_KEY')" >> $GITHUB_ENV
           echo "✅ Keys exported"
 
       - name: Verify edge functions

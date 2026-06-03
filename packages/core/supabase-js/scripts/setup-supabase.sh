@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 echo "🚀 Stop supabase if it is running"
-npx supabase stop
+npx supabase@beta stop
 
 # Pin realtime to a version that includes the per-event broadcast endpoint
 # (supabase/realtime#1864, first released in realtime v2.97.0). The Supabase CLI
@@ -14,7 +14,7 @@ mkdir -p supabase/.temp
 echo "v2.97.3" > supabase/.temp/realtime-version
 
 echo "🚀 Starting Supabase (migrations applied, seed data skipped)..."
-npx supabase start
+npx supabase@beta start
 
 echo "⏳ Waiting for all services..."
 sleep 3
@@ -30,7 +30,7 @@ PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -c "selec
 PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -c "select id from storage.buckets where id = 'test-bucket';" > /dev/null 2>&1
 
 echo "📦 Starting Edge Functions..."
-npx supabase functions serve --import-map supabase/deno.json > /tmp/supabase-functions.log 2>&1 &
+npx supabase@beta functions serve --import-map supabase/deno.json > /tmp/supabase-functions.log 2>&1 &
 FUNCTIONS_PID=$!
 echo $FUNCTIONS_PID > /tmp/supabase-functions.pid
 
@@ -38,7 +38,7 @@ echo "⏳ Waiting for Edge Runtime to initialize..."
 sleep 5
 
 echo "🔑 Exporting authentication keys..."
-export SUPABASE_PUBLISHABLE_KEY="$(npx supabase status --output json | jq -r '.ANON_KEY')"
+export SUPABASE_PUBLISHABLE_KEY="$(npx supabase@beta status --output json | jq -r '.ANON_KEY')"
 echo "   Keys exported"
 
 echo "🧪 Testing edge function endpoint..."

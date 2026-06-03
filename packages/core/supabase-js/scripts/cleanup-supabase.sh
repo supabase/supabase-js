@@ -16,6 +16,6 @@ if [ -f /tmp/supabase-functions.pid ]; then
 fi
 rm -f /tmp/supabase-functions.log
 
-npx supabase stop
+npx supabase@beta stop
 
 echo "✨ Cleanup complete!"
