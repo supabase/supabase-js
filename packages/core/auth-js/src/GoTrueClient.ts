@@ -4711,7 +4711,7 @@ export default class GoTrueClient {
             if (isAuthRefreshDiscardedError(error)) {
               this._debug(debugName, 'refresh discarded by commit guard', error)
             } else {
-              console.error(error)
+              this._debug(debugName, 'refresh failed', error)
 
               if (!isAuthRetryableFetchError(error)) {
                 this._debug(
