@@ -154,9 +154,9 @@ export default abstract class PostgrestBuilder<
    *
    * @category Database
    */
-  throwOnError(): Omit<this, 'then'> & PostgrestBuilder<ClientOptions, Result, true> {
+  throwOnError(): this & PostgrestBuilder<ClientOptions, Result, true> {
     this.shouldThrowOnError = true
-    return this as Omit<this, 'then'> & PostgrestBuilder<ClientOptions, Result, true>
+    return this as this & PostgrestBuilder<ClientOptions, Result, true>
   }
 
   /**
@@ -253,6 +253,22 @@ export default abstract class PostgrestBuilder<
     return this
   }
 
+  then<TResult1 = PostgrestResponseSuccess<Result>, TResult2 = never>(
+    this: PostgrestBuilder<ClientOptions, Result, true>,
+    onfulfilled?:
+      | ((value: PostgrestResponseSuccess<Result>) => TResult1 | PromiseLike<TResult1>)
+      | undefined
+      | null,
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
+  ): PromiseLike<TResult1 | TResult2>
+  then<TResult1 = PostgrestSingleResponse<Result>, TResult2 = never>(
+    this: PostgrestBuilder<ClientOptions, Result, false>,
+    onfulfilled?:
+      | ((value: PostgrestSingleResponse<Result>) => TResult1 | PromiseLike<TResult1>)
+      | undefined
+      | null,
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
+  ): PromiseLike<TResult1 | TResult2>
   then<
     TResult1 = ThrowOnError extends true
       ? PostgrestResponseSuccess<Result>
@@ -260,11 +276,7 @@ export default abstract class PostgrestBuilder<
     TResult2 = never,
   >(
     onfulfilled?:
-      | ((
-          value: ThrowOnError extends true
-            ? PostgrestResponseSuccess<Result>
-            : PostgrestSingleResponse<Result>
-        ) => TResult1 | PromiseLike<TResult1>)
+      | ((value: any) => TResult1 | PromiseLike<TResult1>)
       | undefined
       | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
