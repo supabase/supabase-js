@@ -233,7 +233,8 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   const x = postgrest.from('channels').select()
   const y = x.throwOnError()
   const z = x.setHeader('', '')
-  expectType<typeof y extends typeof x ? true : false>(true)
+  const w = y.eq('id', 1)
+  expectType<typeof w extends typeof y ? true : false>(true)
   expectType<typeof z extends typeof x ? true : false>(true)
 }
 
