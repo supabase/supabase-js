@@ -346,9 +346,9 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Limit the query result by `count`.
+   * Limit the query result by `rows`.
    *
-   * @param count - The maximum number of rows to return
+   * @param rows - The maximum number of rows to return
    * @param options - Named parameters
    * @param options.referencedTable - Set this to limit rows of referenced
    * tables instead of the parent table
@@ -446,14 +446,14 @@ export default class PostgrestTransformBuilder<
    * ```
    */
   limit(
-    count: number,
+    rows: number,
     {
       foreignTable,
       referencedTable = foreignTable,
     }: { foreignTable?: string; referencedTable?: string } = {}
   ): this {
     const key = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
-    this.url.searchParams.set(key, `${count}`)
+    this.url.searchParams.set(key, `${rows}`)
     return this
   }
 
@@ -960,18 +960,18 @@ export default class PostgrestTransformBuilder<
    * Set the maximum number of rows that can be affected by the query.
    * Only available in PostgREST v13+ and only works with PATCH and DELETE methods.
    *
-   * @param value - The maximum number of rows that can be affected
+   * @param rows - The maximum number of rows that can be affected
    *
    * @category Database
    */
-  maxAffected(value: number): MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
+  maxAffected(rows: number): MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
     ? // TODO: update the RPC case to only work on RPC that returns SETOF rows
       Method extends 'PATCH' | 'DELETE' | 'RPC'
       ? this
       : InvalidMethodError<'maxAffected method only available on update or delete'>
     : InvalidMethodError<'maxAffected method only available on postgrest 13+'> {
     this.headers.append('Prefer', 'handling=strict')
-    this.headers.append('Prefer', `max-affected=${value}`)
+    this.headers.append('Prefer', `max-affected=${rows}`)
     return this as unknown as MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
       ? Method extends 'PATCH' | 'DELETE' | 'RPC'
         ? this
