@@ -186,7 +186,7 @@ describe('Fetch error handling', () => {
     const [_url, options] = mockFetch.mock.calls[0]
     expect(options.method).toBe('POST')
     expect(JSON.parse(options.body)).toEqual({ obj_arg: { nested: 'value' } })
-    expect(options.headers.get('Prefer')).toContain('return=minimal')
+    expect(options.headers['prefer']).toContain('return=minimal')
   })
 
   test('PostgrestError serializes message with JSON.stringify', () => {

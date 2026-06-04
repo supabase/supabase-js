@@ -2176,7 +2176,7 @@ test('uses native fetch when no custom fetch provided', async () => {
     expect.stringContaining(REST_URL),
     expect.objectContaining({
       method: 'GET',
-      headers: expect.any(Headers),
+      headers: expect.any(Object),
     })
   )
 

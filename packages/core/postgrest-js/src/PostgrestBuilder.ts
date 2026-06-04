@@ -304,9 +304,17 @@ export default abstract class PostgrestBuilder<
       let attemptCount = 0
 
       while (true) {
-        const requestHeaders = new Headers(this.headers)
+        // Serialize headers as a plain object rather than a Headers instance.
+        // React Native's XHR-based fetch silently drops headers (notably Content-Type)
+        // when given a Headers instance, causing PGRST202 on parameter-less RPC calls.
+        // See supabase/supabase-js#1562 and facebook/react-native#33933.
+        // All sibling packages (auth-js, storage-js, functions-js) already pass plain objects.
+        const headers: Record<string, string> = {}
+        this.headers.forEach((value, key) => {
+          headers[key] = value
+        })
         if (attemptCount > 0) {
-          requestHeaders.set('X-Retry-Count', String(attemptCount))
+          headers['X-Retry-Count'] = String(attemptCount)
         }
 
         // Only wrap the fetch call itself — processResponse errors must never trigger retries
@@ -314,7 +322,7 @@ export default abstract class PostgrestBuilder<
         try {
           res = await _fetch(this.url.toString(), {
             method: this.method,
-            headers: requestHeaders,
+            headers,
             body: JSON.stringify(this.body, (_, value) =>
               typeof value === 'bigint' ? value.toString() : value
             ),
