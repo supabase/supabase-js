@@ -116,18 +116,22 @@ To see traces in a real observability backend:
      jaegertracing/all-in-one:latest
    ```
 
-2. Create `test-with-jaeger.js`:
+2. Use the included `test-with-jaeger.js` script:
 
    ```javascript
    import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-   import { NodeSDK } from '@opentelemetry/sdk-node'
-   import { Resource } from '@opentelemetry/resources'
-   import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
+   import otelSdk from '@opentelemetry/sdk-node'
+   import otelResources from '@opentelemetry/resources'
+   import otelSemconv from '@opentelemetry/semantic-conventions'
    import { createClient } from '@supabase/supabase-js'
    import { trace } from '@opentelemetry/api'
 
+   const { NodeSDK } = otelSdk
+   const { resourceFromAttributes } = otelResources
+   const { ATTR_SERVICE_NAME } = otelSemconv
+
    const sdk = new NodeSDK({
-     resource: new Resource({
+     resource: resourceFromAttributes({
        [ATTR_SERVICE_NAME]: 'supabase-trace-test',
      }),
      traceExporter: new OTLPTraceExporter({
@@ -142,7 +146,7 @@ To see traces in a real observability backend:
    const tracer = trace.getTracer('test')
 
    await tracer.startActiveSpan('database-query', async (span) => {
-     const { data, error } = await supabase.from('your_table').select('*').limit(10)
+     const { data, error } = await supabase.from('testtable').select('*').limit(10)
 
      console.log('Query completed:', data ? 'success' : 'error')
      span.end()
