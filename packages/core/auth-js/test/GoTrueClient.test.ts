@@ -3125,6 +3125,35 @@ describe('Auto Refresh', () => {
       // Verify we got a new token
       expect(session?.access_token).not.toEqual(signUpData.session?.access_token)
     })
+
+    test('does not call console.error when refresh fails with an invalid token', async () => {
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+      const storageKey = 'test-no-console-error-on-failed-refresh'
+      const staleSession = {
+        access_token: 'invalid-access-token',
+        refresh_token: 'invalid-refresh-token',
+        expires_at: Math.floor(Date.now() / 1000) - 3600,
+        expires_in: 3600,
+        token_type: 'bearer',
+        user: null,
+      }
+      const storage = memoryLocalStorageAdapter({
+        [storageKey]: JSON.stringify(staleSession),
+      })
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: true,
+        persistSession: true,
+        storage,
+        storageKey,
+      })
+
+      await client.getUser()
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      errorSpy.mockRestore()
+    })
   })
 
   test('should handle auto refresh start/stop multiple times', async () => {
