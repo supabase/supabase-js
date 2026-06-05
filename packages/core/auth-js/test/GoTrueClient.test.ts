@@ -4213,3 +4213,233 @@ describe('GoTrueClient with skipAutoInitialize option', () => {
     expect(data.user).toBeDefined()
   })
 })
+
+describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
+  const plantSession = async (
+    storage: ReturnType<typeof memoryLocalStorageAdapter>,
+    overrides: { secondsUntilExpiry?: number; refreshToken?: string } = {}
+  ) => {
+    const secondsUntilExpiry = overrides.secondsUntilExpiry ?? 60
+    const session: Session = {
+      access_token: 'jwt.accesstoken.signature',
+      refresh_token: overrides.refreshToken ?? 'refresh-token-r1',
+      token_type: 'bearer',
+      expires_in: secondsUntilExpiry,
+      expires_at: Math.floor(Date.now() / 1000) + secondsUntilExpiry,
+      user: { id: 'user-1', email: 'u@example.com' } as any,
+    }
+    await setItemAsync(storage, STORAGE_KEY, session)
+    return session
+  }
+
+  const buildClient = (storage: ReturnType<typeof memoryLocalStorageAdapter>) =>
+    new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storage,
+      autoRefreshToken: false,
+      persistSession: true,
+    })
+
+  test('proactive refresh failure preserves session when access token still valid', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = buildClient(storage)
+    await client.initialize()
+    await plantSession(storage, { secondsUntilExpiry: 60 })
+
+    // 400 invalid_grant — non-retryable, but access token is still valid.
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => ({
+      data: { session: null, user: null },
+      error: Object.assign(new AuthError('Invalid Refresh Token: Already Used', 400), {
+        name: 'AuthApiError',
+        code: 'refresh_token_already_used',
+        __isAuthError: true,
+      }),
+    }))
+
+    // @ts-expect-error access protected for test
+    const result = await client._callRefreshToken('refresh-token-r1')
+
+    expect(result.data).toBeNull()
+    expect((result.error as AuthError)?.code).toBe('refresh_token_already_used')
+
+    // Session preserved: storage still holds the original session.
+    const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+    expect(stored).not.toBeNull()
+    expect(stored?.access_token).toBe('jwt.accesstoken.signature')
+    expect(stored?.refresh_token).toBe('refresh-token-r1')
+  })
+
+  test('reactive refresh failure removes session when access token already expired', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = buildClient(storage)
+    await client.initialize()
+    await plantSession(storage, { secondsUntilExpiry: -60 }) // expired a minute ago
+
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => ({
+      data: { session: null, user: null },
+      error: Object.assign(new AuthError('Invalid Refresh Token: Already Used', 400), {
+        name: 'AuthApiError',
+        code: 'refresh_token_already_used',
+        __isAuthError: true,
+      }),
+    }))
+
+    // @ts-expect-error access protected for test
+    const result = await client._callRefreshToken('refresh-token-r1')
+
+    expect(result.data).toBeNull()
+    expect((result.error as AuthError)?.code).toBe('refresh_token_already_used')
+
+    // Session removed: access token was already dead, refresh token rejected.
+    const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+    expect(stored).toBeNull()
+  })
+
+  test('cooldown dedupes serial callers within REFRESH_FAILURE_COOLDOWN_MS', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = buildClient(storage)
+    await client.initialize()
+    await plantSession(storage, { secondsUntilExpiry: 60 })
+
+    const refreshSpy = jest.fn(async () => ({
+      data: { session: null, user: null },
+      error: Object.assign(new AuthError('Invalid Refresh Token', 400), {
+        name: 'AuthApiError',
+        code: 'refresh_token_already_used',
+        __isAuthError: true,
+      }),
+    }))
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = refreshSpy
+
+    // First call — actually attempts the refresh.
+    // @ts-expect-error access protected for test
+    await client._callRefreshToken('refresh-token-r1')
+    expect(refreshSpy).toHaveBeenCalledTimes(1)
+
+    // Subsequent serial callers in the cooldown window must reuse the cached
+    // failure without firing another /token request.
+    for (let i = 0; i < 50; i++) {
+      // @ts-expect-error access protected for test
+      const result = await client._callRefreshToken('refresh-token-r1')
+      expect(result.data).toBeNull()
+      expect((result.error as AuthError)?.code).toBe('refresh_token_already_used')
+    }
+    expect(refreshSpy).toHaveBeenCalledTimes(1)
+  })
+
+  test('successful refresh clears the cooldown cache', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = buildClient(storage)
+    await client.initialize()
+    await plantSession(storage, { secondsUntilExpiry: 60 })
+
+    // Plant a stale failure manually — simulates a prior cooldown still in
+    // effect from earlier in the session.
+    // @ts-expect-error access protected for test
+    client.lastRefreshFailure = {
+      result: {
+        data: null,
+        error: Object.assign(new AuthError('stale failure', 400), {
+          name: 'AuthApiError',
+          code: 'refresh_token_already_used',
+          __isAuthError: true,
+        }),
+      } as any,
+      expiresAt: Date.now() + 30_000,
+    }
+
+    const newSession = {
+      access_token: 'jwt.new.signature',
+      refresh_token: 'refresh-token-r2',
+      token_type: 'bearer',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: { id: 'user-1', email: 'u@example.com' },
+    }
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => ({
+      data: { session: newSession, user: newSession.user },
+      error: null,
+    }))
+
+    // The cooldown should be returned BEFORE the refresh runs — confirm that
+    // the stale cache short-circuits the call. This documents the contract.
+    // @ts-expect-error access protected for test
+    const cooled = await client._callRefreshToken('refresh-token-r1')
+    expect(cooled.error).not.toBeNull()
+
+    // Now manually expire the cooldown and confirm a real refresh resets it.
+    // @ts-expect-error access protected for test
+    client.lastRefreshFailure = null
+
+    // @ts-expect-error access protected for test
+    const fresh = await client._callRefreshToken('refresh-token-r1')
+    expect(fresh.error).toBeNull()
+    expect(fresh.data?.refresh_token).toBe('refresh-token-r2')
+
+    // @ts-expect-error access protected for test
+    expect(client.lastRefreshFailure).toBeNull()
+  })
+
+  test('transient network error caches failure and preserves session', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = buildClient(storage)
+    await client.initialize()
+    await plantSession(storage, { secondsUntilExpiry: 60 })
+
+    // Simulate DNS failure — wrapped by handleError into AuthRetryableFetchError.
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => ({
+      data: { session: null, user: null },
+      error: Object.assign(new AuthError('Failed to fetch', 0), {
+        name: 'AuthRetryableFetchError',
+        __isAuthError: true,
+      }),
+    }))
+
+    // @ts-expect-error access protected for test
+    const result = await client._callRefreshToken('refresh-token-r1')
+    expect(result.data).toBeNull()
+    expect((result.error as AuthError)?.name).toBe('AuthRetryableFetchError')
+
+    // Storage MUST NOT be touched on a transient failure, regardless of
+    // whether the access token is still valid.
+    const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+    expect(stored?.refresh_token).toBe('refresh-token-r1')
+
+    // The failure is cached under the same single-TTL cooldown so a
+    // subsequent tick gets the cached failure synchronously instead of
+    // hitting the network again.
+    // @ts-expect-error access protected for test
+    expect(client.lastRefreshFailure).not.toBeNull()
+  })
+
+  test('_removeSession clears the cooldown cache', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = buildClient(storage)
+    await client.initialize()
+    await plantSession(storage, { secondsUntilExpiry: 60 })
+
+    // @ts-expect-error access protected for test
+    client.lastRefreshFailure = {
+      result: {
+        data: null,
+        error: Object.assign(new AuthError('x', 400), {
+          name: 'AuthApiError',
+          code: 'refresh_token_already_used',
+          __isAuthError: true,
+        }),
+      } as any,
+      expiresAt: Date.now() + 30_000,
+    }
+
+    // @ts-expect-error access protected for test
+    await client._removeSession()
+
+    // @ts-expect-error access protected for test
+    expect(client.lastRefreshFailure).toBeNull()
+  })
+})

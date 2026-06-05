@@ -6,6 +6,7 @@ import {
   EXPIRY_MARGIN_MS,
   GOTRUE_URL,
   JWKS_TTL,
+  REFRESH_FAILURE_COOLDOWN_MS,
   STORAGE_KEY,
 } from './lib/constants'
 import {
@@ -289,6 +290,17 @@ export default class GoTrueClient {
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
+   * Cache of the most recent refresh failure. Serial callers arriving within
+   * `REFRESH_FAILURE_COOLDOWN_MS` (including subsequent auto-refresh ticks)
+   * receive this cached result instead of firing another /token request.
+   * Cleared on any successful refresh (locally or via BroadcastChannel from
+   * another tab) and on `_removeSession`.
+   *
+   * Pairs with `refreshingDeferred`: concurrent callers share the in-flight
+   * promise, serial callers within the cooldown share the failure result.
+   */
+  protected lastRefreshFailure: { result: CallRefreshTokenResult; expiresAt: number } | null = null
+  /**
    * Monotonic counter incremented at the top of `_removeSession`, before any
    * `await`. The commit guard inside `_callRefreshToken` captures this value
    * before `_saveSession` and re-checks it after, so a `signOut` that
@@ -481,6 +493,12 @@ export default class GoTrueClient {
 
       this.broadcastChannel?.addEventListener('message', async (event) => {
         this._debug('received broadcast notification from other tab or client', event)
+
+        // Another tab successfully refreshed the session — any cached failure
+        // in this tab is stale and should not block the next refresh attempt.
+        if (event.data.event === 'TOKEN_REFRESHED' || event.data.event === 'SIGNED_IN') {
+          this.lastRefreshFailure = null
+        }
 
         try {
           await this._notifyAllSubscribers(event.data.event, event.data.session, false) // broadcast = false so we don't get an endless loop of messages
@@ -4787,6 +4805,18 @@ export default class GoTrueClient {
       return this.refreshingDeferred.promise
     }
 
+    // Serial failure cooldown: every caller that arrived after a recent
+    // non-retryable failure receives the cached result instead of firing
+    // another /token request. This is what stops the proactive-refresh
+    // storm pattern where every `getSession()` call inside the 90s
+    // EXPIRY_MARGIN_MS window kept re-firing against the same broken
+    // refresh token. Concurrent callers already share `refreshingDeferred`;
+    // this cache covers serial callers spaced across cooldown windows.
+    if (this.lastRefreshFailure && Date.now() < this.lastRefreshFailure.expiresAt) {
+      this._debug('#_callRefreshToken()', 'returning cached failure (cooldown active)')
+      return this.lastRefreshFailure.result
+    }
+
     // Refresh tokens are long-lived bearer credentials; do NOT include any
     // fragment of the token in the debug tag, even when `debug: true` is
     // enabled (logs may be forwarded to third-party services).
@@ -4870,6 +4900,10 @@ export default class GoTrueClient {
 
       const result = { data: data.session, error: null }
 
+      // Refresh succeeded — clear any cached failure so the next caller
+      // (including the auto-refresh ticker) attempts a real refresh again.
+      this.lastRefreshFailure = null
+
       this.refreshingDeferred.resolve(result)
 
       return result
@@ -4879,8 +4913,40 @@ export default class GoTrueClient {
       if (isAuthError(error)) {
         const result = { data: null, error }
 
+        // Cache any AuthError so serial callers (and the next auto-refresh
+        // tick) within the cooldown window receive the cached failure
+        // synchronously instead of firing another /token call. This is what
+        // stops the proactive-refresh storm pattern where every getSession()
+        // call inside the 90s EXPIRY_MARGIN_MS window kept hammering the
+        // server with the same broken refresh token.
+        this.lastRefreshFailure = {
+          result,
+          expiresAt: Date.now() + REFRESH_FAILURE_COOLDOWN_MS,
+        }
+
         if (!isAuthRetryableFetchError(error)) {
-          await this._removeSession()
+          // Non-retryable error from GoTrue. Proactive vs reactive
+          // distinction: a refresh fires whenever the access token is
+          // within EXPIRY_MARGIN_MS of expiry. If the access token is
+          // *still valid* at this moment, the refresh was proactive and
+          // the existing session is still usable until its real expiry.
+          // Destroying it now would log out a user whose access token
+          // works. If the access token has actually expired, the refresh
+          // token is the only credential left and it just got rejected —
+          // the session is genuinely dead.
+          const storedNow = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+          const accessTokenStillValid = !!(
+            storedNow?.expires_at && storedNow.expires_at * 1000 > Date.now()
+          )
+
+          if (accessTokenStillValid) {
+            this._debug(
+              debugName,
+              'proactive refresh failed, access token still valid — preserving session'
+            )
+          } else {
+            await this._removeSession()
+          }
         }
 
         this.refreshingDeferred?.resolve(result)
@@ -4983,6 +5049,10 @@ export default class GoTrueClient {
     // `_callRefreshToken`. See `_sessionRemovalEpoch` field doc.
     this._sessionRemovalEpoch += 1
     this._debug('#_removeSession()')
+
+    // The session is gone — no point holding on to a cached refresh failure
+    // for a token that no longer exists.
+    this.lastRefreshFailure = null
 
     this.suppressGetSessionWarning = false
 
