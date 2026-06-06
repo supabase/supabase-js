@@ -1,6 +1,7 @@
 import { AuthInvalidJwtError } from '../src'
 import {
   decodeJWT,
+  deepClone,
   generateCallbackId,
   getAlgorithm,
   getItemAsync,
@@ -383,5 +384,44 @@ describe('getItemAsync', () => {
     // valid behavior. We are only guarding against parse failures here.
     const storage = makeStorage({ session: '"hello"' })
     expect(await getItemAsync(storage, 'session')).toEqual('hello')
+  })
+})
+
+describe('deepClone', () => {
+  it('returns a deep copy with no shared references', () => {
+    const original = { a: 1, b: { c: 2 } }
+    const clone = deepClone(original)
+    expect(clone).toEqual(original)
+    clone.b.c = 99
+    expect(original.b.c).toBe(2)
+  })
+
+  it('clones arrays correctly', () => {
+    const original = [1, [2, 3], { d: 4 }]
+    const clone = deepClone(original)
+    expect(clone).toEqual(original)
+    ;(clone[1] as number[])[0] = 99
+    expect((original[1] as number[])[0]).toBe(2)
+  })
+
+  it('works when globalThis.structuredClone is undefined (React Native / Hermes)', () => {
+    // Simulate the React Native / Hermes environment where structuredClone does not exist.
+    // Regression guard for https://github.com/supabase/supabase-js/issues/1615
+    const saved = (globalThis as any).structuredClone
+    delete (globalThis as any).structuredClone
+
+    try {
+      const session = {
+        access_token: 'token',
+        refresh_token: 'refresh',
+        user: { id: 'user-id', role: 'authenticated' },
+      }
+      const clone = deepClone(session)
+      expect(clone).toEqual(session)
+      expect(clone).not.toBe(session)
+      expect(clone.user).not.toBe(session.user)
+    } finally {
+      ;(globalThis as any).structuredClone = saved
+    }
   })
 })
