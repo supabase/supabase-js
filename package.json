@@ -50,14 +50,13 @@
     "jsr": "^0.13.5",
     "nx": "22.7.1",
     "prettier": "^3.6.2",
-    "supabase": "2.98.2",
+    "supabase": "2.102.0",
     "ts-node": "^10.9.1",
     "tsx": "^4.21.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.21.0",
     "vite": "7.3.2"
   },
-  "dependencies": {},
   "pnpm": {
     "overrides": {
       "unrun": ">=0.2.39 <0.3.0"
