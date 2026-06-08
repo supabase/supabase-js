@@ -1,5 +1,6 @@
 import { expectType, TypeEqual } from './types'
 import { PostgrestClient, PostgrestError } from '../src/index'
+import type { PostgrestFilterBuilder } from '../src/index'
 import { Prettify } from '../src/types/types'
 import { Json } from '../src/select-query-parser/types'
 import { Database } from './types.override'
@@ -8,6 +9,28 @@ import { Database as DatabaseWithOptions } from './types.override-with-options-p
 const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
+
+type WithThrowOnError<T> = T extends PostgrestFilterBuilder<
+  infer ClientOptions,
+  infer Schema,
+  infer Row,
+  infer Result,
+  infer RelationName,
+  infer Relationships,
+  infer Method,
+  boolean
+>
+  ? PostgrestFilterBuilder<
+      ClientOptions,
+      Schema,
+      Row,
+      Result,
+      RelationName,
+      Relationships,
+      Method,
+      true
+    >
+  : never
 
 // table and view name type safety
 {
@@ -233,7 +256,9 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   const x = postgrest.from('channels').select()
   const y = x.throwOnError()
   const z = x.setHeader('', '')
-  expectType<typeof y extends typeof x ? true : false>(true)
+  const w = y.eq('id', 1)
+  expectType<TypeEqual<typeof y, WithThrowOnError<typeof x>>>(true)
+  expectType<typeof w extends typeof y ? true : false>(true)
   expectType<typeof z extends typeof x ? true : false>(true)
 }
 
@@ -297,6 +322,61 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   expectType<TypeEqual<typeof data, typeof expected>>(true)
   expectType<TypeEqual<typeof error, null>>(true)
   error
+}
+
+{
+  postgrest
+    .from('messages')
+    .select('id')
+    .eq('id', 1)
+    .single()
+    .throwOnError()
+    .then(({ data, error }) => {
+      expectType<TypeEqual<typeof data, { id: number }>>(true)
+      expectType<TypeEqual<typeof error, null>>(true)
+      return data
+    })
+}
+
+{
+  postgrest
+    .from('messages')
+    .select('id')
+    .eq('id', 1)
+    .maybeSingle()
+    .throwOnError()
+    .then(({ data, error }) => {
+      expectType<TypeEqual<typeof data, { id: number } | null>>(true)
+      expectType<TypeEqual<typeof error, null>>(true)
+      return data
+    })
+}
+
+{
+  postgrest
+    .from('messages')
+    .select('id')
+    .eq('id', 1)
+    .throwOnError()
+    .single()
+    .then(({ data, error }) => {
+      expectType<TypeEqual<typeof data, { id: number }>>(true)
+      expectType<TypeEqual<typeof error, null>>(true)
+      return data
+    })
+}
+
+{
+  postgrest
+    .from('messages')
+    .select('id')
+    .throwOnError()
+    .eq('id', 1)
+    .then(({ data, error }) => {
+      expectType<TypeEqual<typeof data, { id: number }[]>>(true)
+      expectType<TypeEqual<typeof error, null>>(true)
+      return data
+    })
 }
 
 // Json Accessor with custom types overrides

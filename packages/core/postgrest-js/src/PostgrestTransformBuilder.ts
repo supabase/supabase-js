@@ -13,7 +13,30 @@ export default class PostgrestTransformBuilder<
   RelationName = unknown,
   Relationships = unknown,
   Method = unknown,
-> extends PostgrestBuilder<ClientOptions, Result> {
+  ThrowOnError extends boolean = false,
+> extends PostgrestBuilder<ClientOptions, Result, ThrowOnError> {
+  throwOnError(): PostgrestTransformBuilder<
+    ClientOptions,
+    Schema,
+    Row,
+    Result,
+    RelationName,
+    Relationships,
+    Method,
+    true
+  > {
+    return super.throwOnError() as PostgrestTransformBuilder<
+      ClientOptions,
+      Schema,
+      Row,
+      Result,
+      RelationName,
+      Relationships,
+      Method,
+      true
+    >
+  }
+
   /**
    * Perform a SELECT on the query result.
    *
@@ -75,7 +98,8 @@ export default class PostgrestTransformBuilder<
       : NewResultOne[],
     RelationName,
     Relationships,
-    Method
+    Method,
+    ThrowOnError
   > {
     // Remove whitespaces except when quoted
     let quoted = false
@@ -104,7 +128,8 @@ export default class PostgrestTransformBuilder<
         : NewResultOne[],
       RelationName,
       Relationships,
-      Method
+      Method,
+      ThrowOnError
     >
   }
 
@@ -644,10 +669,11 @@ export default class PostgrestTransformBuilder<
    */
   single<ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never>(): PostgrestBuilder<
     ClientOptions,
-    ResultOne
+    ResultOne,
+    ThrowOnError
   > {
     this.headers.set('Accept', 'application/vnd.pgrst.object+json')
-    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne>
+    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne, ThrowOnError>
   }
 
   /**
@@ -691,11 +717,11 @@ export default class PostgrestTransformBuilder<
    */
   maybeSingle<
     ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never,
-  >(): PostgrestBuilder<ClientOptions, ResultOne | null> {
+  >(): PostgrestBuilder<ClientOptions, ResultOne | null, ThrowOnError> {
     // No Accept header override — we fetch as a list and enforce cardinality client-side.
     // Fixes https://github.com/supabase/postgrest-js/issues/361 for all request methods.
     this.isMaybeSingle = true
-    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne | null>
+    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne | null, ThrowOnError>
   }
 
   /**
@@ -737,9 +763,9 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
-  csv(): PostgrestBuilder<ClientOptions, string> {
+  csv(): PostgrestBuilder<ClientOptions, string, ThrowOnError> {
     this.headers.set('Accept', 'text/csv')
-    return this as unknown as PostgrestBuilder<ClientOptions, string>
+    return this as unknown as PostgrestBuilder<ClientOptions, string, ThrowOnError>
   }
 
   /**
@@ -747,9 +773,9 @@ export default class PostgrestTransformBuilder<
    *
    * @category Database
    */
-  geojson(): PostgrestBuilder<ClientOptions, Record<string, unknown>> {
+  geojson(): PostgrestBuilder<ClientOptions, Record<string, unknown>, ThrowOnError> {
     this.headers.set('Accept', 'application/geo+json')
-    return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>>
+    return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>, ThrowOnError>
   }
 
   /**
@@ -879,9 +905,13 @@ export default class PostgrestTransformBuilder<
       `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${options};`
     )
     if (format === 'json') {
-      return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>[]>
+      return this as unknown as PostgrestBuilder<
+        ClientOptions,
+        Record<string, unknown>[],
+        ThrowOnError
+      >
     } else {
-      return this as unknown as PostgrestBuilder<ClientOptions, string>
+      return this as unknown as PostgrestBuilder<ClientOptions, string, ThrowOnError>
     }
   }
 
@@ -943,7 +973,8 @@ export default class PostgrestTransformBuilder<
     CheckMatchingArrayTypes<Result, NewResult>,
     RelationName,
     Relationships,
-    Method
+    Method,
+    ThrowOnError
   > {
     return this as unknown as PostgrestTransformBuilder<
       ClientOptions,
@@ -952,7 +983,8 @@ export default class PostgrestTransformBuilder<
       CheckMatchingArrayTypes<Result, NewResult>,
       RelationName,
       Relationships,
-      Method
+      Method,
+      ThrowOnError
     >
   }
 

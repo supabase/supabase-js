@@ -100,6 +100,7 @@ export default class PostgrestFilterBuilder<
   RelationName = unknown,
   Relationships = unknown,
   Method = unknown,
+  ThrowOnError extends boolean = false,
 > extends PostgrestTransformBuilder<
   ClientOptions,
   Schema,
@@ -107,8 +108,31 @@ export default class PostgrestFilterBuilder<
   Result,
   RelationName,
   Relationships,
-  Method
+  Method,
+  ThrowOnError
 > {
+  throwOnError(): PostgrestFilterBuilder<
+    ClientOptions,
+    Schema,
+    Row,
+    Result,
+    RelationName,
+    Relationships,
+    Method,
+    true
+  > {
+    return super.throwOnError() as PostgrestFilterBuilder<
+      ClientOptions,
+      Schema,
+      Row,
+      Result,
+      RelationName,
+      Relationships,
+      Method,
+      true
+    >
+  }
+
   /**
    * Match only rows where `column` is equal to `value`.
    *
@@ -1773,7 +1797,8 @@ export default class PostgrestFilterBuilder<
     NarrowResultColumn<Result, ColumnName>,
     RelationName,
     Relationships,
-    Method
+    Method,
+    ThrowOnError
   > &
     this
   not<ColumnName extends string & keyof Row>(
@@ -1845,7 +1870,16 @@ export default class PostgrestFilterBuilder<
     column: string,
     operator: string,
     value: unknown
-  ): PostgrestFilterBuilder<ClientOptions, Schema, any, any, RelationName, Relationships, Method> &
+  ): PostgrestFilterBuilder<
+    ClientOptions,
+    Schema,
+    any,
+    any,
+    RelationName,
+    Relationships,
+    Method,
+    ThrowOnError
+  > &
     this {
     this.url.searchParams.append(column, `not.${operator}.${value}`)
     return this as any
