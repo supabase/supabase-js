@@ -30,7 +30,7 @@ on:
         required: true
       PRIVATE_KEY:
         required: true
-      DOGFOOD_APP_ID:
+      DOGFOOD_APP_CLIENT_ID:
         required: true
       DOGFOOD_APP_PRIVATE_KEY:
         required: true

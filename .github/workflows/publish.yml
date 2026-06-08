@@ -169,7 +169,7 @@ jobs:
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-      DOGFOOD_APP_ID: ${{ secrets.DOGFOOD_APP_ID }}
+      DOGFOOD_APP_CLIENT_ID: ${{ secrets.DOGFOOD_APP_CLIENT_ID }}
       DOGFOOD_APP_PRIVATE_KEY: ${{ secrets.DOGFOOD_APP_PRIVATE_KEY }}
     with:
       version: ${{ needs.release-stable.outputs.released_version }}
