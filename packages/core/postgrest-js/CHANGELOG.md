@@ -1,3 +1,13 @@
+## 2.108.0 (2026-06-08)
+
+### 🩹 Fixes
+
+- **postgrest:** pass request headers as plain object for RN/custom-fetch compatibility ([#2414](https://github.com/supabase/supabase-js/pull/2414))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.107.0 (2026-06-02)
 
 ### 🩹 Fixes

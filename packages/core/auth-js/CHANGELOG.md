@@ -1,3 +1,18 @@
+## 2.108.0 (2026-06-08)
+
+### 🚀 Features
+
+- **auth:** auth.resend() consistent confirmation flow ([#2144](https://github.com/supabase/supabase-js/pull/2144))
+
+### 🩹 Fixes
+
+- **auth:** do not console.error AuthApiError already returned through contract ([#2428](https://github.com/supabase/supabase-js/pull/2428))
+
+### ❤️ Thank You
+
+- Lawrence Li @weilirs
+- MaitreyeeDeshmukh
+
 ## 2.107.0 (2026-06-02)
 
 ### 🚀 Features
