@@ -1,3 +1,7 @@
+## 2.108.0 (2026-06-08)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
 ## 2.107.0 (2026-06-02)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
