@@ -405,6 +405,12 @@ describe('GoTrueClient', () => {
 
       expect(refreshAccessTokenSpy).toHaveBeenCalledTimes(1)
 
+      // The failure cooldown would normally short-circuit the next serial
+      // caller; clear it to verify the deferred itself has been reset and
+      // a fresh refresh can proceed.
+      // @ts-expect-error 'Allow access to private lastRefreshFailure'
+      authWithSession.lastRefreshFailure = null
+
       // verify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
       const { data: session3, error: error3 } = await authWithSession._callRefreshToken(
