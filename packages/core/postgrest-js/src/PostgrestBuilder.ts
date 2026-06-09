@@ -151,6 +151,7 @@ export default abstract class PostgrestBuilder<
    * {@link https://github.com/supabase/supabase-js/issues/92}
    *
    * @category Database
+   * @subcategory Using modifiers
    */
   throwOnError(): PostgrestBuilder<ClientOptions, Result, true> {
     this.shouldThrowOnError = true
@@ -219,6 +220,7 @@ export default abstract class PostgrestBuilder<
    * Set an HTTP header for the request.
    *
    * @category Database
+   * @subcategory Using modifiers
    */
   setHeader(name: string, value: string): this {
     this.headers = new Headers(this.headers)
@@ -228,6 +230,7 @@ export default abstract class PostgrestBuilder<
 
   /**
    * @category Database
+   * @subcategory Using modifiers
    *
    * Configure retry behavior for this request.
    *
@@ -569,6 +572,7 @@ export default abstract class PostgrestBuilder<
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
    *
    * @category Database
+   * @subcategory Using modifiers
    */
   returns<NewResult>(): PostgrestBuilder<
     ClientOptions,

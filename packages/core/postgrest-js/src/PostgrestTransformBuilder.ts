@@ -772,6 +772,7 @@ export default class PostgrestTransformBuilder<
    * Return `data` as an object in [GeoJSON](https://geojson.org) format.
    *
    * @category Database
+   * @subcategory Using modifiers
    */
   geojson(): PostgrestBuilder<ClientOptions, Record<string, unknown>, ThrowOnError> {
     this.headers.set('Accept', 'application/geo+json')
@@ -932,6 +933,7 @@ export default class PostgrestTransformBuilder<
    * preferences for the underlying mechanism.
    *
    * @category Database
+   * @subcategory Using modifiers
    *
    * @example Validate an insert without persisting
    * ```ts
@@ -1016,6 +1018,7 @@ export default class PostgrestTransformBuilder<
    * @param rows - The maximum number of rows that can be affected
    *
    * @category Database
+   * @subcategory Using modifiers
    */
   maxAffected(rows: number): MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
     ? // TODO: update the RPC case to only work on RPC that returns SETOF rows
