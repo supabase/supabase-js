@@ -151,6 +151,7 @@ export default abstract class PostgrestBuilder<
    * {@link https://github.com/supabase/supabase-js/issues/92}
    *
    * @category Database
+   * @subcategory Using modifiers
    */
   throwOnError(): PostgrestBuilder<ClientOptions, Result, true> {
     this.shouldThrowOnError = true
@@ -216,9 +217,20 @@ export default abstract class PostgrestBuilder<
   }
 
   /**
-   * Set an HTTP header for the request.
+   * Set an HTTP header on this single PostgREST request, overriding any header
+   * with the same name set on the client.
+   *
+   * This is an advanced escape hatch for one-off needs (passing a custom
+   * `Authorization` for a single query, attaching a tracing header, etc.).
+   * Most callers do not need it: configure client-wide headers via the
+   * `headers` option when constructing the client, and authentication via
+   * Supabase Auth.
+   *
+   * @param name - HTTP header name
+   * @param value - HTTP header value
    *
    * @category Database
+   * @subcategory Using modifiers
    */
   setHeader(name: string, value: string): this {
     this.headers = new Headers(this.headers)
@@ -228,6 +240,7 @@ export default abstract class PostgrestBuilder<
 
   /**
    * @category Database
+   * @subcategory Using modifiers
    *
    * Configure retry behavior for this request.
    *
@@ -569,6 +582,7 @@ export default abstract class PostgrestBuilder<
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
    *
    * @category Database
+   * @subcategory Using modifiers
    */
   returns<NewResult>(): PostgrestBuilder<
     ClientOptions,
