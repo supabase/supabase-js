@@ -217,7 +217,17 @@ export default abstract class PostgrestBuilder<
   }
 
   /**
-   * Set an HTTP header for the request.
+   * Set an HTTP header on this single PostgREST request, overriding any header
+   * with the same name set on the client.
+   *
+   * This is an advanced escape hatch for one-off needs (passing a custom
+   * `Authorization` for a single query, attaching a tracing header, etc.).
+   * Most callers do not need it: configure client-wide headers via the
+   * `headers` option when constructing the client, and authentication via
+   * Supabase Auth.
+   *
+   * @param name - HTTP header name
+   * @param value - HTTP header value
    *
    * @category Database
    * @subcategory Using modifiers
