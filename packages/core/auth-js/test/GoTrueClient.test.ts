@@ -4454,6 +4454,7 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
       // @ts-expect-error access protected for test
       client.lastRefreshFailure = {
+        refreshToken: 'refresh-token-r1',
         result: {
           data: null,
           error: Object.assign(new AuthError('stale', 400), {
@@ -4505,6 +4506,7 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
       // @ts-expect-error access protected for test
       client.lastRefreshFailure = {
+        refreshToken: 'refresh-token-r1',
         result: {
           data: null,
           error: Object.assign(new AuthError('x', 400), {
@@ -4565,6 +4567,33 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
     test('REFRESH_FAILURE_COOLDOWN_MS is two auto-refresh ticks', () => {
       expect(REFRESH_FAILURE_COOLDOWN_MS).toBe(2 * AUTO_REFRESH_TICK_DURATION_MS)
+    })
+
+    test('cooldown is keyed by refresh token — different token bypasses the cache', async () => {
+      const storage = memoryLocalStorageAdapter()
+      const client = buildClient(storage)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: 60 })
+      const spy = stubInvalidGrant(client)
+
+      // First call fails and caches the failure under token A.
+      // @ts-expect-error access protected for test
+      await client._callRefreshToken('refresh-token-A')
+      expect(spy).toHaveBeenCalledTimes(1)
+
+      // A second call with the *same* token is short-circuited by the
+      // cache (no new /token).
+      // @ts-expect-error access protected for test
+      await client._callRefreshToken('refresh-token-A')
+      expect(spy).toHaveBeenCalledTimes(1)
+
+      // A call with a *different* refresh token (e.g. picked up from a
+      // sibling tab's rotation, or hydrated via setSession / refreshSession)
+      // must NOT return token A's cached failure — it must attempt a fresh
+      // refresh of token B. This is the regression spydon flagged.
+      // @ts-expect-error access protected for test
+      await client._callRefreshToken('refresh-token-B')
+      expect(spy).toHaveBeenCalledTimes(2)
     })
   })
 

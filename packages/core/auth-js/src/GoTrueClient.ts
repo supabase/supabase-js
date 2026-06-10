@@ -290,16 +290,24 @@ export default class GoTrueClient {
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
-   * Cache of the most recent refresh failure. Serial callers arriving within
+   * Cache of the most recent refresh failure, keyed by the refresh token
+   * that failed. Serial callers passing the *same* token within
    * `REFRESH_FAILURE_COOLDOWN_MS` (including subsequent auto-refresh ticks)
    * receive this cached result instead of firing another `/token` request.
+   * Callers passing a *different* token (token rotation pickup, explicit
+   * `setSession`/`refreshSession({ refresh_token })`, multi-account switch)
+   * bypass the cache and attempt a fresh refresh as they should.
    * Cleared on any successful refresh (locally or via BroadcastChannel from
    * another tab) and on `_removeSession`.
    *
    * Pairs with `refreshingDeferred`: concurrent callers share the in-flight
    * promise, serial callers within the cooldown share the failure result.
    */
-  protected lastRefreshFailure: { result: CallRefreshTokenResult; expiresAt: number } | null = null
+  protected lastRefreshFailure: {
+    refreshToken: string
+    result: CallRefreshTokenResult
+    expiresAt: number
+  } | null = null
   /**
    * Monotonic counter incremented at the top of `_removeSession`, before any
    * `await`. The commit guard inside `_callRefreshToken` captures this value
@@ -4832,14 +4840,22 @@ export default class GoTrueClient {
       return this.refreshingDeferred.promise
     }
 
-    // Serial failure cooldown: callers arriving after a recent failure
-    // receive the cached result instead of firing another `/token` request.
-    // This caps the proactive-refresh storm where every `getSession()` call
-    // inside the 90s EXPIRY_MARGIN_MS window kept re-firing against the
-    // same broken refresh token during outages. Concurrent callers already
-    // share `refreshingDeferred`; this cache covers serial callers spaced
-    // across cooldown windows.
-    if (this.lastRefreshFailure && Date.now() < this.lastRefreshFailure.expiresAt) {
+    // Serial failure cooldown: callers passing the *same* refresh token
+    // after a recent failure receive the cached result instead of firing
+    // another `/token` request. This caps the proactive-refresh storm
+    // where every `getSession()` call inside the 90s EXPIRY_MARGIN_MS
+    // window kept re-firing against the same broken refresh token during
+    // outages. Concurrent callers already share `refreshingDeferred`; this
+    // cache covers serial callers spaced across cooldown windows.
+    //
+    // Token-keyed so callers with a fresh refresh token (rotation pickup
+    // from another tab, explicit `setSession`/`refreshSession({ refresh_token })`,
+    // multi-account switch) bypass the cache and attempt a real refresh.
+    if (
+      this.lastRefreshFailure &&
+      this.lastRefreshFailure.refreshToken === refreshToken &&
+      Date.now() < this.lastRefreshFailure.expiresAt
+    ) {
       this._debug('#_callRefreshToken()', 'returning cached failure (cooldown active)')
       return this.lastRefreshFailure.result
     }
@@ -4967,11 +4983,12 @@ export default class GoTrueClient {
         }
 
         // Cache the failure so serial callers (and the next auto-refresh
-        // tick) within the cooldown window receive it synchronously
-        // instead of firing another `/token` call. Set after the optional
-        // `_removeSession` above (which clears the cache as part of
-        // teardown) so the cache survives.
+        // tick) passing the same refresh token within the cooldown window
+        // receive it synchronously instead of firing another `/token`
+        // call. Set after the optional `_removeSession` above (which
+        // clears the cache as part of teardown) so the cache survives.
         this.lastRefreshFailure = {
+          refreshToken,
           result,
           expiresAt: Date.now() + REFRESH_FAILURE_COOLDOWN_MS,
         }
