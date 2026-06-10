@@ -283,6 +283,13 @@ describe('Channel Lifecycle Management', () => {
     })
 
     describe('socket push operations', () => {
+      const singlePostgresChangeReply = {
+        status: 'ok',
+        response: {
+          postgres_changes: [{ id: 'abc', event: '*', schema: '*' }],
+        },
+      }
+
       test('triggers socket push with default channel params', async () => {
         const joinSpy = vi.fn()
         testSetup.cleanup()
@@ -420,6 +427,13 @@ describe('Channel Lifecycle Management', () => {
             defaultRef
           )
         })
+        expect(cbSpy).not.toHaveBeenCalledWith('SUBSCRIBED')
+
+        channel.channelAdapter.getChannel().trigger('system', {
+          extension: 'postgres_changes',
+          status: 'ok',
+        })
+
         expect(cbSpy).toHaveBeenCalledWith('SUBSCRIBED')
 
         expect(channel.bindings.postgres_changes).toStrictEqual([
@@ -450,6 +464,72 @@ describe('Channel Lifecycle Management', () => {
             callback: func,
           },
         ])
+      })
+
+      test.each([
+        ['broadcast', { event: '*' }],
+        ['presence', { event: 'join' }],
+      ])('does not wait for system ready when %s bindings are present', async (type, filter) => {
+        testSetup.cleanup()
+        testSetup = setupRealtimeTest({
+          useFakeTimers: true,
+          timeout: defaultTimeout,
+          socketHandlers: {
+            phx_join: (socket, message) => {
+              socket.send(phxReply(message as string, singlePostgresChangeReply))
+            },
+          },
+        })
+
+        channel = testSetup.client.channel('topic')
+        const cbSpy = vi.fn()
+        const func = () => {}
+
+        channel.on('postgres_changes', { event: '*', schema: '*' }, func)
+        channel.on(type, filter, func)
+
+        channel.subscribe(cbSpy)
+
+        await vi.waitFor(() => {
+          expect(cbSpy).toHaveBeenCalledWith('SUBSCRIBED')
+        })
+      })
+
+      test('still waits for system ready when presence is enabled without presence callbacks', async () => {
+        testSetup.cleanup()
+        testSetup = setupRealtimeTest({
+          useFakeTimers: true,
+          timeout: defaultTimeout,
+          socketHandlers: {
+            phx_join: (socket, message) => {
+              socket.send(phxReply(message as string, singlePostgresChangeReply))
+            },
+          },
+        })
+
+        channel = testSetup.client.channel('topic', {
+          config: {
+            presence: {
+              enabled: true,
+            },
+          },
+        })
+        const cbSpy = vi.fn()
+        const func = () => {}
+
+        channel.on('postgres_changes', { event: '*', schema: '*' }, func)
+        channel.subscribe(cbSpy)
+
+        expect(cbSpy).not.toHaveBeenCalledWith('SUBSCRIBED')
+
+        channel.channelAdapter.getChannel().trigger('system', {
+          extension: 'postgres_changes',
+          status: 'ok',
+        })
+
+        await vi.waitFor(() => {
+          expect(cbSpy).toHaveBeenCalledWith('SUBSCRIBED')
+        })
       })
     })
 
