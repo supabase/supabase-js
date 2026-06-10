@@ -409,6 +409,13 @@ describe('GoTrueClient', () => {
 
       expect(refreshAccessTokenSpy).toHaveBeenCalledTimes(1)
 
+      // The failure cooldown would normally short-circuit the next serial
+      // caller; clear it so this test continues to verify the deferred
+      // itself has been reset (the cooldown is exercised in its own block
+      // below).
+      // @ts-expect-error 'Allow access to private lastRefreshFailure'
+      authWithSession.lastRefreshFailure = null
+
       // verify the deferred has been reset and successive calls can be made
       // @ts-expect-error 'Allow access to private _callRefreshToken()'
       const { data: session3, error: error3 } = await authWithSession._callRefreshToken(
@@ -4564,15 +4571,22 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
   describe('init cleanup (no double SIGNED_OUT)', () => {
     test('_recoverAndRefresh non-retryable failure emits SIGNED_OUT exactly once', async () => {
       const storage = memoryLocalStorageAdapter()
+      // Plant the session BEFORE constructing the client so it's present
+      // when _recoverAndRefresh runs at init time.
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
       const client = new GoTrueClient({
         url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
         storage,
         autoRefreshToken: true,
         persistSession: true,
+        // Without this, the constructor fires `initialize()` in the
+        // background before we can stub `_refreshAccessToken` and attach
+        // the listener — the test would observe 0 events because init
+        // had already settled against the unstubbed method.
+        skipAutoInitialize: true,
       })
-      // Plant a session whose access token has already expired so the
-      // refresh failure flows through the reactive (remove) branch.
-      await plantSession(storage, { secondsUntilExpiry: -60 })
+
       stubInvalidGrant(client)
 
       const events: string[] = []
