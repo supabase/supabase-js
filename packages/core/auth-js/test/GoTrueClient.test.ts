@@ -4516,37 +4516,14 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       expect(client.lastRefreshFailure).toBeNull()
     })
 
-    test('cooldown cleared on BroadcastChannel TOKEN_REFRESHED', async () => {
-      const storage = memoryLocalStorageAdapter()
-      const client = buildClient(storage)
-      await client.initialize()
-
-      // @ts-expect-error access protected for test
-      client.lastRefreshFailure = {
-        result: {
-          data: null,
-          error: Object.assign(new AuthError('x', 400), {
-            name: 'AuthApiError',
-            code: 'refresh_token_already_used',
-            __isAuthError: true,
-          }),
-        } as any,
-        expiresAt: Date.now() + 30_000,
-      }
-
-      // Simulate the broadcast handler clearing the cache directly. The
-      // browser-only setup wires this in `initialize`; here we exercise the
-      // contract (clear on TOKEN_REFRESHED) by calling the same statement
-      // the handler runs.
-      const event = { data: { event: 'TOKEN_REFRESHED' as const, session: null } }
-      if (event.data.event === 'TOKEN_REFRESHED' || event.data.event === 'SIGNED_IN') {
-        // @ts-expect-error access protected for test
-        client.lastRefreshFailure = null
-      }
-
-      // @ts-expect-error access protected for test
-      expect(client.lastRefreshFailure).toBeNull()
-    })
+    // BroadcastChannel cache-clear (GoTrueClient.ts:485-492) is not unit
+    // tested here: `globalThis.BroadcastChannel` is undefined in the Jest
+    // node env, so the handler is never wired up. Properly testing it
+    // would need a BroadcastChannel stub or jsdom, both of which are
+    // out of scope for this test file. The branch is small, exercised
+    // implicitly by manual multi-tab review, and any regression here
+    // would only affect cross-tab cooldown invalidation (callers in the
+    // failing tab still get correct behavior via the same-tab cache).
 
     test('cooldown expires after REFRESH_FAILURE_COOLDOWN_MS and next call fires /token', async () => {
       jest.useFakeTimers({ doNotFake: ['setImmediate'] })
