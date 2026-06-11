@@ -4,6 +4,7 @@ import { GetResult } from './select-query-parser/result'
 import { CheckMatchingArrayTypes } from './types/types'
 import { ClientServerOptions, GenericSchema } from './types/common/common'
 import type { MaxAffectedEnabled } from './types/feature-flags'
+import type { TablesAndViews } from './select-query-parser/types'
 
 export default class PostgrestTransformBuilder<
   ClientOptions extends ClientServerOptions,
@@ -137,9 +138,22 @@ export default class PostgrestTransformBuilder<
     column: ColumnName,
     options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: undefined }
   ): this
-  order(
+  order<
+    ReferencedTable extends string & keyof TablesAndViews<Schema>,
+    ColumnName extends string & keyof TablesAndViews<Schema>[ReferencedTable]['Row'],
+  >(
+    column: ColumnName,
+    options: { ascending?: boolean; nullsFirst?: boolean; referencedTable: ReferencedTable }
+  ): this
+  order<ReferencedTable extends string>(
     column: string,
-    options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: string }
+    options?: {
+      ascending?: boolean
+      nullsFirst?: boolean
+      referencedTable?: ReferencedTable extends keyof TablesAndViews<Schema>
+        ? never
+        : ReferencedTable
+    }
   ): this
   /**
    * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
@@ -151,9 +165,23 @@ export default class PostgrestTransformBuilder<
   /**
    * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
    */
-  order(
+  order<
+    ReferencedTable extends string & keyof TablesAndViews<Schema>,
+    ColumnName extends string & keyof TablesAndViews<Schema>[ReferencedTable]['Row'],
+  >(
+    column: ColumnName,
+    options: { ascending?: boolean; nullsFirst?: boolean; foreignTable: ReferencedTable }
+  ): this
+  /**
+   * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
+   */
+  order<ReferencedTable extends string>(
     column: string,
-    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string }
+    options?: {
+      ascending?: boolean
+      nullsFirst?: boolean
+      foreignTable?: ReferencedTable extends keyof TablesAndViews<Schema> ? never : ReferencedTable
+    }
   ): this
   /**
    * Order the query result by `column`.
