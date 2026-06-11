@@ -69,10 +69,12 @@ const _getErrorMessage = (err: unknown): string => {
   return JSON.stringify(err)
 }
 
-// 502, 503, 504: Standard server/gateway errors
-// 520-524, 530: Cloudflare-specific error codes (web server down, connection timed out, etc.)
+// 500, 501, 502, 503, 504: Standard server/gateway errors
+// 520-529, 530: Cloudflare-specific error codes (web server down, connection timed out, etc.)
 // These are infrastructure errors and should not cause session invalidation.
-const NETWORK_ERROR_CODES = [502, 503, 504, 520, 521, 522, 523, 524, 530]
+const NETWORK_ERROR_CODES = [
+  500, 501, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530,
+]
 
 export async function handleError(error: unknown) {
   if (!looksLikeFetchResponse(error)) {
