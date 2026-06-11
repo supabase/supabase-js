@@ -50,7 +50,7 @@
     "jsr": "^0.13.5",
     "nx": "22.7.1",
     "prettier": "^3.6.2",
-    "supabase": "2.98.2",
+    "supabase": "beta",
     "ts-node": "^10.9.1",
     "tsx": "^4.21.0",
     "typescript": "~5.8.3",
