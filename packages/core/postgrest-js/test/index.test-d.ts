@@ -10,27 +10,28 @@ const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 
-type WithThrowOnError<T> = T extends PostgrestFilterBuilder<
-  infer ClientOptions,
-  infer Schema,
-  infer Row,
-  infer Result,
-  infer RelationName,
-  infer Relationships,
-  infer Method,
-  boolean
->
-  ? PostgrestFilterBuilder<
-      ClientOptions,
-      Schema,
-      Row,
-      Result,
-      RelationName,
-      Relationships,
-      Method,
-      true
-    >
-  : never
+type WithThrowOnError<T> =
+  T extends PostgrestFilterBuilder<
+    infer ClientOptions,
+    infer Schema,
+    infer Row,
+    infer Result,
+    infer RelationName,
+    infer Relationships,
+    infer Method,
+    boolean
+  >
+    ? PostgrestFilterBuilder<
+        ClientOptions,
+        Schema,
+        Row,
+        Result,
+        RelationName,
+        Relationships,
+        Method,
+        true
+      >
+    : never
 
 // table and view name type safety
 {
@@ -560,4 +561,55 @@ type WithThrowOnError<T> = T extends PostgrestFilterBuilder<
     }
     expectType<TypeEqual<typeof result.data, { id: number; message: string }[]>>(true)
   }
+}
+
+// `.order()` with `referencedTable` provides typed column names from the referenced table (#971)
+{
+  // Base case: order by parent table columns still works
+  postgrest.from('users').select('messages(*)').order('username')
+
+  // referencedTable provides autocomplete for the referenced table's columns
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    .order('channel_id', { referencedTable: 'messages', ascending: false })
+
+  // Also works with other valid columns on the referenced table
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    .order('message', { referencedTable: 'messages', ascending: false })
+
+  // Invalid column on a known referenced table should error
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    // @ts-expect-error No overload matches this call.
+    .order('nonexistent_column', { referencedTable: 'messages', ascending: false })
+
+  // Deprecated foreignTable also provides typed column names
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    .order('channel_id', { foreignTable: 'messages', ascending: false })
+
+  // Invalid column on a known referenced table should error (foreignTable)
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    // @ts-expect-error No overload matches this call.
+    .order('nonexistent_column', { foreignTable: 'messages', ascending: false })
+
+  // Ordering by a column on 'channels' table works
+  postgrest
+    .from('messages')
+    .select('channels(*)')
+    .order('slug', { referencedTable: 'channels', ascending: true })
+
+  // Invalid column on channels should error
+  postgrest
+    .from('messages')
+    .select('channels(*)')
+    // @ts-expect-error No overload matches this call.
+    .order('bad_col', { referencedTable: 'channels', ascending: true })
 }
