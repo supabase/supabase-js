@@ -33,29 +33,29 @@ const signingKeys = JSON.parse(fs.readFileSync(signingKeysPath, 'utf8'))
 const rsaKey = signingKeys[0]
 const privateKeyObject = crypto.createPrivateKey({
   key: rsaKey,
-  format: 'jwk'
+  format: 'jwk',
 })
 const privateKey = privateKeyObject.export({ type: 'pkcs8', format: 'pem' })
 
 // Generate publishable key dynamically from signing keys (RS256-signed, required for API gateway)
-const SUPABASE_PUBLISHABLE_KEY = jwt.sign(
+export const SUPABASE_PUBLISHABLE_KEY = jwt.sign(
   {
     iss: 'supabase-demo',
     role: 'anon',
     exp: 1983812996,
-    iat: 1768925145
+    iat: 1768925145,
   },
   privateKey,
   { algorithm: 'RS256', keyid: rsaKey.kid }
 )
 
 // Generate secret key dynamically from signing keys (RS256-signed)
-const SUPABASE_SECRET_KEY = jwt.sign(
+export const SUPABASE_SECRET_KEY = jwt.sign(
   {
     iss: 'supabase-demo',
     role: 'service_role',
     exp: 1983812996,
-    iat: 1768925145
+    iat: 1768925145,
   },
   privateKey,
   { algorithm: 'RS256', keyid: rsaKey.kid }

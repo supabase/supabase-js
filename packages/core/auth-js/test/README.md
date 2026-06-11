@@ -35,6 +35,25 @@ npm run test:suite
 
 All emails will appear in the mock mail server.
 
+## Passkey (WebAuthn) Tests
+
+Passkey coverage is split across three files:
+
+- `passkey.test.ts` — experimental-flag gating (no infra needed)
+- `passkey.methods.test.ts` — unit tests for all `auth.passkey.*`, `signInWithPasskey()`,
+  `registerPasskey()` and `admin.passkey.*` methods with mocked `fetch` and a simulated
+  browser environment (no infra needed)
+- `passkey.e2e.test.ts` — full registration/authentication ceremonies against the
+  Supabase CLI Auth server
+
+The e2e tests rely on:
+
+- `[auth.passkey]` and `[auth.webauthn]` in `test/supabase/config.toml` (requires
+  Supabase CLI >= 2.105.0)
+- `test/lib/software-authenticator.ts`, a minimal software WebAuthn authenticator
+  (ES256, "none" attestation, discoverable credentials) that stands in for
+  `navigator.credentials` since the tests run in Node
+
 ## RSA Signing Keys
 
 ### Security Model
@@ -64,6 +83,7 @@ This creates `test/supabase/signing_keys.json` (gitignored).
 JWT tokens (anon, service_role, admin) are **automatically generated** at runtime from the signing keys in `test/lib/clients.ts`. No manual updates needed!
 
 For debugging/inspection only:
+
 ```bash
 cd packages/core/auth-js/test
 node generate-jwt.js

@@ -58,6 +58,61 @@ test('createClient gates passkey methods when auth.experimental.passkey is not s
   await expect(supa.auth.passkey.list()).rejects.toThrow(/experimental.*passkey/)
 })
 
+test('createClient gates admin passkey methods when auth.experimental.passkey is not set', async () => {
+  const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey')
+  await expect(
+    supa.auth.admin.passkey.listPasskeys({ userId: '00000000-0000-0000-0000-000000000000' })
+  ).rejects.toThrow(/experimental.*passkey/)
+})
+
+test('createClient with auth.experimental.passkey enables the passkey API', async () => {
+  const optionsResponse = {
+    challenge_id: '00000000-0000-0000-0000-000000000000',
+    options: { challenge: 'Y2hhbGxlbmdl', rpId: 'example.supabase.com' },
+    expires_at: 1900000000,
+  }
+  const mockFetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    headers: new Headers(),
+    json: () => Promise.resolve(optionsResponse),
+  })
+  const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey', {
+    auth: { experimental: { passkey: true }, persistSession: false, autoRefreshToken: false },
+    global: { fetch: mockFetch },
+  })
+
+  const { data, error } = await supa.auth.passkey.startAuthentication()
+
+  expect(error).toBeNull()
+  expect(data).toEqual(optionsResponse)
+  const [url, params] = mockFetch.mock.calls[0]
+  expect(url).toBe('https://example.supabase.com/auth/v1/passkeys/authentication/options')
+  expect(params.method).toBe('POST')
+})
+
+test('createClient with auth.experimental.passkey enables the admin passkey API', async () => {
+  const userId = '00000000-0000-0000-0000-000000000000'
+  const mockFetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    headers: new Headers(),
+    json: () => Promise.resolve([]),
+  })
+  const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey', {
+    auth: { experimental: { passkey: true }, persistSession: false, autoRefreshToken: false },
+    global: { fetch: mockFetch },
+  })
+
+  const { data, error } = await supa.auth.admin.passkey.listPasskeys({ userId })
+
+  expect(error).toBeNull()
+  expect(data).toEqual([])
+  const [url, params] = mockFetch.mock.calls[0]
+  expect(url).toBe(`https://example.supabase.com/auth/v1/admin/users/${userId}/passkeys`)
+  expect(params.method).toBe('GET')
+})
+
 // The two tests below verify that `lockAcquireTimeout` flows from
 // `createClient({ auth: { lockAcquireTimeout: ... }})` through to the
 // constructed `GoTrueClient` instance. The field is `protected`, so we

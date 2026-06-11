@@ -246,6 +246,17 @@ max_frequency = "1s"
 enroll_enabled = true
 verify_enabled = true
 
+# Configure passkey sign-ins. Used by test/passkey.e2e.test.ts.
+[auth.passkey]
+enabled = true
+
+# Configure WebAuthn relying party settings (required when passkey is enabled).
+# Must match the rpId/origin used by the software authenticator in the passkey e2e tests.
+[auth.webauthn]
+rp_display_name = "auth-js tests"
+rp_id = "localhost"
+rp_origins = ["http://localhost:5173"]
+
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `slack`, `spotify`, `workos`, `zoom`.
