@@ -121,7 +121,19 @@ async function publishToJsr() {
       // than whatever the `jsr` npm wrapper downloads from dl.deno.land at
       // runtime. Timeout caps JSR queue stranding (jsr-io/jsr#1448) at 10 min
       // instead of letting the unbounded poll loop wedge the workflow.
-      const args = ['publish', '--allow-dirty']
+      //
+      // Flags mirror what the `jsr` npm wrapper passes for Node-style projects
+      // (package.json present): sloppy imports, BYO node_modules, bare node
+      // builtins, and --no-check. Without them Deno rejects our extension-less
+      // imports and unsupported tsconfig options as hard errors.
+      const args = [
+        'publish',
+        '--allow-dirty',
+        '--unstable-bare-node-builtins',
+        '--unstable-sloppy-imports',
+        '--unstable-byonm',
+        '--no-check',
+      ]
       if (dryRun) args.push('--dry-run')
       console.log(`   Command: deno ${args.join(' ')}`)
       const result = spawnSync('deno', args, {
@@ -129,6 +141,7 @@ async function publishToJsr() {
         stdio: 'inherit',
         timeout: 10 * 60 * 1000,
         killSignal: 'SIGKILL',
+        env: { ...process.env, DENO_DISABLE_PEDANTIC_NODE_WARNINGS: 'true' },
       })
       if (result.signal === 'SIGKILL') {
         throw new Error(

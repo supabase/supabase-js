@@ -94,5 +94,16 @@ function safeExec(cmd: string, opts = {}) {
     verbose: true,
   })
 
+  // Publish all packages to JSR. Mirrors the pattern in release-canary.ts and
+  // release-stable.ts: failures here don't fail the npm release that already
+  // succeeded above.
+  console.log('\n📦 Publishing packages to JSR (beta)...')
+  try {
+    safeExec('pnpm exec tsx scripts/publish-to-jsr.ts --tag=beta')
+  } catch (error) {
+    console.error('❌ Failed to publish to JSR:', error)
+    console.log('⚠️  Continuing with release despite JSR publish failure')
+  }
+
   process.exit(Object.values(publishResult).every((r) => r.code === 0) ? 0 : 1)
 })()
