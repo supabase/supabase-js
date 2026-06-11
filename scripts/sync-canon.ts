@@ -363,16 +363,36 @@ function buildFeatures(spec: SpecNode, area: AreaConfig): FeatureEntry[] {
 
 // ─── yaml emit / parse ────────────────────────────────────────────────────────
 
-function quoteScalar(s: string): string {
-  // Always double-quote for safety; descriptions can contain colons, dashes, etc.
+// Plain (unquoted) scalar if YAML accepts it; double-quoted with escaping otherwise.
+// Matches the existing canon style — no diff churn over cosmetic quoting.
+//
+// Quotes when:
+//   - the string is empty, or has leading/trailing whitespace
+//   - it would be parsed as a non-string (true/false/null/yes/no/~, numbers)
+//   - it starts with a YAML indicator (- ? : , [ ] { } # & * ! | > ' " % @ `)
+//   - it contains ": " or " #" (would terminate the scalar mid-string)
+//   - it contains any newline or control character
+function needsQuoting(s: string): boolean {
+  if (s === '') return true
+  if (/^\s|\s$/.test(s)) return true
+  if (/^(true|false|null|yes|no|on|off|~)$/i.test(s)) return true
+  if (/^-?\d+(\.\d+)?$/.test(s)) return true
+  if (/^[-?:,[\]{}#&*!|>'"%@`]/.test(s)) return true
+  if (/: /.test(s) || / #/.test(s)) return true
+  if (/[\n\r\t\v\f\0]/.test(s)) return true
+  return false
+}
+
+function formatScalar(s: string): string {
+  if (!needsQuoting(s)) return s
   return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
 }
 
 function emitFeatureBlock(f: FeatureEntry): string {
   const lines = [
     `  - id: ${f.id}`,
-    `    name: ${quoteScalar(f.name)}`,
-    `    description: ${quoteScalar(f.description)}`,
+    `    name: ${formatScalar(f.name)}`,
+    `    description: ${formatScalar(f.description)}`,
   ]
   if (f.group) lines.push(`    group: ${f.group}`)
   return lines.join('\n')
@@ -382,12 +402,12 @@ function emitFullFile(area: AreaConfig, features: FeatureEntry[]): string {
   const lines: string[] = [
     '# yaml-language-server: $schema=../schema/capability-matrix.schema.json',
     `area: ${area.area}`,
-    `title: ${quoteScalar(area.title)}`,
-    `description: ${quoteScalar(area.description)}`,
+    `title: ${formatScalar(area.title)}`,
+    `description: ${formatScalar(area.description)}`,
     'groups:',
   ]
   for (const g of area.groups) {
-    lines.push(`  - id: ${g.id}`, `    title: ${quoteScalar(g.title)}`)
+    lines.push(`  - id: ${g.id}`, `    title: ${formatScalar(g.title)}`)
   }
   lines.push('features:')
   for (const f of features) lines.push(emitFeatureBlock(f))
