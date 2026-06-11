@@ -1,4 +1,4 @@
-import { execSync } from 'child_process'
+import { spawnSync } from 'child_process'
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 
@@ -69,15 +69,6 @@ function getArg(name: string): string | undefined {
 const tag = getArg('tag') || 'latest'
 const dryRun = process.argv.includes('--dry-run')
 
-function safeExec(cmd: string, opts = {}) {
-  try {
-    return execSync(cmd, { stdio: 'inherit', ...opts })
-  } catch (err) {
-    console.error(`❌ Command failed: ${cmd}`)
-    throw err
-  }
-}
-
 async function publishToJsr() {
   console.log(`\n📦 Publishing packages to JSR (tag: ${tag})...\n`)
 
@@ -125,15 +116,29 @@ async function publishToJsr() {
     console.log(`\n📤 Publishing @supabase/${pkg}@${version} to JSR...`)
 
     try {
-      // Change to package directory and publish
-      // Note: In GitHub Actions, authentication happens automatically via OIDC
-      // Provenance is automatically enabled when using OIDC (no flag needed)
-      // Local publishing will prompt for interactive browser authentication
-      const publishCmd = dryRun
-        ? `cd "${packagePath}" && pnpm exec jsr publish --dry-run --allow-dirty`
-        : `cd "${packagePath}" && pnpm exec jsr publish --allow-dirty`
-
-      safeExec(publishCmd)
+      // Call `deno publish` directly (instead of `pnpm exec jsr publish`) so we
+      // use the pinned Deno from `denoland/setup-deno` in publish.yml rather
+      // than whatever the `jsr` npm wrapper downloads from dl.deno.land at
+      // runtime. Timeout caps JSR queue stranding (jsr-io/jsr#1448) at 10 min
+      // instead of letting the unbounded poll loop wedge the workflow.
+      const args = ['publish', '--allow-dirty']
+      if (dryRun) args.push('--dry-run')
+      console.log(`   Command: deno ${args.join(' ')}`)
+      const result = spawnSync('deno', args, {
+        cwd: packagePath,
+        stdio: 'inherit',
+        timeout: 10 * 60 * 1000,
+        killSignal: 'SIGKILL',
+      })
+      if (result.signal === 'SIGKILL') {
+        throw new Error(
+          `deno publish for ${pkg} timed out after 10 minutes — likely JSR task stranding, see jsr-io/jsr#1448`
+        )
+      }
+      if (result.error) throw result.error
+      if (result.status !== 0) {
+        throw new Error(`deno publish for ${pkg} exited with status ${result.status}`)
+      }
 
       console.log(`✅ Successfully published @supabase/${pkg}@${version} to JSR`)
       results.push({ package: pkg, success: true })
