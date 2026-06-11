@@ -705,6 +705,19 @@ describe('httpSend', () => {
     })
   })
 
+  describe('server version errors', () => {
+    test('rejects with an actionable message when the endpoint returns 404', async () => {
+      const mockResponse = createMockResponse(404, 'Not Found')
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
+        /requires Realtime server v2\.97\.0 or newer/
+      )
+    })
+  })
+
   describe('binary payloads', () => {
     test('sends ArrayBuffer payload as application/octet-stream', async () => {
       const mockResponse = createMockResponse(202)

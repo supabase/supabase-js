@@ -803,6 +803,16 @@ export default class RealtimeChannel {
       return { success: true }
     }
 
+    if (response.status === 404) {
+      return Promise.reject(
+        new Error(
+          'httpSend() requires Realtime server v2.97.0 or newer; the endpoint returned 404. ' +
+            'Update your Supabase CLI to a recent version, or upgrade the Realtime server in your self-hosted setup. ' +
+            'See https://github.com/supabase/supabase-js/blob/master/packages/core/realtime-js/migrations/httpsend-server-version.md'
+        )
+      )
+    }
+
     let errorMessage = response.statusText
     try {
       const errorBody = await response.json()
