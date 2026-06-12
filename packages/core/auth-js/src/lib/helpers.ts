@@ -301,15 +301,27 @@ export async function generatePKCEChallenge(verifier: string) {
   return btoa(hashed).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
+/**
+ * Tags the stored PKCE verifier so that the post-redirect `_exchangeCodeForSession`
+ * step can recover the original flow type and emit the correct
+ * `onAuthStateChange` event:
+ * - `'recovery'` → `PASSWORD_RECOVERY`
+ * - `'email_change'` → `USER_UPDATED`
+ *
+ * Sign-in flows (signUp, signInWithOtp, signInWithOAuth, etc.) leave `flowType`
+ * undefined; those emit `SIGNED_IN`.
+ */
+export type PKCEStoredFlowType = 'recovery' | 'email_change'
+
 export async function getCodeChallengeAndMethod(
   storage: SupportedStorage,
   storageKey: string,
-  isPasswordRecovery = false
+  flowType?: PKCEStoredFlowType
 ) {
   const codeVerifier = generatePKCEVerifier()
   let storedCodeVerifier = codeVerifier
-  if (isPasswordRecovery) {
-    storedCodeVerifier += '/recovery'
+  if (flowType) {
+    storedCodeVerifier += `/${flowType}`
   }
   await setItemAsync(storage, `${storageKey}-code-verifier`, storedCodeVerifier)
   const codeChallenge = await generatePKCEChallenge(codeVerifier)

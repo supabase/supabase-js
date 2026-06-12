@@ -533,6 +533,69 @@ describe('GoTrueClient', () => {
       expect(error?.message).toContain('@supabase/ssr')
       expect(error?.code).toEqual('pkce_code_verifier_not_found')
     })
+
+    test.each([
+      { tag: 'email_change', expectedEvent: 'USER_UPDATED' },
+      { tag: 'recovery', expectedEvent: 'PASSWORD_RECOVERY' },
+      { tag: '', expectedEvent: 'SIGNED_IN' },
+    ])(
+      'exchangeCodeForSession() emits $expectedEvent when verifier is tagged "$tag"',
+      async ({ tag, expectedEvent }) => {
+        const mockFetch = jest.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: () =>
+            Promise.resolve({
+              access_token: 'mock-access-token',
+              refresh_token: 'mock-refresh-token',
+              token_type: 'bearer',
+              expires_in: 3600,
+              user: {
+                id: '11111111-1111-1111-1111-111111111111',
+                aud: 'authenticated',
+                role: 'authenticated',
+                email: 'example@email.com',
+                app_metadata: {},
+                user_metadata: {},
+                created_at: '2024-01-01T00:00:00Z',
+                updated_at: '2024-01-01T00:00:00Z',
+              },
+            }),
+        })
+
+        const storage = memoryLocalStorageAdapter()
+        const client = new GoTrueClient({
+          url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+          autoRefreshToken: false,
+          persistSession: true,
+          storage,
+          flowType: 'pkce',
+          fetch: mockFetch as unknown as typeof fetch,
+        })
+
+        // @ts-expect-error 'Allow access to protected storageKey'
+        const storageKey = client.storageKey
+        const storedVerifier = tag ? `mock-verifier/${tag}` : 'mock-verifier'
+        await storage.setItem(`${storageKey}-code-verifier`, storedVerifier)
+
+        const callback = jest.fn()
+        const {
+          data: { subscription },
+        } = client.onAuthStateChange(callback)
+
+        const { data, error } = await client.exchangeCodeForSession('mock-code')
+
+        expect(error).toBeNull()
+        expect(data.session).not.toBeNull()
+        expect(callback).toHaveBeenCalledWith(
+          expectedEvent,
+          expect.objectContaining({ access_token: 'mock-access-token' })
+        )
+
+        subscription?.unsubscribe()
+      }
+    )
   })
 
   describe('Email Auth', () => {
@@ -913,6 +976,66 @@ describe('GoTrueClient', () => {
       expect(data.user).toBeNull()
       expect(data.session).toBeNull()
     })
+
+    test.each([
+      { type: 'email_change' as const, expectedEvent: 'USER_UPDATED' },
+      { type: 'phone_change' as const, expectedEvent: 'USER_UPDATED' },
+      { type: 'recovery' as const, expectedEvent: 'PASSWORD_RECOVERY' },
+      { type: 'magiclink' as const, expectedEvent: 'SIGNED_IN' },
+    ])(
+      'verifyOtp({ type: $type }) emits $expectedEvent on success',
+      async ({ type, expectedEvent }) => {
+        const mockFetch = jest.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: () =>
+            Promise.resolve({
+              access_token: 'mock-access-token',
+              refresh_token: 'mock-refresh-token',
+              token_type: 'bearer',
+              expires_in: 3600,
+              user: {
+                id: '11111111-1111-1111-1111-111111111111',
+                aud: 'authenticated',
+                role: 'authenticated',
+                email: 'example@email.com',
+                app_metadata: {},
+                user_metadata: {},
+                created_at: '2024-01-01T00:00:00Z',
+                updated_at: '2024-01-01T00:00:00Z',
+              },
+            }),
+        })
+
+        const client = new GoTrueClient({
+          url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+          autoRefreshToken: false,
+          persistSession: false,
+          storage: memoryLocalStorageAdapter(),
+          fetch: mockFetch as unknown as typeof fetch,
+        })
+
+        const callback = jest.fn()
+        const {
+          data: { subscription },
+        } = client.onAuthStateChange(callback)
+
+        const { data, error } = await client.verifyOtp({
+          token_hash: 'token-hash',
+          type,
+        })
+
+        expect(error).toBeNull()
+        expect(data.session).not.toBeNull()
+        expect(callback).toHaveBeenCalledWith(
+          expectedEvent,
+          expect.objectContaining({ access_token: 'mock-access-token' })
+        )
+
+        subscription?.unsubscribe()
+      }
+    )
   })
 
   describe('signInWithOtp', () => {
