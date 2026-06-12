@@ -80,6 +80,14 @@ async function publishToJsr() {
     console.warn('   For CI/CD, ensure your workflow has "id-token: write" permission.')
   }
 
+  // In CI, DENO_BIN_PATH should point to the pinned Deno from `denoland/setup-deno`
+  // so the `jsr` wrapper doesn't fall back to downloading "latest" from dl.deno.land.
+  if (process.env.GITHUB_ACTIONS && !process.env.DENO_BIN_PATH) {
+    console.warn(
+      '⚠️  DENO_BIN_PATH is not set — the `jsr` wrapper will download the latest Deno binary instead of using the pinned one. Check that publish.yml has the "Export pinned Deno path" step after Setup Deno.'
+    )
+  }
+
   let hasErrors = false
   const results: { package: string; success: boolean; error?: string }[] = []
 
@@ -116,41 +124,21 @@ async function publishToJsr() {
     console.log(`\n📤 Publishing @supabase/${pkg}@${version} to JSR...`)
 
     try {
-      // Call `deno publish` directly (instead of `pnpm exec jsr publish`) so we
-      // use the pinned Deno from `denoland/setup-deno` in publish.yml rather
-      // than whatever the `jsr` npm wrapper downloads from dl.deno.land at
-      // runtime. Timeout caps JSR queue stranding (jsr-io/jsr#1448) at 10 min
-      // instead of letting the unbounded poll loop wedge the workflow.
-      //
-      // Flags mirror what the `jsr` npm wrapper passes for Node-style projects
-      // (package.json present): sloppy imports, BYO node_modules, bare node
-      // builtins, and --no-check. Without them Deno rejects our extension-less
-      // imports and unsupported tsconfig options as hard errors.
-      const args = [
-        'publish',
-        '--allow-dirty',
-        '--unstable-bare-node-builtins',
-        '--unstable-sloppy-imports',
-        '--unstable-byonm',
-        '--no-check',
-      ]
+      const args = ['exec', 'jsr', 'publish', '--allow-dirty']
       if (dryRun) args.push('--dry-run')
-      console.log(`   Command: deno ${args.join(' ')}`)
-      const result = spawnSync('deno', args, {
+      console.log(`   Command: pnpm ${args.join(' ')}`)
+      const result = spawnSync('pnpm', args, {
         cwd: packagePath,
         stdio: 'inherit',
-        timeout: 10 * 60 * 1000,
+        timeout: 5 * 60 * 1000,
         killSignal: 'SIGKILL',
-        env: { ...process.env, DENO_DISABLE_PEDANTIC_NODE_WARNINGS: 'true' },
       })
       if (result.signal === 'SIGKILL') {
-        throw new Error(
-          `deno publish for ${pkg} timed out after 10 minutes — likely JSR task stranding, see jsr-io/jsr#1448`
-        )
+        throw new Error(`jsr publish for ${pkg} timed out after 5 minutes`)
       }
       if (result.error) throw result.error
       if (result.status !== 0) {
-        throw new Error(`deno publish for ${pkg} exited with status ${result.status}`)
+        throw new Error(`jsr publish for ${pkg} exited with status ${result.status}`)
       }
 
       console.log(`✅ Successfully published @supabase/${pkg}@${version} to JSR`)
