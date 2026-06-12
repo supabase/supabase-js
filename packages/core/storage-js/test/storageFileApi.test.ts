@@ -1024,6 +1024,75 @@ describe('error handling', () => {
   })
 })
 
+describe('purgeCache', () => {
+  const PURGE_URL = 'http://localhost:8000/storage/v1'
+  const BUCKET = 'avatars'
+  const PATH = 'folder/avatar.png'
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it('issues DELETE to /cdn/{bucket}/{path} and returns the server message', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { data, error } = await client.from(BUCKET).purgeCache(PATH)
+
+    expect(error).toBeNull()
+    expect(data?.message).toBe('success')
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/${PATH}`,
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('surfaces server errors via StorageApiError', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ statusCode: '404', error: 'Not Found', message: 'Object not found' }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { data, error } = await client.from(BUCKET).purgeCache(PATH)
+
+    expect(data).toBeNull()
+    expect(error).toBeInstanceOf(StorageApiError)
+    expect(error?.message).toBe('Object not found')
+  })
+
+  it('forwards the AbortController signal to fetch', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const controller = new AbortController()
+    const { error } = await client.from(BUCKET).purgeCache(PATH, { signal: controller.signal })
+
+    expect(error).toBeNull()
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/${PATH}`,
+      expect.objectContaining({ method: 'DELETE', signal: controller.signal })
+    )
+  })
+})
+
 describe('StorageFileApi Edge Cases', () => {
   let storage: StorageClient
 
