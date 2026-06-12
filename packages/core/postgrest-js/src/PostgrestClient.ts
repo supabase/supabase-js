@@ -20,13 +20,10 @@ export default class PostgrestClient<
   }
     ? I
     : {},
-  SchemaName extends string &
-    keyof Omit<Database, '__InternalSupabase'> = 'public' extends keyof Omit<
-    Database,
-    '__InternalSupabase'
-  >
-    ? 'public'
-    : string & keyof Omit<Database, '__InternalSupabase'>,
+  SchemaName extends string & keyof Omit<Database, '__InternalSupabase'> =
+    'public' extends keyof Omit<Database, '__InternalSupabase'>
+      ? 'public'
+      : string & keyof Omit<Database, '__InternalSupabase'>,
   Schema extends GenericSchema = Omit<
     Database,
     '__InternalSupabase'
@@ -149,13 +146,6 @@ export default class PostgrestClient<
     }
     this.retry = retry
   }
-  from<
-    TableName extends string & keyof Schema['Tables'],
-    Table extends Schema['Tables'][TableName],
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
-  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
-  ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
@@ -163,6 +153,13 @@ export default class PostgrestClient<
    *
    * @category Database
    */
+  from<
+    TableName extends string & keyof Schema['Tables'],
+    Table extends Schema['Tables'][TableName],
+  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
+  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
+    relation: ViewName
+  ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   from(
     relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views'])
   ): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
@@ -374,11 +371,8 @@ export default class PostgrestClient<
   rpc<
     FnName extends string & keyof Schema['Functions'],
     Args extends Schema['Functions'][FnName]['Args'] = never,
-    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<
-      Schema,
-      FnName,
-      Args
-    > = GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
+    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args> =
+      GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
   >(
     fn: FnName,
     args: Args = {} as Args,

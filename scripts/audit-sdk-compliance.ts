@@ -26,6 +26,16 @@ import * as path from 'path'
 
 type ClassMatcher = string | RegExp
 
+// Splits an overloaded method into one feature per first-param literal value.
+// See sync-canon.ts for the rationale; realtime's RealtimeChannel.on() is
+// currently the only consumer.
+interface SignatureSplitConfig {
+  method: string
+  by: 'first-param-literal'
+  idStem?: (literalValue: string) => string
+  filter?: (literalValue: string) => boolean
+}
+
 interface AreaConfig {
   area: string
   pkg: string
@@ -34,6 +44,7 @@ interface AreaConfig {
   // exported classes (e.g. StorageFileApi) lose their name in typedoc and have
   // to be matched by file path.
   matchers: ClassMatcher[]
+  signatureSplit?: SignatureSplitConfig[]
 }
 
 const AREAS: AreaConfig[] = [
@@ -78,6 +89,16 @@ const AREAS: AreaConfig[] = [
     area: 'realtime',
     pkg: 'realtime-js',
     matchers: ['RealtimeClient', 'RealtimeChannel'],
+    signatureSplit: [
+      {
+        method: 'on',
+        by: 'first-param-literal',
+        // Yields realtime.broadcast / realtime.presence / realtime.postgres_changes.
+        // 'system' is filtered as a non-user-facing connection-event channel.
+        idStem: (v) => v,
+        filter: (v) => v !== 'system',
+      },
+    ],
   },
   {
     area: 'functions',
@@ -86,9 +107,15 @@ const AREAS: AreaConfig[] = [
   },
 ]
 
-// Method names that show up across multiple classes as boilerplate, not real
-// user-facing features. Keep this list conservative — when in doubt, leave it
-// in and prune the yaml by hand.
+// Method names never collected as canonical features. Two reasons live here:
+//   - boilerplate plumbing (then/catch/finally/toJSON/dispose/log/...)
+//   - public-but-not-a-capability internals (copyBindings, sendHeartbeat,
+//     teardown, updateJoinPayload, initialize, toBase64) — flagged by review.
+//
+// Inherited methods from un-matched base classes (PostgrestBuilder's setHeader
+// / abortSignal / throwOnError / overrideTypes / returns / retry) are dropped
+// automatically by collectMethods via the `inheritedFrom` check — no entries
+// needed here.
 const DENYLIST = new Set<string>([
   'then',
   'catch',
@@ -97,15 +124,43 @@ const DENYLIST = new Set<string>([
   'dispose',
   'log',
   'isThrowOnErrorEnabled',
+  // Public-but-not-capability internals — flagged by review.
+  'copyBindings',
+  'sendHeartbeat',
+  'teardown',
+  'updateJoinPayload',
+  'initialize',
+  'toBase64',
+  // Builder-level modifiers: JS-specific plumbing, not real capabilities.
+  // (grdsdev review on supabase/sdk#18.) Re-declared on PostgrestTransform-
+  // Builder with @subcategory tags, so the inheritance check above doesn't
+  // catch them — explicit denylist instead.
+  'abortSignal',
+  'throwOnError',
+  'overrideTypes',
+  'returns',
+  'retry',
+  'setHeader',
 ])
 
 const REPO_ROOT = path.resolve(__dirname, '..')
+
+interface ParamType {
+  type?: string
+  value?: string | number | boolean | null
+}
+
+interface SpecSignature {
+  parameters?: { type?: ParamType; name?: string }[]
+}
 
 interface SpecNode {
   name?: string
   kind?: number
   children?: SpecNode[]
   sources?: { fileName?: string }[]
+  signatures?: SpecSignature[]
+  inheritedFrom?: { name?: string }
 }
 
 interface CliArgs {
@@ -151,28 +206,86 @@ function matches(node: SpecNode, ms: ClassMatcher[]): boolean {
   return false
 }
 
-// Walk every node; whenever we're inside a class/interface that matches one
-// of the area's matchers, collect its methods.
+function classDisplayName(node: SpecNode): string {
+  if (node.name && node.name !== 'default') return node.name
+  const file = node.sources?.[0]?.fileName ?? ''
+  return path.basename(file).replace(/\.(ts|tsx|js)$/, '') || 'default'
+}
+
+function collectMatchedClassNames(spec: SpecNode, ms: ClassMatcher[]): Set<string> {
+  const names = new Set<string>()
+  function visit(node: SpecNode): void {
+    if (!node || typeof node !== 'object') return
+    if ((node.kind === 128 || node.kind === 256) && matches(node, ms)) {
+      names.add(classDisplayName(node))
+    }
+    if (Array.isArray(node.children)) for (const c of node.children) visit(c)
+  }
+  visit(spec)
+  return names
+}
+
+function collectFirstParamLiterals(node: SpecNode): string[] {
+  const seen = new Set<string>()
+  const order: string[] = []
+  for (const sig of node.signatures ?? []) {
+    const t = sig.parameters?.[0]?.type
+    if (t?.type === 'literal' && typeof t.value === 'string' && !seen.has(t.value)) {
+      seen.add(t.value)
+      order.push(t.value)
+    }
+  }
+  return order
+}
+
+// Walk the spec and collect every method name that should become a feature id-
+// stem. Two rules:
+//   - skip a method when `inheritedFrom` points to a class outside the area's
+//     matcher list — the boilerplate base (e.g. PostgrestBuilder) is not in
+//     scope, so its methods aren't capabilities. Methods inherited *from*
+//     another matched class are also skipped here; the declaring class will
+//     surface them on its own visit.
+//   - for methods configured via signatureSplit, emit one id-stem per unique
+//     first-param literal (snake-cased downstream).
 //
 // Duplicate method names across multiple matched classes (e.g. `signOut` on
 // both GoTrueClient and GoTrueAdminApi) collapse into a single entry — the
 // Set deduplicates, and the yaml schema requires unique feature IDs anyway.
-// `seen` lets the caller report how many duplicates were filtered out.
 function collectMethods(
   spec: SpecNode,
-  ms: ClassMatcher[],
+  area: AreaConfig,
   seen: { duplicates: number }
 ): Set<string> {
+  const matchedClassNames = collectMatchedClassNames(spec, area.matchers)
+  const splitConfigByMethod = new Map<string, SignatureSplitConfig>()
+  for (const cfg of area.signatureSplit ?? []) splitConfigByMethod.set(cfg.method, cfg)
+
   const found = new Set<string>()
 
   function visit(node: SpecNode, insideMatched: boolean): void {
     if (!node || typeof node !== 'object') return
     const isClass = node.kind === 128 || node.kind === 256
-    const inside = insideMatched || (isClass && matches(node, ms))
-    if (inside && node.kind === 2048 && typeof node.name === 'string') {
-      if (!DENYLIST.has(node.name)) {
-        if (found.has(node.name)) seen.duplicates++
-        else found.add(node.name)
+    const inside = insideMatched || (isClass && matches(node, area.matchers))
+    if (inside && node.kind === 2048 && typeof node.name === 'string' && !DENYLIST.has(node.name)) {
+      const inheritedFromName = node.inheritedFrom?.name?.split('.')[0]
+      const isInherited = !!inheritedFromName
+      // Drop both "inherited from un-matched class" (not a capability) and
+      // "inherited from another matched class" (declaring class will emit it).
+      if (!isInherited) {
+        const split = splitConfigByMethod.get(node.name)
+        if (split) {
+          const literals = collectFirstParamLiterals(node)
+          for (const literal of literals) {
+            if (split.filter && !split.filter(literal)) continue
+            const id = split.idStem ? split.idStem(literal) : literal
+            if (found.has(id)) seen.duplicates++
+            else found.add(id)
+          }
+        } else if (found.has(node.name)) {
+          seen.duplicates++
+        } else {
+          found.add(node.name)
+        }
       }
     }
     if (Array.isArray(node.children)) {
@@ -184,13 +297,27 @@ function collectMethods(
   return found
 }
 
-// camelCase / PascalCase → snake_case.
-// Handles the common boundary (lower→upper) and digit boundary (alpha→digit).
-// Does NOT split acronym runs (SSO, OAuth, URL): they collapse to lowercase
-// as one token, which is what the canon registry wants (auth.sign_in_with_oauth,
-// not auth.sign_in_with_o_auth).
+// Known acronyms that should NOT be split mid-run by camelToSnake. Without
+// this pre-pass, signInWithOAuth becomes sign_in_with_o_auth because the
+// second regex splits OAuth → O_Auth. We pre-normalize OAuth → Oauth (and
+// similar) so only the first regex fires, yielding sign_in_with_oauth.
+// Keep in sync with sync-canon.ts.
+const ACRONYMS = ['OAuth', 'URL', 'SSO', 'JWT', 'JWKS', 'API', 'PKCE', 'OIDC', 'MFA', 'AAL']
+
+function preNormalizeAcronyms(name: string): string {
+  let s = name
+  for (const a of ACRONYMS) {
+    s = s.replace(new RegExp(a, 'g'), a[0] + a.slice(1).toLowerCase())
+  }
+  return s
+}
+
+// camelCase / PascalCase → snake_case. Handles the common boundary
+// (lower→upper) and acronym-followed-by-word boundary (XYa → X_Ya, e.g.
+// regexIMatch → regex_i_match). Known acronyms like OAuth are pre-normalized
+// to avoid being mistakenly split (signInWithOAuth → sign_in_with_oauth).
 function camelToSnake(name: string): string {
-  return name
+  return preNormalizeAcronyms(name)
     .replace(/([a-z\d])([A-Z])/g, '$1_$2')
     .replace(/([A-Z])([A-Z][a-z])/g, '$1_$2')
     .toLowerCase()
@@ -232,17 +359,17 @@ function main(): void {
 
   const areaMethods = new Map<string, string[]>()
   let totalDuplicates = 0
-  for (const { area, pkg, matchers } of AREAS) {
-    const spec = readSpec(pkg)
+  for (const area of AREAS) {
+    const spec = readSpec(area.pkg)
     const seen = { duplicates: 0 }
-    const methods = [...collectMethods(spec, matchers, seen)]
-    areaMethods.set(area, methods)
+    const methods = [...collectMethods(spec, area, seen)]
+    areaMethods.set(area.area, methods)
     totalDuplicates += seen.duplicates
     const dupNote =
       seen.duplicates > 0
         ? ` (${seen.duplicates} duplicate${seen.duplicates === 1 ? '' : 's'} filtered)`
         : ''
-    console.log(`${area} (${pkg}): ${methods.length} methods${dupNote}`)
+    console.log(`${area.area} (${area.pkg}): ${methods.length} methods${dupNote}`)
   }
 
   emitYaml(areaMethods, args.out)
