@@ -140,13 +140,17 @@ export default class Serializer {
       try {
         const jsonPayload = JSON.parse(rawPayload)
         if (!Array.isArray(jsonPayload) || jsonPayload.length < 5) {
-          log('error', 'Malformed Realtime message', jsonPayload)
+          const isArray = Array.isArray(jsonPayload)
+          log('error', 'Malformed Realtime message', {
+            isArray,
+            length: isArray ? jsonPayload.length : undefined,
+          })
           return
         }
         const [join_ref, ref, topic, event, payload] = jsonPayload
         return callback({ join_ref, ref, topic, event, payload })
       } catch (error) {
-        log('error', 'Error parsing Realtime message', { error, rawPayload })
+        log('error', 'Error parsing Realtime message', { error })
         return
       }
     }
@@ -198,7 +202,7 @@ export default class Serializer {
       try {
         parsedPayload = JSON.parse(textPayload)
       } catch (error) {
-        log('error', 'Error decoding JSON payload', { error, textPayload })
+        log('error', 'Error decoding JSON payload', { error })
         return undefined
       }
     } else {
@@ -216,7 +220,7 @@ export default class Serializer {
       try {
         data['meta'] = JSON.parse(metadata)
       } catch (error) {
-        log('error', 'Error decoding JSON metadata', { error, metadata })
+        log('error', 'Error decoding JSON metadata', { error })
         return undefined
       }
     }

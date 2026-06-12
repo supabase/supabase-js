@@ -81,7 +81,9 @@ describe('JSON', () => {
     const callback = vi.fn()
     serializer.decode('this is not json{{{', callback, log)
     expect(callback).not.toHaveBeenCalled()
-    expect(log).toHaveBeenCalledWith('error', 'Error parsing Realtime message', expect.anything())
+    expect(log).toHaveBeenCalledWith('error', 'Error parsing Realtime message', {
+      error: expect.any(Error),
+    })
   })
 
   it('logs error and does not invoke callback for a valid JSON array with fewer than 5 elements', async () => {
@@ -90,7 +92,10 @@ describe('JSON', () => {
     const callback = vi.fn()
     serializer.decode('["0","1","t"]', callback, log)
     expect(callback).not.toHaveBeenCalled()
-    expect(log).toHaveBeenCalledWith('error', 'Malformed Realtime message', ['0', '1', 't'])
+    expect(log).toHaveBeenCalledWith('error', 'Malformed Realtime message', {
+      isArray: true,
+      length: 3,
+    })
   })
 
   it('logs error and does not invoke callback for a non-array JSON value', async () => {
@@ -99,7 +104,10 @@ describe('JSON', () => {
     const callback = vi.fn()
     serializer.decode('{"key":"value"}', callback, log)
     expect(callback).not.toHaveBeenCalled()
-    expect(log).toHaveBeenCalledWith('error', 'Malformed Realtime message', { key: 'value' })
+    expect(log).toHaveBeenCalledWith('error', 'Malformed Realtime message', {
+      isArray: false,
+      length: undefined,
+    })
   })
 })
 
@@ -594,7 +602,9 @@ describe('binary', () => {
 
     serializer.decode(buffer.buffer, callback, log)
     expect(callback).not.toHaveBeenCalled()
-    expect(log).toHaveBeenCalledWith('error', 'Error decoding JSON payload', expect.anything())
+    expect(log).toHaveBeenCalledWith('error', 'Error decoding JSON payload', {
+      error: expect.any(Error),
+    })
   })
 
   it('logs error and does not invoke callback for corrupt JSON metadata', () => {
@@ -633,7 +643,9 @@ describe('binary', () => {
 
     serializer.decode(buffer.buffer, callback, log)
     expect(callback).not.toHaveBeenCalled()
-    expect(log).toHaveBeenCalledWith('error', 'Error decoding JSON metadata', expect.anything())
+    expect(log).toHaveBeenCalledWith('error', 'Error decoding JSON metadata', {
+      error: expect.any(Error),
+    })
   })
 
   it('logs error and does not invoke callback for unknown binary kind', () => {
