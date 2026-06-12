@@ -1,33 +1,26 @@
 #!/usr/bin/env node
 
 /**
- * Sync supabase-js's public API surface into the canonical capability matrix
- * (capabilities/<area>.yaml in the supabase/sdk repo).
+ * Append genuinely-new methods from supabase-js into the canonical capability
+ * matrix (capabilities/<area>.yaml in the supabase/sdk repo).
  *
- * supabase-js is the source of truth: this script walks each package's typedoc
- * spec.json and writes feature entries into the canon yaml files.
- *
- * Two modes:
- *
- *   default (additive)
- *     For each ID we extract, check the matching canon yaml. If the ID is
- *     missing, append a new feature entry. Existing entries are left untouched
- *     so registry maintainers and other SDKs can edit names/descriptions/groups
- *     without us clobbering them on the next sync.
- *
- *   --bootstrap
- *     Replace each capability file wholesale from scratch. Use exactly once
- *     when seeding the registry from supabase-js. After that, default mode.
+ * The canon is hand-curated. This script only adds entries — it never edits
+ * or removes existing ones. It walks each package's typedoc spec.json,
+ * computes the canonical id for each public method (consulting
+ * scripts/canonical-mapping.yaml for renames and exclusions), and appends
+ * any id that doesn't already exist in the canon.
  *
  * Usage:
- *   pnpm tsx scripts/sync-canon.ts [--canon-path <path>] [--bootstrap] [--dry-run]
+ *   pnpm tsx scripts/sync-canon.ts [--canon-path <path>] [--dry-run]
  *
  * Canon path resolution (first match wins):
  *   1. --canon-path <path>                    flag
  *   2. SUPABASE_SDK_CAPABILITIES_PATH         env var
- *   3. ../sdk/capabilities                    fallback (assumes supabase/sdk
- *                                             is cloned as a sibling of this
- *                                             repo)
+ *   3. ../sdk/capabilities                    fallback (sibling-checkout layout)
+ *
+ * To make a naming or removal change, edit capabilities/*.yaml in supabase/sdk
+ * directly and add a matching entry to canonical-mapping.yaml. The --bootstrap
+ * mode that previously regenerated canon from scratch is no longer supported.
  */
 
 import * as fs from 'fs'
@@ -295,6 +288,34 @@ const REPO_ROOT = path.resolve(__dirname, '..')
 // Default canon location: a sibling checkout of github.com/supabase/sdk.
 // Override with --canon-path or SUPABASE_SDK_CAPABILITIES_PATH.
 const DEFAULT_CANON_PATH = path.resolve(REPO_ROOT, '..', 'sdk', 'capabilities')
+
+// ─── canonical-mapping loader ────────────────────────────────────────────────
+
+// Maps auto-derived feature ids to canonical ids in supabase/sdk.
+// Read from canonical-mapping.yaml. A null value means "drop this id".
+// Auto-derived ids without an entry pass through unchanged.
+function loadCanonicalMapping(): Map<string, string | null> {
+  const file = path.join(__dirname, 'canonical-mapping.yaml')
+  const map = new Map<string, string | null>()
+  if (!fs.existsSync(file)) return map
+  const text = fs.readFileSync(file, 'utf8')
+  let inMappings = false
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.replace(/\r$/, '')
+    if (/^\s*#/.test(line) || /^\s*$/.test(line)) continue
+    if (/^mappings:/.test(line)) {
+      inMappings = true
+      continue
+    }
+    if (!inMappings) continue
+    const m = line.match(/^\s{2}([a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+):\s*(\S+)/)
+    if (!m) continue
+    const key = m[1]
+    const value = m[2] === 'null' || m[2] === '~' ? null : m[2]
+    map.set(key, value)
+  }
+  return map
+}
 
 // ─── spec.json walking ────────────────────────────────────────────────────────
 
@@ -636,7 +657,11 @@ interface BuildResult {
   groupTitles: Map<string, string>
 }
 
-function buildFeatures(spec: SpecNode, area: AreaConfig): BuildResult {
+function buildFeatures(
+  spec: SpecNode,
+  area: AreaConfig,
+  mapping: Map<string, string | null>
+): BuildResult {
   const metas = collectMethods(spec, area)
   const features: FeatureEntry[] = []
   const seenIds = new Set<string>()
@@ -649,7 +674,16 @@ function buildFeatures(spec: SpecNode, area: AreaConfig): BuildResult {
     const group = resolveGroup(meta, stem, area) ?? area.groups[0]?.id
     if (!group) continue // shouldn't happen — every area has at least one predefined group
     const namespace = namespaceForGroup(group, area)
-    const id = `${area.area}.${namespace}.${stem}`
+    const autoId = `${area.area}.${namespace}.${stem}`
+    // Apply canonical mapping. null = drop; other = rename to canonical id.
+    let id: string
+    if (mapping.has(autoId)) {
+      const m = mapping.get(autoId) ?? null
+      if (m === null) continue
+      id = m
+    } else {
+      id = autoId
+    }
     if (seenIds.has(id)) continue
     seenIds.add(id)
 
@@ -783,7 +817,15 @@ function parseArgs(argv: string[]): CliArgs {
     else if (f === '--dry-run') args.dryRun = true
     else if (f === '-h' || f === '--help') {
       console.log(
-        'Usage: pnpm tsx scripts/sync-canon.ts [--canon-path <path>] [--bootstrap] [--dry-run]'
+        'Usage: pnpm tsx scripts/sync-canon.ts [--canon-path <path>] [--dry-run]\n' +
+          '\n' +
+          '  --canon-path  Path to capabilities/ in a supabase/sdk checkout.\n' +
+          '                Defaults to ../sdk/capabilities (sibling layout).\n' +
+          '  --dry-run     Print what would change without writing.\n' +
+          '\n' +
+          'Behavior: reads canonical-mapping.yaml, computes the canonical id for\n' +
+          'each supabase-js method, and appends any id not already present in the\n' +
+          'canon. Existing canon entries are never modified.'
       )
       process.exit(0)
     }
@@ -793,42 +835,48 @@ function parseArgs(argv: string[]): CliArgs {
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2))
+  if (args.bootstrap) {
+    console.error(
+      'ERROR: --bootstrap is no longer supported. The canon is now hand-curated;\n' +
+        '       this script appends genuinely new methods only. To make naming or\n' +
+        '       removal changes, edit capabilities/*.yaml in supabase/sdk directly\n' +
+        '       and update scripts/canonical-mapping.yaml accordingly.'
+    )
+    process.exit(2)
+  }
   if (!fs.existsSync(args.canonPath)) {
     throw new Error(`Canon path does not exist: ${args.canonPath}`)
   }
+
+  const mapping = loadCanonicalMapping()
+  console.log(`Loaded ${mapping.size} canonical mapping entr${mapping.size === 1 ? 'y' : 'ies'}.`)
 
   const totalMissing: { area: string; entries: MissingDescription[] }[] = []
 
   for (const area of AREAS) {
     const spec = readSpec(area.pkg)
-    const result = buildFeatures(spec, area)
+    const result = buildFeatures(spec, area, mapping)
     const file = path.join(args.canonPath, `${area.area}.yaml`)
 
-    if (args.bootstrap) {
-      const content = emitFullFile(area, result)
-      console.log(`[bootstrap] ${file}: ${result.features.length} features`)
-      if (!args.dryRun) fs.writeFileSync(file, content)
-    } else {
-      const existing = readExistingIds(file)
-      const news = result.features.filter((f) => !existing.has(f.id))
-      const orphans = [...existing].filter(
-        (id) => !result.features.some((f) => f.id === id) && id.startsWith(area.area + '.')
+    const existing = readExistingIds(file)
+    const news = result.features.filter((f) => !existing.has(f.id))
+    const orphans = [...existing].filter(
+      (id) => !result.features.some((f) => f.id === id) && id.startsWith(area.area + '.')
+    )
+    if (news.length === 0) {
+      console.log(
+        `[sync] ${file}: nothing to add (${result.features.length} matching, ${orphans.length} orphan${orphans.length === 1 ? '' : 's'} in canon)`
       )
-      if (news.length === 0) {
-        console.log(
-          `[sync] ${file}: nothing to add (${result.features.length} matching, ${orphans.length} orphan${orphans.length === 1 ? '' : 's'} in canon)`
-        )
-      } else {
-        console.log(
-          `[sync] ${file}: +${news.length} new (${orphans.length} orphan${orphans.length === 1 ? '' : 's'} left untouched)`
-        )
-        for (const f of news) console.log(`        + ${f.id}`)
-        if (!args.dryRun) fs.writeFileSync(file, appendFeatures(file, news))
-      }
-      if (orphans.length > 0) {
-        for (const id of orphans)
-          console.log(`        ~ orphan: ${id} (in canon, not in supabase-js)`)
-      }
+    } else {
+      console.log(
+        `[sync] ${file}: +${news.length} new (${orphans.length} orphan${orphans.length === 1 ? '' : 's'} left untouched)`
+      )
+      for (const f of news) console.log(`        + ${f.id}`)
+      if (!args.dryRun) fs.writeFileSync(file, appendFeatures(file, news))
+    }
+    if (orphans.length > 0) {
+      for (const id of orphans)
+        console.log(`        ~ orphan: ${id} (in canon, not in supabase-js)`)
     }
 
     if (result.missingDescriptions.length > 0) {

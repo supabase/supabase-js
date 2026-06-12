@@ -228,6 +228,39 @@ const DENYLIST = new Set<string>([
 
 const REPO_ROOT = path.resolve(__dirname, '..')
 
+// ─── canonical-mapping loader ────────────────────────────────────────────────
+
+// Maps auto-derived feature ids to their canonical ids in supabase/sdk.
+// Read from canonical-mapping.yaml. A null value means "drop this id".
+// Auto-derived ids without an entry pass through unchanged.
+//
+// We parse the file by hand to avoid adding a yaml dependency for one read.
+type CanonicalMapping = Map<string, string | null>
+
+function loadCanonicalMapping(): CanonicalMapping {
+  const file = path.join(__dirname, 'canonical-mapping.yaml')
+  const map: CanonicalMapping = new Map()
+  if (!fs.existsSync(file)) return map
+  const text = fs.readFileSync(file, 'utf8')
+  let inMappings = false
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.replace(/\r$/, '')
+    if (/^\s*#/.test(line) || /^\s*$/.test(line)) continue
+    if (/^mappings:/.test(line)) {
+      inMappings = true
+      continue
+    }
+    if (!inMappings) continue
+    // entries are 2-space indented: "  <id>: <value>"
+    const m = line.match(/^\s{2}([a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+):\s*(\S+)/)
+    if (!m) continue
+    const key = m[1]
+    const value = m[2] === 'null' || m[2] === '~' ? null : m[2]
+    map.set(key, value)
+  }
+  return map
+}
+
 interface ParamType {
   type?: string
   value?: string | number | boolean | null
@@ -261,7 +294,10 @@ function readBlockTag(node: SpecNode, tag: string): string | undefined {
   const tags = node.signatures?.[0]?.comment?.blockTags ?? []
   for (const t of tags) {
     if (t.tag === tag) {
-      const text = (t.content ?? []).map((p) => p.text ?? '').join('').trim()
+      const text = (t.content ?? [])
+        .map((p) => p.text ?? '')
+        .join('')
+        .trim()
       if (text) return text
     }
   }
@@ -373,23 +409,45 @@ function namespaceForGroup(groupId: string, area: AreaConfig): string {
 
 // Walk the spec and emit a Set of fully-namespaced feature ids of the form
 // `<area>.<namespace>.<method_stem>`. Mirrors sync-canon.ts's resolution.
+// The optional `mapping` argument rewrites auto-derived ids to their canonical
+// equivalents (null means drop).
 function collectMethods(
   spec: SpecNode,
   area: AreaConfig,
-  seen: { duplicates: number }
+  seen: { duplicates: number; dropped: number; mapped: number },
+  mapping: CanonicalMapping
 ): Set<string> {
   const splitConfigByMethod = new Map<string, SignatureSplitConfig>()
   for (const cfg of area.signatureSplit ?? []) splitConfigByMethod.set(cfg.method, cfg)
 
   const found = new Set<string>()
 
-  function emit(stem: string, enclosingClass: string, methodName: string, sub: string | undefined, splitGroup: string | undefined): void {
+  function emit(
+    stem: string,
+    enclosingClass: string,
+    methodName: string,
+    sub: string | undefined,
+    splitGroup: string | undefined
+  ): void {
     const group = resolveGroup(methodName, stem, enclosingClass, sub, splitGroup, area)
     if (!group) return
     const namespace = namespaceForGroup(group, area)
-    const id = `${area.area}.${namespace}.${stem}`
-    if (found.has(id)) seen.duplicates++
-    else found.add(id)
+    const autoId = `${area.area}.${namespace}.${stem}`
+    if (mapping.has(autoId)) {
+      const mapped = mapping.get(autoId) ?? null
+      if (mapped === null) {
+        seen.dropped++
+        return
+      }
+      if (found.has(mapped)) seen.duplicates++
+      else {
+        found.add(mapped)
+        seen.mapped++
+      }
+      return
+    }
+    if (found.has(autoId)) seen.duplicates++
+    else found.add(autoId)
   }
 
   function visit(node: SpecNode, enclosingClass: string | null): void {
@@ -487,24 +545,32 @@ function emitYaml(areaIds: Map<string, string[]>, out: string): void {
 function main(): void {
   const args = parseArgs(process.argv.slice(2))
 
+  const mapping = loadCanonicalMapping()
+  console.log(`Loaded ${mapping.size} canonical mapping entr${mapping.size === 1 ? 'y' : 'ies'}.`)
+
   const areaMethods = new Map<string, string[]>()
   let totalDuplicates = 0
+  let totalMapped = 0
+  let totalDropped = 0
   for (const area of AREAS) {
     const spec = readSpec(area.pkg)
-    const seen = { duplicates: 0 }
-    const methods = [...collectMethods(spec, area, seen)]
+    const seen = { duplicates: 0, dropped: 0, mapped: 0 }
+    const methods = [...collectMethods(spec, area, seen, mapping)]
     areaMethods.set(area.area, methods)
     totalDuplicates += seen.duplicates
-    const dupNote =
-      seen.duplicates > 0
-        ? ` (${seen.duplicates} duplicate${seen.duplicates === 1 ? '' : 's'} filtered)`
-        : ''
-    console.log(`${area.area} (${area.pkg}): ${methods.length} methods${dupNote}`)
+    totalMapped += seen.mapped
+    totalDropped += seen.dropped
+    const notes: string[] = []
+    if (seen.duplicates) notes.push(`${seen.duplicates} dup${seen.duplicates === 1 ? '' : 's'}`)
+    if (seen.mapped) notes.push(`${seen.mapped} mapped`)
+    if (seen.dropped) notes.push(`${seen.dropped} dropped`)
+    const suffix = notes.length ? ` (${notes.join(', ')})` : ''
+    console.log(`${area.area} (${area.pkg}): ${methods.length} methods${suffix}`)
   }
 
   emitYaml(areaMethods, args.out)
   console.log(
-    `\nWrote ${args.out}${totalDuplicates > 0 ? ` (${totalDuplicates} duplicate method names filtered overall)` : ''}`
+    `\nWrote ${args.out} — total: ${totalMapped} mapped, ${totalDropped} dropped, ${totalDuplicates} duplicates filtered`
   )
 }
 
