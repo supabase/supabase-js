@@ -55,6 +55,15 @@ interface SignatureSplitConfig {
   group?: string
 }
 
+interface GroupConfig {
+  id: string
+  title: string
+  // Segment used in feature ids (`<area>.<namespace>.<method>`). If omitted,
+  // defaults to id.replace(/-/g, '_'). Override when the id contains an area
+  // prefix or filler ("auth-mfa" → "mfa", "using-filters" → "filters").
+  namespace?: string
+}
+
 interface AreaConfig {
   area: string
   pkg: string
@@ -63,7 +72,7 @@ interface AreaConfig {
   // Predefined groups with curated titles. Group ids derived from @subcategory
   // tags that aren't present here will be auto-appended with a title derived
   // from the slug.
-  groups: { id: string; title: string }[]
+  groups: GroupConfig[]
   matchers: ClassMatcher[]
   // Map enclosing class → group id. Used when @subcategory is absent.
   classToGroup: Record<string, string>
@@ -71,6 +80,11 @@ interface AreaConfig {
   // classToGroup miss.
   byMethodPrefix?: { match: (snake: string) => boolean; group: string }[]
   signatureSplit?: SignatureSplitConfig[]
+}
+
+// Default namespace for a group id when GroupConfig.namespace is unspecified.
+function defaultNamespace(groupId: string): string {
+  return groupId.replace(/-/g, '_')
 }
 
 const AREAS: AreaConfig[] = [
@@ -84,12 +98,14 @@ const AREAS: AreaConfig[] = [
     // → auth-admin) appear here with curated titles; any subcategory slug
     // encountered at runtime that isn't listed below gets auto-appended.
     groups: [
-      { id: 'sign-in', title: 'Sign-in / Sign-up' },
+      { id: 'sign-in', title: 'Sign-in / Sign-up', namespace: 'sign_in' },
       { id: 'passkey', title: 'Passkeys' },
       { id: 'session', title: 'Session & User' },
       { id: 'identities', title: 'Identity Linking' },
-      { id: 'auth-admin', title: 'Auth Admin' },
-      { id: 'auth-mfa', title: 'Auth MFA' },
+      // The "auth-" prefix on these slugs is redundant once IDs are namespaced
+      // (the area segment already says "auth"); strip it.
+      { id: 'auth-admin', title: 'Auth Admin', namespace: 'admin' },
+      { id: 'auth-mfa', title: 'Auth MFA', namespace: 'mfa' },
       { id: 'oauth-admin', title: 'OAuth Admin' },
       { id: 'oauth-server', title: 'OAuth Server' },
       { id: 'passkey-admin', title: 'Passkey Admin' },
@@ -147,8 +163,8 @@ const AREAS: AreaConfig[] = [
     groups: [
       { id: 'query', title: 'Query' },
       { id: 'mutate', title: 'Mutate' },
-      { id: 'using-filters', title: 'Filters' },
-      { id: 'using-modifiers', title: 'Modifiers' },
+      { id: 'using-filters', title: 'Filters', namespace: 'filters' },
+      { id: 'using-modifiers', title: 'Modifiers', namespace: 'modifiers' },
     ],
     matchers: [
       'PostgrestClient',
@@ -589,6 +605,14 @@ function resolveGroup(meta: MethodMeta, snakeStem: string, area: AreaConfig): st
   return area.groups[0]?.id
 }
 
+// Group id → namespace segment used in the feature id. Predefined groups
+// supply explicit `namespace` overrides; everything else falls back to the
+// slug with hyphens swapped for underscores.
+function namespaceForGroup(groupId: string, area: AreaConfig): string {
+  const g = area.groups.find((g) => g.id === groupId)
+  return g?.namespace ?? defaultNamespace(groupId)
+}
+
 interface FeatureEntry {
   id: string
   name: string
@@ -622,7 +646,10 @@ function buildFeatures(spec: SpecNode, area: AreaConfig): BuildResult {
 
   for (const meta of metas) {
     const stem = meta.idStem
-    const id = `${area.area}.${stem}`
+    const group = resolveGroup(meta, stem, area) ?? area.groups[0]?.id
+    if (!group) continue // shouldn't happen — every area has at least one predefined group
+    const namespace = namespaceForGroup(group, area)
+    const id = `${area.area}.${namespace}.${stem}`
     if (seenIds.has(id)) continue
     seenIds.add(id)
 
@@ -634,7 +661,6 @@ function buildFeatures(spec: SpecNode, area: AreaConfig): BuildResult {
       // edits replace a real string, not a placeholder warning.
       description = name
     }
-    const group = resolveGroup(meta, stem, area)
     if (group && !groupTitles.has(group) && meta.subcategory) {
       groupTitles.set(group, meta.subcategory)
     }
