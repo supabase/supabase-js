@@ -37,7 +37,6 @@ features:
   auth.get_user: implemented
   auth.get_user_by_id: implemented
   auth.get_user_identities: implemented
-  auth.initialize: implemented
   auth.invite_user_by_email: implemented
   auth.link_identity: implemented
   auth.list_clients: implemented
@@ -57,7 +56,7 @@ features:
   auth.set_session: implemented
   auth.sign_in_anonymously: implemented
   auth.sign_in_with_id_token: implemented
-  auth.sign_in_with_o_auth: implemented
+  auth.sign_in_with_oauth: implemented
   auth.sign_in_with_otp: implemented
   auth.sign_in_with_passkey: implemented
   auth.sign_in_with_password: implemented
@@ -77,7 +76,6 @@ features:
   auth.verify_otp: implemented
 
   # database
-  database.abort_signal: implemented
   database.contained_by: implemented
   database.contains: implemented
   database.csv: implemented
@@ -111,7 +109,6 @@ features:
   database.or: implemented
   database.order: implemented
   database.overlaps: implemented
-  database.override_types: implemented
   database.range: implemented
   database.range_adjacent: implemented
   database.range_gt: implemented
@@ -120,17 +117,12 @@ features:
   database.range_lte: implemented
   database.regex_i_match: implemented
   database.regex_match: implemented
-  database.retry: implemented
-  database.returns: implemented
   database.rollback: implemented
   database.rpc: implemented
   database.schema: implemented
   database.select: implemented
-  database.set_header: implemented
   database.single: implemented
-  database.strip_nulls: implemented
   database.text_search: implemented
-  database.throw_on_error: implemented
   database.update: implemented
   database.upsert: implemented
 
@@ -163,19 +155,16 @@ features:
   storage.put_vectors: implemented
   storage.query_vectors: implemented
   storage.remove: implemented
-  storage.set_header: implemented
-  storage.throw_on_error: implemented
-  storage.to_base64: implemented
   storage.update: implemented
   storage.update_bucket: implemented
   storage.upload: implemented
   storage.upload_to_signed_url: implemented
 
   # realtime
+  realtime.broadcast: implemented
   realtime.channel: implemented
   realtime.connect: implemented
   realtime.connection_state: implemented
-  realtime.copy_bindings: implemented
   realtime.disconnect: implemented
   realtime.endpoint_url: implemented
   realtime.get_channels: implemented
@@ -183,21 +172,19 @@ features:
   realtime.is_connected: implemented
   realtime.is_connecting: implemented
   realtime.is_disconnecting: implemented
-  realtime.on: implemented
   realtime.on_heartbeat: implemented
+  realtime.postgres_changes: implemented
+  realtime.presence: implemented
   realtime.presence_state: implemented
   realtime.push: implemented
   realtime.remove_all_channels: implemented
   realtime.remove_channel: implemented
   realtime.send: implemented
-  realtime.send_heartbeat: implemented
   realtime.set_auth: implemented
   realtime.subscribe: implemented
-  realtime.teardown: implemented
   realtime.track: implemented
   realtime.unsubscribe: implemented
   realtime.untrack: implemented
-  realtime.update_join_payload: implemented
 
   # functions
   functions.invoke: implemented
