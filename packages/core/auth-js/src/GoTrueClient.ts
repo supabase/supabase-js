@@ -660,6 +660,8 @@ export default class GoTrueClient {
         setTimeout(async () => {
           if (redirectType === 'recovery') {
             await this._notifyAllSubscribers('PASSWORD_RECOVERY', session)
+          } else if (redirectType === 'email_change' || redirectType === 'phone_change') {
+            await this._notifyAllSubscribers('USER_UPDATED', session)
           } else {
             await this._notifyAllSubscribers('SIGNED_IN', session)
           }
@@ -1973,7 +1975,11 @@ export default class GoTrueClient {
       if (data.session) {
         await this._saveSession(data.session)
         await this._notifyAllSubscribers(
-          redirectType === 'recovery' ? 'PASSWORD_RECOVERY' : 'SIGNED_IN',
+          redirectType === 'recovery'
+            ? 'PASSWORD_RECOVERY'
+            : redirectType === 'email_change' || redirectType === 'phone_change'
+              ? 'USER_UPDATED'
+              : 'SIGNED_IN',
           data.session
         )
       }
@@ -2249,6 +2255,7 @@ export default class GoTrueClient {
    *   4. `email_change` – Used when verifying an OTP sent to a new email address during an email update process.
    * - The verification type used should be determined based on the corresponding auth method called before `verifyOtp` to sign up / sign-in a user.
    * - The `TokenHash` is contained in the [email templates](/docs/guides/auth/auth-email-templates) and can be used to sign in.  You may wish to use the hash for the PKCE flow for Server Side Auth. Read [the Password-based Auth guide](/docs/guides/auth/passwords) for more details.
+   * - Events emitted on success: `recovery` → `PASSWORD_RECOVERY`; `email_change` and `phone_change` → `USER_UPDATED`; all other types → `SIGNED_IN`.
    *
    * @example Verify Signup One-Time Password (OTP)
    * ```js
@@ -2401,7 +2408,11 @@ export default class GoTrueClient {
       if (session?.access_token) {
         await this._saveSession(session as Session)
         await this._notifyAllSubscribers(
-          params.type == 'recovery' ? 'PASSWORD_RECOVERY' : 'SIGNED_IN',
+          params.type === 'recovery'
+            ? 'PASSWORD_RECOVERY'
+            : params.type === 'email_change' || params.type === 'phone_change'
+              ? 'USER_UPDATED'
+              : 'SIGNED_IN',
           session
         )
       }
@@ -3333,7 +3344,8 @@ export default class GoTrueClient {
         if (this.flowType === 'pkce' && attributes.email != null) {
           ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
             this.storage,
-            this.storageKey
+            this.storageKey,
+            'email_change'
           )
         }
 
@@ -4054,6 +4066,7 @@ export default class GoTrueClient {
    *     - The frequency of this event is related to the JWT expiry limit configured on your project.
    *   - `USER_UPDATED`
    *     - Emitted each time the `supabase.auth.updateUser()` method finishes successfully. Listen to it to update your application's UI based on new profile information.
+   *     - Also emitted after a successful email change or phone change verification (`email_change` / `phone_change` OTP types and the corresponding implicit-grant or PKCE callback). In earlier versions this was emitted as `SIGNED_IN`.
    *   - `PASSWORD_RECOVERY`
    *     - Emitted instead of the `SIGNED_IN` event when the user lands on a page that includes a password recovery link in the URL.
    *     - Use it to show a UI to the user where they can [reset their password](/docs/guides/auth/passwords#resetting-a-users-password-forgot-password).
@@ -4343,7 +4356,7 @@ export default class GoTrueClient {
       ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
         this.storage,
         this.storageKey,
-        true // isPasswordRecovery
+        'recovery'
       )
     }
     try {
