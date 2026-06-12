@@ -34,6 +34,16 @@ interface SignatureSplitConfig {
   by: 'first-param-literal'
   idStem?: (literalValue: string) => string
   filter?: (literalValue: string) => boolean
+  // Optional group id assigned to every feature this split emits.
+  group?: string
+}
+
+interface GroupConfig {
+  id: string
+  // Segment used in feature ids (`<area>.<namespace>.<method>`). Defaults to
+  // id.replace(/-/g, '_'). Override when the slug carries an area prefix or
+  // filler ("auth-mfa" → "mfa", "using-filters" → "filters").
+  namespace?: string
 }
 
 interface AreaConfig {
@@ -44,9 +54,21 @@ interface AreaConfig {
   // exported classes (e.g. StorageFileApi) lose their name in typedoc and have
   // to be matched by file path.
   matchers: ClassMatcher[]
+  // Group definitions — supplies namespace overrides used by feature-id
+  // construction. Must mirror sync-canon.ts so the two scripts produce the
+  // same IDs.
+  groups: GroupConfig[]
+  classToGroup: Record<string, string>
+  byMethodPrefix?: { match: (snake: string) => boolean; group: string }[]
   signatureSplit?: SignatureSplitConfig[]
 }
 
+function defaultNamespace(groupId: string): string {
+  return groupId.replace(/-/g, '_')
+}
+
+// Mirrors sync-canon.ts. Keep in sync — both scripts emit the same feature
+// ids, so changing one without the other breaks cross-validation.
 const AREAS: AreaConfig[] = [
   {
     area: 'auth',
@@ -62,6 +84,39 @@ const AREAS: AreaConfig[] = [
       'AuthOAuthServerApi',
       'WebAuthnApi',
     ],
+    groups: [
+      { id: 'sign-in', namespace: 'sign_in' },
+      { id: 'passkey' },
+      { id: 'session' },
+      { id: 'identities' },
+      { id: 'auth-admin', namespace: 'admin' },
+      { id: 'auth-mfa', namespace: 'mfa' },
+      { id: 'oauth-admin' },
+      { id: 'oauth-server' },
+      { id: 'passkey-admin' },
+    ],
+    classToGroup: {
+      GoTrueAdminApi: 'auth-admin',
+      GoTrueAdminMFAApi: 'auth-admin',
+      GoTrueAdminOAuthApi: 'oauth-admin',
+      GoTrueAdminPasskeyApi: 'passkey-admin',
+      GoTrueAdminCustomProvidersApi: 'auth-admin',
+      GoTrueMFAApi: 'auth-mfa',
+      AuthOAuthServerApi: 'oauth-server',
+      WebAuthnApi: 'passkey',
+    },
+    byMethodPrefix: [
+      { match: (s) => /_passkeys?$/.test(s) || s === 'register_passkey', group: 'passkey' },
+      {
+        match: (s) =>
+          /^(sign_up|sign_in|verify_otp|exchange_code|resend|reauthenticate|reset_password)/.test(
+            s
+          ),
+        group: 'sign-in',
+      },
+      { match: (s) => /(_identity|_identities)$/.test(s), group: 'identities' },
+      { match: () => true, group: 'session' },
+    ],
   },
   {
     area: 'database',
@@ -72,6 +127,19 @@ const AREAS: AreaConfig[] = [
       'PostgrestFilterBuilder',
       'PostgrestTransformBuilder',
     ],
+    groups: [
+      { id: 'query' },
+      { id: 'mutate' },
+      { id: 'using-filters', namespace: 'filters' },
+      { id: 'using-modifiers', namespace: 'modifiers' },
+    ],
+    classToGroup: {
+      PostgrestClient: 'query',
+      PostgrestQueryBuilder: 'mutate',
+      PostgrestFilterBuilder: 'using-filters',
+      PostgrestTransformBuilder: 'using-modifiers',
+    },
+    byMethodPrefix: [{ match: (s) => s === 'select', group: 'query' }],
   },
   {
     area: 'storage',
@@ -84,19 +152,32 @@ const AREAS: AreaConfig[] = [
       /StorageFileApi\.ts$/,
       /StorageBucketApi\.ts$/,
     ],
+    groups: [{ id: 'file-buckets' }, { id: 'vector-buckets' }],
+    classToGroup: {
+      StorageClient: 'file-buckets',
+      StorageVectorsClient: 'vector-buckets',
+      VectorBucketScope: 'vector-buckets',
+      VectorIndexScope: 'vector-buckets',
+    },
   },
   {
     area: 'realtime',
     pkg: 'realtime-js',
     matchers: ['RealtimeClient', 'RealtimeChannel'],
+    groups: [{ id: 'client' }, { id: 'channel' }, { id: 'subscriptions' }],
+    classToGroup: {
+      RealtimeClient: 'client',
+      RealtimeChannel: 'channel',
+    },
     signatureSplit: [
       {
         method: 'on',
         by: 'first-param-literal',
-        // Yields realtime.broadcast / realtime.presence / realtime.postgres_changes.
+        // Yields realtime.subscriptions.broadcast / .presence / .postgres_changes.
         // 'system' is filtered as a non-user-facing connection-event channel.
         idStem: (v) => v,
         filter: (v) => v !== 'system',
+        group: 'subscriptions',
       },
     ],
   },
@@ -104,6 +185,8 @@ const AREAS: AreaConfig[] = [
     area: 'functions',
     pkg: 'functions-js',
     matchers: ['FunctionsClient'],
+    groups: [{ id: 'invocation' }],
+    classToGroup: { FunctionsClient: 'invocation' },
   },
 ]
 
@@ -150,8 +233,19 @@ interface ParamType {
   value?: string | number | boolean | null
 }
 
+interface CommentPart {
+  kind: string
+  text?: string
+}
+
+interface BlockTag {
+  tag: string
+  content?: CommentPart[]
+}
+
 interface SpecSignature {
   parameters?: { type?: ParamType; name?: string }[]
+  comment?: { blockTags?: BlockTag[] }
 }
 
 interface SpecNode {
@@ -161,6 +255,24 @@ interface SpecNode {
   sources?: { fileName?: string }[]
   signatures?: SpecSignature[]
   inheritedFrom?: { name?: string }
+}
+
+function readBlockTag(node: SpecNode, tag: string): string | undefined {
+  const tags = node.signatures?.[0]?.comment?.blockTags ?? []
+  for (const t of tags) {
+    if (t.tag === tag) {
+      const text = (t.content ?? []).map((p) => p.text ?? '').join('').trim()
+      if (text) return text
+    }
+  }
+  return undefined
+}
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 interface CliArgs {
@@ -238,62 +350,80 @@ function collectFirstParamLiterals(node: SpecNode): string[] {
   return order
 }
 
-// Walk the spec and collect every method name that should become a feature id-
-// stem. Two rules:
-//   - skip a method when `inheritedFrom` points to a class outside the area's
-//     matcher list — the boilerplate base (e.g. PostgrestBuilder) is not in
-//     scope, so its methods aren't capabilities. Methods inherited *from*
-//     another matched class are also skipped here; the declaring class will
-//     surface them on its own visit.
-//   - for methods configured via signatureSplit, emit one id-stem per unique
-//     first-param literal (snake-cased downstream).
-//
-// Duplicate method names across multiple matched classes (e.g. `signOut` on
-// both GoTrueClient and GoTrueAdminApi) collapse into a single entry — the
-// Set deduplicates, and the yaml schema requires unique feature IDs anyway.
+function resolveGroup(
+  methodName: string,
+  snakeStem: string,
+  enclosingClass: string,
+  subcategory: string | undefined,
+  splitGroup: string | undefined,
+  area: AreaConfig
+): string | undefined {
+  if (splitGroup) return splitGroup
+  if (subcategory) return slugify(subcategory)
+  if (area.byMethodPrefix) {
+    for (const rule of area.byMethodPrefix) if (rule.match(snakeStem)) return rule.group
+  }
+  return area.classToGroup[enclosingClass] ?? area.groups[0]?.id
+}
+
+function namespaceForGroup(groupId: string, area: AreaConfig): string {
+  const g = area.groups.find((g) => g.id === groupId)
+  return g?.namespace ?? defaultNamespace(groupId)
+}
+
+// Walk the spec and emit a Set of fully-namespaced feature ids of the form
+// `<area>.<namespace>.<method_stem>`. Mirrors sync-canon.ts's resolution.
 function collectMethods(
   spec: SpecNode,
   area: AreaConfig,
   seen: { duplicates: number }
 ): Set<string> {
-  const matchedClassNames = collectMatchedClassNames(spec, area.matchers)
   const splitConfigByMethod = new Map<string, SignatureSplitConfig>()
   for (const cfg of area.signatureSplit ?? []) splitConfigByMethod.set(cfg.method, cfg)
 
   const found = new Set<string>()
 
-  function visit(node: SpecNode, insideMatched: boolean): void {
+  function emit(stem: string, enclosingClass: string, methodName: string, sub: string | undefined, splitGroup: string | undefined): void {
+    const group = resolveGroup(methodName, stem, enclosingClass, sub, splitGroup, area)
+    if (!group) return
+    const namespace = namespaceForGroup(group, area)
+    const id = `${area.area}.${namespace}.${stem}`
+    if (found.has(id)) seen.duplicates++
+    else found.add(id)
+  }
+
+  function visit(node: SpecNode, enclosingClass: string | null): void {
     if (!node || typeof node !== 'object') return
     const isClass = node.kind === 128 || node.kind === 256
-    const inside = insideMatched || (isClass && matches(node, area.matchers))
-    if (inside && node.kind === 2048 && typeof node.name === 'string' && !DENYLIST.has(node.name)) {
+    const nextClass =
+      isClass && matches(node, area.matchers) ? classDisplayName(node) : enclosingClass
+    if (
+      nextClass &&
+      node.kind === 2048 &&
+      typeof node.name === 'string' &&
+      !DENYLIST.has(node.name)
+    ) {
       const inheritedFromName = node.inheritedFrom?.name?.split('.')[0]
       const isInherited = !!inheritedFromName
-      // Drop both "inherited from un-matched class" (not a capability) and
-      // "inherited from another matched class" (declaring class will emit it).
       if (!isInherited) {
         const split = splitConfigByMethod.get(node.name)
+        const subcategory = readBlockTag(node, '@subcategory')
         if (split) {
           const literals = collectFirstParamLiterals(node)
           for (const literal of literals) {
             if (split.filter && !split.filter(literal)) continue
-            const id = split.idStem ? split.idStem(literal) : literal
-            if (found.has(id)) seen.duplicates++
-            else found.add(id)
+            const stem = split.idStem ? split.idStem(literal) : literal
+            emit(stem, nextClass, node.name, subcategory, split.group)
           }
-        } else if (found.has(node.name)) {
-          seen.duplicates++
         } else {
-          found.add(node.name)
+          emit(camelToSnake(node.name), nextClass, node.name, subcategory, undefined)
         }
       }
     }
-    if (Array.isArray(node.children)) {
-      for (const c of node.children) visit(c, inside)
-    }
+    if (Array.isArray(node.children)) for (const c of node.children) visit(c, nextClass)
   }
 
-  visit(spec, false)
+  visit(spec, null)
   return found
 }
 
@@ -323,7 +453,7 @@ function camelToSnake(name: string): string {
     .toLowerCase()
 }
 
-function emitYaml(areaMethods: Map<string, string[]>, out: string): void {
+function emitYaml(areaIds: Map<string, string[]>, out: string): void {
   const lines: string[] = [
     '# Compliance with the canonical Supabase SDK capability matrix.',
     '# Spec: https://github.com/supabase/sdk',
@@ -342,11 +472,11 @@ function emitYaml(areaMethods: Map<string, string[]>, out: string): void {
   ]
 
   for (const { area } of AREAS) {
-    const methods = areaMethods.get(area) ?? []
-    if (methods.length === 0) continue
+    const ids = areaIds.get(area) ?? []
+    if (ids.length === 0) continue
     lines.push(`  # ${area}`)
-    for (const m of methods.slice().sort()) {
-      lines.push(`  ${area}.${camelToSnake(m)}: implemented`)
+    for (const id of ids.slice().sort()) {
+      lines.push(`  ${id}: implemented`)
     }
     lines.push('')
   }
