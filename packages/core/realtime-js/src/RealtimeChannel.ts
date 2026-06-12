@@ -448,7 +448,8 @@ export default class RealtimeChannel {
   }
 
   /**
-   * Creates an event handler that listens to changes.
+   * Listen for presence events on this channel — when peers join, leave, or
+   * sync presence state.
    */
   on(
     type: `${REALTIME_LISTEN_TYPES.PRESENCE}`,
@@ -470,6 +471,10 @@ export default class RealtimeChannel {
     filter: { event: '*' },
     callback: (payload?: RealtimePresenceJoinPayload<T> | RealtimePresenceLeavePayload<T>) => void
   ): RealtimeChannel
+  /**
+   * Listen for Postgres database changes (insert / update / delete) streamed
+   * over this channel.
+   */
   on<T extends { [key: string]: any }>(
     type: `${REALTIME_LISTEN_TYPES.POSTGRES_CHANGES}`,
     filter: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.ALL}`>,
@@ -496,7 +501,8 @@ export default class RealtimeChannel {
     callback: (payload: RealtimePostgresChangesPayload<T>) => void
   ): RealtimeChannel
   /**
-   * The following is placed here to display on supabase.com/docs/reference/javascript/subscribe.
+   * Listen for broadcast messages sent on this channel.
+   *
    * @param type One of "broadcast", "presence", or "postgres_changes".
    * @param filter Custom object specific to the Realtime feature detailing which payloads to receive.
    * @param callback Function to be invoked when event handler is triggered.
