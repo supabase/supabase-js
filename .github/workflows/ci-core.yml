@@ -68,6 +68,11 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+
+      - name: Configure Dependency Firewall registry
+        run: |
+          pnpm config set //firewall.depthfirst.com/npm/:_authToken ${{ secrets.DF_FIREWALL_TOKEN }}
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Audit production dependencies
@@ -99,6 +104,11 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+
+      - name: Configure Dependency Firewall registry
+        run: |
+          pnpm config set //firewall.depthfirst.com/npm/:_authToken ${{ secrets.DF_FIREWALL_TOKEN }}
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
@@ -143,6 +153,11 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+
+      - name: Configure Dependency Firewall registry
+        run: |
+          pnpm config set //firewall.depthfirst.com/npm/:_authToken ${{ secrets.DF_FIREWALL_TOKEN }}
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
@@ -202,6 +217,11 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+
+      - name: Configure Dependency Firewall registry
+        run: |
+          pnpm config set //firewall.depthfirst.com/npm/:_authToken ${{ secrets.DF_FIREWALL_TOKEN }}
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
@@ -259,6 +279,11 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+
+      - name: Configure Dependency Firewall registry
+        run: |
+          pnpm config set //firewall.depthfirst.com/npm/:_authToken ${{ secrets.DF_FIREWALL_TOKEN }}
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
@@ -312,6 +337,11 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+
+      - name: Configure Dependency Firewall registry
+        run: |
+          pnpm config set //firewall.depthfirst.com/npm/:_authToken ${{ secrets.DF_FIREWALL_TOKEN }}
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
@@ -392,6 +422,11 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
+
+      - name: Configure Dependency Firewall registry
+        run: |
+          pnpm config set //firewall.depthfirst.com/npm/:_authToken ${{ secrets.DF_FIREWALL_TOKEN }}
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
