@@ -1,3 +1,13 @@
+## 2.108.2 (2026-06-15)
+
+### 🩹 Fixes
+
+- **auth:** preserve valid session on refresh failure and cooldown repeat failures ([#2436](https://github.com/supabase/supabase-js/pull/2436))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.108.0 (2026-06-08)
 
 ### 🚀 Features

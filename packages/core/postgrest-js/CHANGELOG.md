@@ -1,3 +1,7 @@
+## 2.108.2 (2026-06-15)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
 ## 2.108.0 (2026-06-08)
 
 ### 🩹 Fixes
