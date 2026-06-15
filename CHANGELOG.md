@@ -1,3 +1,16 @@
+## 2.108.2 (2026-06-15)
+
+### 🩹 Fixes
+
+- **auth:** preserve valid session on refresh failure and cooldown repeat failures ([#2436](https://github.com/supabase/supabase-js/pull/2436))
+- **realtime:** clarify httpSend() 404 error and server migration note ([#2444](https://github.com/supabase/supabase-js/pull/2444))
+- **release:** pin Deno and bound JSR publish to survive stranded-task hangs ([#2439](https://github.com/supabase/supabase-js/pull/2439))
+- **release:** restore JSR publish flags and enable for beta ([#2440](https://github.com/supabase/supabase-js/pull/2440))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.108.0 (2026-06-08)
 
 ### 🚀 Features

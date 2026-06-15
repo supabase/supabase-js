@@ -1,3 +1,13 @@
+## 2.108.2 (2026-06-15)
+
+### 🩹 Fixes
+
+- **realtime:** clarify httpSend() 404 error and server migration note ([#2444](https://github.com/supabase/supabase-js/pull/2444))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.108.0 (2026-06-08)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
