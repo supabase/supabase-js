@@ -29,6 +29,7 @@ jobs:
       - name: Configure Dependency Firewall registry
         run: |
           pnpm config set //firewall.depthfirst.com/npm/:_authToken ${{ secrets.DF_FIREWALL_TOKEN }}
+          pnpm config set registry https://firewall.depthfirst.com/npm/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -85,6 +86,7 @@ jobs:
       - name: Configure Dependency Firewall registry
         run: |
           pnpm config set //firewall.depthfirst.com/npm/:_authToken ${{ secrets.DF_FIREWALL_TOKEN }}
+          pnpm config set registry https://firewall.depthfirst.com/npm/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -126,6 +128,7 @@ jobs:
       - name: Configure Dependency Firewall registry
         run: |
           pnpm config set //firewall.depthfirst.com/npm/:_authToken ${{ secrets.DF_FIREWALL_TOKEN }}
+          pnpm config set registry https://firewall.depthfirst.com/npm/
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
