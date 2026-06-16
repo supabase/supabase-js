@@ -28,7 +28,15 @@ export type RealtimeChannelOptions = {
      */
     broadcast?: { self?: boolean; ack?: boolean; replay?: ReplayOption }
     /**
-     * key option is used to track presence payload across clients
+     * Presence configuration for the channel.
+     *
+     * - `key` is used to track presence payload across clients.
+     * - `enabled` opts the channel into presence on join. The client sets this
+     *   to `true` automatically when a `.on('presence', ...)` listener is
+     *   registered before `.subscribe()`. Set it explicitly when the channel
+     *   only sends presence via `.track()` and never listens for presence
+     *   events, otherwise the first `.track()` call will trigger a one-time
+     *   internal resubscribe to enable presence on the server.
      */
     presence?: { key?: string; enabled?: boolean }
     /**
@@ -416,6 +424,13 @@ export default class RealtimeChannel {
    * Sends the supplied payload to the presence tracker so other subscribers can see that this
    * client is online. Use `untrack` to stop broadcasting presence for the same key.
    *
+   * Presence must be enabled on the channel for tracked state to reach other subscribers.
+   * The client enables it automatically when a `.on('presence', ...)` listener is registered
+   * before `.subscribe()`. For channels that only send presence and never listen for it,
+   * the first call to `track()` will transparently re-join the channel with presence enabled.
+   * To avoid that one-time round-trip, set `config.presence.enabled` to `true` when creating
+   * the channel.
+   *
    * @category Realtime
    */
   async track(
@@ -443,6 +458,8 @@ export default class RealtimeChannel {
 
   /**
    * Removes the current presence state for this client.
+   *
+   * @see {@link track} for notes on presence being enabled on the channel.
    *
    * @category Realtime
    */
