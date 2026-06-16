@@ -98,3 +98,4 @@ jobs:
     uses: ./.github/workflows/integration-tests.yml
     with:
       commit_hash: ${{ needs.preview.outputs.commit_hash }}
+    secrets: inherit
