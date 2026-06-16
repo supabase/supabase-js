@@ -437,14 +437,32 @@ export default class RealtimeChannel {
     payload: { [key: string]: any },
     opts: { [key: string]: any } = {}
   ): Promise<RealtimeChannelSendResponse> {
-    if (this.state === CHANNEL_STATES.joined && this.params.config.presence?.enabled !== true) {
+    // Mirror the auto-detection in subscribe() so we only re-join when the
+    // server actually treats this channel as non-presence. A listener-only
+    // channel already joined with enabled: true and does not need re-joining.
+    const presenceAlreadyEnabled =
+      (!!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] &&
+        this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0) ||
+      this.params.config.presence?.enabled === true
+
+    if (this.state === CHANNEL_STATES.joined && !presenceAlreadyEnabled) {
       this.params.config.presence = {
         ...this.params.config.presence,
         enabled: true,
       }
       this.socket.log('channel', `resubscribe to ${this.topic} to enable presence for track()`)
       await this.unsubscribe()
-      await this.subscribe()
+      await new Promise<void>((resolve, reject) => {
+        this.subscribe((status, err) => {
+          if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
+            resolve()
+          } else if (status === REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR) {
+            reject(err ?? new Error(`channel error during track() re-subscribe`))
+          } else if (status === REALTIME_SUBSCRIBE_STATES.TIMED_OUT) {
+            reject(new Error(`timed out re-subscribing for track()`))
+          }
+        }, opts.timeout || this.timeout)
+      })
     }
     return await this.send(
       {
