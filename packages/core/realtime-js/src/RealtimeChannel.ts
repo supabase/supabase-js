@@ -452,6 +452,20 @@ export default class RealtimeChannel {
       }
       this.socket.log('channel', `resubscribe to ${this.topic} to enable presence for track()`)
       await this.unsubscribe()
+
+      // Workaround: phoenix's Channel constructor's onClose handler removes
+      // the channel from socket.channels when leave completes (channel.js
+      // constructor onClose: `this.socket.remove(this)`). Without re-adding,
+      // the second join's phx_reply never routes back to this channel and
+      // joinPush times out. Re-register before re-subscribing.
+      // A complete fix lives in @supabase/phoenix; until then, this keeps
+      // the resubscribe-on-track path working at the supabase-js layer.
+      const phoenixChannel = this.channelAdapter.getChannel()
+      const phoenixSocket = phoenixChannel.socket
+      if (!phoenixSocket.channels.includes(phoenixChannel)) {
+        phoenixSocket.channels.push(phoenixChannel)
+      }
+
       await new Promise<void>((resolve, reject) => {
         this.subscribe((status, err) => {
           if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
