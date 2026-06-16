@@ -77,12 +77,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Audit production dependencies
-        env:
-          npm_config_registry: https://firewall.depthfirst.com/npm/
-          npm_config__authToken: ${{ secrets.DF_FIREWALL_TOKEN }}
-        run: |
-          pnpm config list
-          pnpm audit --audit-level=high --prod
+        run: pnpm audit --audit-level=high --prod --registry https://registry.npmjs.org
       - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
       - name: Check common types are in sync
         run: pnpm run codegen:check
