@@ -229,7 +229,7 @@ describe('Channel Lifecycle Management', () => {
       assert.equal(channel.state, CHANNEL_STATES.joined)
     })
 
-    test('if subscription closed and then subscribe, it will throw error', async () => {
+    test('can be subscribed again after being unsubscribed', async () => {
       const subscribeSpy = vi.fn()
 
       channel.subscribe(subscribeSpy)
@@ -237,7 +237,11 @@ describe('Channel Lifecycle Management', () => {
       await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.joined))
       channel.unsubscribe()
       await vi.waitFor(() => expect(channel.state).toBe(CHANNEL_STATES.closed))
-      expect(() => channel.subscribe()).toThrowError()
+
+      // @supabase/phoenix >= 0.4.3 resets joinedOnce on leave, so a fresh
+      // subscribe() succeeds and transitions the channel back through joining.
+      expect(() => channel.subscribe()).not.toThrow()
+      assert.equal(channel.state, CHANNEL_STATES.joining)
     })
 
     test('updates join push payload access token', async () => {

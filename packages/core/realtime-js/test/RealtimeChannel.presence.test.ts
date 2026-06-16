@@ -282,7 +282,11 @@ describe('Presence helper methods', () => {
         },
       },
     })
-    channel = testSetup.client.channel('test-presence')
+    // enabled: true so `track()` exercises the send path directly instead of
+    // triggering the auto-enable resubscribe added in RealtimeChannel.track().
+    channel = testSetup.client.channel('test-presence', {
+      config: { presence: { enabled: true } },
+    })
   })
 
   test('gets transformed presence state', () => {
@@ -449,34 +453,40 @@ describe('Presence configuration override', () => {
 })
 
 describe('track() auto-enables presence when needed', () => {
-  let trackTestSetup: TestSetup
-
   beforeEach(() => {
-    trackTestSetup = setupRealtimeTest({
-      useFakeTimers: true,
+    // Reassign the file-level testSetup (same pattern as
+    // `Presence configuration override`) so the outer beforeEach's setup
+    // doesn't run in parallel with ours. We need an explicit phx_leave handler
+    // because the auto-enable path inside track() does unsubscribe()+subscribe().
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({
       timeout: defaultTimeout,
       socketHandlers: {
         phx_leave: (socket, message) => {
           socket.send(phxReply(message as string, { status: 'ok', response: {} }))
         },
-        phx_join: (socket, message) => {
+        presence: (socket, msg) => {
+          const { topic, ref } = JSON.parse(msg as string)
           socket.send(
-            phxReply(message as string, { status: 'ok', response: { postgres_changes: [] } })
+            JSON.stringify({
+              topic,
+              event: 'phx_reply',
+              payload: { status: 'ok', response: {} },
+              ref,
+            })
           )
         },
       },
     })
   })
 
-  afterEach(() => trackTestSetup.cleanup())
-
   test('resubscribes with presence enabled when track() is called on a channel that joined without it', async () => {
-    const senderChannel = trackTestSetup.client.channel('test-track-auto-enable')
+    const senderChannel = testSetup.client.channel('test-track-auto-enable')
     senderChannel.subscribe()
     await waitForChannelSubscribed(senderChannel)
 
     // First join went out with enabled: false
-    const firstJoinPayload = trackTestSetup.emitters.message.mock.calls.find(
+    const firstJoinPayload = testSetup.emitters.message.mock.calls.find(
       (call) => call[1] === 'phx_join'
     )
     assert.equal(firstJoinPayload?.[2].config.presence.enabled, false)
@@ -486,14 +496,14 @@ describe('track() auto-enables presence when needed', () => {
 
     // After track(), expect a phx_leave and a second phx_join with enabled: true
     await vi.waitFor(() =>
-      expect(trackTestSetup.emitters.message).toHaveBeenCalledWith(
+      expect(testSetup.emitters.message).toHaveBeenCalledWith(
         'realtime:test-track-auto-enable',
         'phx_leave',
         expect.anything()
       )
     )
 
-    const joinCalls = trackTestSetup.emitters.message.mock.calls.filter(
+    const joinCalls = testSetup.emitters.message.mock.calls.filter(
       (call) => call[0] === 'realtime:test-track-auto-enable' && call[1] === 'phx_join'
     )
     assert.equal(joinCalls.length, 2)
@@ -501,16 +511,18 @@ describe('track() auto-enables presence when needed', () => {
 
     // The track event itself goes out after the re-join
     await vi.waitFor(() =>
-      expect(trackTestSetup.emitters.message).toHaveBeenCalledWith(
+      expect(testSetup.emitters.message).toHaveBeenCalledWith(
         'realtime:test-track-auto-enable',
         'presence',
         { type: 'presence', event: 'track', payload: { user_id: 1 } }
       )
     )
+
+    senderChannel.unsubscribe()
   })
 
   test('does not resubscribe when track() is called on a channel that joined with presence enabled via config', async () => {
-    const senderChannel = trackTestSetup.client.channel('test-track-config-enabled', {
+    const senderChannel = testSetup.client.channel('test-track-config-enabled', {
       config: { presence: { enabled: true } },
     })
     senderChannel.subscribe()
@@ -519,20 +531,22 @@ describe('track() auto-enables presence when needed', () => {
     const resp = await senderChannel.track({ user_id: 1 })
     expect(resp).toBe('ok')
 
-    const joinCalls = trackTestSetup.emitters.message.mock.calls.filter(
+    const joinCalls = testSetup.emitters.message.mock.calls.filter(
       (call) => call[0] === 'realtime:test-track-config-enabled' && call[1] === 'phx_join'
     )
     assert.equal(joinCalls.length, 1)
     assert.equal(joinCalls[0][2].config.presence.enabled, true)
 
-    const leaveCalls = trackTestSetup.emitters.message.mock.calls.filter(
+    const leaveCalls = testSetup.emitters.message.mock.calls.filter(
       (call) => call[0] === 'realtime:test-track-config-enabled' && call[1] === 'phx_leave'
     )
     assert.equal(leaveCalls.length, 0)
+
+    senderChannel.unsubscribe()
   })
 
   test('does not resubscribe when track() is called on a channel with a presence listener', async () => {
-    const senderChannel = trackTestSetup.client.channel('test-track-listener-enabled')
+    const senderChannel = testSetup.client.channel('test-track-listener-enabled')
     senderChannel.on('presence', { event: 'sync' }, () => {})
     senderChannel.subscribe()
     await waitForChannelSubscribed(senderChannel)
@@ -540,15 +554,17 @@ describe('track() auto-enables presence when needed', () => {
     const resp = await senderChannel.track({ user_id: 1 })
     expect(resp).toBe('ok')
 
-    const joinCalls = trackTestSetup.emitters.message.mock.calls.filter(
+    const joinCalls = testSetup.emitters.message.mock.calls.filter(
       (call) => call[0] === 'realtime:test-track-listener-enabled' && call[1] === 'phx_join'
     )
     assert.equal(joinCalls.length, 1)
     assert.equal(joinCalls[0][2].config.presence.enabled, true)
 
-    const leaveCalls = trackTestSetup.emitters.message.mock.calls.filter(
+    const leaveCalls = testSetup.emitters.message.mock.calls.filter(
       (call) => call[0] === 'realtime:test-track-listener-enabled' && call[1] === 'phx_leave'
     )
     assert.equal(leaveCalls.length, 0)
+
+    senderChannel.unsubscribe()
   })
 })
