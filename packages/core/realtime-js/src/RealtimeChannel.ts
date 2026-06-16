@@ -422,6 +422,15 @@ export default class RealtimeChannel {
     payload: { [key: string]: any },
     opts: { [key: string]: any } = {}
   ): Promise<RealtimeChannelSendResponse> {
+    if (this.state === CHANNEL_STATES.joined && this.params.config.presence?.enabled !== true) {
+      this.params.config.presence = {
+        ...this.params.config.presence,
+        enabled: true,
+      }
+      this.socket.log('channel', `resubscribe to ${this.topic} to enable presence for track()`)
+      await this.unsubscribe()
+      await this.subscribe()
+    }
     return await this.send(
       {
         type: 'presence',

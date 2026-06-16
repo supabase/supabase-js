@@ -178,6 +178,14 @@ channel.subscribe(async (status) => {
 })
 ```
 
+Presence is opt-in on the join payload. The client enables it automatically when a `.on('presence', ...)` listener is registered before `.subscribe()`. For "sender-only" clients that call `.track()` without listening for presence events, pass `enabled: true` explicitly to avoid an internal resubscribe round-trip on the first `track()`:
+
+```js
+const channel = client.channel('presence-test', {
+  config: { presence: { enabled: true } },
+})
+```
+
 ## Postgres CDC
 
 Receive database changes on the client.
