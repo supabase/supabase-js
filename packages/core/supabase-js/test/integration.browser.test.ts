@@ -13,14 +13,14 @@ const port = 8000
 const content = `<html>
 <body>
     <div id="output"></div>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.29.7/babel.min.js"></script>
     <script src="http://localhost:${port}/supabase.js"></script>
 
     <script type="text/babel" data-presets="env,react">
         const SUPABASE_URL = 'http://127.0.0.1:54321'
-        const PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+        const PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTk4MzgxMjk5Nn0.jkAl8ZbvuOYg3HGfFtNz6Tpe6hVLlRPpATG0okuLsIg'
 
         // Get vsn from query params
         const urlParams = new URLSearchParams(window.location.search)
@@ -150,6 +150,12 @@ describe('Realtime integration test', () => {
 
       beforeAll(async () => {
         page = await browser.newPage()
+        // Surface client-side failures (e.g. broken bundle, CDN drift) instead of
+        // a silent `#realtime_status` timeout. Silent on success.
+        page.on('pageerror', (err) => console.log(`[browser:${vsn}] pageerror: ${err.message}`))
+        page.on('requestfailed', (req) =>
+          console.log(`[browser:${vsn}] requestfailed: ${req.url()} ${req.failure()?.errorText}`)
+        )
       })
 
       afterAll(async () => {
