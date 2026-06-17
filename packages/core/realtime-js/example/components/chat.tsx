@@ -33,7 +33,12 @@ export function Chat() {
   const [status, setStatus] = useState<string>("CONNECTING");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const supabase = createClient();
+  // Create the client once. `createClient()` returns a fresh instance (and a fresh
+  // GoTrueClient) on every call, so calling it inline on each render produced a new
+  // `supabase` reference, which is a dependency of the subscribe effect below. That made
+  // the effect tear down and re-create the channel on every render, spawning a flood of
+  // GoTrueClient instances and preventing the channel from staying SUBSCRIBED.
+  const [supabase] = useState(createClient);
 
   // Get username on mount
   useEffect(() => {
