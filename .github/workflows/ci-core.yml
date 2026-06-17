@@ -30,17 +30,25 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
+        env:
+          DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
-          pnpm config set //firewall.depthfirst.com/npm/:_authToken "${{ secrets.DF_FIREWALL_TOKEN }}"
-          pnpm config set registry https://firewall.depthfirst.com/npm/
+          # The firewall token is withheld from fork-triggered PR runs, so only route
+          # through the firewall when the token is present. Forks fall back to the
+          # default public npm registry (install still uses --frozen-lockfile).
+          if [ -n "$DF_FIREWALL_TOKEN" ]; then
+            pnpm config set //firewall.depthfirst.com/npm/:_authToken "$DF_FIREWALL_TOKEN"
+            pnpm config set registry https://firewall.depthfirst.com/npm/
+          else
+            echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
+          fi
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
           cache: 'pnpm'
       - name: Install dependencies
-        env:
-          pnpm_config_registry: https://firewall.depthfirst.com/npm/
         run: pnpm install --frozen-lockfile
       - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
       - name: Detect affected packages
@@ -74,17 +82,25 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
+        env:
+          DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
-          pnpm config set //firewall.depthfirst.com/npm/:_authToken "${{ secrets.DF_FIREWALL_TOKEN }}"
-          pnpm config set registry https://firewall.depthfirst.com/npm/
+          # The firewall token is withheld from fork-triggered PR runs, so only route
+          # through the firewall when the token is present. Forks fall back to the
+          # default public npm registry (install still uses --frozen-lockfile).
+          if [ -n "$DF_FIREWALL_TOKEN" ]; then
+            pnpm config set //firewall.depthfirst.com/npm/:_authToken "$DF_FIREWALL_TOKEN"
+            pnpm config set registry https://firewall.depthfirst.com/npm/
+          else
+            echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
+          fi
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
           cache: 'pnpm'
       - name: Install dependencies
-        env:
-          pnpm_config_registry: https://firewall.depthfirst.com/npm/
         run: pnpm install --frozen-lockfile
       - name: Audit production dependencies
         run: pnpm audit --audit-level=high --prod --registry https://registry.npmjs.org
@@ -113,17 +129,25 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
+        env:
+          DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
-          pnpm config set //firewall.depthfirst.com/npm/:_authToken "${{ secrets.DF_FIREWALL_TOKEN }}"
-          pnpm config set registry https://firewall.depthfirst.com/npm/
+          # The firewall token is withheld from fork-triggered PR runs, so only route
+          # through the firewall when the token is present. Forks fall back to the
+          # default public npm registry (install still uses --frozen-lockfile).
+          if [ -n "$DF_FIREWALL_TOKEN" ]; then
+            pnpm config set //firewall.depthfirst.com/npm/:_authToken "$DF_FIREWALL_TOKEN"
+            pnpm config set registry https://firewall.depthfirst.com/npm/
+          else
+            echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
+          fi
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22
           cache: 'pnpm'
       - name: Install dependencies
-        env:
-          pnpm_config_registry: https://firewall.depthfirst.com/npm/
         run: pnpm install --frozen-lockfile
       - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
       - name: Run test:ci for affected packages
@@ -165,9 +189,19 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
+        env:
+          DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
-          pnpm config set //firewall.depthfirst.com/npm/:_authToken "${{ secrets.DF_FIREWALL_TOKEN }}"
-          pnpm config set registry https://firewall.depthfirst.com/npm/
+          # The firewall token is withheld from fork-triggered PR runs, so only route
+          # through the firewall when the token is present. Forks fall back to the
+          # default public npm registry (install still uses --frozen-lockfile).
+          if [ -n "$DF_FIREWALL_TOKEN" ]; then
+            pnpm config set //firewall.depthfirst.com/npm/:_authToken "$DF_FIREWALL_TOKEN"
+            pnpm config set registry https://firewall.depthfirst.com/npm/
+          else
+            echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
+          fi
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
@@ -175,8 +209,6 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        env:
-          pnpm_config_registry: https://firewall.depthfirst.com/npm/
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -233,9 +265,19 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
+        env:
+          DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
-          pnpm config set //firewall.depthfirst.com/npm/:_authToken "${{ secrets.DF_FIREWALL_TOKEN }}"
-          pnpm config set registry https://firewall.depthfirst.com/npm/
+          # The firewall token is withheld from fork-triggered PR runs, so only route
+          # through the firewall when the token is present. Forks fall back to the
+          # default public npm registry (install still uses --frozen-lockfile).
+          if [ -n "$DF_FIREWALL_TOKEN" ]; then
+            pnpm config set //firewall.depthfirst.com/npm/:_authToken "$DF_FIREWALL_TOKEN"
+            pnpm config set registry https://firewall.depthfirst.com/npm/
+          else
+            echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
+          fi
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
@@ -243,8 +285,6 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        env:
-          pnpm_config_registry: https://firewall.depthfirst.com/npm/
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -299,9 +339,19 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
+        env:
+          DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
-          pnpm config set //firewall.depthfirst.com/npm/:_authToken "${{ secrets.DF_FIREWALL_TOKEN }}"
-          pnpm config set registry https://firewall.depthfirst.com/npm/
+          # The firewall token is withheld from fork-triggered PR runs, so only route
+          # through the firewall when the token is present. Forks fall back to the
+          # default public npm registry (install still uses --frozen-lockfile).
+          if [ -n "$DF_FIREWALL_TOKEN" ]; then
+            pnpm config set //firewall.depthfirst.com/npm/:_authToken "$DF_FIREWALL_TOKEN"
+            pnpm config set registry https://firewall.depthfirst.com/npm/
+          else
+            echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
+          fi
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
@@ -309,8 +359,6 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        env:
-          pnpm_config_registry: https://firewall.depthfirst.com/npm/
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -361,9 +409,19 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
+        env:
+          DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
-          pnpm config set //firewall.depthfirst.com/npm/:_authToken "${{ secrets.DF_FIREWALL_TOKEN }}"
-          pnpm config set registry https://firewall.depthfirst.com/npm/
+          # The firewall token is withheld from fork-triggered PR runs, so only route
+          # through the firewall when the token is present. Forks fall back to the
+          # default public npm registry (install still uses --frozen-lockfile).
+          if [ -n "$DF_FIREWALL_TOKEN" ]; then
+            pnpm config set //firewall.depthfirst.com/npm/:_authToken "$DF_FIREWALL_TOKEN"
+            pnpm config set registry https://firewall.depthfirst.com/npm/
+          else
+            echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
+          fi
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
@@ -371,8 +429,6 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        env:
-          pnpm_config_registry: https://firewall.depthfirst.com/npm/
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -450,9 +506,19 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
+        env:
+          DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
-          pnpm config set //firewall.depthfirst.com/npm/:_authToken "${{ secrets.DF_FIREWALL_TOKEN }}"
-          pnpm config set registry https://firewall.depthfirst.com/npm/
+          # The firewall token is withheld from fork-triggered PR runs, so only route
+          # through the firewall when the token is present. Forks fall back to the
+          # default public npm registry (install still uses --frozen-lockfile).
+          if [ -n "$DF_FIREWALL_TOKEN" ]; then
+            pnpm config set //firewall.depthfirst.com/npm/:_authToken "$DF_FIREWALL_TOKEN"
+            pnpm config set registry https://firewall.depthfirst.com/npm/
+          else
+            echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
+          fi
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
@@ -460,8 +526,6 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        env:
-          pnpm_config_registry: https://firewall.depthfirst.com/npm/
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
