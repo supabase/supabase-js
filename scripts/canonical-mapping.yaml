@@ -116,6 +116,9 @@ mappings:
   # ─── storage ─────────────────────────────────────────────────────────────
 
   # File-bucket method renames
+  storage.file_buckets.create_bucket: storage.file_buckets.create_file_bucket
+  storage.file_buckets.delete_bucket: storage.file_buckets.delete_file_bucket
+  storage.file_buckets.list_buckets: storage.file_buckets.list_file_buckets
   storage.file_buckets.exists: storage.file_buckets.file_exists
   storage.file_buckets.from: storage.file_buckets.access_bucket
   storage.file_buckets.info: storage.file_buckets.file_info
@@ -129,8 +132,8 @@ mappings:
 
   # StorageVectorsClient exposes bucket-level operations that overlap with
   # the file-bucket API. Canon consolidates these under file-buckets.
-  storage.vector_buckets.create_bucket: storage.file_buckets.create_bucket
-  storage.vector_buckets.delete_bucket: storage.file_buckets.delete_bucket
+  storage.vector_buckets.create_bucket: storage.file_buckets.create_file_bucket
+  storage.vector_buckets.delete_bucket: storage.file_buckets.delete_file_bucket
   storage.vector_buckets.from: storage.file_buckets.access_bucket
   storage.vector_buckets.get_bucket: storage.file_buckets.get_bucket
-  storage.vector_buckets.list_buckets: storage.file_buckets.list_buckets
+  storage.vector_buckets.list_buckets: storage.file_buckets.list_file_buckets

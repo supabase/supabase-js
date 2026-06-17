@@ -130,18 +130,18 @@ features:
   # storage
   storage.file_buckets.access_bucket: implemented
   storage.file_buckets.copy: implemented
-  storage.file_buckets.create_bucket: implemented
+  storage.file_buckets.create_file_bucket: implemented
   storage.file_buckets.create_signed_upload_url: implemented
   storage.file_buckets.create_signed_url: implemented
   storage.file_buckets.create_signed_urls: implemented
-  storage.file_buckets.delete_bucket: implemented
+  storage.file_buckets.delete_file_bucket: implemented
   storage.file_buckets.download: implemented
   storage.file_buckets.empty_bucket: implemented
   storage.file_buckets.file_exists: implemented
   storage.file_buckets.file_info: implemented
   storage.file_buckets.get_bucket: implemented
   storage.file_buckets.get_public_url: implemented
-  storage.file_buckets.list_buckets: implemented
+  storage.file_buckets.list_file_buckets: implemented
   storage.file_buckets.list_files: implemented
   storage.file_buckets.list_files_paginated: implemented
   storage.file_buckets.move: implemented
