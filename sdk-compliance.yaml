@@ -163,18 +163,14 @@ features:
 
   # realtime
   realtime.channel.broadcast_http: implemented
-  realtime.channel.channel: implemented
   realtime.channel.send: implemented
   realtime.channel.subscribe: implemented
   realtime.channel.unsubscribe: implemented
+  realtime.client.channel: implemented
   realtime.client.connect: implemented
   realtime.client.connection_state: implemented
   realtime.client.disconnect: implemented
-  realtime.client.endpoint_url: implemented
   realtime.client.get_channels: implemented
-  realtime.client.is_connected: implemented
-  realtime.client.is_connecting: implemented
-  realtime.client.is_disconnecting: implemented
   realtime.client.listen_heartbeats: implemented
   realtime.client.remove_all_channels: implemented
   realtime.client.remove_channel: implemented
