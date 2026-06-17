@@ -30,6 +30,7 @@ export function Chat() {
   const [onlineUsers, setOnlineUsers] = useState<PresenceState[]>([]);
   const [input, setInput] = useState("");
   const [username, setUsername] = useState("");
+  const [status, setStatus] = useState<string>("CONNECTING");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const supabase = createClient();
@@ -62,6 +63,9 @@ export function Chat() {
 
     fetchMessages();
 
+    // Re-engage the readiness gate while the (new) channel joins
+    setStatus("CONNECTING");
+
     // Subscribe to new messages and presence
     const channel = supabase
       .channel(`room:${room}`)
@@ -73,8 +77,9 @@ export function Chat() {
         const users = Object.values(state).flat();
         setOnlineUsers(users);
       })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
+      .subscribe(async (channelStatus) => {
+        setStatus(channelStatus);
+        if (channelStatus === "SUBSCRIBED") {
           await channel.track({ username });
         }
       });
@@ -189,7 +194,7 @@ export function Chat() {
               placeholder="Type a message..."
               className="flex-1"
             />
-            <Button type="submit" disabled={!input.trim()}>
+            <Button type="submit" disabled={!input.trim() || status !== "SUBSCRIBED"}>
               Send
             </Button>
           </form>
