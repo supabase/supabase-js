@@ -30,6 +30,7 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
         env:
           DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
@@ -81,6 +82,7 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
         env:
           DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
@@ -127,6 +129,7 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
         env:
           DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
@@ -186,6 +189,7 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
         env:
           DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
@@ -261,6 +265,7 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
         env:
           DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
@@ -334,6 +339,7 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
         env:
           DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
@@ -403,6 +409,7 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
         env:
           DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
@@ -499,6 +506,7 @@ jobs:
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
 
       - name: Configure Dependency Firewall registry
+        shell: bash
         env:
           DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
         run: |
