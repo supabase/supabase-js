@@ -182,6 +182,7 @@ export default class RealtimeChannel {
   private _postgresChangesSystemReady = false
   private _subscribeCallback: ((status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void) | null =
     null
+  private _subscribeTimeoutId: ReturnType<typeof setTimeout> | null = null
   /** @internal */
   channelAdapter: ChannelAdapter
 
@@ -258,16 +259,33 @@ export default class RealtimeChannel {
     this.presence = new RealtimePresence(this)
     this.channelAdapter.on(REALTIME_LISTEN_TYPES.SYSTEM, (payload: unknown) => {
       if (
-        payload &&
-        typeof payload === 'object' &&
-        'extension' in payload &&
-        payload.extension === REALTIME_LISTEN_TYPES.POSTGRES_CHANGES &&
-        'status' in payload &&
-        payload.status === 'ok'
+        !payload ||
+        typeof payload !== 'object' ||
+        !('extension' in payload) ||
+        payload.extension !== REALTIME_LISTEN_TYPES.POSTGRES_CHANGES ||
+        !('status' in payload)
       ) {
-        this._postgresChangesSystemReady = true
-        this._emitSubscribed()
+        return
       }
+
+      if (payload.status !== 'ok') {
+        this._failSubscribeState(
+          REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
+          new Error(
+            'message' in payload && typeof payload.message === 'string'
+              ? payload.message
+              : `postgres_changes system status: ${String(payload.status)}`
+          )
+        )
+        return
+      }
+
+      this._postgresChangesSystemReady = true
+      this._emitSubscribed()
+    })
+
+    this._onError(() => {
+      this._resetSubscribeState()
     })
 
     this._onClose(() => {
@@ -342,6 +360,7 @@ export default class RealtimeChannel {
       }
 
       this._onError((reason: unknown) => {
+        this._resetSubscribeState()
         callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, normalizeChannelError(reason))
       })
 
@@ -363,7 +382,7 @@ export default class RealtimeChannel {
             return
           }
 
-          this._updatePostgresBindings(postgres_changes, callback)
+          this._updatePostgresBindings(postgres_changes, callback, timeout)
         })
         .receive('error', (error: { [key: string]: any }) => {
           this._resetSubscribeState()
@@ -381,7 +400,8 @@ export default class RealtimeChannel {
 
   private _updatePostgresBindings(
     postgres_changes: PostgresChangesFilters['postgres_changes'],
-    callback?: (status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void
+    callback?: (status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void,
+    timeout = this.timeout
   ) {
     const clientPostgresBindings = this.bindings.postgres_changes
     const bindingsLen = clientPostgresBindings?.length ?? 0
@@ -406,6 +426,7 @@ export default class RealtimeChannel {
           id: serverPostgresFilter.id,
         })
       } else {
+        this._resetSubscribeState()
         this.unsubscribe()
         this.state = CHANNEL_STATES.errored
 
@@ -420,7 +441,7 @@ export default class RealtimeChannel {
     this.bindings.postgres_changes = newPostgresBindings
 
     if (this.state != CHANNEL_STATES.errored && callback) {
-      this._onSubscribeOk(callback)
+      this._onSubscribeOk(callback, timeout)
     }
   }
 
@@ -1145,13 +1166,17 @@ export default class RealtimeChannel {
     return normalizedServer === normalizedClient
   }
 
-  private _onSubscribeOk(callback: (status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void) {
+  private _onSubscribeOk(
+    callback: (status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void,
+    timeout = this.timeout
+  ) {
     if (!this._shouldWaitForPostgresChangesSystem()) {
       callback(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
       return
     }
 
     this._subscribeCallback = callback
+    this._startSubscribeTimeout(timeout)
     this._emitSubscribed()
   }
 
@@ -1161,13 +1186,38 @@ export default class RealtimeChannel {
     }
 
     const callback = this._subscribeCallback
-    this._subscribeCallback = null
-    callback(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+    this._resetSubscribeState()
+    callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+  }
+
+  private _failSubscribeState(status: REALTIME_SUBSCRIBE_STATES, err?: Error) {
+    if (!this._subscribeCallback) {
+      return
+    }
+
+    const callback = this._subscribeCallback
+    this._resetSubscribeState()
+    this.state = CHANNEL_STATES.errored
+    callback?.(status, err)
+  }
+
+  private _startSubscribeTimeout(timeout: number) {
+    if (this._subscribeTimeoutId) {
+      clearTimeout(this._subscribeTimeoutId)
+    }
+
+    this._subscribeTimeoutId = setTimeout(() => {
+      this._failSubscribeState(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
+    }, timeout)
   }
 
   private _resetSubscribeState() {
     this._postgresChangesSystemReady = false
     this._subscribeCallback = null
+    if (this._subscribeTimeoutId) {
+      clearTimeout(this._subscribeTimeoutId)
+      this._subscribeTimeoutId = null
+    }
   }
 
   private _shouldWaitForPostgresChangesSystem() {
