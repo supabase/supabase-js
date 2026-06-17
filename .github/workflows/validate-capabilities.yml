@@ -1,0 +1,14 @@
+name: Validate SDK Compliance
+
+on:
+  pull_request:
+    paths:
+      - 'sdk-compliance.yaml'
+      - '.github/workflows/validate-capabilities.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: supabase/sdk/.github/workflows/validate-sdk-compliance.yml@main

@@ -133,6 +133,25 @@ export default class PostgrestTransformBuilder<
     >
   }
 
+  /**
+   * Order the query result by `column`.
+   *
+   * You can call this method multiple times to order by multiple columns.
+   *
+   * You can order referenced tables, but it only affects the ordering of the
+   * parent table if you use `!inner` in the query.
+   *
+   * @param column - The column to order by
+   * @param options - Named parameters
+   * @param options.ascending - If `true`, the result will be in ascending order
+   * @param options.nullsFirst - If `true`, `null`s appear first. If `false`,
+   * `null`s appear last.
+   * @param options.referencedTable - Set this to order a referenced table by
+   * its columns
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   */
   order<ColumnName extends string & keyof Row>(
     column: ColumnName,
     options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: undefined }

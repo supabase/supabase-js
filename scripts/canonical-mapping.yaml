@@ -1,0 +1,139 @@
+# Auto-derived feature id → canonical feature id in supabase/sdk.
+#
+# The audit script (audit-sdk-compliance.ts) constructs a 3-segment id from
+# every supabase-js method (`<area>.<group_namespace>.<snake_method>`).
+# Where that id doesn't match its canonical name in supabase/sdk, an entry
+# goes here.
+#
+# Maintain by hand when a canonical rename lands in the registry. Without an
+# entry, the auto-derived id flows through unchanged.
+#
+# A null value means "drop this id" (the JS method has no canonical
+# counterpart; it shouldn't appear in compliance).
+
+mappings:
+  # ─── auth ────────────────────────────────────────────────────────────────
+
+  # JS-isms renamed in canon
+  auth.admin.delete_factor: auth.admin.delete_mfa_factor
+  auth.admin.get_user_by_id: auth.admin.get_user
+  auth.admin.invite_user_by_email: auth.admin.invite_user
+  auth.admin.list_factors: auth.admin.list_mfa_factors
+  auth.admin.update_user_by_id: auth.admin.update_user
+  auth.identities.get_user_identities: auth.identities.list_identities
+  auth.session.on_auth_state_change: auth.session.subscribe_auth_events
+  auth.sign_in.resend: auth.sign_in.resend_confirmation
+  auth.sign_in.reset_password_for_email: auth.sign_in.reset_password
+
+  # start/stop_auto_refresh collapse into a single capability
+  auth.session.start_auto_refresh: auth.session.auto_refresh
+  auth.session.stop_auto_refresh: auth.session.auto_refresh
+
+  # ─── database ────────────────────────────────────────────────────────────
+
+  # Group rename: filters → using_filters
+  database.filters.contained_by: database.using_filters.contained_by
+  database.filters.contains: database.using_filters.contains
+  database.filters.eq: database.using_filters.eq
+  database.filters.gt: database.using_filters.gt
+  database.filters.gte: database.using_filters.gte
+  database.filters.ilike: database.using_filters.ilike
+  database.filters.in: database.using_filters.in
+  database.filters.is: database.using_filters.is
+  database.filters.is_distinct: database.using_filters.is_distinct
+  database.filters.like: database.using_filters.like
+  database.filters.lt: database.using_filters.lt
+  database.filters.lte: database.using_filters.lte
+  database.filters.match: database.using_filters.match
+  database.filters.neq: database.using_filters.neq
+  database.filters.not: database.using_filters.not
+  database.filters.not_in: database.using_filters.not_in
+  database.filters.or: database.using_filters.or
+  database.filters.overlaps: database.using_filters.overlaps
+  database.filters.range_adjacent: database.using_filters.range_adjacent
+  database.filters.range_gt: database.using_filters.range_gt
+  database.filters.range_gte: database.using_filters.range_gte
+  database.filters.range_lt: database.using_filters.range_lt
+  database.filters.range_lte: database.using_filters.range_lte
+  database.filters.text_search: database.using_filters.text_search
+
+  # filters with method renames
+  database.filters.filter: database.using_filters.raw
+  database.filters.ilike_all_of: database.using_filters.ilike_all
+  database.filters.ilike_any_of: database.using_filters.ilike_any
+  database.filters.like_all_of: database.using_filters.like_all
+  database.filters.like_any_of: database.using_filters.like_any
+  database.filters.regex_match: database.using_filters.regex
+  database.filters.regex_i_match: database.using_filters.regex_icase
+
+  # Group rename: modifiers → using_modifiers
+  database.modifiers.explain: database.using_modifiers.explain
+  database.modifiers.limit: database.using_modifiers.limit
+  database.modifiers.order: database.using_modifiers.order
+  database.modifiers.range: database.using_modifiers.range
+
+  # modifiers with method renames
+  database.modifiers.csv: database.using_modifiers.format_csv
+  database.modifiers.geojson: database.using_modifiers.format_geojson
+  database.modifiers.max_affected: database.using_modifiers.max_affected_rows
+  database.modifiers.maybe_single: database.using_modifiers.maybe_single_row
+  database.modifiers.rollback: database.using_modifiers.dry_run
+  database.modifiers.single: database.using_modifiers.single_row
+
+  # select on TransformBuilder collapses into the query.select feature
+  database.modifiers.select: database.query.select
+
+  # query renames
+  database.query.from: database.query.from_table
+  database.query.schema: database.query.schema_selection
+
+  # ─── functions ───────────────────────────────────────────────────────────
+
+  functions.invocation.set_auth: functions.invocation.set_auth_token
+
+  # ─── realtime ────────────────────────────────────────────────────────────
+
+  # Method renames within the same group
+  realtime.channel.http_send: realtime.channel.broadcast_http
+  realtime.client.on_heartbeat: realtime.client.listen_heartbeats
+  realtime.client.set_auth: realtime.client.set_auth_token
+
+  # The `channel()` factory method on RealtimeClient is conceptually a
+  # channel-creation operation. Canon places it under the channel group.
+  realtime.client.channel: realtime.channel.channel
+
+  # presence operations moved to a dedicated group
+  realtime.channel.presence_state: realtime.presence.presence_state
+  realtime.channel.track: realtime.presence.track
+  realtime.channel.untrack: realtime.presence.untrack
+
+  # The on() signature for presence is conceptually a subscription
+  realtime.subscriptions.presence: realtime.subscriptions.subscribe_presence
+
+  # Low-level Phoenix push — not a canonical capability
+  realtime.client.push: null
+
+  # ─── storage ─────────────────────────────────────────────────────────────
+
+  # File-bucket method renames
+  storage.file_buckets.create_bucket: storage.file_buckets.create_file_bucket
+  storage.file_buckets.delete_bucket: storage.file_buckets.delete_file_bucket
+  storage.file_buckets.list_buckets: storage.file_buckets.list_file_buckets
+  storage.file_buckets.exists: storage.file_buckets.file_exists
+  storage.file_buckets.from: storage.file_buckets.access_bucket
+  storage.file_buckets.info: storage.file_buckets.file_info
+  storage.file_buckets.list: storage.file_buckets.list_files
+  storage.file_buckets.list_v2: storage.file_buckets.list_files_paginated
+  storage.file_buckets.update: storage.file_buckets.update_file
+  storage.file_buckets.upload_to_signed_url: storage.file_buckets.upload_with_signed_url
+
+  # Vector-bucket scoping operations
+  storage.vector_buckets.index: storage.vector_buckets.access_vector_index
+
+  # StorageVectorsClient exposes bucket-level operations that overlap with
+  # the file-bucket API. Canon consolidates these under file-buckets.
+  storage.vector_buckets.create_bucket: storage.file_buckets.create_file_bucket
+  storage.vector_buckets.delete_bucket: storage.file_buckets.delete_file_bucket
+  storage.vector_buckets.from: storage.file_buckets.access_bucket
+  storage.vector_buckets.get_bucket: storage.file_buckets.get_bucket
+  storage.vector_buckets.list_buckets: storage.file_buckets.list_file_buckets
