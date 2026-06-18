@@ -1320,7 +1320,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
+      // Deep-merge `sortBy` so overriding only one of its keys (e.g. `column`) keeps the
+      // default for the other (e.g. `order`), matching how the top-level defaults behave.
+      const sortBy = options?.sortBy
+        ? { ...DEFAULT_SEARCH_OPTIONS.sortBy, ...options.sortBy }
+        : DEFAULT_SEARCH_OPTIONS.sortBy
+      const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, sortBy, prefix: path || '' }
       return await post(
         this.fetch,
         `${this.url}/object/list/${this.bucketId}`,
