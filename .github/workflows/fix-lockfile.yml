@@ -29,9 +29,12 @@ jobs:
         run: pnpm install --lockfile-only --ignore-scripts
 
       - name: Commit fixed lockfile
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add pnpm-lock.yaml
-          git diff --staged --quiet || git commit -m "chore(deps): regenerate pnpm-lock.yaml"
-          git push
+          git diff --staged --quiet && exit 0
+          git commit -m "chore(deps): regenerate pnpm-lock.yaml"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_HEAD_REF}"
