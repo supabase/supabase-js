@@ -68,10 +68,10 @@ describe('int8/bigint precision over PostgREST', () => {
   test('writing int8 above 2^53 as a string round-trips losslessly', async () => {
     const updated = await postgrest
       .from('bigint_precision')
-      // big_value is generated as `number`; the postgres-meta `bigint_as=string` option
-      // (supabase/postgres-meta#1078) would type the Insert/Update column as `string`, so this
-      // lossless string form would need no cast.
-      // @ts-expect-error intentionally exercising the string write the default `number` type rejects.
+      // big_value is generated as `number`, so the lossless string form is a type error today.
+      // The postgres-meta `bigint_as=string` option (supabase/postgres-meta#1078) would type the
+      // Insert/Update column as `string`, which is the gap this exercises.
+      // @ts-expect-error Type 'string' is not assignable to type 'number'.
       .update({ big_value: ABOVE_MAX_SAFE })
       .eq('id', 2)
       .select('big_value::text')
