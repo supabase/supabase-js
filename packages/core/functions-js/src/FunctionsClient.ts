@@ -220,10 +220,11 @@ export class FunctionsClient {
         url.searchParams.set('forceFunctionRegion', region)
       }
       let body: any
-      if (
-        functionArgs &&
-        ((headers && !Object.prototype.hasOwnProperty.call(headers, 'Content-Type')) || !headers)
-      ) {
+      // HTTP header names are case-insensitive, so detect a caller-supplied Content-Type
+      // regardless of casing — otherwise the SDK injects a second, conflicting Content-Type.
+      const hasContentTypeHeader =
+        !!headers && Object.keys(headers).some((key) => key.toLowerCase() === 'content-type')
+      if (functionArgs && !hasContentTypeHeader) {
         if (
           (typeof Blob !== 'undefined' && functionArgs instanceof Blob) ||
           functionArgs instanceof ArrayBuffer

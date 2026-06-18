@@ -543,4 +543,44 @@ describe('body stringify with custom headers', () => {
       })
     )
   })
+
+  // HTTP header names are case-insensitive, so a caller-supplied Content-Type must be
+  // honored regardless of casing — the SDK must not inject its own conflicting one.
+  const effectiveContentTypes = (mockFetch: jest.Mock): string[] => {
+    const headers = (mockFetch.mock.calls[0][1] as { headers?: Record<string, string> }).headers
+    return Object.entries(headers ?? {})
+      .filter(([key]) => key.toLowerCase() === 'content-type')
+      .map(([, value]) => value)
+  }
+
+  test('honors an uppercase Content-Type override (baseline)', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+
+    await client.invoke('test-fn', {
+      body: { a: 1 },
+      headers: { 'Content-Type': 'application/vnd.api+json' },
+    })
+
+    expect(effectiveContentTypes(mockFetch)).toEqual(['application/vnd.api+json'])
+  })
+
+  test('honors a lowercase content-type override without injecting a conflicting one', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+
+    await client.invoke('test-fn', {
+      body: { a: 1 },
+      headers: { 'content-type': 'application/vnd.api+json' },
+    })
+
+    expect(effectiveContentTypes(mockFetch)).toEqual(['application/vnd.api+json'])
+    // body still routes through the JSON serialization branch
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: '{"a":1}',
+      })
+    )
+  })
 })
