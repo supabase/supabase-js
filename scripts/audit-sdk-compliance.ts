@@ -511,6 +511,29 @@ function camelToSnake(name: string): string {
     .toLowerCase()
 }
 
+const SYMBOL_OVERRIDES: Record<string, string[]> = {
+  'realtime.subscriptions.postgres_changes': [
+    'postgresChangesFilter',
+    'RealtimePostgresFilterBuilder',
+    'RealtimePostgresFilterBuilder.eq',
+    'RealtimePostgresFilterBuilder.neq',
+    'RealtimePostgresFilterBuilder.gt',
+    'RealtimePostgresFilterBuilder.gte',
+    'RealtimePostgresFilterBuilder.lt',
+    'RealtimePostgresFilterBuilder.lte',
+    'RealtimePostgresFilterBuilder.in',
+    'RealtimePostgresFilterBuilder.like',
+    'RealtimePostgresFilterBuilder.ilike',
+    'RealtimePostgresFilterBuilder.match',
+    'RealtimePostgresFilterBuilder.imatch',
+    'RealtimePostgresFilterBuilder.is',
+    'RealtimePostgresFilterBuilder.isDistinct',
+    'RealtimePostgresFilterBuilder.not',
+    'RealtimePostgresFilterBuilder.build',
+    'RealtimePostgresFilterBuilder.toString',
+  ],
+}
+
 function emitYaml(areaIds: Map<string, string[]>, out: string): void {
   const lines: string[] = [
     '# Compliance with the canonical Supabase SDK capability matrix.',
@@ -534,7 +557,15 @@ function emitYaml(areaIds: Map<string, string[]>, out: string): void {
     if (ids.length === 0) continue
     lines.push(`  # ${area}`)
     for (const id of ids.slice().sort()) {
-      lines.push(`  ${id}: implemented`)
+      const symbols = SYMBOL_OVERRIDES[id]
+      if (symbols) {
+        lines.push(`  ${id}:`)
+        lines.push(`    status: implemented`)
+        lines.push(`    symbols:`)
+        for (const sym of symbols) lines.push(`      - ${sym}`)
+      } else {
+        lines.push(`  ${id}: implemented`)
+      }
     }
     lines.push('')
   }

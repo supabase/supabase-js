@@ -179,7 +179,27 @@ features:
   realtime.presence.track: implemented
   realtime.presence.untrack: implemented
   realtime.subscriptions.broadcast: implemented
-  realtime.subscriptions.postgres_changes: implemented
+  realtime.subscriptions.postgres_changes:
+    status: implemented
+    symbols:
+      - postgresChangesFilter
+      - RealtimePostgresFilterBuilder
+      - RealtimePostgresFilterBuilder.eq
+      - RealtimePostgresFilterBuilder.neq
+      - RealtimePostgresFilterBuilder.gt
+      - RealtimePostgresFilterBuilder.gte
+      - RealtimePostgresFilterBuilder.lt
+      - RealtimePostgresFilterBuilder.lte
+      - RealtimePostgresFilterBuilder.in
+      - RealtimePostgresFilterBuilder.like
+      - RealtimePostgresFilterBuilder.ilike
+      - RealtimePostgresFilterBuilder.match
+      - RealtimePostgresFilterBuilder.imatch
+      - RealtimePostgresFilterBuilder.is
+      - RealtimePostgresFilterBuilder.isDistinct
+      - RealtimePostgresFilterBuilder.not
+      - RealtimePostgresFilterBuilder.build
+      - RealtimePostgresFilterBuilder.toString
   realtime.subscriptions.subscribe_presence: implemented
 
   # functions
