@@ -307,7 +307,7 @@ describe('SupabaseClient', () => {
         expect(failingAccessTokenFn).toHaveBeenCalled()
         expect(client).toBeDefined()
         expect(client.realtime).toBeDefined()
-        // Stays in callback mode so a later setAuth() retries the callback.
+        // Stays in callback mode so a later setAuth() retries the callback
         expect((client.realtime as any)._isManualToken()).toBe(false)
 
         client.realtime.disconnect()
