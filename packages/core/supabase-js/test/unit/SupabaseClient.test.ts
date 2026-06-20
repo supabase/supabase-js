@@ -263,21 +263,21 @@ describe('SupabaseClient', () => {
         jest.clearAllMocks()
       })
 
-      test('should automatically call setAuth() when accessToken option is provided', async () => {
+      test('should automatically call setAuth() in callback mode when accessToken option is provided', async () => {
         const customToken = 'custom-jwt-token'
         const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
 
         const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
-        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
 
-        // Wait for the constructor's async operation to complete
-        await Promise.resolve()
+        // Flush microtask queue to wait for constructor setting auth
+        await new Promise((resolve) => setTimeout(resolve))
 
-        expect(setAuthSpy).toHaveBeenCalledWith(customToken)
+        // Realtime acquires auth token without dropping to manual mode
         expect(customAccessTokenFn).toHaveBeenCalled()
+        expect(client.realtime.accessTokenValue).toBe(customToken)
+        expect((client.realtime as any)._isManualToken()).toBe(false)
 
         // Clean up
-        setAuthSpy.mockRestore()
         client.realtime.disconnect()
       })
 
@@ -296,24 +296,20 @@ describe('SupabaseClient', () => {
       })
 
       test('should handle errors gracefully when accessToken callback fails', async () => {
-        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
         const error = new Error('Token fetch failed')
         const failingAccessTokenFn = jest.fn().mockRejectedValue(error)
 
         const client = createClient(URL, KEY, { accessToken: failingAccessTokenFn })
 
-        // Wait for the promise to reject and warning to be logged
-        await Promise.resolve()
-        await Promise.resolve()
+        // Flush microtask queue to wait for constructor setting auth
+        await new Promise((resolve) => setTimeout(resolve))
 
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
-          'Failed to set initial Realtime auth token:',
-          error
-        )
+        expect(failingAccessTokenFn).toHaveBeenCalled()
         expect(client).toBeDefined()
         expect(client.realtime).toBeDefined()
+        // Stays in callback mode so a later setAuth() retries the callback
+        expect((client.realtime as any)._isManualToken()).toBe(false)
 
-        consoleWarnSpy.mockRestore()
         client.realtime.disconnect()
       })
 
