@@ -411,8 +411,25 @@ export default abstract class PostgrestBuilder<
             errorDetails += `\n${cause.stack}`
           }
         } else {
-          // No cause available, just include the error stack
+          // No cause available — include the error stack.
+          // In browsers, DNS failures (ERR_NAME_NOT_RESOLVED) surface as a plain
+          // TypeError("Failed to fetch") with no cause and no error code.
+          // Detect this pattern and surface a human-readable hint so developers
+          // know to check their project URL / DNS rather than their code.
           errorDetails = fetchError?.stack ?? ''
+
+          const msg: string = fetchError?.message ?? ''
+          if (
+            msg === 'Failed to fetch' || // Chrome / Edge
+            msg === 'NetworkError when attempting to fetch resource.' || // Firefox
+            msg === 'Load failed' // Safari
+          ) {
+            hint =
+              'Network request failed — the Supabase project URL could not be reached. ' +
+              'This is usually caused by a DNS resolution failure (e.g. ERR_NAME_NOT_RESOLVED in Chrome). ' +
+              'Verify that your SUPABASE_URL is correct and that the project is active in the Supabase dashboard. ' +
+              'If the issue persists, check https://status.supabase.com for platform outages.'
+          }
         }
 
         // Get URL length for potential hints
