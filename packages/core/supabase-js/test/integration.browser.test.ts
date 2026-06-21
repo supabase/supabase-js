@@ -164,7 +164,10 @@ describe('Realtime integration test', () => {
 
       it('connects to realtime', async () => {
         await page.goto(`http://localhost:${port}?vsn=${vsn}`)
-        await page.waitForSelector('#realtime_status', { timeout: 2000 })
+        // `#realtime_status` is rendered only once the channel reaches SUBSCRIBED, so
+        // waiting for the selector is the readiness gate. Allow a CI-realistic budget for
+        // CDN script load + Babel transpile + websocket connect + channel join.
+        await page.waitForSelector('#realtime_status', { timeout: 30000 })
         const realtimeStatus = await page.$eval('#realtime_status', (el) => el.innerHTML)
         assertEquals(realtimeStatus, 'SUBSCRIBED')
 
@@ -176,8 +179,8 @@ describe('Realtime integration test', () => {
       it('can broadcast and receive messages', async () => {
         await page.goto(`http://localhost:${port}?vsn=${vsn}`)
 
-        // Wait for subscription
-        await page.waitForSelector('#realtime_status', { timeout: 2000 })
+        // Wait for subscription (selector renders only once SUBSCRIBED)
+        await page.waitForSelector('#realtime_status', { timeout: 30000 })
 
         // Wait for the broadcast message to be received
         await page.waitForSelector('#received_message', { timeout: 5000 })
