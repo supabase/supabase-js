@@ -2,7 +2,7 @@ import { DEFAULT_HEADERS } from '../lib/constants'
 import { StorageError } from '../lib/common/errors'
 import { Fetch, get, post, put, remove } from '../lib/common/fetch'
 import BaseApiClient from '../lib/common/BaseApiClient'
-import { Bucket, BucketType, ListBucketOptions } from '../lib/types'
+import { Bucket, BucketType, FetchParameters, ListBucketOptions } from '../lib/types'
 import { StorageClientOptions } from '../StorageClient'
 
 export default class StorageBucketApi extends BaseApiClient<StorageError> {
@@ -387,6 +387,60 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   > {
     return this.handleOperation(async () => {
       return await remove(this.fetch, `${this.url}/bucket/${id}`, {}, { headers: this.headers })
+    })
+  }
+
+  /**
+   * Purges the CDN cache for an entire bucket.
+   *
+   * Maps to `DELETE /cdn/{bucket}/{path}` on the Storage API. The server
+   * issues a CDN invalidation for the object and returns `{ message: 'success' }`.
+   *
+   * **Requires the `service_role` key.** The underlying endpoint enforces
+   * `service_role` JWT — calls made with the anon key or a user JWT will be
+   * rejected by the server.
+   *
+   * **Hosted CDN feature.** On self-hosted Supabase, the Storage service must
+   * have `CDN_PURGE_ENDPOINT_URL` configured and the `purgeCache` tenant
+   * feature enabled, otherwise the server returns an error.
+   *
+   * Operates on a single object path. There is no wildcard or recursion: pass
+   * the exact path of the object you want invalidated.
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param path The path (relative to the bucket) of the object to purge, e.g. `folder/avatar.png`.
+   * @param parameters Optional fetch parameters such as an `AbortController` signal.
+   * @returns Promise with `{ data: { message }, error: null }` on success or `{ data: null, error }` on failure.
+   *
+   * @example Purge cache for an entire bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .purgeBucketCache('avatars')
+   * ```
+   */
+  async purgeBucketCache(
+    id: string,
+    parameters?: FetchParameters
+  ): Promise<
+    | {
+        data: { message: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    return this.handleOperation(async () => {
+      return await remove(
+        this.fetch,
+        `${this.url}/cdn/${id}`,
+        {},
+        { headers: this.headers },
+        parameters
+      )
     })
   }
 
