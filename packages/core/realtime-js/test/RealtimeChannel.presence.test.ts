@@ -320,6 +320,22 @@ describe('Presence helper methods', () => {
 
     expect(resp).toBe('ok')
   })
+
+  test('track() forwards a custom timeout option to the underlying push', async () => {
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+
+    // @ts-ignore - channelAdapter is internal; spy on the push call to assert the timeout
+    const pushSpy = vi.spyOn(channel.channelAdapter as any, 'push')
+
+    await channel.track({ id: 123 }, { timeout: 1234 })
+
+    expect(pushSpy).toHaveBeenCalledWith(
+      'presence',
+      expect.objectContaining({ type: 'presence', event: 'track' }),
+      1234
+    )
+  })
 })
 
 describe('Presence configuration override', () => {
