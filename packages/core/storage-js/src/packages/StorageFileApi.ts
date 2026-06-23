@@ -726,10 +726,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       const queryString = query.toString()
 
       // `data.signedURL` contains a `token` query parameter, so append extra params with `&`
-      // only when we actually have something to add.
-      const signedUrl = encodeURI(
-        `${this.url}${data.signedURL}${queryString ? `&${queryString}` : ''}`
-      )
+      // only when we actually have something to add. encodeURI only the path/token portion —
+      // `queryString` is already percent-encoded by URLSearchParams, so re-encoding it would
+      // double-encode the `download` filename.
+      const base = encodeURI(`${this.url}${data.signedURL}`)
+      const signedUrl = queryString ? `${base}&${queryString}` : base
 
       return { signedUrl }
     })
@@ -814,7 +815,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       return data.map((datum: { signedURL: string }) => ({
         ...datum,
         signedUrl: datum.signedURL
-          ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
+          ? encodeURI(`${this.url}${datum.signedURL}`) + (queryString ? `&${queryString}` : '')
           : null,
       }))
     })
