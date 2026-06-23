@@ -313,6 +313,16 @@ describe('validateUUID', () => {
       shouldThrow: false,
     },
     {
+      name: 'should accept uppercase UUID (UUIDs are case-insensitive per RFC 9562/4122)',
+      input: '123E4567-E89B-12D3-A456-426614174000',
+      shouldThrow: false,
+    },
+    {
+      name: 'should accept mixed-case UUID',
+      input: '123e4567-E89B-12d3-A456-426614174000',
+      shouldThrow: false,
+    },
+    {
       name: 'should reject invalid UUID format',
       input: 'not-a-uuid',
       shouldThrow: true,
