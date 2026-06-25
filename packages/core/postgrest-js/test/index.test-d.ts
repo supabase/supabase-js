@@ -1,20 +1,58 @@
 import { expectType, TypeEqual } from './types'
 import { PostgrestClient, PostgrestError } from '../src/index'
+import type { PostgrestFilterBuilder } from '../src/index'
 import { Prettify } from '../src/types/types'
 import { Json } from '../src/select-query-parser/types'
 import { Database } from './types.override'
-import { Database as DatabaseWithOptions } from './types.override-with-options-postgrest13'
+import { Database as DatabaseWithOptions } from './types.override-with-options-postgrest14'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 
-// table invalid type
+type WithThrowOnError<T> = T extends PostgrestFilterBuilder<
+  infer ClientOptions,
+  infer Schema,
+  infer Row,
+  infer Result,
+  infer RelationName,
+  infer Relationships,
+  infer Method,
+  boolean
+>
+  ? PostgrestFilterBuilder<
+      ClientOptions,
+      Schema,
+      Row,
+      Result,
+      RelationName,
+      Relationships,
+      Method,
+      true
+    >
+  : never
+
+// table and view name type safety
 {
   // @ts-expect-error Argument of type '42' is not assignable to parameter of type
   postgrest.from(42)
   // @ts-expect-error Argument of type '"nonexistent_table"' is not assignable to parameter of type
   postgrest.from('nonexistent_table')
+  // @ts-expect-error Argument of type '"nonexistent_view"' is not assignable to parameter of type
+  postgrest.from('nonexistent_view')
+}
+
+// `.eq()` and `.neq()` reject invalid column name literals
+{
+  // @ts-expect-error Argument of type '"INVALID"' is not assignable to parameter
+  postgrest.from('users').select().eq('INVALID', 'test')
+  // @ts-expect-error Argument of type '"INVALID"' is not assignable to parameter
+  postgrest.from('users').select().neq('INVALID', 'test')
+
+  // Dynamic string variables should still work (falls through to string branch)
+  const col: string = 'username'
+  postgrest.from('users').select().eq(col, 'foo')
+  postgrest.from('users').select().neq(col, 'foo')
 }
 
 // `null` can't be used with `.eq()`
@@ -158,6 +196,20 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   postgrest.from('updatable_view').update({ non_updatable_column: 0 })
 }
 
+// reject excess properties on insert, update, and upsert (#1636)
+{
+  // @ts-expect-error Type 'string' is not assignable to type 'never'.
+  postgrest.from('users').insert({ username: 'foo', nonexistent: 'bad' })
+}
+{
+  // @ts-expect-error Type 'string' is not assignable to type 'never'.
+  postgrest.from('users').update({ username: 'foo', nonexistent: 'bad' })
+}
+{
+  // @ts-expect-error Type 'string' is not assignable to type 'never'.
+  postgrest.from('users').upsert({ username: 'foo', nonexistent: 'bad' })
+}
+
 // spread resource with single column in select query
 {
   const result = await postgrest.from('messages').select('message, ...users(status)').single()
@@ -204,7 +256,9 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   const x = postgrest.from('channels').select()
   const y = x.throwOnError()
   const z = x.setHeader('', '')
-  expectType<typeof y extends typeof x ? true : false>(true)
+  const w = y.eq('id', 1)
+  expectType<TypeEqual<typeof y, WithThrowOnError<typeof x>>>(true)
+  expectType<typeof w extends typeof y ? true : false>(true)
   expectType<typeof z extends typeof x ? true : false>(true)
 }
 
@@ -270,6 +324,61 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
   error
 }
 
+{
+  postgrest
+    .from('messages')
+    .select('id')
+    .eq('id', 1)
+    .single()
+    .throwOnError()
+    .then(({ data, error }) => {
+      expectType<TypeEqual<typeof data, { id: number }>>(true)
+      expectType<TypeEqual<typeof error, null>>(true)
+      return data
+    })
+}
+
+{
+  postgrest
+    .from('messages')
+    .select('id')
+    .eq('id', 1)
+    .maybeSingle()
+    .throwOnError()
+    .then(({ data, error }) => {
+      expectType<TypeEqual<typeof data, { id: number } | null>>(true)
+      expectType<TypeEqual<typeof error, null>>(true)
+      return data
+    })
+}
+
+{
+  postgrest
+    .from('messages')
+    .select('id')
+    .eq('id', 1)
+    .throwOnError()
+    .single()
+    .then(({ data, error }) => {
+      expectType<TypeEqual<typeof data, { id: number }>>(true)
+      expectType<TypeEqual<typeof error, null>>(true)
+      return data
+    })
+}
+
+{
+  postgrest
+    .from('messages')
+    .select('id')
+    .throwOnError()
+    .eq('id', 1)
+    .then(({ data, error }) => {
+      expectType<TypeEqual<typeof data, { id: number }[]>>(true)
+      expectType<TypeEqual<typeof error, null>>(true)
+      return data
+    })
+}
+
 // Json Accessor with custom types overrides
 {
   const result = await postgrest
@@ -316,4 +425,139 @@ const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
       bar: string
     }[]
   >(result.data)
+}
+
+// `.not(col, 'is', null)` narrows nullable column to non-nullable in result (#1360)
+{
+  {
+    type Database = {
+      public: {
+        Tables: {
+          articles: {
+            Row: { id: string; published_at: string | null }
+            Insert: never
+            Update: never
+            Relationships: []
+          }
+        }
+        Views: {}
+        Functions: {}
+        Enums: {}
+        CompositeTypes: {}
+      }
+    }
+
+    const client = new PostgrestClient<Database>(REST_URL)
+    let query = client.from('articles').select('id, published_at')
+
+    const hasPublishedAt = true
+    if (hasPublishedAt) {
+      query = query.not('published_at', 'is', null)
+    }
+
+    const result = await query
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+
+    expectType<{ id: string; published_at: string | null }[]>(result.data)
+  }
+
+  // Basic narrowing: message goes from `string | null` to `string`
+  {
+    const result = await postgrest.from('messages').select('id, message').not('message', 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string }[]>>(true)
+  }
+
+  // Narrowing with .single()
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'is', null)
+      .single()
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string }>>(true)
+  }
+
+  // Narrowing with .maybeSingle()
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'is', null)
+      .maybeSingle()
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string } | null>>(true)
+  }
+
+  // Chaining multiple .not() calls narrows both columns
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message, blurb_message')
+      .not('message', 'is', null)
+      .not('blurb_message', 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    const item = result.data[0]
+    expectType<number>(item.id)
+    expectType<string>(item.message)
+    expectType<string>(item.blurb_message)
+  }
+
+  // Non-nullable column: type stays the same
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, username')
+      .not('username', 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; username: string }[]>>(true)
+  }
+
+  // Other operators do NOT narrow
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'eq', 'hello')
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string | null }[]>>(true)
+  }
+
+  // Dynamic string column: falls through to untyped overload, no narrowing
+  {
+    const col: string = 'message'
+    const result = await postgrest.from('messages').select('id, message').not(col, 'is', null)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string | null }[]>>(true)
+  }
+
+  // Chaining filters after narrowing preserves narrowed type
+  {
+    const result = await postgrest
+      .from('messages')
+      .select('id, message')
+      .not('message', 'is', null)
+      .eq('id', 1)
+    if (result.error) {
+      throw new Error(result.error.message)
+    }
+    expectType<TypeEqual<typeof result.data, { id: number; message: string }[]>>(true)
+  }
 }

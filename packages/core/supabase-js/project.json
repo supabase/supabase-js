@@ -15,6 +15,81 @@
     },
     "test:all": {
       "inputs": ["testing", "^production"]
+    },
+    "test:supabase:setup": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bash scripts/setup-supabase.sh",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "test:supabase:stop": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "bash scripts/cleanup-supabase.sh",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "test:deno:setup": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Deno will cache dependencies on-demand during test runs'",
+        "cwd": "{projectRoot}/test/deno"
+      }
+    },
+    "test:deno:integration": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node run-deno-test.js integration.test.ts",
+        "cwd": "{projectRoot}/test/deno"
+      },
+      "dependsOn": ["test:deno:setup"]
+    },
+    "test:deno:edge-functions": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node run-deno-test.js edge-functions-integration.test.ts",
+        "cwd": "{projectRoot}/test/deno"
+      },
+      "dependsOn": ["test:deno:setup"]
+    },
+    "test:deno:cors-validation": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node run-deno-test.js cors-validation.test.ts",
+        "cwd": "{projectRoot}/test/deno"
+      },
+      "dependsOn": ["test:deno:setup"]
+    },
+    "test:deno:cors-http-methods": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node run-deno-test.js cors-http-methods.test.ts",
+        "cwd": "{projectRoot}/test/deno"
+      },
+      "dependsOn": ["test:deno:setup"]
+    },
+    "test:deno:cors-errors": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node run-deno-test.js cors-errors.test.ts",
+        "cwd": "{projectRoot}/test/deno"
+      },
+      "dependsOn": ["test:deno:setup"]
+    },
+    "test:deno:all": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'All Deno tests complete'",
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": [
+        "test:deno:integration",
+        "test:deno:edge-functions",
+        "test:deno:cors-validation",
+        "test:deno:cors-http-methods",
+        "test:deno:cors-errors"
+      ]
     }
   }
 }

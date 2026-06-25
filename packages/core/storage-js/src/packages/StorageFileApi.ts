@@ -1,6 +1,13 @@
-import { isStorageError, StorageError, StorageUnknownError } from '../lib/errors'
-import { Fetch, get, head, post, put, remove } from '../lib/fetch'
-import { recursiveToCamel, resolveFetch } from '../lib/helpers'
+import {
+  StorageApiError,
+  StorageError,
+  StorageUnknownError,
+  isStorageError,
+} from '../lib/common/errors'
+import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
+import { setHeader } from '../lib/common/headers'
+import { recursiveToCamel } from '../lib/common/helpers'
+import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   FileObject,
   FileOptions,
@@ -42,12 +49,8 @@ type FileBody =
   | URLSearchParams
   | string
 
-export default class StorageFileApi {
-  protected url: string
-  protected headers: { [key: string]: string }
-  protected bucketId?: string
-  protected fetch: Fetch
-  protected shouldThrowOnError = false
+export default class StorageFileApi extends BaseApiClient<StorageError> {
+  protected bucketId: string | undefined
 
   constructor(
     url: string,
@@ -55,18 +58,8 @@ export default class StorageFileApi {
     bucketId?: string,
     fetch?: Fetch
   ) {
-    this.url = url
-    this.headers = headers
+    super(url, headers, fetch, 'storage')
     this.bucketId = bucketId
-    this.fetch = resolveFetch(fetch)
-  }
-
-  /**
-   * Enable throwing errors instead of returning them.
-   */
-  public throwOnError(): this {
-    this.shouldThrowOnError = true
-    return this
   }
 
   /**
@@ -91,7 +84,7 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       let body
       const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
       let headers: Record<string, string> = {
@@ -110,8 +103,11 @@ export default class StorageFileApi {
         body.append('', fileBody)
       } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
         body = fileBody
-        body.append('cacheControl', options.cacheControl as string)
-        if (metadata) {
+        // Only append if not already present
+        if (!body.has('cacheControl')) {
+          body.append('cacheControl', options.cacheControl as string)
+        }
+        if (metadata && !body.has('metadata')) {
           body.append('metadata', this.encodeMetadata(metadata))
         }
       } else {
@@ -122,10 +118,22 @@ export default class StorageFileApi {
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
         }
+
+        // Node.js streams require duplex option for fetch in Node 20+
+        // Check for both web ReadableStream and Node.js streams
+        const isStream =
+          (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream) ||
+          (body && typeof body === 'object' && 'pipe' in body && typeof body.pipe === 'function')
+
+        if (isStream && !options.duplex) {
+          options.duplex = 'half'
+        }
       }
 
       if (fileOptions?.headers) {
-        headers = { ...headers, ...fileOptions.headers }
+        for (const [key, value] of Object.entries(fileOptions.headers)) {
+          headers = setHeader(headers, key, value)
+        }
       }
 
       const cleanPath = this._removeEmptyFolders(path)
@@ -137,27 +145,76 @@ export default class StorageFileApi {
         { headers, ...(options?.duplex ? { duplex: options.duplex } : {}) }
       )
 
-      return {
-        data: { path: cleanPath, id: data.Id, fullPath: data.Key },
-        error: null,
-      }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return { path: cleanPath, id: data.Id, fullPath: data.Key }
+    })
   }
 
   /**
    * Uploads a file to an existing bucket.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
+   * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
+   * @returns Promise with response containing file path, id, and fullPath or error
+   *
+   * @example Upload file
+   * ```js
+   * const avatarFile = event.target.files[0]
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .upload('public/avatar1.png', avatarFile, {
+   *     cacheControl: '3600',
+   *     upsert: false
+   *   })
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "path": "public/avatar1.png",
+   *     "fullPath": "avatars/public/avatar1.png"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Upload file using `ArrayBuffer` from base64 file data
+   * ```js
+   * import { decode } from 'base64-arraybuffer'
+   *
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .upload('public/avatar1.png', decode('base64FileData'), {
+   *     contentType: 'image/png'
+   *   })
+   * ```
+   *
+   * @example Handling errors
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .upload('public/avatar1.png', avatarFile)
+   *
+   * if (error) {
+   *   // Log the full error so fields like `statusCode` and `error` (the
+   *   // Storage error name, e.g. "Duplicate") aren't hidden behind `error.message`.
+   *   console.error(error)
+   *   return
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: only `insert` when you are uploading new files and `select`, `insert` and `update` when you are upserting files
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
+   * - For React Native, using either `Blob`, `File` or `FormData` does not work as intended. Upload file using `ArrayBuffer` from base64 file data instead, see example below.
    */
   async upload(
     path: string,
@@ -178,9 +235,41 @@ export default class StorageFileApi {
 
   /**
    * Upload a file with a token generated from `createSignedUploadUrl`.
+   *
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param token The token generated from `createSignedUploadUrl`
    * @param fileBody The body of the file to be stored in the bucket.
+   * @param fileOptions HTTP headers (cacheControl, contentType, etc.).
+   * **Note:** The `upsert` option has no effect here. To enable upsert behavior,
+   * pass `{ upsert: true }` when calling `createSignedUploadUrl()` instead.
+   * @returns Promise with response containing file path and fullPath or error
+   *
+   * @example Upload to a signed URL
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .uploadToSignedUrl('folder/cat.jpg', 'token-from-createSignedUploadUrl', file)
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "path": "folder/cat.jpg",
+   *     "fullPath": "avatars/folder/cat.jpg"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async uploadToSignedUrl(
     path: string,
@@ -194,51 +283,99 @@ export default class StorageFileApi {
     const url = new URL(this.url + `/object/upload/sign/${_path}`)
     url.searchParams.set('token', token)
 
-    try {
+    return this.handleOperation(async () => {
       let body
-      const options = { upsert: DEFAULT_FILE_OPTIONS.upsert, ...fileOptions }
-      const headers: Record<string, string> = {
+      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      let headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
       }
 
+      const metadata = options.metadata
+
       if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
         body = new FormData()
         body.append('cacheControl', options.cacheControl as string)
+        if (metadata) {
+          body.append('metadata', this.encodeMetadata(metadata))
+        }
         body.append('', fileBody)
       } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
         body = fileBody
-        body.append('cacheControl', options.cacheControl as string)
+        if (!body.has('cacheControl')) {
+          body.append('cacheControl', options.cacheControl as string)
+        }
+        if (metadata && !body.has('metadata')) {
+          body.append('metadata', this.encodeMetadata(metadata))
+        }
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+        if (metadata) {
+          headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
+        }
+
+        const isStream =
+          (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream) ||
+          (body && typeof body === 'object' && 'pipe' in body && typeof body.pipe === 'function')
+
+        if (isStream && !options.duplex) {
+          options.duplex = 'half'
+        }
       }
 
-      const data = await put(this.fetch, url.toString(), body as object, { headers })
-
-      return {
-        data: { path: cleanPath, fullPath: data.Key },
-        error: null,
-      }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
+      if (fileOptions?.headers) {
+        for (const [key, value] of Object.entries(fileOptions.headers)) {
+          headers = setHeader(headers, key, value)
+        }
       }
 
-      throw error
-    }
+      const data = await put(this.fetch, url.toString(), body as object, {
+        headers,
+        ...(options?.duplex ? { duplex: options.duplex } : {}),
+      })
+
+      return { path: cleanPath, fullPath: data.Key }
+    })
   }
 
   /**
    * Creates a signed upload URL.
    * Signed upload URLs can be used to upload files to the bucket without further authentication.
    * They are valid for 2 hours.
+   *
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the current file name. For example `folder/image.png`.
    * @param options.upsert If set to true, allows the file to be overwritten if it already exists.
+   * @returns Promise with response containing signed upload URL, token, and path or error
+   *
+   * @example Create Signed Upload URL
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .createSignedUploadUrl('folder/cat.jpg')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "signedUrl": "https://example.supabase.co/storage/v1/object/upload/sign/avatars/folder/cat.jpg?token=<TOKEN>",
+   *     "path": "folder/cat.jpg",
+   *     "token": "<TOKEN>"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `insert`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createSignedUploadUrl(
     path: string,
@@ -253,7 +390,7 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       let _path = this._getFinalPath(path)
 
       const headers = { ...this.headers }
@@ -277,24 +414,64 @@ export default class StorageFileApi {
         throw new StorageError('No token returned by API')
       }
 
-      return { data: { signedUrl: url.toString(), path, token }, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return { signedUrl: url.toString(), path, token }
+    })
   }
 
   /**
    * Replaces an existing file at the specified path with a new one.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to update.
    * @param fileBody The body of the file to be stored in the bucket.
+   * @param fileOptions Optional file upload options including cacheControl, contentType, and metadata.
+   * **Note:** The `upsert` option has no effect here. `update()` always replaces the
+   * file at the given path, so the `x-upsert` header is not sent. To control upsert
+   * behavior, use `upload()` instead.
+   * @returns Promise with response containing file path, id, and fullPath or error
+   *
+   * @example Update file
+   * ```js
+   * const avatarFile = event.target.files[0]
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .update('public/avatar1.png', avatarFile, {
+   *     cacheControl: '3600'
+   *   })
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "path": "public/avatar1.png",
+   *     "fullPath": "avatars/public/avatar1.png"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Update file using `ArrayBuffer` from base64 file data
+   * ```js
+   * import {decode} from 'base64-arraybuffer'
+   *
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .update('public/avatar1.png', decode('base64FileData'), {
+   *     contentType: 'image/png'
+   *   })
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `update` and `select`
+   * - `update()` always replaces the file at the given path regardless of the `upsert` option.
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
+   * - For React Native, using either `Blob`, `File` or `FormData` does not work as intended. Update file using `ArrayBuffer` from base64 file data instead, see example below.
    */
   async update(
     path: string,
@@ -326,9 +503,36 @@ export default class StorageFileApi {
   /**
    * Moves an existing file to a new path in the same bucket.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
    * @param options The destination options.
+   * @returns Promise with response containing success message or error
+   *
+   * @example Move file
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .move('public/avatar1.png', 'private/avatar2.png')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "message": "Successfully moved"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `update` and `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async move(
     fromPath: string,
@@ -344,8 +548,8 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await post(
+    return this.handleOperation(async () => {
+      return await post(
         this.fetch,
         `${this.url}/object/move`,
         {
@@ -356,25 +560,42 @@ export default class StorageFileApi {
         },
         { headers: this.headers }
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
    * Copies an existing file to a new path in the same bucket.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    * @param options The destination options.
+   * @returns Promise with response containing copied file path or error
+   *
+   * @example Copy file
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .copy('public/avatar1.png', 'private/avatar2.png')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "path": "avatars/private/avatar2.png"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `insert` and `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async copy(
     fromPath: string,
@@ -390,7 +611,7 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       const data = await post(
         this.fetch,
         `${this.url}/object/copy`,
@@ -402,31 +623,77 @@ export default class StorageFileApi {
         },
         { headers: this.headers }
       )
-      return { data: { path: data.Key }, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return { path: data.Key }
+    })
   }
 
   /**
    * Creates a signed URL. Use a signed URL to share a file for a fixed amount of time.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The file path, including the current file name. For example `folder/image.png`.
    * @param expiresIn The number of seconds until the signed URL expires. For example, `60` for a URL which is valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @returns Promise with response containing signed URL or error
+   *
+   * @example Create Signed URL
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .createSignedUrl('folder/avatar1.png', 60)
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "signedUrl": "https://example.supabase.co/storage/v1/object/sign/avatars/folder/avatar1.png?token=<TOKEN>"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Create a signed URL for an asset with transformations
+   * ```js
+   * const { data } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .createSignedUrl('folder/avatar1.png', 60, {
+   *     transform: {
+   *       width: 100,
+   *       height: 100,
+   *     }
+   *   })
+   * ```
+   *
+   * @example Create a signed URL which triggers the download of the asset
+   * ```js
+   * const { data } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .createSignedUrl('folder/avatar1.png', 60, {
+   *     download: true,
+   *   })
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createSignedUrl(
     path: string,
     expiresIn: number,
-    options?: { download?: string | boolean; transform?: TransformOptions }
+    options?: {
+      download?: string | boolean
+      transform?: TransformOptions
+      cacheNonce?: string
+    }
   ): Promise<
     | {
         data: { signedUrl: string }
@@ -437,47 +704,90 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       let _path = this._getFinalPath(path)
+
+      const hasTransform =
+        typeof options?.transform === 'object' &&
+        options.transform !== null &&
+        Object.keys(options.transform).length > 0
 
       let data = await post(
         this.fetch,
         `${this.url}/object/sign/${_path}`,
-        { expiresIn, ...(options?.transform ? { transform: options.transform } : {}) },
+        { expiresIn, ...(hasTransform ? { transform: options!.transform } : {}) },
         { headers: this.headers }
       )
-      const downloadQueryParam = options?.download
-        ? `&download=${options.download === true ? '' : options.download}`
-        : ''
-      const signedUrl = encodeURI(`${this.url}${data.signedURL}${downloadQueryParam}`)
-      data = { signedUrl }
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
 
-      throw error
-    }
+      const query = new URLSearchParams()
+      if (options?.download)
+        query.set('download', options.download === true ? '' : options.download)
+      if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+      const queryString = query.toString()
+
+      // `data.signedURL` contains a `token` query parameter, so append extra params with `&`
+      // only when we actually have something to add.
+      const signedUrl = encodeURI(
+        `${this.url}${data.signedURL}${queryString ? `&${queryString}` : ''}`
+      )
+
+      return { signedUrl }
+    })
   }
 
   /**
    * Creates multiple signed URLs. Use a signed URL to share a file for a fixed amount of time.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param paths The file paths to be downloaded, including the current file names. For example `['folder/image.png', 'folder2/image2.png']`.
    * @param expiresIn The number of seconds until the signed URLs expire. For example, `60` for URLs which are valid for one minute.
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @returns Promise with response containing array of objects with signedUrl, path, and error or error
+   *
+   * @example Create Signed URLs
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .createSignedUrls(['folder/avatar1.png', 'folder/avatar2.png'], 60)
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "error": null,
+   *       "path": "folder/avatar1.png",
+   *       "signedURL": "/object/sign/avatars/folder/avatar1.png?token=<TOKEN>",
+   *       "signedUrl": "https://example.supabase.co/storage/v1/object/sign/avatars/folder/avatar1.png?token=<TOKEN>"
+   *     },
+   *     {
+   *       "error": null,
+   *       "path": "folder/avatar2.png",
+   *       "signedURL": "/object/sign/avatars/folder/avatar2.png?token=<TOKEN>",
+   *       "signedUrl": "https://example.supabase.co/storage/v1/object/sign/avatars/folder/avatar2.png?token=<TOKEN>"
+   *     }
+   *   ],
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createSignedUrls(
     paths: string[],
     expiresIn: number,
-    options?: { download: string | boolean }
+    options?: { download?: string | boolean; cacheNonce?: string }
   ): Promise<
     | {
-        data: { error: string | null; path: string | null; signedUrl: string }[]
+        data: { error: string | null; path: string | null; signedUrl: string | null }[]
         error: null
       }
     | {
@@ -485,7 +795,7 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       const data = await post(
         this.fetch,
         `${this.url}/object/sign/${this.bucketId}`,
@@ -493,56 +803,142 @@ export default class StorageFileApi {
         { headers: this.headers }
       )
 
-      const downloadQueryParam = options?.download
-        ? `&download=${options.download === true ? '' : options.download}`
-        : ''
-      return {
-        data: data.map((datum: { signedURL: string }) => ({
-          ...datum,
-          signedUrl: datum.signedURL
-            ? encodeURI(`${this.url}${datum.signedURL}${downloadQueryParam}`)
-            : null,
-        })),
-        error: null,
-      }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
+      const query = new URLSearchParams()
 
-      throw error
-    }
+      if (options?.download)
+        query.set('download', options.download === true ? '' : options.download)
+      if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+
+      const queryString = query.toString()
+
+      return data.map((datum: { signedURL: string }) => ({
+        ...datum,
+        signedUrl: datum.signedURL
+          ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
+          : null,
+      }))
+    })
   }
 
   /**
    * Downloads a file from a private bucket. For public buckets, make a request to the URL returned from `getPublicUrl` instead.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
+   * @returns BlobDownloadBuilder instance for downloading the file
+   *
+   * @example Download file
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .download('folder/avatar1.png')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": <BLOB>,
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Download file with transformations
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .download('folder/avatar1.png', {
+   *     transform: {
+   *       width: 100,
+   *       height: 100,
+   *       quality: 80
+   *     }
+   *   })
+   * ```
+   *
+   * @example Download with cache control (useful in Edge Functions)
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .download('folder/avatar1.png', {}, { cache: 'no-store' })
+   * ```
+   *
+   * @example Download with abort signal
+   * ```js
+   * const controller = new AbortController()
+   * setTimeout(() => controller.abort(), 5000)
+   *
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .download('folder/avatar1.png', {}, { signal: controller.signal })
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
-  download<Options extends { transform?: TransformOptions }>(
+  download<Options extends { transform?: TransformOptions; cacheNonce?: string }>(
     path: string,
-    options?: Options
+    options?: Options,
+    parameters?: FetchParameters
   ): BlobDownloadBuilder {
-    const wantsTransformation = typeof options?.transform !== 'undefined'
+    const wantsTransformation =
+      typeof options?.transform === 'object' &&
+      options.transform !== null &&
+      Object.keys(options.transform).length > 0
     const renderPath = wantsTransformation ? 'render/image/authenticated' : 'object'
-    const transformationQuery = this.transformOptsToQueryString(options?.transform || {})
-    const queryString = transformationQuery ? `?${transformationQuery}` : ''
+
+    const query = new URLSearchParams()
+    if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
+    if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+    const queryString = query.toString()
+
     const _path = this._getFinalPath(path)
     const downloadFn = () =>
-      get(this.fetch, `${this.url}/${renderPath}/${_path}${queryString}`, {
-        headers: this.headers,
-        noResolveJson: true,
-      })
+      get(
+        this.fetch,
+        `${this.url}/${renderPath}/${_path}${queryString ? `?${queryString}` : ''}`,
+        {
+          headers: this.headers,
+          noResolveJson: true,
+        },
+        parameters
+      )
     return new BlobDownloadBuilder(downloadFn, this.shouldThrowOnError)
   }
 
   /**
    * Retrieves the details of an existing file.
-   * @param path
+   *
+   * Returns detailed file metadata including size, content type, and timestamps.
+   * Note: The API returns `last_modified` field, not `updated_at`.
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param path The file path, including the file name. For example `folder/image.png`.
+   * @returns Promise with response containing file metadata or error
+   *
+   * @example Get file info
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .info('folder/avatar1.png')
+   *
+   * if (data) {
+   *   console.log('Last modified:', data.lastModified)
+   *   console.log('Size:', data.size)
+   * }
+   * ```
    */
   async info(path: string): Promise<
     | {
@@ -556,27 +952,30 @@ export default class StorageFileApi {
   > {
     const _path = this._getFinalPath(path)
 
-    try {
+    return this.handleOperation(async () => {
       const data = await get(this.fetch, `${this.url}/object/info/${_path}`, {
         headers: this.headers,
       })
 
-      return { data: recursiveToCamel(data) as Camelize<FileObjectV2>, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+      return recursiveToCamel(data) as Camelize<FileObjectV2>
+    })
   }
 
   /**
    * Checks the existence of a file.
-   * @param path
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param path The file path, including the file name. For example `folder/image.png`.
+   * @returns Promise with response containing boolean indicating file existence or error
+   *
+   * @example Check file existence
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .exists('folder/avatar1.png')
+   * ```
    */
   async exists(path: string): Promise<
     | {
@@ -600,10 +999,16 @@ export default class StorageFileApi {
       if (this.shouldThrowOnError) {
         throw error
       }
-      if (isStorageError(error) && error instanceof StorageUnknownError) {
-        const originalError = error.originalError as unknown as { status: number }
+      if (isStorageError(error)) {
+        // HEAD requests produce StorageApiError (via handleError) or StorageUnknownError (legacy)
+        const status =
+          error instanceof StorageApiError
+            ? error.status
+            : error instanceof StorageUnknownError
+              ? (error.originalError as { status: number })?.status
+              : undefined
 
-        if ([400, 404].includes(originalError?.status)) {
+        if (status !== undefined && [400, 404].includes(status)) {
           return { data: false, error }
         }
       }
@@ -616,47 +1021,124 @@ export default class StorageFileApi {
    * A simple convenience function to get the URL for an asset in a public bucket. If you do not want to use this function, you can construct the public URL by concatenating the bucket URL with the path to the asset.
    * This function does not verify if the bucket is public. If a public URL is created for a bucket which is not public, you will not be able to download the asset.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The path and name of the file to generate the public URL for. For example `folder/image.png`.
    * @param options.download Triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
+   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @returns Object with public URL
+   *
+   * @example Returns the URL for an asset in a public bucket
+   * ```js
+   * const { data } = supabase
+   *   .storage
+   *   .from('public-bucket')
+   *   .getPublicUrl('folder/avatar1.png')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "publicUrl": "https://example.supabase.co/storage/v1/object/public/public-bucket/folder/avatar1.png"
+   *   }
+   * }
+   * ```
+   *
+   * @example Returns the URL for an asset in a public bucket with transformations
+   * ```js
+   * const { data } = supabase
+   *   .storage
+   *   .from('public-bucket')
+   *   .getPublicUrl('folder/avatar1.png', {
+   *     transform: {
+   *       width: 100,
+   *       height: 100,
+   *     }
+   *   })
+   * ```
+   *
+   * @example Returns the URL which triggers the download of an asset in a public bucket
+   * ```js
+   * const { data } = supabase
+   *   .storage
+   *   .from('public-bucket')
+   *   .getPublicUrl('folder/avatar1.png', {
+   *     download: true,
+   *   })
+   * ```
+   *
+   * @remarks
+   * - The bucket needs to be set to public, either via [updateBucket()](/docs/reference/javascript/storage-updatebucket) or by going to Storage on [supabase.com/dashboard](https://supabase.com/dashboard), clicking the overflow menu on a bucket and choosing "Make public"
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   getPublicUrl(
     path: string,
-    options?: { download?: string | boolean; transform?: TransformOptions }
+    options?: {
+      download?: string | boolean
+      transform?: TransformOptions
+      cacheNonce?: string
+    }
   ): { data: { publicUrl: string } } {
     const _path = this._getFinalPath(path)
-    const _queryString = []
 
-    const downloadQueryParam = options?.download
-      ? `download=${options.download === true ? '' : options.download}`
-      : ''
+    const query = new URLSearchParams()
+    if (options?.download) query.set('download', options.download === true ? '' : options.download)
+    if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
+    if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+    const queryString = query.toString()
 
-    if (downloadQueryParam !== '') {
-      _queryString.push(downloadQueryParam)
-    }
-
-    const wantsTransformation = typeof options?.transform !== 'undefined'
+    const wantsTransformation =
+      typeof options?.transform === 'object' &&
+      options.transform !== null &&
+      Object.keys(options.transform).length > 0
     const renderPath = wantsTransformation ? 'render/image' : 'object'
-    const transformationQuery = this.transformOptsToQueryString(options?.transform || {})
-
-    if (transformationQuery !== '') {
-      _queryString.push(transformationQuery)
-    }
-
-    let queryString = _queryString.join('&')
-    if (queryString !== '') {
-      queryString = `?${queryString}`
-    }
 
     return {
-      data: { publicUrl: encodeURI(`${this.url}/${renderPath}/public/${_path}${queryString}`) },
+      data: {
+        publicUrl:
+          encodeURI(`${this.url}/${renderPath}/public/${_path}`) +
+          (queryString ? `?${queryString}` : ''),
+      },
     }
   }
 
   /**
    * Deletes files within the same bucket
    *
+   * Returns an array of FileObject entries for the deleted files. Note that deprecated
+   * fields like `bucket_id` may or may not be present in the response - do not rely on them.
+   *
+   * @category Storage
+   * @subcategory File Buckets
    * @param paths An array of files to delete, including the path and file name. For example [`'folder/image.png'`].
+   * @returns Promise with response containing array of deleted file objects or error
+   *
+   * @example Delete file
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .remove(['folder/avatar1.png'])
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": [],
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `delete` and `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async remove(paths: string[]): Promise<
     | {
@@ -668,24 +1150,14 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await remove(
+    return this.handleOperation(async () => {
+      return await remove(
         this.fetch,
         `${this.url}/object/${this.bucketId}`,
         { prefixes: paths },
         { headers: this.headers }
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
@@ -753,8 +1225,85 @@ export default class StorageFileApi {
 
   /**
    * Lists all the files and folders within a path of the bucket.
+   *
+   * **Important:** For folder entries, fields like `id`, `updated_at`, `created_at`,
+   * `last_accessed_at`, and `metadata` will be `null`. Only files have these fields populated.
+   * Additionally, deprecated fields like `bucket_id`, `owner`, and `buckets` are NOT returned
+   * by this method.
+   *
+   * @category Storage
+   * @subcategory File Buckets
    * @param path The folder path.
    * @param options Search options including limit (defaults to 100), offset, sortBy, and search
+   * @param parameters Optional fetch parameters including signal for cancellation
+   * @returns Promise with response containing array of files/folders or error
+   *
+   * @example List files in a bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .list('folder', {
+   *     limit: 100,
+   *     offset: 0,
+   *     sortBy: { column: 'name', order: 'asc' },
+   *   })
+   *
+   * // Handle files vs folders
+   * data?.forEach(item => {
+   *   if (item.id !== null) {
+   *     // It's a file
+   *     console.log('File:', item.name, 'Size:', item.metadata?.size)
+   *   } else {
+   *     // It's a folder
+   *     console.log('Folder:', item.name)
+   *   }
+   * })
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "avatar1.png",
+   *       "id": "e668cf7f-821b-4a2f-9dce-7dfa5dd1cfd2",
+   *       "updated_at": "2024-05-22T23:06:05.580Z",
+   *       "created_at": "2024-05-22T23:04:34.443Z",
+   *       "last_accessed_at": "2024-05-22T23:04:34.443Z",
+   *       "metadata": {
+   *         "eTag": "\"c5e8c553235d9af30ef4f6e280790b92\"",
+   *         "size": 32175,
+   *         "mimetype": "image/png",
+   *         "cacheControl": "max-age=3600",
+   *         "lastModified": "2024-05-22T23:06:05.574Z",
+   *         "contentLength": 32175,
+   *         "httpStatusCode": 200
+   *       }
+   *     }
+   *   ],
+   *   "error": null
+   * }
+   * ```
+   *
+   * @example Search files in a bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .list('folder', {
+   *     limit: 100,
+   *     offset: 0,
+   *     sortBy: { column: 'name', order: 'asc' },
+   *     search: 'jon'
+   *   })
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: none
+   *   - `objects` table permissions: `select`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async list(
     path?: string,
@@ -770,32 +1319,69 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
-      const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, prefix: path || '' }
-      const data = await post(
+    return this.handleOperation(async () => {
+      // Deep-merge `sortBy` so overriding only one of its keys (e.g. `column`) keeps the
+      // default for the other (e.g. `order`), matching how the top-level defaults behave.
+      const sortBy = options?.sortBy
+        ? { ...DEFAULT_SEARCH_OPTIONS.sortBy, ...options.sortBy }
+        : DEFAULT_SEARCH_OPTIONS.sortBy
+      const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, sortBy, prefix: path || '' }
+      return await post(
         this.fetch,
         `${this.url}/object/list/${this.bucketId}`,
         body,
         { headers: this.headers },
         parameters
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
+   * Lists all the files and folders within a bucket using the V2 API with pagination support.
+   *
+   * **Important:** Folder entries in the `folders` array only contain `name` and optionally `key` —
+   * they have no `id`, timestamps, or `metadata` fields. Full file metadata is only available
+   * on entries in the `objects` array.
+   *
    * @experimental this method signature might change in the future
-   * @param options search options
-   * @param parameters
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param options Search options including prefix, cursor for pagination, limit, with_delimiter
+   * @param parameters Optional fetch parameters including signal for cancellation
+   * @returns Promise with response containing folders/objects arrays with pagination info or error
+   *
+   * @example List files with pagination
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .listV2({
+   *     prefix: 'folder/',
+   *     limit: 100,
+   *   })
+   *
+   * // Handle pagination
+   * if (data?.hasNext) {
+   *   const nextPage = await supabase
+   *     .storage
+   *     .from('avatars')
+   *     .listV2({
+   *       prefix: 'folder/',
+   *       cursor: data.nextCursor,
+   *     })
+   * }
+   *
+   * // Handle files vs folders
+   * data?.objects.forEach(file => {
+   *   if (file.id !== null) {
+   *     console.log('File:', file.name, 'Size:', file.metadata?.size)
+   *   }
+   * })
+   * data?.folders.forEach(folder => {
+   *   console.log('Folder:', folder.name)
+   * })
+   * ```
    */
   async listV2(
     options?: SearchV2Options,
@@ -810,26 +1396,16 @@ export default class StorageFileApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       const body = { ...options }
-      const data = await post(
+      return await post(
         this.fetch,
         `${this.url}/object/list-v2/${this.bucketId}`,
         body,
         { headers: this.headers },
         parameters
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   protected encodeMetadata(metadata: Record<string, any>) {
@@ -851,28 +1427,17 @@ export default class StorageFileApi {
     return path.replace(/^\/|\/$/g, '').replace(/\/+/g, '/')
   }
 
-  private transformOptsToQueryString(transform: TransformOptions) {
-    const params = []
-    if (transform.width) {
-      params.push(`width=${transform.width}`)
-    }
+  /** Modifies the `query`, appending values the from `transform` */
+  private applyTransformOptsToQuery(
+    query: URLSearchParams,
+    transform: TransformOptions
+  ): URLSearchParams {
+    if (transform.width) query.set('width', transform.width.toString())
+    if (transform.height) query.set('height', transform.height.toString())
+    if (transform.resize) query.set('resize', transform.resize)
+    if (transform.format) query.set('format', transform.format)
+    if (transform.quality) query.set('quality', transform.quality.toString())
 
-    if (transform.height) {
-      params.push(`height=${transform.height}`)
-    }
-
-    if (transform.resize) {
-      params.push(`resize=${transform.resize}`)
-    }
-
-    if (transform.format) {
-      params.push(`format=${transform.format}`)
-    }
-
-    if (transform.quality) {
-      params.push(`quality=${transform.quality}`)
-    }
-
-    return params.join('&')
+    return query
   }
 }

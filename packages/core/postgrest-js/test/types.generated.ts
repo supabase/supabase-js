@@ -275,6 +275,70 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_type: string | null
+          id: number
+          days_since_event: number | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
+      events_2024: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_type: string | null
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
+      events_2025: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_type: string | null
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
       hotel: {
         Row: {
           id: number
@@ -488,6 +552,25 @@ export type Database = {
         }
         Relationships: []
       }
+      users_audit: {
+        Row: {
+          created_at: string | null
+          id: number
+          previous_value: number | null
+          created_ago: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          previous_value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          previous_value?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       active_users: {
@@ -589,6 +672,18 @@ export type Database = {
           error: true
         } & 'the function public.blurb_message with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
       }
+      created_ago: {
+        Args: { '': Database['public']['Tables']['users_audit']['Row'] }
+        Returns: {
+          error: true
+        } & 'the function public.created_ago with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
+      }
+      days_since_event: {
+        Args: { '': Database['public']['Tables']['events']['Row'] }
+        Returns: {
+          error: true
+        } & 'the function public.days_since_event with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
+      }
       function_returning_row: {
         Args: never
         Returns: {
@@ -618,6 +713,25 @@ export type Database = {
           from: '*'
           to: 'users'
           isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      scalar_computed_count: {
+        Args: { '': Database['public']['Tables']['users']['Row'] }
+        Returns: number
+        SetofOptions: {
+          from: 'users'
+          to: ''
+          isSetofReturn: false
+          isNotNullable: true
+        }
+      }
+      scalar_computed_ids: {
+        Args: { '': Database['public']['Tables']['users']['Row'] }
+        Returns: string[]
+        SetofOptions: {
+          from: 'users'
+          to: ''
           isSetofReturn: true
         }
       }
@@ -691,22 +805,6 @@ export type Database = {
       }
       get_messages:
         | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
-            Returns: {
-              channel_id: number
-              data: Json | null
-              id: number
-              message: string | null
-              username: string
-            }[]
-            SetofOptions: {
-              from: 'users'
-              to: 'messages'
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
-        | {
             Args: {
               channel_row: Database['public']['Tables']['channels']['Row']
             }
@@ -719,6 +817,22 @@ export type Database = {
             }[]
             SetofOptions: {
               from: 'channels'
+              to: 'messages'
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
+        | {
+            Args: { user_row: Database['public']['Tables']['users']['Row'] }
+            Returns: {
+              channel_id: number
+              data: Json | null
+              id: number
+              message: string | null
+              username: string
+            }[]
+            SetofOptions: {
+              from: 'users'
               to: 'messages'
               isOneToOne: false
               isSetofReturn: true
@@ -822,22 +936,6 @@ export type Database = {
       }
       get_user_recent_messages:
         | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
-            Returns: {
-              channel_id: number | null
-              data: Json | null
-              id: number | null
-              message: string | null
-              username: string | null
-            }[]
-            SetofOptions: {
-              from: 'users'
-              to: 'recent_messages'
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
-        | {
             Args: {
               active_user_row: Database['public']['Views']['active_users']['Row']
             }
@@ -850,6 +948,22 @@ export type Database = {
             }[]
             SetofOptions: {
               from: 'active_users'
+              to: 'recent_messages'
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
+        | {
+            Args: { user_row: Database['public']['Tables']['users']['Row'] }
+            Returns: {
+              channel_id: number | null
+              data: Json | null
+              id: number | null
+              message: string | null
+              username: string | null
+            }[]
+            SetofOptions: {
+              from: 'users'
               to: 'recent_messages'
               isOneToOne: false
               isSetofReturn: true
@@ -902,8 +1016,25 @@ export type Database = {
         Returns: number
       }
       postgrest_resolvable_with_override_function:
+        | { Args: never; Returns: undefined }
         | { Args: { a: string }; Returns: number }
         | { Args: { b: number }; Returns: string }
+        | {
+            Args: { cid: number; search?: string }
+            Returns: {
+              channel_id: number
+              data: Json | null
+              id: number
+              message: string | null
+              username: string
+            }[]
+            SetofOptions: {
+              from: '*'
+              to: 'messages'
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
         | {
             Args: { profile_id: number }
             Returns: {
@@ -933,37 +1064,20 @@ export type Database = {
               isSetofReturn: true
             }
           }
-        | {
-            Args: { cid: number; search?: string }
-            Returns: {
-              channel_id: number
-              data: Json | null
-              id: number
-              message: string | null
-              username: string
-            }[]
-            SetofOptions: {
-              from: '*'
-              to: 'messages'
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
-        | { Args: never; Returns: undefined }
       postgrest_unresolvable_function:
-        | {
-            Args: { a: string }
-            Returns: {
-              error: true
-            } & 'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
-          }
+        | { Args: never; Returns: undefined }
         | {
             Args: { a: number }
             Returns: {
               error: true
             } & 'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
           }
-        | { Args: never; Returns: undefined }
+        | {
+            Args: { a: string }
+            Returns: {
+              error: true
+            } & 'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
+          }
       set_users_offline: {
         Args: { name_param: string }
         Returns: {

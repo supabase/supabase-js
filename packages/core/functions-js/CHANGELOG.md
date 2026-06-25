@@ -1,3 +1,283 @@
+## 2.108.2 (2026-06-15)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.108.0 (2026-06-08)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.107.0 (2026-06-02)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.106.2 (2026-05-25)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.106.1 (2026-05-20)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.106.0 (2026-05-18)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.105.4 (2026-05-08)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.105.2 (2026-05-04)
+
+### 🩹 Fixes
+
+- **misc:** widen enum-like unions with (string & {}) for forward compat ([#2303](https://github.com/supabase/supabase-js/pull/2303))
+
+## 2.105.1 (2026-04-28)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.105.0 (2026-04-27)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.104.1 (2026-04-23)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.104.0 (2026-04-20)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.103.3 (2026-04-16)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.103.2 (2026-04-15)
+
+### 🩹 Fixes
+
+- **misc:** add explicit return types to toJSON methods for JSR compat ([#2252](https://github.com/supabase/supabase-js/pull/2252))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.103.1 (2026-04-15)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.103.0 (2026-04-09)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.102.1 (2026-04-07)
+
+### 🩹 Fixes
+
+- **functions:** add toJSON to FunctionsError for correct JSON serialization ([#2226](https://github.com/supabase/supabase-js/pull/2226))
+
+### ❤️ Thank You
+
+- oniani1
+
+## 2.102.0 (2026-04-07)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.101.1 (2026-03-31)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.101.0 (2026-03-30)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.100.1 (2026-03-26)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.100.0 (2026-03-23)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.99.2 (2026-03-16)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.99.1 (2026-03-11)
+
+### 🩹 Fixes
+
+- **functions:** add RateLimitError in `Deno.errors` namespace ([#2160](https://github.com/supabase/supabase-js/pull/2160))
+
+### ❤️ Thank You
+
+- 냥냐챠 @nyannyacha
+
+## 2.99.0 (2026-03-09)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.98.0 (2026-02-26)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.97.0 (2026-02-18)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.96.0 (2026-02-17)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.95.3 (2026-02-06)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.95.0 (2026-02-05)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.94.1 (2026-02-04)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.94.0 (2026-02-03)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.93.3 (2026-01-29)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.93.2 (2026-01-27)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.93.1 (2026-01-26)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.93.0 (2026-01-26)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.91.1 (2026-01-23)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.91.0 (2026-01-20)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.90.1 (2026-01-08)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.90.0 (2026-01-07)
+
+### 🩹 Fixes
+
+- **functions:** auto-stringify object body when custom Content-Type header is provided ([#1988](https://github.com/supabase/supabase-js/pull/1988))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.89.0 (2025-12-18)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.88.0 (2025-12-16)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.87.3 (2025-12-15)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.87.2 (2025-12-15)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.87.1 (2025-12-09)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.87.0 (2025-12-08)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.86.2 (2025-12-04)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.86.1 (2025-12-04)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.86.0 (2025-11-26)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.85.0 (2025-11-26)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.84.0 (2025-11-20)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.83.0 (2025-11-18)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.82.0 (2025-11-18)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.81.1 (2025-11-11)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.81.0 (2025-11-10)
+
+### 🩹 Fixes
+
+- **functions:** add configurable timeout and normalize abort/timeout errors as FunctionsFetchError ([#1837](https://github.com/supabase/supabase-js/pull/1837))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.80.0 (2025-11-06)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.79.0 (2025-11-04)
+
+### 🚀 Features
+
+- **repo:** remove node-fetch dependency, require Node.js 20+ ([#1830](https://github.com/supabase/supabase-js/pull/1830))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.78.0 (2025-10-30)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## v2.77.0 (2025-10-29)
+
+### 🩹 Fixes
+
+- **repo:** add missing tslib dependency to core packages ([#1789](https://github.com/supabase/supabase-js/pull/1789))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.76.1 (2025-10-21)
 
 ### 🩹 Fixes

@@ -1,4 +1,4 @@
-import { AuthClient } from '@supabase/auth-js'
+import { GoTrueClientOptions } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
 import type { StorageClientOptions } from '@supabase/storage-js'
@@ -21,11 +21,77 @@ export type {
   GenericFunction,
 }
 
-type AuthClientOptions = ConstructorParameters<typeof AuthClient>[0]
-
-export interface SupabaseAuthClientOptions extends AuthClientOptions {}
+export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
 export type Fetch = typeof fetch
+
+/**
+ * Configuration options for trace context propagation.
+ *
+ * Enables distributed tracing across Supabase services using W3C Trace Context
+ * and OpenTelemetry standards. When enabled, the SDK automatically attaches
+ * trace context headers (`traceparent`, `tracestate`, `baggage`) to outgoing
+ * requests to Supabase domains. The resulting `trace_id` appears in API
+ * Gateway and Edge Function logs, so logs forwarded through Log Drains can
+ * be correlated back to the originating client-side span.
+ *
+ * Requires `@opentelemetry/api` to be installed in the consuming application.
+ * If it is not installed, or there is no active context at request time,
+ * propagation silently no-ops.
+ *
+ * @example Enable with defaults
+ * ```ts
+ * const supabase = createClient(url, key, {
+ *   tracePropagation: { enabled: true },
+ * })
+ * ```
+ *
+ * @see https://www.w3.org/TR/trace-context/
+ * @see https://opentelemetry.io/docs/concepts/context-propagation/
+ * @see https://supabase.com/docs/guides/telemetry/client-side-tracing
+ */
+export interface TracePropagationOptions {
+  /**
+   * Enable trace propagation. Disabled by default.
+   *
+   * When enabled, automatically detects and propagates active trace context
+   * from the OpenTelemetry API to outgoing Supabase requests. Trace context
+   * is only propagated to Supabase domains (`*.supabase.co`, `*.supabase.in`,
+   * `localhost`) for security — third-party hosts never receive trace headers.
+   *
+   * @default false
+   *
+   * @example
+   * ```ts
+   * const supabase = createClient(url, key, {
+   *   tracePropagation: { enabled: true },
+   * })
+   * ```
+   */
+  enabled?: boolean
+
+  /**
+   * Respect upstream sampling decisions.
+   *
+   * When true (the default), trace context is not propagated if the upstream
+   * trace indicates non-sampling (sampled flag = `0` in the `traceparent`
+   * header). This avoids overhead when traces are being recorded but dropped.
+   *
+   * Set to `false` to always propagate, regardless of the sampling decision
+   * — useful when you want every Supabase request tagged with a `trace_id`
+   * for log correlation, even if the trace itself will not be exported.
+   *
+   * @default true
+   *
+   * @example Always propagate, ignore sampling
+   * ```ts
+   * const supabase = createClient(url, key, {
+   *   tracePropagation: { enabled: true, respectSamplingDecision: false },
+   * })
+   * ```
+   */
+  respectSamplingDecision?: boolean
+}
 
 export type SupabaseClientOptions<SchemaName> = {
   /**
@@ -33,6 +99,31 @@ export type SupabaseClientOptions<SchemaName> = {
    */
   db?: {
     schema?: SchemaName
+    /**
+     * Optional timeout in milliseconds for PostgREST requests.
+     * When set, requests will automatically abort after this duration to prevent indefinite hangs.
+     *
+     * @example With timeout
+     * ```ts
+     * const supabase = createClient(url, key, {
+     *   db: { timeout: 30000 } // 30 second timeout
+     * })
+     * ```
+     */
+    timeout?: number
+    /**
+     * Maximum URL length in characters before warnings/errors are triggered.
+     * Defaults to 8000 characters. Used to provide helpful hints when URLs
+     * exceed server limits.
+     *
+     * @example With custom URL length limit
+     * ```ts
+     * const supabase = createClient(url, key, {
+     *   db: { urlLengthLimit: 10000 } // Custom limit
+     * })
+     * ```
+     */
+    urlLengthLimit?: number
   }
 
   auth?: {
@@ -50,8 +141,26 @@ export type SupabaseClientOptions<SchemaName> = {
     persistSession?: boolean
     /**
      * Detect a session from the URL. Used for OAuth login callbacks. Defaults to true.
+     *
+     * Can be set to a function to provide custom logic for determining if a URL contains
+     * a Supabase auth callback. The function receives the current URL and parsed parameters,
+     * and should return true if the URL should be processed as a Supabase auth callback.
+     *
+     * This is useful when your app uses other OAuth providers (e.g., Facebook Login) that
+     * also return access_token in the URL fragment, which would otherwise be incorrectly
+     * intercepted by Supabase Auth.
+     *
+     * @example With custom detection logic
+     * ```ts
+     * detectSessionInUrl: (url, params) => {
+     *   // Ignore Facebook OAuth redirects
+     *   if (url.pathname === '/facebook/redirect') return false
+     *   // Use default detection for other URLs
+     *   return Boolean(params.access_token || params.error_description)
+     * }
+     * ```
      */
-    detectSessionInUrl?: boolean
+    detectSessionInUrl?: boolean | ((url: URL, params: { [parameter: string]: string }) => boolean)
     /**
      * A storage provider. Used to store the logged-in session.
      */
@@ -73,11 +182,46 @@ export type SupabaseClientOptions<SchemaName> = {
      */
     debug?: SupabaseAuthClientOptions['debug']
     /**
-     * Provide your own locking mechanism based on the environment. By default no locking is done at this time.
+     * Provide your own locking mechanism based on the environment. By default
+     * the auth client coordinates refreshes itself and the server resolves
+     * cross-tab races. Passing a custom `lock` opts into a legacy path that
+     * wraps every auth operation in your supplied lock.
+     *
+     * @deprecated Custom locks still work in v2.x for backwards compatibility.
+     * The legacy lock path will be removed in v3 — drop this option from your
+     * `createClient` options before upgrading.
+     */
+    lock?: SupabaseAuthClientOptions['lock']
+    /**
+     * If there is an error with the query, throwOnError will reject the promise by
+     * throwing the error instead of returning it as part of a successful response.
+     */
+    throwOnError?: SupabaseAuthClientOptions['throwOnError']
+    /**
+     * Opt-in flags for experimental features. These APIs may change without
+     * notice and are disabled by default.
      *
      * @experimental
      */
-    lock?: SupabaseAuthClientOptions['lock']
+    experimental?: SupabaseAuthClientOptions['experimental']
+    /**
+     * Maximum time in milliseconds to wait for acquiring the custom lock
+     * supplied via `lock`. Only consulted when a custom `lock` is passed.
+     *
+     * @default 5000
+     *
+     * @deprecated Only used by the legacy lock path. Will be removed in v3
+     * along with the `lock` option.
+     */
+    lockAcquireTimeout?: SupabaseAuthClientOptions['lockAcquireTimeout']
+    /**
+     * If true, skips automatic initialization in the auth client constructor.
+     * Useful for SSR contexts where initialization timing must be controlled to
+     * prevent race conditions with HTTP response generation.
+     *
+     * @default false
+     */
+    skipAutoInitialize?: SupabaseAuthClientOptions['skipAutoInitialize']
   }
   /**
    * Options passed to the realtime-js instance
@@ -106,6 +250,55 @@ export type SupabaseClientOptions<SchemaName> = {
    * authentications concurrently in the same application.
    */
   accessToken?: () => Promise<string | null>
+  /**
+   * Enable OpenTelemetry / W3C trace context propagation to Supabase services.
+   *
+   * Disabled by default. Pass `true` for the common case (auto-detect an
+   * active OpenTelemetry context and inject `traceparent` / `tracestate` /
+   * `baggage` headers) or an object for fine-grained control.
+   *
+   * Requires `@opentelemetry/api` to be installed in your application; if
+   * not present, the SDK silently no-ops. Trace headers are only attached
+   * to requests targeting Supabase domains, so third-party hosts called
+   * through a custom `fetch` are never tagged.
+   *
+   * The resulting `trace_id` appears in Supabase logs (API Gateway, Edge
+   * Functions), letting you correlate client-side spans with server-side
+   * log entries — including logs forwarded via Log Drains.
+   *
+   * @example Shorthand — opt in with defaults
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient(url, key, { tracePropagation: true })
+   * ```
+   *
+   * @example With an active OpenTelemetry span
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   * import { trace } from '@opentelemetry/api'
+   *
+   * const supabase = createClient(url, key, { tracePropagation: true })
+   * const tracer = trace.getTracer('my-app')
+   *
+   * await tracer.startActiveSpan('fetch-users', async (span) => {
+   *   // Request carries the active trace context.
+   *   const { data, error } = await supabase.from('users').select('*')
+   *   span.end()
+   * })
+   * ```
+   *
+   * @example Advanced — always propagate, even for non-sampled traces
+   * ```ts
+   * const supabase = createClient(url, key, {
+   *   tracePropagation: { enabled: true, respectSamplingDecision: false },
+   * })
+   * ```
+   *
+   * @see https://supabase.com/docs/guides/telemetry/client-side-tracing
+   * @see https://www.w3.org/TR/trace-context/
+   */
+  tracePropagation?: TracePropagationOptions | boolean
 }
 
 /**
@@ -114,3 +307,14 @@ export type SupabaseClientOptions<SchemaName> = {
 export type QueryResult<T> = T extends PromiseLike<infer U> ? U : never
 export type QueryData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
 export type QueryError = PostgrestError
+
+/**
+ * Strips internal Supabase metadata from Database types.
+ * Useful for libraries defining generic constraints on Database types.
+ *
+ * @example Stripping internal Supabase metadata
+ * ```typescript
+ * type CleanDB = DatabaseWithoutInternals<Database>
+ * ```
+ */
+export type DatabaseWithoutInternals<DB> = Omit<DB, '__InternalSupabase'>

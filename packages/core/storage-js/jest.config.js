@@ -1,8 +1,8 @@
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'jsdom',
+  testEnvironment: 'node',
   collectCoverage: true,
-  coverageDirectory: './test/coverage',
+  coverageDirectory: './coverage',
   coverageReporters: ['lcov'],
   collectCoverageFrom: [
     './src/**/*.{js,ts}',

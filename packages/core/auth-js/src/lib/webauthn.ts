@@ -356,7 +356,7 @@ export function isValidDomain(hostname: string): boolean {
  * @returns {boolean} True if browser supports WebAuthn
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential#browser_compatibility MDN - PublicKeyCredential Browser Compatibility}
  */
-function browserSupportsWebAuthn(): boolean {
+export function browserSupportsWebAuthn(): boolean {
   return !!(
     isBrowser() &&
     'PublicKeyCredential' in window &&
@@ -462,13 +462,14 @@ export const DEFAULT_CREATION_OPTIONS: Partial<PublicKeyCredentialCreationOption
     userVerification: 'preferred',
     residentKey: 'discouraged',
   },
-  attestation: 'none',
+  attestation: 'direct',
 }
 
 export const DEFAULT_REQUEST_OPTIONS: Partial<PublicKeyCredentialRequestOptionsFuture> = {
   /** set to preferred because older yubikeys don't have PIN/Biometric */
   userVerification: 'preferred',
   hints: ['security-key'],
+  attestation: 'direct',
 }
 
 function deepMerge<T>(...sources: Partial<T>[]): T {
@@ -638,7 +639,19 @@ export class WebAuthnApi {
       if (challengeResponse.webauthn.type === 'create') {
         const { user } = challengeResponse.webauthn.credential_options.publicKey
         if (!user.name) {
-          user.name = `${user.id}:${friendlyName}`
+          // Preserve original format: use friendlyName if provided, otherwise fetch fallback
+          // This maintains backward compatibility with the ${user.id}:${name} format
+          const nameToUse = friendlyName
+          if (!nameToUse) {
+            // Only fetch user data if friendlyName is not provided (bug fix for null friendlyName)
+            const currentUser = await this.client.getUser()
+            const userData = currentUser.data.user
+            const fallbackName =
+              userData?.user_metadata?.name || userData?.email || userData?.id || 'User'
+            user.name = `${user.id}:${fallbackName}`
+          } else {
+            user.name = `${user.id}:${nameToUse}`
+          }
         }
         if (!user.displayName) {
           user.displayName = user.name
@@ -763,10 +776,10 @@ export class WebAuthnApi {
         rpId = typeof window !== 'undefined' ? window.location.hostname : undefined,
         rpOrigins = typeof window !== 'undefined' ? [window.location.origin] : undefined,
         signal,
-      },
+      } = {},
     }: {
       factorId: string
-      webauthn: {
+      webauthn?: {
         rpId?: string
         rpOrigins?: string[]
         signal?: AbortSignal
@@ -844,14 +857,18 @@ export class WebAuthnApi {
   public async _register(
     {
       friendlyName,
-      rpId = typeof window !== 'undefined' ? window.location.hostname : undefined,
-      rpOrigins = typeof window !== 'undefined' ? [window.location.origin] : undefined,
-      signal,
+      webauthn: {
+        rpId = typeof window !== 'undefined' ? window.location.hostname : undefined,
+        rpOrigins = typeof window !== 'undefined' ? [window.location.origin] : undefined,
+        signal,
+      } = {},
     }: {
       friendlyName: string
-      rpId?: string
-      rpOrigins?: string[]
-      signal?: AbortSignal
+      webauthn?: {
+        rpId?: string
+        rpOrigins?: string[]
+        signal?: AbortSignal
+      }
     },
     overrides?: Partial<PublicKeyCredentialCreationOptionsFuture>
   ): Promise<RequestResult<AuthMFAVerifyResponseData, WebAuthnError | AuthError>> {

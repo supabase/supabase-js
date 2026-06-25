@@ -2,12 +2,6 @@
 
 Thank you for your interest in contributing to the Supabase JavaScript SDK! This guide will help you get started with contributing to the Supabase JS monorepo.
 
-> **Repository Structure Changed:** This repository has been restructured as a monorepo. **All libraries, including `supabase-js`, are now under `packages/core/`**. If you previously contributed to `supabase-js`, `auth-js`, `postgrest-js`, `realtime-js`, `storage-js`, or `functions-js`, please read our **[Migration Guide](docs/MIGRATION.md)** to understand:
->
-> - Where your code moved (everything is now in `packages/core/<library-name>/`)
-> - How commands changed (`npm test` → `npx nx test <library-name>`)
-> - New workflow with Nx
-
 ## 📋 Table of Contents
 
 - [Getting Started](#getting-started)
@@ -24,7 +18,7 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
 ### Prerequisites
 
 - **Node.js** (version 20 or higher)
-- **npm** (comes with Node.js)
+- **pnpm** (enable via `corepack enable` — the workspace pins the version in `package.json`)
 - **Docker** (required for integration tests)
 - **Git**
 
@@ -41,32 +35,47 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
 3. **Install dependencies**:
 
    ```bash
-   npm install
+   corepack enable
+   pnpm install
    ```
 
 4. **Build all packages**:
 
    ```bash
-   npx nx run-many --target=build --all
+   pnpm nx run-many --target=build --all
    ```
 
 5. **Run tests** to ensure everything works:
 
    ```bash
-   npx nx affected --target=test
+   pnpm nx affected --target=test
    ```
+
+### Browser tests (optional)
+
+The `test:integration:browser` target for `supabase-js` uses Puppeteer. The workspace denies arbitrary install scripts by default, so Puppeteer does **not** download Chromium during `pnpm install`. If you want to run browser tests locally, install Chrome once:
+
+```bash
+pnpm exec puppeteer browsers install chrome
+```
+
+CI does this explicitly after `pnpm install`, so it's only a manual step for local browser testing.
 
 ## Development Workflow
 
 ### Making Changes
 
-1. **Create a new branch** from `master`:
+1. **Create a new branch** from `master` (the default branch — features, fixes, and chores all start here). Branch from `v3` only when working on v3-only breaking changes:
 
    ```bash
+   git checkout master
+   git pull upstream master
    git checkout -b feature/your-feature-name
    # or
    git checkout -b fix/your-bug-fix
    ```
+
+   v3-only breaking changes target the `v3` branch directly. The `v3` branch is kept in sync with `master` periodically via a maintainer-run merge — no per-PR action needed from contributors.
 
 2. **Make your changes** in the appropriate library under `packages/core/`
 
@@ -80,24 +89,24 @@ Thank you for your interest in contributing to the Supabase JavaScript SDK! This
 
    ```bash
    # Run affected tests
-   npx nx affected --target=test
+   pnpm nx affected --target=test
 
    # Run specific library tests
-   npx nx test <package-name>
+   pnpm nx test <package-name>
    ```
 
-   For detailed testing instructions, see [TESTING.md](./TESTING.md) and the README in each package directory.
+   For detailed testing instructions, see [TESTING.md](./docs/TESTING.md) and the README in each package directory.
 
 5. **Format your code**:
 
    ```bash
-   npx nx format
+   pnpm nx format
    ```
 
 6. **Build affected packages**:
 
    ```bash
-   npx nx affected --target=build
+   pnpm nx affected --target=build
    ```
 
 ## Commit Guidelines
@@ -109,7 +118,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) with automat
 **You can use the interactive commit tool** instead of `git commit` directly:
 
 ```bash
-npm run commit
+pnpm commit
 ```
 
 This command will:
@@ -184,31 +193,31 @@ ci(release): add preview package generation
 - **Use imperative mood** - "add feature" not "added feature"
 - **Keep subject line under 100 characters**
 - **No period at the end** of the subject line
-- **Use the interactive tool** - `npm run commit` ensures compliance
+- **Use the interactive tool** - `pnpm commit` ensures compliance
 
 ## Pull Request Process
 
 ### Before Submitting
 
-1. **Ensure your branch is up to date** with `master`:
+1. **Ensure your branch is up to date** with the branch you're targeting (typically `master`; `v3` only for v3-only breaking changes):
 
    ```bash
-   git checkout master
-   git pull upstream master
+   git checkout <target-branch>     # master or v3
+   git pull upstream <target-branch>
    git checkout your-branch
-   git rebase master
+   git rebase <target-branch>
    ```
 
 2. **Run the full test suite**:
 
    ```bash
-   npx nx affected --target=test
+   pnpm nx affected --target=test
    ```
 
 3. **Build all affected packages**:
 
    ```bash
-   npx nx affected --target=build
+   pnpm nx affected --target=build
    ```
 
 ### Submitting Your PR
@@ -245,26 +254,26 @@ All pull requests must meet these requirements:
 
 Each package has its own testing requirements and infrastructure. For comprehensive testing information, see:
 
-- **[TESTING.md](./TESTING.md)** - Overview of testing across all packages
+- **[TESTING.md](./docs/TESTING.md)** - Overview of testing across all packages
 - **Package-specific guides** - Detailed testing instructions in each package's README:
-  - [`supabase-js`](../packages/core/supabase-js/README.md)
-  - [`auth-js`](../packages/core/auth-js/README.md)
-  - [`functions-js`](../packages/core/functions-js/README.md)
-  - [`postgrest-js`](../packages/core/postgrest-js/README.md)
-  - [`realtime-js`](../packages/core/realtime-js/README.md)
-  - [`storage-js`](../packages/core/storage-js/README.md)
+  - [`supabase-js`](./packages/core/supabase-js/README.md)
+  - [`auth-js`](./packages/core/auth-js/README.md)
+  - [`functions-js`](./packages/core/functions-js/README.md)
+  - [`postgrest-js`](./packages/core/postgrest-js/README.md)
+  - [`realtime-js`](./packages/core/realtime-js/README.md)
+  - [`storage-js`](./packages/core/storage-js/README.md)
 
 ### Quick Testing Commands
 
 ```bash
 # Run tests for a specific package
-npx nx test <package-name>
+pnpm nx test <package-name>
 
 # Run affected tests only (recommended during development)
-npx nx affected --target=test
+pnpm nx affected --target=test
 
 # Run tests with coverage
-npx nx test <package> --coverage
+pnpm nx test <package> --coverage
 ```
 
 ### Test Requirements by Package
@@ -287,21 +296,21 @@ npx nx test <package> --coverage
 We automatically generate TypeScript API documentation that is used by the main [Supabase documentation site](https://supabase.com/docs). The process works as follows:
 
 1. **TypeDoc generates JSON specifications** from TypeScript source code
-2. **GitHub Actions publishes** these specs to GitHub Pages on every push to `master`
+2. **GitHub Actions publishes** these specs to GitHub Pages after every successful stable release from `master`
 3. **Main Supabase repository** uses these JSON files to generate the official API docs via `make` commands
 
 #### Available Documentation Commands
 
 ```bash
 # Generate JSON specs for all libraries (used by main docs)
-npx nx run-many --target=docs:json --all
+pnpm nx run-many --target=docs:json --all
 
 # Generate HTML docs for all libraries (for local viewing)
-npx nx run-many --target=docs --all
+pnpm nx run-many --target=docs --all
 
 # Generate docs for a specific library
-npx nx docs:json auth-js
-npx nx docs postgrest-js
+pnpm nx docs:json auth-js
+pnpm nx docs postgrest-js
 ```
 
 #### Published API Specifications
@@ -360,7 +369,7 @@ We are committed to providing a welcoming and inspiring community for all. Pleas
 
 ## 📄 License
 
-By contributing to Supabase JS Libraries, you agree that your contributions will be licensed under the [MIT License](../LICENSE).
+By contributing to Supabase JS Libraries, you agree that your contributions will be licensed under the [MIT License](./LICENSE).
 
 ---
 

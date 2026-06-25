@@ -1,7 +1,7 @@
 import 'node:buffer'
 import { assertEquals, assertExists } from 'https://deno.land/std@0.220.1/assert/mod.ts'
-import { createClient, SupabaseClient } from '../../dist/module/index.js'
-import type { RealtimeChannel } from '../../dist/module/index.js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 // These tests assume that a local Supabase server is already running
 // Start a local Supabase instance with 'supabase start' before running these tests
@@ -13,12 +13,10 @@ Deno.test(
   async (t) => {
     // Default local dev credentials from Supabase CLI
     const SUPABASE_URL = 'http://127.0.0.1:54321'
-    const ANON_KEY =
+    const PUBLISHABLE_KEY =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 
-    const supabase = createClient(SUPABASE_URL, ANON_KEY, {
-      realtime: { heartbeatIntervalMs: 500 },
-    })
+    const supabase = createClient(SUPABASE_URL, PUBLISHABLE_KEY)
 
     // Cleanup function to be called after all tests
     const cleanup = async () => {
@@ -147,81 +145,76 @@ Deno.test(
         assertEquals(data.user, null)
       })
 
-      await t.step('Realtime - is able to connect and broadcast', async () => {
-        const channelName = `channel-${crypto.randomUUID()}`
-        let channel: RealtimeChannel
-        const email = `test-${Date.now()}@example.com`
-        const password = 'password123'
-
-        // Sign up and create channel
-        await supabase.auth.signUp({ email, password })
-        const config = { broadcast: { self: true }, private: true }
-        channel = supabase.channel(channelName, { config })
-
-        const testMessage = { message: 'test' }
-        let receivedMessage: any
-        let subscribed = false
-        let attempts = 0
-
-        channel
-          .on('broadcast', { event: '*' }, (payload: unknown) => (receivedMessage = payload))
-          .subscribe((status: string) => {
-            if (status == 'SUBSCRIBED') subscribed = true
+      // Run realtime tests for both versions
+      const versions = ['1.0.0', '2.0.0']
+      for (const vsn of versions) {
+        await t.step(`Realtime v${vsn} - is able to connect and broadcast`, async () => {
+          const supabaseRealtime = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
+            realtime: { heartbeatIntervalMs: 500, vsn },
           })
 
-        // Wait for subscription
-        while (!subscribed) {
-          if (attempts > 50) throw new Error('Timeout waiting for subscription')
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          attempts++
-        }
+          const channelName = `channel-${crypto.randomUUID()}`
+          let channel: RealtimeChannel
+          const email = `test-${Date.now()}@example.com`
+          const password = 'password123'
 
-        attempts = 0
+          // Sign up and create channel
+          await supabaseRealtime.auth.signUp({ email, password })
+          const config = { broadcast: { self: true, ack: true }, private: true }
+          channel = supabaseRealtime.channel(channelName, { config })
 
-        channel.send({
-          type: 'broadcast',
-          event: 'test-event',
-          payload: testMessage,
+          const testMessage = { message: 'test' }
+          let receivedMessage: any
+          let subscribed = false
+          let attempts = 0
+
+          channel
+            .on('broadcast', { event: 'test-event' }, (payload: unknown) => (receivedMessage = payload))
+            .subscribe((status: string) => {
+              if (status == 'SUBSCRIBED') subscribed = true
+            })
+
+          // Wait for subscription
+          while (!subscribed) {
+            if (attempts > 50) throw new Error('Timeout waiting for subscription')
+            await new Promise((resolve) => setTimeout(resolve, 100))
+            attempts++
+          }
+
+          attempts = 0
+
+          await channel.send({ type: 'broadcast', event: 'test-event', payload: testMessage })
+
+          // Wait on message
+          while (!receivedMessage) {
+            if (attempts > 50) throw new Error('Timeout waiting for message')
+            await new Promise((resolve) => setTimeout(resolve, 100))
+            attempts++
+          }
+
+          assertExists(receivedMessage)
+          assertEquals(supabaseRealtime.realtime.getChannels().length, 1)
+
+          // Cleanup channel
+          await channel.unsubscribe()
+          await supabaseRealtime.removeAllChannels()
         })
-
-        // Wait on message
-        while (!receivedMessage) {
-          if (attempts > 50) throw new Error('Timeout waiting for message')
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          attempts++
-        }
-
-        assertExists(receivedMessage)
-        assertEquals(supabase.realtime.getChannels().length, 1)
-
-        // Cleanup channel
-        await channel.unsubscribe()
-      })
+      }
 
       await t.step('Storage - should upload and list file in bucket', async () => {
         const bucket = 'test-bucket'
         const filePath = 'test-file.txt'
         const fileContent = new Blob(['Hello, Supabase Storage!'], { type: 'text/plain' })
 
-        // use service_role key for bypass RLS
-        const SERVICE_ROLE_KEY =
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ||
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
-        const supabaseWithServiceRole = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-          realtime: { heartbeatIntervalMs: 500 },
-        })
-
         // upload
-        const { data: uploadData, error: uploadError } = await supabaseWithServiceRole.storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from(bucket)
           .upload(filePath, fileContent, { upsert: true })
         assertEquals(uploadError, null)
         assertExists(uploadData)
 
         // list
-        const { data: listData, error: listError } = await supabaseWithServiceRole.storage
-          .from(bucket)
-          .list()
+        const { data: listData, error: listError } = await supabase.storage.from(bucket).list()
         assertEquals(listError, null)
         assertEquals(Array.isArray(listData), true)
         if (!listData) throw new Error('listData is null')
@@ -229,9 +222,7 @@ Deno.test(
         assertEquals(fileNames.includes('test-file.txt'), true)
 
         // delete file
-        const { error: deleteError } = await supabaseWithServiceRole.storage
-          .from(bucket)
-          .remove([filePath])
+        const { error: deleteError } = await supabase.storage.from(bucket).remove([filePath])
         assertEquals(deleteError, null)
       })
     } finally {

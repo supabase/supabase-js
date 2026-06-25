@@ -13,11 +13,45 @@
   "author": "Supabase",
   "files": [
     "dist",
-    "src"
+    "src",
+    "migrations",
+    "AGENTS.md"
   ],
-  "main": "dist/main/index.js",
-  "module": "dist/module/index.js",
-  "types": "dist/module/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
+  "exports": {
+    ".": {
+      "react-native": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./cors": {
+      "react-native": {
+        "types": "./dist/cors.d.cts",
+        "default": "./dist/cors.cjs"
+      },
+      "import": {
+        "types": "./dist/cors.d.mts",
+        "default": "./dist/cors.mjs"
+      },
+      "require": {
+        "types": "./dist/cors.d.cts",
+        "default": "./dist/cors.cjs"
+      }
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
   "sideEffects": false,
   "repository": {
     "type": "git",
@@ -25,52 +59,61 @@
     "directory": "packages/core/supabase-js"
   },
   "scripts": {
-    "clean": "rimraf dist docs/v2",
-    "build": "npm run clean && npm run build:main && npm run build:module && npm run build:umd",
-    "build:main": "tsc -p tsconfig.json",
-    "build:module": "tsc -p tsconfig.module.json",
-    "build:umd": "webpack --env mode=production",
+    "build": "tsdown",
+    "build:watch": "tsdown --watch",
     "test": "npm run test:types && npm run test:run",
     "test:all": "npm run test:types && npm run test:run && npm run test:integration && npm run test:integration:browser",
     "test:run": "jest --runInBand --detectOpenHandles",
     "test:unit": "jest --runInBand --detectOpenHandles test/unit",
-    "test:coverage": "jest --runInBand --coverage --testPathIgnorePatterns=\"test/integration|test/deno\"",
+    "test:coverage": "jest --runInBand --coverage --testPathIgnorePatterns=\"test/integration|test/deno|\\.[mc]js$\"",
     "test:integration": "jest --runInBand --detectOpenHandles test/integration.test.ts",
-    "test:integration:browser": "deno test --allow-all test/integration.browser.test.ts",
+    "test:integration:browser": "deno test --allow-all --node-modules-dir=auto test/integration.browser.test.ts",
     "test:edge-functions": "cd test/deno && npm run test:edge-functions",
+    "test:deno": "cd test/deno && npm run test",
     "test:watch": "jest --watch --verbose false --silent false",
     "test:node:playwright": "cd test/integration/node-browser && npm install && cp ../../../dist/umd/supabase.js . && npm run test",
     "test:bun": "cd test/integration/bun && bun install && bun test",
-    "test:types": "tsd --files test/types/*.test-d.ts && jsr publish --dry-run --allow-dirty",
-    "docs": "typedoc --entryPoints src/index.ts --out docs/v2",
-    "docs:json": "typedoc --entryPoints src/index.ts --json docs/v2/spec.json --excludeExternals",
-    "serve:coverage": "npx nx test:coverage supabase-js && serve test/coverage",
-    "update:test-deps": "npm run update:test-deps:expo && npm run update:test-deps:next && npm run update:test-deps:deno && npm run update:test-deps:bun",
-    "update:test-deps:expo": "cd test/integration/expo && npm install",
-    "update:test-deps:next": "cd test/integration/next && npm install --legacy-peer-deps",
-    "update:test-deps:deno": "cd test/deno && npm install",
+    "test:expo": "cd test/integration/expo && npm test",
+    "test:next": "cd test/integration/next && npm test",
+    "test:types": "tsd --files test/types/index.test-d.ts && tsd --typings dist/cors.d.cts --files test/types/cors.test-d.ts && jsr publish --dry-run --allow-dirty",
+    "test:exports": "attw --pack . --ignore-rules no-resolution",
+    "test:esm": "node test/module-resolution.test.mjs && node test/module-resolution-cors.test.mjs",
+    "test:cjs": "node test/module-resolution.test.cjs && node test/module-resolution-cors.test.cjs",
+    "test:hermes-compat": "node test/bundle-hermes-compat.test.cjs",
+    "test:module-resolution": "npm run test:exports && npm run test:esm && npm run test:cjs && npm run test:hermes-compat",
+    "docs": "typedoc --entryPoints src/index.ts --entryPoints src/cors.ts --out docs/v2",
+    "docs:json": "typedoc --entryPoints src/index.ts --entryPoints src/cors.ts --json docs/v2/spec.json --excludeExternals",
+    "serve:coverage": "pnpm nx test:coverage supabase-js && pnpm dlx serve test/coverage",
+    "update:test-deps": "pnpm run update:test-deps:expo && pnpm run update:test-deps:next && pnpm run update:test-deps:deno && pnpm run update:test-deps:bun",
+    "update:test-deps:expo": "cd test/integration/expo && pnpm install --ignore-workspace",
+    "update:test-deps:next": "cd test/integration/next && pnpm install --ignore-workspace",
+    "update:test-deps:deno": "cd test/deno && pnpm install --ignore-workspace",
     "update:test-deps:bun": "cd test/integration/bun && bun install"
   },
   "dependencies": {
-    "@supabase/auth-js": "*",
-    "@supabase/functions-js": "*",
-    "@supabase/node-fetch": "2.6.15",
-    "@supabase/postgrest-js": "*",
-    "@supabase/realtime-js": "*",
-    "@supabase/storage-js": "*"
+    "@supabase/auth-js": "workspace:*",
+    "@supabase/functions-js": "workspace:*",
+    "@supabase/postgrest-js": "workspace:*",
+    "@supabase/realtime-js": "workspace:*",
+    "@supabase/storage-js": "workspace:*"
   },
   "devDependencies": {
-    "@sebbo2002/semantic-release-jsr": "^1.0.0",
-    "eslint-formatter-pretty": "^4.1.0",
+    "@arethetypeswrong/cli": "catalog:",
+    "@jest/globals": "catalog:",
+    "@jest/types": "catalog:",
+    "@supabase/tracing": "workspace:*",
+    "@types/jest": "catalog:",
+    "@types/jsonwebtoken": "^8.5.8",
+    "@types/node": "catalog:",
+    "jest": "catalog:",
+    "jsonwebtoken": "^9.0.0",
     "jsr": "^0.13.5",
-    "pretty-quick": "^3.1.3",
     "puppeteer": "^24.9.0",
-    "serve": "^14.2.1",
-    "ts-jest": "^29.0.5",
-    "ts-loader": "^9.5.4",
-    "tsd": "^0.30.4",
-    "webpack": "^5.69.1",
-    "webpack-cli": "^4.9.2"
+    "ts-jest": "catalog:",
+    "tsd": "catalog:",
+    "tsdown": "catalog:",
+    "typedoc": "catalog:",
+    "typescript": "catalog:"
   },
   "jsdelivr": "dist/umd/supabase.js",
   "unpkg": "dist/umd/supabase.js",
@@ -97,5 +140,8 @@
         ]
       }
     }
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

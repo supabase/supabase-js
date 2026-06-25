@@ -18,9 +18,9 @@ describe('navigatorLock', () => {
 
   it('should acquire and release lock successfully', async () => {
     const mockLock = { name: 'test-lock' }
-    ;(globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) =>
-      Promise.resolve(callback(mockLock))
-    )
+      ; (globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) =>
+        Promise.resolve(callback(mockLock))
+      )
 
     const result = await navigatorLock('test', -1, async () => 'success')
     expect(result).toBe('success')
@@ -28,7 +28,7 @@ describe('navigatorLock', () => {
   })
 
   it('should handle immediate acquisition failure', async () => {
-    ;(globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) =>
+    ; (globalThis.navigator.locks.request as jest.Mock).mockImplementation((_, __, callback) =>
       Promise.resolve(callback(null))
     )
 
@@ -37,6 +37,99 @@ describe('navigatorLock', () => {
 
   it('should not throw if browser is not following the Navigator LockManager spec', async () => {
     await expect(navigatorLock('test-lock', 1, async () => 'success')).resolves.toBe('success')
+  })
+
+  it('should rethrow non-AbortError errors unchanged', async () => {
+    // Mock navigator.locks.request to throw a different error
+    const customError = new Error('Some other error')
+    customError.name = 'CustomError'
+      ; (globalThis.navigator.locks.request as jest.Mock).mockRejectedValue(customError)
+
+    // Should rethrow the error unchanged (no isAcquireTimeout property)
+    await expect(navigatorLock('test-lock', 100, async () => 'success')).rejects.toMatchObject({
+      message: 'Some other error',
+      name: 'CustomError',
+    })
+  })
+
+  it('should recover from orphaned lock by stealing after acquire timeout', async () => {
+    let callCount = 0
+    const mockLock = { name: 'test-lock' }
+
+      ; (globalThis.navigator.locks.request as jest.Mock).mockImplementation(
+        (name: string, options: any, callback: (lock: any) => Promise<any>) => {
+          callCount++
+
+          if (callCount === 1) {
+            // First call: simulate an orphaned lock by aborting via the signal
+            // (mimics the acquireTimeout firing while a lock is held by another caller)
+            return new Promise((_, reject) => {
+              if (options.signal) {
+                options.signal.addEventListener('abort', () => {
+                  reject(new DOMException('signal is aborted without reason', 'AbortError'))
+                })
+              }
+            })
+          }
+
+          // Second call (steal: true): grant the lock immediately
+          expect(options.steal).toBe(true)
+          return Promise.resolve(callback(mockLock))
+        }
+      )
+
+    const result = await navigatorLock('test', 100, async () => 'recovered')
+    expect(result).toBe('recovered')
+    expect(callCount).toBe(2)
+  })
+
+  it('should throw NavigatorLockAcquireTimeoutError when the held lock is stolen by another request', async () => {
+    // Simulate: we acquire the lock (callback is invoked, fn() starts running),
+    // but then another request steals it — the outer promise rejects with AbortError
+    // even though our AbortController signal has NOT been aborted (signal.aborted remains false).
+    const mockFn = jest.fn(async () => 'result')
+    ;(globalThis.navigator.locks.request as jest.Mock).mockImplementation(
+      (_name: string, _options: any, callback: (lock: any) => Promise<any>) => {
+        // Invoke callback so fn() runs (we held the lock)
+        callback({ name: 'test' })
+        // Outer promise rejects independently — another request stole the lock
+        return Promise.reject(
+          new DOMException("Lock broken by another request with the 'steal' option.", 'AbortError')
+        )
+      }
+    )
+
+    await expect(navigatorLock('test', 100, mockFn)).rejects.toMatchObject({
+      isAcquireTimeout: true,
+    })
+
+    // fn() ran exactly once (while we held the lock) — no steal-back re-execution
+    expect(mockFn).toHaveBeenCalledTimes(1)
+    // Must NOT have tried to steal back (no second call to navigator.locks.request)
+    expect(globalThis.navigator.locks.request).toHaveBeenCalledTimes(1)
+  })
+
+  it('should propagate non-AbortError errors without attempting steal', async () => {
+    ; (globalThis.navigator.locks.request as jest.Mock).mockImplementation(() => {
+      return Promise.reject(new Error('some other error'))
+    })
+
+    await expect(navigatorLock('test', 100, async () => 'success')).rejects.toThrow(
+      'some other error'
+    )
+    // Should only be called once (no steal retry)
+    expect(globalThis.navigator.locks.request).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not attempt steal when acquireTimeout is negative (no timeout)', async () => {
+    ; (globalThis.navigator.locks.request as jest.Mock).mockImplementation(() => {
+      const error = new DOMException('aborted', 'AbortError')
+      return Promise.reject(error)
+    })
+
+    await expect(navigatorLock('test', -1, async () => 'success')).rejects.toThrow()
+    // Should only be called once (no steal retry for negative timeout)
+    expect(globalThis.navigator.locks.request).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -101,16 +194,35 @@ describe('processLock', () => {
     }
   }, 15_000)
 
-  it('should handle timeout correctly', async () => {
+  it('should throw LockAcquireTimeoutError when lock acquisition times out', async () => {
+    // Start an operation that holds the lock for 200ms
     const operation1 = processLock('timeout-test', -1, async () => {
       await new Promise((resolve) => setTimeout(resolve, 200))
       return 'success'
     })
 
-    // Try to acquire same lock with timeout
+    // Try to acquire same lock with 100ms timeout - should fail
     const operation2 = processLock('timeout-test', 100, async () => 'should timeout')
 
-    await expect(operation2).rejects.toThrow()
+    // Verify the error is a LockAcquireTimeoutError (identified by isAcquireTimeout property)
+    await expect(operation2).rejects.toMatchObject({
+      isAcquireTimeout: true,
+    })
+    await expect(operation1).resolves.toBe('success')
+  })
+
+  it('should fail immediately when acquireTimeout is 0 and lock is held', async () => {
+    const operation1 = processLock('immediate-test', -1, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      return 'success'
+    })
+
+    // Try to acquire same lock with timeout=0 (fail immediately)
+    const operation2 = processLock('immediate-test', 0, async () => 'should fail immediately')
+
+    await expect(operation2).rejects.toMatchObject({
+      isAcquireTimeout: true,
+    })
     await expect(operation1).resolves.toBe('success')
   })
 

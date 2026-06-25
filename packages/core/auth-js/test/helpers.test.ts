@@ -1,12 +1,53 @@
 import { AuthInvalidJwtError } from '../src'
 import {
   decodeJWT,
+  generateCallbackId,
   getAlgorithm,
+  getItemAsync,
   parseParametersFromURL,
   parseResponseAPIVersion,
   getCodeChallengeAndMethod,
   validateUUID,
 } from '../src/lib/helpers'
+
+describe('generateCallbackId', () => {
+  it('should return a Symbol', () => {
+    const id = generateCallbackId()
+    expect(typeof id).toBe('symbol')
+  })
+
+  it('should return unique Symbols on each call', () => {
+    const id1 = generateCallbackId()
+    const id2 = generateCallbackId()
+    const id3 = generateCallbackId()
+
+    expect(id1).not.toBe(id2)
+    expect(id2).not.toBe(id3)
+    expect(id1).not.toBe(id3)
+  })
+
+  it('should work as Map keys', () => {
+    const id1 = generateCallbackId()
+    const id2 = generateCallbackId()
+
+    const map = new Map()
+    map.set(id1, 'callback1')
+    map.set(id2, 'callback2')
+
+    expect(map.get(id1)).toBe('callback1')
+    expect(map.get(id2)).toBe('callback2')
+    expect(map.size).toBe(2)
+
+    map.delete(id1)
+    expect(map.has(id1)).toBe(false)
+    expect(map.has(id2)).toBe(true)
+  })
+
+  it('should have a description for debugging', () => {
+    const id = generateCallbackId()
+    expect(id.toString()).toBe('Symbol(auth-callback)')
+  })
+})
 
 describe('parseParametersFromURL', () => {
   it('should parse parameters from a URL with query params only', () => {
@@ -82,10 +123,8 @@ describe('parseResponseAPIVersion', () => {
 
 describe('decodeJWT', () => {
   it('should reject non-JWT strings', () => {
-    expect(() => decodeJWT('non-jwt')).toThrowError(
-      new AuthInvalidJwtError('Invalid JWT structure')
-    )
-    expect(() => decodeJWT('aHR0.cDovL.2V4YW1wbGUuY29t')).toThrowError(
+    expect(() => decodeJWT('non-jwt')).toThrow(new AuthInvalidJwtError('Invalid JWT structure'))
+    expect(() => decodeJWT('aHR0.cDovL.2V4YW1wbGUuY29t')).toThrow(
       new AuthInvalidJwtError('JWT not in base64url format')
     )
   })
@@ -96,107 +135,107 @@ describe('decodeJWT', () => {
         'eyJhbGciOiJFUzI1NiIsImtpZCI6ImZhM2ZmYzk5LTQ2MzUtNGIxOS1iNWMwLTZkNmE4ZDMwYzRlYiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Byb2plY3RyZWYuc3VwYWJhc2UuY28iLCJzdWIiOiI2OTAxMTJlNi04NThiLTQwYzctODBlNi05NmRiNjk3MTkyYjUiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxODM4MDk5NjcwLCJpYXQiOjE3MzgwOTk2NzAsImVtYWlsIjoiIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnt9LCJ1c2VyX21ldGFkYXRhIjp7ImNvbG9yIjoiYmx1ZSJ9LCJyb2xlIjoiIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoiYW5vbnltb3VzIiwidGltZXN0YW1wIjoxNzM4MDk5NjcwfV0sInNlc3Npb25faWQiOiI0YzZiMjg5NC00M2I0LTQ2YzQtYmQyZi0zNWM1OWVjNDRmZWYiLCJpc19hbm9ueW1vdXMiOnRydWV9.JcWCW3u4F9iFo1yV3OlxnosP7jLnOa2Q7LoPTxyFmvZc1_Kziimw8jD95EpXyTMEwKFt2dPSmWGkqdoJu6FV0Q'
       )
     ).toMatchInlineSnapshot(`
-Object {
-  "header": Object {
-    "alg": "ES256",
-    "kid": "fa3ffc99-4635-4b19-b5c0-6d6a8d30c4eb",
-    "typ": "JWT",
-  },
-  "payload": Object {
-    "aal": "aal1",
-    "amr": Array [
-      Object {
-        "method": "anonymous",
-        "timestamp": 1738099670,
-      },
-    ],
-    "app_metadata": Object {},
-    "aud": "authenticated",
-    "email": "",
-    "exp": 1838099670,
-    "iat": 1738099670,
-    "is_anonymous": true,
-    "iss": "https://projectref.supabase.co",
-    "phone": "",
-    "role": "",
-    "session_id": "4c6b2894-43b4-46c4-bd2f-35c59ec44fef",
-    "sub": "690112e6-858b-40c7-80e6-96db697192b5",
-    "user_metadata": Object {
-      "color": "blue",
-    },
-  },
-  "raw": Object {
-    "header": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImZhM2ZmYzk5LTQ2MzUtNGIxOS1iNWMwLTZkNmE4ZDMwYzRlYiIsInR5cCI6IkpXVCJ9",
-    "payload": "eyJpc3MiOiJodHRwczovL3Byb2plY3RyZWYuc3VwYWJhc2UuY28iLCJzdWIiOiI2OTAxMTJlNi04NThiLTQwYzctODBlNi05NmRiNjk3MTkyYjUiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxODM4MDk5NjcwLCJpYXQiOjE3MzgwOTk2NzAsImVtYWlsIjoiIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnt9LCJ1c2VyX21ldGFkYXRhIjp7ImNvbG9yIjoiYmx1ZSJ9LCJyb2xlIjoiIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoiYW5vbnltb3VzIiwidGltZXN0YW1wIjoxNzM4MDk5NjcwfV0sInNlc3Npb25faWQiOiI0YzZiMjg5NC00M2I0LTQ2YzQtYmQyZi0zNWM1OWVjNDRmZWYiLCJpc19hbm9ueW1vdXMiOnRydWV9",
-  },
-  "signature": Uint8Array [
-    37,
-    197,
-    130,
-    91,
-    123,
-    184,
-    23,
-    216,
-    133,
-    163,
-    92,
-    149,
-    220,
-    233,
-    113,
-    158,
-    139,
-    15,
-    238,
-    50,
-    231,
-    57,
-    173,
-    144,
-    236,
-    186,
-    15,
-    79,
-    28,
-    133,
-    154,
-    246,
-    92,
-    215,
-    242,
-    179,
-    138,
-    41,
-    176,
-    242,
-    48,
-    253,
-    228,
-    74,
-    87,
-    201,
-    51,
-    4,
-    192,
-    161,
-    109,
-    217,
-    211,
-    210,
-    153,
-    97,
-    164,
-    169,
-    218,
-    9,
-    187,
-    161,
-    85,
-    209,
-  ],
-}
-`)
+      {
+        "header": {
+          "alg": "ES256",
+          "kid": "fa3ffc99-4635-4b19-b5c0-6d6a8d30c4eb",
+          "typ": "JWT",
+        },
+        "payload": {
+          "aal": "aal1",
+          "amr": [
+            {
+              "method": "anonymous",
+              "timestamp": 1738099670,
+            },
+          ],
+          "app_metadata": {},
+          "aud": "authenticated",
+          "email": "",
+          "exp": 1838099670,
+          "iat": 1738099670,
+          "is_anonymous": true,
+          "iss": "https://projectref.supabase.co",
+          "phone": "",
+          "role": "",
+          "session_id": "4c6b2894-43b4-46c4-bd2f-35c59ec44fef",
+          "sub": "690112e6-858b-40c7-80e6-96db697192b5",
+          "user_metadata": {
+            "color": "blue",
+          },
+        },
+        "raw": {
+          "header": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImZhM2ZmYzk5LTQ2MzUtNGIxOS1iNWMwLTZkNmE4ZDMwYzRlYiIsInR5cCI6IkpXVCJ9",
+          "payload": "eyJpc3MiOiJodHRwczovL3Byb2plY3RyZWYuc3VwYWJhc2UuY28iLCJzdWIiOiI2OTAxMTJlNi04NThiLTQwYzctODBlNi05NmRiNjk3MTkyYjUiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxODM4MDk5NjcwLCJpYXQiOjE3MzgwOTk2NzAsImVtYWlsIjoiIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnt9LCJ1c2VyX21ldGFkYXRhIjp7ImNvbG9yIjoiYmx1ZSJ9LCJyb2xlIjoiIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoiYW5vbnltb3VzIiwidGltZXN0YW1wIjoxNzM4MDk5NjcwfV0sInNlc3Npb25faWQiOiI0YzZiMjg5NC00M2I0LTQ2YzQtYmQyZi0zNWM1OWVjNDRmZWYiLCJpc19hbm9ueW1vdXMiOnRydWV9",
+        },
+        "signature": Uint8Array [
+          37,
+          197,
+          130,
+          91,
+          123,
+          184,
+          23,
+          216,
+          133,
+          163,
+          92,
+          149,
+          220,
+          233,
+          113,
+          158,
+          139,
+          15,
+          238,
+          50,
+          231,
+          57,
+          173,
+          144,
+          236,
+          186,
+          15,
+          79,
+          28,
+          133,
+          154,
+          246,
+          92,
+          215,
+          242,
+          179,
+          138,
+          41,
+          176,
+          242,
+          48,
+          253,
+          228,
+          74,
+          87,
+          201,
+          51,
+          4,
+          192,
+          161,
+          109,
+          217,
+          211,
+          210,
+          153,
+          97,
+          164,
+          169,
+          218,
+          9,
+          187,
+          161,
+          85,
+          209,
+        ],
+      }
+    `)
   })
 })
 
@@ -224,18 +263,18 @@ describe('getAlgorithm', () => {
     })
   })
   it('should throw if invalid alg claim', () => {
-    expect(() => getAlgorithm('EdDSA' as any)).toThrowError(new Error('Invalid alg claim'))
+    expect(() => getAlgorithm('EdDSA' as any)).toThrow(new Error('Invalid alg claim'))
   })
 })
 
 describe('getCodeChallengeAndMethod', () => {
   const testCases = [
     {
-      name: 'should append /PASSWORD_RECOVERY to stored code_verifier',
+      name: 'should append /recovery to stored code_verifier',
       isPasswordRecovery: true,
     },
     {
-      name: 'should not append /PASSWORD_RECOVERY for other flows',
+      name: 'should not append /recovery for other flows',
       isPasswordRecovery: false,
     },
   ]
@@ -257,9 +296,9 @@ describe('getCodeChallengeAndMethod', () => {
     expect(setItemCall[0]).toBe('test-storage-key-code-verifier')
     const storedValue = JSON.parse(setItemCall[1])
     if (isPasswordRecovery) {
-      expect(storedValue).toContain('/PASSWORD_RECOVERY')
+      expect(storedValue).toContain('/recovery')
     } else {
-      expect(storedValue).not.toContain('/PASSWORD_RECOVERY')
+      expect(storedValue).not.toContain('/recovery')
     }
     expect(codeChallenge).toBeDefined()
     expect(codeChallengeMethod).toBeDefined()
@@ -298,5 +337,51 @@ describe('validateUUID', () => {
     } else {
       expect(() => validateUUID(input)).not.toThrow()
     }
+  })
+})
+
+describe('getItemAsync', () => {
+  const makeStorage = (initial: { [key: string]: string | null }) => {
+    const data: { [key: string]: string | null } = { ...initial }
+    return {
+      getItem: jest.fn(async (key: string) => data[key] ?? null),
+      setItem: jest.fn(async (key: string, value: string) => {
+        data[key] = value
+      }),
+      removeItem: jest.fn(async (key: string) => {
+        delete data[key]
+      }),
+    }
+  }
+
+  it('returns null when the storage value is missing', async () => {
+    const storage = makeStorage({})
+    expect(await getItemAsync(storage, 'session')).toBeNull()
+  })
+
+  it('returns null when the storage value is empty string', async () => {
+    const storage = makeStorage({ session: '' })
+    expect(await getItemAsync(storage, 'session')).toBeNull()
+  })
+
+  it('returns the parsed object for valid JSON', async () => {
+    const session = { access_token: 'a', refresh_token: 'b', expires_at: 1 }
+    const storage = makeStorage({ session: JSON.stringify(session) })
+    expect(await getItemAsync(storage, 'session')).toEqual(session)
+  })
+
+  it('returns null when the storage value is not valid JSON', async () => {
+    // Simulates corrupted chunked cookies: combined+decoded payload that is
+    // not parseable. Returning the raw string would cause _recoverAndRefresh
+    // to throw `TypeError: Cannot create property 'user' on string ...`.
+    const storage = makeStorage({ session: '{"access_token":"abc' })
+    expect(await getItemAsync(storage, 'session')).toBeNull()
+  })
+
+  it('returns null for a JSON-encoded primitive that auth callers do not expect', async () => {
+    // JSON.parse('"hello"') succeeds and returns the string "hello", which is
+    // valid behavior. We are only guarding against parse failures here.
+    const storage = makeStorage({ session: '"hello"' })
+    expect(await getItemAsync(storage, 'session')).toEqual('hello')
   })
 })

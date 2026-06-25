@@ -98,11 +98,11 @@ describe('End-to-End Workflow Tests', () => {
       })
 
       const queryData = assertSuccessResponse(queryResponse)
-      expect(queryData.matches.length).toBeGreaterThan(0)
-      expect(queryData.matches.length).toBeLessThanOrEqual(2)
+      expect(queryData.vectors.length).toBeGreaterThan(0)
+      expect(queryData.vectors.length).toBeLessThanOrEqual(2)
 
       // All matches should have published: true
-      for (const match of queryData.matches) {
+      for (const match of queryData.vectors) {
         expect(match.metadata?.published).toBe(true)
       }
 
@@ -240,7 +240,7 @@ describe('End-to-End Workflow Tests', () => {
           returnMetadata: true,
         })
         const data = assertSuccessResponse(response)
-        expect(data.matches.length).toBeGreaterThan(0)
+        expect(data.vectors.length).toBeGreaterThan(0)
       }
 
       // Cleanup: Delete all indexes
@@ -329,8 +329,8 @@ describe('End-to-End Workflow Tests', () => {
       })
 
       const tech1Data = assertSuccessResponse(tech1Response)
-      expect(tech1Data.matches.length).toBeGreaterThan(0)
-      for (const match of tech1Data.matches) {
+      expect(tech1Data.vectors.length).toBeGreaterThan(0)
+      for (const match of tech1Data.vectors) {
         expect(match.metadata?.type).toBe('article')
         expect(match.metadata?.category).toBe('technology')
       }
@@ -344,8 +344,8 @@ describe('End-to-End Workflow Tests', () => {
       })
 
       const year2024Data = assertSuccessResponse(year2024Response)
-      expect(year2024Data.matches.length).toBeGreaterThan(0)
-      for (const match of year2024Data.matches) {
+      expect(year2024Data.vectors.length).toBeGreaterThan(0)
+      for (const match of year2024Data.vectors) {
         expect(match.metadata?.year).toBe(2024)
       }
 
@@ -358,8 +358,8 @@ describe('End-to-End Workflow Tests', () => {
       })
 
       const papersData = assertSuccessResponse(papersResponse)
-      expect(papersData.matches.length).toBeGreaterThan(0)
-      for (const match of papersData.matches) {
+      expect(papersData.vectors.length).toBeGreaterThan(0)
+      for (const match of papersData.vectors) {
         expect(match.metadata?.type).toBe('paper')
       }
 
@@ -419,8 +419,8 @@ describe('End-to-End Workflow Tests', () => {
       })
 
       const queryData = assertSuccessResponse(queryResponse)
-      expect(queryData.matches.length).toBeGreaterThan(0)
-      expect(queryData.matches.length).toBeLessThanOrEqual(10)
+      expect(queryData.vectors.length).toBeGreaterThan(0)
+      expect(queryData.vectors.length).toBeLessThanOrEqual(10)
 
       // Delete in batches
       const keysToDelete = Array.from({ length: 100 }, (_, i) => `vector-${i}`)

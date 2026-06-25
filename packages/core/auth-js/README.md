@@ -27,7 +27,17 @@
 [![Package](https://img.shields.io/npm/v/@supabase/auth-js)](https://www.npmjs.com/package/@supabase/auth-js)
 [![License: MIT](https://img.shields.io/npm/l/@supabase/supabase-js)](#license)
 [![pkg.pr.new](https://pkg.pr.new/badge/supabase/auth-js)](https://pkg.pr.new/~/supabase/auth-js)
+
 </div>
+
+## Requirements
+
+- **Node.js 20 or later** (Node.js 18 support dropped as of October 31, 2025)
+- For browser support, all modern browsers are supported
+
+> ⚠️ **Node.js 18 Deprecation Notice**
+>
+> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped on October 31, 2025.
 
 ## Quick start
 
@@ -71,21 +81,19 @@ This package is part of the [Supabase JavaScript monorepo](https://github.com/su
 
 ```bash
 # Complete build (from monorepo root)
-npx nx build auth-js
+pnpm nx build auth-js
 
 # Build with watch mode for development
-npx nx build auth-js --watch
+pnpm nx build auth-js --watch
 
 # Individual build targets
-npx nx build:main auth-js    # CommonJS build (dist/main/)
-npx nx build:module auth-js  # ES Modules build (dist/module/)
+pnpm nx build:main auth-js    # CommonJS build (dist/main/)
+pnpm nx build:module auth-js  # ES Modules build (dist/module/)
 
 # Other useful commands
-npx nx clean auth-js         # Clean build artifacts
-npx nx format auth-js        # Format code with Prettier
-npx nx lint auth-js          # Run ESLint
-npx nx typecheck auth-js     # TypeScript type checking
-npx nx docs auth-js          # Generate documentation
+pnpm nx lint auth-js          # Run ESLint
+pnpm nx typecheck auth-js     # TypeScript type checking
+pnpm nx docs auth-js          # Generate documentation
 ```
 
 #### Build Outputs
@@ -96,30 +104,61 @@ npx nx docs auth-js          # Generate documentation
 
 ### Testing
 
-**Docker Required!** The auth-js tests require a local Supabase Auth server (GoTrue) running in Docker.
+The auth-js package has two test suites:
+
+1. **CLI Tests** - Main test suite using Supabase CLI (331 tests)
+2. **Docker Tests** - Edge case tests requiring specific GoTrue configurations (11 tests)
+
+#### Prerequisites
+
+- **Supabase CLI** - Required for main test suite ([installation guide](https://supabase.com/docs/guides/cli))
+- **Docker** - Required for edge case tests
+
+#### Running Tests
 
 ```bash
-# Run complete test suite (from monorepo root)
-npx nx test:auth auth-js
+# Run main test suite with Supabase CLI (recommended)
+pnpm nx test:auth auth-js
+
+# Run Docker-only edge case tests
+pnpm nx test:docker auth-js
+
+# Run both test suites
+pnpm nx test:auth auth-js && pnpm nx test:docker auth-js
 ```
 
-This command automatically:
+#### Main Test Suite (Supabase CLI)
 
-1. Stops any existing test containers
-2. Starts a Supabase Auth server (GoTrue) and PostgreSQL database in Docker
-3. Waits for services to be ready (30 seconds)
-4. Runs the test suite
-5. Cleans up Docker containers after tests complete
+The `test:auth` command automatically:
 
-#### Individual Test Commands
+1. Stops any existing Supabase instance
+2. Starts a local Supabase instance via CLI
+3. Runs the test suite (excludes `docker-tests/` folder)
+4. Cleans up after tests complete
 
 ```bash
-# Run just the test suite (requires infrastructure to be running)
-npx nx test:suite auth-js
+# Individual commands for manual control
+pnpm nx test:infra auth-js    # Start Supabase CLI
+pnpm nx test:suite auth-js    # Run tests only
+pnpm nx test:clean-post auth-js  # Stop Supabase CLI
+```
 
-# Manually manage test infrastructure
-npx nx test:infra auth-js   # Start Docker containers
-npx nx test:clean auth-js   # Stop and remove containers
+#### Docker Tests (Edge Cases)
+
+The `test:docker` target runs tests that require specific GoTrue configurations not possible with a single Supabase CLI instance:
+
+- **Signup disabled** - Tests for disabled signup functionality
+- **Asymmetric JWT (RS256)** - Tests for RS256 JWT verification
+- **Phone OTP / SMS** - Tests requiring Twilio SMS provider
+- **Anonymous sign-in disabled** - Tests for disabled anonymous auth
+
+These tests are located in `test/docker-tests/` and use the Docker Compose setup in `infra/docker-compose.yml`.
+
+```bash
+# Individual commands for manual control
+pnpm nx test:docker:infra auth-js    # Start Docker containers
+pnpm nx test:docker:suite auth-js    # Run Docker tests only
+pnpm nx test:docker:clean-post auth-js  # Stop Docker containers
 ```
 
 #### Development Testing
@@ -127,29 +166,22 @@ npx nx test:clean auth-js   # Stop and remove containers
 For actively developing and debugging tests:
 
 ```bash
-# Start infrastructure once
-npx nx test:infra auth-js
+# Start Supabase CLI once
+pnpm nx test:infra auth-js
 
-# Run tests multiple times (faster since containers stay up)
-npx nx test:suite auth-js
+# Run tests multiple times (faster since instance stays up)
+pnpm nx test:suite auth-js
 
 # Clean up when done
-npx nx test:clean auth-js
+pnpm nx test:clean-post auth-js
 ```
 
 #### Test Infrastructure
 
-The Docker setup includes:
-
-- **Supabase Auth (GoTrue)** - The authentication server
-- **PostgreSQL** - Database for auth data
-- Pre-configured with test users and settings
-
-#### Prerequisites
-
-- **Docker** must be installed and running
-- Ports used by test infrastructure (check `infra/docker-compose.yml`)
-- No full Supabase instance needed - just the Auth server
+| Suite        | Infrastructure | Configuration               |
+| ------------ | -------------- | --------------------------- |
+| CLI Tests    | Supabase CLI   | `test/supabase/config.toml` |
+| Docker Tests | Docker Compose | `infra/docker-compose.yml`  |
 
 ### Contributing
 

@@ -1,8 +1,14 @@
 /**
  * @jest-environment jsdom
+ * @jest-environment-options {"url": "http://localhost:9999"}
  */
 
-import { autoRefreshClient, getClientWithSpecificStorage, pkceClient } from './lib/clients'
+import {
+  autoRefreshClient,
+  getClientWithSpecificStorage,
+  getClientWithSpecificStorageKey,
+  pkceClient,
+} from './lib/clients'
 import { mockUserCredentials } from './lib/utils'
 import {
   supportsLocalStorage,
@@ -30,18 +36,7 @@ describe('GoTrueClient in browser environment', () => {
       writable: true,
     })
 
-    // Mock window.location
-    const mockLocation = {
-      href: 'http://localhost:9999',
-      assign: jest.fn(),
-      replace: jest.fn(),
-      reload: jest.fn(),
-      toString: () => 'http://localhost:9999',
-    }
-    Object.defineProperty(window, 'location', {
-      value: mockLocation,
-      writable: true,
-    })
+    window.history.pushState(null, '', '/')
   })
 
   it('should handle basic OAuth', async () => {
@@ -80,6 +75,22 @@ describe('GoTrueClient in browser environment', () => {
   })
 
   it('should handle PKCE flow', async () => {
+    // Mock fetch since jsdom doesn't provide it, and we're testing browser behavior not HTTP
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        access_token: 'test-token',
+        refresh_token: 'test-refresh-token',
+        expires_in: 3600,
+        token_type: 'bearer',
+        user: {
+          id: 'test-user-id',
+          email: 'test@example.com',
+          created_at: new Date().toISOString(),
+        },
+      }),
+    })
+
     const { email, password } = mockUserCredentials()
     const pkceClient = getClientWithSpecificStorage({
       getItem: jest.fn(),
@@ -174,11 +185,99 @@ describe('Fetch resolution in browser environment', () => {
     const resolvedFetch = resolveFetch(customFetch)
     expect(typeof resolvedFetch).toBe('function')
   })
+
+  it('should warn when two clients are created with the same storage key', () => {
+    let consoleWarnSpy
+    let consoleTraceSpy
+    try {
+      consoleWarnSpy = jest.spyOn(console, 'warn')
+      consoleTraceSpy = jest.spyOn(console, 'trace')
+      getClientWithSpecificStorageKey('same-storage-key')
+      getClientWithSpecificStorageKey('same-storage-key')
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(1)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /GoTrueClient@same-storage-key:1 .* Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key./
+        )
+      )
+      expect(consoleTraceSpy).not.toHaveBeenCalled()
+    } finally {
+      consoleWarnSpy?.mockRestore()
+      consoleTraceSpy?.mockRestore()
+    }
+  })
+
+  it('should warn & trace when two clients are created with the same storage key and debug is enabled', () => {
+    let consoleWarnSpy
+    let consoleTraceSpy
+    try {
+      consoleWarnSpy = jest.spyOn(console, 'warn')
+      consoleTraceSpy = jest.spyOn(console, 'trace')
+      getClientWithSpecificStorageKey('identical-storage-key')
+      getClientWithSpecificStorageKey('identical-storage-key', { debug: true })
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(1)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /GoTrueClient@identical-storage-key:1 .* Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key./
+        )
+      )
+      expect(consoleTraceSpy).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /GoTrueClient@identical-storage-key:1 .* Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key./
+        )
+      )
+    } finally {
+      consoleWarnSpy?.mockRestore()
+      consoleTraceSpy?.mockRestore()
+    }
+  })
+
+  it('should not warn when two clients are created with differing storage keys', () => {
+    let consoleWarnSpy
+    let consoleTraceSpy
+    try {
+      consoleWarnSpy = jest.spyOn(console, 'warn')
+      consoleTraceSpy = jest.spyOn(console, 'trace')
+      getClientWithSpecificStorageKey('first-storage-key')
+      getClientWithSpecificStorageKey('second-storage-key')
+      expect(consoleWarnSpy).not.toHaveBeenCalled()
+      expect(consoleTraceSpy).not.toHaveBeenCalled()
+    } finally {
+      consoleWarnSpy?.mockRestore()
+      consoleTraceSpy?.mockRestore()
+    }
+  })
+
+  it('should warn only when a second client with a duplicate key is created', () => {
+    let consoleWarnSpy
+    let consoleTraceSpy
+    try {
+      consoleWarnSpy = jest.spyOn(console, 'warn')
+      consoleTraceSpy = jest.spyOn(console, 'trace')
+      getClientWithSpecificStorageKey('test-storage-key1')
+      expect(consoleWarnSpy).not.toHaveBeenCalled()
+      getClientWithSpecificStorageKey('test-storage-key2')
+      expect(consoleWarnSpy).not.toHaveBeenCalled()
+      getClientWithSpecificStorageKey('test-storage-key3')
+      expect(consoleWarnSpy).not.toHaveBeenCalled()
+      getClientWithSpecificStorageKey('test-storage-key2')
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(1)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /GoTrueClient@test-storage-key2:1 .* Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key./
+        )
+      )
+      expect(consoleTraceSpy).not.toHaveBeenCalled()
+    } finally {
+      consoleWarnSpy?.mockRestore()
+      consoleTraceSpy?.mockRestore()
+    }
+  })
 })
 
 describe('Callback URL handling', () => {
   let mockFetch: jest.Mock
-  let storedSession: string | null
+  let storedSession: string | null = null
   const mockStorage = {
     getItem: jest.fn(() => storedSession),
     setItem: jest.fn((key: string, value: string) => {
@@ -192,12 +291,16 @@ describe('Callback URL handling', () => {
   beforeEach(() => {
     mockFetch = jest.fn()
     global.fetch = mockFetch
+    storedSession = null
   })
 
   it('should handle implicit grant callback', async () => {
     // Set up URL with implicit grant callback parameters
-    window.location.href =
-      'http://localhost:9999/callback#access_token=test-token&refresh_token=test-refresh-token&expires_in=3600&token_type=bearer&type=implicit'
+    window.history.pushState(
+      null,
+      '',
+      '/callback#access_token=test-token&refresh_token=test-refresh-token&expires_in=3600&token_type=bearer&type=implicit'
+    )
 
     // Mock user info response
     mockFetch.mockImplementation((url: string) => {
@@ -238,8 +341,11 @@ describe('Callback URL handling', () => {
 
   it('should handle error in callback URL', async () => {
     // Set up URL with error parameters
-    window.location.href =
-      'http://localhost:9999/callback#error=invalid_grant&error_description=Invalid+grant'
+    window.history.pushState(
+      null,
+      '',
+      '/callback#error=invalid_grant&error_description=Invalid+grant'
+    )
 
     mockFetch.mockImplementation((url: string) => {
       return Promise.resolve({
@@ -262,17 +368,12 @@ describe('Callback URL handling', () => {
   })
 
   it('should handle _initialize with detectSessionInUrl', async () => {
-    // Mock window.location with session parameters
-    Object.defineProperty(window, 'location', {
-      value: {
-        href: 'http://localhost:9999/callback?access_token=test&refresh_token=test&expires_in=3600&token_type=bearer&type=recovery',
-        assign: jest.fn(),
-        replace: jest.fn(),
-        reload: jest.fn(),
-        toString: () => 'http://localhost:9999/callback',
-      },
-      writable: true,
-    })
+    // Set URL with session parameters
+    window.history.pushState(
+      null,
+      '',
+      '/callback?access_token=test&refresh_token=test&expires_in=3600&token_type=bearer&type=recovery'
+    )
 
     const client = new (require('../src/GoTrueClient').default)({
       url: 'http://localhost:9999',
@@ -287,17 +388,8 @@ describe('Callback URL handling', () => {
   })
 
   it('should handle _initialize with PKCE flow mismatch', async () => {
-    // Mock window.location with PKCE parameters
-    Object.defineProperty(window, 'location', {
-      value: {
-        href: 'http://localhost:9999/callback?code=test-code',
-        assign: jest.fn(),
-        replace: jest.fn(),
-        reload: jest.fn(),
-        toString: () => 'http://localhost:9999/callback',
-      },
-      writable: true,
-    })
+    // Set URL with PKCE parameters
+    window.history.pushState(null, '', '/callback?code=test-code')
 
     // Mock storage to return code verifier
     const mockStorage = {
@@ -318,6 +410,167 @@ describe('Callback URL handling', () => {
     await client.initialize()
 
     expect(client).toBeDefined()
+  })
+
+  it('should use custom detectSessionInUrl function to filter out non-Supabase OAuth callbacks', async () => {
+    // Simulate Facebook OAuth redirect with access_token in fragment
+    window.history.pushState(
+      null,
+      '',
+      '/facebook/redirect#access_token=facebook-token&data_access_expiration_time=1658889585'
+    )
+
+    // Custom predicate to ignore Facebook OAuth redirects
+    const detectSessionInUrlFn = jest.fn((url: URL, params: { [key: string]: string }) => {
+      // Ignore Facebook OAuth redirects
+      if (url.pathname === '/facebook/redirect') return false
+      // Default behavior for other URLs
+      return Boolean(params.access_token || params.error_description)
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: detectSessionInUrlFn,
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    await client.initialize()
+
+    // The custom function should have been called
+    expect(detectSessionInUrlFn).toHaveBeenCalled()
+    expect(detectSessionInUrlFn).toHaveBeenCalledWith(
+      expect.any(URL),
+      expect.objectContaining({ access_token: 'facebook-token' })
+    )
+
+    // Session should be null because we filtered out the Facebook callback
+    const { data } = await client.getSession()
+    expect(data.session).toBeNull()
+  })
+
+  it('should process Supabase callbacks when custom detectSessionInUrl returns true', async () => {
+    // Simulate Supabase OAuth redirect
+    window.history.pushState(
+      null,
+      '',
+      '/auth/callback#access_token=supabase-token&refresh_token=test-refresh&expires_in=3600&token_type=bearer&type=implicit'
+    )
+
+    // Mock fetch for user info
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/user')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              id: 'test-user',
+              email: 'test@example.com',
+              created_at: new Date().toISOString(),
+            }),
+        })
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            access_token: 'supabase-token',
+            refresh_token: 'test-refresh',
+            expires_in: 3600,
+            token_type: 'bearer',
+            user: { id: 'test-user' },
+          }),
+      })
+    })
+
+    // Custom predicate that allows Supabase callbacks but not Facebook
+    const detectSessionInUrlFn = jest.fn((url: URL, params: { [key: string]: string }) => {
+      if (url.pathname === '/facebook/redirect') return false
+      return Boolean(params.access_token || params.error_description)
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: detectSessionInUrlFn,
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    await client.initialize()
+
+    // The custom function should have been called and returned true
+    expect(detectSessionInUrlFn).toHaveBeenCalled()
+    expect(detectSessionInUrlFn.mock.results[0].value).toBe(true)
+
+    // Session should be set because we allowed this callback
+    const { data } = await client.getSession()
+    expect(data.session).toBeDefined()
+    expect(data.session?.access_token).toBe('supabase-token')
+  })
+
+  it('should return error when custom detectSessionInUrl function throws', async () => {
+    window.history.pushState(null, '', '/callback#access_token=test-token')
+
+    // Reset storage state from previous tests
+    storedSession = null
+
+    // Custom predicate that throws an error
+    const detectSessionInUrlFn = jest.fn(() => {
+      throw new Error('Custom predicate error')
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: detectSessionInUrlFn,
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    // initialize() catches errors and returns them wrapped in AuthUnknownError
+    const { error } = await client.initialize()
+
+    expect(detectSessionInUrlFn).toHaveBeenCalled()
+    expect(error).toBeDefined()
+    expect(error?.message).toBe('Unexpected error during initialization')
+    expect(error?.originalError?.message).toBe('Custom predicate error')
+  })
+
+  it('should use default behavior when detectSessionInUrl is true (boolean)', async () => {
+    window.history.pushState(
+      null,
+      '',
+      '/callback#access_token=test-token&refresh_token=test-refresh&expires_in=3600&token_type=bearer&type=implicit'
+    )
+
+    // Mock fetch for user info
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/user')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              id: 'test-user',
+              email: 'test@example.com',
+              created_at: new Date().toISOString(),
+            }),
+        })
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+    })
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      detectSessionInUrl: true, // Boolean true - use default behavior
+      autoRefreshToken: false,
+      storage: mockStorage,
+    })
+
+    await client.initialize()
+
+    // Should process the callback with default behavior
+    const { data } = await client.getSession()
+    expect(data.session).toBeDefined()
+    expect(data.session?.access_token).toBe('test-token')
   })
 })
 
@@ -397,51 +650,22 @@ describe('GoTrueClient BroadcastChannel', () => {
   })
 })
 
-describe('Browser locks functionality', () => {
-  it('should use navigator locks when available', () => {
-    // Mock navigator.locks
-    const mockLock = { name: 'test-lock' }
-    const mockRequest = jest
-      .fn()
-      .mockImplementation((_, __, callback) => Promise.resolve(callback(mockLock)))
-
+describe('Lockless coordination: navigator.locks should NOT be invoked', () => {
+  it('initializes without touching navigator.locks', async () => {
+    const mockRequest = jest.fn()
     Object.defineProperty(navigator, 'locks', {
       value: { request: mockRequest },
       writable: true,
     })
 
-    // Test navigator locks usage in GoTrueClient
     const client = getClientWithSpecificStorage({
       getItem: jest.fn(),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     })
-
-    expect(client).toBeDefined()
-  })
-
-  it('should handle _acquireLock with empty pendingInLock', async () => {
-    const client = getClientWithSpecificStorage({
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-    })
-
-    // Mock navigator.locks
-    const mockLock = { name: 'test-lock' }
-    const mockRequest = jest
-      .fn()
-      .mockImplementation((_, __, callback) => Promise.resolve(callback(mockLock)))
-
-    Object.defineProperty(navigator, 'locks', {
-      value: { request: mockRequest },
-      writable: true,
-    })
-
-    // Initialize client to trigger lock acquisition
     await client.initialize()
 
-    expect(client).toBeDefined()
+    expect(mockRequest).not.toHaveBeenCalled()
   })
 })
 
@@ -565,16 +789,7 @@ describe('GoTrueClient constructor edge cases', () => {
 
 describe('linkIdentity with skipBrowserRedirect false', () => {
   it('should linkIdentity with skipBrowserRedirect false', async () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        href: 'http://localhost:9999',
-        assign: jest.fn(),
-        replace: jest.fn(),
-        reload: jest.fn(),
-        toString: () => 'http://localhost:9999',
-      },
-      writable: true,
-    })
+    window.history.pushState(null, '', '/')
     // Mock successful session
     const mockSession = {
       access_token: 'test-access-token',
@@ -609,19 +824,6 @@ describe('linkIdentity with skipBrowserRedirect false', () => {
       fetch: mockFetch,
     })
 
-    // Mock window.location.assign
-    const mockAssign = jest.fn()
-    Object.defineProperty(window, 'location', {
-      value: {
-        href: 'http://localhost:9999',
-        assign: mockAssign,
-        replace: jest.fn(),
-        reload: jest.fn(),
-        toString: () => 'http://localhost:9999',
-      },
-      writable: true,
-    })
-
     try {
       const result = await clientWithSession.linkIdentity({
         provider: 'github',
@@ -632,8 +834,6 @@ describe('linkIdentity with skipBrowserRedirect false', () => {
 
       expect(result.data?.url).toBeDefined()
       expect(mockFetch).toHaveBeenCalled()
-      // Note: linkIdentity might not always call window.location.assign depending on the response
-      // So we just verify the result is defined
     } catch (error) {
       console.error('Test error:', error)
       throw error
@@ -828,17 +1028,12 @@ describe('Additional Tests', () => {
   })
 
   it('should handle _initialize with expires_at parameter', async () => {
-    // Mock window.location with expires_at parameter
-    Object.defineProperty(window, 'location', {
-      value: {
-        href: 'http://localhost:9999/callback?access_token=test&refresh_token=test&expires_in=3600&expires_at=1234567890&token_type=bearer',
-        assign: jest.fn(),
-        replace: jest.fn(),
-        reload: jest.fn(),
-        toString: () => 'http://localhost:9999/callback',
-      },
-      writable: true,
-    })
+    // Set URL with expires_at parameter
+    window.history.pushState(
+      null,
+      '',
+      '/callback?access_token=test&refresh_token=test&expires_in=3600&expires_at=1234567890&token_type=bearer'
+    )
 
     const client = new (require('../src/GoTrueClient').default)({
       url: 'http://localhost:9999',
@@ -860,18 +1055,6 @@ describe('Additional Tests', () => {
       headers: new Headers(),
     })
 
-    const mockAssign = jest.fn()
-    Object.defineProperty(window, 'location', {
-      value: {
-        href: 'http://localhost:9999',
-        assign: mockAssign,
-        replace: jest.fn(),
-        reload: jest.fn(),
-        toString: () => 'http://localhost:9999',
-      },
-      writable: true,
-    })
-
     const client = new (require('../src/GoTrueClient').default)({
       url: 'http://localhost:9999',
       autoRefreshToken: false,
@@ -885,8 +1068,7 @@ describe('Additional Tests', () => {
       },
     })
 
-    expect(data?.url).toBeDefined()
-    expect(mockAssign).toHaveBeenCalledWith('http://localhost:9999/authorize?provider=github')
+    expect(data?.url).toBe('http://localhost:9999/authorize?provider=github')
   })
 })
 
@@ -899,18 +1081,6 @@ describe('OAuth and Sign-in Branch Testing', () => {
       headers: new Headers(),
     })
 
-    const mockAssign = jest.fn()
-    Object.defineProperty(window, 'location', {
-      value: {
-        href: 'http://localhost:9999',
-        assign: mockAssign,
-        replace: jest.fn(),
-        reload: jest.fn(),
-        toString: () => 'http://localhost:9999',
-      },
-      writable: true,
-    })
-
     const client = new (require('../src/GoTrueClient').default)({
       url: 'http://localhost:9999',
       autoRefreshToken: false,
@@ -924,8 +1094,7 @@ describe('OAuth and Sign-in Branch Testing', () => {
       },
     })
 
-    expect(data?.url).toBeDefined()
-    expect(mockAssign).toHaveBeenCalledWith('http://localhost:9999/authorize?provider=github')
+    expect(data?.url).toBe('http://localhost:9999/authorize?provider=github')
   })
 
   it('should handle signInWithPassword with phone', async () => {
@@ -1027,36 +1196,22 @@ describe('Storage and User Storage Combinations', () => {
   })
 })
 
-describe('Lock Mechanism Branches', () => {
-  it('should handle lock acquisition timeout', async () => {
-    const slowLock = jest
+describe('Legacy lock opt-in: custom `lock` function is invoked when supplied', () => {
+  it('a custom `lock` function passed to the constructor IS invoked (legacy path)', async () => {
+    const customLock = jest
       .fn()
-      .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)))
+      .mockImplementation(async (_name: string, _timeout: number, fn: () => Promise<unknown>) =>
+        fn()
+      )
 
     const client = new (require('../src/GoTrueClient').default)({
       url: 'http://localhost:9999',
       autoRefreshToken: false,
-      lock: slowLock,
+      lock: customLock,
     })
 
     await client.initialize()
-    expect(client).toBeDefined()
-  })
-
-  it('should handle lock release errors', async () => {
-    const errorLock = jest.fn().mockImplementation(() => ({
-      acquire: jest.fn().mockResolvedValue(undefined),
-      release: jest.fn().mockRejectedValue(new Error('Lock release error')),
-    }))
-
-    const client = new (require('../src/GoTrueClient').default)({
-      url: 'http://localhost:9999',
-      autoRefreshToken: false,
-      lock: errorLock,
-    })
-
-    await client.initialize()
-    expect(client).toBeDefined()
+    expect(customLock).toHaveBeenCalled()
   })
 })
 

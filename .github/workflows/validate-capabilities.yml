@@ -1,0 +1,13 @@
+name: SDK Compliance
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: supabase/sdk/.github/workflows/validate-sdk-compliance.yml@main
+    with:
+      language: javascript

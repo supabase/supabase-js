@@ -1,44 +1,88 @@
 import { serve } from 'https://deno.land/std@0.192.0/http/server.ts'
 import { assertEquals } from 'https://deno.land/std@0.224.0/testing/asserts.ts'
 import { describe, it, beforeAll, afterAll } from 'https://deno.land/std@0.224.0/testing/bdd.ts'
-import { Browser, Page, launch } from 'npm:puppeteer@24.9.0'
+import { Browser, Page, launch } from 'npm:puppeteer@24.19.0'
 import { sleep } from 'https://deno.land/x/sleep/mod.ts'
-// Run the UMD build before serving the page
+
 const stderr = 'inherit'
 const ac = new AbortController()
 
 let browser: Browser
-let page: Page
 
 const port = 8000
 const content = `<html>
 <body>
     <div id="output"></div>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.29.7/babel.min.js"></script>
     <script src="http://localhost:${port}/supabase.js"></script>
 
     <script type="text/babel" data-presets="env,react">
         const SUPABASE_URL = 'http://127.0.0.1:54321'
-        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-        const supabase = supabase.createClient(SUPABASE_URL, ANON_KEY)
-        const App = (props) => {
+        const PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTk4MzgxMjk5Nn0.jkAl8ZbvuOYg3HGfFtNz6Tpe6hVLlRPpATG0okuLsIg'
+
+        // Get vsn from query params
+        const urlParams = new URLSearchParams(window.location.search)
+        const vsn = urlParams.get('vsn') || '1.0.0'
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
+            realtime: {
+                heartbeatIntervalMs: 500,
+                vsn: vsn
+            }
+        })
+
+        const App = () => {
             const [realtimeStatus, setRealtimeStatus] = React.useState(null)
-            const channel = supabase.channel('realtime:public:todos')
+            const [receivedMessage, setReceivedMessage] = React.useState(null)
+            const channelRef = React.useRef(null)
+
             React.useEffect(() => {
-                channel.subscribe((status) => { if (status === 'SUBSCRIBED') setRealtimeStatus(status) })
+                const channelName = \`test-broadcast-channel-\${vsn}\`
+                const channel = supabase.channel(channelName, {
+                    config: { broadcast: { ack: true, self: true } }
+                })
+
+                channelRef.current = channel
+
+                // Listen for broadcast messages
+                channel.on('broadcast', { event: 'test-event' }, (payload) => {
+                    setReceivedMessage(payload.payload)
+                })
+
+                // Subscribe to the channel
+                channel.subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        setRealtimeStatus(status)
+
+                        // Send a test message after subscribing
+                        await channel.send({
+                            type: 'broadcast',
+                            event: 'test-event',
+                            payload: { message: 'Hello from browser!' }
+                        })
+                    }
+                })
 
                 return () => {
                     channel.unsubscribe()
                 }
             }, [])
-            if (realtimeStatus) {
-                return <div id='realtime_status'>{realtimeStatus}</div>
-            } else {
-                return <div></div>
-            }
+
+            return (
+                <div>
+                    <div id='vsn'>{vsn}</div>
+                    {realtimeStatus && (
+                        <div id='realtime_status'>{realtimeStatus}</div>
+                    )}
+                    {receivedMessage && (
+                        <div id='received_message'>{receivedMessage.message}</div>
+                    )}
+                </div>
+            )
         }
+
         ReactDOM.render(<App />, document.getElementById('output'));
     </script>
 </body>
@@ -46,10 +90,14 @@ const content = `<html>
 `
 
 beforeAll(async () => {
-  await new Deno.Command('supabase', { args: ['start'], stderr }).output()
+  try {
+    await new Deno.Command('npx', { args: ['supabase', 'start'], stderr }).output()
+  } catch {
+    // supabase may already be running (e.g. in CI) or not available via PATH
+  }
   await new Deno.Command('npm', { args: ['install'], stderr }).output()
   await new Deno.Command('npm', {
-    args: ['run', 'build:umd', '--', '--mode', 'production'],
+    args: ['run', 'build'],
     stderr,
   }).output()
 
@@ -80,8 +128,6 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await ac.abort()
-  await page.close()
-  await browser.close()
   await sleep(1)
 })
 
@@ -90,13 +136,55 @@ describe('Realtime integration test', () => {
     browser = await launch({
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     })
-    page = await browser.newPage()
   })
 
-  it('connects to realtime', async () => {
-    await page.goto('http://localhost:8000')
-    await page.waitForSelector('#realtime_status', { timeout: 2000 })
-    const realtimeStatus = await page.$eval('#realtime_status', (el) => el.innerHTML)
-    assertEquals(realtimeStatus, 'SUBSCRIBED')
+  afterAll(async () => {
+    await browser.close()
+  })
+
+  const versions = [{ vsn: '1.0.0' }, { vsn: '2.0.0' }]
+
+  versions.forEach(({ vsn }) => {
+    describe(`Realtime with vsn: ${vsn}`, () => {
+      let page: Page
+
+      beforeAll(async () => {
+        page = await browser.newPage()
+        // Surface client-side failures (e.g. broken bundle, CDN drift) instead of
+        // a silent `#realtime_status` timeout. Silent on success.
+        page.on('pageerror', (err) => console.log(`[browser:${vsn}] pageerror: ${err.message}`))
+        page.on('requestfailed', (req) =>
+          console.log(`[browser:${vsn}] requestfailed: ${req.url()} ${req.failure()?.errorText}`)
+        )
+      })
+
+      afterAll(async () => {
+        await page.close()
+      })
+
+      it('connects to realtime', async () => {
+        await page.goto(`http://localhost:${port}?vsn=${vsn}`)
+        await page.waitForSelector('#realtime_status', { timeout: 2000 })
+        const realtimeStatus = await page.$eval('#realtime_status', (el) => el.innerHTML)
+        assertEquals(realtimeStatus, 'SUBSCRIBED')
+
+        // Verify correct version is being used
+        const displayedVsn = await page.$eval('#vsn', (el) => el.innerHTML)
+        assertEquals(displayedVsn, vsn)
+      })
+
+      it('can broadcast and receive messages', async () => {
+        await page.goto(`http://localhost:${port}?vsn=${vsn}`)
+
+        // Wait for subscription
+        await page.waitForSelector('#realtime_status', { timeout: 2000 })
+
+        // Wait for the broadcast message to be received
+        await page.waitForSelector('#received_message', { timeout: 5000 })
+        const receivedMessage = await page.$eval('#received_message', (el) => el.innerHTML)
+
+        assertEquals(receivedMessage, 'Hello from browser!')
+      })
+    })
   })
 })

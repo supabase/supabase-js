@@ -4,19 +4,19 @@ import { PostgrestClient } from '../src/index'
 import { expectType, type TypeEqual } from './types'
 import type { Database } from './types.override'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 
 describe('embeded functions select', () => {
   test('embeded_setof_function - function returning a setof embeded table', async () => {
     const res = await postgrest.from('channels').select('id, all_channels_messages:get_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_channels_messages": Array [
-              Object {
+        "data": [
+          {
+            "all_channels_messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
@@ -26,9 +26,9 @@ describe('embeded functions select', () => {
             ],
             "id": 1,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
+          {
+            "all_channels_messages": [
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -38,13 +38,20 @@ describe('embeded functions select', () => {
             ],
             "id": 2,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
+          {
+            "all_channels_messages": [
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
@@ -54,6 +61,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -84,32 +92,36 @@ describe('embeded functions select', () => {
       .from('channels')
       .select('id, all_channels_messages:get_messages(id,message)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_channels_messages": Array [
-              Object {
+        "data": [
+          {
+            "all_channels_messages": [
+              {
                 "id": 1,
                 "message": "Hello World 👋",
               },
             ],
             "id": 1,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
+          {
+            "all_channels_messages": [
+              {
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               },
             ],
             "id": 2,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
+          {
+            "all_channels_messages": [
+              {
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
+              },
+              {
+                "id": 3,
+                "message": "Some message on channel without details",
               },
             ],
             "id": 3,
@@ -118,6 +130,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -141,55 +154,63 @@ describe('embeded functions select', () => {
   test('embeded_setof_function_double_definition - function double definition returning a setof embeded table', async () => {
     const res = await postgrest.from('users').select('username, all_user_messages:get_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_user_messages": Array [
-              Object {
+        "data": [
+          {
+            "all_user_messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
                 "message": "Hello World 👋",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
             "username": "supabot",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "dragarcia",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -218,46 +239,51 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, all_user_messages:get_messages(id,message)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_user_messages": Array [
-              Object {
+        "data": [
+          {
+            "all_user_messages": [
+              {
                 "id": 1,
                 "message": "Hello World 👋",
               },
-              Object {
+              {
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               },
-              Object {
+              {
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
+              },
+              {
+                "id": 3,
+                "message": "Some message on channel without details",
               },
             ],
             "username": "supabot",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "dragarcia",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -283,49 +309,55 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, all_user_messages:get_messages(id,message, blurb_message)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_user_messages": Array [
-              Object {
+        "data": [
+          {
+            "all_user_messages": [
+              {
                 "blurb_message": "Hel",
                 "id": 1,
                 "message": "Hello World 👋",
               },
-              Object {
+              {
                 "blurb_message": "Per",
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               },
-              Object {
+              {
                 "blurb_message": "Som",
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
+              },
+              {
+                "blurb_message": "Som",
+                "id": 3,
+                "message": "Some message on channel without details",
               },
             ],
             "username": "supabot",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "all_user_messages": Array [],
+          {
+            "all_user_messages": [],
             "username": "dragarcia",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -352,29 +384,29 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, setof_rows_one:function_using_setof_rows_one(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "setof_rows_one": Object {
+        "data": [
+          {
+            "setof_rows_one": {
               "id": 1,
               "username": "supabot",
             },
             "username": "supabot",
           },
-          Object {
+          {
             "setof_rows_one": null,
             "username": "kiwicopple",
           },
-          Object {
+          {
             "setof_rows_one": null,
             "username": "awailas",
           },
-          Object {
+          {
             "setof_rows_one": null,
             "username": "jsonuser",
           },
-          Object {
+          {
             "setof_rows_one": null,
             "username": "dragarcia",
           },
@@ -382,6 +414,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -407,39 +440,39 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, returns_row:function_using_table_returns(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "returns_row": Object {
+        "data": [
+          {
+            "returns_row": {
               "id": 1,
               "username": "supabot",
             },
             "username": "supabot",
           },
-          Object {
-            "returns_row": Object {
+          {
+            "returns_row": {
               "id": null,
               "username": null,
             },
             "username": "kiwicopple",
           },
-          Object {
-            "returns_row": Object {
+          {
+            "returns_row": {
               "id": null,
               "username": null,
             },
             "username": "awailas",
           },
-          Object {
-            "returns_row": Object {
+          {
+            "returns_row": {
               "id": null,
               "username": null,
             },
             "username": "jsonuser",
           },
-          Object {
-            "returns_row": Object {
+          {
+            "returns_row": {
               "id": null,
               "username": null,
             },
@@ -449,6 +482,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -474,11 +508,11 @@ describe('embeded functions select', () => {
       // by setting isNotNullable for the function SetofOptions definition to true
       .select('username, user_called_profile_not_null:get_user_profile_non_nullable!inner(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "user_called_profile_not_null": Object {
+        "data": [
+          {
+            "user_called_profile_not_null": {
               "id": 1,
               "username": "supabot",
             },
@@ -488,6 +522,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -515,35 +550,35 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, user_called_profile:get_user_profile(username)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "user_called_profile": Object {
+        "data": [
+          {
+            "user_called_profile": {
               "username": "supabot",
             },
             "username": "supabot",
           },
-          Object {
-            "user_called_profile": Object {
+          {
+            "user_called_profile": {
               "username": null,
             },
             "username": "kiwicopple",
           },
-          Object {
-            "user_called_profile": Object {
+          {
+            "user_called_profile": {
               "username": null,
             },
             "username": "awailas",
           },
-          Object {
-            "user_called_profile": Object {
+          {
+            "user_called_profile": {
               "username": null,
             },
             "username": "jsonuser",
           },
-          Object {
-            "user_called_profile": Object {
+          {
+            "user_called_profile": {
               "username": null,
             },
             "username": "dragarcia",
@@ -552,6 +587,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -574,13 +610,13 @@ describe('embeded functions select', () => {
       .from('channels')
       .select('id, all_channels_messages:get_messages(id,message,channels(id,slug))')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "all_channels_messages": Array [
-              Object {
-                "channels": Object {
+        "data": [
+          {
+            "all_channels_messages": [
+              {
+                "channels": {
                   "id": 1,
                   "slug": "public",
                 },
@@ -590,10 +626,10 @@ describe('embeded functions select', () => {
             ],
             "id": 1,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
-                "channels": Object {
+          {
+            "all_channels_messages": [
+              {
+                "channels": {
                   "id": 2,
                   "slug": "random",
                 },
@@ -603,15 +639,23 @@ describe('embeded functions select', () => {
             ],
             "id": 2,
           },
-          Object {
-            "all_channels_messages": Array [
-              Object {
-                "channels": Object {
+          {
+            "all_channels_messages": [
+              {
+                "channels": {
                   "id": 3,
                   "slug": "other",
                 },
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
+              },
+              {
+                "channels": {
+                  "id": 3,
+                  "slug": "other",
+                },
+                "id": 3,
+                "message": "Some message on channel without details",
               },
             ],
             "id": 3,
@@ -620,6 +664,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -647,55 +692,63 @@ describe('embeded functions select', () => {
   test('embeded_function_with_table_row_input - function with table row input', async () => {
     const res = await postgrest.from('users').select('username, user_messages:get_user_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "user_messages": Array [
-              Object {
+        "data": [
+          {
+            "user_messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
                 "message": "Hello World 👋",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
             "username": "supabot",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "dragarcia",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -724,51 +777,59 @@ describe('embeded functions select', () => {
       .from('active_users')
       .select('username, active_user_messages:get_active_user_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "active_user_messages": Array [
-              Object {
+        "data": [
+          {
+            "active_user_messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
                 "message": "Hello World 👋",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
             "username": "supabot",
           },
-          Object {
-            "active_user_messages": Array [],
+          {
+            "active_user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "active_user_messages": Array [],
+          {
+            "active_user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "active_user_messages": Array [],
+          {
+            "active_user_messages": [],
             "username": "dragarcia",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -797,26 +858,33 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, recent_messages:get_user_recent_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "recent_messages": Array [
-              Object {
+        "data": [
+          {
+            "recent_messages": [
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
-              Object {
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
@@ -826,26 +894,27 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "awailas",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "dragarcia",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -874,26 +943,33 @@ describe('embeded functions select', () => {
       .from('active_users')
       .select('username, recent_messages:get_user_recent_messages(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "recent_messages": Array [
-              Object {
+        "data": [
+          {
+            "recent_messages": [
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
-              Object {
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
@@ -903,22 +979,23 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "awailas",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "recent_messages": Array [],
+          {
+            "recent_messages": [],
             "username": "dragarcia",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -947,49 +1024,55 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, user_messages:get_user_messages(id,message,blurb_message)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "user_messages": Array [
-              Object {
+        "data": [
+          {
+            "user_messages": [
+              {
                 "blurb_message": "Hel",
                 "id": 1,
                 "message": "Hello World 👋",
               },
-              Object {
+              {
                 "blurb_message": "Per",
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               },
-              Object {
+              {
                 "blurb_message": "Som",
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
+              },
+              {
+                "blurb_message": "Som",
+                "id": 3,
+                "message": "Some message on channel without details",
               },
             ],
             "username": "supabot",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "kiwicopple",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "awailas",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "jsonuser",
           },
-          Object {
-            "user_messages": Array [],
+          {
+            "user_messages": [],
             "username": "dragarcia",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1014,10 +1097,10 @@ describe('embeded functions select', () => {
   test('embeded_function_returning_row - Cannot embed an function that is not a setofOptions one', async () => {
     const res = await postgrest.from('channels').select('id, user:function_returning_row(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST200",
           "details": "Searched for a foreign key relationship between 'channels' and 'function_returning_row' in the schema 'public', but no matches were found.",
           "hint": null,
@@ -1025,6 +1108,7 @@ describe('embeded functions select', () => {
         },
         "status": 400,
         "statusText": "Bad Request",
+        "success": false,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1037,26 +1121,33 @@ describe('embeded functions select', () => {
       .from('messages')
       .select('id, user:function_returning_single_row(status, username)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "id": 1,
-            "user": Object {
+            "user": {
               "status": "ONLINE",
               "username": "supabot",
             },
           },
-          Object {
+          {
             "id": 2,
-            "user": Object {
+            "user": {
               "status": "ONLINE",
               "username": "supabot",
             },
           },
-          Object {
+          {
             "id": 4,
-            "user": Object {
+            "user": {
+              "status": "ONLINE",
+              "username": "supabot",
+            },
+          },
+          {
+            "id": 3,
+            "user": {
               "status": "ONLINE",
               "username": "supabot",
             },
@@ -1065,6 +1156,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1088,10 +1180,10 @@ describe('embeded functions select', () => {
       .from('messages')
       .select('id, users:function_returning_set_of_rows(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST200",
           "details": "Searched for a foreign key relationship between 'messages' and 'function_returning_set_of_rows' in the schema 'public', but no matches were found.",
           "hint": null,
@@ -1099,6 +1191,7 @@ describe('embeded functions select', () => {
         },
         "status": 400,
         "statusText": "Bad Request",
+        "success": false,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1111,39 +1204,39 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, profile:function_using_table_returns(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "profile": Object {
+        "data": [
+          {
+            "profile": {
               "id": 1,
               "username": "supabot",
             },
             "username": "supabot",
           },
-          Object {
-            "profile": Object {
+          {
+            "profile": {
               "id": null,
               "username": null,
             },
             "username": "kiwicopple",
           },
-          Object {
-            "profile": Object {
+          {
+            "profile": {
               "id": null,
               "username": null,
             },
             "username": "awailas",
           },
-          Object {
-            "profile": Object {
+          {
+            "profile": {
               "id": null,
               "username": null,
             },
             "username": "jsonuser",
           },
-          Object {
-            "profile": Object {
+          {
+            "profile": {
               "id": null,
               "username": null,
             },
@@ -1153,6 +1246,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1176,29 +1270,29 @@ describe('embeded functions select', () => {
       .from('users')
       .select('username, profile:function_using_setof_rows_one(*)')
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "profile": Object {
+        "data": [
+          {
+            "profile": {
               "id": 1,
               "username": "supabot",
             },
             "username": "supabot",
           },
-          Object {
+          {
             "profile": null,
             "username": "kiwicopple",
           },
-          Object {
+          {
             "profile": null,
             "username": "awailas",
           },
-          Object {
+          {
             "profile": null,
             "username": "jsonuser",
           },
-          Object {
+          {
             "profile": null,
             "username": "dragarcia",
           },
@@ -1206,6 +1300,7 @@ describe('embeded functions select', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -1224,5 +1319,144 @@ describe('embeded functions select', () => {
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
+  })
+
+  // test select the created_ago embeded function
+  test('select the created_ago embeded function', async () => {
+    const res = await postgrest.from('users_audit').select('id, created_ago')
+    // Don't snapshot time-based values - they change daily and cause flaky tests
+    expect(res.error).toBeNull()
+    expect(res.status).toBe(200)
+    expect(res.statusText).toBe('OK')
+    expect(res.count).toBeNull()
+    expect(res.data).toHaveLength(5)
+    // Verify structure of each record
+    expect(res.data?.[0]).toMatchObject({
+      id: expect.any(Number),
+      created_ago: expect.any(Number),
+    })
+    // Verify time-based value is reasonable
+    expect(res.data?.[0].created_ago).toBeGreaterThanOrEqual(0)
+    let result: Exclude<typeof res.data, null>
+    const ExpectedSchema = z.array(
+      z.object({
+        id: z.number(),
+        created_ago: z.number().nullable(),
+      })
+    )
+    let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(res.data)
+    const use_rpc_call = await postgrest.rpc('created_ago', {
+      // @ts-expect-error Object literal may only specify known properties
+      id: 1,
+    })
+    expect(use_rpc_call).toMatchInlineSnapshot(`
+      {
+        "count": null,
+        "data": null,
+        "error": {
+          "code": "PGRST202",
+          "details": "Searched for the function public.created_ago with parameter id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
+          "hint": null,
+          "message": "Could not find the function public.created_ago(id) in the schema cache",
+        },
+        "status": 404,
+        "statusText": "Not Found",
+        "success": false,
+      }
+    `)
+    let result_rpc: Exclude<typeof use_rpc_call.data, null>
+    expectType<
+      TypeEqual<
+        typeof result_rpc,
+        {
+          error: true
+        } & 'the function public.created_ago with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
+      >
+    >(true)
+  })
+  // Test the days_since_event embeded function over partitioned table
+  test('select the days_since_event embeded function over partitioned table', async () => {
+    const res = await postgrest.from('events').select('id, days_since_event')
+    // Don't snapshot time-based values - they change daily and cause flaky tests
+    expect(res.error).toBeNull()
+    expect(res.status).toBe(200)
+    expect(res.statusText).toBe('OK')
+    expect(res.count).toBeNull()
+    expect(res.data).toHaveLength(2)
+    // Verify structure of each record
+    expect(res.data?.[0]).toMatchObject({
+      id: expect.any(Number),
+      days_since_event: expect.any(Number),
+    })
+    // Verify time-based value is reasonable
+    expect(res.data?.[0].days_since_event).toBeGreaterThanOrEqual(0)
+    let result: Exclude<typeof res.data, null>
+    const ExpectedSchema = z.array(
+      z.object({
+        id: z.number(),
+        days_since_event: z.number().nullable(),
+      })
+    )
+    let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    ExpectedSchema.parse(res.data)
+    const use_rpc_call = await postgrest.rpc('days_since_event', {
+      // @ts-expect-error Object literal may only specify known properties
+      id: 1,
+    })
+    expect(use_rpc_call).toMatchInlineSnapshot(`
+      {
+        "count": null,
+        "data": null,
+        "error": {
+          "code": "PGRST202",
+          "details": "Searched for the function public.days_since_event with parameter id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
+          "hint": null,
+          "message": "Could not find the function public.days_since_event(id) in the schema cache",
+        },
+        "status": 404,
+        "statusText": "Not Found",
+        "success": false,
+      }
+    `)
+    let result_rpc: Exclude<typeof use_rpc_call.data, null>
+    expectType<
+      TypeEqual<
+        typeof result_rpc,
+        {
+          error: true
+        } & 'the function public.days_since_event with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
+      >
+    >(true)
+  })
+
+  test('scalar_computed_count - non-SETOF non-nullable scalar returns number (not null)', async () => {
+    const res = await postgrest.from('users').select('username, scalar_computed_count()')
+    let result: Exclude<typeof res.data, null>
+    const ExpectedSchema = z.array(
+      z.object({
+        username: z.string(),
+        scalar_computed_count: z.number(),
+      })
+    )
+    let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
+  })
+
+  test('scalar_computed_ids - SETOF scalar returns string[] (not null)', async () => {
+    const res = await postgrest.from('users').select('username, scalar_computed_ids()')
+    let result: Exclude<typeof res.data, null>
+    const ExpectedSchema = z.array(
+      z.object({
+        username: z.string(),
+        scalar_computed_ids: z.array(z.string()),
+      })
+    )
+    let expected: z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 })

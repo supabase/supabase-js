@@ -50,17 +50,7 @@ describe('WebSocketFactory', () => {
     test('detects native WebSocket', () => {
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('native')
-      expect(env.constructor).toBe(MockWebSocket)
-    })
-
-    test('creates WebSocket instance', () => {
-      const ws = WebSocketFactory.createWebSocket('wss://example.com')
-      expect(ws.url).toBe('wss://example.com')
-    })
-
-    test('creates WebSocket with protocols', () => {
-      const ws = WebSocketFactory.createWebSocket('wss://example.com', ['protocol1'])
-      expect(ws.url).toBe('wss://example.com')
+      expect(env.wsConstructor).toBe(MockWebSocket)
     })
 
     test('checks if WebSocket is supported', () => {
@@ -78,7 +68,7 @@ describe('WebSocketFactory', () => {
     test('detects globalThis WebSocket', () => {
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('native')
-      expect(env.constructor).toBe(MockWebSocket)
+      expect(env.wsConstructor).toBe(MockWebSocket)
     })
 
     afterEach(() => {
@@ -97,7 +87,7 @@ describe('WebSocketFactory', () => {
     test('detects global WebSocket', () => {
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('native')
-      expect(env.constructor).toBe(MockWebSocket)
+      expect(env.wsConstructor).toBe(MockWebSocket)
     })
 
     afterEach(() => {
@@ -239,7 +229,7 @@ describe('WebSocketFactory', () => {
 
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('native')
-      expect(env.constructor).toBe(MockWebSocket)
+      expect(env.wsConstructor).toBe(MockWebSocket)
 
       delete (globalThis as any).WebSocket
     })
@@ -291,15 +281,6 @@ describe('WebSocketFactory', () => {
       expect(env.workaround).toContain('import ws from "ws"')
       expect(env.workaround).toContain('transport: ws')
     })
-
-    test.skip('throws error when trying to create WebSocket without transport', () => {
-      // Note: This test is skipped because the test runner (Vitest) provides
-      // WebSocket even when we delete it from globals. The actual functionality
-      // works correctly in real Node.js environments without WebSocket.
-      expect(() => {
-        WebSocketFactory.createWebSocket('wss://example.com')
-      }).toThrow()
-    })
   })
 
   describe('Node.js 22+ environment', () => {
@@ -315,7 +296,7 @@ describe('WebSocketFactory', () => {
 
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('native')
-      expect(env.constructor).toBe(MockWebSocket)
+      expect(env.wsConstructor).toBe(MockWebSocket)
     })
 
     test('handles missing native WebSocket in Node.js 22+', () => {
@@ -571,34 +552,6 @@ describe('WebSocketFactory', () => {
 
       // Restore original method
       ;(WebSocketFactory as any).detectEnvironment = originalDetectEnvironment
-    })
-  })
-
-  describe('createWebSocket', () => {
-    test('should create WebSocket with protocols', () => {
-      const mockWebSocket = vi.fn()
-      const originalGetWebSocketConstructor = WebSocketFactory.getWebSocketConstructor
-      WebSocketFactory.getWebSocketConstructor = () => mockWebSocket as any
-
-      WebSocketFactory.createWebSocket('ws://example.com', ['protocol1', 'protocol2'])
-
-      expect(mockWebSocket).toHaveBeenCalledWith('ws://example.com', ['protocol1', 'protocol2'])
-
-      // Restore original method
-      WebSocketFactory.getWebSocketConstructor = originalGetWebSocketConstructor
-    })
-
-    test('should create WebSocket with single protocol string', () => {
-      const mockWebSocket = vi.fn()
-      const originalGetWebSocketConstructor = WebSocketFactory.getWebSocketConstructor
-      WebSocketFactory.getWebSocketConstructor = () => mockWebSocket as any
-
-      WebSocketFactory.createWebSocket('ws://example.com', 'protocol1')
-
-      expect(mockWebSocket).toHaveBeenCalledWith('ws://example.com', 'protocol1')
-
-      // Restore original method
-      WebSocketFactory.getWebSocketConstructor = originalGetWebSocketConstructor
     })
   })
 })

@@ -1,4 +1,3 @@
-// Always update wrapper.mjs when updating this file.
 import PostgrestClient from './PostgrestClient'
 import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'

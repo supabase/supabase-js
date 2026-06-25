@@ -3,26 +3,46 @@ import type { SupabaseClientOptions } from './lib/types'
 
 export * from '@supabase/auth-js'
 export type { User as AuthUser, Session as AuthSession } from '@supabase/auth-js'
-export {
-  type PostgrestResponse,
-  type PostgrestSingleResponse,
-  type PostgrestMaybeSingleResponse,
-  PostgrestError,
+export type {
+  PostgrestResponse,
+  PostgrestSingleResponse,
+  PostgrestMaybeSingleResponse,
+  PostgrestBuilder,
+  PostgrestFilterBuilder,
+  PostgrestTransformBuilder,
+  PostgrestQueryBuilder,
 } from '@supabase/postgrest-js'
+export { PostgrestError } from '@supabase/postgrest-js'
+export { StorageApiError } from '@supabase/storage-js'
+export type { FunctionInvokeOptions } from '@supabase/functions-js'
 export {
   FunctionsHttpError,
   FunctionsFetchError,
   FunctionsRelayError,
   FunctionsError,
-  type FunctionInvokeOptions,
   FunctionRegion,
 } from '@supabase/functions-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
-export type { SupabaseClientOptions, QueryResult, QueryData, QueryError } from './lib/types'
+export type {
+  SupabaseClientOptions,
+  TracePropagationOptions,
+  QueryResult,
+  QueryData,
+  QueryError,
+  DatabaseWithoutInternals,
+} from './lib/types'
 
 /**
  * Creates a new Supabase Client.
+ *
+ * @example Creating a Supabase client
+ * ```ts
+ * import { createClient } from '@supabase/supabase-js'
+ *
+ * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
+ * const { data, error } = await supabase.from('profiles').select('*')
+ * ```
  */
 export const createClient = <
   Database = any,
@@ -31,13 +51,12 @@ export const createClient = <
     | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
     ? 'public'
     : string & keyof Omit<Database, '__InternalSupabase'>,
-  SchemaName extends string &
-    keyof Omit<Database, '__InternalSupabase'> = SchemaNameOrClientOptions extends string &
-    keyof Omit<Database, '__InternalSupabase'>
-    ? SchemaNameOrClientOptions
-    : 'public' extends keyof Omit<Database, '__InternalSupabase'>
-      ? 'public'
-      : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
+  SchemaName extends string & keyof Omit<Database, '__InternalSupabase'> =
+    SchemaNameOrClientOptions extends string & keyof Omit<Database, '__InternalSupabase'>
+      ? SchemaNameOrClientOptions
+      : 'public' extends keyof Omit<Database, '__InternalSupabase'>
+        ? 'public'
+        : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
 >(
   supabaseUrl: string,
   supabaseKey: string,
@@ -58,12 +77,13 @@ function shouldShowDeprecationWarning(): boolean {
   }
 
   // Skip if process is not available (e.g., Edge Runtime)
-  if (typeof process === 'undefined') {
+  // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
+  const _process = (globalThis as any)['process']
+  if (!_process) {
     return false
   }
 
-  // Use dynamic property access to avoid Next.js Edge Runtime static analysis warnings
-  const processVersion = (process as any)['version']
+  const processVersion = _process['version']
   if (processVersion === undefined || processVersion === null) {
     return false
   }

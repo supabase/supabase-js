@@ -4,56 +4,64 @@ import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 import { RequiredDeep } from 'type-fest'
 
-const postgrest = new PostgrestClient<Database>('http://localhost:3000')
+const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')
 
 test('embedded select', async () => {
   // By default postgrest will omit computed field from "star" selector
   const res = await postgrest.from('users').select('messages(*)')
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [
-        Object {
-          "messages": Array [
-            Object {
+      "data": [
+        {
+          "messages": [
+            {
               "channel_id": 1,
               "data": null,
               "id": 1,
               "message": "Hello World 👋",
               "username": "supabot",
             },
-            Object {
+            {
               "channel_id": 2,
               "data": null,
               "id": 2,
               "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               "username": "supabot",
             },
-            Object {
+            {
               "channel_id": 3,
               "data": null,
               "id": 4,
-              "message": "Some message on channel wihtout details",
+              "message": "Some message on channel without details",
+              "username": "supabot",
+            },
+            {
+              "channel_id": 3,
+              "data": null,
+              "id": 3,
+              "message": "Some message on channel without details",
               "username": "supabot",
             },
           ],
         },
-        Object {
-          "messages": Array [],
+        {
+          "messages": [],
         },
-        Object {
-          "messages": Array [],
+        {
+          "messages": [],
         },
-        Object {
-          "messages": Array [],
+        {
+          "messages": [],
         },
-        Object {
-          "messages": Array [],
+        {
+          "messages": [],
         },
       ],
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -81,12 +89,12 @@ test('embedded select with computed field explicit selection', async () => {
   // If the computed field is explicitely requested on top of the star selector, it should be present in the result
   const res = await postgrest.from('users').select('messages(*, blurb_message)')
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [
-        Object {
-          "messages": Array [
-            Object {
+      "data": [
+        {
+          "messages": [
+            {
               "blurb_message": "Hel",
               "channel_id": 1,
               "data": null,
@@ -94,7 +102,7 @@ test('embedded select with computed field explicit selection', async () => {
               "message": "Hello World 👋",
               "username": "supabot",
             },
-            Object {
+            {
               "blurb_message": "Per",
               "channel_id": 2,
               "data": null,
@@ -102,32 +110,41 @@ test('embedded select with computed field explicit selection', async () => {
               "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               "username": "supabot",
             },
-            Object {
+            {
               "blurb_message": "Som",
               "channel_id": 3,
               "data": null,
               "id": 4,
-              "message": "Some message on channel wihtout details",
+              "message": "Some message on channel without details",
+              "username": "supabot",
+            },
+            {
+              "blurb_message": "Som",
+              "channel_id": 3,
+              "data": null,
+              "id": 3,
+              "message": "Some message on channel without details",
               "username": "supabot",
             },
           ],
         },
-        Object {
-          "messages": Array [],
+        {
+          "messages": [],
         },
-        Object {
-          "messages": Array [],
+        {
+          "messages": [],
         },
-        Object {
-          "messages": Array [],
+        {
+          "messages": [],
         },
-        Object {
-          "messages": Array [],
+        {
+          "messages": [],
         },
       ],
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -160,12 +177,12 @@ describe('embedded filters', () => {
       .select('messages(*)')
       .eq('messages.channel_id' as any, 1)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "messages": Array [
-              Object {
+        "data": [
+          {
+            "messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
@@ -174,22 +191,23 @@ describe('embedded filters', () => {
               },
             ],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -218,19 +236,19 @@ describe('embedded filters', () => {
       .select('messages(*)')
       .or('channel_id.eq.2,message.eq.Hello World 👋', { foreignTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "messages": Array [
-              Object {
+        "data": [
+          {
+            "messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
                 "message": "Hello World 👋",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -239,22 +257,23 @@ describe('embedded filters', () => {
               },
             ],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -285,19 +304,19 @@ describe('embedded filters', () => {
         foreignTable: 'messages',
       })
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "messages": Array [
-              Object {
+        "data": [
+          {
+            "messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
                 "message": "Hello World 👋",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -306,22 +325,23 @@ describe('embedded filters', () => {
               },
             ],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -353,26 +373,33 @@ describe('embedded transforms', () => {
       .select('messages(*)')
       .order('channel_id' as any, { foreignTable: 'messages', ascending: false })
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "messages": Array [
-              Object {
+        "data": [
+          {
+            "messages": [
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
-              Object {
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
@@ -381,22 +408,23 @@ describe('embedded transforms', () => {
               },
             ],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -427,26 +455,33 @@ describe('embedded transforms', () => {
       .order('channel_id' as any, { foreignTable: 'messages', ascending: false })
       .order('username', { foreignTable: 'messages', ascending: false })
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "messages": Array [
-              Object {
+        "data": [
+          {
+            "messages": [
+              {
                 "channel_id": 3,
                 "data": null,
                 "id": 4,
-                "message": "Some message on channel wihtout details",
+                "message": "Some message on channel without details",
                 "username": "supabot",
               },
-              Object {
+              {
+                "channel_id": 3,
+                "data": null,
+                "id": 3,
+                "message": "Some message on channel without details",
+                "username": "supabot",
+              },
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
                 "username": "supabot",
               },
-              Object {
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
@@ -455,22 +490,23 @@ describe('embedded transforms', () => {
               },
             ],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -500,12 +536,12 @@ describe('embedded transforms', () => {
       .select('messages(*)')
       .limit(1, { foreignTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "messages": Array [
-              Object {
+        "data": [
+          {
+            "messages": [
+              {
                 "channel_id": 1,
                 "data": null,
                 "id": 1,
@@ -514,22 +550,23 @@ describe('embedded transforms', () => {
               },
             ],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>
@@ -559,12 +596,12 @@ describe('embedded transforms', () => {
       .select('messages(*)')
       .range(1, 1, { foreignTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
-            "messages": Array [
-              Object {
+        "data": [
+          {
+            "messages": [
+              {
                 "channel_id": 2,
                 "data": null,
                 "id": 2,
@@ -573,22 +610,23 @@ describe('embedded transforms', () => {
               },
             ],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
-          Object {
-            "messages": Array [],
+          {
+            "messages": [],
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     let result: Exclude<typeof res.data, null>

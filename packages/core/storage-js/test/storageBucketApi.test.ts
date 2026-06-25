@@ -1,5 +1,5 @@
 import { StorageClient } from '../src/index'
-import { StorageError, StorageUnknownError } from '../src/lib/errors'
+import { StorageUnknownError } from '../src/lib/common/errors'
 
 // Create a simple Response implementation for testing
 class MockResponse {
@@ -20,8 +20,8 @@ class MockResponse {
   }
 }
 
-// Mock URL and credentials for testing
-const URL = 'http://localhost:8000/storage/v1'
+// Supabase CLI local development defaults
+const URL = 'http://127.0.0.1:54321/storage/v1'
 const KEY = 'test-api-key'
 
 describe('Bucket API Error Handling', () => {
@@ -85,12 +85,11 @@ describe('Bucket API Error Handling', () => {
       const { data, error } = await storage.listBuckets()
       expect(data).toBeNull()
       expect(error).not.toBeNull()
-      expect(error?.message).toBe(`headers must have required property 'authorization'`)
+      // Supabase CLI returns "Invalid Compact JWS" when no auth header is provided
+      expect(error?.message).toBe('Invalid Compact JWS')
 
       // throws when .throwOnError is enabled
-      await expect(storage.throwOnError().listBuckets()).rejects.toThrowError(
-        "headers must have required property 'authorization'"
-      )
+      await expect(storage.throwOnError().listBuckets()).rejects.toThrow('Invalid Compact JWS')
     })
 
     it('handles network errors', async () => {
@@ -104,7 +103,7 @@ describe('Bucket API Error Handling', () => {
       expect(error?.message).toBe('Network failure')
 
       // throws when .throwOnError is enabled
-      await expect(storage.throwOnError().listBuckets()).rejects.toThrowError('Network failure')
+      await expect(storage.throwOnError().listBuckets()).rejects.toThrow('Network failure')
     })
 
     it('wraps non-Response errors as StorageUnknownError', async () => {
@@ -121,7 +120,7 @@ describe('Bucket API Error Handling', () => {
       expect(error?.message).toBe('Invalid argument')
 
       // throws when .throwOnError is enabled
-      await expect(storage.throwOnError().listBuckets()).rejects.toThrowError('Invalid argument')
+      await expect(storage.throwOnError().listBuckets()).rejects.toThrow('Invalid argument')
     })
 
     it('throws non-StorageError exceptions', async () => {
@@ -129,12 +128,14 @@ describe('Bucket API Error Handling', () => {
       const storage = new StorageClient(URL, { apikey: KEY })
 
       // Create a spy on the get method that will throw a non-StorageError
-      const mockFn = jest.spyOn(require('../src/lib/fetch'), 'get').mockImplementationOnce(() => {
-        const error = new Error('Unexpected error')
-        // Ensure it's not recognized as a StorageError
-        Object.defineProperty(error, 'name', { value: 'CustomError' })
-        throw error
-      })
+      const mockFn = jest
+        .spyOn(require('../src/lib/common/fetch'), 'get')
+        .mockImplementationOnce(() => {
+          const error = new Error('Unexpected error')
+          // Ensure it's not recognized as a StorageError
+          Object.defineProperty(error, 'name', { value: 'CustomError' })
+          throw error
+        })
 
       // The error should be thrown all the way up
       await expect(storage.listBuckets()).rejects.toThrow('Unexpected error')
@@ -145,7 +146,7 @@ describe('Bucket API Error Handling', () => {
 
     it('constructs query string with limit option', async () => {
       const storage = new StorageClient(URL, { apikey: KEY })
-      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+      const mockGet = jest.spyOn(require('../src/lib/common/fetch'), 'get').mockResolvedValue([])
 
       await storage.listBuckets({ limit: 10 })
 
@@ -162,7 +163,7 @@ describe('Bucket API Error Handling', () => {
 
     it('constructs query string with offset option', async () => {
       const storage = new StorageClient(URL, { apikey: KEY })
-      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+      const mockGet = jest.spyOn(require('../src/lib/common/fetch'), 'get').mockResolvedValue([])
 
       await storage.listBuckets({ offset: 5 })
 
@@ -179,7 +180,7 @@ describe('Bucket API Error Handling', () => {
 
     it('constructs query string with sortColumn option', async () => {
       const storage = new StorageClient(URL, { apikey: KEY })
-      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+      const mockGet = jest.spyOn(require('../src/lib/common/fetch'), 'get').mockResolvedValue([])
 
       await storage.listBuckets({ sortColumn: 'name' })
 
@@ -196,7 +197,7 @@ describe('Bucket API Error Handling', () => {
 
     it('constructs query string with sortOrder option', async () => {
       const storage = new StorageClient(URL, { apikey: KEY })
-      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+      const mockGet = jest.spyOn(require('../src/lib/common/fetch'), 'get').mockResolvedValue([])
 
       await storage.listBuckets({ sortOrder: 'desc' })
 
@@ -213,7 +214,7 @@ describe('Bucket API Error Handling', () => {
 
     it('constructs query string with search option', async () => {
       const storage = new StorageClient(URL, { apikey: KEY })
-      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+      const mockGet = jest.spyOn(require('../src/lib/common/fetch'), 'get').mockResolvedValue([])
 
       await storage.listBuckets({ search: 'test-bucket' })
 
@@ -230,7 +231,7 @@ describe('Bucket API Error Handling', () => {
 
     it('constructs query string with multiple options', async () => {
       const storage = new StorageClient(URL, { apikey: KEY })
-      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+      const mockGet = jest.spyOn(require('../src/lib/common/fetch'), 'get').mockResolvedValue([])
 
       await storage.listBuckets({
         limit: 20,
@@ -253,7 +254,7 @@ describe('Bucket API Error Handling', () => {
 
     it('handles empty options object', async () => {
       const storage = new StorageClient(URL, { apikey: KEY })
-      const mockGet = jest.spyOn(require('../src/lib/fetch'), 'get').mockResolvedValue([])
+      const mockGet = jest.spyOn(require('../src/lib/common/fetch'), 'get').mockResolvedValue([])
 
       await storage.listBuckets({})
 
@@ -303,12 +304,14 @@ describe('Bucket API Error Handling', () => {
       const storage = new StorageClient(URL, { apikey: KEY })
 
       // Create a spy on the get method that will throw a non-StorageError
-      const mockFn = jest.spyOn(require('../src/lib/fetch'), 'get').mockImplementationOnce(() => {
-        const error = new Error('Unexpected error in getBucket')
-        // Ensure it's not recognized as a StorageError
-        Object.defineProperty(error, 'name', { value: 'CustomError' })
-        throw error
-      })
+      const mockFn = jest
+        .spyOn(require('../src/lib/common/fetch'), 'get')
+        .mockImplementationOnce(() => {
+          const error = new Error('Unexpected error in getBucket')
+          // Ensure it's not recognized as a StorageError
+          Object.defineProperty(error, 'name', { value: 'CustomError' })
+          throw error
+        })
 
       // The error should be thrown all the way up
       await expect(storage.getBucket('test-bucket')).rejects.toThrow(
@@ -354,12 +357,14 @@ describe('Bucket API Error Handling', () => {
       const storage = new StorageClient(URL, { apikey: KEY })
 
       // Create a spy on the post method that will throw a non-StorageError
-      const mockFn = jest.spyOn(require('../src/lib/fetch'), 'post').mockImplementationOnce(() => {
-        const error = new Error('Unexpected error in createBucket')
-        // Ensure it's not recognized as a StorageError
-        Object.defineProperty(error, 'name', { value: 'CustomError' })
-        throw error
-      })
+      const mockFn = jest
+        .spyOn(require('../src/lib/common/fetch'), 'post')
+        .mockImplementationOnce(() => {
+          const error = new Error('Unexpected error in createBucket')
+          // Ensure it's not recognized as a StorageError
+          Object.defineProperty(error, 'name', { value: 'CustomError' })
+          throw error
+        })
 
       // The error should be thrown all the way up
       await expect(storage.createBucket('test-bucket')).rejects.toThrow(
@@ -405,12 +410,14 @@ describe('Bucket API Error Handling', () => {
       const storage = new StorageClient(URL, { apikey: KEY })
 
       // Create a spy on the put method that will throw a non-StorageError
-      const mockFn = jest.spyOn(require('../src/lib/fetch'), 'put').mockImplementationOnce(() => {
-        const error = new Error('Unexpected error in updateBucket')
-        // Ensure it's not recognized as a StorageError
-        Object.defineProperty(error, 'name', { value: 'CustomError' })
-        throw error
-      })
+      const mockFn = jest
+        .spyOn(require('../src/lib/common/fetch'), 'put')
+        .mockImplementationOnce(() => {
+          const error = new Error('Unexpected error in updateBucket')
+          // Ensure it's not recognized as a StorageError
+          Object.defineProperty(error, 'name', { value: 'CustomError' })
+          throw error
+        })
 
       // The error should be thrown all the way up
       await expect(storage.updateBucket('test-bucket', { public: true })).rejects.toThrow(
@@ -456,12 +463,14 @@ describe('Bucket API Error Handling', () => {
       const storage = new StorageClient(URL, { apikey: KEY })
 
       // Create a spy on the post method that will throw a non-StorageError
-      const mockFn = jest.spyOn(require('../src/lib/fetch'), 'post').mockImplementationOnce(() => {
-        const error = new Error('Unexpected error in emptyBucket')
-        // Ensure it's not recognized as a StorageError
-        Object.defineProperty(error, 'name', { value: 'CustomError' })
-        throw error
-      })
+      const mockFn = jest
+        .spyOn(require('../src/lib/common/fetch'), 'post')
+        .mockImplementationOnce(() => {
+          const error = new Error('Unexpected error in emptyBucket')
+          // Ensure it's not recognized as a StorageError
+          Object.defineProperty(error, 'name', { value: 'CustomError' })
+          throw error
+        })
 
       // The error should be thrown all the way up
       await expect(storage.emptyBucket('test-bucket')).rejects.toThrow(
@@ -513,7 +522,7 @@ describe('Bucket API Error Handling', () => {
 
       // Create a spy on the remove method that will throw a non-StorageError
       const mockFn = jest
-        .spyOn(require('../src/lib/fetch'), 'remove')
+        .spyOn(require('../src/lib/common/fetch'), 'remove')
         .mockImplementationOnce(() => {
           const error = new Error('Unexpected error in deleteBucket')
           // Ensure it's not recognized as a StorageError

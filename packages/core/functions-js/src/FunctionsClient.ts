@@ -9,12 +9,38 @@ import {
   FunctionsResponse,
 } from './types'
 
+/**
+ * Client for invoking Supabase Edge Functions.
+ */
 export class FunctionsClient {
   protected url: string
   protected headers: Record<string, string>
   protected region: FunctionRegion
   protected fetch: Fetch
 
+  /**
+   * Creates a new Functions client bound to an Edge Functions URL.
+   *
+   * @example Using supabase-js (recommended)
+   * ```ts
+   * import { createClient } from '@supabase/supabase-js'
+   *
+   * const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key')
+   * const { data, error } = await supabase.functions.invoke('hello-world')
+   * ```
+   *
+   * @category Edge Functions
+   *
+   * @example Standalone import for bundle-sensitive environments
+   * ```ts
+   * import { FunctionsClient, FunctionRegion } from '@supabase/functions-js'
+   *
+   * const functions = new FunctionsClient('https://xyzcompany.supabase.co/functions/v1', {
+   *   headers: { apikey: 'your-publishable-key' },
+   *   region: FunctionRegion.UsEast1,
+   * })
+   * ```
+   */
   constructor(
     url: string,
     {
@@ -36,6 +62,13 @@ export class FunctionsClient {
   /**
    * Updates the authorization header
    * @param token - the new jwt token sent in the authorisation header
+   *
+   * @category Edge Functions
+   *
+   * @example Setting the authorization header
+   * ```ts
+   * functions.setAuth(session.access_token)
+   * ```
    */
   setAuth(token: string) {
     this.headers.Authorization = `Bearer ${token}`
@@ -45,13 +78,136 @@ export class FunctionsClient {
    * Invokes a function
    * @param functionName - The name of the Function to invoke.
    * @param options - Options for invoking the Function.
+   * @example
+   * ```ts
+   * const { data, error } = await functions.invoke('hello-world', {
+   *   body: { name: 'Ada' },
+   * })
+   * ```
+   *
+   * @category Edge Functions
+   *
+   * @remarks
+   * - Requires an Authorization header.
+   * - Invoke params generally match the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) spec.
+   * - When you pass in a body to your function, we automatically attach the Content-Type header for `Blob`, `ArrayBuffer`, `File`, `FormData` and `String`. If it doesn't match any of these types we assume the payload is `json`, serialize it and attach the `Content-Type` header as `application/json`. You can override this behavior by passing in a `Content-Type` header of your own.
+   * - Responses are automatically parsed as `json`, `blob` and `form-data` depending on the `Content-Type` header sent by your function. Responses are parsed as `text` by default.
+   *
+   * @example Basic invocation
+   * ```js
+   * const { data, error } = await supabase.functions.invoke('hello', {
+   *   body: { foo: 'bar' }
+   * })
+   * ```
+   *
+   * @exampleDescription Error handling
+   * A `FunctionsHttpError` error is returned if your function throws an error, `FunctionsRelayError` if the Supabase Relay has an error processing your function and `FunctionsFetchError` if there is a network error in calling your function. Log the full error object so fields like `name`, `context`, and any structured body aren't hidden.
+   *
+   * @example Error handling
+   * ```js
+   * import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from "@supabase/supabase-js";
+   *
+   * const { data, error } = await supabase.functions.invoke('hello', {
+   *   headers: {
+   *     "my-custom-header": 'my-custom-header-value'
+   *   },
+   *   body: { foo: 'bar' }
+   * })
+   *
+   * if (error instanceof FunctionsHttpError) {
+   *   const errorMessage = await error.context.json()
+   *   console.error('Function returned an error', errorMessage)
+   * } else if (error instanceof FunctionsRelayError) {
+   *   console.error('Relay error:', error)
+   * } else if (error instanceof FunctionsFetchError) {
+   *   console.error('Fetch error:', error)
+   * }
+   * ```
+   *
+   * @exampleDescription Passing custom headers
+   * You can pass custom headers to your function. Note: supabase-js automatically passes the `Authorization` header with the signed in user's JWT.
+   *
+   * @example Passing custom headers
+   * ```js
+   * const { data, error } = await supabase.functions.invoke('hello', {
+   *   headers: {
+   *     "my-custom-header": 'my-custom-header-value'
+   *   },
+   *   body: { foo: 'bar' }
+   * })
+   * ```
+   *
+   * @exampleDescription Calling with DELETE HTTP verb
+   * You can also set the HTTP verb to `DELETE` when calling your Edge Function.
+   *
+   * @example Calling with DELETE HTTP verb
+   * ```js
+   * const { data, error } = await supabase.functions.invoke('hello', {
+   *   headers: {
+   *     "my-custom-header": 'my-custom-header-value'
+   *   },
+   *   body: { foo: 'bar' },
+   *   method: 'DELETE'
+   * })
+   * ```
+   *
+   * @exampleDescription Invoking a Function in the UsEast1 region
+   * Here are the available regions:
+   * - `FunctionRegion.Any`
+   * - `FunctionRegion.ApNortheast1`
+   * - `FunctionRegion.ApNortheast2`
+   * - `FunctionRegion.ApSouth1`
+   * - `FunctionRegion.ApSoutheast1`
+   * - `FunctionRegion.ApSoutheast2`
+   * - `FunctionRegion.CaCentral1`
+   * - `FunctionRegion.EuCentral1`
+   * - `FunctionRegion.EuWest1`
+   * - `FunctionRegion.EuWest2`
+   * - `FunctionRegion.EuWest3`
+   * - `FunctionRegion.SaEast1`
+   * - `FunctionRegion.UsEast1`
+   * - `FunctionRegion.UsWest1`
+   * - `FunctionRegion.UsWest2`
+   *
+   * @example Invoking a Function in the UsEast1 region
+   * ```js
+   * import { createClient, FunctionRegion } from '@supabase/supabase-js'
+   *
+   * const { data, error } = await supabase.functions.invoke('hello', {
+   *   body: { foo: 'bar' },
+   *   region: FunctionRegion.UsEast1
+   * })
+   * ```
+   *
+   * @exampleDescription Calling with GET HTTP verb
+   * You can also set the HTTP verb to `GET` when calling your Edge Function.
+   *
+   * @example Calling with GET HTTP verb
+   * ```js
+   * const { data, error } = await supabase.functions.invoke('hello', {
+   *   headers: {
+   *     "my-custom-header": 'my-custom-header-value'
+   *   },
+   *   method: 'GET'
+   * })
+   * ```
+   *
+   * @example Standalone client invoke
+   * ```ts
+   * const { data, error } = await functions.invoke('hello-world', {
+   *   body: { name: 'Ada' },
+   * })
+   * ```
    */
   async invoke<T = any>(
     functionName: string,
     options: FunctionInvokeOptions = {}
   ): Promise<FunctionsResponse<T>> {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    let timeoutController: AbortController | undefined
+
     try {
-      const { headers, method, body: functionArgs, signal } = options
+      const { headers, method, body: functionArgs, signal, timeout } = options
       let _headers: Record<string, string> = {}
       let { region } = options
       if (!region) {
@@ -64,10 +220,11 @@ export class FunctionsClient {
         url.searchParams.set('forceFunctionRegion', region)
       }
       let body: any
-      if (
-        functionArgs &&
-        ((headers && !Object.prototype.hasOwnProperty.call(headers, 'Content-Type')) || !headers)
-      ) {
+      // HTTP header names are case-insensitive, so detect a caller-supplied Content-Type
+      // regardless of casing — otherwise the SDK injects a second, conflicting Content-Type.
+      const hasContentTypeHeader =
+        !!headers && Object.keys(headers).some((key) => key.toLowerCase() === 'content-type')
+      if (functionArgs && !hasContentTypeHeader) {
         if (
           (typeof Blob !== 'undefined' && functionArgs instanceof Blob) ||
           functionArgs instanceof ArrayBuffer
@@ -90,8 +247,33 @@ export class FunctionsClient {
           body = JSON.stringify(functionArgs)
         }
       } else {
-        // if the Content-Type was supplied, simply set the body
-        body = functionArgs
+        if (
+          functionArgs &&
+          typeof functionArgs !== 'string' &&
+          !(typeof Blob !== 'undefined' && functionArgs instanceof Blob) &&
+          !(functionArgs instanceof ArrayBuffer) &&
+          !(typeof FormData !== 'undefined' && functionArgs instanceof FormData)
+        ) {
+          body = JSON.stringify(functionArgs)
+        } else {
+          body = functionArgs
+        }
+      }
+
+      // Handle timeout by creating an AbortController
+      let effectiveSignal = signal
+      if (timeout) {
+        timeoutController = new AbortController()
+        timeoutId = setTimeout(() => timeoutController!.abort(), timeout)
+
+        // If user provided their own signal, we need to respect both
+        if (signal) {
+          effectiveSignal = timeoutController.signal
+          // If the user's signal is aborted, abort our timeout controller too
+          signal.addEventListener('abort', () => timeoutController!.abort())
+        } else {
+          effectiveSignal = timeoutController.signal
+        }
       }
 
       const response = await this.fetch(url.toString(), {
@@ -102,11 +284,8 @@ export class FunctionsClient {
         // 3. default Content-Type header
         headers: { ..._headers, ...this.headers, ...headers },
         body,
-        signal,
+        signal: effectiveSignal,
       }).catch((fetchError) => {
-        if (fetchError.name === 'AbortError') {
-          throw fetchError
-        }
         throw new FunctionsFetchError(fetchError)
       })
 
@@ -139,9 +318,6 @@ export class FunctionsClient {
 
       return { data, error: null, response }
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return { data: null, error: new FunctionsFetchError(error) }
-      }
       return {
         data: null,
         error,
@@ -149,6 +325,11 @@ export class FunctionsClient {
           error instanceof FunctionsHttpError || error instanceof FunctionsRelayError
             ? error.context
             : undefined,
+      }
+    } finally {
+      // Clear the timeout if it was set
+      if (timeoutId) {
+        clearTimeout(timeoutId)
       }
     }
   }

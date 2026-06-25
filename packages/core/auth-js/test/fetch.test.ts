@@ -1,9 +1,7 @@
 import { MockServer } from 'jest-mock-server'
-// @ts-ignore
-import fetch from '@supabase/node-fetch'
 import { API_VERSION_HEADER_NAME } from '../src/lib/constants'
 import { AuthUnknownError, AuthApiError, AuthRetryableFetchError } from '../src/lib/errors'
-import { _request, handleError } from '../src/lib/fetch'
+import { _request, _sessionResponse, handleError } from '../src/lib/fetch'
 
 describe('fetch', () => {
   const server = new MockServer()
@@ -49,7 +47,7 @@ describe('fetch', () => {
       expect(route).toHaveBeenCalledTimes(1)
     })
 
-    test('should not throw AuthRetryableFetchError upon internal server error', async () => {
+    test('should throw AuthRetryableFetchError upon internal server error (500)', async () => {
       const route = server
         .get('/')
         .mockImplementationOnce((ctx) => {
@@ -62,7 +60,25 @@ describe('fetch', () => {
 
       const url = server.getURL().toString()
 
-      await expect(_request(fetch, 'GET', url)).rejects.not.toBeInstanceOf(AuthRetryableFetchError)
+      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthRetryableFetchError)
+
+      expect(route).toHaveBeenCalledTimes(1)
+    })
+
+    test('should throw AuthRetryableFetchError upon Cloudflare edge errors (525)', async () => {
+      const route = server
+        .get('/')
+        .mockImplementationOnce((ctx) => {
+          ctx.status = 525
+          ctx.body = 'SSL Handshake Failed'
+        })
+        .mockImplementation((ctx) => {
+          ctx.status = 200
+        })
+
+      const url = server.getURL().toString()
+
+      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthRetryableFetchError)
 
       expect(route).toHaveBeenCalledTimes(1)
     })
@@ -215,5 +231,50 @@ describe('handleError', () => {
       expect(error.name).toEqual(example.ename)
       expect(error.code).toEqual(example.code)
     })
+  })
+})
+
+describe('_sessionResponse', () => {
+  test('returns session and user when the response carries an access token', () => {
+    const user = { id: 'user-id', email: 'user@example.com' } as any
+    const data = {
+      access_token: 'access-token',
+      refresh_token: 'refresh-token',
+      expires_in: 3600,
+      token_type: 'bearer',
+      user,
+    } as any
+
+    const result = _sessionResponse(data)
+
+    expect(result.error).toBeNull()
+    expect(result.data.user).toEqual(user)
+    expect(result.data.session).not.toBeNull()
+    expect(result.data.session?.access_token).toEqual('access-token')
+    expect(result.data.session?.user).toEqual(user)
+    expect(typeof result.data.session?.expires_at).toEqual('number')
+  })
+
+  test('returns null user and null session for the email_change single-confirmation response', () => {
+    // gotrue's POST /verify returns this body (200 OK) after the first of two
+    // confirmations succeeds when secure email change is enabled.
+    const data = {
+      code: '200',
+      msg: 'Confirmation link accepted. Please proceed to confirm link sent to the other email',
+    } as any
+
+    const result = _sessionResponse(data)
+
+    expect(result).toEqual({ data: { session: null, user: null }, error: null })
+  })
+
+  test('returns the user but no session when the response has a user but no access token', () => {
+    const user = { id: 'user-id', email: 'user@example.com' } as any
+
+    const result = _sessionResponse({ user } as any)
+
+    expect(result.error).toBeNull()
+    expect(result.data.session).toBeNull()
+    expect(result.data.user).toEqual(user)
   })
 })

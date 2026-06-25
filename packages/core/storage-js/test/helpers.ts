@@ -4,7 +4,7 @@
 
 /// <reference types="jest" />
 
-import { StorageVectorsClient } from '../src/lib/vectors'
+import { StorageVectorsClient } from '../src/packages/StorageVectorsClient'
 import { createMockFetch, resetMockStorage } from './mock-server'
 import { getTestConfig } from './setup'
 
@@ -27,9 +27,9 @@ export function createTestClient(): StorageVectorsClient {
     )
   }
 
-  return new StorageVectorsClient(config.apiUrl, {
-    headers: config.headers,
-  })
+  const options = config.headers ? { headers: config.headers } : {}
+
+  return new StorageVectorsClient(config.apiUrl, options)
 }
 
 /**

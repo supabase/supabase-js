@@ -3,3 +3,6 @@
 /coverage
 /.nx/cache
 /.nx/workspace-data
+.nx/self-healing
+pnpm-lock.yaml
+CHANGELOG.md

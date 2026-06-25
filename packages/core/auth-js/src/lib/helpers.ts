@@ -9,12 +9,21 @@ export function expiresAt(expiresIn: number) {
   return timeNow + expiresIn
 }
 
-export function uuid() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0,
-      v = c == 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+/**
+ * Generates a unique identifier for internal callback subscriptions.
+ *
+ * This function uses JavaScript Symbols to create guaranteed-unique identifiers
+ * for auth state change callbacks. Symbols are ideal for this use case because:
+ * - They are guaranteed unique by the JavaScript runtime
+ * - They work in all environments (browser, SSR, Node.js)
+ * - They avoid issues with Next.js 16 deterministic rendering requirements
+ * - They are perfect for internal, non-serializable identifiers
+ *
+ * Note: This function is only used for internal subscription management,
+ * not for security-critical operations like session tokens.
+ */
+export function generateCallbackId(): symbol {
+  return Symbol('auth-callback')
 }
 
 export const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined'
@@ -78,7 +87,7 @@ export function parseParametersFromURL(href: string) {
       hashSearchParams.forEach((value, key) => {
         result[key] = value
       })
-    } catch (e: any) {
+    } catch (_e) {
       // hash is not a query string
     }
   }
@@ -94,16 +103,10 @@ export function parseParametersFromURL(href: string) {
 type Fetch = typeof fetch
 
 export const resolveFetch = (customFetch?: Fetch): Fetch => {
-  let _fetch: Fetch
   if (customFetch) {
-    _fetch = customFetch
-  } else if (typeof fetch === 'undefined') {
-    _fetch = (...args) =>
-      import('@supabase/node-fetch' as any).then(({ default: fetch }) => fetch(...args))
-  } else {
-    _fetch = fetch
+    return (...args) => customFetch(...args)
   }
-  return (...args) => _fetch(...args)
+  return (...args) => fetch(...args)
 }
 
 export const looksLikeFetchResponse = (maybeResponse: unknown): maybeResponse is Response => {
@@ -136,7 +139,12 @@ export const getItemAsync = async (storage: SupportedStorage, key: string): Prom
   try {
     return JSON.parse(value)
   } catch {
-    return value
+    // Storage values are always written as JSON via setItemAsync. A non-JSON
+    // value means the entry is corrupted (e.g. mismatched chunked cookies in
+    // SSR contexts). Treat as absent so callers do not mutate or re-save the
+    // garbage, which would otherwise trigger a TypeError downstream and
+    // leak the raw value into error logs.
+    return null
   }
 }
 
@@ -232,7 +240,7 @@ export function retryable<T>(
             accept(result)
             return
           }
-        } catch (e: any) {
+        } catch (e) {
           if (!isRetryable(attempt, e)) {
             reject(e)
             return
@@ -301,7 +309,7 @@ export async function getCodeChallengeAndMethod(
   const codeVerifier = generatePKCEVerifier()
   let storedCodeVerifier = codeVerifier
   if (isPasswordRecovery) {
-    storedCodeVerifier += '/PASSWORD_RECOVERY'
+    storedCodeVerifier += '/recovery'
   }
   await setItemAsync(storage, `${storageKey}-code-verifier`, storedCodeVerifier)
   const codeChallenge = await generatePKCEChallenge(codeVerifier)
@@ -326,7 +334,7 @@ export function parseResponseAPIVersion(response: Response) {
   try {
     const date = new Date(`${apiVersion}T00:00:00.0Z`)
     return date
-  } catch (e: any) {
+  } catch (_e) {
     return null
   }
 }
@@ -342,7 +350,7 @@ export function validateExp(exp: number) {
 }
 
 export function getAlgorithm(
-  alg: 'HS256' | 'RS256' | 'ES256'
+  alg: 'HS256' | 'RS256' | 'ES256' | (string & {})
 ): RsaHashedImportParams | EcKeyImportParams {
   switch (alg) {
     case 'RS256':
@@ -366,6 +374,14 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 export function validateUUID(str: string) {
   if (!UUID_REGEX.test(str)) {
     throw new Error('@supabase/auth-js: Expected parameter to be UUID but is not')
+  }
+}
+
+export function assertPasskeyExperimentalEnabled(experimental: { passkey?: boolean }): void {
+  if (!experimental.passkey) {
+    throw new Error(
+      '@supabase/auth-js: the passkey API is experimental and disabled by default. Enable it by passing `auth: { experimental: { passkey: true } }` to createClient (or to the GoTrueClient constructor).'
+    )
   }
 }
 
@@ -403,6 +419,50 @@ export function userNotAvailableProxy(): User {
       throw new Error(
         `@supabase/auth-js: client was created with userStorage option and there was no user stored in the user storage. Deleting the "${prop}" property of the session object is not supported. Please use getUser() to fetch a user object you can manipulate.`
       )
+    },
+  })
+}
+
+/**
+ * Creates a proxy around a user object that warns when properties are accessed on the server.
+ * This is used to alert developers that using user data from getSession() on the server is insecure.
+ *
+ * @param user The actual user object to wrap
+ * @param suppressWarningRef An object with a 'value' property that controls warning suppression
+ * @returns A proxied user object that warns on property access
+ */
+export function insecureUserWarningProxy(user: User, suppressWarningRef: { value: boolean }): User {
+  return new Proxy(user, {
+    get: (target: any, prop: string | symbol, receiver: any) => {
+      // Allow internal checks without warning
+      if (prop === '__isInsecureUserWarningProxy') {
+        return true
+      }
+
+      // Preventative check for common problematic symbols during cloning/inspection
+      // These symbols might be accessed by structuredClone or other internal mechanisms
+      if (typeof prop === 'symbol') {
+        const sProp = prop.toString()
+        if (
+          sProp === 'Symbol(Symbol.toPrimitive)' ||
+          sProp === 'Symbol(Symbol.toStringTag)' ||
+          sProp === 'Symbol(util.inspect.custom)' ||
+          sProp === 'Symbol(nodejs.util.inspect.custom)'
+        ) {
+          // Return the actual value for these symbols to allow proper inspection
+          return Reflect.get(target, prop, receiver)
+        }
+      }
+
+      // Emit warning on first property access
+      if (!suppressWarningRef.value && typeof prop === 'string') {
+        console.warn(
+          'Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.'
+        )
+        suppressWarningRef.value = true
+      }
+
+      return Reflect.get(target, prop, receiver)
     },
   })
 }

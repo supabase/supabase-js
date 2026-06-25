@@ -1,0 +1,8 @@
+{
+  "name": "@supabase/functions-js",
+  "targets": {
+    "test:ci": {
+      "cache": false
+    }
+  }
+}

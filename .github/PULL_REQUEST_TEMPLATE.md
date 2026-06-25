@@ -31,7 +31,7 @@ Closes #(issue_number) <!-- If applicable -->
 
 - [ ] I have read the [Contributing Guidelines](https://github.com/supabase/supabase-js/blob/master/CONTRIBUTING.md)
 - [ ] My PR title follows the [conventional commit format](https://www.conventionalcommits.org/): `<type>(<scope>): <description>`
-- [ ] I have run `npx nx format` to ensure consistent code formatting
+- [ ] I have run `pnpm nx format` to ensure consistent code formatting
 - [ ] I have added tests for new functionality (if applicable)
 - [ ] I have updated documentation (if applicable)
 

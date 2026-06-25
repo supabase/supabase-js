@@ -1,4 +1,4 @@
-import faker from 'faker'
+import { faker } from '@faker-js/faker'
 import jwt from 'jsonwebtoken'
 
 import { serviceRoleApiClient } from './clients'
@@ -39,7 +39,7 @@ export const mockVerificationOTP = (): string => {
 
 export const mockUserMetadata = () => {
   return {
-    profile_image: faker.image.avatar(),
+    profile_image: faker.image.avatarGitHub(),
   }
 }
 
@@ -65,4 +65,28 @@ export const createNewUserWithEmail = async ({
     password: newPassword,
     user_metadata: {},
   })
+}
+
+export const mockOAuthClientParams = () => {
+  return {
+    client_name: `Test OAuth Client ${faker.string.alphanumeric(8)}`,
+    redirect_uris: [
+      `https://${faker.internet.domainName()}/callback`,
+      `https://example.com/callback/${faker.string.alphanumeric(8)}`,
+    ],
+    grant_types: ['authorization_code' as const, 'refresh_token' as const],
+    response_types: ['code' as const],
+  }
+}
+
+export const mockOAuthUpdateParams = () => {
+  return {
+    client_name: `Updated OAuth Client ${faker.string.alphanumeric(8)}`,
+    logo_uri: faker.image.url(),
+  }
+}
+
+export const createTestOAuthClient = async () => {
+  const params = mockOAuthClientParams()
+  return await serviceRoleApiClient.oauth.createClient(params)
 }

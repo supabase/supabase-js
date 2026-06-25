@@ -30,6 +30,15 @@
 
 </div>
 
+## Requirements
+
+- **Node.js 20 or later** (Node.js 18 support dropped as of October 31, 2025)
+- For browser support, all modern browsers are supported
+
+> ⚠️ **Node.js 18 Deprecation Notice**
+>
+> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped on October 31, 2025.
+
 ## Quick Start
 
 ### Installation
@@ -44,11 +53,11 @@ npm install @supabase/functions-js
 import { FunctionsClient } from '@supabase/functions-js'
 
 const functionsUrl = 'https://<project_ref>.supabase.co/functions/v1'
-const anonKey = '<anon_key>'
+const publishableKey = '<publishable_key>'
 
 const functions = new FunctionsClient(functionsUrl, {
   headers: {
-    Authorization: `Bearer ${anonKey}`,
+    Authorization: `Bearer ${publishableKey}`,
   },
 })
 
@@ -66,20 +75,19 @@ This package is part of the [Supabase JavaScript monorepo](https://github.com/su
 
 ```bash
 # Complete build (from monorepo root)
-npx nx build functions-js
+pnpm nx build functions-js
 
 # Build with watch mode for development
-npx nx build functions-js --watch
+pnpm nx build functions-js --watch
 
 # Individual build targets
-npx nx build:main functions-js    # CommonJS build (dist/main/)
-npx nx build:module functions-js  # ES Modules build (dist/module/)
+pnpm nx build:main functions-js    # CommonJS build (dist/main/)
+pnpm nx build:module functions-js  # ES Modules build (dist/module/)
 
 # Other useful commands
-npx nx clean functions-js         # Clean build artifacts
-npx nx format functions-js        # Format code with Prettier
-npx nx typecheck functions-js     # TypeScript type checking
-npx nx docs functions-js          # Generate documentation
+pnpm nx clean functions-js         # Clean build artifacts
+pnpm nx typecheck functions-js     # TypeScript type checking
+pnpm nx docs functions-js          # Generate documentation
 ```
 
 #### Build Outputs
@@ -94,16 +102,16 @@ npx nx docs functions-js          # Generate documentation
 
 ```bash
 # Run all tests (from monorepo root)
-npx nx test functions-js
+pnpm nx test functions-js
 
 # Run tests with coverage report
-npx nx test functions-js --coverage
+pnpm nx test functions-js --coverage
 
 # Run tests in watch mode during development
-npx nx test functions-js --watch
+pnpm nx test functions-js --watch
 
 # CI test command (runs with coverage)
-npx nx test:ci functions-js
+pnpm nx test:ci functions-js
 ```
 
 #### Test Requirements

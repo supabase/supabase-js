@@ -1,5 +1,5 @@
 import { StorageClient } from '../src/index'
-import { StorageError, StorageUnknownError } from '../src/lib/errors'
+import { StorageError, StorageUnknownError } from '../src/lib/common/errors'
 
 // Mock URL and credentials for testing
 const URL = 'http://localhost:8000/storage/v1'

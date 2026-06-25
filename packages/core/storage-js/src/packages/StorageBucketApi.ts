@@ -1,16 +1,11 @@
 import { DEFAULT_HEADERS } from '../lib/constants'
-import { isStorageError, StorageError } from '../lib/errors'
-import { Fetch, get, post, put, remove } from '../lib/fetch'
-import { resolveFetch } from '../lib/helpers'
+import { StorageError } from '../lib/common/errors'
+import { Fetch, get, post, put, remove } from '../lib/common/fetch'
+import BaseApiClient from '../lib/common/BaseApiClient'
 import { Bucket, BucketType, ListBucketOptions } from '../lib/types'
 import { StorageClientOptions } from '../StorageClient'
 
-export default class StorageBucketApi {
-  protected url: string
-  protected headers: { [key: string]: string }
-  protected fetch: Fetch
-  protected shouldThrowOnError = false
-
+export default class StorageBucketApi extends BaseApiClient<StorageError> {
   constructor(
     url: string,
     headers: { [key: string]: string } = {},
@@ -28,21 +23,50 @@ export default class StorageBucketApi {
       }
     }
 
-    this.url = baseUrl.href.replace(/\/$/, '')
-    this.headers = { ...DEFAULT_HEADERS, ...headers }
-    this.fetch = resolveFetch(fetch)
-  }
+    const finalUrl = baseUrl.href.replace(/\/$/, '')
+    const finalHeaders = { ...DEFAULT_HEADERS, ...headers }
 
-  /**
-   * Enable throwing errors instead of returning them.
-   */
-  public throwOnError(): this {
-    this.shouldThrowOnError = true
-    return this
+    super(finalUrl, finalHeaders, fetch, 'storage')
   }
 
   /**
    * Retrieves the details of all Storage buckets within an existing project.
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param options Query parameters for listing buckets
+   * @param options.limit Maximum number of buckets to return
+   * @param options.offset Number of buckets to skip
+   * @param options.sortColumn Column to sort by ('id', 'name', 'created_at', 'updated_at')
+   * @param options.sortOrder Sort order ('asc' or 'desc')
+   * @param options.search Search term to filter bucket names
+   * @returns Promise with response containing array of buckets or error
+   *
+   * @example List buckets
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .listBuckets()
+   * ```
+   *
+   * @example List buckets with options
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .listBuckets({
+   *     limit: 10,
+   *     offset: 0,
+   *     sortColumn: 'created_at',
+   *     sortOrder: 'desc',
+   *     search: 'prod'
+   *   })
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async listBuckets(options?: ListBucketOptions): Promise<
     | {
@@ -54,28 +78,53 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
+    return this.handleOperation(async () => {
       const queryString = this.listBucketOptionsToQueryString(options)
-      const data = await get(this.fetch, `${this.url}/bucket${queryString}`, {
+      return await get(this.fetch, `${this.url}/bucket${queryString}`, {
         headers: this.headers,
       })
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
    * Retrieves the details of an existing Storage bucket.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param id The unique identifier of the bucket you would like to retrieve.
+   * @returns Promise with response containing bucket details or error
+   *
+   * @example Get bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .getBucket('avatars')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "id": "avatars",
+   *     "name": "avatars",
+   *     "owner": "",
+   *     "public": false,
+   *     "file_size_limit": 1024,
+   *     "allowed_mime_types": [
+   *       "image/png"
+   *     ],
+   *     "created_at": "2024-05-22T22:26:05.100Z",
+   *     "updated_at": "2024-05-22T22:26:05.100Z"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async getBucket(id: string): Promise<
     | {
@@ -87,24 +136,16 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await get(this.fetch, `${this.url}/bucket/${id}`, { headers: this.headers })
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    return this.handleOperation(async () => {
+      return await get(this.fetch, `${this.url}/bucket/${id}`, { headers: this.headers })
+    })
   }
 
   /**
    * Creates a new Storage bucket
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param id A unique identifier for the bucket you are creating.
    * @param options.public The visibility of the bucket. Public buckets don't require an authorization token to download objects, but still require a valid token for all other operations. By default, buckets are private.
    * @param options.fileSizeLimit specifies the max file size in bytes that can be uploaded to this bucket.
@@ -113,9 +154,36 @@ export default class StorageBucketApi {
    * @param options.allowedMimeTypes specifies the allowed mime types that this bucket can accept during upload.
    * The default value is null, which allows files with all mime types to be uploaded.
    * Each mime type specified can be a wildcard, e.g. image/*, or a specific mime type, e.g. image/png.
-   * @returns newly created bucket id
    * @param options.type (private-beta) specifies the bucket type. see `BucketType` for more details.
    *   - default bucket type is `STANDARD`
+   * @returns Promise with response containing newly created bucket name or error
+   *
+   * @example Create bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .createBucket('avatars', {
+   *     public: false,
+   *     allowedMimeTypes: ['image/png'],
+   *     fileSizeLimit: 1024
+   *   })
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "name": "avatars"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `insert`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async createBucket(
     id: string,
@@ -137,8 +205,8 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await post(
+    return this.handleOperation(async () => {
+      return await post(
         this.fetch,
         `${this.url}/bucket`,
         {
@@ -151,22 +219,14 @@ export default class StorageBucketApi {
         },
         { headers: this.headers }
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
    * Updates a Storage bucket
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param id A unique identifier for the bucket you are updating.
    * @param options.public The visibility of the bucket. Public buckets don't require an authorization token to download objects, but still require a valid token for all other operations.
    * @param options.fileSizeLimit specifies the max file size in bytes that can be uploaded to this bucket.
@@ -175,6 +235,34 @@ export default class StorageBucketApi {
    * @param options.allowedMimeTypes specifies the allowed mime types that this bucket can accept during upload.
    * The default value is null, which allows files with all mime types to be uploaded.
    * Each mime type specified can be a wildcard, e.g. image/*, or a specific mime type, e.g. image/png.
+   * @returns Promise with response containing success message or error
+   *
+   * @example Update bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .updateBucket('avatars', {
+   *     public: false,
+   *     allowedMimeTypes: ['image/png'],
+   *     fileSizeLimit: 1024
+   *   })
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "message": "Successfully updated"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select` and `update`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async updateBucket(
     id: string,
@@ -193,8 +281,8 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await put(
+    return this.handleOperation(async () => {
+      return await put(
         this.fetch,
         `${this.url}/bucket/${id}`,
         {
@@ -206,23 +294,39 @@ export default class StorageBucketApi {
         },
         { headers: this.headers }
       )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    })
   }
 
   /**
    * Removes all objects inside a single bucket.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param id The unique identifier of the bucket you would like to empty.
+   * @returns Promise with success message or error
+   *
+   * @example Empty bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .emptyBucket('avatars')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "message": "Successfully emptied"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select`
+   *   - `objects` table permissions: `select` and `delete`
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async emptyBucket(id: string): Promise<
     | {
@@ -234,31 +338,42 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await post(
-        this.fetch,
-        `${this.url}/bucket/${id}/empty`,
-        {},
-        { headers: this.headers }
-      )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    return this.handleOperation(async () => {
+      return await post(this.fetch, `${this.url}/bucket/${id}/empty`, {}, { headers: this.headers })
+    })
   }
 
   /**
    * Deletes an existing bucket. A bucket can't be deleted with existing objects inside it.
    * You must first `empty()` the bucket.
    *
+   * @category Storage
+   * @subcategory File Buckets
    * @param id The unique identifier of the bucket you would like to delete.
+   * @returns Promise with success message or error
+   *
+   * @example Delete bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .deleteBucket('avatars')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "message": "Successfully deleted"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select` and `delete`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
   async deleteBucket(id: string): Promise<
     | {
@@ -270,24 +385,9 @@ export default class StorageBucketApi {
         error: StorageError
       }
   > {
-    try {
-      const data = await remove(
-        this.fetch,
-        `${this.url}/bucket/${id}`,
-        {},
-        { headers: this.headers }
-      )
-      return { data, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        return { data: null, error }
-      }
-
-      throw error
-    }
+    return this.handleOperation(async () => {
+      return await remove(this.fetch, `${this.url}/bucket/${id}`, {}, { headers: this.headers })
+    })
   }
 
   private listBucketOptionsToQueryString(options?: ListBucketOptions): string {

@@ -1,33 +1,13 @@
 import { releaseVersion, releaseChangelog, releasePublish } from 'nx/release'
 import { execSync } from 'child_process'
 import { writeFile } from 'fs/promises'
-
-function getLastStableTag(): string {
-  try {
-    return execSync(
-      `git tag --list --sort=-version:refname | grep -E '^v?[0-9]+\\.[0-9]+\\.[0-9]+$' | head -n1`
-    )
-      .toString()
-      .trim()
-  } catch {
-    return ''
-  }
-}
-
-function getArg(name: string): string | undefined {
-  // supports --name=value and --name value
-  const idx = process.argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`))
-  if (idx === -1) return undefined
-  const token = process.argv[idx]
-  if (token.includes('=')) return token.split('=')[1]
-  return process.argv[idx + 1] // next token
-}
+import { getLastStableTag, getArg } from './utils'
 
 const versionSpecifier = getArg('versionSpecifier') ?? process.argv[2] // optional positional fallback
 
 if (!versionSpecifier) {
   console.error(
-    `Usage: npm run release-stable -- --versionSpecifier <specifier>\n` +
+    `Usage: pnpm run release-stable -- --versionSpecifier <specifier>\n` +
       `Examples:\n` +
       `  --versionSpecifier patch | minor | major | prepatch | preminor | premajor | prerelease\n` +
       `  --versionSpecifier v2.3.4 (explicit version)\n`
@@ -73,11 +53,11 @@ function safeExec(cmd: string, opts = {}) {
 
   // Update version.ts files with the new versions
   console.log('\n📦 Updating version.ts files...')
-  safeExec('npx tsx scripts/update-version-files.ts')
+  safeExec('pnpm exec tsx scripts/update-version-files.ts')
 
   // Rebuild packages with correct versions
   console.log('\n🔨 Rebuilding packages with new versions...')
-  safeExec('npx nx run-many --target=build --all')
+  safeExec('pnpm nx run-many --target=build --all')
   console.log('✅ Build complete\n')
 
   // --- GIT AUTH SETUP FOR TAGGING/CHANGELOG ---
@@ -135,11 +115,21 @@ function safeExec(cmd: string, opts = {}) {
   // Publish gotrue-js as legacy mirror of auth-js
   console.log('\n📦 Publishing @supabase/gotrue-js (legacy mirror)...')
   try {
-    safeExec('npx tsx scripts/publish-gotrue-legacy.ts --tag=latest')
+    safeExec('pnpm exec tsx scripts/publish-gotrue-legacy.ts --tag=latest')
   } catch (error) {
     console.error('❌ Failed to publish gotrue-js legacy package:', error)
     // Don't fail the entire release if gotrue-js fails
     console.log('⚠️  Continuing with release despite gotrue-js publish failure')
+  }
+
+  // Publish all packages to JSR
+  console.log('\n📦 Publishing packages to JSR...')
+  try {
+    safeExec('pnpm exec tsx scripts/publish-to-jsr.ts --tag=latest')
+  } catch (error) {
+    console.error('❌ Failed to publish to JSR:', error)
+    // Don't fail the entire release if JSR publishing fails
+    console.log('⚠️  Continuing with release despite JSR publish failure')
   }
 
   // ---- CREATE RELEASE BRANCH + PR ----
@@ -185,6 +175,10 @@ function safeExec(cmd: string, opts = {}) {
   const branchName = `release-${version}`
 
   try {
+    // Format generated changelogs before committing
+    console.log('\n✨ Formatting generated changelogs...')
+    safeExec('pnpm nx format:write')
+    console.log('✅ Changelogs formatted\n')
     safeExec(`git checkout -b ${branchName}`)
     safeExec('git add CHANGELOG.md || true')
     safeExec('git add packages/**/CHANGELOG.md || true')

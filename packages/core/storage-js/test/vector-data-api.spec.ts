@@ -424,10 +424,10 @@ describe('VectorDataApi Integration Tests', () => {
       })
 
       const data = assertSuccessResponse(response)
-      expect(data.matches).toBeDefined()
-      expect(Array.isArray(data.matches)).toBe(true)
-      expect(data.matches.length).toBeGreaterThan(0)
-      expect(data.matches.length).toBeLessThanOrEqual(3)
+      expect(data.vectors).toBeDefined()
+      expect(Array.isArray(data.vectors)).toBe(true)
+      expect(data.vectors.length).toBeGreaterThan(0)
+      expect(data.vectors.length).toBeLessThanOrEqual(3)
     })
 
     it('should return vectors with distance scores', async () => {
@@ -441,8 +441,8 @@ describe('VectorDataApi Integration Tests', () => {
       })
 
       const data = assertSuccessResponse(response)
-      expect(data.matches[0].distance).toBeDefined()
-      expect(typeof data.matches[0].distance).toBe('number')
+      expect(data.vectors[0].distance).toBeDefined()
+      expect(typeof data.vectors[0].distance).toBe('number')
     })
 
     it('should filter by metadata', async () => {
@@ -456,10 +456,10 @@ describe('VectorDataApi Integration Tests', () => {
       })
 
       const data = assertSuccessResponse(response)
-      expect(data.matches.length).toBeGreaterThan(0)
+      expect(data.vectors.length).toBeGreaterThan(0)
 
       // All results should match filter
-      for (const match of data.matches) {
+      for (const match of data.vectors) {
         expect(match.metadata?.category).toBe('tech')
       }
     })
@@ -476,7 +476,7 @@ describe('VectorDataApi Integration Tests', () => {
 
       const data = assertSuccessResponse(response)
 
-      for (const match of data.matches) {
+      for (const match of data.vectors) {
         expect(match.metadata?.category).toBe('tech')
         expect(match.metadata?.published).toBe(true)
       }
@@ -491,7 +491,7 @@ describe('VectorDataApi Integration Tests', () => {
       })
 
       const data = assertSuccessResponse(response)
-      expect(data.matches.length).toBeLessThanOrEqual(2)
+      expect(data.vectors.length).toBeLessThanOrEqual(2)
     })
 
     it('should return empty matches when filter matches nothing', async () => {
@@ -504,7 +504,7 @@ describe('VectorDataApi Integration Tests', () => {
       })
 
       const data = assertSuccessResponse(response)
-      expect(data.matches).toEqual([])
+      expect(data.vectors).toEqual([])
     })
 
     it('should query without metadata in results', async () => {
@@ -518,8 +518,8 @@ describe('VectorDataApi Integration Tests', () => {
       })
 
       const data = assertSuccessResponse(response)
-      expect(data.matches[0].key).toBeDefined()
-      expect(data.matches[0].metadata).toBeUndefined()
+      expect(data.vectors[0].key).toBeDefined()
+      expect(data.vectors[0].metadata).toBeUndefined()
     })
   })
 

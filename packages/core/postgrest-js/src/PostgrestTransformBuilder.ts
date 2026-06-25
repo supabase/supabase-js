@@ -1,8 +1,9 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestFilterBuilder, { InvalidMethodError } from './PostgrestFilterBuilder'
 import { GetResult } from './select-query-parser/result'
-import { CheckMatchingArrayTypes, MaxAffectedEnabled } from './types/types'
+import { CheckMatchingArrayTypes } from './types/types'
 import { ClientServerOptions, GenericSchema } from './types/common/common'
+import type { MaxAffectedEnabled } from './types/feature-flags'
 
 export default class PostgrestTransformBuilder<
   ClientOptions extends ClientServerOptions,
@@ -12,7 +13,30 @@ export default class PostgrestTransformBuilder<
   RelationName = unknown,
   Relationships = unknown,
   Method = unknown,
-> extends PostgrestBuilder<ClientOptions, Result> {
+  ThrowOnError extends boolean = false,
+> extends PostgrestBuilder<ClientOptions, Result, ThrowOnError> {
+  throwOnError(): PostgrestTransformBuilder<
+    ClientOptions,
+    Schema,
+    Row,
+    Result,
+    RelationName,
+    Relationships,
+    Method,
+    true
+  > {
+    return super.throwOnError() as PostgrestTransformBuilder<
+      ClientOptions,
+      Schema,
+      Row,
+      Result,
+      RelationName,
+      Relationships,
+      Method,
+      true
+    >
+  }
+
   /**
    * Perform a SELECT on the query result.
    *
@@ -21,6 +45,42 @@ export default class PostgrestTransformBuilder<
    * `data`.
    *
    * @param columns - The columns to retrieve, separated by commas
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @example With `upsert()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .upsert({ id: 1, name: 'Han Solo' })
+   *   .select()
+   * ```
+   *
+   * @exampleSql With `upsert()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Han');
+   * ```
+   *
+   * @exampleResponse With `upsert()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 1,
+   *       "name": "Han Solo"
+   *     }
+   *   ],
+   *   "status": 201,
+   *   "statusText": "Created"
+   * }
+   * ```
    */
   select<
     Query extends string = '*',
@@ -38,7 +98,8 @@ export default class PostgrestTransformBuilder<
       : NewResultOne[],
     RelationName,
     Relationships,
-    Method
+    Method,
+    ThrowOnError
   > {
     // Remove whitespaces except when quoted
     let quoted = false
@@ -67,10 +128,30 @@ export default class PostgrestTransformBuilder<
         : NewResultOne[],
       RelationName,
       Relationships,
-      Method
+      Method,
+      ThrowOnError
     >
   }
 
+  /**
+   * Order the query result by `column`.
+   *
+   * You can call this method multiple times to order by multiple columns.
+   *
+   * You can order referenced tables, but it only affects the ordering of the
+   * parent table if you use `!inner` in the query.
+   *
+   * @param column - The column to order by
+   * @param options - Named parameters
+   * @param options.ascending - If `true`, the result will be in ascending order
+   * @param options.nullsFirst - If `true`, `null`s appear first. If `false`,
+   * `null`s appear last.
+   * @param options.referencedTable - Set this to order a referenced table by
+   * its columns
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   */
   order<ColumnName extends string & keyof Row>(
     column: ColumnName,
     options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: undefined }
@@ -110,6 +191,177 @@ export default class PostgrestTransformBuilder<
    * its columns
    * @param options.foreignTable - Deprecated, use `options.referencedTable`
    * instead
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('id, name')
+   *   .order('id', { ascending: false })
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "id": 3,
+   *       "name": "Han"
+   *     },
+   *     {
+   *       "id": 2,
+   *       "name": "Leia"
+   *     },
+   *     {
+   *       "id": 1,
+   *       "name": "Luke"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @exampleDescription On a referenced table
+   * Ordering with `referencedTable` doesn't affect the ordering of the
+   * parent table.
+   *
+   * @example On a referenced table
+   * ```ts
+   *   const { data, error } = await supabase
+   *     .from('orchestral_sections')
+   *     .select(`
+   *       name,
+   *       instruments (
+   *         name
+   *       )
+   *     `)
+   *     .order('name', { referencedTable: 'instruments', ascending: false })
+   *
+   * ```
+   *
+   * @exampleSql On a referenced table
+   * ```sql
+   * create table
+   *   orchestral_sections (id int8 primary key, name text);
+   * create table
+   *   instruments (
+   *     id int8 primary key,
+   *     section_id int8 not null references orchestral_sections,
+   *     name text
+   *   );
+   *
+   * insert into
+   *   orchestral_sections (id, name)
+   * values
+   *   (1, 'strings'),
+   *   (2, 'woodwinds');
+   * insert into
+   *   instruments (id, section_id, name)
+   * values
+   *   (1, 1, 'harp'),
+   *   (2, 1, 'violin');
+   * ```
+   *
+   * @exampleResponse On a referenced table
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "strings",
+   *       "instruments": [
+   *         {
+   *           "name": "violin"
+   *         },
+   *         {
+   *           "name": "harp"
+   *         }
+   *       ]
+   *     },
+   *     {
+   *       "name": "woodwinds",
+   *       "instruments": []
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @exampleDescription Order parent table by a referenced table
+   * Ordering with `referenced_table(col)` affects the ordering of the
+   * parent table.
+   *
+   * @example Order parent table by a referenced table
+   * ```ts
+   *   const { data, error } = await supabase
+   *     .from('instruments')
+   *     .select(`
+   *       name,
+   *       section:orchestral_sections (
+   *         name
+   *       )
+   *     `)
+   *     .order('section(name)', { ascending: true })
+   *
+   * ```
+   *
+   * @exampleSql Order parent table by a referenced table
+   * ```sql
+   * create table
+   *   orchestral_sections (id int8 primary key, name text);
+   * create table
+   *   instruments (
+   *     id int8 primary key,
+   *     section_id int8 not null references orchestral_sections,
+   *     name text
+   *   );
+   *
+   * insert into
+   *   orchestral_sections (id, name)
+   * values
+   *   (1, 'strings'),
+   *   (2, 'woodwinds');
+   * insert into
+   *   instruments (id, section_id, name)
+   * values
+   *   (1, 2, 'flute'),
+   *   (2, 1, 'violin');
+   * ```
+   *
+   * @exampleResponse Order parent table by a referenced table
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "violin",
+   *       "orchestral_sections": {"name": "strings"}
+   *     },
+   *     {
+   *       "name": "flute",
+   *       "orchestral_sections": {"name": "woodwinds"}
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   order(
     column: string,
@@ -138,24 +390,114 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Limit the query result by `count`.
+   * Limit the query result by `rows`.
    *
-   * @param count - The maximum number of rows to return
+   * @param rows - The maximum number of rows to return
    * @param options - Named parameters
    * @param options.referencedTable - Set this to limit rows of referenced
    * tables instead of the parent table
    * @param options.foreignTable - Deprecated, use `options.referencedTable`
    * instead
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('name')
+   *   .limit(1)
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "Luke"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
+   *
+   * @example On a referenced table
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('orchestral_sections')
+   *   .select(`
+   *     name,
+   *     instruments (
+   *       name
+   *     )
+   *   `)
+   *   .limit(1, { referencedTable: 'instruments' })
+   * ```
+   *
+   * @exampleSql On a referenced table
+   * ```sql
+   * create table
+   *   orchestral_sections (id int8 primary key, name text);
+   * create table
+   *   instruments (
+   *     id int8 primary key,
+   *     section_id int8 not null references orchestral_sections,
+   *     name text
+   *   );
+   *
+   * insert into
+   *   orchestral_sections (id, name)
+   * values
+   *   (1, 'strings');
+   * insert into
+   *   instruments (id, section_id, name)
+   * values
+   *   (1, 1, 'harp'),
+   *   (2, 1, 'violin');
+   * ```
+   *
+   * @exampleResponse On a referenced table
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "strings",
+   *       "instruments": [
+   *         {
+   *           "name": "violin"
+   *         }
+   *       ]
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   limit(
-    count: number,
+    rows: number,
     {
       foreignTable,
       referencedTable = foreignTable,
     }: { foreignTable?: string; referencedTable?: string } = {}
   ): this {
     const key = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
-    this.url.searchParams.set(key, `${count}`)
+    this.url.searchParams.set(key, `${rows}`)
     return this
   }
 
@@ -173,6 +515,46 @@ export default class PostgrestTransformBuilder<
    * tables instead of the parent table
    * @param options.foreignTable - Deprecated, use `options.referencedTable`
    * instead
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('name')
+   *   .range(0, 1)
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": [
+   *     {
+   *       "name": "Luke"
+   *     },
+   *     {
+   *       "name": "Leia"
+   *     }
+   *   ],
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   range(
     from: number,
@@ -195,6 +577,67 @@ export default class PostgrestTransformBuilder<
    * Set the AbortSignal for the fetch request.
    *
    * @param signal - The AbortSignal to use for the fetch request
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @remarks
+   * You can use this to set a timeout for the request.
+   *
+   * @exampleDescription Aborting requests in-flight
+   * You can use an [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController) to abort requests.
+   * Note that `status` and `statusText` don't mean anything for aborted requests as the request wasn't fulfilled.
+   *
+   * @example Aborting requests in-flight
+   * ```ts
+   * const ac = new AbortController()
+   *
+   * const { data, error } = await supabase
+   *   .from('very_big_table')
+   *   .select()
+   *   .abortSignal(ac.signal)
+   *
+   * // Abort the request after 100 ms
+   * setTimeout(() => ac.abort(), 100)
+   * ```
+   *
+   * @exampleResponse Aborting requests in-flight
+   * ```json
+   *   {
+   *     "error": {
+   *       "message": "AbortError: The user aborted a request.",
+   *       "details": "",
+   *       "hint": "The request was aborted locally via the provided AbortSignal.",
+   *       "code": ""
+   *     },
+   *     "status": 0,
+   *     "statusText": ""
+   *   }
+   *
+   * ```
+   *
+   * @example Set a timeout
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('very_big_table')
+   *   .select()
+   *   .abortSignal(AbortSignal.timeout(1000 /* ms *\/))
+   * ```
+   *
+   * @exampleResponse Set a timeout
+   * ```json
+   *   {
+   *     "error": {
+   *       "message": "FetchError: The user aborted a request.",
+   *       "details": "",
+   *       "hint": "",
+   *       "code": ""
+   *     },
+   *     "status": 400,
+   *     "statusText": "Bad Request"
+   *   }
+   *
+   * ```
    */
   abortSignal(signal: AbortSignal): this {
     this.signal = signal
@@ -206,13 +649,50 @@ export default class PostgrestTransformBuilder<
    *
    * Query result must be one row (e.g. using `.limit(1)`), otherwise this
    * returns an error.
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select('name')
+   *   .limit(1)
+   *   .single()
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "data": {
+   *     "name": "Luke"
+   *   },
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   single<ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never>(): PostgrestBuilder<
     ClientOptions,
-    ResultOne
+    ResultOne,
+    ThrowOnError
   > {
     this.headers.set('Accept', 'application/vnd.pgrst.object+json')
-    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne>
+    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne, ThrowOnError>
   }
 
   /**
@@ -220,35 +700,102 @@ export default class PostgrestTransformBuilder<
    *
    * Query result must be zero or one row (e.g. using `.limit(1)`), otherwise
    * this returns an error.
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @example With `select()`
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .eq('name', 'Katniss')
+   *   .maybeSingle()
+   * ```
+   *
+   * @exampleSql With `select()`
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse With `select()`
+   * ```json
+   * {
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
   maybeSingle<
     ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never,
-  >(): PostgrestBuilder<ClientOptions, ResultOne | null> {
-    // Temporary partial fix for https://github.com/supabase/postgrest-js/issues/361
-    // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
-    if (this.method === 'GET') {
-      this.headers.set('Accept', 'application/json')
-    } else {
-      this.headers.set('Accept', 'application/vnd.pgrst.object+json')
-    }
+  >(): PostgrestBuilder<ClientOptions, ResultOne | null, ThrowOnError> {
+    // No Accept header override — we fetch as a list and enforce cardinality client-side.
+    // Fixes https://github.com/supabase/postgrest-js/issues/361 for all request methods.
     this.isMaybeSingle = true
-    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne | null>
+    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne | null, ThrowOnError>
   }
 
   /**
    * Return `data` as a string in CSV format.
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @exampleDescription Return data as CSV
+   * By default, the data is returned in JSON format, but can also be returned as Comma Separated Values.
+   *
+   * @example Return data as CSV
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .csv()
+   * ```
+   *
+   * @exampleSql Return data as CSV
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse Return data as CSV
+   * ```json
+   * {
+   *   "data": "id,name\n1,Luke\n2,Leia\n3,Han",
+   *   "status": 200,
+   *   "statusText": "OK"
+   * }
+   * ```
    */
-  csv(): PostgrestBuilder<ClientOptions, string> {
+  csv(): PostgrestBuilder<ClientOptions, string, ThrowOnError> {
     this.headers.set('Accept', 'text/csv')
-    return this as unknown as PostgrestBuilder<ClientOptions, string>
+    return this as unknown as PostgrestBuilder<ClientOptions, string, ThrowOnError>
   }
 
   /**
    * Return `data` as an object in [GeoJSON](https://geojson.org) format.
+   *
+   * @category Database
+   * @subcategory Using modifiers
    */
-  geojson(): PostgrestBuilder<ClientOptions, Record<string, unknown>> {
+  geojson(): PostgrestBuilder<ClientOptions, Record<string, unknown>, ThrowOnError> {
     this.headers.set('Accept', 'application/geo+json')
-    return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>>
+    return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>, ThrowOnError>
   }
 
   /**
@@ -275,6 +822,77 @@ export default class PostgrestTransformBuilder<
    *
    * @param options.format - The format of the output, can be `"text"` (default)
    * or `"json"`
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @exampleDescription Get the execution plan
+   * By default, the data is returned in TEXT format, but can also be returned as JSON by using the `format` parameter.
+   *
+   * @example Get the execution plan
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .explain()
+   * ```
+   *
+   * @exampleSql Get the execution plan
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse Get the execution plan
+   * ```js
+   * Aggregate  (cost=33.34..33.36 rows=1 width=112)
+   *   ->  Limit  (cost=0.00..18.33 rows=1000 width=40)
+   *         ->  Seq Scan on characters  (cost=0.00..22.00 rows=1200 width=40)
+   * ```
+   *
+   * @exampleDescription Get the execution plan with analyze and verbose
+   * By default, the data is returned in TEXT format, but can also be returned as JSON by using the `format` parameter.
+   *
+   * @example Get the execution plan with analyze and verbose
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('characters')
+   *   .select()
+   *   .explain({analyze:true,verbose:true})
+   * ```
+   *
+   * @exampleSql Get the execution plan with analyze and verbose
+   * ```sql
+   * create table
+   *   characters (id int8 primary key, name text);
+   *
+   * insert into
+   *   characters (id, name)
+   * values
+   *   (1, 'Luke'),
+   *   (2, 'Leia'),
+   *   (3, 'Han');
+   * ```
+   *
+   * @exampleResponse Get the execution plan with analyze and verbose
+   * ```js
+   * Aggregate  (cost=33.34..33.36 rows=1 width=112) (actual time=0.041..0.041 rows=1 loops=1)
+   *   Output: NULL::bigint, count(ROW(characters.id, characters.name)), COALESCE(json_agg(ROW(characters.id, characters.name)), '[]'::json), NULLIF(current_setting('response.headers'::text, true), ''::text), NULLIF(current_setting('response.status'::text, true), ''::text)
+   *   ->  Limit  (cost=0.00..18.33 rows=1000 width=40) (actual time=0.005..0.006 rows=3 loops=1)
+   *         Output: characters.id, characters.name
+   *         ->  Seq Scan on public.characters  (cost=0.00..22.00 rows=1200 width=40) (actual time=0.004..0.005 rows=3 loops=1)
+   *               Output: characters.id, characters.name
+   * Query Identifier: -4730654291623321173
+   * Planning Time: 0.407 ms
+   * Execution Time: 0.119 ms
+   * ```
    */
   explain({
     analyze = false,
@@ -307,16 +925,44 @@ export default class PostgrestTransformBuilder<
       `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${options};`
     )
     if (format === 'json') {
-      return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>[]>
+      return this as unknown as PostgrestBuilder<
+        ClientOptions,
+        Record<string, unknown>[],
+        ThrowOnError
+      >
     } else {
-      return this as unknown as PostgrestBuilder<ClientOptions, string>
+      return this as unknown as PostgrestBuilder<ClientOptions, string, ThrowOnError>
     }
   }
 
   /**
-   * Rollback the query.
+   * Dry-run this request: execute the query but discard the changes.
    *
-   * `data` will still be returned, but the query is not committed.
+   * Server-side, PostgREST runs the query inside a transaction and rolls it back
+   * instead of committing. The response still contains the data that *would* have
+   * been returned — `RETURNING` clauses execute and RLS, triggers, and constraints
+   * are all evaluated — but no row is actually inserted, updated, or deleted.
+   *
+   * This affects only the single request it is chained to. The JS caller has no
+   * handle on the transaction: supabase-js does not group multiple queries into
+   * one transaction. For multi-statement transactional logic, use a database
+   * function (`supabase.rpc(...)`).
+   *
+   * Sets the `Prefer: tx=rollback` header. See PostgREST's docs on transaction
+   * preferences for the underlying mechanism.
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @example Validate an insert without persisting
+   * ```ts
+   * const { data, error } = await supabase
+   *   .from('countries')
+   *   .insert({ name: 'France' })
+   *   .select()
+   *   .rollback()
+   * // `data` shows what would have been inserted; nothing is saved.
+   * ```
    */
   rollback(): this {
     this.headers.append('Prefer', 'tx=rollback')
@@ -328,6 +974,39 @@ export default class PostgrestTransformBuilder<
    *
    * @typeParam NewResult - The new result type to override with
    * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @remarks
+   * - Deprecated: use overrideTypes method instead
+   *
+   * @example Override type of successful response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .returns<Array<MyType>>()
+   * ```
+   *
+   * @exampleResponse Override type of successful response
+   * ```js
+   * let x: typeof data // MyType[]
+   * ```
+   *
+   * @example Override type of object response
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .maybeSingle()
+   *   .returns<MyType>()
+   * ```
+   *
+   * @exampleResponse Override type of object response
+   * ```js
+   * let x: typeof data // MyType | null
+   * ```
    */
   returns<NewResult>(): PostgrestTransformBuilder<
     ClientOptions,
@@ -336,7 +1015,8 @@ export default class PostgrestTransformBuilder<
     CheckMatchingArrayTypes<Result, NewResult>,
     RelationName,
     Relationships,
-    Method
+    Method,
+    ThrowOnError
   > {
     return this as unknown as PostgrestTransformBuilder<
       ClientOptions,
@@ -345,7 +1025,8 @@ export default class PostgrestTransformBuilder<
       CheckMatchingArrayTypes<Result, NewResult>,
       RelationName,
       Relationships,
-      Method
+      Method,
+      ThrowOnError
     >
   }
 
@@ -353,16 +1034,19 @@ export default class PostgrestTransformBuilder<
    * Set the maximum number of rows that can be affected by the query.
    * Only available in PostgREST v13+ and only works with PATCH and DELETE methods.
    *
-   * @param value - The maximum number of rows that can be affected
+   * @param rows - The maximum number of rows that can be affected
+   *
+   * @category Database
+   * @subcategory Using modifiers
    */
-  maxAffected(value: number): MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
+  maxAffected(rows: number): MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
     ? // TODO: update the RPC case to only work on RPC that returns SETOF rows
       Method extends 'PATCH' | 'DELETE' | 'RPC'
       ? this
       : InvalidMethodError<'maxAffected method only available on update or delete'>
     : InvalidMethodError<'maxAffected method only available on postgrest 13+'> {
     this.headers.append('Prefer', 'handling=strict')
-    this.headers.append('Prefer', `max-affected=${value}`)
+    this.headers.append('Prefer', `max-affected=${rows}`)
     return this as unknown as MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
       ? Method extends 'PATCH' | 'DELETE' | 'RPC'
         ? this

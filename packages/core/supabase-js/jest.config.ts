@@ -3,6 +3,7 @@ import type { Config } from '@jest/types'
 const config: Config.InitialOptions = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   clearMocks: true,
   collectCoverage: false,
   coverageDirectory: './test/coverage',
@@ -25,6 +26,7 @@ const config: Config.InitialOptions = {
     '/test/integration/node-browser/', // Playwright tests
     '\.spec\.ts$', // Playwright spec files
     'integration\.browser\.test\.ts', // Browser integration tests for Deno
+    '\.[mc]js$', // standalone Node scripts run via test:esm / test:cjs (Jest 30 default testMatch now includes .mjs/.cjs)
   ],
 }
-export default config
+module.exports = config

@@ -5,7 +5,7 @@ import type { SelectQueryError } from '../src/select-query-parser/utils'
 import { expectType, type TypeEqual } from './types'
 import type { Database } from './types.override'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 
 const MessagesWithoutBlurbSchema = z.object({
@@ -69,10 +69,10 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
@@ -83,6 +83,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -103,41 +104,42 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -157,15 +159,16 @@ describe('advanced rpc', () => {
     let expected: z.infer<typeof UserProfileSchema>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Object {
+        "data": {
           "id": 1,
           "username": "supabot",
         },
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     UserProfileSchema.parse(res.data)
@@ -182,41 +185,42 @@ describe('advanced rpc', () => {
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     // Runtime result
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -237,41 +241,42 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -292,41 +297,42 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -346,31 +352,31 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof RecentMessagesSchema>>[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
@@ -381,6 +387,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     RecentMessagesSchema.array().parse(res.data)
@@ -394,31 +401,31 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof RecentMessagesSchema>>[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
@@ -429,6 +436,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     RecentMessagesSchema.array().parse(res.data)
@@ -444,37 +452,37 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof SelectWithUsersSchema>>[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 3,
-            "message": "Some message on channel wihtout details",
-            "users": Object {
+            "message": "Some message on channel without details",
+            "users": {
               "catchphrase": "'cat' 'fat'",
               "username": "supabot",
             },
           },
-          Object {
+          {
             "channel_id": 3,
-            "message": "Some message on channel wihtout details",
-            "users": Object {
+            "message": "Some message on channel without details",
+            "users": {
               "catchphrase": "'cat' 'fat'",
               "username": "supabot",
             },
           },
-          Object {
+          {
             "channel_id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
-            "users": Object {
+            "users": {
               "catchphrase": "'cat' 'fat'",
               "username": "supabot",
             },
           },
-          Object {
+          {
             "channel_id": 1,
             "message": "Hello World 👋",
-            "users": Object {
+            "users": {
               "catchphrase": "'cat' 'fat'",
               "username": "supabot",
             },
@@ -483,6 +491,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     SelectWithUsersSchema.array().parse(res.data)
@@ -504,12 +513,12 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof SelectWithUsersProfileSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Object {
+        "data": {
           "id": 1,
           "username": "supabot",
-          "users": Object {
+          "users": {
             "catchphrase": "'cat' 'fat'",
             "username": "supabot",
           },
@@ -517,6 +526,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     SelectWithUsersProfileSchema.parse(res.data)
@@ -528,12 +538,13 @@ describe('advanced rpc', () => {
     let expected: undefined
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
         "error": null,
         "status": 204,
         "statusText": "No Content",
+        "success": true,
       }
     `)
   })
@@ -547,10 +558,10 @@ describe('advanced rpc', () => {
     let expected: SelectQueryError<'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST203",
           "details": null,
           "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
@@ -558,6 +569,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -571,10 +583,10 @@ describe('advanced rpc', () => {
     let expected: SelectQueryError<'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST203",
           "details": null,
           "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
@@ -582,6 +594,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -592,12 +605,13 @@ describe('advanced rpc', () => {
     let expected: undefined
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
         "error": null,
         "status": 204,
         "statusText": "No Content",
+        "success": true,
       }
     `)
   })
@@ -610,12 +624,13 @@ describe('advanced rpc', () => {
     let expected: number
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": 1,
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -628,12 +643,13 @@ describe('advanced rpc', () => {
     let expected: string
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": "foo",
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -646,10 +662,10 @@ describe('advanced rpc', () => {
     let expected: z.infer<typeof UserProfileSchema>[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "id": 1,
             "username": "supabot",
           },
@@ -657,6 +673,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     UserProfileSchema.array().parse(res.data)
@@ -672,10 +689,10 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
@@ -686,6 +703,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -706,41 +724,42 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "channel_id": 1,
             "data": null,
             "id": 1,
             "message": "Hello World 👋",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 2,
             "data": null,
             "id": 2,
             "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 3,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
-          Object {
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
-            "message": "Some message on channel wihtout details",
+            "message": "Some message on channel without details",
             "username": "supabot",
           },
         ],
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -754,12 +773,13 @@ describe('advanced rpc', () => {
     let expected: string
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": "foo",
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -770,29 +790,30 @@ describe('advanced rpc', () => {
       '': true,
     })
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": "foo",
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
 
   test('polymorphic function with unnamed int param', async () => {
     const res = await postgrest.rpc(
-      // @ts-expect-error Argument of type '"polymorphic_function_with_unnamed_integer"' is not assignable to parameter of type '"blurb_message" | "function_returning_row" | "function_returning_set_of_rows"
+      // @ts-expect-error Argument of type '"polymorphic_function_with_unnamed_integer"' is not assignable to parameter of type
       'polymorphic_function_with_unnamed_integer',
       {
         '': 1,
       }
     )
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST202",
           "details": "Searched for the function public.polymorphic_function_with_unnamed_integer with parameter  or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
           "hint": "Perhaps you meant to call the function public.polymorphic_function_with_unnamed_text",
@@ -800,6 +821,7 @@ describe('advanced rpc', () => {
         },
         "status": 404,
         "statusText": "Not Found",
+        "success": false,
       }
     `)
   })
@@ -812,12 +834,13 @@ describe('advanced rpc', () => {
     let expected: number
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": 1,
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -830,12 +853,13 @@ describe('advanced rpc', () => {
     let expected: number
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": 1,
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -848,12 +872,13 @@ describe('advanced rpc', () => {
     let expected: number
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": 1,
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -864,12 +889,13 @@ describe('advanced rpc', () => {
     let expected: number
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": 1,
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -882,12 +908,13 @@ describe('advanced rpc', () => {
     let expected: string
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": "foo",
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -900,12 +927,13 @@ describe('advanced rpc', () => {
     let expected: string
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": "foo",
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -916,10 +944,10 @@ describe('advanced rpc', () => {
     let expected: SelectQueryError<'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default(), public.polymorphic_function_with_unnamed_default( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST203",
           "details": null,
           "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
@@ -927,6 +955,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -939,10 +968,10 @@ describe('advanced rpc', () => {
     // this should be true
     expectType<TypeEqual<typeof result, typeof expected>>(false)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST203",
           "details": null,
           "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
@@ -950,6 +979,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -962,12 +992,13 @@ describe('advanced rpc', () => {
     let expected: string
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": "foo",
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -978,10 +1009,10 @@ describe('advanced rpc', () => {
     let expected: SelectQueryError<'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default_overload(), public.polymorphic_function_with_unnamed_default_overload( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST203",
           "details": null,
           "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
@@ -989,6 +1020,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -1001,10 +1033,10 @@ describe('advanced rpc', () => {
     // this should be true
     expectType<TypeEqual<typeof result, typeof expected>>(false)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST203",
           "details": null,
           "hint": "Try renaming the parameters or the function itself in the database so function overloading can be resolved",
@@ -1012,6 +1044,7 @@ describe('advanced rpc', () => {
         },
         "status": 300,
         "statusText": "Multiple Choices",
+        "success": false,
       }
     `)
   })
@@ -1024,12 +1057,13 @@ describe('advanced rpc', () => {
     let expected: string
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": "foo",
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -1043,12 +1077,13 @@ describe('advanced rpc', () => {
     let expected: string
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": "foo",
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
   })
@@ -1059,17 +1094,18 @@ describe('advanced rpc', () => {
     let expected: SelectQueryError<'the function public.blurb_message with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST202",
           "details": "Searched for the function public.blurb_message without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
-          "hint": "Perhaps you meant to call the function public.get_messages",
+          "hint": null,
           "message": "Could not find the function public.blurb_message without parameters in the schema cache",
         },
         "status": 404,
         "statusText": "Not Found",
+        "success": false,
       }
     `)
   })
@@ -1089,17 +1125,18 @@ describe('advanced rpc', () => {
     let expected: SelectQueryError<'the function public.blurb_message with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
         "data": null,
-        "error": Object {
+        "error": {
           "code": "PGRST202",
           "details": "Searched for the function public.blurb_message with parameter  or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.",
-          "hint": "Perhaps you meant to call the function public.get_messages",
+          "hint": null,
           "message": "Could not find the function public.blurb_message() in the schema cache",
         },
         "status": 404,
         "statusText": "Not Found",
+        "success": false,
       }
     `)
   })
@@ -1110,9 +1147,9 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof FunctionReturningRowSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Object {
+        "data": {
           "age_range": "[1,2)",
           "catchphrase": "'cat' 'fat'",
           "data": null,
@@ -1122,6 +1159,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     FunctionReturningRowSchema.parse(res.data)
@@ -1134,43 +1172,43 @@ describe('advanced rpc', () => {
     let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "age_range": "[1,2)",
             "catchphrase": "'cat' 'fat'",
             "data": null,
             "status": "ONLINE",
             "username": "supabot",
           },
-          Object {
+          {
             "age_range": "[25,35)",
             "catchphrase": "'bat' 'cat'",
             "data": null,
             "status": "OFFLINE",
             "username": "kiwicopple",
           },
-          Object {
+          {
             "age_range": "[25,35)",
             "catchphrase": "'bat' 'rat'",
             "data": null,
             "status": "ONLINE",
             "username": "awailas",
           },
-          Object {
+          {
             "age_range": "[20,30)",
             "catchphrase": "'fat' 'rat'",
             "data": null,
             "status": "ONLINE",
             "username": "dragarcia",
           },
-          Object {
+          {
             "age_range": "[20,30)",
             "catchphrase": "'json' 'test'",
-            "data": Object {
-              "foo": Object {
-                "bar": Object {
+            "data": {
+              "foo": {
+                "bar": {
                   "nested": "value",
                 },
                 "baz": "string value",
@@ -1183,6 +1221,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -1203,10 +1242,10 @@ describe('advanced rpc', () => {
     let expected: z.infer<typeof ExpectedSchema>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Array [
-          Object {
+        "data": [
+          {
             "id": 1,
             "username": "supabot",
           },
@@ -1214,6 +1253,7 @@ describe('advanced rpc', () => {
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     ExpectedSchema.parse(res.data)
@@ -1233,15 +1273,16 @@ describe('advanced rpc', () => {
     let expected: z.infer<typeof UserProfileSchema>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
-      Object {
+      {
         "count": null,
-        "data": Object {
+        "data": {
           "id": 1,
           "username": "supabot",
         },
         "error": null,
         "status": 200,
         "statusText": "OK",
+        "success": true,
       }
     `)
     UserProfileSchema.parse(res.data)
@@ -1258,12 +1299,13 @@ test('should be able to filter before and after select rpc', async () => {
     .eq('username', 'nope')
 
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": null,
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   const res2 = await postgrest
@@ -1276,12 +1318,13 @@ test('should be able to filter before and after select rpc', async () => {
     .select('id, username, users(username, catchphrase)')
 
   expect(res2).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
       "data": null,
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   const res3 = await postgrest
@@ -1294,11 +1337,11 @@ test('should be able to filter before and after select rpc', async () => {
     .select('username, users(username, catchphrase)')
 
   expect(res3).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "username": "supabot",
-        "users": Object {
+        "users": {
           "catchphrase": "'cat' 'fat'",
           "username": "supabot",
         },
@@ -1306,6 +1349,7 @@ test('should be able to filter before and after select rpc', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
 })
@@ -1317,29 +1361,30 @@ test('RPC call with subselect and computed field', async () => {
     .select('message, blurb_message')
   // .limit(1)
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Array [
-        Object {
+      "data": [
+        {
           "blurb_message": "Hel",
           "message": "Hello World 👋",
         },
-        Object {
+        {
           "blurb_message": "Per",
           "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
         },
-        Object {
+        {
           "blurb_message": "Som",
-          "message": "Some message on channel wihtout details",
+          "message": "Some message on channel without details",
         },
-        Object {
+        {
           "blurb_message": "Som",
-          "message": "Some message on channel wihtout details",
+          "message": "Some message on channel without details",
         },
       ],
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>

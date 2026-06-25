@@ -106,8 +106,11 @@ async function publishGotrueLegacy(): Promise<void> {
       process.exit(1)
     }
 
-    // Publish to npm from the auth-js directory
-    const publishCommand = `npm publish --provenance --tag ${tag}`
+    // Publish to npm from the auth-js directory. Use pnpm publish to match what
+    // nx-release-publish does for the other six packages — `npm publish` from
+    // inside a pnpm workspace can sign provenance but then 404s on the registry
+    // PUT (observed continuously since the pnpm migration).
+    const publishCommand = `pnpm publish --provenance --tag ${tag} --no-git-checks`
 
     log(`\n🚀 Publishing to npm...`)
     log(`   Command: ${publishCommand}`)

@@ -2,7 +2,7 @@ import { expectType, TypeEqual } from './types'
 import { PostgrestBuilder, PostgrestClient } from '../src/index'
 import { Database } from './types.override'
 
-const REST_URL = 'http://localhost:3000'
+const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 
 // Test returns() with different end methods

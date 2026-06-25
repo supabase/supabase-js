@@ -1,4 +1,10 @@
-declare type BeforeunloadReason = 'cpu' | 'memory' | 'wall_clock' | 'early_drop' | 'termination'
+declare type BeforeunloadReason =
+  | 'cpu'
+  | 'memory'
+  | 'wall_clock'
+  | 'early_drop'
+  | 'termination'
+  | (string & {})
 
 declare interface WindowEventMap {
   load: Event
@@ -194,5 +200,15 @@ declare namespace Deno {
   export namespace errors {
     class WorkerRequestCancelled extends Error {}
     class WorkerAlreadyRetired extends Error {}
+
+    /** Thrown when an outbound HTTP request is blocked by the rate limiter. */
+    class RateLimitError extends Error {
+      /**
+       * Number of milliseconds until the rate-limit window resets.
+       * `null` if the reset time could not be determined.
+       */
+      retryAfterMs: number | null
+      constructor(message: string, retryAfterMs?: number)
+    }
   }
 }

@@ -1,11 +1,11 @@
-import { StorageError } from './errors'
+import { StorageError } from './common/errors'
 
 /**
  * Type of storage bucket
  * - STANDARD: Regular file storage buckets
  * - ANALYTICS: Iceberg table-based buckets for analytical workloads
  */
-export type BucketType = 'STANDARD' | 'ANALYTICS'
+export type BucketType = 'STANDARD' | 'ANALYTICS' | (string & {})
 
 export interface Bucket {
   id: string
@@ -33,7 +33,7 @@ export interface ListBucketOptions {
  */
 export interface AnalyticBucket {
   /** Unique identifier for the bucket */
-  id: string
+  name: string
   /** Bucket type - always 'ANALYTICS' for analytics buckets */
   type: 'ANALYTICS'
   /** Storage format used (e.g., 'iceberg') */
@@ -44,34 +44,98 @@ export interface AnalyticBucket {
   updated_at: string
 }
 
-export interface FileObject {
-  name: string
-  bucket_id: string
-  owner: string
-  id: string
-  updated_at: string
-  created_at: string
-  /** @deprecated */
-  last_accessed_at: string
-  metadata: Record<string, any>
-  buckets: Bucket
+/**
+ * Metadata object returned by the Storage API for files
+ * Contains information about file size, type, caching, and HTTP response details
+ */
+export interface FileMetadata {
+  /** Entity tag for caching and conditional requests */
+  eTag: string
+  /** File size in bytes */
+  size: number
+  /** MIME type of the file */
+  mimetype: string
+  /** Cache control directive (e.g., "max-age=3600") */
+  cacheControl: string
+  /** Last modification timestamp (ISO 8601) */
+  lastModified: string
+  /** Content length in bytes (usually same as size) */
+  contentLength: number
+  /** HTTP status code from the storage backend */
+  httpStatusCode: number
+  /** Any additional custom metadata stored with the file */
+  [key: string]: any
 }
 
-export interface FileObjectV2 {
-  id: string
-  version: string
+/**
+ * File object returned by the List V1 API (list() method)
+ * Note: Folder entries will have null values for most fields except name
+ *
+ * Warning: Some fields may not be present in all API responses. Fields like
+ * bucket_id, owner, and buckets are not returned by list() operations.
+ */
+export interface FileObject {
+  /** File or folder name (relative to the prefix) - always present */
   name: string
+  /** Unique identifier for the file (null for folders) */
+  id: string | null
+  /** Last update timestamp (null for folders) */
+  updated_at: string | null
+  /** Creation timestamp (null for folders) */
+  created_at: string | null
+  /** @deprecated Last access timestamp (null for folders) */
+  last_accessed_at: string | null
+  /** File metadata including size, mimetype, etc. (null for folders) */
+  metadata: FileMetadata | null
+  /**
+   * @deprecated Bucket identifier - NOT returned by list() operations.
+   * May be present in remove() responses. Do not rely on this field.
+   */
+  bucket_id?: string
+  /**
+   * @deprecated Owner identifier - NOT returned by list() or remove() operations.
+   * This field should not be relied upon.
+   */
+  owner?: string
+  /**
+   * @deprecated Bucket object - NOT returned by list() or remove() operations.
+   * This field should not be relied upon.
+   */
+  buckets?: Bucket
+}
+
+/**
+ * File object returned by the Info endpoint (info() method)
+ * Contains detailed metadata for a specific file
+ */
+export interface FileObjectV2 {
+  /** Unique identifier for the file */
+  id: string
+  /** File version identifier */
+  version: string
+  /** File name */
+  name: string
+  /** Bucket identifier */
   bucket_id: string
-  updated_at: string
+  /** Creation timestamp */
   created_at: string
-  /** @deprecated */
-  last_accessed_at: string
+  /** File size in bytes */
   size?: number
+  /** Cache control header value */
   cache_control?: string
+  /** MIME content type */
   content_type?: string
+  /** Entity tag for caching */
   etag?: string
+  /** Last modification timestamp (replaces updated_at) */
   last_modified?: string
-  metadata?: Record<string, any>
+  /** Custom file metadata */
+  metadata?: FileMetadata
+  /**
+   * @deprecated The API returns last_modified instead.
+   * This field may not be present in responses.
+   */
+  updated_at?: string
 }
 
 export interface SortBy {
@@ -175,20 +239,37 @@ export interface SearchV2Options {
   sortBy?: SortByV2
 }
 
+/**
+ * File object returned by the List V2 API (listV2() method)
+ * Objects and folders are returned in separate arrays - this type represents
+ * actual files only. Use SearchV2Folder for folder entries.
+ */
 export interface SearchV2Object {
-  id: string
-  key: string
+  /** File name */
   name: string
+  /** Full object key/path */
+  key?: string
+  /** Unique identifier for the file */
+  id: string
+  /** Last update timestamp */
   updated_at: string
+  /** Creation timestamp */
   created_at: string
-  metadata: Record<string, any>
-  /**
-   * @deprecated
-   */
+  /** File metadata including size, mimetype, etc. (null if not yet set) */
+  metadata: FileMetadata | null
+  /** @deprecated Last access timestamp */
   last_accessed_at: string
 }
 
-export type SearchV2Folder = Omit<SearchV2Object, 'id' | 'metadata' | 'last_accessed_at'>
+/**
+ * Folder entry returned by the List V2 API (listV2() method) when using with_delimiter: true
+ */
+export interface SearchV2Folder {
+  /** Folder name/prefix */
+  name: string
+  /** Full folder key/path */
+  key?: string
+}
 
 export interface SearchV2Result {
   hasNext: boolean
@@ -202,6 +283,17 @@ export interface FetchParameters {
    * Pass in an AbortController's signal to cancel the request.
    */
   signal?: AbortSignal
+
+  /**
+   * Controls how the request interacts with the browser's HTTP cache.
+   * - 'default': Use standard cache behavior
+   * - 'no-store': Bypass cache entirely (useful in Edge Functions)
+   * - 'reload': Bypass cache but update it with response
+   * - 'no-cache': Validate with server before using cached response
+   * - 'force-cache': Use cache even if stale
+   * - 'only-if-cached': Only use cache, fail if not cached
+   */
+  cache?: 'default' | 'no-store' | 'reload' | 'no-cache' | 'force-cache' | 'only-if-cached'
 }
 
 // TODO: need to check for metadata props. The api swagger doesnt have.
@@ -257,3 +349,306 @@ export type DownloadResult<T> =
       data: null
       error: StorageError
     }
+// ============================================================================
+// VECTOR STORAGE TYPES
+// ============================================================================
+
+/**
+ * Configuration for encryption at rest
+ * @property kmsKeyArn - ARN of the KMS key used for encryption
+ * @property sseType - Server-side encryption type (e.g., 'KMS')
+ */
+export interface EncryptionConfiguration {
+  kmsKeyArn?: string
+  sseType?: string
+}
+
+/**
+ * Vector bucket metadata
+ * @property vectorBucketName - Unique name of the vector bucket
+ * @property creationTime - Unix timestamp of when the bucket was created
+ * @property encryptionConfiguration - Optional encryption settings
+ */
+export interface VectorBucket {
+  vectorBucketName: string
+  creationTime?: number
+  encryptionConfiguration?: EncryptionConfiguration
+}
+
+/**
+ * Metadata configuration for vector index
+ * Defines which metadata keys should not be indexed for filtering
+ * @property nonFilterableMetadataKeys - Array of metadata keys that cannot be used in filters
+ */
+export interface MetadataConfiguration {
+  nonFilterableMetadataKeys?: string[]
+}
+
+/**
+ * Supported data types for vectors
+ * Currently only float32 is supported
+ */
+export type VectorDataType = 'float32' | (string & {})
+
+/**
+ * Distance metrics for vector similarity search
+ */
+export type DistanceMetric = 'cosine' | 'euclidean' | 'dotproduct' | (string & {})
+
+/**
+ * Vector index configuration and metadata
+ * @property indexName - Unique name of the index within the bucket
+ * @property vectorBucketName - Name of the parent vector bucket
+ * @property dataType - Data type of vector components (currently only 'float32')
+ * @property dimension - Dimensionality of vectors (e.g., 384, 768, 1536)
+ * @property distanceMetric - Similarity metric used for queries
+ * @property metadataConfiguration - Configuration for metadata filtering
+ * @property creationTime - Unix timestamp of when the index was created
+ */
+export interface VectorIndex {
+  indexName: string
+  vectorBucketName: string
+  dataType: VectorDataType
+  dimension: number
+  distanceMetric: DistanceMetric
+  metadataConfiguration?: MetadataConfiguration
+  creationTime?: number
+}
+
+/**
+ * Vector data representation
+ * Vectors must be float32 arrays with dimensions matching the index
+ * @property float32 - Array of 32-bit floating point numbers
+ */
+export interface VectorData {
+  float32: number[]
+}
+
+/**
+ * Arbitrary JSON metadata attached to vectors
+ * Keys configured as non-filterable in the index can be stored but not queried
+ */
+export type VectorMetadata = Record<string, any>
+
+/**
+ * Single vector object for insertion/update
+ * @property key - Unique identifier for the vector
+ * @property data - Vector embedding data
+ * @property metadata - Optional arbitrary metadata
+ */
+export interface VectorObject {
+  key: string
+  data: VectorData
+  metadata?: VectorMetadata
+}
+
+/**
+ * Vector object returned from queries with optional distance
+ * @property key - Unique identifier for the vector
+ * @property data - Vector embedding data (if requested)
+ * @property metadata - Arbitrary metadata (if requested)
+ * @property distance - Similarity distance from query vector (if requested)
+ */
+export interface VectorMatch {
+  key: string
+  data?: VectorData
+  metadata?: VectorMetadata
+  distance?: number
+}
+
+/**
+ * Options for fetching vector buckets
+ * @property prefix - Filter buckets by name prefix
+ * @property maxResults - Maximum number of results to return (default: 100)
+ * @property nextToken - Token for pagination from previous response
+ */
+export interface ListVectorBucketsOptions {
+  prefix?: string
+  maxResults?: number
+  nextToken?: string
+}
+
+/**
+ * Response from listing vector buckets
+ * @property vectorBuckets - Array of bucket names
+ * @property nextToken - Token for fetching next page (if more results exist)
+ */
+export interface ListVectorBucketsResponse {
+  vectorBuckets: { vectorBucketName: string }[]
+  nextToken?: string
+}
+
+/**
+ * Options for listing indexes within a bucket
+ * @property vectorBucketName - Name of the parent vector bucket
+ * @property prefix - Filter indexes by name prefix
+ * @property maxResults - Maximum number of results to return (default: 100)
+ * @property nextToken - Token for pagination from previous response
+ */
+export interface ListIndexesOptions {
+  vectorBucketName: string
+  prefix?: string
+  maxResults?: number
+  nextToken?: string
+}
+
+/**
+ * Response from listing indexes
+ * @property indexes - Array of index names
+ * @property nextToken - Token for fetching next page (if more results exist)
+ */
+export interface ListIndexesResponse {
+  indexes: { indexName: string }[]
+  nextToken?: string
+}
+
+/**
+ * Options for batch reading vectors
+ * @property vectorBucketName - Name of the vector bucket
+ * @property indexName - Name of the index
+ * @property keys - Array of vector keys to retrieve
+ * @property returnData - Whether to include vector data in response
+ * @property returnMetadata - Whether to include metadata in response
+ */
+export interface GetVectorsOptions {
+  vectorBucketName: string
+  indexName: string
+  keys: string[]
+  returnData?: boolean
+  returnMetadata?: boolean
+}
+
+/**
+ * Response from getting vectors
+ * @property vectors - Array of retrieved vector objects
+ */
+export interface GetVectorsResponse {
+  vectors: VectorMatch[]
+}
+
+/**
+ * Options for batch inserting/updating vectors
+ * @property vectorBucketName - Name of the vector bucket
+ * @property indexName - Name of the index
+ * @property vectors - Array of vectors to insert/upsert (1-500 items)
+ */
+export interface PutVectorsOptions {
+  vectorBucketName: string
+  indexName: string
+  vectors: VectorObject[]
+}
+
+/**
+ * Options for batch deleting vectors
+ * @property vectorBucketName - Name of the vector bucket
+ * @property indexName - Name of the index
+ * @property keys - Array of vector keys to delete (1-500 items)
+ */
+export interface DeleteVectorsOptions {
+  vectorBucketName: string
+  indexName: string
+  keys: string[]
+}
+
+/**
+ * Options for listing/scanning vectors in an index
+ * Supports parallel scanning via segment configuration
+ * @property vectorBucketName - Name of the vector bucket
+ * @property indexName - Name of the index
+ * @property maxResults - Maximum number of results to return (default: 500, max: 1000)
+ * @property nextToken - Token for pagination from previous response
+ * @property returnData - Whether to include vector data in response
+ * @property returnMetadata - Whether to include metadata in response
+ * @property segmentCount - Total number of parallel segments (1-16)
+ * @property segmentIndex - Zero-based index of this segment (0 to segmentCount-1)
+ */
+export interface ListVectorsOptions {
+  vectorBucketName: string
+  indexName: string
+  maxResults?: number
+  nextToken?: string
+  returnData?: boolean
+  returnMetadata?: boolean
+  segmentCount?: number
+  segmentIndex?: number
+}
+
+/**
+ * Response from listing vectors
+ * @property vectors - Array of vector objects
+ * @property nextToken - Token for fetching next page (if more results exist)
+ */
+export interface ListVectorsResponse {
+  vectors: VectorMatch[]
+  nextToken?: string
+}
+
+/**
+ * JSON filter expression for metadata filtering
+ * Format and syntax depend on the S3 Vectors service implementation
+ */
+export type VectorFilter = Record<string, any>
+
+/**
+ * Options for querying similar vectors (ANN search)
+ * @property vectorBucketName - Name of the vector bucket
+ * @property indexName - Name of the index
+ * @property queryVector - Query vector to find similar vectors
+ * @property topK - Number of nearest neighbors to return (default: 10)
+ * @property filter - Optional JSON filter for metadata
+ * @property returnDistance - Whether to include distance scores
+ * @property returnMetadata - Whether to include metadata in results
+ */
+export interface QueryVectorsOptions {
+  vectorBucketName: string
+  indexName: string
+  queryVector: VectorData
+  topK?: number
+  filter?: VectorFilter
+  returnDistance?: boolean
+  returnMetadata?: boolean
+}
+
+/**
+ * Response from vector similarity query
+ * @property vectors - Array of similar vectors ordered by distance
+ * @property distanceMetric - The distance metric used for the similarity search
+ */
+export interface QueryVectorsResponse {
+  vectors: VectorMatch[]
+  distanceMetric?: DistanceMetric
+}
+
+/**
+ * Fetch-specific parameters like abort signals
+ * @property signal - AbortSignal for cancelling requests
+ */
+export interface VectorFetchParameters {
+  signal?: AbortSignal
+}
+
+/**
+ * Standard response wrapper for successful operations
+ * @property data - Response data of type T
+ * @property error - Null on success
+ */
+export interface SuccessResponse<T> {
+  data: T
+  error: null
+}
+
+/**
+ * Standard response wrapper for failed operations
+ * @property data - Null on error
+ * @property error - StorageError with details (named StorageVectorsError for vector operations)
+ */
+export interface ErrorResponse {
+  data: null
+  error: StorageError
+}
+
+/**
+ * Union type for all API responses
+ * Follows the pattern: { data: T, error: null } | { data: null, error: Error }
+ */
+export type ApiResponse<T> = SuccessResponse<T> | ErrorResponse

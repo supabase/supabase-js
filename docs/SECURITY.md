@@ -1,6 +1,8 @@
 Contact: https://hackerone.com/supabase
 Canonical: https://supabase.com/.well-known/security.txt
 
+> Looking to **harden your install** of Supabase npm packages against supply-chain attacks (version pinning, minimum release age, private registries, provenance verification)? See [Securing your npm installs](https://supabase.com/docs/guides/security/npm-security). The rest of this page is about reporting vulnerabilities in Supabase itself.
+
 At Supabase, we consider the security of our systems a top priority. But no matter how much effort we put into system security, there can still be vulnerabilities present.
 
 If you discover a vulnerability, we would like to know about it so we can take steps to address it as quickly as possible. We would like to ask you to help us better protect our clients and our systems.

@@ -1,6 +1,6 @@
-npx --no-install commitlint --edit $1 || {
+pnpm exec commitlint --edit $1 || {
   echo ""
-  echo "💡 Tip: Use 'npm run commit' for guided commits!"
+  echo "💡 Tip: Use 'pnpm commit' for guided commits!"
   echo ""
   exit 1
 }

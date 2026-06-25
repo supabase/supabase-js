@@ -26,89 +26,71 @@
 
 </div>
 
-> **For contributors: Repository Structure Changed**
->
-> This repository has been restructured as a monorepo. All libraries, including `supabase-js` itself, have moved to `packages/core/`:
->
-> | What You're Looking For | Where It Is Now              |
-> | ----------------------- | ---------------------------- |
-> | Main supabase-js code   | `packages/core/supabase-js/` |
-> | Other libraries         | `packages/core/*/`           |
->
-> Read the **[Migration Guide](./docs/MIGRATION.md)** to learn more.
-
 ## 📦 Libraries
 
 This monorepo contains the complete suite of Supabase JavaScript SDK:
 
-| Library                                                    | Description                              |
-| ---------------------------------------------------------- | ---------------------------------------- |
-| **[@supabase/supabase-js](./packages/core/supabase-js)**   | Main isomorphic sdk for Supabase      |
-| **[@supabase/auth-js](./packages/core/auth-js)**           | Authentication sdk                    |
-| **[@supabase/postgrest-js](./packages/core/postgrest-js)** | PostgREST sdk for database operations |
-| **[@supabase/realtime-js](./packages/core/realtime-js)**   | Real-time subscriptions sdk           |
-| **[@supabase/storage-js](./packages/core/storage-js)**     | File storage sdk                      |
-| **[@supabase/functions-js](./packages/core/functions-js)** | Edge Functions sdk                    |
+| Library                                                    | Description                           |
+| ---------------------------------------------------------- | ------------------------------------- |
+| **[@supabase/supabase-js](./packages/core/supabase-js)**   | Main isomorphic SDK for Supabase      |
+| **[@supabase/auth-js](./packages/core/auth-js)**           | Authentication SDK                    |
+| **[@supabase/postgrest-js](./packages/core/postgrest-js)** | PostgREST SDK for database operations |
+| **[@supabase/realtime-js](./packages/core/realtime-js)**   | Real-time subscriptions SDK           |
+| **[@supabase/storage-js](./packages/core/storage-js)**     | File storage SDK                      |
+| **[@supabase/functions-js](./packages/core/functions-js)** | Edge Functions SDK                    |
 
-> **💡 Note for Package Users:** If you install and use these packages, **nothing has changed**. Continue installing packages normally:
+## Support Policy
+
+This section outlines the scope of support for various runtime environments in Supabase JavaScript client.
+
+### Node.js
+
+We only support Node.js versions that are in **Active LTS** or **Maintenance** status as defined by the [official Node.js release schedule](https://nodejs.org/en/about/previous-releases#release-schedule). This means we support versions that are currently receiving long-term support and critical bug fixes.
+
+When a Node.js version reaches end-of-life and is no longer in Active LTS or Maintenance status, Supabase will drop it in a **minor release**, and **this won't be considered a breaking change**.
+
+> ⚠️ **Node.js 18 Deprecation Notice**
 >
-> ```bash
-> npm install @supabase/supabase-js
-> npm install @supabase/auth-js
-> ```
+> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped in version `2.79.0`.
 >
-> The monorepo structure **only affects contributors**. This is how we develop and maintain the code, not how you use it.
+> If you must use Node.js 18, please use version `2.78.0`, which is the last version that supported Node.js 18.
+
+### Deno
+
+We support Deno versions that are currently receiving active development and security updates. We follow the [official Deno release schedule](https://docs.deno.com/runtime/fundamentals/stability_and_releases/) and only support versions from the `stable` and `lts` release channels.
+
+When a Deno version reaches end-of-life and is no longer receiving security updates, Supabase will drop it in a **minor release**, and **this won't be considered a breaking change**.
+
+### Browsers
+
+All modern browsers are supported. We support browsers that provide native `fetch` API. For Realtime features, browsers must also support native `WebSocket` API.
+
+### Bun
+
+We support Bun runtime environments. Bun provides native fetch support and is compatible with Node.js APIs. Since Bun does not follow a structured release schedule like Node.js or Deno, we support current stable versions of Bun and may drop support for older versions in minor releases without considering it a breaking change.
+
+### React Native
+
+We support React Native environments with fetch polyfills provided by the framework. Since React Native does not follow a structured release schedule, we support current stable versions and may drop support for older versions in minor releases without considering it a breaking change.
+
+### Cloudflare Workers
+
+We support Cloudflare Workers runtime environments. Cloudflare Workers provides native fetch support. Since Cloudflare Workers does not follow a structured release schedule, we support current stable versions and may drop support for older versions in minor releases without considering it a breaking change.
+
+### Important Notes
+
+- **Experimental features**: Features marked as experimental may be removed or changed without notice
+- **Build warnings**: If you see `UNUSED_EXTERNAL_IMPORT` warnings from Vite/Nuxt, see the [supabase-js README](./packages/core/supabase-js/README.md#known-build-warnings) — these are false positives
 
 ## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/supabase/supabase-js.git
-cd supabase-js
-
-# Install dependencies
-npm install
-
-# Build all packages
-npx nx run-many --target=build --all
-
+npm install @supabase/supabase-js
 ```
 
-## 🏗️ Development
-
-### Workspace Commands
-
-```bash
-# Build a specific library
-npx nx build auth-js
-
-# Test a specific library
-npx nx test postgrest-js
-
-# Build affected projects (only build what changed)
-npx nx affected --target=build
-
-# Generate dependency graph
-npx nx graph
-
-# Format all code
-npx nx format
-
-# Check code formatting
-npx nx format:check
-```
-
-### Working with Individual Libraries
-
-Each library can be developed independently:
-
-```bash
-# Start development with watch mode
-npx nx build auth-js --watch
-npx nx test auth-js --watch
-```
+Read more in each package's README file.
 
 ## 🤝 Contributing
 
@@ -119,8 +101,8 @@ We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md)
 1. **Fork the repository**
 2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
 3. **Make your changes** and add tests
-4. **Run tests** (`npx nx affected --target=test`)
-5. **Commit your changes** (`npm run commit`)
+4. **Run tests** (`pnpm nx affected --target=test`)
+5. **Commit your changes** (`pnpm commit`)
 6. **Push to your branch** (`git push origin feature/amazing-feature`)
 7. **Open a Pull Request**
 
@@ -129,40 +111,31 @@ We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md)
 - Follow [conventional commits](https://www.conventionalcommits.org/) for commit messages
 - Add tests for new functionality
 - Update documentation for API changes
-- Run `npx nx format` before committing
-- Ensure all tests pass with `npx nx affected --target=test`
+- Run `pnpm nx format` before committing
+- Ensure all tests pass with `pnpm nx affected --target=test`
 
 ## 🧪 Testing
 
 Testing varies per package. See the top-level [TESTING.md](docs/TESTING.md) for an overview and links to package-specific guides.
 
-Quick examples:
-
-```bash
-# Run tests for a specific package
-npx nx test <package-name>
-
-# Run tests with coverage
-npx nx test <package-name> --coverage
-```
-
 ## 📚 Documentation
 
 ### API Documentation
 
-- **[Auth sdk](./packages/core/auth-js/README.md)** - Authentication and user management
-- **[Database sdk](./packages/core/postgrest-js/README.md)** - Database queries and operations
-- **[Realtime sdk](./packages/core/realtime-js/README.md)** - Real-time subscriptions
-- **[Storage sdk](./packages/core/storage-js/README.md)** - File upload and management
-- **[Functions sdk](./packages/core/functions-js/README.md)** - Edge Functions invocation
-- **[Main sdk](./packages/core/supabase-js/README.md)** - Combined sdk
+- **[Auth SDK](./packages/core/auth-js/README.md)** - Authentication and user management
+- **[Database SDK](./packages/core/postgrest-js/README.md)** - Database queries and operations
+- **[Realtime SDK](./packages/core/realtime-js/README.md)** - Real-time subscriptions
+- **[Storage SDK](./packages/core/storage-js/README.md)** - File upload and management
+- **[Functions SDK](./packages/core/functions-js/README.md)** - Edge Functions invocation
+- **[Main SDK](./packages/core/supabase-js/README.md)** - Combined SDK
 
 ### Architecture Documentation
 
 - **[Contributing](./CONTRIBUTING.md)** - Development guidelines
 - **[Release Workflows](./docs/RELEASE.md)** - Release and publishing process
-- **[Migration Guide](./docs/MIGRATION.md)** - Migrating to the monorepo structure
-- **[Security Policy](./docs/SECURITY.md)** - Security guidelines and reporting
+- **[Migration Guide](./docs/MIGRATION.md)** - Cross-cutting migration notes (per-package migrations live alongside each package under `packages/core/<package>/migrations/`)
+- **[Security Policy](./docs/SECURITY.md)** - Vulnerability reporting and disclosure policy
+- **[Securing your npm installs](https://supabase.com/docs/guides/security/npm-security)** - Consumer-side guide to defending your install against npm supply-chain attacks
 
 ## 🔐 Verifying provenance attestations
 
@@ -189,24 +162,7 @@ audited 1 package in 0s
 
 Because provenance attestations are a new capability, security features may evolve over time. Ensure you are using the latest npm CLI to verify attestation signatures reliably. This may require updating npm beyond the version bundled with Node.js.
 
-## 🏛️ Architecture
-
-### Monorepo Structure
-
-```tree
-supabase-js/
-├── packages/
-│   └── core/                  # Published libraries
-│       ├── auth-js/           # Authentication sdk
-│       ├── functions-js/      # Edge Functions sdk
-│       ├── postgrest-js/      # PostgREST database sdk
-│       ├── realtime-js/       # Real-time subscriptions sdk
-│       ├── storage-js/        # File storage sdk
-│       └── supabase-js/       # Main isomorphic sdk
-├── nx.json                    # npx nx workspace configuration
-├── package.json               # Root package.json and workspaces setup
-└── ...
-```
+For a broader checklist — minimum release age, lockfile hygiene, blocking exotic transitive deps, lifecycle script controls, and what to do if you suspect a compromise — see [Securing your npm installs](https://supabase.com/docs/guides/security/npm-security).
 
 ## 📄 License
 

@@ -1,0 +1,138 @@
+name: Deprecate package versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deprecate (e.g. 2.80.0, 2.80.0-canary.0)'
+        required: true
+        type: string
+      message:
+        description: 'Deprecation message'
+        required: true
+        type: string
+
+env:
+  NODE_VERSION: '22'
+
+permissions:
+  contents: read
+
+jobs:
+  deprecate:
+    runs-on: ubuntu-latest
+    environment: npm-deprecate
+
+    steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Check if actor is member of admin or sdk team
+        id: team-check
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const org = 'supabase'
+            const actor = process.env.GITHUB_TRIGGERING_ACTOR
+
+            async function isTeamMember(team_slug) {
+              try {
+                const res = await github.rest.teams.getMembershipForUserInOrg({
+                  org,
+                  team_slug,
+                  username: actor,
+                })
+                return res && res.status === 200
+              } catch (_) {
+                return false
+              }
+            }
+            const isAdmin = await isTeamMember('admin')
+            const isSdk = await isTeamMember('sdk')
+            const isMember = isAdmin || isSdk
+            core.setOutput('is_team_member', isMember ? 'true' : 'false')
+
+      - name: Fail if not authorized
+        if: ${{ steps.team-check.outputs.is_team_member != 'true' }}
+        run: |
+          echo "You must be a member of @supabase/admin or @supabase/sdk."
+          exit 1
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm
+        run: corepack enable npm && corepack prepare npm@11 --activate
+
+      - name: Deprecate package versions
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          MESSAGE: ${{ inputs.message }}
+        run: |
+
+          PACKAGES=(
+            "supabase-js"
+            "auth-js"
+            "functions-js"
+            "realtime-js"
+            "storage-js"
+            "postgrest-js"
+            "gotrue-js"
+          )
+
+          FAILED=0
+
+          for pkg in "${PACKAGES[@]}"; do
+            FULL_PKG="@supabase/${pkg}"
+
+            echo "============================================"
+            echo "Deprecating ${FULL_PKG}@${VERSION}"
+            echo "Message: ${MESSAGE}"
+            echo "============================================"
+
+            if npm deprecate "${FULL_PKG}@${VERSION}" "${MESSAGE}"; then
+              echo "✅ Successfully deprecated ${FULL_PKG}@${VERSION}"
+            else
+              echo "❌ Failed to deprecate ${FULL_PKG}@${VERSION}"
+              FAILED=$((FAILED + 1))
+            fi
+
+            echo ""
+          done
+
+          if [ "$FAILED" -gt 0 ]; then
+            echo "⚠️ ${FAILED} package(s) failed to deprecate."
+            exit 1
+          fi
+
+          echo "🎉 All packages deprecated successfully!"
+
+  notify-success:
+    needs: deprecate
+    if: success()
+    uses: ./.github/workflows/slack-notify.yml
+    with:
+      title: 'SDK Deprecation'
+      status: 'success'
+      version: ${{ inputs.version }}
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
+
+  notify-failure:
+    needs: deprecate
+    if: failure()
+    uses: ./.github/workflows/slack-notify.yml
+    with:
+      title: 'SDK Deprecation'
+      status: 'failure'
+      version: ${{ inputs.version }}
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}

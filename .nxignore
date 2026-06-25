@@ -14,3 +14,6 @@ packages/core/auth-js/test
 packages/core/supabase-js/test/integration/next
 packages/core/supabase-js/test/integration/expo
 packages/core/supabase-js/test/deno
+
+# Ignore git worktrees managed by Claude Code
+.claude/worktrees

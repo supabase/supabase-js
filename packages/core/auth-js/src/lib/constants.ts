@@ -12,6 +12,15 @@ export const AUTO_REFRESH_TICK_THRESHOLD = 3
  */
 export const EXPIRY_MARGIN_MS = AUTO_REFRESH_TICK_THRESHOLD * AUTO_REFRESH_TICK_DURATION_MS
 
+/**
+ * After a refresh fails, serial callers (including the next auto-refresh
+ * tick) within this window receive the cached failure instead of firing
+ * another /token request. Two ticks: each outage burns at most one /token
+ * call per cooldown window. Cleared on any successful refresh (locally or
+ * via BroadcastChannel from another tab) and on `_removeSession`.
+ */
+export const REFRESH_FAILURE_COOLDOWN_MS = 2 * AUTO_REFRESH_TICK_DURATION_MS
+
 export const GOTRUE_URL = 'http://localhost:9999'
 export const STORAGE_KEY = 'supabase.auth.token'
 export const AUDIENCE = ''

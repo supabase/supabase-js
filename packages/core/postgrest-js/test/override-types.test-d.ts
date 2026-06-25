@@ -548,3 +548,12 @@ const postgrest = new PostgrestClient<Database>(REST_URL)
     >
   >(true)
 }
+
+// Test cross-schema rpc falls back to Returns type
+{
+  const result = await postgrest.schema('personal').rpc('get_public_users', {})
+  if (result.error) {
+    throw new Error(result.error.message)
+  }
+  expectType<TypeEqual<typeof result.data, { id: string; user_id: string }[]>>(true)
+}

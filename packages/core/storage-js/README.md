@@ -30,6 +30,15 @@
 
 </div>
 
+## Requirements
+
+- **Node.js 20 or later** (Node.js 18 support dropped as of October 31, 2025)
+- For browser support, all modern browsers are supported
+
+> ⚠️ **Node.js 18 Deprecation Notice**
+>
+> Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped on October 31, 2025.
+
 ## Features
 
 - **File Storage**: Upload, download, list, move, and delete files
@@ -58,10 +67,8 @@ If you're already using `@supabase/supabase-js`, access storage through the clie
 ```js
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  'https://<project_ref>.supabase.co',
-  '<your-anon-key>'
-)
+// Use publishable key for frontend applications
+const supabase = createClient('https://<project_ref>.supabase.co', '<your-publishable-key>')
 
 // Access storage
 const storage = supabase.storage
@@ -74,13 +81,13 @@ const analyticsBucket = storage.analytics // Analytics API
 
 #### Option 2: Standalone StorageClient
 
-For applications that only need storage functionality:
+For backend applications or when you need to bypass Row Level Security:
 
 ```js
 import { StorageClient } from '@supabase/storage-js'
 
 const STORAGE_URL = 'https://<project_ref>.supabase.co/storage/v1'
-const SERVICE_KEY = '<service_role>' //! service key, not anon key
+const SERVICE_KEY = '<your-secret-key>' // Use secret key for backend operations
 
 const storageClient = new StorageClient(STORAGE_URL, {
   apikey: SERVICE_KEY,
@@ -94,8 +101,11 @@ const analyticsBucket = storageClient.analytics // Analytics API
 ```
 
 > **When to use each approach:**
-> - Use `supabase.storage` when working with other Supabase features (auth, database, etc.)
-> - Use `new StorageClient()` for storage-only applications or when you need fine-grained control
+>
+> - Use `supabase.storage` when working with other Supabase features (auth, database, etc.) in frontend applications
+> - Use `new StorageClient()` for backend applications, Edge Functions, or when you need to bypass RLS policies
+
+> **Note:** Refer to the [Storage Access Control guide](https://supabase.com/docs/guides/storage/access-control) for detailed information on creating RLS policies.
 
 ### Understanding Bucket Types
 
@@ -108,7 +118,7 @@ Standard buckets for storing files, images, videos, and other assets.
 ```js
 // Create regular storage bucket
 const { data, error } = await storageClient.createBucket('my-files', {
-  public: false
+  public: false,
 })
 
 // Upload files
@@ -130,7 +140,7 @@ const bucket = storageClient.vectors.from('embeddings-prod')
 await bucket.createIndex({
   indexName: 'documents',
   dimension: 1536,
-  distanceMetric: 'cosine'
+  distanceMetric: 'cosine',
 })
 ```
 
@@ -202,7 +212,17 @@ await storageClient.analytics.deleteBucket('analytics-data')
 - Retrieve the details of all Storage buckets within an existing project:
 
   ```js
+  // List all buckets
   const { data, error } = await storageClient.listBuckets()
+
+  // List buckets with options (pagination, sorting, search)
+  const { data, error } = await storageClient.listBuckets({
+    limit: 10,
+    offset: 0,
+    sortColumn: 'created_at',
+    sortOrder: 'desc',
+    search: 'prod',
+  })
   ```
 
 #### Handling Files
@@ -290,6 +310,7 @@ Supabase Storage provides specialized analytics buckets using Apache Iceberg tab
 ### What are Analytics Buckets?
 
 Analytics buckets use the Apache Iceberg open table format, providing:
+
 - **ACID transactions** for data consistency
 - **Schema evolution** without data rewrites
 - **Time travel** to query historical data
@@ -299,6 +320,7 @@ Analytics buckets use the Apache Iceberg open table format, providing:
 ### When to Use Analytics Buckets
 
 **Use analytics buckets for:**
+
 - Time-series data (logs, metrics, events)
 - Data lake architectures
 - Business intelligence and reporting
@@ -306,6 +328,7 @@ Analytics buckets use the Apache Iceberg open table format, providing:
 - Analytical workloads requiring ACID guarantees
 
 **Use regular storage buckets for:**
+
 - User file uploads (images, documents, videos)
 - Individual file management
 - Content delivery
@@ -320,10 +343,7 @@ You can access analytics functionality through the `analytics` property on your 
 ```typescript
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  'https://your-project.supabase.co',
-  'your-anon-key'
-)
+const supabase = createClient('https://your-project.supabase.co', 'your-publishable-key')
 
 // Access analytics operations
 const analytics = supabase.storage.analytics
@@ -371,6 +391,7 @@ if (error) {
 ```
 
 **Returns:**
+
 ```typescript
 {
   data: {
@@ -394,18 +415,19 @@ const { data, error } = await analytics.listBuckets({
   offset: 0,
   sortColumn: 'created_at',
   sortOrder: 'desc',
-  search: 'prod'
+  search: 'prod',
 })
 
 if (data) {
   console.log(`Found ${data.length} analytics buckets`)
-  data.forEach(bucket => {
+  data.forEach((bucket) => {
     console.log(`- ${bucket.id} (created: ${bucket.created_at})`)
   })
 }
 ```
 
 **Parameters:**
+
 - `limit?: number` - Maximum number of buckets to return
 - `offset?: number` - Number of buckets to skip (for pagination)
 - `sortColumn?: 'id' | 'name' | 'created_at' | 'updated_at'` - Column to sort by
@@ -413,6 +435,7 @@ if (data) {
 - `search?: string` - Search term to filter bucket names
 
 **Returns:**
+
 ```typescript
 {
   data: AnalyticBucket[] | null
@@ -428,7 +451,7 @@ const firstPage = await analytics.listBuckets({
   limit: 100,
   offset: 0,
   sortColumn: 'created_at',
-  sortOrder: 'desc'
+  sortOrder: 'desc',
 })
 
 // Fetch second page
@@ -436,7 +459,7 @@ const secondPage = await analytics.listBuckets({
   limit: 100,
   offset: 100,
   sortColumn: 'created_at',
-  sortOrder: 'desc'
+  sortOrder: 'desc',
 })
 ```
 
@@ -455,6 +478,7 @@ if (error) {
 ```
 
 **Returns:**
+
 ```typescript
 {
   data: { message: string } | null
@@ -463,6 +487,70 @@ if (error) {
 ```
 
 > **Note:** A bucket cannot be deleted if it contains data. You must empty the bucket first.
+
+#### Get Iceberg Catalog for Advanced Operations
+
+For advanced operations like creating tables, namespaces, and querying Iceberg metadata, use the `from()` method to get a configured [iceberg-js](https://github.com/supabase/iceberg-js) client:
+
+```typescript
+// Get an Iceberg REST Catalog client for your analytics bucket
+const catalog = analytics.from('analytics-data')
+
+// Create a namespace
+await catalog.createNamespace({ namespace: ['default'] }, { properties: { owner: 'data-team' } })
+
+// Create a table with schema
+await catalog.createTable(
+  { namespace: ['default'] },
+  {
+    name: 'events',
+    schema: {
+      type: 'struct',
+      fields: [
+        { id: 1, name: 'id', type: 'long', required: true },
+        { id: 2, name: 'timestamp', type: 'timestamp', required: true },
+        { id: 3, name: 'user_id', type: 'string', required: false },
+      ],
+      'schema-id': 0,
+      'identifier-field-ids': [1],
+    },
+    'partition-spec': {
+      'spec-id': 0,
+      fields: [],
+    },
+    'write-order': {
+      'order-id': 0,
+      fields: [],
+    },
+    properties: {
+      'write.format.default': 'parquet',
+    },
+  }
+)
+
+// List tables in namespace
+const tables = await catalog.listTables({ namespace: ['default'] })
+console.log(tables) // [{ namespace: ['default'], name: 'events' }]
+
+// Load table metadata
+const table = await catalog.loadTable({ namespace: ['default'], name: 'events' })
+
+// Update table properties
+await catalog.updateTable(
+  { namespace: ['default'], name: 'events' },
+  { properties: { 'read.split.target-size': '134217728' } }
+)
+
+// Drop table
+await catalog.dropTable({ namespace: ['default'], name: 'events' })
+
+// Drop namespace
+await catalog.dropNamespace({ namespace: ['default'] })
+```
+
+**Returns:** `IcebergRestCatalog` instance from [iceberg-js](https://github.com/supabase/iceberg-js)
+
+> **Note:** The `from()` method returns an Iceberg REST Catalog client that provides full access to the Apache Iceberg REST API. For complete documentation of available operations, see the [iceberg-js documentation](https://supabase.github.io/iceberg-js/).
 
 ### Error Handling
 
@@ -503,11 +591,7 @@ try {
 The library exports TypeScript types for analytics buckets:
 
 ```typescript
-import type {
-  AnalyticBucket,
-  BucketType,
-  StorageError,
-} from '@supabase/storage-js'
+import type { AnalyticBucket, BucketType, StorageError } from '@supabase/storage-js'
 
 // AnalyticBucket type
 interface AnalyticBucket {
@@ -526,7 +610,7 @@ interface AnalyticBucket {
 ```typescript
 async function bucketExists(bucketName: string): Promise<boolean> {
   const { data, error } = await analytics.listBuckets({
-    search: bucketName
+    search: bucketName,
   })
 
   if (error) {
@@ -534,7 +618,7 @@ async function bucketExists(bucketName: string): Promise<boolean> {
     return false
   }
 
-  return data?.some(bucket => bucket.id === bucketName) ?? false
+  return data?.some((bucket) => bucket.id === bucketName) ?? false
 }
 ```
 
@@ -575,7 +659,7 @@ async function getAllAnalyticsBuckets() {
       limit,
       offset,
       sortColumn: 'created_at',
-      sortOrder: 'desc'
+      sortOrder: 'desc',
     })
 
     if (error) {
@@ -629,10 +713,7 @@ If you're using the full Supabase client:
 ```typescript
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  'https://your-project.supabase.co',
-  'your-anon-key'
-)
+const supabase = createClient('https://your-project.supabase.co', 'your-publishable-key')
 
 // Access vector operations through storage
 const vectors = supabase.storage.vectors
@@ -1076,145 +1157,34 @@ This package is part of the [Supabase JavaScript monorepo](https://github.com/su
 
 #### Build Scripts Overview
 
-The storage-js package uses multiple build scripts to generate different module formats for various JavaScript environments:
-
-| Script         | Description                 | Output                                                          |
-| -------------- | --------------------------- | --------------------------------------------------------------- |
-| `build`        | **Complete build pipeline** | Runs all build steps in sequence                                |
-| `build:main`   | **CommonJS build**          | `dist/main/` - Node.js compatible CommonJS modules              |
-| `build:module` | **ES Modules build**        | `dist/module/` - Modern ES6 modules with TypeScript definitions |
-| `build:umd`    | **UMD build**               | `dist/umd/` - Universal Module Definition for browsers/CDN      |
-| `clean`        | **Clean build artifacts**   | Removes `dist/` and `docs/v2/` directories                      |
-| `format`       | **Format code**             | Runs Prettier on all TypeScript files                           |
-
-#### Running Builds
-
-##### Complete Build (Recommended)
-
 ```bash
-# From the monorepo root
-npx nx build storage-js
-```
+# Build the package
+pnpm nx build storage-js
 
-This command executes the full build pipeline:
-
-1. **Cleans** - Removes any existing build artifacts
-2. **Formats** - Ensures consistent code formatting
-3. **Builds CommonJS** - For Node.js environments (`dist/main/`)
-4. **Builds ES Modules** - For modern bundlers (`dist/module/`)
-5. **Builds UMD** - For browser script tags (`dist/umd/`)
-
-##### Development Build with Watch Mode
-
-```bash
-# Continuously rebuild on file changes (from monorepo root)
-npx nx build storage-js --watch
-```
-
-##### Individual Build Targets
-
-For specific build outputs during development:
-
-```bash
-# Build CommonJS only (Node.js)
-npx nx build:main storage-js
-
-# Build ES Modules only (Modern bundlers)
-npx nx build:module storage-js
-
-# Build UMD only (Browser/CDN)
-npx nx build:umd storage-js
-```
-
-##### Other Useful Commands
-
-```bash
-# Clean build artifacts
-npx nx clean storage-js
-
-# Format code
-npx nx format storage-js
-
-# Type checking
-npx nx typecheck storage-js
+# Watch mode for development
+pnpm nx build storage-js --watch
 
 # Generate documentation
-npx nx docs storage-js
+pnpm nx docs storage-js
 ```
-
-#### Build Outputs Explained
-
-##### CommonJS (`dist/main/`)
-
-- **Used by:** Node.js applications, older build tools
-- **Entry point:** `dist/main/index.js`
-- **Module format:** `require()` and `module.exports`
-- **TypeScript definitions:** Included
-
-##### ES Modules (`dist/module/`)
-
-- **Used by:** Modern bundlers (Webpack, Rollup, Vite)
-- **Entry point:** `dist/module/index.js`
-- **Module format:** `import` and `export`
-- **TypeScript definitions:** `dist/module/index.d.ts`
-- **Benefits:** Tree-shaking, better static analysis
-
-##### UMD (`dist/umd/`)
-
-- **Used by:** Browser `<script>` tags, CDNs
-- **Entry point:** `dist/umd/supabase.js`
-- **Global variable:** `window.supabase`
-- **Size:** Larger (includes all dependencies)
-- **Usage example:**
-  ```html
-  <script src="https://unpkg.com/@supabase/storage-js/dist/umd/supabase.js"></script>
-  <script>
-    const { StorageClient } = window.supabase
-  </script>
-  ```
-
-#### Package Exports
-
-The package.json exports are configured to provide the right format for each environment:
-
-```json
-{
-  "main": "dist/main/index.js",
-  "module": "dist/module/index.js",
-  "types": "dist/module/index.d.ts",
-  "jsdelivr": "dist/umd/supabase.js",
-  "unpkg": "dist/umd/supabase.js"
-}
-```
-
-- **main** → Node.js environments (CommonJS format)
-- **module** → Modern bundlers like Webpack, Vite, Rollup (ES Modules)
-- **types** → TypeScript type definitions
-- **jsdelivr/unpkg** → CDN usage via `<script>` tags (UMD format)
 
 ### Testing
 
-**Important:** The storage-js tests require a local test infrastructure running in Docker. This is **NOT** the same as a regular Supabase instance - it's a specialized test setup with its own storage API, database, and Kong gateway.
+**Important:** The storage-js tests require a local Supabase stack running via the Supabase CLI. Docker must be running since the Supabase CLI uses it internally.
 
 #### Prerequisites
 
-1. **Docker** must be installed and running
-2. **Port availability** - The following ports must be free:
-   - 5432 (PostgreSQL database)
-   - 5050 (Storage API - sometimes 5000 conflicts macOS AirPlay conflict)
-   - 8000 (Kong API Gateway)
-   - 50020 (imgproxy for image transformations)
-
-**Note:** If port 5000 conflicts with macOS AirPlay Receiver, the docker-compose.yml has been configured to use port 5050 instead.
+1. **Docker** must be installed and running (used by Supabase CLI internally)
+2. **Supabase CLI** — installed automatically via `pnpm exec supabase`
 
 #### Test Scripts Overview
 
-| Script         | Description                       | What it does                                                      |
-| -------------- | --------------------------------- | ----------------------------------------------------------------- |
-| `test:storage` | **Complete test workflow**        | Runs the full test cycle: clean → start infra → run tests → clean |
-| `test:suite`   | **Jest tests only**               | Runs Jest tests with coverage (requires infra to be running)      |
-| `test:infra`   | **Start test infrastructure**     | Starts Docker containers for storage API, database, and Kong      |
-| `test:clean`   | **Stop and clean infrastructure** | Stops all Docker containers and removes them                      |
+| Script            | Description                       | What it does                                                      |
+| ----------------- | --------------------------------- | ----------------------------------------------------------------- |
+| `test:storage`    | **Complete test workflow**        | Runs the full test cycle: clean → start infra → run tests → clean |
+| `test:suite`      | **Jest tests only**               | Runs Jest tests with coverage (requires infra to be running)      |
+| `test:infra`      | **Start test infrastructure**     | Starts Supabase CLI stack (PostgreSQL, Storage API, Kong, etc.)   |
+| `test:clean-post` | **Stop and clean infrastructure** | Stops the Supabase CLI stack                                      |
 
 #### Running Tests
 
@@ -1224,7 +1194,7 @@ This handles everything automatically - starting infrastructure, running tests, 
 
 ```bash
 # From monorepo root
-npx nx test:storage storage-js
+pnpm nx test:storage storage-js
 ```
 
 This command will:
@@ -1242,14 +1212,14 @@ Useful for development when you want to run tests multiple times without restart
 ```bash
 # Step 1: Start the test infrastructure
 # From root
-npx nx test:infra storage-js
+pnpm nx test:infra storage-js
 # This starts: PostgreSQL, Storage API, Kong Gateway, and imgproxy
 
 # Step 2: Run tests (can run multiple times)
-npx nx test:suite storage-js
+pnpm nx test:suite storage-js
 
 # Step 3: When done, clean up the infrastructure
-npx nx test:clean storage-js
+pnpm nx test:clean-post storage-js
 ```
 
 ##### Option 3: Development Mode
@@ -1258,59 +1228,32 @@ For actively developing and debugging tests:
 
 ```bash
 # Start infrastructure once (from root)
-npx nx test:infra storage-js
+pnpm nx test:infra storage-js
 
 # Run tests in watch mode
-npx nx test:suite storage-js --watch
+pnpm nx test:suite storage-js --watch
 
 # Clean up when done
-npx nx test:clean storage-js
+pnpm nx test:clean-post storage-js
 ```
 
 #### Test Infrastructure Details
 
-The test infrastructure (`infra/docker-compose.yml`) includes:
-
-- **PostgreSQL Database** (port 5432)
-  - Initialized with storage schema and test data
-  - Contains bucket configurations and permissions
-
-- **Storage API** (port 5050, internal 5000)
-  - Supabase Storage service for handling file operations
-  - Configured with test authentication keys
-
-- **Kong Gateway** (port 8000)
-  - API gateway that routes requests to storage service
-  - Handles authentication and CORS
-
-- **imgproxy** (port 50020)
-  - Image transformation service for on-the-fly image processing
+The test infrastructure is managed via the Supabase CLI (`pnpm exec supabase start --workdir test`), which starts a local Supabase stack defined by the config in `test/`. This includes PostgreSQL, the Storage API, Kong Gateway, and supporting services.
 
 #### Common Issues and Solutions
 
-| Issue                             | Solution                                                                                                                               |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Port 5000 already in use          | macOS AirPlay uses this port. Either disable AirPlay Receiver in System Settings or use the modified docker-compose.yml with port 5050 |
-| Port 5432 already in use          | Another PostgreSQL instance is running. Stop it or modify the port in docker-compose.yml                                               |
-| "request failed, reason:" errors  | Infrastructure isn't running. Run `npx nx test:infra storage-js` first                                                                 |
-| Tests fail with connection errors | Ensure Docker is running and healthy                                                                                                   |
-| "Container name already exists"   | Run `npx nx test:clean storage-js` to remove existing containers                                                                       |
+| Issue                             | Solution                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Port conflicts                    | Another service is using a required port. Run `pnpm nx test:clean-post storage-js` then try again |
+| "request failed, reason:" errors  | Infrastructure isn't running. Run `pnpm nx test:infra storage-js` first                           |
+| Tests fail with connection errors | Ensure Docker is running (Supabase CLI requires Docker)                                           |
+| Stack already running             | Run `pnpm nx test:clean-post storage-js` to stop it before restarting                             |
 
 #### Understanding Test Failures
 
 - **StorageUnknownError with "request failed"**: Infrastructure not running
-- **Port binding errors**: Ports are already in use by other services
-- **Snapshot failures**: Expected test data has changed - review and update snapshots if needed
-
-#### What About Supabase CLI?
-
-**No**, you don't need `supabase start` or a regular Supabase instance for these tests. The storage-js tests use their own specialized Docker setup that's lighter and focused specifically on testing the storage SDK. This test infrastructure:
-
-- Is completely independent from any Supabase CLI projects
-- Uses fixed test authentication keys
-- Has predictable test data and bucket configurations
-- Runs faster than a full Supabase stack
-- Doesn't interfere with your local Supabase development projects
+- **Snapshot failures**: Expected test data has changed — review and update snapshots if needed
 
 ### Contributing
 

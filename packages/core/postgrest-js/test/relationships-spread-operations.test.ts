@@ -1,14 +1,10 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
-import { Database as DatabaseWithOptions13 } from './types.override-with-options-postgrest13'
+import { Database as DatabaseWithOptions13 } from './types.override-with-options-postgrest14'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 
-const REST_URL = 'http://localhost:3000'
-const postgrest = new PostgrestClient<Database>(REST_URL)
-const REST_URL_13 = 'http://localhost:3001'
-const postgrest13 = new PostgrestClient<Database, { PostgrestVersion: '13' }>(REST_URL_13)
-const postgrest13FromDatabaseTypes = new PostgrestClient<DatabaseWithOptions13>(REST_URL_13)
+const REST_URL = 'http://localhost:54321/rest/v1'
+const postgrest = new PostgrestClient<DatabaseWithOptions13>(REST_URL)
 
 test('select with aggregate count and spread', async () => {
   const res = await postgrest
@@ -17,24 +13,30 @@ test('select with aggregate count and spread', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "count": 1,
               "details": "Details for public channel",
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "count": 1,
               "details": "Details for random channel",
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
+              "count": 1,
+              "details": null,
+            },
+          },
+          {
+            "channels": {
               "count": 1,
               "details": null,
             },
@@ -45,6 +47,7 @@ test('select with aggregate count and spread', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -71,24 +74,30 @@ test('spread resource with single column in select query', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "count": 1,
               "details": "Details for public channel",
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "count": 1,
               "details": "Details for random channel",
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
+              "count": 1,
+              "details": null,
+            },
+          },
+          {
+            "channels": {
               "count": 1,
               "details": null,
             },
@@ -99,6 +108,7 @@ test('spread resource with single column in select query', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -125,26 +135,33 @@ test('spread resource with all columns in select query', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "count": 1,
               "details": "Details for public channel",
               "id": 1,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "count": 1,
               "details": "Details for random channel",
               "id": 2,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
+              "count": 1,
+              "details": null,
+              "id": null,
+            },
+          },
+          {
+            "channels": {
               "count": 1,
               "details": null,
               "id": null,
@@ -156,6 +173,7 @@ test('spread resource with all columns in select query', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -183,24 +201,30 @@ test('select with aggregate sum and spread', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "details": "Details for public channel",
               "sum": 1,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "details": "Details for random channel",
               "sum": 2,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
+              "details": null,
+              "sum": 3,
+            },
+          },
+          {
+            "channels": {
               "details": null,
               "sum": 3,
             },
@@ -211,6 +235,7 @@ test('select with aggregate sum and spread', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -239,26 +264,33 @@ test('select with aggregate sum and spread on nested relation', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "messages": Array [
-          Object {
-            "channels": Object {
+      "data": {
+        "messages": [
+          {
+            "channels": {
               "details": "Details for public channel",
               "details_sum": 1,
               "sum": 1,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
               "details": "Details for random channel",
               "details_sum": 2,
               "sum": 2,
             },
           },
-          Object {
-            "channels": Object {
+          {
+            "channels": {
+              "details": null,
+              "details_sum": null,
+              "sum": 3,
+            },
+          },
+          {
+            "channels": {
               "details": null,
               "details_sum": null,
               "sum": 3,
@@ -270,6 +302,7 @@ test('select with aggregate sum and spread on nested relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -297,10 +330,10 @@ test('select with spread on nested relation', async () => {
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
-        "channels": Object {
+      "data": {
+        "channels": {
           "details": "Details for public channel",
           "details_id": 1,
           "id": 1,
@@ -310,6 +343,7 @@ test('select with spread on nested relation', async () => {
       "error": null,
       "status": 200,
       "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>
@@ -326,61 +360,28 @@ test('select with spread on nested relation', async () => {
   ExpectedSchema.parse(res.data)
 })
 
-test('select spread on many relation postgrest13', async () => {
-  const res = await postgrest13
+test('select spread on many relation', async () => {
+  const res = await postgrest
     .from('channels')
     .select('channel_id:id, ...messages(id, message)')
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
-    Object {
+    {
       "count": null,
-      "data": Object {
+      "data": {
         "channel_id": 1,
-        "id": Array [
+        "id": [
           1,
         ],
-        "message": Array [
+        "message": [
           "Hello World 👋",
         ],
       },
       "error": null,
       "status": 200,
       "statusText": "OK",
-    }
-  `)
-  let result: Exclude<typeof res.data, null>
-  const ExpectedSchema = z.object({
-    channel_id: z.number(),
-    id: z.array(z.number()),
-    message: z.array(z.string().nullable()),
-  })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
-  ExpectedSchema.parse(res.data)
-})
-
-test('select spread on many relation postgrest13FromDatabaseTypes', async () => {
-  const res = await postgrest13FromDatabaseTypes
-    .from('channels')
-    .select('channel_id:id, ...messages(id, message)')
-    .limit(1)
-    .single()
-  expect(res).toMatchInlineSnapshot(`
-    Object {
-      "count": null,
-      "data": Object {
-        "channel_id": 1,
-        "id": Array [
-          1,
-        ],
-        "message": Array [
-          "Hello World 👋",
-        ],
-      },
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
+      "success": true,
     }
   `)
   let result: Exclude<typeof res.data, null>

@@ -13,6 +13,7 @@
     "target": "ES6",
 
     "strict": true,
+    "exactOptionalPropertyTypes": true,
 
     "esModuleInterop": true,
     "moduleResolution": "Node",

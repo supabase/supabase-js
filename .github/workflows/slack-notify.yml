@@ -16,17 +16,24 @@ on:
         description: 'Version string to display (e.g., v1.2.3 or 1.2.3-canary.1)'
         required: false
         type: string
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK:
+        required: true
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack notification
+        env:
+          TITLE: ${{ inputs.title }}
+          STATUS: ${{ inputs.status }}
+          VERSION_INPUT: ${{ inputs.version }}
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+          GITHUB_REFNAME: ${{ github.ref_name }}
+          GITHUB_ACTOR: ${{ github.actor }}
         run: |
-          TITLE="${{ inputs.title }}"
-          STATUS="${{ inputs.status }}"
-          VERSION_INPUT="${{ inputs.version }}"
-
           STATUS_ICON=""
           STATUS_PREFIX=""
           case "$STATUS" in
@@ -38,21 +45,35 @@ jobs:
               STATUS_ICON="❌";
               STATUS_PREFIX="failed";
               ;;
+            partial)
+              STATUS_ICON="⚠️";
+              STATUS_PREFIX="";
+              ;;
             *)
               STATUS_ICON="ℹ️";
               STATUS_PREFIX="update";
               ;;
           esac
+          # Omit ", version …" when no version is supplied; older callers that
+          # pass a version still render unchanged.
           VERSION_VALUE=${VERSION_INPUT:-n/a}
-          VERSION_LINE=", version ${VERSION_VALUE}"
+          VERSION_LINE=""
+          if [ -n "$VERSION_INPUT" ]; then
+            VERSION_LINE=", version ${VERSION_INPUT}"
+          fi
+          # Drop the trailing status word when it would be redundant (partial).
+          TITLE_SUFFIX=""
+          if [ -n "$STATUS_PREFIX" ]; then
+            TITLE_SUFFIX=" ${STATUS_PREFIX}"
+          fi
 
           payload=$(cat <<EOF
           {
-            "text": "${STATUS_ICON} ${TITLE} ${STATUS_PREFIX}${VERSION_LINE} in ${{ github.repository }}",
+            "text": "${STATUS_ICON} ${TITLE}${TITLE_SUFFIX}${VERSION_LINE} in ${GITHUB_REPO}",
             "blocks": [
               {
                 "type": "header",
-                "text": { "type": "plain_text", "text": "${STATUS_ICON} ${TITLE} ${STATUS_PREFIX}", "emoji": true }
+                "text": { "type": "plain_text", "text": "${STATUS_ICON} ${TITLE}${TITLE_SUFFIX}", "emoji": true }
               },
               {
                 "type": "section",
@@ -61,10 +82,10 @@ jobs:
               {
                 "type": "section",
                 "fields": [
-                  { "type": "mrkdwn", "text": "*Repository*\n${{ github.repository }}" },
-                  { "type": "mrkdwn", "text": "*Workflow*\n${{ github.workflow }}" },
-                  { "type": "mrkdwn", "text": "*Ref*\n${{ github.ref_name }}" },
-                  { "type": "mrkdwn", "text": "*Actor*\n${{ github.actor }}" },
+                  { "type": "mrkdwn", "text": "*Repository*\n${GITHUB_REPO}" },
+                  { "type": "mrkdwn", "text": "*Workflow*\n${GITHUB_WORKFLOW}" },
+                  { "type": "mrkdwn", "text": "*Ref*\n${GITHUB_REFNAME}" },
+                  { "type": "mrkdwn", "text": "*Actor*\n${GITHUB_ACTOR}" },
                   { "type": "mrkdwn", "text": "*Version*\n${VERSION_VALUE}" }
                 ]
               },
@@ -74,12 +95,12 @@ jobs:
                   {
                     "type": "button",
                     "text": { "type": "plain_text", "text": "View Run" },
-                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    "url": "https://github.com/${GITHUB_REPO}/actions/runs/${{ github.run_id }}"
                   },
                   {
                     "type": "button",
                     "text": { "type": "plain_text", "text": "View Commit" },
-                    "url": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+                    "url": "https://github.com/${GITHUB_REPO}/commit/${{ github.sha }}"
                   }
                 ]
               },

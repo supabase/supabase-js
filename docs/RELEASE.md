@@ -1,215 +1,102 @@
 # Release Workflows
 
-- [.github/workflows/main-ci-release.yml](.github/workflows/main-ci-release.yml) - Main CI & automated canary releases
-- [.github/workflows/release-stable.yml](.github/workflows/release-stable.yml) - Manual stable releases
-- [.github/workflows/preview-release.yml](.github/workflows/preview-release.yml) - PR preview releases
+**TL;DR:** `master` is the default branch. Every push auto-publishes a `@canary` prerelease; stable releases are manually promoted from `master`. `v3` is a long-lived feature branch for v3-only (breaking) work; v3 prereleases (`@next`) are published manually via `workflow_dispatch`. Beta and preview paths are unchanged.
 
-## Overview
+## Branch model
 
-This monorepo uses a fixed release model where all packages share a single version number and are released together. There are three types of releases:
+| Branch   | Role                                       | Default? | PR target for                      |
+| -------- | ------------------------------------------ | -------- | ---------------------------------- |
+| `master` | v2 active development, `@canary`/`@latest` | Yes      | All work (features, fixes, chores) |
+| `v3`     | v3 breaking changes, `@next` (manual)      | No       | v3-only breaking changes           |
 
-1. **Canary Releases** - Automated pre-releases on every commit to master
-2. **Stable Releases** - Manual releases for production use
-3. **Preview Releases** - PR-specific releases for testing changes
-
-## Workflows
-
-### 🤖 Canary Releases (Automated)
-
-**File:** `main-ci-release.yml`  
-**Trigger:** Every push to `master` branch  
-**Purpose:** Immediate feedback with pre-release versions
-
-#### What it does
-
-1. **CI Pipeline**: Runs all CI checks
-2. **Version Bump**: Creates a new pre-release version using conventional commits
-
-3. **NPM Publish**: Publishes all packages to npm with `canary` dist-tag
-4. **GitHub Release**: Creates a pre-release tag on GitHub with changelog
-
-#### Example flow
-
-- Make a change
-
-```bash
-# Commit with conventional format
-git commit -m "fix(auth): resolve token refresh issue"
+```mermaid
+graph LR
+  master["master (default)"] -- "auto on push" --> canary["@canary"]
+  master -- "manual" --> latest["@latest"]
+  v3["v3"] -- "manual" --> next["@next"]
+  feature["feature/*"] -- "manual" --> beta["@beta"]
 ```
 
-- Open PR and get it merged to `master`
-
-- Then:
-  → CI runs and passes
-  → Version bumped to e.g., 2.80.1-canary.0
-  → Published to npm with 'canary' dist-tag
-  → GitHub pre-release tag created
-  → All packages versioned identically
-
-#### Install canary versions
+`v3` is kept in sync with `master` by periodic manual merge (no automation):
 
 ```bash
-npm install @supabase/supabase-js@canary
-# or install specific packages
-npm install @supabase/auth-js@canary
-npm install @supabase/storage-js@canary
+git switch v3 && git pull --ff-only
+git merge master   # merge commit, NOT rebase
+# resolve conflicts, favor v3 for breaking-change code paths
+git push origin v3
 ```
 
-### 👨‍💻 Stable Releases (Manual)
+## Release types
 
-**File:** `release-stable.yml`  
-**Trigger:** Manual workflow dispatch (repository owners only)  
-**Purpose:** Production-ready releases for end users
+All packages share a single version (fixed versioning).
 
-#### How it works
+| Type        | Trigger     | Branch      | npm tag  | Version          | Script              |
+| ----------- | ----------- | ----------- | -------- | ---------------- | ------------------- |
+| **Canary**  | Auto (push) | `master`    | `canary` | `2.x.x-canary.X` | `release-canary.ts` |
+| **Stable**  | Manual      | `master`    | `latest` | `2.x.x`          | `release-stable.ts` |
+| **Next**    | Manual      | `v3`        | `next`   | `3.0.0-next.X`   | `release-canary.ts` |
+| **Beta**    | Manual      | `feature/*` | `beta`   | `x.x.x-beta.X`   | `release-beta.ts`   |
+| **Preview** | Auto (PR)   | any         | -        | -                | pkg.pr.new          |
 
-1. **Version Specification**: Repository owner provides a version specifier
-2. **Version Bump**: Nx applies the version change to all packages
-3. **Changelog Update**: Generates changelogs from conventional commits
-4. **NPM Publish**: Publishes all packages with `latest` dist-tag
-5. **PR Creation**: Automatically creates a PR with changelog updates
+### Canary (auto)
 
-#### Version Specifiers (for repo owners)
+Every push to `master` runs `publish.yml` and publishes a canary if there are conventional commits since the last stable tag:
 
-You can specify the version in two ways:
+| Commit type                  | Bump  |
+| ---------------------------- | ----- |
+| `fix:`                       | patch |
+| `feat:`                      | minor |
+| `feat!:` / `BREAKING CHANGE` | major |
 
-##### Semantic Version Keywords
+Skipped if no conventional commits are detected. Install: `npm install @supabase/supabase-js@canary`.
 
-- `patch` - Bump patch version (1.2.3 → 1.2.4)
-- `minor` - Bump minor version (1.2.3 → 1.3.0)
-- `major` - Bump major version (1.2.3 → 2.0.0)
-- `prepatch` - Create patch pre-release (1.2.3 → 1.2.4-0)
-- `preminor` - Create minor pre-release (1.2.3 → 1.3.0-0)
-- `premajor` - Create major pre-release (1.2.3 → 2.0.0-0)
-- `prerelease` - Bump pre-release version (1.2.3-0 → 1.2.3-1)
+### Stable, Next, Beta (manual)
 
-##### Explicit Version
+All three are paths inside `publish.yml`'s `workflow_dispatch`. Trigger from **Actions → Publish releases → Run workflow**, select the branch, fill exactly one input, leave the others empty:
 
-- `v2.3.4` or `2.3.4` - Set exact version number
+| Path   | Branch      | Input to fill                                           |
+| ------ | ----------- | ------------------------------------------------------- |
+| Stable | `master`    | `version_specifier` (e.g. `patch`, `minor`, `v2.105.0`) |
+| Next   | `v3`        | check `next_prerelease`                                 |
+| Beta   | `feature/*` | `beta_version` (e.g. `2.105.0-beta.0`)                  |
 
-### 🔄 Preview Releases (PR-based)
+Restricted to `@supabase/admin` or `@supabase/sdk` team members. Each path posts to Slack on success/failure.
 
-**File:** `preview-release.yml`  
-**Trigger:** PR with `trigger: preview` label  
-**Purpose:** Test PR changes before merging
-
-#### How it works
-
-1. **Label Trigger**: Contributors request preview by asking maintainers to add label
-2. **Build**: Builds all affected packages
-3. **Publish**: Uses [pkg.pr.new](https://pkg.pr.new) to create preview packages
-4. **Comment**: Adds installation instructions to PR
-
-#### Example flow
+The Next path reads `.next-base-version` (currently `3.0.0`) and auto-computes the next `-next.X` suffix. The GitHub release is auto-marked as a prerelease (nx detects the semver prerelease identifier); npm dist-tag is `next`, **not** `latest`.
 
 ```bash
-# 1. Contributor creates PR with changes
-# 2. Requests preview: "Can you add the preview label?"
-# 3. Maintainer adds 'trigger: preview' label
-# 4. Workflow publishes preview packages
-# 5. Install with:
-npm install https://pkg.pr.new/@supabase/supabase-js@[pr-number]
+npm install @supabase/supabase-js@next   # v3 prerelease
+npm install @supabase/supabase-js@beta   # beta from a feature branch
 ```
 
-## Usage Instructions
+### Preview (PR-based)
 
-### Running Canary Release
+Every PR that touches `packages/core/**` auto-publishes via [pkg.pr.new](https://pkg.pr.new) (`preview-release.yml`). No label needed.
 
-Canary releases are **fully automated**. Simply:
+```bash
+npm install https://pkg.pr.new/@supabase/supabase-js@[commit-hash]
+```
 
-1. Make changes in your feature branch
-2. Use conventional commits with type and scope (e.g., `fix(auth):`, `feat(realtime):`, `chore(repo):`)
-3. Create and merge PR to `master` branch
-4. Workflow automatically:
-   - Runs CI checks
-   - Creates pre-release version
-   - Publishes to npm with `canary` tag
-   - Creates GitHub pre-release
+## Common flows
 
-### Running Stable Release (repository owners only)
+**Non-breaking fix or feature:** PR → `master` → canary auto-publishes → trigger Stable when ready → optionally merge `master` into `v3` to bring the change forward.
 
-1. **Navigate to Actions tab** in GitHub repository
-2. **Select "Release Stable"** workflow
-3. **Click "Run workflow"**
-4. **Enter version specifier:**
-   - For patch release: `patch`
-   - For minor release: `minor`
-   - For major release: `major`
-   - For specific version: `v2.81.0` or `2.81.0`
-5. **Click "Run workflow"**
-6. **Workflow automatically:**
-   - Bumps version for all packages
-   - Generates changelogs
-   - Publishes to npm with `latest` tag
-   - Creates release branch and PR
-   - Enables auto-merge on PR
+**v3-only breaking change:** PR → `v3` (no auto-publish) → manually trigger Next when a prerelease is needed for dogfooding.
 
-### Requesting Preview Release (contributors)
+**Emergency v2 fix:** PR → `master` → trigger Stable with `patch` → merge `master` into `v3` so it carries forward.
 
-1. **Create your PR** with changes
-2. **Request preview** in PR comment: "Can a maintainer add the preview label for testing?"
-3. **Wait for label** - Maintainer adds `trigger: preview` label
-4. **Install preview** - Follow instructions in automated PR comment
+**v3 ships:** PR `v3` → `master` (merge commit), then trigger Stable with `major` → publishes `3.0.0` with `latest`.
 
-## Workflow Features
+## Configuration
 
-### 📦 Fixed Versioning
+- `.next-base-version` — base version for v3 prereleases
+- `scripts/release-canary.ts` — canary (default) + next (via `--base-version`, `--preid`, `--tag` flags)
+- `scripts/release-stable.ts` — stable releases, creates the changelog PR
+- `scripts/release-beta.ts` — beta from feature branches
 
-- All packages share identical version numbers
-- Internal dependencies automatically updated using workspace protocol (`*`)
-- Version synchronization handled by Nx
-- Single source of truth for versioning
+## Permissions
 
-### 📝 Automatic Changelogs
-
-- Generated from conventional commits
-- Per-package CHANGELOG.md files
-- Unchanged packages show "No user-facing changes in this release"
-- GitHub releases created automatically
-
-### 🔐 Security & Permissions
-
-- Canary releases use GitHub App token for automation
-- Stable releases restricted to repository owners
-- NPM publishing uses secure tokens
-- All releases signed and traceable
-
-### Nx Release Configuration
-
-The workflows rely on `nx.json` release configuration:
-
-### Release Scripts
-
-- **`scripts/release-canary.ts`** - Handles canary releases with `canary` preid
-- **`scripts/release-stable.ts`** - Handles stable releases with version specifier input
-
-## Best Practices
-
-### For Contributors
-
-1. **Use conventional commits** with scope and type for automatic versioning
-   - `fix(auth):` for bug fixes (patch release)
-   - `feat(realtime):` for new features (minor release)
-   - `feat(repo)!:` or `BREAKING CHANGE:` for breaking changes (major release)
-2. **Request preview releases** for complex PRs
-3. **Monitor canary releases** to verify your changes
-
-### For Repository Owners
-
-1. **Release cadence**:
-   - Canary: Automatic on every `master` commit
-   - Stable: Weekly or as needed
-   - Major: Coordinate with team and users
-2. **Version strategy**:
-   - Use `patch` for bug fixes
-   - Use `minor` for new features
-   - Use `major` for breaking changes
-3. **Monitor package health** after releases
-4. **Review PR auto-merge** from release workflow
-
-### For Emergency Releases
-
-1. **Fix in `master` first** - Apply fix and let canary release
-2. **Test canary** - Verify fix works in canary version
-3. **Release stable** - Use stable workflow with `patch`
-4. **Document incident** - Update changelog with details
+- Automated canary uses a GitHub App token (must be a bypass actor on `master`)
+- Manual releases (Stable, Next, Beta) require `@supabase/admin` or `@supabase/sdk` membership
+- npm uses OIDC trusted publishing (provenance); all paths live in `publish.yml`
+- Slack failure notifications post to `#team-sdk`

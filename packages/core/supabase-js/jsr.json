@@ -1,6 +1,16 @@
 {
   "name": "@supabase/supabase-js",
   "version": "0.0.0-automated",
-  "exports": "./src/index.ts",
-  "exclude": ["examples"]
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cors": "./src/cors.ts"
+  },
+  "imports": {
+    "@supabase/tracing": "./src/_internal/tracing/index.ts"
+  },
+  "exclude": ["examples"],
+  "publish": {
+    "exclude": ["!src/_internal"]
+  }
 }

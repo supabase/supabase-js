@@ -18,7 +18,9 @@ describe('basic tests (hello function)', () => {
   })
 
   afterAll(async () => {
-    relay && relay.container && (await relay.container.stop())
+    if (relay) {
+      await relay.stop()
+    }
   })
 
   test('invoke hello with auth header', async () => {

@@ -1,0 +1,22 @@
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  // Use local Prettier v2 for consistent inline snapshot formatting across Jest 29
+  prettierPath: require.resolve('prettier'),
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
+  },
+  collectCoverage: true,
+  coverageDirectory: './coverage',
+  coverageReporters: ['json', 'html', 'lcov'],
+  collectCoverageFrom: [
+    'src/**/*.{js,ts}',
+    'src/**/*.unit.test.ts',
+    '!**/node_modules/**',
+    '!**/vendor/**',
+  ],
+  testPathIgnorePatterns: ['/node_modules/', '/example/'],
+  rootDir: '.',
+  silent: true,
+  forceExit: true,
+}
