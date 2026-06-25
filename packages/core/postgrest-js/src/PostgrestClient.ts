@@ -2,6 +2,8 @@ import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common'
 import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
+import { PostgrestQueryBuilderOptions, PostgrestQueryBuilderOptionsWithSchema } from './types/types'
+import { mergeHeaders } from './utils'
 
 /**
  * PostgREST client.
@@ -28,8 +30,8 @@ export default class PostgrestClient<
     Database,
     '__InternalSupabase'
   >[SchemaName] extends GenericSchema
-    ? Omit<Database, '__InternalSupabase'>[SchemaName]
-    : any,
+  ? Omit<Database, '__InternalSupabase'>[SchemaName]
+  : any,
 > {
   url: string
   headers: Headers
@@ -89,13 +91,8 @@ export default class PostgrestClient<
       timeout,
       urlLengthLimit = 8000,
       retry,
-    }: {
-      headers?: HeadersInit
-      schema?: SchemaName
-      fetch?: Fetch
+    }: PostgrestQueryBuilderOptionsWithSchema<SchemaName> & {
       timeout?: number
-      urlLengthLimit?: number
-      retry?: boolean
     } = {}
   ) {
     this.url = url
@@ -156,12 +153,17 @@ export default class PostgrestClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName],
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
+  >(
+    relation: TableName,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>;
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
+    relation: ViewName,
+    options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   from(
-    relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views'])
+    relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views']),
+    options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
     if (!relation || typeof relation !== 'string' || relation.trim() === '') {
       throw new Error('Invalid relation name: relation must be a non-empty string.')
@@ -169,9 +171,9 @@ export default class PostgrestClient<
 
     const url = new URL(`${this.url}/${relation}`)
     return new PostgrestQueryBuilder(url, {
-      headers: new Headers(this.headers),
+      headers: mergeHeaders(this.headers, options?.headers),
       schema: this.schemaName,
-      fetch: this.fetch,
+      fetch: options?.fetch ?? this.fetch,
       urlLengthLimit: this.urlLengthLimit,
       retry: this.retry,
     })
