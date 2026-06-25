@@ -175,6 +175,28 @@ describe('Channel Lifecycle Management', () => {
           },
         },
       },
+      {
+        name: 'sets up joinPush object with broadcast.replication_ready opt-in forwarded to the server',
+        config: { broadcast: { replication_ready: true } },
+        setup: (channel: RealtimeChannel) => {
+          channel.subscribe()
+        },
+        expectedParams: {
+          config: {
+            broadcast: { replication_ready: true },
+            presence: { key: '', enabled: false },
+            private: false,
+          },
+        },
+        expectedJoinPayload: {
+          config: {
+            broadcast: { replication_ready: true },
+            presence: { key: '', enabled: false },
+            postgres_changes: [],
+            private: false,
+          },
+        },
+      },
     ])('$name', ({ config, setup, expectedParams, expectedJoinPayload }) => {
       channel = new RealtimeChannel('topic', { config }, testSetup.client)
 

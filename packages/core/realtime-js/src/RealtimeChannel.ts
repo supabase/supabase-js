@@ -25,8 +25,18 @@ export type RealtimeChannelOptions = {
      * self option enables client to receive message it broadcast
      * ack option instructs server to acknowledge that broadcast message was received
      * replay option instructs server to replay broadcast messages
+     * replication_ready option instructs the server to emit a `system` event once the
+     * Postgres replication connection backing this channel is established and ready to
+     * stream changes. Listen for it with `channel.on('system', {}, (payload) => ...)`;
+     * the payload's `status` is `'ok'` (`message: 'Replication connection established'`)
+     * on success or `'error'` if the connection is not ready in time.
      */
-    broadcast?: { self?: boolean; ack?: boolean; replay?: ReplayOption }
+    broadcast?: {
+      self?: boolean
+      ack?: boolean
+      replay?: ReplayOption
+      replication_ready?: boolean
+    }
     /**
      * key option is used to track presence payload across clients
      */
@@ -126,6 +136,24 @@ export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES
 }
 
 export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'error' | (string & {})
+
+/**
+ * Payload of a `system` event emitted by the server.
+ *
+ * Most notably, when a channel is created with `config.broadcast.replication_ready: true`,
+ * the server sends one of these once the Postgres replication connection is ready
+ * (`status: 'ok'`) or fails to become ready in time (`status: 'error'`).
+ */
+export type RealtimeSystemPayload = {
+  /** The extension that produced the message, e.g. `'system'` or `'postgres_changes'`. */
+  extension: 'system' | 'postgres_changes' | (string & {})
+  /** `'ok'` on success, `'error'` on failure. */
+  status: 'ok' | 'error' | (string & {})
+  /** Human-readable description, e.g. `'Replication connection established'`. */
+  message: string
+  /** The channel (sub)topic the message refers to. */
+  channel: string
+}
 
 export enum REALTIME_POSTGRES_CHANGES_LISTEN_EVENT {
   ALL = '*',
@@ -569,6 +597,31 @@ export default class RealtimeChannel {
       payload: RealtimeBroadcastDeletePayload<T>
     }) => void
   ): RealtimeChannel
+  /**
+   * Listen for `system` events on this channel.
+   *
+   * The payload follows the {@link RealtimeSystemPayload} shape. Opt in to the replication-ready
+   * notification with `config.broadcast.replication_ready: true` when creating the channel, then
+   * watch for `payload.status === 'ok'` to know the Postgres replication connection is ready.
+   *
+   * @example Know when the replication connection is ready
+   * ```js
+   * const channel = supabase.channel('room1', {
+   *   config: { broadcast: { replication_ready: true } },
+   * })
+   *
+   * channel
+   *   .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
+   *     console.log('Change received!', payload)
+   *   })
+   *   .on('system', {}, (payload) => {
+   *     if (payload.extension === 'system' && payload.status === 'ok') {
+   *       console.log('Replication connection is ready:', payload.message)
+   *     }
+   *   })
+   *   .subscribe()
+   * ```
+   */
   on<T extends { [key: string]: any }>(
     type: `${REALTIME_LISTEN_TYPES.SYSTEM}`,
     filter: {},
