@@ -2,7 +2,13 @@ import { DEFAULT_HEADERS } from '../lib/constants'
 import { StorageError } from '../lib/common/errors'
 import { Fetch, get, post, put, remove } from '../lib/common/fetch'
 import BaseApiClient from '../lib/common/BaseApiClient'
-import { Bucket, BucketType, ListBucketOptions } from '../lib/types'
+import {
+  Bucket,
+  BucketType,
+  FetchParameters,
+  ListBucketOptions,
+  PurgeCacheOptions,
+} from '../lib/types'
 import { StorageClientOptions } from '../StorageClient'
 
 export default class StorageBucketApi extends BaseApiClient<StorageError> {
@@ -387,6 +393,73 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   > {
     return this.handleOperation(async () => {
       return await remove(this.fetch, `${this.url}/bucket/${id}`, {}, { headers: this.headers })
+    })
+  }
+
+  /**
+   * Purges the CDN cache for an entire bucket.
+   *
+   * Maps to `DELETE /cdn/{bucket}` on the Storage API. The server
+   * issues a CDN invalidation for the bucket and returns `{ message: 'success' }`.
+   *
+   * **Requires the `service_role` key.** The underlying endpoint enforces
+   * `service_role` JWT — calls made with the anon key or a user JWT will be
+   * rejected by the server.
+   *
+   * **Hosted CDN feature.** On self-hosted Supabase, the Storage service must
+   * have `CDN_PURGE_ENDPOINT_URL` configured and the `purgeCache` tenant
+   * feature enabled, otherwise the server returns an error.
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param id The unique identifier of the bucket you would like to purge from cache.
+   * @param options Optional purge cache options.
+   * @param options.transformations If true, purges only transformations (resized/formatted variants), leaving original cached files intact.
+   * @param parameters Optional fetch parameters such as an `AbortController` signal.
+   * @returns Promise with `{ data: { message }, error: null }` on success or `{ data: null, error }` on failure.
+   *
+   * @example Purge cache for an entire bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .purgeBucketCache('avatars')
+   * ```
+   *
+   * @example Purge only transformations for an entire bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .purgeBucketCache('avatars', { transformations: true })
+   * ```
+   */
+  async purgeBucketCache(
+    id: string,
+    options?: PurgeCacheOptions,
+    parameters?: FetchParameters
+  ): Promise<
+    | {
+        data: { message: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    return this.handleOperation(async () => {
+      const query = new URLSearchParams()
+      if (options?.transformations) {
+        query.set('transformations', 'true')
+      }
+      const queryString = query.toString()
+
+      return await remove(
+        this.fetch,
+        `${this.url}/cdn/${id}${queryString ? `?${queryString}` : ''}`,
+        {},
+        { headers: this.headers },
+        parameters
+      )
     })
   }
 

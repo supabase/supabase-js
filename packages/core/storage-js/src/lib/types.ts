@@ -27,6 +27,14 @@ export interface ListBucketOptions {
   search?: string
 }
 
+export interface PurgeCacheOptions {
+  /**
+   * If true, purges only the transformations (resized/formatted variants) for the object or bucket,
+   * leaving the original cached file intact. If omitted, purges all cached versions.
+   */
+  transformations?: true
+}
+
 /**
  * Represents an Analytics Bucket using Apache Iceberg table format.
  * Analytics buckets are optimized for analytical queries and data processing.
