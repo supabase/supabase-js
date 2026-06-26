@@ -569,14 +569,16 @@ describe('Bucket API Error Handling', () => {
     })
 
     it('surfaces server errors via StorageApiError', async () => {
-      const fetchMock = jest
-        .fn()
-        .mockResolvedValue(
-          new Response(
-            JSON.stringify({ statusCode: '404', error: 'Not Found', message: 'Object not found' }),
-            { status: 404, headers: { 'Content-Type': 'application/json' } }
-          )
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            statusCode: '403',
+            error: 'Forbidden',
+            message: 'Feature not enabled',
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
         )
+      )
       global.fetch = fetchMock
 
       const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
@@ -584,7 +586,7 @@ describe('Bucket API Error Handling', () => {
 
       expect(data).toBeNull()
       expect(error).toBeInstanceOf(StorageApiError)
-      expect(error?.message).toBe('Object not found')
+      expect(error?.message).toBe('Feature not enabled')
     })
 
     it('forwards the AbortController signal to fetch', async () => {

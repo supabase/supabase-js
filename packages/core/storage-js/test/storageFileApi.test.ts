@@ -1058,8 +1058,8 @@ describe('purgeCache', () => {
       .fn()
       .mockResolvedValue(
         new Response(
-          JSON.stringify({ statusCode: '404', error: 'Not Found', message: 'Object not found' }),
-          { status: 404, headers: { 'Content-Type': 'application/json' } }
+          JSON.stringify({ statusCode: '403', error: 'Forbidden', message: 'Feature not enabled' }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
         )
       )
     global.fetch = fetchMock
@@ -1069,7 +1069,7 @@ describe('purgeCache', () => {
 
     expect(data).toBeNull()
     expect(error).toBeInstanceOf(StorageApiError)
-    expect(error?.message).toBe('Object not found')
+    expect(error?.message).toBe('Feature not enabled')
   })
 
   it('forwards the AbortController signal to fetch', async () => {

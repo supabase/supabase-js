@@ -393,8 +393,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   /**
    * Purges the CDN cache for an entire bucket.
    *
-   * Maps to `DELETE /cdn/{bucket}/{path}` on the Storage API. The server
-   * issues a CDN invalidation for the object and returns `{ message: 'success' }`.
+   * Maps to `DELETE /cdn/{bucket}` on the Storage API. The server
+   * issues a CDN invalidation for the bucket and returns `{ message: 'success' }`.
    *
    * **Requires the `service_role` key.** The underlying endpoint enforces
    * `service_role` JWT — calls made with the anon key or a user JWT will be
@@ -404,12 +404,9 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    * have `CDN_PURGE_ENDPOINT_URL` configured and the `purgeCache` tenant
    * feature enabled, otherwise the server returns an error.
    *
-   * Operates on a single object path. There is no wildcard or recursion: pass
-   * the exact path of the object you want invalidated.
-   *
    * @category Storage
    * @subcategory File Buckets
-   * @param path The path (relative to the bucket) of the object to purge, e.g. `folder/avatar.png`.
+   * @param id The unique identifier of the bucket you would like to purge from cache.
    * @param parameters Optional fetch parameters such as an `AbortController` signal.
    * @returns Promise with `{ data: { message }, error: null }` on success or `{ data: null, error }` on failure.
    *
