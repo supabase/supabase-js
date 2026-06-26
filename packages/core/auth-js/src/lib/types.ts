@@ -2250,6 +2250,14 @@ export type CustomOAuthProvider = {
   acceptable_client_ids?: string[]
   /** OAuth scopes requested during authorization */
   scopes?: string[]
+  /**
+   * Allowlist of raw identity provider claim keys to copy verbatim into the
+   * user's `custom_claims` field (within `identity_data` and
+   * `raw_user_meta_data`), e.g. `["groups", "org_id", "mail"]`. This is an
+   * opt-in allowlist that defaults to empty (no claims captured) and operates
+   * independently from `attribute_mapping`.
+   */
+  custom_claims_allowlist?: string[]
   /** Whether PKCE is enabled */
   pkce_enabled?: boolean
   /** Mapping of provider attributes to Supabase user attributes */
@@ -2300,6 +2308,14 @@ export type CreateCustomProviderParams = {
   acceptable_client_ids?: string[]
   /** OAuth scopes requested during authorization */
   scopes?: string[]
+  /**
+   * Allowlist of raw identity provider claim keys to copy verbatim into the
+   * user's `custom_claims` field (within `identity_data` and
+   * `raw_user_meta_data`), e.g. `["groups", "org_id", "mail"]`. This is an
+   * opt-in allowlist that defaults to empty (no claims captured) and operates
+   * independently from `attribute_mapping`.
+   */
+  custom_claims_allowlist?: string[]
   /** Whether PKCE is enabled */
   pkce_enabled?: boolean
   /** Mapping of provider attributes to Supabase user attributes */
@@ -2342,6 +2358,14 @@ export type UpdateCustomProviderParams = {
   acceptable_client_ids?: string[]
   /** OAuth scopes requested during authorization */
   scopes?: string[]
+  /**
+   * Allowlist of raw identity provider claim keys to copy verbatim into the
+   * user's `custom_claims` field (within `identity_data` and
+   * `raw_user_meta_data`), e.g. `["groups", "org_id", "mail"]`. This is an
+   * opt-in allowlist that defaults to empty (no claims captured) and operates
+   * independently from `attribute_mapping`.
+   */
+  custom_claims_allowlist?: string[]
   /** Whether PKCE is enabled */
   pkce_enabled?: boolean
   /** Mapping of provider attributes to Supabase user attributes */
