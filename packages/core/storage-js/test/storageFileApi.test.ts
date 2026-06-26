@@ -1072,6 +1072,46 @@ describe('purgeCache', () => {
     expect(error?.message).toBe('Feature not enabled')
   })
 
+  it('appends transformations query param when transformations option is true', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { data, error } = await client.from(BUCKET).purgeCache(PATH, { transformations: true })
+
+    expect(error).toBeNull()
+    expect(data?.message).toBe('success')
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/${PATH}?transformations=true`,
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('omits transformations query param when transformations option is not provided', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { data, error } = await client.from(BUCKET).purgeCache(PATH)
+
+    expect(error).toBeNull()
+    expect(data?.message).toBe('success')
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/${PATH}`,
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
   it('forwards the AbortController signal to fetch', async () => {
     const fetchMock = jest.fn().mockResolvedValue(
       new Response(JSON.stringify({ message: 'success' }), {
@@ -1083,7 +1123,9 @@ describe('purgeCache', () => {
 
     const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
     const controller = new AbortController()
-    const { error } = await client.from(BUCKET).purgeCache(PATH, { signal: controller.signal })
+    const { error } = await client
+      .from(BUCKET)
+      .purgeCache(PATH, undefined, { signal: controller.signal })
 
     expect(error).toBeNull()
     expect(fetchMock).toHaveBeenCalledWith(

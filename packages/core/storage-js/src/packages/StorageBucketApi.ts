@@ -2,7 +2,13 @@ import { DEFAULT_HEADERS } from '../lib/constants'
 import { StorageError } from '../lib/common/errors'
 import { Fetch, get, post, put, remove } from '../lib/common/fetch'
 import BaseApiClient from '../lib/common/BaseApiClient'
-import { Bucket, BucketType, FetchParameters, ListBucketOptions } from '../lib/types'
+import {
+  Bucket,
+  BucketType,
+  FetchParameters,
+  ListBucketOptions,
+  PurgeCacheOptions,
+} from '../lib/types'
 import { StorageClientOptions } from '../StorageClient'
 
 export default class StorageBucketApi extends BaseApiClient<StorageError> {
@@ -407,6 +413,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    * @category Storage
    * @subcategory File Buckets
    * @param id The unique identifier of the bucket you would like to purge from cache.
+   * @param options Optional purge cache options.
+   * @param options.transformations If true, purges only transformations (resized/formatted variants), leaving original cached files intact.
    * @param parameters Optional fetch parameters such as an `AbortController` signal.
    * @returns Promise with `{ data: { message }, error: null }` on success or `{ data: null, error }` on failure.
    *
@@ -416,9 +424,17 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    *   .storage
    *   .purgeBucketCache('avatars')
    * ```
+   *
+   * @example Purge only transformations for an entire bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .purgeBucketCache('avatars', { transformations: true })
+   * ```
    */
   async purgeBucketCache(
     id: string,
+    options?: PurgeCacheOptions,
     parameters?: FetchParameters
   ): Promise<
     | {
@@ -431,9 +447,15 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
+      const query = new URLSearchParams()
+      if (options?.transformations) {
+        query.set('transformations', 'true')
+      }
+      const queryString = query.toString()
+
       return await remove(
         this.fetch,
-        `${this.url}/cdn/${id}`,
+        `${this.url}/cdn/${id}${queryString ? `?${queryString}` : ''}`,
         {},
         { headers: this.headers },
         parameters
