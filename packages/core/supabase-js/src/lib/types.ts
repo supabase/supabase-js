@@ -98,7 +98,7 @@ export type SupabaseClientOptions<SchemaName> = {
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to `public`.
    */
   db?: {
-    schema?: SchemaName
+    schema?: string
     /**
      * Optional timeout in milliseconds for PostgREST requests.
      * When set, requests will automatically abort after this duration to prevent indefinite hangs.
