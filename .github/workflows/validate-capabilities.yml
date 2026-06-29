@@ -9,3 +9,5 @@ permissions:
 jobs:
   validate:
     uses: supabase/sdk/.github/workflows/validate-sdk-compliance-javascript.yml@main
+    with:
+      typedoc-packages: packages/core/auth-js,packages/core/functions-js,packages/core/postgrest-js,packages/core/realtime-js,packages/core/storage-js,packages/core/supabase-js
