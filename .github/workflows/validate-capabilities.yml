@@ -8,6 +8,4 @@ permissions:
 
 jobs:
   validate:
-    uses: supabase/sdk/.github/workflows/validate-sdk-compliance.yml@main
-    with:
-      language: javascript
+    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-javascript.yml@main
