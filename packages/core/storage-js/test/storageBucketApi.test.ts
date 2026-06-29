@@ -1,5 +1,5 @@
 import { StorageClient } from '../src/index'
-import { StorageUnknownError } from '../src/lib/common/errors'
+import { StorageApiError, StorageUnknownError } from '../src/lib/common/errors'
 
 // Create a simple Response implementation for testing
 class MockResponse {
@@ -537,6 +537,118 @@ describe('Bucket API Error Handling', () => {
 
       // Clean up
       mockFn.mockRestore()
+    })
+  })
+
+  describe('purgeBucketCache', () => {
+    const PURGE_URL = 'http://localhost:8000/storage/v1'
+    const BUCKET = 'avatars'
+
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('issues DELETE to /cdn/{bucket} and returns the server message', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.purgeBucketCache(BUCKET)
+
+      expect(error).toBeNull()
+      expect(data?.message).toBe('success')
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${PURGE_URL}/cdn/${BUCKET}`,
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+
+    it('surfaces server errors via StorageApiError', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            statusCode: '403',
+            error: 'Forbidden',
+            message: 'Feature not enabled',
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.purgeBucketCache(BUCKET)
+
+      expect(data).toBeNull()
+      expect(error).toBeInstanceOf(StorageApiError)
+      expect(error?.message).toBe('Feature not enabled')
+    })
+
+    it('appends transformations query param when transformations option is true', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.purgeBucketCache(BUCKET, { transformations: true })
+
+      expect(error).toBeNull()
+      expect(data?.message).toBe('success')
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${PURGE_URL}/cdn/${BUCKET}?transformations=true`,
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+
+    it('omits transformations query param when transformations option is not provided', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.purgeBucketCache(BUCKET)
+
+      expect(error).toBeNull()
+      expect(data?.message).toBe('success')
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${PURGE_URL}/cdn/${BUCKET}`,
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+
+    it('forwards the AbortController signal to fetch', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const controller = new AbortController()
+      const { error } = await client.purgeBucketCache(BUCKET, undefined, {
+        signal: controller.signal,
+      })
+
+      expect(error).toBeNull()
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${PURGE_URL}/cdn/${BUCKET}`,
+        expect.objectContaining({ method: 'DELETE', signal: controller.signal })
+      )
     })
   })
 })

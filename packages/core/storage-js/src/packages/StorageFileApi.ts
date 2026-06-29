@@ -19,6 +19,7 @@ import {
   Camelize,
   SearchV2Options,
   SearchV2Result,
+  PurgeCacheOptions,
 } from '../lib/types'
 import BlobDownloadBuilder from './BlobDownloadBuilder'
 
@@ -1156,6 +1157,79 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         `${this.url}/object/${this.bucketId}`,
         { prefixes: paths },
         { headers: this.headers }
+      )
+    })
+  }
+
+  /**
+   * Purges the CDN cache for a single object in this bucket.
+   *
+   * Maps to `DELETE /cdn/{bucket}/{path}` on the Storage API. The server
+   * issues a CDN invalidation for the object and returns `{ message: 'success' }`.
+   *
+   * **Requires the `service_role` key.** The underlying endpoint enforces
+   * `service_role` JWT — calls made with the anon key or a user JWT will be
+   * rejected by the server.
+   *
+   * **Hosted CDN feature.** On self-hosted Supabase, the Storage service must
+   * have `CDN_PURGE_ENDPOINT_URL` configured and the `purgeCache` tenant
+   * feature enabled, otherwise the server returns an error.
+   *
+   * Operates on a single object path. There is no wildcard or recursion: pass
+   * the exact path of the object you want invalidated.
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param path The path (relative to the bucket) of the object to purge, e.g. `folder/avatar.png`.
+   * @param options Optional purge cache options.
+   * @param options.transformations If true, purges only transformations (resized/formatted variants), leaving the original cached file intact.
+   * @param parameters Optional fetch parameters such as an `AbortController` signal.
+   * @returns Promise with `{ data: { message }, error: null }` on success or `{ data: null, error }` on failure.
+   *
+   * @example Purge a single cached object
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .purgeCache('folder/avatar1.png')
+   * ```
+   *
+   * @example Purge only transformations for a single object
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .purgeCache('folder/avatar1.png', { transformations: true })
+   * ```
+   */
+  async purgeCache(
+    path: string,
+    options?: PurgeCacheOptions,
+    parameters?: FetchParameters
+  ): Promise<
+    | {
+        data: { message: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    return this.handleOperation(async () => {
+      const _path = this._getFinalPath(path)
+      const query = new URLSearchParams()
+      if (options?.transformations) {
+        query.set('transformations', 'true')
+      }
+      const queryString = query.toString()
+
+      return await remove(
+        this.fetch,
+        `${this.url}/cdn/${_path}${queryString ? `?${queryString}` : ''}`,
+        {},
+        { headers: this.headers },
+        parameters
       )
     })
   }
