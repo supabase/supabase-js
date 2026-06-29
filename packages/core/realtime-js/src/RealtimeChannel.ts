@@ -133,6 +133,11 @@ export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES
    * Receive database changes when filter is matched.
    */
   filter?: string
+  /**
+   * Receive only the specified columns in the change payload.
+   * Primary key columns are always included.
+   */
+  select?: string[]
 }
 
 export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'error' | (string & {})
@@ -185,6 +190,7 @@ type PostgresChangesFilters = {
     schema?: string
     table?: string
     filter?: string
+    select?: string[]
   }[]
 }
 
@@ -329,7 +335,11 @@ export default class RealtimeChannel {
         config: { broadcast, presence, private: isPrivate },
       } = this.params
 
-      const postgres_changes = this.bindings.postgres_changes?.map((r) => r.filter) ?? []
+      const postgres_changes =
+        this.bindings.postgres_changes?.map((r) => {
+          const { select, ...rest } = r.filter
+          return select?.length ? { ...rest, select } : rest
+        }) ?? []
 
       const presence_enabled =
         (!!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] &&
@@ -394,7 +404,7 @@ export default class RealtimeChannel {
     for (let i = 0; i < bindingsLen; i++) {
       const clientPostgresBinding = clientPostgresBindings[i]
       const {
-        filter: { event, schema, table, filter },
+        filter: { event, schema, table, filter, select },
       } = clientPostgresBinding
       const serverPostgresFilter = postgres_changes && postgres_changes[i]
 
@@ -403,7 +413,8 @@ export default class RealtimeChannel {
         serverPostgresFilter.event === event &&
         RealtimeChannel.isFilterValueEqual(serverPostgresFilter.schema, schema) &&
         RealtimeChannel.isFilterValueEqual(serverPostgresFilter.table, table) &&
-        RealtimeChannel.isFilterValueEqual(serverPostgresFilter.filter, filter)
+        RealtimeChannel.isFilterValueEqual(serverPostgresFilter.filter, filter) &&
+        RealtimeChannel.isSelectValueEqual(serverPostgresFilter.select, select)
       ) {
         newPostgresBindings.push({
           ...clientPostgresBinding,
@@ -788,7 +799,7 @@ export default class RealtimeChannel {
    */
   on(
     type: `${REALTIME_LISTEN_TYPES}`,
-    filter: { event: string; [key: string]: string },
+    filter: { event: string; [key: string]: string | string[] | undefined },
     callback: (payload: any) => void
   ): RealtimeChannel {
     const stateCheck = this.channelAdapter.isJoined() || this.channelAdapter.isJoining()
@@ -1188,6 +1199,25 @@ export default class RealtimeChannel {
     const normalizedServer = serverValue ?? undefined
     const normalizedClient = clientValue ?? undefined
     return normalizedServer === normalizedClient
+  }
+
+  /**
+   * Compares two optional select column arrays for equality (order-independent).
+   * Treats undefined, null, and empty arrays as equivalent empty values.
+   * @internal
+   */
+  private static isSelectValueEqual(
+    serverValue: string[] | undefined | null,
+    clientValue: string[] | undefined
+  ): boolean {
+    if (!Array.isArray(serverValue)) serverValue = undefined
+    const normalizedServer = serverValue?.length ? serverValue : undefined
+    const normalizedClient = clientValue?.length ? clientValue : undefined
+    if (normalizedServer === undefined && normalizedClient === undefined) return true
+    if (normalizedServer === undefined || normalizedClient === undefined) return false
+    return (
+      JSON.stringify([...normalizedServer].sort()) === JSON.stringify([...normalizedClient].sort())
+    )
   }
 
   /** @internal */

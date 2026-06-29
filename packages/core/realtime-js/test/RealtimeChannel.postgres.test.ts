@@ -646,3 +646,137 @@ describe('PostgreSQL payload transformation', () => {
     expect(deletePayload.old).toStrictEqual({ id: 2, name: 'deleted' })
   })
 })
+
+describe('PostgreSQL select column filtering', () => {
+  test('should include select in subscription payload sent to server', () => {
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'users', select: ['id', 'name'] },
+      vi.fn()
+    )
+
+    expect(channel.bindings.postgres_changes[0].filter.select).toStrictEqual(['id', 'name'])
+  })
+
+  test('should successfully subscribe when server echoes back matching select', async () => {
+    const callbackSpy = vi.fn()
+
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'users', select: ['id', 'name'] },
+      callbackSpy
+    )
+
+    channel.subscribe()
+
+    const serverResponse = {
+      postgres_changes: [
+        { event: 'INSERT', schema: 'public', table: 'users', select: ['id', 'name'], id: 'srv-1' },
+      ],
+    }
+
+    testSetup.mockServer.emit('message', phxJoinReply(channel, serverResponse))
+
+    await waitForChannelSubscribed(channel)
+    expect(channel.bindings.postgres_changes[0].id).toBe('srv-1')
+  })
+
+  test('should match select regardless of column order', async () => {
+    const callbackSpy = vi.fn()
+
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'users', select: ['name', 'id'] },
+      callbackSpy
+    )
+
+    channel.subscribe()
+
+    const serverResponse = {
+      postgres_changes: [
+        { event: 'INSERT', schema: 'public', table: 'users', select: ['id', 'name'], id: 'srv-1' },
+      ],
+    }
+
+    testSetup.mockServer.emit('message', phxJoinReply(channel, serverResponse))
+
+    await waitForChannelSubscribed(channel)
+    expect(channel.bindings.postgres_changes[0].id).toBe('srv-1')
+  })
+
+  test('should error when server rejects join due to invalid select column', async () => {
+    const errorCallbackSpy = vi.fn()
+
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'users', select: ['nonexistent_column'] },
+      vi.fn()
+    )
+
+    channel.subscribe(errorCallbackSpy)
+
+    testSetup.mockServer.emit(
+      'message',
+      phxJoinReply(channel, 'column nonexistent_column does not exist', 'error')
+    )
+
+    expect(errorCallbackSpy).toHaveBeenCalledWith('CHANNEL_ERROR', expect.any(Error))
+    expect(channel.state).toBe(CHANNEL_STATES.errored)
+  })
+
+  test('should match when both client and server omit select', async () => {
+    const callbackSpy = vi.fn()
+
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'users' },
+      callbackSpy
+    )
+
+    channel.subscribe()
+
+    const serverResponse = {
+      postgres_changes: [{ event: 'INSERT', schema: 'public', table: 'users', id: 'srv-1' }],
+    }
+
+    testSetup.mockServer.emit('message', phxJoinReply(channel, serverResponse))
+
+    await waitForChannelSubscribed(channel)
+    expect(channel.bindings.postgres_changes[0].id).toBe('srv-1')
+  })
+
+  test('should receive only selected columns in payload', () => {
+    const callbackSpy = vi.fn()
+
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'users', select: ['id', 'name'] },
+      callbackSpy
+    )
+    channel.bindings.postgres_changes[0].id = 'srv-1'
+
+    channel.channelAdapter.getChannel().trigger(
+      'postgres_changes',
+      {
+        ids: ['srv-1'],
+        data: {
+          type: 'INSERT',
+          schema: 'public',
+          table: 'users',
+          commit_timestamp: '2023-01-01T00:00:00Z',
+          errors: [],
+          columns: [
+            { name: 'id', type: 'int4' },
+            { name: 'name', type: 'text' },
+          ],
+          record: { id: 1, name: 'Alice' },
+        },
+      },
+      '1'
+    )
+
+    expect(callbackSpy).toHaveBeenCalledTimes(1)
+    const payload = callbackSpy.mock.calls[0][0]
+    expect(payload.new).toStrictEqual({ id: 1, name: 'Alice' })
+  })
+})
