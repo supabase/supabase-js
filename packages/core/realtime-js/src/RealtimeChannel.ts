@@ -501,7 +501,7 @@ export default class RealtimeChannel {
         event: 'track',
         payload,
       },
-      opts.timeout || this.timeout
+      opts
     )
   }
 
