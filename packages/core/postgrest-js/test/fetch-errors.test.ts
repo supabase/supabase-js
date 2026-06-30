@@ -133,7 +133,34 @@ describe('Fetch error handling', () => {
     // When no cause, details should still have the stack trace
     expect(res.error!.details).toBeTruthy()
   })
+  // Browser environments (Chrome/Edge/Firefox/Safari) surface DNS failures as a plain
+  // TypeError with no `cause` and no error code.  The message varies by browser.
+  const browserDnsMessages = [
+    ['Chrome/Edge', 'Failed to fetch'],
+    ['Firefox', 'NetworkError when attempting to fetch resource.'],
+    ['Safari', 'Load failed'],
+  ]
 
+  test.each(browserDnsMessages)(
+    'should surface a helpful hint for %s DNS failure (%s)',
+    async (_browser, msg) => {
+      const mockFetch = jest.fn().mockRejectedValue(new TypeError(msg))
+
+      const postgrest = new PostgrestClient<Database>('https://nonexistent-project.supabase.co', {
+        fetch: mockFetch as any,
+      })
+
+      const res = await postgrest.from('users').select()
+
+      expect(res.error).toBeTruthy()
+      expect(res.data).toBeNull()
+      expect(res.status).toBe(0)
+      expect(res.error!.message).toContain(msg)
+      expect(res.error!.hint).toContain('DNS resolution failure')
+      expect(res.error!.hint).toContain('SUPABASE_URL')
+      expect(res.error!.hint).toContain('status.supabase.com')
+    }
+  )
   test('should handle generic errors without code', async () => {
     // Simulate a generic error
     const mockFetch = jest.fn().mockRejectedValue(new Error('Something went wrong'))
