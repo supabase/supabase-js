@@ -313,22 +313,6 @@ export default class RealtimeClient {
       this.socketAdapter.connect()
     } catch (error) {
       const errorMessage = (error as Error).message
-
-      // Provide helpful error message based on environment
-      if (errorMessage.includes('Node.js')) {
-        throw new Error(
-          `${errorMessage}\n\n` +
-            'To use Realtime in Node.js, you need to provide a WebSocket implementation:\n\n' +
-            'Option 1: Use Node.js 22+ which has native WebSocket support\n' +
-            'Option 2: Install and provide the "ws" package:\n\n' +
-            '  npm install ws\n\n' +
-            '  import ws from "ws"\n' +
-            '  const client = new RealtimeClient(url, {\n' +
-            '    ...options,\n' +
-            '    transport: ws\n' +
-            '  })'
-        )
-      }
       throw new Error(`WebSocket not available: ${errorMessage}`)
     }
 

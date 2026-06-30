@@ -10,10 +10,6 @@
 import { asymmetricClient, DOCKER_URLS } from './clients'
 import { mockUserCredentials } from '../lib/utils'
 
-// Check Node version for crypto.subtle support
-const nodeVersion = parseInt(process.version.slice(1).split('.')[0], 10)
-const isNodeHigherThan18 = nodeVersion > 18
-
 describe('Docker: Asymmetric JWT (RS256)', () => {
   test('getClaims fetches JWKS to verify asymmetric jwt', async () => {
     const fetchedUrls: any[] = []
@@ -43,24 +39,15 @@ describe('Docker: Asymmetric JWT (RS256)', () => {
     expect(error).toBeNull()
     expect(data?.claims.email).toEqual(user?.email)
 
-    // node 18 doesn't support crypto.subtle API by default
-    if (isNodeHigherThan18) {
-      expect(fetchedUrls).toContain(
-        DOCKER_URLS.SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON + '/.well-known/jwks.json'
-      )
-    }
+    expect(fetchedUrls).toContain(
+      DOCKER_URLS.SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON + '/.well-known/jwks.json'
+    )
 
     // contains the response for getSession and fetchJwk
     expect(fetchedResponse).toHaveLength(2)
   })
 
   test('getClaims should return error for Invalid JWT signature (mocked verify)', async () => {
-    // node 18 doesn't support crypto.subtle API by default
-    if (!isNodeHigherThan18) {
-      console.warn('Skipping test due to Node version <= 18')
-      return
-    }
-
     const { email, password } = mockUserCredentials()
     const { data: signUpData, error: signUpError } = await asymmetricClient.signUp({
       email,

@@ -162,63 +162,19 @@ describe('WebSocketFactory', () => {
 
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('unsupported')
-      // NaN from parseInt('invalid') makes nodeVersion < 22 true
-      expect(env.error).toContain('detected without native WebSocket support')
+      expect(env.error).toContain('Node.js detected but native WebSocket not found')
     })
 
-    test('should handle Node.js version without v prefix', () => {
-      global.process = { versions: { node: '18.0.0' } } as any
-      delete global.WebSocket
-      delete (globalThis as any).WebSocket
-
-      const env = (WebSocketFactory as any).detectEnvironment()
-      expect(env.type).toBe('unsupported')
-      expect(env.error).toContain('Node.js 18 detected without native WebSocket support')
-    })
-
-    test('should correctly detect Node.js 16', () => {
-      global.process = { versions: { node: 'v16.14.0' } } as any
-      delete global.WebSocket
-      delete (globalThis as any).WebSocket
-
-      const env = (WebSocketFactory as any).detectEnvironment()
-      expect(env.type).toBe('unsupported')
-      expect(env.error).toContain('Node.js 16 detected without native WebSocket support')
-      expect(env.workaround).toContain('ws')
-    })
-
-    test('should correctly detect Node.js 18', () => {
-      global.process = { versions: { node: 'v18.0.0' } } as any
-      delete global.WebSocket
-      delete (globalThis as any).WebSocket
-
-      const env = (WebSocketFactory as any).detectEnvironment()
-      expect(env.type).toBe('unsupported')
-      expect(env.error).toContain('Node.js 18 detected without native WebSocket support')
-      expect(env.workaround).toContain('ws')
-    })
-
-    test('should correctly detect Node.js 20', () => {
-      global.process = { versions: { node: 'v20.0.0' } } as any
-      delete global.WebSocket
-      delete (globalThis as any).WebSocket
-
-      const env = (WebSocketFactory as any).detectEnvironment()
-      expect(env.type).toBe('unsupported')
-      expect(env.error).toContain('Node.js 20 detected without native WebSocket support')
-      expect(env.workaround).toContain('ws')
-    })
-
-    test('should correctly detect Node.js 22 without WebSocket', () => {
+    test('should detect Node.js without native WebSocket', () => {
       global.process = { versions: { node: 'v22.0.0' } } as any
       delete global.WebSocket
       delete (globalThis as any).WebSocket
 
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('unsupported')
-      expect(env.error).toContain('Node.js 22 detected but native WebSocket not found')
+      expect(env.error).toContain('Node.js detected but native WebSocket not found')
       expect(env.workaround).toContain(
-        'Provide a WebSocket implementation via the transport option'
+        'Ensure you are running Node.js 22+ or provide a WebSocket implementation via the transport option'
       )
     })
 
@@ -254,7 +210,7 @@ describe('WebSocketFactory', () => {
 
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('unsupported')
-      expect(env.error).toContain('Node.js 18')
+      expect(env.error).toContain('Node.js detected')
     })
   })
 
@@ -263,23 +219,20 @@ describe('WebSocketFactory', () => {
       delete global.WebSocket
       delete (globalThis as any).WebSocket
       delete (global as any).WebSocket
-      global.process = { versions: { node: '14.0.0' } } as any
+      global.process = { versions: { node: '22.0.0' } } as any
     })
 
-    test('detects missing native WebSocket in Node.js < 22', () => {
+    test('detects missing native WebSocket in Node.js', () => {
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('unsupported')
-      expect(env.error).toContain('Node.js 14 detected without native WebSocket support')
-      expect(env.workaround).toContain(
-        'install "ws" package and provide it via the transport option'
-      )
+      expect(env.error).toContain('Node.js detected but native WebSocket not found')
     })
 
     test('provides helpful error message for Node.js users', () => {
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('unsupported')
-      expect(env.workaround).toContain('import ws from "ws"')
-      expect(env.workaround).toContain('transport: ws')
+      expect(env.workaround).toContain('Node.js 22+')
+      expect(env.workaround).toContain('transport option')
     })
   })
 
@@ -303,9 +256,9 @@ describe('WebSocketFactory', () => {
       // Node.js 22+ without native WebSocket (shouldn't happen in practice)
       const env = (WebSocketFactory as any).detectEnvironment()
       expect(env.type).toBe('unsupported')
-      expect(env.error).toContain('Node.js 22 detected but native WebSocket not found')
+      expect(env.error).toContain('Node.js detected but native WebSocket not found')
       expect(env.workaround).toContain(
-        'Provide a WebSocket implementation via the transport option'
+        'Ensure you are running Node.js 22+ or provide a WebSocket implementation via the transport option'
       )
     })
   })
@@ -437,13 +390,14 @@ describe('WebSocketFactory', () => {
       // Test Node.js environment
       ;(WebSocketFactory as any).detectEnvironment = () => ({
         type: 'unsupported',
-        error: 'Node.js 18 detected without native WebSocket support.',
-        workaround: 'install "ws" package',
+        error: 'Node.js detected but native WebSocket not found.',
+        workaround:
+          'Ensure you are running Node.js 22+ or provide a WebSocket implementation via the transport option.',
       })
 
       const nodeEnv = (WebSocketFactory as any).detectEnvironment()
       expect(nodeEnv.type).toBe('unsupported')
-      expect(nodeEnv.error).toContain('Node.js 18 detected')
+      expect(nodeEnv.error).toContain('Node.js detected')
 
       // Restore original method
       ;(WebSocketFactory as any).detectEnvironment = originalDetectEnvironment
@@ -508,19 +462,6 @@ describe('WebSocketFactory', () => {
       const originalDetectEnvironment = (WebSocketFactory as any).detectEnvironment
       ;(WebSocketFactory as any).detectEnvironment = () => ({
         type: 'native',
-        constructor: class MockWebSocket {},
-      })
-
-      expect(WebSocketFactory.isWebSocketSupported()).toBe(true)
-
-      // Restore original method
-      ;(WebSocketFactory as any).detectEnvironment = originalDetectEnvironment
-    })
-
-    test('should return true for ws package support', () => {
-      const originalDetectEnvironment = (WebSocketFactory as any).detectEnvironment
-      ;(WebSocketFactory as any).detectEnvironment = () => ({
-        type: 'ws',
         constructor: class MockWebSocket {},
       })
 
