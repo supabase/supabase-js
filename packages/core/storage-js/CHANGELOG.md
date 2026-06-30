@@ -1,3 +1,20 @@
+## 2.109.0 (2026-06-30)
+
+### 🚀 Features
+
+- **storage:** expose purgeCache for buckets and single objects ([#2429](https://github.com/supabase/supabase-js/pull/2429))
+
+### 🩹 Fixes
+
+- **storage:** keep sortBy defaults when list() is given a partial sortBy ([#2454](https://github.com/supabase/supabase-js/pull/2454))
+
+### ❤️ Thank You
+
+- Anubhav Anand @i-anubhav-anand
+- Katerina Skroumpelou @mandarini
+- Lenny
+- Rodrigo Mansueli @mansueli
+
 ## 2.108.2 (2026-06-15)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
