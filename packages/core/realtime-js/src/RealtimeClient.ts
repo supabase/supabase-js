@@ -829,7 +829,8 @@ export default class RealtimeClient {
         break
       case VSN_2_0_0:
         defaultEncode = this.serializer.encode.bind(this.serializer)
-        defaultDecode = this.serializer.decode.bind(this.serializer)
+        defaultDecode = (rawPayload: ArrayBuffer | string, callback: Function) =>
+          this.serializer.decode(rawPayload, callback, this.log.bind(this))
         break
       default:
         throw new Error(`Unsupported serializer version: ${result.vsn}`)
