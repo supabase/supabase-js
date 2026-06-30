@@ -2273,3 +2273,98 @@ test('should not share state between operations on same query builder', async ()
   expect((q1 as any).url.toString()).toContain('status=eq.ONLINE')
   expect((q2 as any).url.toString()).toContain('status=eq.OFFLINE')
 })
+
+// HTTP/2 strips reason phrases (RFC 7540 §8.1.2.4), leaving statusText as "".
+// The following tests verify that the client falls back to the RFC 9110 reason phrase.
+
+test('falls back to reason phrase when HTTP/2 returns empty statusText for 201', async () => {
+  const customFetch = jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      ok: true,
+      status: 201,
+      statusText: '',
+      headers: { get: () => null },
+      text: () => Promise.resolve(JSON.stringify([{ id: 1 }])),
+    })
+  )
+
+  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+    fetch: customFetch,
+  })
+
+  const res = await postgrestWithCustomFetch.from('users').insert({ username: 'test' }).select()
+
+  expect(res.status).toBe(201)
+  expect(res.statusText).toBe('Created')
+})
+
+test('falls back to reason phrase when HTTP/2 returns empty statusText for 206', async () => {
+  const customFetch = jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      ok: true,
+      status: 206,
+      statusText: '',
+      headers: { get: () => null },
+      text: () => Promise.resolve(JSON.stringify([{ id: 1 }])),
+    })
+  )
+
+  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+    fetch: customFetch,
+  })
+
+  const res = await postgrestWithCustomFetch.from('users').select()
+
+  expect(res.status).toBe(206)
+  expect(res.statusText).toBe('Partial Content')
+})
+
+test('falls back to reason phrase when HTTP/2 returns empty statusText for 400', async () => {
+  const customFetch = jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      ok: false,
+      status: 400,
+      statusText: '',
+      headers: { get: () => null },
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            code: '42703',
+            details: null,
+            hint: null,
+            message: 'column "nonexistent" does not exist',
+          })
+        ),
+    })
+  )
+
+  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+    fetch: customFetch,
+  })
+
+  const res = await postgrestWithCustomFetch.from('users').select('nonexistent')
+
+  expect(res.status).toBe(400)
+  expect(res.statusText).toBe('Bad Request')
+})
+
+test('preserves non-empty statusText when provided by the server', async () => {
+  const customFetch = jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => null },
+      text: () => Promise.resolve('[]'),
+    })
+  )
+
+  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+    fetch: customFetch,
+  })
+
+  const res = await postgrestWithCustomFetch.from('users').select()
+
+  expect(res.status).toBe(200)
+  expect(res.statusText).toBe('OK')
+})
