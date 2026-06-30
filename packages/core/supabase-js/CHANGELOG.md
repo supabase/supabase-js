@@ -1,3 +1,13 @@
+## 2.109.0 (2026-06-30)
+
+### 🩹 Fixes
+
+- **realtime:** pin @supabase/phoenix and browser test CDN deps ([#2457](https://github.com/supabase/supabase-js/pull/2457))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.108.2 (2026-06-15)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.

@@ -1,3 +1,19 @@
+## 2.109.0 (2026-06-30)
+
+### 🚀 Features
+
+- **realtime:** add postgres_changes filter builder, new operators and select ([#2463](https://github.com/supabase/supabase-js/pull/2463))
+
+### 🩹 Fixes
+
+- **realtime:** add replication connection system message option ([#2470](https://github.com/supabase/supabase-js/pull/2470))
+- **realtime:** pin @supabase/phoenix and browser test CDN deps ([#2457](https://github.com/supabase/supabase-js/pull/2457))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+- Katerina Skroumpelou @mandarini
+
 ## 2.108.2 (2026-06-15)
 
 ### 🩹 Fixes

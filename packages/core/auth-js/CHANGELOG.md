@@ -1,3 +1,14 @@
+## 2.109.0 (2026-06-30)
+
+### 🚀 Features
+
+- **auth:** add custom_claims_allowlist to custom providers admin API ([#2473](https://github.com/supabase/supabase-js/pull/2473))
+
+### ❤️ Thank You
+
+- Cemal Kılıç @cemalkilic
+- Claude Opus 4.8 (1M context)
+
 ## 2.108.2 (2026-06-15)
 
 ### 🩹 Fixes

@@ -1,3 +1,13 @@
+## 2.109.0 (2026-06-30)
+
+### 🩹 Fixes
+
+- **functions:** honor a caller's Content-Type override regardless of casing ([#2455](https://github.com/supabase/supabase-js/pull/2455))
+
+### ❤️ Thank You
+
+- Anubhav Anand @i-anubhav-anand
+
 ## 2.108.2 (2026-06-15)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
