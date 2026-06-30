@@ -58,7 +58,7 @@ describe('Additional Coverage Tests', () => {
 
       expect(() => {
         socketWithoutTransport.connect()
-      }).toThrow(/To use Realtime in Node.js, you need to provide a WebSocket implementation/)
+      }).toThrow(/WebSocket not available/)
     })
   })
 

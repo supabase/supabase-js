@@ -32,12 +32,16 @@
 
 ## Requirements
 
-- **Node.js 20 or later** (Node.js 18 support dropped as of October 31, 2025)
+- **Node.js 22 or later** (Node.js 20 support dropped in v2.110.0)
 - For browser support, all modern browsers are supported
 
 > ⚠️ **Node.js 18 Deprecation Notice**
 >
 > Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped on October 31, 2025.
+
+> ⚠️ **Node.js 20 Deprecation Notice**
+>
+> Node.js 20 reached end-of-life on April 30, 2026. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/45715), support for Node.js 20 was dropped in v2.110.0.
 
 ## Quick start
 

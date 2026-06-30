@@ -74,7 +74,7 @@ describe('Node.js deprecation warning', () => {
     require('../../src/index')
 
     expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Node.js 18 and below are deprecated')
+      expect.stringContaining('Node.js 20 and below are deprecated')
     )
   })
 
@@ -88,11 +88,11 @@ describe('Node.js deprecation warning', () => {
     require('../../src/index')
 
     expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Node.js 18 and below are deprecated')
+      expect.stringContaining('Node.js 20 and below are deprecated')
     )
   })
 
-  it('should not show warning for Node.js 20', () => {
+  it('should show warning for Node.js 20', () => {
     Object.defineProperty(global.process, 'version', {
       value: 'v20.0.0',
       configurable: true,
@@ -101,7 +101,9 @@ describe('Node.js deprecation warning', () => {
 
     require('../../src/index')
 
-    expect(console.warn).not.toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Node.js 20 and below are deprecated')
+    )
   })
 
   it('should not show warning for Node.js 22', () => {

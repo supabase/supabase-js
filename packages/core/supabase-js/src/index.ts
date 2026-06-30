@@ -69,7 +69,7 @@ export const createClient = <
   )
 }
 
-// Check for Node.js <= 18 deprecation
+// Check for Node.js <= 20 deprecation
 function shouldShowDeprecationWarning(): boolean {
   // Skip in browser environments
   if (typeof window !== 'undefined') {
@@ -94,13 +94,13 @@ function shouldShowDeprecationWarning(): boolean {
   }
 
   const majorVersion = parseInt(versionMatch[1], 10)
-  return majorVersion <= 18
+  return majorVersion <= 20
 }
 
 if (shouldShowDeprecationWarning()) {
   console.warn(
-    `⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. ` +
-      `Please upgrade to Node.js 20 or later. ` +
-      `For more information, visit: https://github.com/orgs/supabase/discussions/37217`
+    `⚠️  Node.js 20 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. ` +
+      `Please upgrade to Node.js 22 or later. ` +
+      `For more information, visit: https://github.com/orgs/supabase/discussions/45715`
   )
 }
