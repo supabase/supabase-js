@@ -1,3 +1,13 @@
+## 2.110.0 (2026-06-30)
+
+### 🚀 Features
+
+- **repo:** drop Node.js 20 support ([#2482](https://github.com/supabase/supabase-js/pull/2482))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.109.0 (2026-06-30)
 
 ### 🩹 Fixes
