@@ -8,6 +8,6 @@ permissions:
 
 jobs:
   validate:
-    uses: supabase/sdk/.github/workflows/validate-sdk-compliance.yml@main
+    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-javascript.yml@main
     with:
-      language: javascript
+      typedoc-packages: packages/core/auth-js,packages/core/functions-js,packages/core/postgrest-js,packages/core/realtime-js,packages/core/storage-js,packages/core/supabase-js
