@@ -13,6 +13,14 @@ import { normalizeChannelError } from './lib/normalizeChannelError'
 import ChannelAdapter from './phoenix/channelAdapter'
 import { ChannelBindingCallback, ChannelOnErrorCallback } from './phoenix/types'
 import type { Timer } from './phoenix/types'
+import { RealtimePostgresFilterBuilder } from './RealtimePostgresFilterBuilder'
+import type { RealtimePostgresChangesFilterOperator } from './RealtimePostgresFilterBuilder'
+
+export type { RealtimePostgresChangesFilterOperator } from './RealtimePostgresFilterBuilder'
+export {
+  RealtimePostgresFilterBuilder,
+  postgresChangesFilter,
+} from './RealtimePostgresFilterBuilder'
 
 type ReplayOption = {
   since: number
@@ -130,9 +138,45 @@ export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES
    */
   table?: string
   /**
-   * Receive database changes when filter is matched.
+   * Receive database changes only when the filter is matched.
+   *
+   * A filter is a `column=operator.value` expression, e.g. `id=eq.1` or
+   * `title=like.%foo%`. See {@link RealtimePostgresChangesFilterOperator} for
+   * the available operators.
+   *
+   * Multiple filters can be combined with commas; they are applied as an `AND`
+   * condition: `filter: 'id=gt.0,id=lt.100'`.
+   *
+   * Any operator can be negated with the `not.` prefix: `filter: 'status=not.in.(draft,archived)'`.
+   *
+   * The server splits conditions on commas outside quotes/parentheses. To
+   * include a reserved character (`,`, `(`, `)`) in a value, wrap it in double
+   * quotes PostgREST-style: `name=eq."a,b"`. The {@link RealtimePostgresFilterBuilder}
+   * does this quoting for you.
+   *
+   * Instead of a raw string you can pass a {@link RealtimePostgresFilterBuilder}
+   * (via `postgresChangesFilter()`) for a type-checked, ergonomic way to compose filters; the
+   * SDK serializes it to a string automatically.
    */
-  filter?: string
+  filter?: string | RealtimePostgresFilterBuilder
+  /**
+   * Restrict the change payload to a subset of columns instead of receiving the
+   * full row. Reduces payload size (helpful for large `bytea`/`jsonb` columns)
+   * and the data transferred per event.
+   *
+   * The listed columns must be selectable by the subscribing role.
+   *
+   * @example
+   * channel.on('postgres_changes', {
+   *   event: '*',
+   *   schema: 'public',
+   *   table: 'users',
+   *   select: ['id', 'first_name'],
+   * }, (payload) => {
+   *   // payload.new only contains { id, first_name }
+   * })
+   */
+  select?: string[]
 }
 
 export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'error' | (string & {})
@@ -185,6 +229,7 @@ type PostgresChangesFilters = {
     schema?: string
     table?: string
     filter?: string
+    select?: string[]
   }[]
 }
 
@@ -788,7 +833,7 @@ export default class RealtimeChannel {
    */
   on(
     type: `${REALTIME_LISTEN_TYPES}`,
-    filter: { event: string; [key: string]: string },
+    filter: { event: string; [key: string]: any },
     callback: (payload: any) => void
   ): RealtimeChannel {
     const stateCheck = this.channelAdapter.isJoined() || this.channelAdapter.isJoining()
@@ -1059,6 +1104,20 @@ export default class RealtimeChannel {
   /** @internal */
   _on(type: string, filter: { [key: string]: any }, callback: ChannelBindingCallback) {
     const typeLower = type.toLocaleLowerCase()
+
+    // Serialize a postgres_changes filter builder into its string form so the
+    // rest of the pipeline (join payload, server binding match) sees a string.
+    // Duck-type `build()` in addition to `instanceof` so a builder constructed
+    // against a duplicate copy of the package (separate module realm) still works.
+    const filterValue = filter?.filter
+    if (
+      filterValue instanceof RealtimePostgresFilterBuilder ||
+      (typeof filterValue === 'object' &&
+        filterValue !== null &&
+        typeof (filterValue as { build?: unknown }).build === 'function')
+    ) {
+      filter = { ...filter, filter: (filterValue as RealtimePostgresFilterBuilder).build() }
+    }
 
     const ref = this.channelAdapter.on(type, callback)
 
