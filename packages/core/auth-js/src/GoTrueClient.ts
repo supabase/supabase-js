@@ -4204,6 +4204,18 @@ export default class GoTrueClient {
     data: { subscription: Subscription }
   } {
     const id: string | symbol = generateCallbackId()
+
+    if (callback.constructor.name === 'AsyncFunction') {
+      console.warn(
+        'onAuthStateChange: async callbacks are deprecated and can cause deadlocks. ' +
+          'Calling auth methods that trigger a token refresh (e.g. refreshSession) from inside a ' +
+          'TOKEN_REFRESHED handler will hang indefinitely because the refresh cannot complete ' +
+          'while its notification is still awaited. Move async work outside the callback using ' +
+          'setTimeout(() => { ... }, 0) or a non-async wrapper. ' +
+          'See https://github.com/supabase/supabase-js/issues/1401 for details.'
+      )
+    }
+
     const subscription: Subscription = {
       id,
       callback,
