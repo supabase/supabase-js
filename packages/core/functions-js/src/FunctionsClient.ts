@@ -205,6 +205,7 @@ export class FunctionsClient {
   ): Promise<FunctionsResponse<T>> {
     let timeoutId: ReturnType<typeof setTimeout> | undefined
     let timeoutController: AbortController | undefined
+    let onAbort: (() => void) | undefined
 
     try {
       const { headers, method, body: functionArgs, signal, timeout } = options
@@ -269,8 +270,10 @@ export class FunctionsClient {
         // If user provided their own signal, we need to respect both
         if (signal) {
           effectiveSignal = timeoutController.signal
-          // If the user's signal is aborted, abort our timeout controller too
-          signal.addEventListener('abort', () => timeoutController!.abort())
+          // If the user's signal is aborted, abort our timeout controller too.
+          // Store the listener so we can clean it up in finally.
+          onAbort = () => timeoutController!.abort()
+          signal.addEventListener('abort', onAbort)
         } else {
           effectiveSignal = timeoutController.signal
         }
@@ -330,6 +333,11 @@ export class FunctionsClient {
       // Clear the timeout if it was set
       if (timeoutId) {
         clearTimeout(timeoutId)
+      }
+      // Remove the cross-signal listener to prevent memory leaks when the caller
+      // reuses the same AbortSignal across multiple invocations.
+      if (onAbort) {
+        options.signal?.removeEventListener('abort', onAbort)
       }
     }
   }
