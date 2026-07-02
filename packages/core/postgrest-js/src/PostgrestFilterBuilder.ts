@@ -1016,7 +1016,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `cs.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(column, `cs.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `cs.{${value.map(toPostgrestArrayLiteral).join(',')}}`)
     } else {
       // json
       this.url.searchParams.append(column, `cs.${JSON.stringify(value)}`)
@@ -1165,7 +1165,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `cd.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(column, `cd.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `cd.{${value.map(toPostgrestArrayLiteral).join(',')}}`)
     } else {
       // json
       this.url.searchParams.append(column, `cd.${JSON.stringify(value)}`)
@@ -1592,7 +1592,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `ov.${value}`)
     } else {
       // array
-      this.url.searchParams.append(column, `ov.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `ov.{${value.map(toPostgrestArrayLiteral).join(',')}}`)
     }
     return this
   }
@@ -2187,4 +2187,20 @@ export default class PostgrestFilterBuilder<
     this.url.searchParams.append(column, `${operator}.${value}`)
     return this
   }
+}
+
+/**
+ * Serializes one element of a Postgres array literal. String elements that
+ * contain a reserved character (comma, brace, double quote or backslash) or
+ * that have surrounding whitespace must be double quoted so the server reads
+ * them as a single element. Other values are emitted as is.
+ */
+function toPostgrestArrayLiteral(element: unknown): string {
+  if (
+    typeof element === 'string' &&
+    (/[,{}"\\]/.test(element) || /^\s|\s$/.test(element))
+  ) {
+    return `"${element.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  }
+  return `${element}`
 }
