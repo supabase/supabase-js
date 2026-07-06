@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["es2022", "dom"],
+    "paths": {
+      "@supabase/auth-js": ["../auth-js/src/index.ts"],
+      "@supabase/functions-js": ["../functions-js/src/index.ts"],
+      "@supabase/postgrest-js": ["../postgrest-js/src/index.ts"],
+      "@supabase/realtime-js": ["../realtime-js/src/index.ts"],
+      "@supabase/storage-js": ["../storage-js/src/index.ts"],
+      "@supabase/tracing": ["../../shared/tracing/src/index.ts"]
+    }
+  },
+  "references": []
+}
