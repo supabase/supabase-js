@@ -123,6 +123,11 @@ test('createClient with auth.experimental.passkey enables the admin passkey API'
 // surfaces both the production code AND these tests together so the
 // removal is mechanical.
 
+test('createClient should preserve the default auth.lockAcquireTimeout when unset', () => {
+  const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey')
+  expect((supa.auth as unknown as { lockAcquireTimeout: number }).lockAcquireTimeout).toBe(5000)
+})
+
 test('_initSupabaseAuthClient should pass through lockAcquireTimeout option', () => {
   const client = new SupabaseClient('https://example.supabase.com', 'supabaseKey')
   const authClient = client['_initSupabaseAuthClient'](

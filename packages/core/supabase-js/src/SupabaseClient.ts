@@ -615,7 +615,7 @@ export default class SupabaseClient<
       throwOnError,
       experimental,
       fetch,
-      lockAcquireTimeout,
+      ...(lockAcquireTimeout !== undefined ? { lockAcquireTimeout } : {}),
       skipAutoInitialize,
       // auth checks if there is a custom authorizaiton header using this flag
       // so it knows whether to return an error when getUser is called with no session
