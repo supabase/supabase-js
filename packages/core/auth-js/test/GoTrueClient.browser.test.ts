@@ -978,6 +978,27 @@ describe('Session Management Tests', () => {
     expect(client).toBeDefined()
   })
 
+  it('should remove corrupted storage value when stored session is a JSON primitive', async () => {
+    // JSON.parse('"corrupted"') returns the string "corrupted", not a Session
+    const mockStorage = {
+      getItem: jest.fn().mockResolvedValue('"corrupted"'),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+
+    const client = new (require('../src/GoTrueClient').default)({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage: mockStorage,
+    })
+
+    await client.initialize()
+
+    // The corrupted value should be removed
+    expect(mockStorage.removeItem).toHaveBeenCalled()
+  })
+
   it('should handle session with invalid tokens', async () => {
     const mockSession = {
       access_token: '',

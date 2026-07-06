@@ -3165,6 +3165,69 @@ describe('Auto Refresh', () => {
       expect(errorSpy).not.toHaveBeenCalled()
       errorSpy.mockRestore()
     })
+
+    test('should remove corrupted storage value when stored session is a JSON string primitive', async () => {
+      const storageKey = 'test-corrupted-string-session'
+      // JSON.parse('"hello"') succeeds and returns the string "hello" —
+      // a valid JSON value but not a session object.
+      const storage = memoryLocalStorageAdapter({
+        [storageKey]: '"hello"',
+      })
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        storageKey,
+      })
+
+      // Should not throw
+      // @ts-expect-error 'Allow access to private _recoverAndRefresh'
+      await client._recoverAndRefresh()
+
+      // The corrupted value should be removed
+      const storedValue = await storage.getItem(storageKey)
+      expect(storedValue).toBeNull()
+    })
+
+    test('should remove corrupted storage value when stored session is a JSON number', async () => {
+      const storageKey = 'test-corrupted-number-session'
+      const storage = memoryLocalStorageAdapter({
+        [storageKey]: '123',
+      })
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        storageKey,
+      })
+
+      // @ts-expect-error 'Allow access to private _recoverAndRefresh'
+      await client._recoverAndRefresh()
+
+      const storedValue = await storage.getItem(storageKey)
+      expect(storedValue).toBeNull()
+    })
+
+    test('should not call _removeSession when no session exists in storage', async () => {
+      const storageKey = 'test-no-session-exists'
+      const storage = memoryLocalStorageAdapter({})
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        storageKey,
+      })
+
+      // @ts-expect-error 'Allow access to private _recoverAndRefresh'
+      await client._recoverAndRefresh()
+
+      // No error, no cleanup needed — storage should remain as-is
+      const storedValue = await storage.getItem(storageKey)
+      expect(storedValue).toBeNull()
+    })
   })
 
   test('should handle auto refresh start/stop multiple times', async () => {

@@ -4715,6 +4715,17 @@ export default class GoTrueClient {
     try {
       const currentSession = (await getItemAsync(this.storage, this.storageKey)) as Session | null
 
+      this._debug(debugName, 'session from storage', currentSession)
+
+      if (!this._isValidSession(currentSession)) {
+        this._debug(debugName, 'session is not valid')
+        if (currentSession !== null) {
+          await this._removeSession()
+        }
+
+        return
+      }
+
       if (currentSession && this.userStorage) {
         let maybeUser: { user: User | null } | null = (await getItemAsync(
           this.userStorage,
@@ -4752,17 +4763,6 @@ export default class GoTrueClient {
             currentSession.user = userNotAvailableProxy()
           }
         }
-      }
-
-      this._debug(debugName, 'session from storage', currentSession)
-
-      if (!this._isValidSession(currentSession)) {
-        this._debug(debugName, 'session is not valid')
-        if (currentSession !== null) {
-          await this._removeSession()
-        }
-
-        return
       }
 
       const expiresWithMargin =
