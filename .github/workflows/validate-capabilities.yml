@@ -10,4 +10,8 @@ jobs:
   validate:
     uses: supabase/sdk/.github/workflows/validate-sdk-compliance-javascript.yml@main
     with:
-      typedoc-packages: packages/core/auth-js,packages/core/functions-js,packages/core/postgrest-js,packages/core/realtime-js,packages/core/storage-js,packages/core/supabase-js
+      build-command: |
+        corepack enable
+        pnpm install --frozen-lockfile
+        pnpm nx run-many --target=docs:json --output-style=stream
+      spec-glob: packages/core/*/docs/v2/spec.json
