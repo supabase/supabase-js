@@ -3814,7 +3814,6 @@ describe('initializePromise deadlock fix', () => {
     })
 
     // Track whether initializePromise was resolved at the time the callback ran.
-    // @ts-expect-error access protected for test
     let initResolvedDuringCallback = false
     client.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN') {
