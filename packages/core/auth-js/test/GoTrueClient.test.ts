@@ -3702,6 +3702,134 @@ describe('Lockless coordination (default) and legacy lock opt-in', () => {
   })
 })
 
+describe('initializePromise deadlock fix', () => {
+  // Regression tests for: getSession()/getUser() called from inside an
+  // onAuthStateChange callback that fires during _recoverAndRefresh().
+  // Before the fix, those methods awaited initializePromise which was still
+  // pending — causing a permanent circular deadlock.
+
+  const plantInitSession = async (
+    storage: ReturnType<typeof memoryLocalStorageAdapter>,
+    secondsUntilExpiry: number
+  ): Promise<Session> => {
+    const session: Session = {
+      access_token: 'jwt.accesstoken.signature',
+      refresh_token: 'refresh-token-init-test',
+      token_type: 'bearer',
+      expires_in: secondsUntilExpiry,
+      expires_at: Math.floor(Date.now() / 1000) + secondsUntilExpiry,
+      user: { id: 'user-init', email: 'init@example.com' } as any,
+    }
+    await setItemAsync(storage, STORAGE_KEY, session)
+    return session
+  }
+
+  const noDeadlock = (promise: Promise<unknown>) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('deadlock: promise did not settle within 2s')), 2000)
+      ),
+    ])
+
+  test('getSession() inside SIGNED_IN callback (valid session at init) resolves without deadlock', async () => {
+    const storage = memoryLocalStorageAdapter()
+    // 120s > EXPIRY_MARGIN_MS (90s): session is valid, no refresh needed.
+    // _recoverAndRefresh fires SIGNED_IN synchronously — the old code path
+    // that deadlocked.
+    await plantInitSession(storage, 120)
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storage,
+      autoRefreshToken: false,
+      persistSession: true,
+      skipAutoInitialize: true,
+    })
+
+    let sessionFromCallback: Session | null | undefined = undefined
+    client.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_IN') {
+        const { data } = await client.getSession()
+        sessionFromCallback = data.session
+      }
+    })
+
+    await expect(noDeadlock(client.initialize())).resolves.toBeDefined()
+    expect(sessionFromCallback).not.toBeUndefined()
+    expect(sessionFromCallback).not.toBeNull()
+  })
+
+  test('getSession() inside TOKEN_REFRESHED callback (near-expiry session at init) resolves without deadlock', async () => {
+    const storage = memoryLocalStorageAdapter()
+    // 60s < EXPIRY_MARGIN_MS (90s): triggers proactive refresh during init.
+    // _callRefreshToken fires TOKEN_REFRESHED — another deadlock path.
+    await plantInitSession(storage, 60)
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storage,
+      autoRefreshToken: true,
+      persistSession: true,
+      skipAutoInitialize: true,
+    })
+
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => ({
+      data: {
+        session: {
+          access_token: 'new.access.token',
+          refresh_token: 'new-refresh-token',
+          token_type: 'bearer',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          user: { id: 'user-init', email: 'init@example.com' } as any,
+        },
+      },
+      error: null,
+    }))
+
+    let sessionFromCallback: Session | null | undefined = undefined
+    client.onAuthStateChange(async (event) => {
+      if (event === 'TOKEN_REFRESHED') {
+        const { data } = await client.getSession()
+        sessionFromCallback = data.session
+      }
+    })
+
+    await expect(noDeadlock(client.initialize())).resolves.toBeDefined()
+    expect(sessionFromCallback).not.toBeUndefined()
+  })
+
+  test('initialize() fires SIGNED_IN after initializePromise resolves (getSession works in callback)', async () => {
+    const storage = memoryLocalStorageAdapter()
+    await plantInitSession(storage, 120)
+
+    const client = new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storage,
+      autoRefreshToken: false,
+      persistSession: true,
+      skipAutoInitialize: true,
+    })
+
+    // Track whether initializePromise was resolved at the time the callback ran.
+    // @ts-expect-error access protected for test
+    let initResolvedDuringCallback = false
+    client.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_IN') {
+        // @ts-expect-error access protected for test
+        initResolvedDuringCallback = client.initializePromise !== null
+      }
+    })
+
+    await noDeadlock(client.initialize())
+    // The SIGNED_IN callback ran after initializePromise was set (non-null),
+    // meaning it was already resolved when the callback executed.
+    expect(initResolvedDuringCallback).toBe(true)
+  })
+})
+
 describe('dispose() lifecycle', () => {
   test('idempotent: safe to call repeatedly', async () => {
     const client = new GoTrueClient({
