@@ -228,7 +228,7 @@ export type RequestResult<T, ErrorType extends Error = AuthError> =
 
 /**
  * similar to RequestResult except it allows you to destructure the possible shape of the success response
- *  {@see RequestResult}
+ *  {@link RequestResult}
  */
 export type RequestResultSafeDestructure<T> =
   | { data: T; error: null }
@@ -251,7 +251,7 @@ export type AuthResponsePassword = RequestResultSafeDestructure<{
 /**
  * AuthOtpResponse is returned when OTP is used.
  *
- * {@see AuthResponse}
+ * {@link AuthResponse}
  */
 export type AuthOtpResponse = RequestResultSafeDestructure<{
   user: null
@@ -407,7 +407,7 @@ type FactorVerificationStatus = (typeof FactorVerificationStatuses)[number]
  *
  * @see {@link GoTrueMFAApi#enroll}
  * @see {@link GoTrueMFAApi#listFactors}
- * @see {@link GoTrueMFAAdminApi#listFactors}
+ * @see {@link GoTrueAdminMFAApi#listFactors}
  */
 export type Factor<
   Type extends FactorType = FactorType,
@@ -1691,14 +1691,14 @@ export interface GoTrueMFAApi {
 }
 
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminDeleteFactorResponse = RequestResult<{
   /** ID of the factor that was successfully deleted. */
   id: string
 }>
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminDeleteFactorParams = {
   /** ID of the MFA factor to delete. */
@@ -1709,7 +1709,7 @@ export type AuthMFAAdminDeleteFactorParams = {
 }
 
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminListFactorsResponse = RequestResult<{
   /** All factors attached to the user. */
@@ -1717,7 +1717,7 @@ export type AuthMFAAdminListFactorsResponse = RequestResult<{
 }>
 
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminListFactorsParams = {
   /** ID of the user. */
@@ -1727,7 +1727,7 @@ export type AuthMFAAdminListFactorsParams = {
 /**
  * Contains the full multi-factor authentication administration API.
  *
- * @expermental
+ * @experimental
  */
 export interface GoTrueAdminMFAApi {
   /**
@@ -1769,7 +1769,7 @@ export interface GoTrueAdminMFAApi {
    *
    * @see {@link GoTrueMFAApi#unenroll}
    *
-   * @expermental
+   * @experimental
    *
    * @category Auth
    * @subcategory Auth Admin

@@ -102,14 +102,15 @@ export default class SupabaseClient<
    *
    * @param supabaseUrl The unique Supabase URL which is supplied when you create a new project in your project dashboard.
    * @param supabaseKey The unique Supabase Key which is supplied when you create a new project in your project dashboard.
-   * @param options.db.schema You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
-   * @param options.auth.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
-   * @param options.auth.persistSession Set to "true" if you want to automatically save the user session into local storage.
-   * @param options.auth.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
-   * @param options.realtime Options passed along to realtime-js constructor.
-   * @param options.storage Options passed along to the storage-js constructor.
-   * @param options.global.fetch A custom fetch implementation.
-   * @param options.global.headers Any additional headers to send with each network request.
+   * @param options Optional configuration for the client:
+   * - `db.schema` — You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
+   * - `auth.autoRefreshToken` — Set to `true` if you want to automatically refresh the token before expiring.
+   * - `auth.persistSession` — Set to `true` if you want to automatically save the user session into local storage.
+   * - `auth.detectSessionInUrl` — Set to `true` if you want to automatically detect OAuth grants in the URL and sign in the user.
+   * - `realtime` — Options passed along to the realtime-js constructor.
+   * - `storage` — Options passed along to the storage-js constructor.
+   * - `global.fetch` — A custom fetch implementation.
+   * - `global.headers` — Any additional headers to send with each network request.
    *
    * @example Creating a client
    * ```js
