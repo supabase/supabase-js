@@ -527,7 +527,7 @@ export default class RealtimeClient {
 
   /**
    * Sets a callback that receives lifecycle events for internal heartbeat messages.
-   * Useful for instrumenting connection health (e.g. sent/ok/timeout/disconnected).
+   * Useful for instrumenting connection health (e.g. sent/ok/timeout).
    *
    * @category Realtime
    */
@@ -714,6 +714,7 @@ export default class RealtimeClient {
   /** @internal */
   private _wrapHeartbeatCallback(heartbeatCallback?: HeartbeatCallback): HeartbeatCallback {
     return (status, latency) => {
+      if (status === 'disconnected') return
       if (status == 'sent') this._setAuthSafely()
       if (heartbeatCallback) heartbeatCallback(status, latency)
     }
