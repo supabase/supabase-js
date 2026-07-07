@@ -46,6 +46,7 @@
       "{projectRoot}/docs/**/*",
       "{projectRoot}/typedoc.json",
       "{projectRoot}/package.json",
+      "{workspaceRoot}/typedoc.base.mjs",
       "sharedGlobals"
     ],
     "buildConfig": [

@@ -36,8 +36,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage.enabled true --coverage.reporter=text",
-    "docs": "typedoc src/index.ts --out docs/v2",
-    "docs:json": "typedoc --json docs/v2/spec.json --excludeExternals src/index.ts",
+    "docs": "typedoc --options ../../../typedoc.base.mjs src/index.ts --out docs/v2",
+    "docs:json": "typedoc --options ../../../typedoc.base.mjs --json docs/v2/spec.json --excludeExternals src/index.ts",
     "check-exports": "attw --pack .",
     "test:ci": "vitest run --coverage"
   },

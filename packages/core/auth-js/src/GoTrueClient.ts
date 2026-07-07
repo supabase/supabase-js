@@ -2729,7 +2729,7 @@ export default class GoTrueClient {
    * to the client. If that storage is based on request cookies for example,
    * the values in it may not be authentic and therefore it's strongly advised
    * against using this method and its results in such circumstances. A warning
-   * will be emitted if this is detected. Use {@link #getUser()} instead.
+   * will be emitted if this is detected. Use {@link GoTrueClient.getUser} instead.
    *
    * @category Auth
    *
@@ -2898,7 +2898,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Use instead of {@link #getSession} inside the library. Loads the session
+   * Use instead of {@link GoTrueClient.getSession} inside the library. Loads the session
    * via `__loadSession` (which may trigger a refresh if the access token is
    * within the expiry margin) and runs `fn` with the result.
    */
@@ -2943,7 +2943,7 @@ export default class GoTrueClient {
   /**
    * NEVER USE DIRECTLY!
    *
-   * Always use {@link #_useSession}.
+   * Always use `_useSession`.
    */
   private async __loadSession(): Promise<
     | {
@@ -5165,8 +5165,8 @@ export default class GoTrueClient {
   /**
    * Removes any registered visibilitychange callback.
    *
-   * {@see #startAutoRefresh}
-   * {@see #stopAutoRefresh}
+   * {@link GoTrueClient.startAutoRefresh}
+   * {@link GoTrueClient.stopAutoRefresh}
    */
   private _removeVisibilityChangedCallback() {
     this._debug('#_removeVisibilityChangedCallback()')
@@ -5184,7 +5184,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * This is the private implementation of {@link #startAutoRefresh}. Use this
+   * This is the private implementation of {@link GoTrueClient.startAutoRefresh}. Use this
    * within the library.
    */
   private async _startAutoRefresh() {
@@ -5230,7 +5230,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * This is the private implementation of {@link #stopAutoRefresh}. Use this
+   * This is the private implementation of {@link GoTrueClient.stopAutoRefresh}. Use this
    * within the library.
    */
   private async _stopAutoRefresh() {
@@ -5271,7 +5271,7 @@ export default class GoTrueClient {
    * platform's foreground indication mechanism and call these methods
    * appropriately to conserve resources.
    *
-   * {@see #stopAutoRefresh}
+   * {@link GoTrueClient.stopAutoRefresh}
    *
    * @category Auth
    *
@@ -5306,7 +5306,7 @@ export default class GoTrueClient {
    * If you call this method any managed visibility change callback will be
    * removed and you must manage visibility changes on your own.
    *
-   * See {@link #startAutoRefresh} for more details.
+   * See {@link GoTrueClient.startAutoRefresh} for more details.
    *
    * @category Auth
    *
@@ -5628,7 +5628,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * {@see GoTrueMFAApi#enroll}
+   * {@link GoTrueMFAApi#enroll}
    */
   private async _enroll(params: MFAEnrollTOTPParams): Promise<AuthMFAEnrollTOTPResponse>
   private async _enroll(params: MFAEnrollPhoneParams): Promise<AuthMFAEnrollPhoneResponse>
@@ -5675,7 +5675,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * {@see GoTrueMFAApi#verify}
+   * {@link GoTrueMFAApi#verify}
    */
   private async _verify(params: MFAVerifyTOTPParams): Promise<AuthMFAVerifyResponse>
   private async _verify(params: MFAVerifyPhoneParams): Promise<AuthMFAVerifyResponse>
@@ -5764,7 +5764,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * {@see GoTrueMFAApi#challenge}
+   * {@link GoTrueMFAApi#challenge}
    */
   private async _challenge(
     params: MFAChallengeTOTPParams
@@ -5859,7 +5859,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * {@see GoTrueMFAApi#challengeAndVerify}
+   * {@link GoTrueMFAApi#challengeAndVerify}
    */
   private async _challengeAndVerify(
     params: MFAChallengeAndVerifyParams
@@ -5879,7 +5879,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * {@see GoTrueMFAApi#listFactors}
+   * {@link GoTrueMFAApi#listFactors}
    */
   private async _listFactors(): Promise<AuthMFAListFactorsResponse> {
     const {
@@ -5912,7 +5912,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * {@see GoTrueMFAApi#getAuthenticatorAssuranceLevel}
+   * {@link GoTrueMFAApi#getAuthenticatorAssuranceLevel}
    */
   private async _getAuthenticatorAssuranceLevel(
     jwt?: string
@@ -6260,15 +6260,15 @@ export default class GoTrueClient {
    * Extracts the JWT claims present in the access token by first verifying the
    * JWT against the server's JSON Web Key Set endpoint
    * `/.well-known/jwks.json` which is often cached, resulting in significantly
-   * faster responses. Prefer this method over {@link #getUser} which always
+   * faster responses. Prefer this method over {@link GoTrueClient.getUser} which always
    * sends a request to the Auth server for each JWT.
    *
    * If the project is not using an asymmetric JWT signing key (like ECC or
-   * RSA) it always sends a request to the Auth server (similar to {@link
-   * #getUser}) to verify the JWT.
+   * RSA) it always sends a request to the Auth server (similar to
+   * {@link GoTrueClient.getUser}) to verify the JWT.
    *
    * @param jwt An optional specific JWT you wish to verify, not the one you
-   *            can obtain from {@link #getSession}.
+   *            can obtain from {@link GoTrueClient.getSession}.
    * @param options Various additional options that allow you to customize the
    *                behavior of this method.
    *

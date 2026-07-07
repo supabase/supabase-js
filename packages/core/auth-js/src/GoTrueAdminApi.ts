@@ -257,10 +257,7 @@ export default class GoTrueAdminApi {
 
   /**
    * Generates email links and OTPs to be sent via a custom email provider.
-   * @param email The user's email.
-   * @param options.password User password. For signup only.
-   * @param options.data Optional user metadata. For signup only.
-   * @param options.redirectTo The redirect url which should be appended to the generated link
+   * @param params The parameters for generating the link, including the link `type`, the user's `email`, and type-specific options such as `password`, `data`, and `redirectTo`.
    *
    * @category Auth
    * @subcategory Auth Admin

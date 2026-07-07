@@ -827,8 +827,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @category Storage
    * @subcategory File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
-   * @param options.transform Transform the asset before serving it to the client.
-   * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @param options Optional settings: `transform` to transform the asset before serving it to the client, and `cacheNonce` to append a cache nonce parameter to the URL to invalidate the cache.
    * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns BlobDownloadBuilder instance for downloading the file
    *

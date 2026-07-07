@@ -302,7 +302,7 @@ const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
  * Useful for environments like React Native or other non-browser
  * single-process (i.e. no concept of "tabs") environments.
  *
- * Use {@link #navigatorLock} in browser environments.
+ * Use {@link navigatorLock} in browser environments.
  *
  * @param name Name of the lock to be acquired.
  * @param acquireTimeout If negative, no timeout. If 0 an error is thrown if
