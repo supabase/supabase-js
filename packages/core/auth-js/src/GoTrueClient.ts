@@ -323,6 +323,23 @@ export default class GoTrueClient {
    * Keep extra care to never reject or throw uncaught errors
    */
   protected initializePromise: Promise<InitializeResult> | null = null
+  /**
+   * Non-null only while `initialize()` is running. While open,
+   * `_notifyAllSubscribers` enqueues init-chain notifications (those fired with
+   * `broadcast = true`, i.e. from `_recoverAndRefresh`) into this array instead
+   * of firing directly, so that `initializePromise` is guaranteed to be
+   * resolved before any subscriber callback runs. Callbacks that call
+   * `getSession()` / `getUser()` etc. would otherwise deadlock because those
+   * methods await `initializePromise`. Notifications from the incoming
+   * BroadcastChannel handler (`broadcast = false`) are not enqueued — they fire
+   * immediately. Flushed (in order) by `initialize()` after `initializePromise`
+   * settles.
+   */
+  private _pendingInitNotifications: Array<{
+    event: AuthChangeEvent
+    session: Session | null
+    broadcast: boolean
+  }> | null = null
   protected detectSessionInUrl:
     | boolean
     | ((url: URL, params: { [parameter: string]: string }) => boolean) = true
@@ -584,6 +601,16 @@ export default class GoTrueClient {
       return await this.initializePromise
     }
 
+    // Open the notification queue before _initialize() runs so that every
+    // _notifyAllSubscribers call inside the init chain enqueues instead of
+    // firing. Without this, a callback receiving SIGNED_IN (or TOKEN_REFRESHED
+    // / SIGNED_OUT) during _recoverAndRefresh would deadlock if it called
+    // getSession() / getUser() — those methods await initializePromise, which
+    // can only resolve after the callback returns, which can only return after
+    // getSession() resolves. The queue is flushed below after initializePromise
+    // has settled, so callbacks run with a fully resolved initializePromise.
+    this._pendingInitNotifications = []
+
     this.initializePromise = (async () => {
       if (this.lock != null) {
         // TODO(v3): remove legacy lock path
@@ -594,7 +621,17 @@ export default class GoTrueClient {
       return await this._initialize()
     })()
 
-    return await this.initializePromise
+    const result = await this.initializePromise
+
+    // initializePromise is now resolved — flush queued notifications in order.
+    // Callbacks can safely call getSession() / getUser() / signOut() etc.
+    const queue = this._pendingInitNotifications ?? []
+    this._pendingInitNotifications = null
+    for (const n of queue) {
+      await this._notifyAllSubscribers(n.event, n.session, n.broadcast)
+    }
+
+    return result
   }
 
   /**
@@ -5011,6 +5048,20 @@ export default class GoTrueClient {
     session: Session | null,
     broadcast = true
   ) {
+    if (this._pendingInitNotifications !== null && broadcast) {
+      // We're inside initialize() before initializePromise has resolved, and
+      // this notification originates from the init chain (_recoverAndRefresh),
+      // which always fires with broadcast = true. Enqueue instead of firing so
+      // that callbacks can safely call getSession() / getUser() without
+      // deadlocking on initializePromise.
+      //
+      // Notifications with broadcast = false come from the incoming
+      // BroadcastChannel handler (a cross-tab event), not the init chain, so
+      // they are fired immediately to preserve multi-tab ordering.
+      this._pendingInitNotifications.push({ event, session, broadcast })
+      return
+    }
+
     const debugName = `#_notifyAllSubscribers(${event})`
     this._debug(debugName, 'begin', session, `broadcast = ${broadcast}`)
 
