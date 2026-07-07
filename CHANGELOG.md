@@ -1,3 +1,14 @@
+## 2.110.1 (2026-07-07)
+
+### 🩹 Fixes
+
+- **auth:** defer init-time notifications until initializePromise resolves ([#2498](https://github.com/supabase/supabase-js/pull/2498))
+- **realtime:** suppress disconnected status from onHeartbeat consumers ([#2496](https://github.com/supabase/supabase-js/pull/2496))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.110.0 (2026-06-30)
 
 ### 🚀 Features
