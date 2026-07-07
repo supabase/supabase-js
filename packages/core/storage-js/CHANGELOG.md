@@ -1,3 +1,7 @@
+## 2.110.1 (2026-07-07)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
 ## 2.110.0 (2026-06-30)
 
 ### 🚀 Features
