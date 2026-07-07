@@ -4000,6 +4000,10 @@ export default class GoTrueClient {
     { scope }: SignOut = { scope: 'global' }
   ): Promise<{ error: AuthError | null }> {
     return await this._useSession(async (result) => {
+      const removeCurrentSession = async () => {
+        await this._removeSession()
+        await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      }
       const { data, error: sessionError } = result
       if (sessionError && !isAuthSessionMissingError(sessionError)) {
         return this._returnResult({ error: sessionError })
@@ -4017,13 +4021,15 @@ export default class GoTrueClient {
               isAuthSessionMissingError(error)
             )
           ) {
+            if (scope !== 'others') {
+              await removeCurrentSession()
+            }
             return this._returnResult({ error })
           }
         }
       }
       if (scope !== 'others') {
-        await this._removeSession()
-        await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+        await removeCurrentSession()
       }
       return this._returnResult({ error: null })
     })
