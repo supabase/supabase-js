@@ -1,3 +1,13 @@
+## 2.110.2 (2026-07-09)
+
+### 🩹 Fixes
+
+- **auth:** clear local session on signout failures ([#2504](https://github.com/supabase/supabase-js/pull/2504))
+
+### ❤️ Thank You
+
+- Luc Peng
+
 ## 2.110.1 (2026-07-07)
 
 ### 🩹 Fixes
