@@ -48,7 +48,7 @@
     "test:run": "jest --runInBand --coverage -u",
     "test:smoke": "node test/smoke.cjs && node test/smoke.mjs",
     "test:types": "tstyche",
-    "test:types:ci": "tstyche --target '4.7,5.5,latest'",
+    "test:types:ci": "tstyche --target '4.7,5.5,6.0'",
     "test:types:watch": "chokidar 'src/**/*.ts' 'test/**/*.ts' -c 'npm run test:types'",
     "type-check": "tsc --noEmit --project tsconfig.json",
     "type-check:test": "tsc --noEmit --project tsconfig.test.json"
