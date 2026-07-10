@@ -488,6 +488,38 @@ describe('SupabaseClient', () => {
         expect(options.headers.get('Authorization')).toBe(`Bearer ${KEY}`)
         expect(options.headers.get('apikey')).toBe(KEY)
       })
+
+      test('functions omit Authorization for a new-format key without a session, other services do not', async () => {
+        const NEW_KEY = 'sb_publishable_test123'
+        const mockFetch = jest.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          text: () => Promise.resolve('{}'),
+          headers: new Headers(),
+          json: () => Promise.resolve({}),
+        })
+
+        const client = createClient(URL, NEW_KEY, {
+          global: { fetch: mockFetch },
+        })
+
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: null },
+        })
+
+        // Functions: no session + new-format key → apikey only, no Authorization.
+        await client.functions.invoke('test-function')
+        const [, functionsOptions] = mockFetch.mock.calls[0]
+        expect(functionsOptions.headers.get('apikey')).toBe(NEW_KEY)
+        expect(functionsOptions.headers.get('Authorization')).toBeNull()
+
+        // Other services stay uniform: the key is still sent in Authorization.
+        await client.from('test').select('*')
+        const [, restOptions] = mockFetch.mock.calls[1]
+        expect(restOptions.headers.get('Authorization')).toBe(`Bearer ${NEW_KEY}`)
+        expect(restOptions.headers.get('apikey')).toBe(NEW_KEY)
+      })
     })
   })
 })

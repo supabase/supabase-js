@@ -89,6 +89,7 @@ export default class SupabaseClient<
   protected rest: PostgrestClient<Database, ClientOptions, SchemaName>
   protected storageKey: string
   protected fetch?: Fetch
+  protected functionsFetch?: Fetch
   protected changedAccessToken?: string
   protected accessToken?: () => Promise<string | null>
 
@@ -364,6 +365,17 @@ export default class SupabaseClient<
       settings.global.fetch,
       settings.tracePropagation
     )
+    // Edge Functions use a dedicated fetch that reserves the Authorization header for a
+    // real user/custom session token — it never falls back to a new-format API key
+    // (that key travels only in the `apikey` header). Other services keep `this.fetch`.
+    this.functionsFetch = fetchWithAuth(
+      supabaseKey,
+      supabaseUrl,
+      this._getAccessToken.bind(this),
+      settings.global.fetch,
+      settings.tracePropagation,
+      { isFunctionsClient: true }
+    )
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
       accessToken: this._getAccessToken.bind(this),
@@ -404,7 +416,7 @@ export default class SupabaseClient<
   get functions(): FunctionsClient {
     return new FunctionsClient(this.functionsUrl.href, {
       headers: this.headers,
-      customFetch: this.fetch,
+      customFetch: this.functionsFetch,
     })
   }
 
