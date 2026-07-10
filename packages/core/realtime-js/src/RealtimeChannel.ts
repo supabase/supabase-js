@@ -47,6 +47,18 @@ export type RealtimeChannelOptions = {
     }
     /**
      * key option is used to track presence payload across clients
+     *
+     * enabled controls whether this client receives presence state and updates from other
+     * clients — set it to true (or add an `.on('presence', ...)` listener, which enables it
+     * automatically) if you want to see who else is present. Without it, this client's
+     * `presenceState()` stays empty and no `presence` events fire for you, because the
+     * underlying presence state machine buffers incoming updates until it has received an
+     * initial snapshot, which is only requested when this flag is set.
+     *
+     * It does not gate the other direction: calling `track()` always makes this client
+     * visible to other subscribers that have presence enabled, regardless of this client's
+     * own `enabled` setting. On RLS-protected (private) channels, receiving presence updates
+     * additionally requires the `presence.read` policy to authorize this client.
      */
     presence?: { key?: string; enabled?: boolean }
     /**
@@ -488,6 +500,11 @@ export default class RealtimeChannel {
   /**
    * Sends the supplied payload to the presence tracker so other subscribers can see that this
    * client is online. Use `untrack` to stop broadcasting presence for the same key.
+   *
+   * Tracking makes this client visible to other subscribers immediately, regardless of this
+   * channel's `config.presence.enabled` setting or whether it has a `presence` listener — that
+   * flag only affects whether *this* client receives presence updates from others (and, on
+   * RLS-protected channels, whether it's authorized to do so).
    *
    * @category Realtime
    */
