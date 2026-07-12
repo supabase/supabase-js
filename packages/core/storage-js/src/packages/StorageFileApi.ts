@@ -1489,7 +1489,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     if (typeof Buffer !== 'undefined') {
       return Buffer.from(data).toString('base64')
     }
-    return btoa(data)
+    // `btoa` operates on Latin-1: it throws on code points > 255 and mangles
+    // 128-255, so encode to UTF-8 bytes first to match the `Buffer` path above.
+    return btoa(String.fromCharCode(...new TextEncoder().encode(data)))
   }
 
   private _getFinalPath(path: string) {
