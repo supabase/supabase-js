@@ -62,19 +62,24 @@ export default class Serializer {
     encodingType: number,
     encodedPayload: ArrayBuffer
   ) {
-    const topic = message.topic
-    const ref = message.ref ?? ''
-    const joinRef = message.join_ref ?? ''
-    const userEvent = message.payload.event
+    // Encode each header field as UTF-8. The length prefixes are byte counts and
+    // the decode side uses TextDecoder (UTF-8), so measuring with String.length
+    // and writing with charCodeAt would corrupt any multi-byte character (e.g.
+    // accents or emoji) and desynchronize the buffer.
+    const encoder = new TextEncoder()
+    const topic = encoder.encode(message.topic)
+    const ref = encoder.encode(message.ref ?? '')
+    const joinRef = encoder.encode(message.join_ref ?? '')
+    const userEvent = encoder.encode(message.payload.event)
 
     // Filter metadata based on allowed keys
     const rest = this.allowedMetadataKeys
       ? this._pick(message.payload, this.allowedMetadataKeys)
       : {}
 
-    const metadata = Object.keys(rest).length === 0 ? '' : JSON.stringify(rest)
+    const metadata = encoder.encode(Object.keys(rest).length === 0 ? '' : JSON.stringify(rest))
 
-    // Validate lengths don't exceed uint8 max value (255)
+    // Validate byte lengths don't exceed uint8 max value (255)
     if (joinRef.length > 255) {
       throw new Error(`joinRef length ${joinRef.length} exceeds maximum of 255`)
     }
@@ -100,7 +105,8 @@ export default class Serializer {
       metadata.length
 
     const header = new ArrayBuffer(this.HEADER_LENGTH + metaLength)
-    let view = new DataView(header)
+    const view = new DataView(header)
+    const bytes = new Uint8Array(header)
     let offset = 0
 
     view.setUint8(offset++, this.KINDS.userBroadcastPush) // kind
@@ -110,11 +116,16 @@ export default class Serializer {
     view.setUint8(offset++, userEvent.length)
     view.setUint8(offset++, metadata.length)
     view.setUint8(offset++, encodingType)
-    Array.from(joinRef, (char) => view.setUint8(offset++, char.charCodeAt(0)))
-    Array.from(ref, (char) => view.setUint8(offset++, char.charCodeAt(0)))
-    Array.from(topic, (char) => view.setUint8(offset++, char.charCodeAt(0)))
-    Array.from(userEvent, (char) => view.setUint8(offset++, char.charCodeAt(0)))
-    Array.from(metadata, (char) => view.setUint8(offset++, char.charCodeAt(0)))
+    bytes.set(joinRef, offset)
+    offset += joinRef.length
+    bytes.set(ref, offset)
+    offset += ref.length
+    bytes.set(topic, offset)
+    offset += topic.length
+    bytes.set(userEvent, offset)
+    offset += userEvent.length
+    bytes.set(metadata, offset)
+    offset += metadata.length
 
     var combined = new Uint8Array(header.byteLength + encodedPayload.byteLength)
     combined.set(new Uint8Array(header), 0)
