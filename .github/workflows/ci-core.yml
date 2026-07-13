@@ -22,7 +22,7 @@ jobs:
       functions: ${{ steps.affected.outputs.functions }}
       realtime: ${{ steps.affected.outputs.realtime }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           filter: tree:0
           fetch-depth: 0
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-affected
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           filter: tree:0
           fetch-depth: 0
@@ -121,7 +121,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.functions != '0' || needs.check-affected.outputs.realtime != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           filter: tree:0
           fetch-depth: 0
@@ -181,7 +181,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.auth != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           filter: tree:0
           fetch-depth: 0
@@ -257,7 +257,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.storage != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           filter: tree:0
           fetch-depth: 0
@@ -331,7 +331,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.auth != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           filter: tree:0
           fetch-depth: 0
@@ -401,7 +401,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.postgrest != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           filter: tree:0
           fetch-depth: 0
@@ -498,7 +498,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.postgrest != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           filter: tree:0
           fetch-depth: 0
