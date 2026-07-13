@@ -3406,6 +3406,82 @@ describe('Storage adapter edge cases', () => {
     expect(data.session).toBeNull()
   })
 
+  test('should preserve pending PKCE code verifier when _saveSession persists a session', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      storageKey: 'test-pkce-preserve',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage,
+      flowType: 'pkce',
+    })
+    const session = {
+      access_token: 'test-token',
+      refresh_token: 'test-refresh',
+      expires_in: 3600,
+      token_type: 'bearer',
+      user: null,
+    }
+
+    await setItemAsync(storage, 'test-pkce-preserve-code-verifier', 'pending-verifier')
+
+    // @ts-expect-error private method
+    await client._saveSession(session)
+
+    expect(await getItemAsync(storage, 'test-pkce-preserve-code-verifier')).toBe('pending-verifier')
+  })
+
+  test('refreshSession() should preserve pending PKCE code verifier', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      storageKey: 'test-pkce-refresh-preserve',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage,
+      flowType: 'pkce',
+    })
+
+    await setItemAsync(storage, 'test-pkce-refresh-preserve-code-verifier', 'pending-verifier')
+
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => ({
+      data: {
+        session: {
+          access_token: 'refreshed-token',
+          refresh_token: 'refreshed-refresh-token',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          token_type: 'bearer',
+          user: {
+            id: 'user-id',
+            aud: 'authenticated',
+            user_metadata: {},
+            app_metadata: {},
+            created_at: new Date().toISOString(),
+          },
+        },
+        user: {
+          id: 'user-id',
+          aud: 'authenticated',
+          user_metadata: {},
+          app_metadata: {},
+          created_at: new Date().toISOString(),
+        },
+      },
+      error: null,
+    }))
+
+    const { error, data } = await client.refreshSession({ refresh_token: 'refresh-token-r1' })
+
+    expect(error).toBeNull()
+    expect(data.session?.refresh_token).toBe('refreshed-refresh-token')
+    expect(await getItemAsync(storage, 'test-pkce-refresh-preserve-code-verifier')).toBe(
+      'pending-verifier'
+    )
+  })
+
   test('should handle storage removeItem failure in _removeSession', async () => {
     const brokenStorage = {
       getItem: async () => '{}',
