@@ -1,3 +1,15 @@
+## 2.110.3 (2026-07-13)
+
+### 🩹 Fixes
+
+- **auth:** preserve pkce verifier ([#2513](https://github.com/supabase/supabase-js/pull/2513))
+- **postgrest:** pin tstyche target off floating latest ([#2509](https://github.com/supabase/supabase-js/pull/2509))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.110.2 (2026-07-09)
 
 ### 🩹 Fixes
