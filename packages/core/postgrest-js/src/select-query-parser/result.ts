@@ -461,18 +461,26 @@ type ProcessEmbeddedResourceResult<
               : ProcessedChildren[]
           : // If the relation is a self-reference it'll always be considered as reverse relationship
             Resolved['relation']['referencedRelation'] extends CurrentTableOrView
-            ? // It can either be a reverse reference via a column inclusion (eg: parent_id(*))
-              // in such case the result will be a single object
-              Resolved['relation']['match'] extends 'col'
-              ? IsRelationNullable<
-                  TablesAndViews<Schema>[CurrentTableOrView],
-                  Resolved['relation']
-                > extends true
-                ? ProcessedChildren | null
-                : ProcessedChildren
-              : // Or it can be a reference via the reference relation (eg: collections(*))
-                // in such case, the result will be an array of all the values (all collection with parent_id being the current id)
-                ProcessedChildren[]
+            ? // When an explicit hint is used to embed a self-reference (eg: collections!parent_id(*)
+              // or collections!collections_parent_id_fkey(*)), PostgREST only ever resolves the
+              // one-to-many direction, so the result is always an array. See PostgREST's `findRel`
+              // `relIsSelf`/`Just hint` branch, which has no many-to-one/one-to-one match for
+              // self-relationships. This holds regardless of what the hint matched (column name,
+              // fk constraint name, or referenced relation), so it must be checked before `match`.
+              Resolved['relation'] extends { hint: string }
+              ? ProcessedChildren[]
+              : // Without a hint it can either be a reverse reference via a column inclusion
+                // (eg: parent_id(*)) in such case the result will be a single object
+                Resolved['relation']['match'] extends 'col'
+                ? IsRelationNullable<
+                    TablesAndViews<Schema>[CurrentTableOrView],
+                    Resolved['relation']
+                  > extends true
+                  ? ProcessedChildren | null
+                  : ProcessedChildren
+                : // Or it can be a reference via the reference relation (eg: collections(*))
+                  // in such case, the result will be an array of all the values (all collection with parent_id being the current id)
+                  ProcessedChildren[]
             : // Otherwise if it's a non self-reference reverse relationship it's a single object
               IsRelationNullable<
                   TablesAndViews<Schema>[CurrentTableOrView],
