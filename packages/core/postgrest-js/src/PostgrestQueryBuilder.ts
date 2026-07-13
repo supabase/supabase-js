@@ -7,7 +7,7 @@ import {
   GenericTable,
   GenericView,
 } from './types/common/common'
-import { RejectExcessProperties } from './types/types'
+import { PostgrestQueryBuilderOptionsWithSchema, RejectExcessProperties } from './types/types'
 
 export default class PostgrestQueryBuilder<
   ClientOptions extends ClientServerOptions,
@@ -70,13 +70,7 @@ export default class PostgrestQueryBuilder<
       fetch,
       urlLengthLimit = 8000,
       retry,
-    }: {
-      headers?: HeadersInit
-      schema?: string
-      fetch?: Fetch
-      urlLengthLimit?: number
-      retry?: boolean
-    }
+    }: PostgrestQueryBuilderOptionsWithSchema<string>
   ) {
     this.url = url
     this.headers = new Headers(headers)
