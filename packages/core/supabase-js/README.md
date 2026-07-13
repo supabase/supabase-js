@@ -97,7 +97,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 ### Custom `fetch` implementation
 
-`supabase-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is most useful in environments where `cross-fetch` is not compatible, for instance Cloudflare Workers:
+`supabase-js` uses the runtime's global `fetch` to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is useful in environments where the global `fetch` is unavailable or where you want to customize request behavior:
 
 ```js
 import { createClient } from '@supabase/supabase-js'
