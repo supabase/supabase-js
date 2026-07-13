@@ -1,3 +1,13 @@
+## 2.110.3 (2026-07-13)
+
+### 🩹 Fixes
+
+- **auth:** preserve pkce verifier ([#2513](https://github.com/supabase/supabase-js/pull/2513))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.110.2 (2026-07-09)
 
 ### 🩹 Fixes

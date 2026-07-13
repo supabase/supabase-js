@@ -1,3 +1,13 @@
+## 2.110.3 (2026-07-13)
+
+### 🩹 Fixes
+
+- **postgrest:** pin tstyche target off floating latest ([#2509](https://github.com/supabase/supabase-js/pull/2509))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.110.2 (2026-07-09)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
