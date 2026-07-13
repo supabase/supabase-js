@@ -5108,7 +5108,6 @@ export default class GoTrueClient {
     // _saveSession is always called whenever a new session has been acquired
     // so we can safely suppress the warning returned by future getSession calls
     this.suppressGetSessionWarning = true
-    await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
     // Create a shallow copy to work with, to avoid mutating the original session object if it's used elsewhere
     const sessionToProcess = { ...session }
 
