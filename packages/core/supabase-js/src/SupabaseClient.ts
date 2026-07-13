@@ -20,7 +20,7 @@ import {
   DEFAULT_REALTIME_OPTIONS,
   DEFAULT_TRACE_PROPAGATION_OPTIONS,
 } from './lib/constants'
-import { fetchWithAuth } from './lib/fetch'
+import { assertSupportedApiKey, fetchWithAuth } from './lib/fetch'
 import {
   applySettingDefaults,
   validateSupabaseUrl,
@@ -89,6 +89,7 @@ export default class SupabaseClient<
   protected rest: PostgrestClient<Database, ClientOptions, SchemaName>
   protected storageKey: string
   protected fetch?: Fetch
+  protected functionsFetch?: Fetch
   protected changedAccessToken?: string
   protected accessToken?: () => Promise<string | null>
 
@@ -314,6 +315,7 @@ export default class SupabaseClient<
   ) {
     const baseUrl = validateSupabaseUrl(supabaseUrl)
     if (!supabaseKey) throw new Error('supabaseKey is required.')
+    assertSupportedApiKey(supabaseKey)
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
@@ -357,12 +359,24 @@ export default class SupabaseClient<
       })
     }
 
+    // The fetch wrappers receive the raw session token (null when there is no session) and
+    // decide the `Authorization` fallback themselves, so the API-key fallback lives in one place.
     this.fetch = fetchWithAuth(
       supabaseKey,
       supabaseUrl,
-      this._getAccessToken.bind(this),
+      this._getSessionToken.bind(this),
       settings.global.fetch,
       settings.tracePropagation
+    )
+    // Edge Functions use a dedicated fetch that never falls back to a new-format API key in
+    // the Authorization header (see `isNewApiKey` in ./lib/fetch). Other services use `this.fetch`.
+    this.functionsFetch = fetchWithAuth(
+      supabaseKey,
+      supabaseUrl,
+      this._getSessionToken.bind(this),
+      settings.global.fetch,
+      settings.tracePropagation,
+      { omitApiKeyAsBearer: true }
     )
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
@@ -404,7 +418,7 @@ export default class SupabaseClient<
   get functions(): FunctionsClient {
     return new FunctionsClient(this.functionsUrl.href, {
       headers: this.headers,
-      customFetch: this.fetch,
+      customFetch: this.functionsFetch,
     })
   }
 
@@ -568,14 +582,23 @@ export default class SupabaseClient<
     return this.realtime.removeAllChannels()
   }
 
-  private async _getAccessToken() {
+  /**
+   * The raw session token — the custom `accessToken` result or the signed-in user's JWT —
+   * or `null` when there is no session. Unlike {@link _getAccessToken} it does not fall back
+   * to `supabaseKey`, so callers can distinguish "no session" from "has session".
+   */
+  private async _getSessionToken(): Promise<string | null> {
     if (this.accessToken) {
       return await this.accessToken()
     }
 
     const { data } = await this.auth.getSession()
 
-    return data.session?.access_token ?? this.supabaseKey
+    return data.session?.access_token ?? null
+  }
+
+  private async _getAccessToken() {
+    return (await this._getSessionToken()) ?? this.supabaseKey
   }
 
   private _initSupabaseAuthClient(
