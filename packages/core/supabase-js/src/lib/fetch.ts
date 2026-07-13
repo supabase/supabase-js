@@ -24,10 +24,28 @@ export const resolveHeadersConstructor = () => {
 /**
  * New-format Supabase API keys (`sb_publishable_…` / `sb_secret_…`) are not JWTs and
  * must never be sent as a Bearer token — they belong only in the `apikey` header.
- * Legacy (JWT) keys predate this format and keep their existing behavior.
+ * Legacy (JWT) keys predate this format (they don't start with `sb_`) and keep their
+ * existing behavior. Any other `sb_`-prefixed key is an unrecognized future subtype;
+ * see {@link assertSupportedApiKey}.
  */
 const isNewApiKey = (key: string): boolean =>
   key.startsWith('sb_publishable_') || key.startsWith('sb_secret_')
+
+/**
+ * Fail fast on an `sb_`-family key whose subtype this SDK version does not recognize, so a
+ * future key type can never be silently mistreated as a legacy JWT and sent as a Bearer
+ * token. Recognized new-format keys and legacy JWT keys (no `sb_` prefix) pass through.
+ * The key itself is never included in the message to avoid leaking secret keys.
+ */
+export const assertSupportedApiKey = (key: string): void => {
+  if (key.startsWith('sb_') && !isNewApiKey(key)) {
+    throw new Error(
+      '@supabase/supabase-js: Unrecognized Supabase API key format. Expected a legacy JWT key ' +
+        'or a new-format key (sb_publishable_… / sb_secret_…). This "sb_" key type is not ' +
+        'supported by this version of the SDK — please upgrade @supabase/supabase-js.'
+    )
+  }
+}
 
 export const fetchWithAuth = (
   supabaseKey: string,
@@ -35,7 +53,7 @@ export const fetchWithAuth = (
   getAccessToken: () => Promise<string | null>,
   customFetch?: Fetch,
   tracePropagationOptions?: TracePropagationOptions,
-  options?: { isFunctionsClient?: boolean }
+  options?: { omitApiKeyAsBearer?: boolean }
 ): Fetch => {
   const fetch = resolveFetch(customFetch)
   const HeadersConstructor = resolveHeadersConstructor()
@@ -48,8 +66,13 @@ export const fetchWithAuth = (
     ? getDefaultPropagationTargets(supabaseUrl)
     : null
 
+  // Whether the API key may be used as the `Authorization` Bearer fallback when there is no
+  // session token. Disabled for Edge Functions with a new-format key (see `isNewApiKey`).
+  // Static per instance, so it is computed once here rather than on every request.
+  const allowKeyAsBearer = !(options?.omitApiKeyAsBearer && isNewApiKey(supabaseKey))
+
   return async (input, init) => {
-    const accessToken = (await getAccessToken()) ?? supabaseKey
+    const realToken = await getAccessToken()
     let headers = new HeadersConstructor(init?.headers)
 
     if (!headers.has('apikey')) {
@@ -57,14 +80,9 @@ export const fetchWithAuth = (
     }
 
     if (!headers.has('Authorization')) {
-      // Edge Functions: a new-format API key must never be sent as a Bearer token —
-      // it belongs only in the `apikey` header. Reserve Authorization for a real user
-      // or custom session token. `accessToken === supabaseKey` means there is no such
-      // token (getAccessToken falls back to the key). Legacy JWT keys are unchanged.
-      const omitKeyInAuth =
-        options?.isFunctionsClient && accessToken === supabaseKey && isNewApiKey(supabaseKey)
-      if (!omitKeyInAuth) {
-        headers.set('Authorization', `Bearer ${accessToken}`)
+      const bearer = realToken ?? (allowKeyAsBearer ? supabaseKey : null)
+      if (bearer) {
+        headers.set('Authorization', `Bearer ${bearer}`)
       }
     }
 

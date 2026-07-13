@@ -29,6 +29,17 @@ describe('SupabaseClient', () => {
     expect(() => createClient(URL, '')).toThrow('supabaseKey is required.')
   })
 
+  test('should validate the API key format', () => {
+    // Unrecognized sb_ subtype → fail fast, signalling an SDK upgrade is needed.
+    expect(() => createClient(URL, 'sb_unknown_abc123')).toThrow(
+      'Unrecognized Supabase API key format'
+    )
+    // Recognized new-format keys and legacy JWT keys are accepted.
+    expect(() => createClient(URL, 'sb_publishable_abc123')).not.toThrow()
+    expect(() => createClient(URL, 'sb_secret_abc123')).not.toThrow()
+    expect(() => createClient(URL, KEY)).not.toThrow()
+  })
+
   test('should validate supabaseUrl', () => {
     expect(() => createClient('https://xyz123.supabase.co', KEY)).not.toThrow()
     expect(() => createClient('http://localhost:54321', KEY)).not.toThrow()

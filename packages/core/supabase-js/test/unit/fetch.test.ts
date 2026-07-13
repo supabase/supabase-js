@@ -1,4 +1,9 @@
-import { resolveFetch, resolveHeadersConstructor, fetchWithAuth } from '../../src/lib/fetch'
+import {
+  resolveFetch,
+  resolveHeadersConstructor,
+  fetchWithAuth,
+  assertSupportedApiKey,
+} from '../../src/lib/fetch'
 
 jest.mock('@supabase/tracing', () => {
   const actual = jest.requireActual('@supabase/tracing')
@@ -147,7 +152,7 @@ describe('fetch module', () => {
       expect(mockSet).not.toHaveBeenCalledWith('Authorization', expect.stringContaining('Bearer'))
     })
 
-    describe('isFunctionsClient option', () => {
+    describe('omitApiKeyAsBearer option', () => {
       const setupHeaders = (existing: string[] = []) => {
         const mockSet = jest.fn()
         const mockHeadersImpl = jest.fn().mockReturnValue({
@@ -170,7 +175,7 @@ describe('fetch module', () => {
           getAccessToken,
           undefined,
           undefined,
-          { isFunctionsClient: true }
+          { omitApiKeyAsBearer: true }
         )
         await authFetch('https://example.com')
 
@@ -189,7 +194,7 @@ describe('fetch module', () => {
           getAccessToken,
           undefined,
           undefined,
-          { isFunctionsClient: true }
+          { omitApiKeyAsBearer: true }
         )
         await authFetch('https://example.com')
 
@@ -207,7 +212,7 @@ describe('fetch module', () => {
           getAccessToken,
           undefined,
           undefined,
-          { isFunctionsClient: true }
+          { omitApiKeyAsBearer: true }
         )
         await authFetch('https://example.com')
 
@@ -225,14 +230,14 @@ describe('fetch module', () => {
           getAccessToken,
           undefined,
           undefined,
-          { isFunctionsClient: true }
+          { omitApiKeyAsBearer: true }
         )
         await authFetch('https://example.com')
 
         expect(mockSet).not.toHaveBeenCalledWith('Authorization', expect.anything())
       })
 
-      test('non-functions fetch still sends a new-format key in Authorization (scoping guard)', async () => {
+      test('without the option, a new-format key is still sent in Authorization (scoping guard)', async () => {
         const mockSet = setupHeaders()
         const supabaseKey = 'sb_publishable_abc123'
         const getAccessToken = jest.fn().mockResolvedValue(null)
@@ -245,6 +250,33 @@ describe('fetch module', () => {
         await authFetch('https://example.com')
 
         expect(mockSet).toHaveBeenCalledWith('Authorization', `Bearer ${supabaseKey}`)
+      })
+    })
+
+    describe('assertSupportedApiKey', () => {
+      test('throws for an unrecognized sb_ key subtype', () => {
+        expect(() => assertSupportedApiKey('sb_unknown_abc123')).toThrow(
+          /Unrecognized Supabase API key format/
+        )
+      })
+
+      test('never includes the key in the error message', () => {
+        const key = 'sb_futuretype_supersecretvalue'
+        expect.assertions(1)
+        try {
+          assertSupportedApiKey(key)
+        } catch (err) {
+          expect((err as Error).message).not.toContain(key)
+        }
+      })
+
+      test.each([
+        'sb_publishable_abc123',
+        'sb_secret_abc123',
+        'header.payload.signature',
+        'anon-key',
+      ])('accepts recognized / legacy key %p', (key) => {
+        expect(() => assertSupportedApiKey(key)).not.toThrow()
       })
     })
 
