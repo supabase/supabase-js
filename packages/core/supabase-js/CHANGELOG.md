@@ -1,3 +1,13 @@
+## 2.110.5 (2026-07-14)
+
+### 🩹 Fixes
+
+- **supabase:** avoid edge runtime warning ([#2522](https://github.com/supabase/supabase-js/pull/2522))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.110.4 (2026-07-14)
 
 ### 🩹 Fixes
