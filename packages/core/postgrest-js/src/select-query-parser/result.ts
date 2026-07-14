@@ -459,18 +459,17 @@ type ProcessEmbeddedResourceResult<
                   : ProcessedChildren | null
                 : ProcessedChildren | null
               : ProcessedChildren[]
-          : // If the relation is a self-reference it'll always be considered as reverse relationship
+          : // If the relation is a self-reference it'll always be considered as a reverse relationship.
+            // PostgREST returns arrays for a self-reference when using the table name
+            // (collections(*)) or any hint (collections!parent_id(*)), and a single object
+            // only when using the column name directly (parent_id(*)).
+            // See https://github.com/PostgREST/postgrest/blob/8776ece7d5fd612fad44151f9be4dffd855b28f0/src/PostgREST/Plan.hs#L633-L644
             Resolved['relation']['referencedRelation'] extends CurrentTableOrView
-            ? // When an explicit hint is used to embed a self-reference (eg: collections!parent_id(*)
-              // or collections!collections_parent_id_fkey(*)), PostgREST only ever resolves the
-              // one-to-many direction, so the result is always an array. See PostgREST's `findRel`
-              // `relIsSelf`/`Just hint` branch, which has no many-to-one/one-to-one match for
-              // self-relationships. This holds regardless of what the hint matched (column name,
-              // fk constraint name, or referenced relation), so it must be checked before `match`.
+            ? // An explicit hint must be checked before `match: 'col'`, since a hinted
+              // self-reference is always an array (eg: collections!parent_id(*)).
               Resolved['relation'] extends { hint: string }
               ? ProcessedChildren[]
-              : // Without a hint it can either be a reverse reference via a column inclusion
-                // (eg: parent_id(*)) in such case the result will be a single object
+              : // Without a hint, a column inclusion (eg: parent_id(*)) is a single object.
                 Resolved['relation']['match'] extends 'col'
                 ? IsRelationNullable<
                     TablesAndViews<Schema>[CurrentTableOrView],
@@ -478,8 +477,7 @@ type ProcessEmbeddedResourceResult<
                   > extends true
                   ? ProcessedChildren | null
                   : ProcessedChildren
-                : // Or it can be a reference via the reference relation (eg: collections(*))
-                  // in such case, the result will be an array of all the values (all collection with parent_id being the current id)
+                : // The table name (eg: collections(*)) is an array of children.
                   ProcessedChildren[]
             : // Otherwise if it's a non self-reference reverse relationship it's a single object
               IsRelationNullable<

@@ -593,9 +593,7 @@ test('self reference relation via hint matching column name', async () => {
 })
 
 // Documents a known PostgREST limitation: a self-referencing embed cannot be
-// disambiguated by its foreign key constraint name. PostgREST's `findRel`
-// `relIsSelf`/`Just hint` branch only matches the hint against a column name
-// (`matchFKRefSingleCol`), never a constraint name (`matchConstraint`), so this
+// disambiguated by its foreign key constraint name, so this
 // query fails at runtime with PGRST200. Use the column name hint instead (see the
 // test above). The inferred type is still (correctly) an array. See
 // https://github.com/supabase/supabase-js/issues/2517
