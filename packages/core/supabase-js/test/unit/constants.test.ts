@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   DEFAULT_HEADERS,
   DEFAULT_GLOBAL_OPTIONS,
@@ -115,6 +117,12 @@ describe('constants', () => {
 
       expect(newHeaders['X-Client-Info']).toContain('runtime=node')
       expect(newHeaders['X-Client-Info']).toMatch(/runtime-version=\d+\.\d+\.\d+/)
+    })
+
+    test('should avoid static process.version access for Edge runtimes', () => {
+      const source = readFileSync(join(__dirname, '../../src/lib/constants.ts'), 'utf8')
+
+      expect(source).not.toContain('process.version')
     })
   })
 })
