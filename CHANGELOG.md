@@ -1,3 +1,15 @@
+## 2.110.4 (2026-07-14)
+
+### 🩹 Fixes
+
+- **functions:** stop sending API key in Authorization header for function calls ([#2511](https://github.com/supabase/supabase-js/pull/2511))
+- **realtime:** encode broadcast header fields as UTF-8 ([#2516](https://github.com/supabase/supabase-js/pull/2516))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Pedro Henrique
+
 ## 2.110.3 (2026-07-13)
 
 ### 🩹 Fixes
