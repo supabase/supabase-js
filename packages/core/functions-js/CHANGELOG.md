@@ -1,3 +1,13 @@
+## 2.110.4 (2026-07-14)
+
+### 🩹 Fixes
+
+- **functions:** stop sending API key in Authorization header for function calls ([#2511](https://github.com/supabase/supabase-js/pull/2511))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.110.3 (2026-07-13)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.

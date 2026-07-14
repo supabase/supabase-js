@@ -1,3 +1,13 @@
+## 2.110.4 (2026-07-14)
+
+### 🩹 Fixes
+
+- **realtime:** encode broadcast header fields as UTF-8 ([#2516](https://github.com/supabase/supabase-js/pull/2516))
+
+### ❤️ Thank You
+
+- Pedro Henrique
+
 ## 2.110.3 (2026-07-13)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
