@@ -864,8 +864,9 @@ export default class PostgrestFilterBuilder<
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
         // handle postgrest reserved characters
-        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+        // https://postgrest.org/en/stable/references/api/url_grammar.html#reserved-characters
+        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+          return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
         else return `${s}`
       })
       .join(',')
@@ -892,8 +893,9 @@ export default class PostgrestFilterBuilder<
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
         // handle postgrest reserved characters
-        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+        // https://postgrest.org/en/stable/references/api/url_grammar.html#reserved-characters
+        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+          return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
         else return `${s}`
       })
       .join(',')
