@@ -400,7 +400,7 @@ export default class PostgrestClient<
     // objects/arrays-of-objects can't be serialized to URL params, use POST + return=minimal instead
     const _isObject = (v: unknown): boolean =>
       v !== null && typeof v === 'object' && (!Array.isArray(v) || v.some(_isObject))
-    const _hasObjectArg = head && Object.values(args as object).some(_isObject)
+    const _hasObjectArg = (head || get) && Object.values(args as object).some(_isObject)
     if (_hasObjectArg) {
       method = 'POST'
       body = args
@@ -421,7 +421,7 @@ export default class PostgrestClient<
     }
 
     const headers = new Headers(this.headers)
-    if (_hasObjectArg) {
+    if (_hasObjectArg && head) {
       headers.set('Prefer', count ? `count=${count},return=minimal` : 'return=minimal')
     } else if (count) {
       headers.set('Prefer', `count=${count}`)
