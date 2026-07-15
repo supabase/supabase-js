@@ -24,27 +24,35 @@ export const resolveHeadersConstructor = () => {
 /**
  * New-format Supabase API keys (`sb_publishable_…` / `sb_secret_…`) are not JWTs and
  * must never be sent as a Bearer token — they belong only in the `apikey` header.
- * Legacy (JWT) keys predate this format (they don't start with `sb_`) and keep their
- * existing behavior. Any other `sb_`-prefixed key is an unrecognized future subtype;
- * see {@link assertSupportedApiKey}.
+ * All other keys (legacy JWT keys, `sb_temp_…` temporary keys, unrecognized `sb_`
+ * subtypes) keep the Bearer fallback.
  */
 const isNewApiKey = (key: string): boolean =>
   key.startsWith('sb_publishable_') || key.startsWith('sb_secret_')
 
+const TEMP_KEY_PREFIX = 'sb_temp_'
+
+const warnedKeySubtypes = new Set<string>()
+
 /**
- * Fail fast on an `sb_`-family key whose subtype this SDK version does not recognize, so a
- * future key type can never be silently mistreated as a legacy JWT and sent as a Bearer
- * token. Recognized new-format keys and legacy JWT keys (no `sb_` prefix) pass through.
- * The key itself is never included in the message to avoid leaking secret keys.
+ * Warn (once per subtype) when an `sb_` key isn't a subtype this SDK version recognizes.
+ * Never throws — the server, not the SDK, decides key validity. The key value is never
+ * included in the message.
  */
-export const assertSupportedApiKey = (key: string): void => {
-  if (key.startsWith('sb_') && !isNewApiKey(key)) {
-    throw new Error(
-      '@supabase/supabase-js: Unrecognized Supabase API key format. Expected a legacy JWT key ' +
-        'or a new-format key (sb_publishable_… / sb_secret_…). This "sb_" key type is not ' +
-        'supported by this version of the SDK — please upgrade @supabase/supabase-js.'
-    )
+export const checkApiKeyFormat = (key: string): void => {
+  if (!key.startsWith('sb_') || isNewApiKey(key) || key.startsWith(TEMP_KEY_PREFIX)) {
+    return
   }
+  const subtype = key.match(/^sb_[a-zA-Z0-9]+_/)?.[0] ?? 'unknown'
+  if (warnedKeySubtypes.has(subtype)) {
+    return
+  }
+  warnedKeySubtypes.add(subtype)
+  console.warn(
+    '@supabase/supabase-js: Unrecognized Supabase API key format. The client will proceed ' +
+      'and send this key as-is; if you see authentication errors you may need to upgrade ' +
+      '@supabase/supabase-js to a version that recognizes this key type.'
+  )
 }
 
 export const fetchWithAuth = (

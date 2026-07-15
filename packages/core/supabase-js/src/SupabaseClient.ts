@@ -20,7 +20,7 @@ import {
   DEFAULT_REALTIME_OPTIONS,
   DEFAULT_TRACE_PROPAGATION_OPTIONS,
 } from './lib/constants'
-import { assertSupportedApiKey, fetchWithAuth } from './lib/fetch'
+import { checkApiKeyFormat, fetchWithAuth } from './lib/fetch'
 import {
   applySettingDefaults,
   validateSupabaseUrl,
@@ -315,7 +315,7 @@ export default class SupabaseClient<
   ) {
     const baseUrl = validateSupabaseUrl(supabaseUrl)
     if (!supabaseKey) throw new Error('supabaseKey is required.')
-    assertSupportedApiKey(supabaseKey)
+    checkApiKeyFormat(supabaseKey)
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
