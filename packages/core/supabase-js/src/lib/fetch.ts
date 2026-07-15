@@ -43,7 +43,7 @@ export const checkApiKeyFormat = (key: string): void => {
   if (!key.startsWith('sb_') || isNewApiKey(key) || key.startsWith(TEMP_KEY_PREFIX)) {
     return
   }
-  const subtype = key.match(/^sb_[a-zA-Z0-9]+_/)?.[0] ?? key
+  const subtype = key.match(/^sb_[a-zA-Z0-9]+_/)?.[0] ?? 'unknown'
   if (warnedKeySubtypes.has(subtype)) {
     return
   }

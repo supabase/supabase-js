@@ -341,13 +341,15 @@ describe('fetch module', () => {
         expect(warnSpy).not.toHaveBeenCalled()
       })
 
-      test.each(['sb_', 'sb_unknowntype'])(
-        'warns for malformed sb_ key %p without throwing',
-        (key) => {
-          expect(() => checkApiKeyFormat(key)).not.toThrow()
-          expect(warnSpy).toHaveBeenCalledTimes(1)
-        }
-      )
+      test('warns once for all sb_ keys without a parseable subtype', () => {
+        // Keys with no second underscore share one dedup bucket ('unknown'), so the
+        // full key value is never stored for deduplication.
+        expect(() => checkApiKeyFormat('sb_')).not.toThrow()
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+
+        expect(() => checkApiKeyFormat('sb_unknowntype')).not.toThrow()
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+      })
     })
 
     describe('trace propagation', () => {
