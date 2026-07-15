@@ -1,3 +1,13 @@
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **realtime:** forward opts to send() in track() ([#2490](https://github.com/supabase/supabase-js/pull/2490))
+
+### ❤️ Thank You
+
+- Franco Kaddour @FrancoKaddour
+
 ## 2.110.5 (2026-07-14)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
