@@ -1,3 +1,16 @@
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **postgrest:** type hinted self-referencing embeds as arrays ([#2520](https://github.com/supabase/supabase-js/pull/2520))
+- **realtime:** forward opts to send() in track() ([#2490](https://github.com/supabase/supabase-js/pull/2490))
+- **supabase:** warn instead of throw for unrecognized sb_ API key subtypes ([#2526](https://github.com/supabase/supabase-js/pull/2526))
+
+### ❤️ Thank You
+
+- Franco Kaddour @FrancoKaddour
+- Katerina Skroumpelou @mandarini
+
 ## 2.110.5 (2026-07-14)
 
 ### 🩹 Fixes

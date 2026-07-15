@@ -1,3 +1,13 @@
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **supabase:** warn instead of throw for unrecognized sb_ API key subtypes ([#2526](https://github.com/supabase/supabase-js/pull/2526))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.110.5 (2026-07-14)
 
 ### 🩹 Fixes
