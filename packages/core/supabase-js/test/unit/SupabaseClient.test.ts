@@ -384,6 +384,15 @@ describe('SupabaseClient', () => {
         expect(setAuthSpy).toHaveBeenCalledWith()
       })
 
+      test('should call setAuth() on INITIAL_SESSION event', async () => {
+        const client = createClient(URL, KEY)
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
+
+        // @ts-ignore - accessing private method for testing
+        client._handleTokenChanged('INITIAL_SESSION', 'CLIENT', 'initial-token')
+        expect(setAuthSpy).toHaveBeenCalledWith('initial-token')
+      })
+
       test('should update token in realtime client when setAuth is called', async () => {
         const client = createClient(URL, KEY)
         const testToken = 'test-realtime-token'
