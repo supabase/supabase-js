@@ -3,10 +3,57 @@ import { CustomUserDataTypeSchema, Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 import { Json } from '../src/select-query-parser/types'
+import type { SelectQueryError } from '../src/select-query-parser/utils'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
+
+type MultipleSelfReferencesDatabase = {
+  public: {
+    Tables: {
+      lab: {
+        Row: {
+          id: number
+          main: number | null
+          parent: number | null
+        }
+        Insert: {
+          id?: number
+          main?: number | null
+          parent?: number | null
+        }
+        Update: {
+          id?: number
+          main?: number | null
+          parent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'lab_parent_fkey'
+            columns: ['parent']
+            isOneToOne: false
+            referencedRelation: 'lab'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'lab_main_fkey'
+            columns: ['main']
+            isOneToOne: false
+            referencedRelation: 'lab'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+    }
+    Views: Record<never, never>
+    Functions: Record<never, never>
+    Enums: Record<never, never>
+    CompositeTypes: Record<never, never>
+  }
+}
+
+const multipleSelfReferences = new PostgrestClient<MultipleSelfReferencesDatabase>(REST_URL)
 
 const UsersRowSchema = z.object({
   age_range: z.unknown().nullable(),
@@ -539,6 +586,31 @@ test('self reference relation via column', async () => {
   }
   expectType<TypeEqual<typeof result, typeof crippledExpected>>(true)
   ExpectedSchema.parse(res.data)
+})
+
+test('self reference relation via aliased column with multiple foreign keys', () => {
+  const columnQuery = multipleSelfReferences.from('lab').select('*, parents:parent(*)')
+  type ColumnResult = Exclude<Awaited<typeof columnQuery>['data'], null>
+  type ExpectedColumnResult = {
+    id: number
+    main: number | null
+    parent: number | null
+    parents: {
+      id: number
+      main: number | null
+      parent: number | null
+    } | null
+  }[]
+  expectType<TypeEqual<ColumnResult, ExpectedColumnResult>>(true)
+  void columnQuery
+
+  const ambiguousQuery = multipleSelfReferences.from('lab').select('children:lab(*)')
+  type AmbiguousResult = Exclude<Awaited<typeof ambiguousQuery>['data'], null>
+  type ExpectedAmbiguousResult = {
+    children: SelectQueryError<"Could not embed because more than one relationship was found for 'lab' and 'lab' you need to hint the column with lab!<columnName> ?">
+  }[]
+  expectType<TypeEqual<AmbiguousResult, ExpectedAmbiguousResult>>(true)
+  void ambiguousQuery
 })
 
 test('self reference relation via hint matching column name', async () => {
