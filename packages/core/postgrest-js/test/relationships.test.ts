@@ -3,6 +3,7 @@ import { CustomUserDataTypeSchema, Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 import { Json } from '../src/select-query-parser/types'
+import type { SelectQueryError } from '../src/select-query-parser/utils'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
@@ -539,6 +540,61 @@ test('self reference relation via column', async () => {
   }
   expectType<TypeEqual<typeof result, typeof crippledExpected>>(true)
   ExpectedSchema.parse(res.data)
+})
+
+test('self reference relation via aliased column with multiple foreign keys', async () => {
+  const res = await postgrest.from('lab').select('*, parents:parent(*)').eq('id', 2).single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "id": 2,
+        "main": null,
+        "name": "First Task",
+        "parent": 1,
+        "parents": {
+          "id": 1,
+          "main": null,
+          "name": "Main Board",
+          "parent": null,
+          "type": "board",
+        },
+        "type": "task",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+      "success": true,
+    }
+  `)
+  type Result = Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    main: z.number().nullable(),
+    name: z.string().nullable(),
+    parent: z.number().nullable(),
+    parents: z
+      .object({
+        id: z.number(),
+        main: z.number().nullable(),
+        name: z.string().nullable(),
+        parent: z.number().nullable(),
+        type: z.string().nullable(),
+      })
+      .nullable(),
+    type: z.string().nullable(),
+  })
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
+  ExpectedSchema.parse(res.data)
+
+  const ambiguousRes = await postgrest.from('lab').select('children:lab(*)')
+  expect(ambiguousRes.error?.code).toBe('PGRST201')
+  type AmbiguousResult = Exclude<typeof ambiguousRes.data, null>
+  type ExpectedAmbiguousResult = {
+    children: SelectQueryError<"Could not embed because more than one relationship was found for 'lab' and 'lab' you need to hint the column with lab!<columnName> ?">
+  }[]
+  expectType<TypeEqual<AmbiguousResult, ExpectedAmbiguousResult>>(true)
 })
 
 test('self reference relation via hint matching column name', async () => {

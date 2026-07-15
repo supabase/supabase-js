@@ -354,6 +354,45 @@ export type Database = {
         }
         Relationships: []
       }
+      lab: {
+        Row: {
+          id: number
+          main: number | null
+          name: string | null
+          parent: number | null
+          type: string | null
+        }
+        Insert: {
+          id?: number
+          main?: number | null
+          name?: string | null
+          parent?: number | null
+          type?: string | null
+        }
+        Update: {
+          id?: number
+          main?: number | null
+          name?: string | null
+          parent?: number | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'lab_main_fkey'
+            columns: ['main']
+            isOneToOne: false
+            referencedRelation: 'lab'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'lab_parent_fkey'
+            columns: ['parent']
+            isOneToOne: false
+            referencedRelation: 'lab'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       messages: {
         Row: {
           channel_id: number

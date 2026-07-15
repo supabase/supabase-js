@@ -196,8 +196,10 @@ type CheckRelationshipError<
       ? RelatedRelationName extends string
         ? // We check if there is possible confusion with other relations with this table
           HasMultipleFKeysToFRel<RelatedRelationName, Relationships> extends true
-          ? // If there is, postgrest will fail at runtime, and require desambiguation via hinting
-            SelectQueryError<`Could not embed because more than one relationship was found for '${RelatedRelationName}' and '${CurrentTableOrView}' you need to hint the column with ${RelatedRelationName}!<columnName> ?`>
+          ? FoundRelation extends { relation: { match: 'col' } }
+            ? FoundRelation
+            : // If there is, postgrest will fail at runtime, and require desambiguation via hinting
+              SelectQueryError<`Could not embed because more than one relationship was found for '${RelatedRelationName}' and '${CurrentTableOrView}' you need to hint the column with ${RelatedRelationName}!<columnName> ?`>
           : FoundRelation
         : never
       : // Same check for forward relationships, but we must gather the relationships from the found relation
@@ -260,8 +262,8 @@ type ResolveReverseRelationship<
       : FoundRelation extends { referencedRelation: infer RelatedRelationName }
         ? RelatedRelationName extends string
           ? RelatedRelationName extends keyof TablesAndViews<Schema>
-            ? // If the relation was found via hinting we just return it without any more checks
-              FoundRelation extends { hint: string }
+            ? // If the relation was found via hinting or a column match, return it without further checks
+              FoundRelation extends { hint: string } | { match: 'col' }
               ? {
                   referencedTable: TablesAndViews<Schema>[RelatedRelationName]
                   relation: FoundRelation
