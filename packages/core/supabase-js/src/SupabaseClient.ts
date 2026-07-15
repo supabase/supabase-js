@@ -669,7 +669,7 @@ export default class SupabaseClient<
     token?: string
   ) {
     if (
-      (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
+      (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') &&
       this.changedAccessToken !== token
     ) {
       this.changedAccessToken = token
