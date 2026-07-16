@@ -1,3 +1,13 @@
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **postgrest:** correct self-reference inference ([#2525](https://github.com/supabase/supabase-js/pull/2525))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.110.6 (2026-07-15)
 
 ### 🩹 Fixes
