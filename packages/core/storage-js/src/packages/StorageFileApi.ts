@@ -788,7 +788,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: { download?: string | boolean; cacheNonce?: string }
   ): Promise<
     | {
-        data: { error: string | null; path: string | null; signedUrl: string | null }[]
+        data: {
+          error: string | null
+          path: string | null
+          signedURL: string | null
+          signedUrl: string | null
+        }[]
         error: null
       }
     | {
@@ -812,12 +817,14 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       const queryString = query.toString()
 
-      return data.map((datum: { signedURL: string }) => ({
-        ...datum,
-        signedUrl: datum.signedURL
-          ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
-          : null,
-      }))
+      return data.map(
+        (datum: { error: string | null; path: string | null; signedURL: string | null }) => ({
+          ...datum,
+          signedUrl: datum.signedURL
+            ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
+            : null,
+        })
+      )
     })
   }
 
