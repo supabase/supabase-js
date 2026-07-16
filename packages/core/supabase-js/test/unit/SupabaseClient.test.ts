@@ -218,6 +218,15 @@ describe('SupabaseClient', () => {
       expect(schemaClient).toBeDefined()
       expect(schemaClient).toBeInstanceOf(PostgrestClient)
     })
+
+    test('should initialize client with a custom schema option', () => {
+      const client = createClient<Database>(URL, KEY, {
+        db: {
+          schema: 'personal',
+        },
+      })
+      expect(client).toBeDefined()
+    })
   })
 
   describe('Table/View Queries', () => {

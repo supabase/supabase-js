@@ -394,7 +394,7 @@ export default class SupabaseClient<
 
     this.rest = new PostgrestClient(new URL('rest/v1', baseUrl).href, {
       headers: this.headers,
-      schema: settings.db.schema,
+      schema: settings.db.schema as any,
       fetch: this.fetch,
       timeout: settings.db.timeout,
       urlLengthLimit: settings.db.urlLengthLimit,
