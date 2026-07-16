@@ -1,3 +1,13 @@
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **realtime:** update phoenix to fix presence issue ([#2532](https://github.com/supabase/supabase-js/pull/2532))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
 ## 2.110.6 (2026-07-15)
 
 ### 🩹 Fixes

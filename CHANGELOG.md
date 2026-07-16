@@ -1,3 +1,17 @@
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **postgrest:** correct self-reference inference ([#2525](https://github.com/supabase/supabase-js/pull/2525))
+- **realtime:** trigger set auth on INITIAL_SESSION event ([#2531](https://github.com/supabase/supabase-js/pull/2531))
+- **realtime:** update phoenix to fix presence issue ([#2532](https://github.com/supabase/supabase-js/pull/2532))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Filipe Cabaço @filipecabaco
+- Vaibhav @7ttp
+
 ## 2.110.6 (2026-07-15)
 
 ### 🩹 Fixes

@@ -1,3 +1,13 @@
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **realtime:** trigger set auth on INITIAL_SESSION event ([#2531](https://github.com/supabase/supabase-js/pull/2531))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+
 ## 2.110.6 (2026-07-15)
 
 ### 🩹 Fixes
