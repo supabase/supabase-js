@@ -591,12 +591,8 @@ describe('Common Fetch', () => {
       }
     })
 
-    it('should extract status and error codes from their response fields', async () => {
-      const errorResponse = {
-        message: 'Error',
-        statusCode: 'CustomErrorCode',
-        error: 'NoSuchKey',
-      }
+    it('should extract status code from statusCode field', async () => {
+      const errorResponse = { message: 'Error', statusCode: 'CustomErrorCode' }
       mockFetch.mockResolvedValue(
         new MockResponse(JSON.stringify(errorResponse), {
           status: 400,
@@ -608,9 +604,27 @@ describe('Common Fetch', () => {
         await get(mockFetch, 'http://test.com/api')
       } catch (error: any) {
         expect(error.statusCode).toBe('CustomErrorCode')
-        expect(error.code).toBe('NoSuchKey')
-        expect(error.error).toBe('NoSuchKey')
       }
+    })
+
+    it('should expose the Storage API error code from the error field', async () => {
+      const errorResponse = {
+        message: 'Object not found',
+        statusCode: '404',
+        error: 'NoSuchKey',
+      }
+      mockFetch.mockResolvedValue(
+        new MockResponse(JSON.stringify(errorResponse), {
+          status: 404,
+          statusText: 'Not Found',
+        })
+      )
+
+      await expect(get(mockFetch, 'http://test.com/api')).rejects.toMatchObject({
+        statusCode: '404',
+        code: 'NoSuchKey',
+        error: 'NoSuchKey',
+      })
     })
 
     it('should use code field as statusCode if statusCode is not present', async () => {
