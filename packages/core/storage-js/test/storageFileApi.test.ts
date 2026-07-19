@@ -523,6 +523,11 @@ describe('Object API', () => {
       expect(blobResponse.data?.size).toBeGreaterThan(0)
       expect(blobResponse.data?.type).toEqual('text/plain;charset=utf-8')
 
+      const missingResponse = await storage.from(bucketName).download('non-existent-file')
+      expect(missingResponse.error?.statusCode).toBe('404')
+      expect(missingResponse.error?.code).toEqual(expect.any(String))
+      expect(missingResponse.error?.error).toEqual(expect.any(String))
+
       // throws when .throwOnError is enabled
       await expect(
         storage.from(bucketName).throwOnError().download('non-existent-file')

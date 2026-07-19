@@ -59,13 +59,15 @@ describe('Common Errors', () => {
     })
 
     it('should serialize to JSON correctly', () => {
-      const error = new StorageApiError('API error', 500, 'InternalError')
+      const error = new StorageApiError('API error', 500, '500', 'storage', 'Code', 'Error')
       const json = error.toJSON()
       expect(json).toEqual({
         name: 'StorageApiError',
         message: 'API error',
         status: 500,
-        statusCode: 'InternalError',
+        statusCode: '500',
+        code: 'Code',
+        error: 'Error',
       })
     })
 

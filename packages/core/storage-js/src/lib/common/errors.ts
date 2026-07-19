@@ -13,6 +13,8 @@ export class StorageError extends Error {
   protected namespace: ErrorNamespace
   status: number | undefined
   statusCode: string | undefined
+  code?: string
+  error?: string
 
   constructor(
     message: string,
@@ -32,12 +34,16 @@ export class StorageError extends Error {
     message: string
     status: number | undefined
     statusCode: string | undefined
+    code?: string
+    error?: string
   } {
     return {
       name: this.name,
       message: this.message,
       status: this.status,
       statusCode: this.statusCode,
+      ...(this.code !== undefined ? { code: this.code } : {}),
+      ...(this.error !== undefined ? { error: this.error } : {}),
     }
   }
 }
@@ -63,12 +69,16 @@ export class StorageApiError extends StorageError {
     message: string,
     status: number,
     statusCode: string,
-    namespace: ErrorNamespace = 'storage'
+    namespace: ErrorNamespace = 'storage',
+    code?: string,
+    error?: string
   ) {
     super(message, namespace, status, statusCode)
     this.name = namespace === 'vectors' ? 'StorageVectorsApiError' : 'StorageApiError'
     this.status = status
     this.statusCode = statusCode
+    if (code !== undefined) this.code = code
+    if (error !== undefined) this.error = error
   }
 
   toJSON(): {
@@ -76,6 +86,8 @@ export class StorageApiError extends StorageError {
     message: string
     status: number | undefined
     statusCode: string | undefined
+    code?: string
+    error?: string
   } {
     return {
       ...super.toJSON(),

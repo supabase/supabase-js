@@ -591,8 +591,12 @@ describe('Common Fetch', () => {
       }
     })
 
-    it('should extract status code from statusCode field', async () => {
-      const errorResponse = { message: 'Error', statusCode: 'CustomErrorCode' }
+    it('should extract status and error codes from their response fields', async () => {
+      const errorResponse = {
+        message: 'Error',
+        statusCode: 'CustomErrorCode',
+        error: 'NoSuchKey',
+      }
       mockFetch.mockResolvedValue(
         new MockResponse(JSON.stringify(errorResponse), {
           status: 400,
@@ -604,6 +608,8 @@ describe('Common Fetch', () => {
         await get(mockFetch, 'http://test.com/api')
       } catch (error: any) {
         expect(error.statusCode).toBe('CustomErrorCode')
+        expect(error.code).toBe('NoSuchKey')
+        expect(error.error).toBe('NoSuchKey')
       }
     })
 
@@ -620,6 +626,8 @@ describe('Common Fetch', () => {
         await get(mockFetch, 'http://test.com/api')
       } catch (error: any) {
         expect(error.statusCode).toBe('CustomCode')
+        expect(error.code).toBe('CustomCode')
+        expect(error.error).toBe('CustomCode')
       }
     })
   })
