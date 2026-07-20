@@ -99,7 +99,8 @@ describe('Common Fetch', () => {
       })
 
       it('should expose the service error code from the response body', async () => {
-        const errorResponse = { code: 'NoSuchKey', message: 'Object not found' }
+        // Mirror a real Storage payload, which sends both `statusCode` and `code`
+        const errorResponse = { statusCode: '404', code: 'NoSuchKey', message: 'Object not found' }
         mockFetch.mockResolvedValue(
           new MockResponse(JSON.stringify(errorResponse), {
             status: 404,
@@ -110,6 +111,7 @@ describe('Common Fetch', () => {
         await expect(get(mockFetch, 'http://test.com/api')).rejects.toMatchObject({
           name: 'StorageApiError',
           status: 404,
+          statusCode: '404',
           code: 'NoSuchKey',
         })
       })
