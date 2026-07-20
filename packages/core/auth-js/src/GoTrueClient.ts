@@ -2981,7 +2981,23 @@ export default class GoTrueClient {
 
       if (maybeSession !== null) {
         if (this._isValidSession(maybeSession)) {
-          currentSession = maybeSession
+          // Validate the JWT access_token's exp claim independently.
+          // The session-level expires_at is set from the server response
+          // and may diverge from the JWT's own exp due to clock skew,
+          // token tampering, or server-side revocation.
+          try{
+            const { payload } = decodeJWT(maybeSession.access_token)
+            if (payload.exp && payload.exp <= Math.floor(Date.now() / 1000)) {
+              this._debug('#getSession()', 'JWT exp claim has expired', payload.exp)
+               await this._removeSession() 
+               // fall through to refresh or return null
+            }else{
+              currentSession = maybeSession
+            }
+          } catch(e){
+            this._debug('#getSession()', 'failed to decode JWT from session', e)
+            await this._removeSession()
+          }
         } else {
           this._debug('#getSession()', 'session from storage is not valid')
           await this._removeSession()
@@ -2997,6 +3013,27 @@ export default class GoTrueClient {
       // in the background), very eager users of getSession() -- like
       // realtime-js -- might send a valid JWT which will expire by the time it
       // reaches the server.
+      // Cross-check: if the JWT exp and session expires_at diverge by more
+      // than 60 seconds, prefer the JWT exp as the source of truth.
+      if (currentSession) {
+        try {
+          const { payload } = decodeJWT(currentSession.access_token)
+          if (payload.exp && currentSession.expires_at) {
+            const drift = Math.abs(payload.exp - currentSession.expires_at)
+            if (drift > 60) {
+              this._debug(
+                '#getSession()',
+                'JWT exp and session expires_at diverge by',
+                 drift,
+                 'seconds — using JWT exp'
+              )
+              currentSession.expires_at = payload.exp
+            }
+          }
+        } catch (e){
+          // already handled above
+        }
+      }
       const hasExpired = currentSession.expires_at
         ? currentSession.expires_at * 1000 - Date.now() < EXPIRY_MARGIN_MS
         : false
