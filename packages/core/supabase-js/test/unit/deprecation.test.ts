@@ -7,6 +7,7 @@ export {}
 
 describe('Node.js deprecation warning', () => {
   const originalProcess = global.process
+  const originalProcessVersion = Object.getOwnPropertyDescriptor(global.process, 'version')
   const originalWindow = global.window
   const originalDeno = (globalThis as any).Deno
   const originalConsoleWarn = console.warn
@@ -21,6 +22,9 @@ describe('Node.js deprecation warning', () => {
   afterEach(() => {
     // Restore original values
     global.process = originalProcess
+    if (originalProcessVersion) {
+      Object.defineProperty(global.process, 'version', originalProcessVersion)
+    }
     global.window = originalWindow
     ;(globalThis as any).Deno = originalDeno
     console.warn = originalConsoleWarn
