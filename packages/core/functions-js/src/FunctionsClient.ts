@@ -303,7 +303,12 @@ export class FunctionsClient {
         throw new FunctionsHttpError(response)
       }
 
-      let responseType = (response.headers.get('Content-Type') ?? 'text/plain').split(';')[0].trim()
+      // HTTP media types are case-insensitive (RFC 9110), so normalize before
+      // matching — otherwise an "Application/JSON" response falls through to text.
+      let responseType = (response.headers.get('Content-Type') ?? 'text/plain')
+        .split(';')[0]
+        .trim()
+        .toLowerCase()
       let data: any
       if (responseType === 'application/json') {
         data = await response.json()
