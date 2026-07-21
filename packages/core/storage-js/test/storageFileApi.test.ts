@@ -1133,6 +1133,48 @@ describe('purgeCache', () => {
       expect.objectContaining({ method: 'DELETE', signal: controller.signal })
     )
   })
+
+  it('percent-encodes URL delimiters in the key while keeping path separators literal', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { error } = await client.from(BUCKET).purgeCache('folder/a?b#c.png')
+
+    expect(error).toBeNull()
+    // `?` and `#` are encoded so they can't be parsed as querystring/fragment,
+    // but `/` stays literal so the server still routes on the real path segments.
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/folder/a%3Fb%23c.png`,
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('appends the transformations query after an encoded key', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { error } = await client.from(BUCKET).purgeCache('folder/a?b.png', {
+      transformations: true,
+    })
+
+    expect(error).toBeNull()
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/folder/a%3Fb.png?transformations=true`,
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
 })
 
 describe('StorageFileApi Edge Cases', () => {
