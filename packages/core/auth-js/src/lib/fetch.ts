@@ -224,9 +224,10 @@ async function _handleRequest(
       ...requestParams,
     })
   } catch (e) {
-    console.error(e)
-
-    // fetch failed, likely due to a network or CORS error
+    // fetch failed (network / CORS / aborted request) — surfaced to the
+    // caller as a retryable error below. Deliberately not logged here: an
+    // aborted in-flight request (e.g. a superseded page navigation) is a
+    // transient condition, and logging the raw error pollutes the console.
     throw new AuthRetryableFetchError(_getErrorMessage(e), 0)
   }
 

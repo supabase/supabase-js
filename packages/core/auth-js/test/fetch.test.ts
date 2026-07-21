@@ -122,6 +122,31 @@ describe('fetch', () => {
       await server.start()
     })
 
+    test('should not log the raw error to console.error when the fetch fails', async () => {
+      // A network / CORS / aborted fetch is a transient condition surfaced to
+      // the caller as AuthRetryableFetchError. It must not be logged raw here,
+      // as that pollutes production consoles.
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+      const route = server
+        .get('/')
+        .mockImplementationOnce((ctx) => {
+          // abort the request without sending any response
+          ctx.req.destroy()
+        })
+        .mockImplementation((ctx) => {
+          ctx.status = 200
+        })
+
+      const url = server.getURL().toString()
+
+      await expect(_request(fetch, 'GET', url)).rejects.toBeInstanceOf(AuthRetryableFetchError)
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(route).toHaveBeenCalledTimes(1)
+
+      errorSpy.mockRestore()
+    })
+
     test('should work with custom fetch implementation', async () => {
       const customFetch = (async () => {
         return {
