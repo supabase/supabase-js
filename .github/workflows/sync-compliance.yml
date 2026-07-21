@@ -10,7 +10,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: supabase/sdk/.github/workflows/sync-sdk-compliance.yml@main
+    uses: supabase/sdk/.github/workflows/sync-sdk-compliance.yml@faba359a57d270bbbf68fd6b583db0604ddce8af # main
     with:
       base-branch: master
     secrets:
