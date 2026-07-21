@@ -4833,7 +4833,7 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
     })
   })
 
-  describe('console noise on transient failures (#2543)', () => {
+  describe('console noise on transient failures', () => {
     const retryableFetchError = () =>
       Object.assign(new AuthError('Failed to fetch', 0), {
         name: 'AuthRetryableFetchError',
@@ -4841,10 +4841,10 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       })
 
     test('_emitInitialSession downgrades a retryable network failure to console.warn', async () => {
-      // Repro of #2543: a full page load starts session recovery, the user
-      // navigates away, the in-flight auth request is aborted and surfaces as
-      // an AuthRetryableFetchError. The INITIAL_SESSION emission must warn,
-      // not error, so it doesn't pollute production consoles / break strict
+      // A full page load starts session recovery, the user navigates away,
+      // and the in-flight auth request is aborted, surfacing as an
+      // AuthRetryableFetchError. The INITIAL_SESSION emission must warn, not
+      // error, so it doesn't pollute production consoles or break strict
       // zero-console-error E2E gates.
       const storage = memoryLocalStorageAdapter()
       await plantSession(storage, { secondsUntilExpiry: -60 })
@@ -4866,7 +4866,7 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       // Drive the INITIAL_SESSION emission directly so the assertion doesn't
       // race the fire-and-forget emission scheduled by onAuthStateChange.
       // @ts-expect-error access private for test
-      await client._emitInitialSession(Symbol('test-2543'))
+      await client._emitInitialSession(Symbol('test-transient-init'))
 
       expect(errorSpy).not.toHaveBeenCalled()
       expect(warnSpy).toHaveBeenCalled()

@@ -124,8 +124,8 @@ describe('fetch', () => {
 
     test('should not log the raw error to console.error when the fetch fails', async () => {
       // A network / CORS / aborted fetch is a transient condition surfaced to
-      // the caller as AuthRetryableFetchError. It must not be logged raw here
-      // (see supabase-js#2543) — that pollutes production consoles.
+      // the caller as AuthRetryableFetchError. It must not be logged raw here,
+      // as that pollutes production consoles.
       const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
 
       const route = server
