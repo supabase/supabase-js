@@ -2985,16 +2985,16 @@ export default class GoTrueClient {
           // The session-level expires_at is set from the server response
           // and may diverge from the JWT's own exp due to clock skew,
           // token tampering, or server-side revocation.
-          try{
+          try {
             const { payload } = decodeJWT(maybeSession.access_token)
             if (payload.exp && payload.exp <= Math.floor(Date.now() / 1000)) {
               this._debug('#getSession()', 'JWT exp claim has expired', payload.exp)
-               await this._removeSession() 
-               // fall through to refresh or return null
-            }else{
+              await this._removeSession()
+              // fall through to refresh or return null
+            } else {
               currentSession = maybeSession
             }
-          } catch(e){
+          } catch (e) {
             this._debug('#getSession()', 'failed to decode JWT from session', e)
             await this._removeSession()
           }
@@ -3024,13 +3024,13 @@ export default class GoTrueClient {
               this._debug(
                 '#getSession()',
                 'JWT exp and session expires_at diverge by',
-                 drift,
-                 'seconds — using JWT exp'
+                drift,
+                'seconds — using JWT exp'
               )
               currentSession.expires_at = payload.exp
             }
           }
-        } catch (e){
+        } catch (e) {
           // already handled above
         }
       }
