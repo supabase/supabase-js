@@ -1,3 +1,13 @@
+## 2.110.8 (2026-07-21)
+
+### 🩹 Fixes
+
+- **supabase:** skip Node warning in Deno ([#2541](https://github.com/supabase/supabase-js/pull/2541))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.110.7 (2026-07-16)
 
 ### 🩹 Fixes

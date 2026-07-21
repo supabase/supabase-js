@@ -1,3 +1,7 @@
+## 2.110.8 (2026-07-21)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
 ## 2.110.7 (2026-07-16)
 
 ### 🩹 Fixes
