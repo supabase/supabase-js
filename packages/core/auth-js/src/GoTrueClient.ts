@@ -2981,19 +2981,14 @@ export default class GoTrueClient {
 
       if (maybeSession !== null) {
         if (this._isValidSession(maybeSession)) {
-          // Validate the JWT access_token's exp claim independently.
-          // The session-level expires_at is set from the server response
-          // and may diverge from the JWT's own exp due to clock skew,
-          // token tampering, or server-side revocation.
+          // Decode the JWT to validate its structure and extract the exp
+          // claim. If the JWT is malformed, clear the session. Otherwise,
+          // assign the session unconditionally — the drift correction below
+          // will align expires_at with the JWT exp, and the existing
+          // hasExpired check will trigger a refresh if needed.
           try {
-            const { payload } = decodeJWT(maybeSession.access_token)
-            if (payload.exp && payload.exp <= Math.floor(Date.now() / 1000)) {
-              this._debug('#getSession()', 'JWT exp claim has expired', payload.exp)
-              await this._removeSession()
-              // fall through to refresh or return null
-            } else {
-              currentSession = maybeSession
-            }
+            decodeJWT(maybeSession.access_token)
+            currentSession = maybeSession
           } catch (e) {
             this._debug('#getSession()', 'failed to decode JWT from session', e)
             await this._removeSession()

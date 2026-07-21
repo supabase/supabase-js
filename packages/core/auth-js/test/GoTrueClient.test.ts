@@ -345,7 +345,7 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
     })
 
-    test('getSession() invalidates session when JWT exp has expired but expires_at is in the future', async () => {
+    test('getSession() triggers refresh when JWT exp has expired but expires_at is in the future', async () => {
       // @ts-expect-error 'Allow access to protected storage'
       const storage = authWithSession.storage
       // @ts-expect-error 'Allow access to protected storageKey'
@@ -387,11 +387,21 @@ describe('GoTrueClient', () => {
           },
         })
       )
+      // Mock _refreshAccessToken to avoid network calls
+      // @ts-expect-error 'Allow mocking private method return type'
+      refreshAccessTokenSpy.mockResolvedValueOnce({
+        data: { user: null, session: null },
+        error: new AuthError('Mocked refresh failure'),
+      })
+      try {
+        const { data: result, error: resultError } = await authWithSession.getSession()
 
-      const { data: result, error: resultError } = await authWithSession.getSession()
-      expect(resultError).toBeNull()
-      expect(result.session).toBeNull()
-    })
+        expect(refreshAccessTokenSpy).toHaveBeenCalledTimes(1)
+        expect(result.session).toBeNull()
+        expect(resultError).not.toBeNull()
+      } finally {
+        refreshAccessTokenSpy.mockRestore()
+      }
 
     test('getSession() corrects expires_at when JWT exp diverges by more than 60s', async () => {
       // @ts-expect-error 'Allow access to protected storage'
