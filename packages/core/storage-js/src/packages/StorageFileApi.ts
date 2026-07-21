@@ -6,7 +6,7 @@ import {
 } from '../lib/common/errors'
 import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
 import { setHeader } from '../lib/common/headers'
-import { recursiveToCamel } from '../lib/common/helpers'
+import { encodeStoragePath, recursiveToCamel } from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   FileObject,
@@ -1216,7 +1216,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      const _path = this._getFinalPath(path)
+      const _path = encodeStoragePath(this._getFinalPath(path))
       const query = new URLSearchParams()
       if (options?.transformations) {
         query.set('transformations', 'true')

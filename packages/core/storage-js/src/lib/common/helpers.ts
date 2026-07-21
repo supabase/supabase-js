@@ -144,3 +144,16 @@ export const validateVectorDimension = (
     )
   }
 }
+
+/**
+ * Percent-encodes each segment of a storage path so URL delimiters within a
+ * key (e.g. `?`, `#`) can't be interpreted as a querystring/fragment start.
+ *
+ * Splits on `/` so real path separators stay literal — the storage server
+ * routes on them and decodes each segment back to the original key.
+ *
+ * @param path - A bucket id or `bucketId/objectKey` path
+ * @returns The path with each `/`-delimited segment percent-encoded
+ */
+export const encodeStoragePath = (path: string): string =>
+  path.split('/').map(encodeURIComponent).join('/')

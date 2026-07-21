@@ -1,6 +1,7 @@
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { StorageError } from '../lib/common/errors'
 import { Fetch, get, post, put, remove } from '../lib/common/fetch'
+import { encodeStoragePath } from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   Bucket,
@@ -455,7 +456,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
 
       return await remove(
         this.fetch,
-        `${this.url}/cdn/${id}${queryString ? `?${queryString}` : ''}`,
+        `${this.url}/cdn/${encodeStoragePath(id)}${queryString ? `?${queryString}` : ''}`,
         {},
         { headers: this.headers },
         parameters
