@@ -4290,7 +4290,10 @@ export default class GoTrueClient {
       } catch (err) {
         await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
         this._debug('INITIAL_SESSION', 'callback id', id, 'error', err)
-        if (isAuthSessionMissingError(err)) {
+        if (isAuthSessionMissingError(err) || isAuthRetryableFetchError(err)) {
+          // A missing session or a transient/aborted network failure (e.g. a
+          // superseded page navigation cancelling the in-flight request) is
+          // not an application error — warn rather than surface it raw.
           console.warn(err)
         } else {
           console.error(err)
@@ -4866,7 +4869,15 @@ export default class GoTrueClient {
     } catch (err) {
       this._debug(debugName, 'error', err)
 
-      console.error(err)
+      if (isAuthRetryableFetchError(err)) {
+        // Transient/aborted network failure during session recovery (e.g. a
+        // superseded page navigation cancelling the in-flight request). Warn
+        // rather than surface it raw; the session is untouched and recovery
+        // will run again on the next load.
+        console.warn(err)
+      } else {
+        console.error(err)
+      }
       return
     } finally {
       this._debug(debugName, 'end')
