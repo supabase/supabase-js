@@ -2981,7 +2981,18 @@ export default class GoTrueClient {
 
       if (maybeSession !== null) {
         if (this._isValidSession(maybeSession)) {
-          currentSession = maybeSession
+          // Decode the JWT to validate its structure and extract the exp
+          // claim. If the JWT is malformed, clear the session. Otherwise,
+          // assign the session unconditionally — the drift correction below
+          // will align expires_at with the JWT exp, and the existing
+          // hasExpired check will trigger a refresh if needed.
+          try {
+            decodeJWT(maybeSession.access_token)
+            currentSession = maybeSession
+          } catch (e) {
+            this._debug('#getSession()', 'failed to decode JWT from session', e)
+            await this._removeSession()
+          }
         } else {
           this._debug('#getSession()', 'session from storage is not valid')
           await this._removeSession()
@@ -2997,6 +3008,27 @@ export default class GoTrueClient {
       // in the background), very eager users of getSession() -- like
       // realtime-js -- might send a valid JWT which will expire by the time it
       // reaches the server.
+      // Cross-check: if the JWT exp and session expires_at diverge by more
+      // than 60 seconds, prefer the JWT exp as the source of truth.
+      if (currentSession) {
+        try {
+          const { payload } = decodeJWT(currentSession.access_token)
+          if (payload.exp && currentSession.expires_at) {
+            const drift = Math.abs(payload.exp - currentSession.expires_at)
+            if (drift > 60) {
+              this._debug(
+                '#getSession()',
+                'JWT exp and session expires_at diverge by',
+                drift,
+                'seconds — using JWT exp'
+              )
+              currentSession.expires_at = payload.exp
+            }
+          }
+        } catch (e) {
+          // already handled above
+        }
+      }
       const hasExpired = currentSession.expires_at
         ? currentSession.expires_at * 1000 - Date.now() < EXPIRY_MARGIN_MS
         : false
