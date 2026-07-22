@@ -13,175 +13,671 @@ sdk: javascript
 
 features:
   # auth
-  auth.admin.create_provider: implemented
-  auth.admin.create_user: implemented
-  auth.admin.delete_mfa_factor: implemented
-  auth.admin.delete_provider: implemented
-  auth.admin.delete_user: implemented
-  auth.admin.generate_link: implemented
-  auth.admin.get_provider: implemented
-  auth.admin.get_user: implemented
-  auth.admin.invite_user: implemented
-  auth.admin.list_mfa_factors: implemented
-  auth.admin.list_providers: implemented
-  auth.admin.list_users: implemented
-  auth.admin.sign_out: implemented
-  auth.admin.update_provider: implemented
-  auth.admin.update_user: implemented
-  auth.identities.link_identity: implemented
-  auth.identities.list_identities: implemented
-  auth.identities.unlink_identity: implemented
-  auth.mfa.challenge: implemented
-  auth.mfa.challenge_and_verify: implemented
-  auth.mfa.enroll: implemented
-  auth.mfa.get_authenticator_assurance_level: implemented
-  auth.mfa.list_factors: implemented
-  auth.mfa.unenroll: implemented
-  auth.mfa.verify: implemented
-  auth.oauth_admin.create_client: implemented
-  auth.oauth_admin.delete_client: implemented
-  auth.oauth_admin.get_client: implemented
-  auth.oauth_admin.list_clients: implemented
-  auth.oauth_admin.regenerate_client_secret: implemented
-  auth.oauth_admin.update_client: implemented
-  auth.oauth_server.approve_authorization: implemented
-  auth.oauth_server.deny_authorization: implemented
-  auth.oauth_server.get_authorization_details: implemented
-  auth.oauth_server.list_grants: implemented
-  auth.oauth_server.revoke_grant: implemented
-  auth.passkey.register_passkey: implemented
-  auth.passkey.sign_in_with_passkey: implemented
-  auth.passkey_admin.delete_passkey: implemented
-  auth.passkey_admin.list_passkeys: implemented
-  auth.session.auto_refresh: implemented
-  auth.session.get_claims: implemented
-  auth.session.get_session: implemented
-  auth.session.get_user: implemented
-  auth.session.refresh_session: implemented
-  auth.session.set_session: implemented
-  auth.session.sign_out: implemented
-  auth.session.subscribe_auth_events: implemented
-  auth.session.update_user: implemented
-  auth.sign_in.exchange_code_for_session: implemented
-  auth.sign_in.reauthenticate: implemented
-  auth.sign_in.resend_confirmation: implemented
-  auth.sign_in.reset_password: implemented
-  auth.sign_in.sign_in_anonymously: implemented
-  auth.sign_in.sign_in_with_id_token: implemented
-  auth.sign_in.sign_in_with_oauth: implemented
-  auth.sign_in.sign_in_with_otp: implemented
-  auth.sign_in.sign_in_with_password: implemented
-  auth.sign_in.sign_in_with_sso: implemented
-  auth.sign_in.sign_in_with_web3: implemented
-  auth.sign_in.sign_up: implemented
-  auth.sign_in.verify_otp: implemented
+  auth.admin.create_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.createProvider
+  auth.admin.create_user:
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.createUser
+  auth.admin.delete_mfa_factor:
+    status: implemented
+    symbols:
+      - GoTrueAdminMFAApi.deleteFactor
+  auth.admin.delete_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.deleteProvider
+  auth.admin.delete_user:
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.deleteUser
+  auth.admin.generate_link:
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.generateLink
+  auth.admin.get_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.getProvider
+  auth.admin.get_user:
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.getUserById
+  auth.admin.invite_user:
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.inviteUserByEmail
+  auth.admin.list_mfa_factors:
+    status: implemented
+    symbols:
+      - GoTrueAdminMFAApi.listFactors
+  auth.admin.list_providers:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.listProviders
+  auth.admin.list_users:
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.listUsers
+  auth.admin.sign_out:
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.signOut
+  auth.admin.update_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.updateProvider
+  auth.admin.update_user:
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.updateUserById
+  auth.identities.link_identity:
+    status: implemented
+    symbols:
+      - GoTrueClient.linkIdentity
+  auth.identities.list_identities:
+    status: implemented
+    symbols:
+      - GoTrueClient.getUserIdentities
+  auth.identities.unlink_identity:
+    status: implemented
+    symbols:
+      - GoTrueClient.unlinkIdentity
+  auth.mfa.challenge:
+    status: implemented
+    symbols:
+      - GoTrueMFAApi.challenge
+  auth.mfa.challenge_and_verify:
+    status: implemented
+    symbols:
+      - GoTrueMFAApi.challengeAndVerify
+  auth.mfa.enroll:
+    status: implemented
+    symbols:
+      - GoTrueMFAApi.enroll
+  auth.mfa.get_authenticator_assurance_level:
+    status: implemented
+    symbols:
+      - GoTrueMFAApi.getAuthenticatorAssuranceLevel
+  auth.mfa.list_factors:
+    status: implemented
+    symbols:
+      - GoTrueMFAApi.listFactors
+  auth.mfa.unenroll:
+    status: implemented
+    symbols:
+      - GoTrueMFAApi.unenroll
+  auth.mfa.verify:
+    status: implemented
+    symbols:
+      - GoTrueMFAApi.verify
+  auth.oauth_admin.create_client:
+    status: implemented
+    symbols:
+      - GoTrueAdminOAuthApi.createClient
+  auth.oauth_admin.delete_client:
+    status: implemented
+    symbols:
+      - GoTrueAdminOAuthApi.deleteClient
+  auth.oauth_admin.get_client:
+    status: implemented
+    symbols:
+      - GoTrueAdminOAuthApi.getClient
+  auth.oauth_admin.list_clients:
+    status: implemented
+    symbols:
+      - GoTrueAdminOAuthApi.listClients
+  auth.oauth_admin.regenerate_client_secret:
+    status: implemented
+    symbols:
+      - GoTrueAdminOAuthApi.regenerateClientSecret
+  auth.oauth_admin.update_client:
+    status: implemented
+    symbols:
+      - GoTrueAdminOAuthApi.updateClient
+  auth.oauth_server.approve_authorization:
+    status: implemented
+    symbols:
+      - AuthOAuthServerApi.approveAuthorization
+  auth.oauth_server.deny_authorization:
+    status: implemented
+    symbols:
+      - AuthOAuthServerApi.denyAuthorization
+  auth.oauth_server.get_authorization_details:
+    status: implemented
+    symbols:
+      - AuthOAuthServerApi.getAuthorizationDetails
+  auth.oauth_server.list_grants:
+    status: implemented
+    symbols:
+      - AuthOAuthServerApi.listGrants
+  auth.oauth_server.revoke_grant:
+    status: implemented
+    symbols:
+      - AuthOAuthServerApi.revokeGrant
+  auth.passkey.register_passkey:
+    status: implemented
+    symbols:
+      - GoTrueClient.registerPasskey
+  auth.passkey.sign_in_with_passkey:
+    status: implemented
+    symbols:
+      - GoTrueClient.signInWithPasskey
+  auth.passkey_admin.delete_passkey:
+    status: implemented
+    symbols:
+      - GoTrueAdminPasskeyApi.deletePasskey
+  auth.passkey_admin.list_passkeys:
+    status: implemented
+    symbols:
+      - GoTrueAdminPasskeyApi.listPasskeys
+  auth.session.auto_refresh:
+    status: implemented
+    symbols:
+      - GoTrueClient.startAutoRefresh
+      - GoTrueClient.stopAutoRefresh
+  auth.session.get_claims:
+    status: implemented
+    symbols:
+      - GoTrueClient.getClaims
+  auth.session.get_session:
+    status: implemented
+    symbols:
+      - GoTrueClient.getSession
+  auth.session.get_user:
+    status: implemented
+    symbols:
+      - GoTrueClient.getUser
+  auth.session.refresh_session:
+    status: implemented
+    symbols:
+      - GoTrueClient.refreshSession
+  auth.session.set_session:
+    status: implemented
+    symbols:
+      - GoTrueClient.setSession
+  auth.session.sign_out:
+    status: implemented
+    symbols:
+      - GoTrueClient.signOut
+  auth.session.subscribe_auth_events:
+    status: implemented
+    symbols:
+      - GoTrueClient.onAuthStateChange
+  auth.session.update_user:
+    status: implemented
+    symbols:
+      - GoTrueClient.updateUser
+  auth.sign_in.exchange_code_for_session:
+    status: implemented
+    symbols:
+      - GoTrueClient.exchangeCodeForSession
+  auth.sign_in.reauthenticate:
+    status: implemented
+    symbols:
+      - GoTrueClient.reauthenticate
+  auth.sign_in.resend_confirmation:
+    status: implemented
+    symbols:
+      - GoTrueClient.resend
+  auth.sign_in.reset_password:
+    status: implemented
+    symbols:
+      - GoTrueClient.resetPasswordForEmail
+  auth.sign_in.sign_in_anonymously:
+    status: implemented
+    symbols:
+      - GoTrueClient.signInAnonymously
+  auth.sign_in.sign_in_with_id_token:
+    status: implemented
+    symbols:
+      - GoTrueClient.signInWithIdToken
+  auth.sign_in.sign_in_with_oauth:
+    status: implemented
+    symbols:
+      - GoTrueClient.signInWithOAuth
+  auth.sign_in.sign_in_with_otp:
+    status: implemented
+    symbols:
+      - GoTrueClient.signInWithOtp
+  auth.sign_in.sign_in_with_password:
+    status: implemented
+    symbols:
+      - GoTrueClient.signInWithPassword
+  auth.sign_in.sign_in_with_sso:
+    status: implemented
+    symbols:
+      - GoTrueClient.signInWithSSO
+  auth.sign_in.sign_in_with_web3:
+    status: implemented
+    symbols:
+      - GoTrueClient.signInWithWeb3
+  auth.sign_in.sign_up:
+    status: implemented
+    symbols:
+      - GoTrueClient.signUp
+  auth.sign_in.verify_otp:
+    status: implemented
+    symbols:
+      - GoTrueClient.verifyOtp
 
   # database
-  database.mutate.delete: implemented
-  database.mutate.insert: implemented
-  database.mutate.update: implemented
-  database.mutate.upsert: implemented
-  database.query.from_table: implemented
-  database.query.rpc: implemented
-  database.query.schema_selection: implemented
-  database.query.select: implemented
-  database.using_filters.contained_by: implemented
-  database.using_filters.contains: implemented
-  database.using_filters.eq: implemented
-  database.using_filters.gt: implemented
-  database.using_filters.gte: implemented
-  database.using_filters.ilike: implemented
-  database.using_filters.ilike_all: implemented
-  database.using_filters.ilike_any: implemented
-  database.using_filters.in: implemented
-  database.using_filters.is: implemented
-  database.using_filters.is_distinct: implemented
-  database.using_filters.like: implemented
-  database.using_filters.like_all: implemented
-  database.using_filters.like_any: implemented
-  database.using_filters.lt: implemented
-  database.using_filters.lte: implemented
-  database.using_filters.match: implemented
-  database.using_filters.neq: implemented
-  database.using_filters.not: implemented
-  database.using_filters.not_in: implemented
-  database.using_filters.or: implemented
-  database.using_filters.overlaps: implemented
-  database.using_filters.range_adjacent: implemented
-  database.using_filters.range_gt: implemented
-  database.using_filters.range_gte: implemented
-  database.using_filters.range_lt: implemented
-  database.using_filters.range_lte: implemented
-  database.using_filters.raw: implemented
-  database.using_filters.regex: implemented
-  database.using_filters.regex_icase: implemented
-  database.using_filters.text_search: implemented
-  database.using_modifiers.dry_run: implemented
-  database.using_modifiers.explain: implemented
-  database.using_modifiers.format_csv: implemented
-  database.using_modifiers.format_geojson: implemented
-  database.using_modifiers.limit: implemented
-  database.using_modifiers.max_affected_rows: implemented
-  database.using_modifiers.maybe_single_row: implemented
-  database.using_modifiers.order: implemented
-  database.using_modifiers.range: implemented
-  database.using_modifiers.single_row: implemented
+  database.mutate.delete:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.delete
+  database.mutate.insert:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+  database.mutate.update:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.update
+  database.mutate.upsert:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.upsert
+  database.query.from_table:
+    status: implemented
+    symbols:
+      - PostgrestClient.from
+  database.query.rpc:
+    status: implemented
+    symbols:
+      - PostgrestClient.rpc
+  database.query.schema_selection:
+    status: implemented
+    symbols:
+      - PostgrestClient.schema
+  database.query.select:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.select
+      - PostgrestTransformBuilder.select
+  database.using_filters.contained_by:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.containedBy
+  database.using_filters.contains:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.contains
+  database.using_filters.eq:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.eq
+  database.using_filters.gt:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.gt
+  database.using_filters.gte:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.gte
+  database.using_filters.ilike:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.ilike
+  database.using_filters.ilike_all:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.ilikeAllOf
+  database.using_filters.ilike_any:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.ilikeAnyOf
+  database.using_filters.in:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.in
+  database.using_filters.is:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.is
+  database.using_filters.is_distinct:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.isDistinct
+  database.using_filters.like:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.like
+  database.using_filters.like_all:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.likeAllOf
+  database.using_filters.like_any:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.likeAnyOf
+  database.using_filters.lt:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.lt
+  database.using_filters.lte:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.lte
+  database.using_filters.match:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.match
+  database.using_filters.neq:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.neq
+  database.using_filters.not:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.not
+  database.using_filters.not_in:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.notIn
+  database.using_filters.or:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.or
+  database.using_filters.overlaps:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.overlaps
+  database.using_filters.range_adjacent:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.rangeAdjacent
+  database.using_filters.range_gt:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.rangeGt
+  database.using_filters.range_gte:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.rangeGte
+  database.using_filters.range_lt:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.rangeLt
+  database.using_filters.range_lte:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.rangeLte
+  database.using_filters.raw:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.filter
+  database.using_filters.regex:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.regexMatch
+  database.using_filters.regex_icase:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.regexIMatch
+  database.using_filters.text_search:
+    status: implemented
+    symbols:
+      - PostgrestFilterBuilder.textSearch
+  database.using_modifiers.dry_run:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.rollback
+  database.using_modifiers.explain:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.explain
+  database.using_modifiers.format_csv:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.csv
+  database.using_modifiers.format_geojson:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.geojson
+  database.using_modifiers.limit:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.limit
+  database.using_modifiers.max_affected_rows:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.maxAffected
+  database.using_modifiers.maybe_single_row:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.maybeSingle
+  database.using_modifiers.order:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.order
+  database.using_modifiers.range:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.range
+  database.using_modifiers.single_row:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.single
 
   # storage
-  storage.file_buckets.access_bucket: implemented
-  storage.file_buckets.copy: implemented
-  storage.file_buckets.create_file_bucket: implemented
-  storage.file_buckets.create_signed_upload_url: implemented
-  storage.file_buckets.create_signed_url: implemented
-  storage.file_buckets.create_signed_urls: implemented
-  storage.file_buckets.delete_file_bucket: implemented
-  storage.file_buckets.download: implemented
-  storage.file_buckets.empty_bucket: implemented
-  storage.file_buckets.file_exists: implemented
-  storage.file_buckets.file_info: implemented
-  storage.file_buckets.get_bucket: implemented
-  storage.file_buckets.get_public_url: implemented
-  storage.file_buckets.list_file_buckets: implemented
-  storage.file_buckets.list_files: implemented
-  storage.file_buckets.list_files_paginated: implemented
-  storage.file_buckets.move: implemented
-  storage.file_buckets.remove: implemented
-  storage.file_buckets.update_bucket: implemented
-  storage.file_buckets.update_file: implemented
-  storage.file_buckets.upload: implemented
-  storage.file_buckets.upload_with_signed_url: implemented
-  storage.vector_buckets.access_vector_index: implemented
-  storage.vector_buckets.create_index: implemented
-  storage.vector_buckets.delete_index: implemented
-  storage.vector_buckets.delete_vectors: implemented
-  storage.vector_buckets.get_index: implemented
-  storage.vector_buckets.get_vectors: implemented
-  storage.vector_buckets.list_indexes: implemented
-  storage.vector_buckets.list_vectors: implemented
-  storage.vector_buckets.put_vectors: implemented
-  storage.vector_buckets.query_vectors: implemented
+  storage.file_buckets.access_bucket:
+    status: implemented
+    symbols:
+      - StorageClient.from
+      - StorageVectorsClient.from
+  storage.file_buckets.copy:
+    status: implemented
+    symbols:
+      - default.copy
+  storage.file_buckets.create_file_bucket:
+    status: implemented
+    symbols:
+      - default.createBucket
+      - StorageVectorsClient.createBucket
+  storage.file_buckets.create_signed_upload_url:
+    status: implemented
+    symbols:
+      - default.createSignedUploadUrl
+  storage.file_buckets.create_signed_url:
+    status: implemented
+    symbols:
+      - default.createSignedUrl
+  storage.file_buckets.create_signed_urls:
+    status: implemented
+    symbols:
+      - default.createSignedUrls
+  storage.file_buckets.delete_file_bucket:
+    status: implemented
+    symbols:
+      - default.deleteBucket
+      - StorageVectorsClient.deleteBucket
+  storage.file_buckets.download:
+    status: implemented
+    symbols:
+      - default.download
+  storage.file_buckets.empty_bucket:
+    status: implemented
+    symbols:
+      - default.emptyBucket
+  storage.file_buckets.file_exists:
+    status: implemented
+    symbols:
+      - default.exists
+  storage.file_buckets.file_info:
+    status: implemented
+    symbols:
+      - default.info
+  storage.file_buckets.get_bucket:
+    status: implemented
+    symbols:
+      - default.getBucket
+      - StorageVectorsClient.getBucket
+  storage.file_buckets.get_public_url:
+    status: implemented
+    symbols:
+      - default.getPublicUrl
+  storage.file_buckets.list_file_buckets:
+    status: implemented
+    symbols:
+      - default.listBuckets
+      - StorageVectorsClient.listBuckets
+  storage.file_buckets.list_files:
+    status: implemented
+    symbols:
+      - default.list
+  storage.file_buckets.list_files_paginated:
+    status: implemented
+    symbols:
+      - default.listV2
+  storage.file_buckets.move:
+    status: implemented
+    symbols:
+      - default.move
+  storage.file_buckets.purge_bucket_cache:
+    status: implemented
+    symbols:
+      - default.purgeBucketCache
+  storage.file_buckets.purge_cache:
+    status: implemented
+    symbols:
+      - default.purgeCache
+  storage.file_buckets.remove:
+    status: implemented
+    symbols:
+      - default.remove
+  storage.file_buckets.update_bucket:
+    status: implemented
+    symbols:
+      - default.updateBucket
+  storage.file_buckets.update_file:
+    status: implemented
+    symbols:
+      - default.update
+  storage.file_buckets.upload:
+    status: implemented
+    symbols:
+      - default.upload
+  storage.file_buckets.upload_with_signed_url:
+    status: implemented
+    symbols:
+      - default.uploadToSignedUrl
+  storage.vector_buckets.access_vector_index:
+    status: implemented
+    symbols:
+      - VectorBucketScope.index
+  storage.vector_buckets.create_index:
+    status: implemented
+    symbols:
+      - VectorBucketScope.createIndex
+  storage.vector_buckets.delete_index:
+    status: implemented
+    symbols:
+      - VectorBucketScope.deleteIndex
+  storage.vector_buckets.delete_vectors:
+    status: implemented
+    symbols:
+      - VectorIndexScope.deleteVectors
+  storage.vector_buckets.get_index:
+    status: implemented
+    symbols:
+      - VectorBucketScope.getIndex
+  storage.vector_buckets.get_vectors:
+    status: implemented
+    symbols:
+      - VectorIndexScope.getVectors
+  storage.vector_buckets.list_indexes:
+    status: implemented
+    symbols:
+      - VectorBucketScope.listIndexes
+  storage.vector_buckets.list_vectors:
+    status: implemented
+    symbols:
+      - VectorIndexScope.listVectors
+  storage.vector_buckets.put_vectors:
+    status: implemented
+    symbols:
+      - VectorIndexScope.putVectors
+  storage.vector_buckets.query_vectors:
+    status: implemented
+    symbols:
+      - VectorIndexScope.queryVectors
 
   # realtime
-  realtime.channel.broadcast_http: implemented
-  realtime.channel.send: implemented
-  realtime.channel.subscribe: implemented
-  realtime.channel.unsubscribe: implemented
-  realtime.client.channel: implemented
-  realtime.client.connect: implemented
-  realtime.client.connection_state: implemented
-  realtime.client.disconnect: implemented
-  realtime.client.get_channels: implemented
-  realtime.client.listen_heartbeats: implemented
-  realtime.client.remove_all_channels: implemented
-  realtime.client.remove_channel: implemented
-  realtime.client.set_auth_token: implemented
-  realtime.presence.presence_state: implemented
-  realtime.presence.track: implemented
-  realtime.presence.untrack: implemented
-  realtime.subscriptions.broadcast: implemented
+  realtime.channel.broadcast_http:
+    status: implemented
+    symbols:
+      - RealtimeChannel.httpSend
+  realtime.channel.send:
+    status: implemented
+    symbols:
+      - RealtimeChannel.send
+  realtime.channel.subscribe:
+    status: implemented
+    symbols:
+      - RealtimeChannel.subscribe
+  realtime.channel.unsubscribe:
+    status: implemented
+    symbols:
+      - RealtimeChannel.unsubscribe
+  realtime.client.channel:
+    status: implemented
+    symbols:
+      - RealtimeClient.channel
+  realtime.client.connect:
+    status: implemented
+    symbols:
+      - RealtimeClient.connect
+  realtime.client.connection_state:
+    status: implemented
+    symbols:
+      - RealtimeClient.connectionState
+  realtime.client.disconnect:
+    status: implemented
+    symbols:
+      - RealtimeClient.disconnect
+  realtime.client.get_channels:
+    status: implemented
+    symbols:
+      - RealtimeClient.getChannels
+  realtime.client.listen_heartbeats:
+    status: implemented
+    symbols:
+      - RealtimeClient.onHeartbeat
+  realtime.client.remove_all_channels:
+    status: implemented
+    symbols:
+      - RealtimeClient.removeAllChannels
+  realtime.client.remove_channel:
+    status: implemented
+    symbols:
+      - RealtimeClient.removeChannel
+  realtime.client.set_auth_token:
+    status: implemented
+    symbols:
+      - RealtimeClient.setAuth
+  realtime.presence.presence_state:
+    status: implemented
+    symbols:
+      - RealtimeChannel.presenceState
+  realtime.presence.track:
+    status: implemented
+    symbols:
+      - RealtimeChannel.track
+  realtime.presence.untrack:
+    status: implemented
+    symbols:
+      - RealtimeChannel.untrack
+  realtime.subscriptions.broadcast:
+    status: implemented
+    symbols:
+      - RealtimeChannel.on
   realtime.subscriptions.postgres_changes:
     status: implemented
     symbols:
+      - RealtimeChannel.on
       - postgresChangesFilter
       - RealtimePostgresFilterBuilder
       - RealtimePostgresFilterBuilder.eq
@@ -200,8 +696,17 @@ features:
       - RealtimePostgresFilterBuilder.not
       - RealtimePostgresFilterBuilder.build
       - RealtimePostgresFilterBuilder.toString
-  realtime.subscriptions.subscribe_presence: implemented
+  realtime.subscriptions.subscribe_presence:
+    status: implemented
+    symbols:
+      - RealtimeChannel.on
 
   # functions
-  functions.invocation.invoke: implemented
-  functions.invocation.set_auth_token: implemented
+  functions.invocation.invoke:
+    status: implemented
+    symbols:
+      - FunctionsClient.invoke
+  functions.invocation.set_auth_token:
+    status: implemented
+    symbols:
+      - FunctionsClient.setAuth

@@ -98,9 +98,13 @@ mappings:
   realtime.client.on_heartbeat: realtime.client.listen_heartbeats
   realtime.client.set_auth: realtime.client.set_auth_token
 
-  # The `channel()` factory method on RealtimeClient is conceptually a
-  # channel-creation operation. Canon places it under the channel group.
-  realtime.client.channel: realtime.channel.channel
+  # Client status getters with no distinct canonical capability.
+  # realtime.client.connection_state covers connection status; these boolean
+  # convenience getters and the socket endpoint accessor are not in canon.
+  realtime.client.is_connected: null
+  realtime.client.is_connecting: null
+  realtime.client.is_disconnecting: null
+  realtime.client.endpoint_url: null
 
   # presence operations moved to a dedicated group
   realtime.channel.presence_state: realtime.presence.presence_state

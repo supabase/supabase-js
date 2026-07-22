@@ -416,15 +416,22 @@ function collectMethods(
   area: AreaConfig,
   seen: { duplicates: number; dropped: number; mapped: number },
   mapping: CanonicalMapping
-): Set<string> {
+): Map<string, Set<string>> {
   const splitConfigByMethod = new Map<string, SignatureSplitConfig>()
   for (const cfg of area.signatureSplit ?? []) splitConfigByMethod.set(cfg.method, cfg)
 
-  const found = new Set<string>()
+  // feature id → set of typedoc symbols that back it. The symbol string mirrors
+  // supabase/sdk's normalize-typedoc (`<rawClassName>.<methodName>`), which is
+  // what the drift checker resolves against. The raw class name matters:
+  // storage's StorageFileApi / StorageBucketApi are default exports that typedoc
+  // names `default`, so their symbols must be `default.<method>` — the prettified
+  // display name would not resolve.
+  const found = new Map<string, Set<string>>()
 
   function emit(
     stem: string,
     enclosingClass: string,
+    enclosingClassRaw: string,
     methodName: string,
     sub: string | undefined,
     splitGroup: string | undefined
@@ -433,30 +440,45 @@ function collectMethods(
     if (!group) return
     const namespace = namespaceForGroup(group, area)
     const autoId = `${area.area}.${namespace}.${stem}`
+    const symbol = `${enclosingClassRaw}.${methodName}`
+
+    let finalId = autoId
     if (mapping.has(autoId)) {
       const mapped = mapping.get(autoId) ?? null
       if (mapped === null) {
         seen.dropped++
         return
       }
-      if (found.has(mapped)) seen.duplicates++
-      else {
-        found.add(mapped)
-        seen.mapped++
-      }
-      return
+      finalId = mapped
+      if (found.has(finalId)) seen.duplicates++
+      else seen.mapped++
+    } else if (found.has(finalId)) {
+      seen.duplicates++
     }
-    if (found.has(autoId)) seen.duplicates++
-    else found.add(autoId)
+
+    let symbols = found.get(finalId)
+    if (!symbols) {
+      symbols = new Set<string>()
+      found.set(finalId, symbols)
+    }
+    symbols.add(symbol)
   }
 
-  function visit(node: SpecNode, enclosingClass: string | null): void {
+  function visit(
+    node: SpecNode,
+    enclosingClass: string | null,
+    enclosingClassRaw: string | null
+  ): void {
     if (!node || typeof node !== 'object') return
     const isClass = node.kind === 128 || node.kind === 256
-    const nextClass =
-      isClass && matches(node, area.matchers) ? classDisplayName(node) : enclosingClass
+    const matched = isClass && matches(node, area.matchers)
+    const nextClass = matched ? classDisplayName(node) : enclosingClass
+    // Raw typedoc name (may be "default" for default-exported classes) — used to
+    // build the symbol, unlike nextClass which is prettified for group lookup.
+    const nextClassRaw = matched ? (node.name ?? classDisplayName(node)) : enclosingClassRaw
     if (
       nextClass &&
+      nextClassRaw &&
       node.kind === 2048 &&
       typeof node.name === 'string' &&
       !DENYLIST.has(node.name)
@@ -471,17 +493,18 @@ function collectMethods(
           for (const literal of literals) {
             if (split.filter && !split.filter(literal)) continue
             const stem = split.idStem ? split.idStem(literal) : literal
-            emit(stem, nextClass, node.name, subcategory, split.group)
+            emit(stem, nextClass, nextClassRaw, node.name, subcategory, split.group)
           }
         } else {
-          emit(camelToSnake(node.name), nextClass, node.name, subcategory, undefined)
+          emit(camelToSnake(node.name), nextClass, nextClassRaw, node.name, subcategory, undefined)
         }
       }
     }
-    if (Array.isArray(node.children)) for (const c of node.children) visit(c, nextClass)
+    if (Array.isArray(node.children))
+      for (const c of node.children) visit(c, nextClass, nextClassRaw)
   }
 
-  visit(spec, null)
+  visit(spec, null, null)
   return found
 }
 
@@ -511,6 +534,10 @@ function camelToSnake(name: string): string {
     .toLowerCase()
 }
 
+// Manual symbol additions for capabilities that don't map 1:1 to a single
+// typedoc method. Symbols here are unioned on top of the auto-derived ones in
+// emitYaml. Keep this to genuine special cases only — every capability now gets
+// its originating symbol automatically via collectMethods.
 const SYMBOL_OVERRIDES: Record<string, string[]> = {
   'realtime.subscriptions.postgres_changes': [
     'postgresChangesFilter',
@@ -534,7 +561,7 @@ const SYMBOL_OVERRIDES: Record<string, string[]> = {
   ],
 }
 
-function emitYaml(areaIds: Map<string, string[]>, out: string): void {
+function emitYaml(areaIds: Map<string, { id: string; symbols: string[] }[]>, out: string): void {
   const lines: string[] = [
     '# Compliance with the canonical Supabase SDK capability matrix.',
     '# Spec: https://github.com/supabase/sdk',
@@ -553,19 +580,19 @@ function emitYaml(areaIds: Map<string, string[]>, out: string): void {
   ]
 
   for (const { area } of AREAS) {
-    const ids = areaIds.get(area) ?? []
-    if (ids.length === 0) continue
+    const entries = areaIds.get(area) ?? []
+    if (entries.length === 0) continue
     lines.push(`  # ${area}`)
-    for (const id of ids.slice().sort()) {
-      const symbols = SYMBOL_OVERRIDES[id]
-      if (symbols) {
-        lines.push(`  ${id}:`)
-        lines.push(`    status: implemented`)
-        lines.push(`    symbols:`)
-        for (const sym of symbols) lines.push(`      - ${sym}`)
-      } else {
-        lines.push(`  ${id}: implemented`)
-      }
+    const sorted = entries.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    for (const { id, symbols: autoSymbols } of sorted) {
+      // Auto-derived symbols, unioned with any manual override for ids that
+      // don't map 1:1 (e.g. realtime.subscriptions.postgres_changes). Set
+      // iteration preserves insertion order, so overrides append after auto.
+      const symbols = [...new Set([...autoSymbols, ...(SYMBOL_OVERRIDES[id] ?? [])])]
+      lines.push(`  ${id}:`)
+      lines.push(`    status: implemented`)
+      lines.push(`    symbols:`)
+      for (const sym of symbols) lines.push(`      - ${sym}`)
     }
     lines.push('')
   }
@@ -579,14 +606,17 @@ function main(): void {
   const mapping = loadCanonicalMapping()
   console.log(`Loaded ${mapping.size} canonical mapping entr${mapping.size === 1 ? 'y' : 'ies'}.`)
 
-  const areaMethods = new Map<string, string[]>()
+  const areaMethods = new Map<string, { id: string; symbols: string[] }[]>()
   let totalDuplicates = 0
   let totalMapped = 0
   let totalDropped = 0
   for (const area of AREAS) {
     const spec = readSpec(area.pkg)
     const seen = { duplicates: 0, dropped: 0, mapped: 0 }
-    const methods = [...collectMethods(spec, area, seen, mapping)]
+    const methods = [...collectMethods(spec, area, seen, mapping)].map(([id, symbols]) => ({
+      id,
+      symbols: [...symbols],
+    }))
     areaMethods.set(area.area, methods)
     totalDuplicates += seen.duplicates
     totalMapped += seen.mapped
