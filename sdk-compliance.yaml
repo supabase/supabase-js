@@ -610,10 +610,6 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.httpSend
-  realtime.channel.channel:
-    status: implemented
-    symbols:
-      - RealtimeClient.channel
   realtime.channel.send:
     status: implemented
     symbols:
@@ -626,6 +622,10 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.unsubscribe
+  realtime.client.channel:
+    status: implemented
+    symbols:
+      - RealtimeClient.channel
   realtime.client.connect:
     status: implemented
     symbols:
@@ -638,26 +638,10 @@ features:
     status: implemented
     symbols:
       - RealtimeClient.disconnect
-  realtime.client.endpoint_url:
-    status: implemented
-    symbols:
-      - RealtimeClient.endpointURL
   realtime.client.get_channels:
     status: implemented
     symbols:
       - RealtimeClient.getChannels
-  realtime.client.is_connected:
-    status: implemented
-    symbols:
-      - RealtimeClient.isConnected
-  realtime.client.is_connecting:
-    status: implemented
-    symbols:
-      - RealtimeClient.isConnecting
-  realtime.client.is_disconnecting:
-    status: implemented
-    symbols:
-      - RealtimeClient.isDisconnecting
   realtime.client.listen_heartbeats:
     status: implemented
     symbols:
