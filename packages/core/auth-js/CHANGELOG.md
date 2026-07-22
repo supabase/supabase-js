@@ -1,3 +1,13 @@
+## 2.110.8 (2026-07-21)
+
+### 🩹 Fixes
+
+- **auth:** downgrade aborted/transient fetch failures from console.error to warn ([#2544](https://github.com/supabase/supabase-js/pull/2544))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.110.7 (2026-07-16)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.

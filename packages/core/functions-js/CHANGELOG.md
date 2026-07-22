@@ -1,3 +1,15 @@
+## 2.110.8 (2026-07-21)
+
+### 🩹 Fixes
+
+- **functions:** match response Content-Type case-insensitively ([#2515](https://github.com/supabase/supabase-js/pull/2515))
+- **functions:** clean up cross-signal abort listener on invoke() return ([#2487](https://github.com/supabase/supabase-js/pull/2487))
+
+### ❤️ Thank You
+
+- Franco Kaddour @FrancoKaddour
+- Pedro Henrique
+
 ## 2.110.7 (2026-07-16)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.

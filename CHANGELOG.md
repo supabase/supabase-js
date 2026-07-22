@@ -1,3 +1,20 @@
+## 2.110.8 (2026-07-21)
+
+### 🩹 Fixes
+
+- **auth:** downgrade aborted/transient fetch failures from console.error to warn ([#2544](https://github.com/supabase/supabase-js/pull/2544))
+- **functions:** clean up cross-signal abort listener on invoke() return ([#2487](https://github.com/supabase/supabase-js/pull/2487))
+- **functions:** match response Content-Type case-insensitively ([#2515](https://github.com/supabase/supabase-js/pull/2515))
+- **storage:** url-encode object key in CDN purge methods ([#2545](https://github.com/supabase/supabase-js/pull/2545))
+- **supabase:** skip Node warning in Deno ([#2541](https://github.com/supabase/supabase-js/pull/2541))
+
+### ❤️ Thank You
+
+- Franco Kaddour @FrancoKaddour
+- Katerina Skroumpelou @mandarini
+- Pedro Henrique
+- Vaibhav @7ttp
+
 ## 2.110.7 (2026-07-16)
 
 ### 🩹 Fixes
