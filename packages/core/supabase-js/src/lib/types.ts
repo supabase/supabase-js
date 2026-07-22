@@ -2,6 +2,7 @@ import { GoTrueClientOptions } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
 import type { StorageClientOptions } from '@supabase/storage-js'
+import type { AnySupabasePlugin } from './plugins'
 import type {
   GenericSchema,
   GenericRelationship,
@@ -299,6 +300,29 @@ export type SupabaseClientOptions<SchemaName> = {
    * @see https://www.w3.org/TR/trace-context/
    */
   tracePropagation?: TracePropagationOptions | boolean
+  /**
+   * Plugins to attach to the client. Each plugin contributes one typed
+   * namespace at `supabase.<name>`, run in array order after the built-in
+   * sub-clients are initialized. Declare plugins with `defineSupabasePlugin`.
+   *
+   * A plugin name that collides with an existing client member or another
+   * plugin throws at construction.
+   *
+   * Note: for the namespaces to be typed, let `createClient` infer its type
+   * arguments. If you pass an explicit `Database` generic, TypeScript's
+   * lack of partial inference means the namespaces fall back to untyped —
+   * pass the plugins tuple explicitly as the fourth type argument
+   * (`const plugins = [...] as const`) to get both.
+   *
+   * @example With a plugin
+   * ```ts
+   * const supabase = createClient(url, key, {
+   *   plugins: [guestbookPlugin()],
+   * })
+   * await supabase.guestbook.list() // typed
+   * ```
+   */
+  plugins?: readonly AnySupabasePlugin[]
 }
 
 /**

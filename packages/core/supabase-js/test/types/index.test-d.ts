@@ -3,6 +3,7 @@ import {
   PostgrestSingleResponse,
   SupabaseClient,
   createClient,
+  defineSupabasePlugin,
   DatabaseWithoutInternals,
 } from '../../src/index'
 import { Database, Json } from '../types'
@@ -308,4 +309,73 @@ const supabase = createClient<Database>(URL, KEY)
   }
   type CleanedPlainDatabase = DatabaseWithoutInternals<PlainDatabase>
   expectType<CleanedPlainDatabase>({} as PlainDatabase)
+}
+
+// plugins: namespace inference from the plugins array (no manual annotations)
+{
+  const guestbookPlugin = () =>
+    defineSupabasePlugin({
+      name: 'guestbook',
+      client: (client) => ({
+        sign: (message: string) => Promise.resolve({ message }),
+        list: () => Promise.resolve([] as string[]),
+      }),
+    })
+
+  const c = createClient(URL, KEY, { plugins: [guestbookPlugin()] })
+  expectType<(message: string) => Promise<{ message: string }>>(c.guestbook.sign)
+  expectType<() => Promise<string[]>>(c.guestbook.list)
+
+  // built-in surface still present on the intersection
+  c.from('users')
+  c.auth
+  c.functions
+
+  // no index-signature leak: unknown keys stay compile errors
+  expectError(c.notAPlugin)
+
+  // defineSupabasePlugin captures the literal name
+  expectType<'guestbook'>(guestbookPlugin().name)
+
+  // two plugins accumulate both namespaces
+  const counterPlugin = defineSupabasePlugin({
+    name: 'counter',
+    client: () => ({ increment: (by: number) => by + 1 }),
+  })
+  const c2 = createClient(URL, KEY, { plugins: [guestbookPlugin(), counterPlugin] })
+  expectType<(message: string) => Promise<{ message: string }>>(c2.guestbook.sign)
+  expectType<(by: number) => number>(c2.counter.increment)
+}
+
+// plugins: no-plugins calls gain no phantom namespaces (overload 1 unchanged)
+{
+  const plain = createClient(URL, KEY)
+  expectError(plain.guestbook)
+  const plainWithOptions = createClient(URL, KEY, { db: {} })
+  expectError(plainWithOptions.guestbook)
+}
+
+// plugins: malformed plugin rejected
+{
+  expectError(createClient(URL, KEY, { plugins: [{ name: 'x' }] }))
+}
+
+// plugins: partial explicit generics — Database typing intact, namespaces
+// fall back to untyped (TS has no partial inference; documented caveat)
+{
+  const guestbookPlugin = defineSupabasePlugin({
+    name: 'guestbook',
+    client: () => ({ list: () => Promise.resolve([] as string[]) }),
+  })
+
+  const c = createClient<Database>(URL, KEY, { plugins: [guestbookPlugin] })
+  c.from('users')
+  expectError(c.from('some_table_that_does_not_exist'))
+  expectError(c.guestbook)
+
+  // escape hatch: pass the plugins tuple as the fourth type argument
+  const plugins = [guestbookPlugin] as const
+  const c2 = createClient<Database, 'public', 'public', typeof plugins>(URL, KEY, { plugins })
+  expectType<() => Promise<string[]>>(c2.guestbook.list)
+  expectError(c2.from('some_table_that_does_not_exist'))
 }

@@ -26,6 +26,7 @@ import {
   validateSupabaseUrl,
   type ResolvedSupabaseClientOptions,
 } from './lib/helpers'
+import { attachPlugins } from './lib/plugins'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import type {
   Fetch,
@@ -409,6 +410,14 @@ export default class SupabaseClient<
 
     if (!settings.accessToken) {
       this._listenForAuthEvents()
+    }
+
+    // Plugins attach last so their factories see a fully initialized client.
+    // Read from `options` (not `settings`): applySettingDefaults builds a
+    // fresh object from known keys and would drop `plugins` — same reason
+    // storage above reads `options?.storage`.
+    if (options?.plugins?.length) {
+      attachPlugins(this, options.plugins)
     }
   }
 
