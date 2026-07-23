@@ -5595,8 +5595,8 @@ export default class GoTrueClient {
       )
 
       const flowParams = new URLSearchParams({
-        code_challenge: `${encodeURIComponent(codeChallenge)}`,
-        code_challenge_method: `${encodeURIComponent(codeChallengeMethod)}`,
+        code_challenge: `${codeChallenge}`,
+        code_challenge_method: `${codeChallengeMethod}`,
       })
       urlParams.push(flowParams.toString())
     }

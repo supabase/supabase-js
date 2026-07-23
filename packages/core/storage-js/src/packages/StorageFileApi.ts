@@ -1493,7 +1493,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   }
 
   private _getFinalPath(path: string) {
-    return `${this.bucketId}/${path.replace(/^\/+/, '')}`
+    return `${this.bucketId}/${path
+      .split('/')
+      .map((seg) => encodeURIComponent(seg))
+      .join('/')
+      .replace(/^\/+/, '')}`
   }
 
   private _removeEmptyFolders(path: string) {
