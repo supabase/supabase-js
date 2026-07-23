@@ -244,6 +244,13 @@ export class FunctionsClient {
           // don't set content-type headers
           // Request will automatically add the right boundary value
           body = functionArgs
+        } else if (
+          typeof ReadableStream !== 'undefined' &&
+          functionArgs instanceof ReadableStream
+        ) {
+          // a stream is a valid fetch body; forward it untouched and let the caller set the
+          // Content-Type (don't serialize it to JSON, which would drop the payload)
+          body = functionArgs
         } else {
           // default, assume this is JSON
           _headers['Content-Type'] = 'application/json'
@@ -255,7 +262,8 @@ export class FunctionsClient {
           typeof functionArgs !== 'string' &&
           !(typeof Blob !== 'undefined' && functionArgs instanceof Blob) &&
           !(functionArgs instanceof ArrayBuffer) &&
-          !(typeof FormData !== 'undefined' && functionArgs instanceof FormData)
+          !(typeof FormData !== 'undefined' && functionArgs instanceof FormData) &&
+          !(typeof ReadableStream !== 'undefined' && functionArgs instanceof ReadableStream)
         ) {
           body = JSON.stringify(functionArgs)
         } else {
@@ -289,6 +297,10 @@ export class FunctionsClient {
         // 3. default Content-Type header
         headers: { ..._headers, ...this.headers, ...headers },
         body,
+        // a web ReadableStream body requires the half-duplex flag for native (undici) fetch
+        ...(typeof ReadableStream !== 'undefined' && body instanceof ReadableStream
+          ? { duplex: 'half' }
+          : {}),
         signal: effectiveSignal,
       }).catch((fetchError) => {
         throw new FunctionsFetchError(fetchError)
