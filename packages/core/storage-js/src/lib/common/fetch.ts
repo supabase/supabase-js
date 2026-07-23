@@ -26,7 +26,7 @@ export type RequestMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD'
  * @param err - Error object from API
  * @returns Human-readable error message
  */
-const _getErrorMessage = (err: unknown): string => {
+export const _getErrorMessage = (err: unknown): string => {
   if (typeof err === 'object' && err !== null) {
     const e = err as Record<string, unknown>
     if (typeof e.msg === 'string') return e.msg

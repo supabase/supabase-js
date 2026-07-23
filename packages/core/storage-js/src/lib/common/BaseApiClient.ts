@@ -1,5 +1,6 @@
 import { ErrorNamespace, isStorageError, StorageError, StorageUnknownError } from './errors'
 import { Fetch } from './fetch'
+import { _getErrorMessage } from './fetch'
 import { normalizeHeaders, setHeader as setHeaderUtil } from './headers'
 import { resolveFetch } from './helpers'
 
