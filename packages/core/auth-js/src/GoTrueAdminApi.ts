@@ -623,7 +623,14 @@ export default class GoTrueAdminApi {
    * ```
    */
   async getUserById(uid: string): Promise<UserResponse> {
-    validateUUID(uid)
+    try {
+      validateUUID(uid)
+    } catch {
+      return {
+        data: { user: null },
+        error: new AuthInvalidCredentialsError('Invalid UUID format') as AuthError,
+      }
+    }
 
     try {
       return await _request(this.fetch, 'GET', `${this.url}/admin/users/${uid}`, {

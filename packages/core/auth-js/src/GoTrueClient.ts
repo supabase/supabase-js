@@ -4462,6 +4462,10 @@ export default class GoTrueClient {
     try {
       const { data, error } = await this.getUser()
       if (error) throw error
+      const { data, error } = await this.getUser()
+      if (error) throw error
+      if (!data.user)
+        return this._returnResult({ data: null, error: new AuthSessionMissingError() })
       return this._returnResult({ data: { identities: data.user.identities ?? [] }, error: null })
     } catch (error) {
       if (isAuthError(error)) {
