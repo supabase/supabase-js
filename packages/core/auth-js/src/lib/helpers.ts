@@ -254,13 +254,12 @@ export function retryable<T>(
 }
 
 function dec2hex(dec: number) {
-  return ('0' + dec.toString(16)).substr(-2)
+  return ('0' + dec.toString(16)).slice(-2)
 }
 
 // Functions below taken from: https://stackoverflow.com/questions/63309409/creating-a-code-verifier-and-challenge-for-pkce-auth-on-spotify-api-in-reactjs
 export function generatePKCEVerifier() {
   const verifierLength = 56
-  const array = new Uint32Array(verifierLength)
   if (typeof crypto === 'undefined') {
     const charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~'
     const charSetLen = charSet.length
@@ -270,6 +269,11 @@ export function generatePKCEVerifier() {
     }
     return verifier
   }
+  // Each byte maps to two hex characters, so a 56-byte buffer yields a
+  // 112-character verifier (within RFC 7636's 43-128 range). A Uint8Array
+  // requests exactly the entropy consumed; a Uint32Array would draw 4x the
+  // bytes and discard three of every four.
+  const array = new Uint8Array(verifierLength)
   crypto.getRandomValues(array)
   return Array.from(array, dec2hex).join('')
 }
