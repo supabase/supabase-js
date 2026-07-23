@@ -1,4 +1,4 @@
-import { ErrorNamespace, isStorageError, StorageError } from './errors'
+import { ErrorNamespace, isStorageError, StorageError, StorageUnknownError } from './errors'
 import { Fetch } from './fetch'
 import { normalizeHeaders, setHeader as setHeaderUtil } from './headers'
 import { resolveFetch } from './helpers'
@@ -98,7 +98,10 @@ export default abstract class BaseApiClient<TError extends StorageError = Storag
       if (isStorageError(error)) {
         return { data: null, error: error as TError }
       }
-      throw error
+      return {
+        data: null,
+        error: new StorageUnknownError(_getErrorMessage(error), error) as unknown as TError,
+      }
     }
   }
 }
