@@ -4875,6 +4875,36 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       warnSpy.mockRestore()
     })
 
+    test('_emitInitialSession downgrades an expired/rotated refresh token to console.warn', async () => {
+      const storage = memoryLocalStorageAdapter()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+        skipAutoInitialize: true,
+      })
+      stubInvalidGrant(client)
+
+      await client.initialize()
+
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // Drive the INITIAL_SESSION emission directly so the assertion doesn't
+      // race the fire-and-forget emission scheduled by onAuthStateChange.
+      // @ts-expect-error access private for test
+      await client._emitInitialSession(Symbol('test-invalid-grant-init'))
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+
+      errorSpy.mockRestore()
+      warnSpy.mockRestore()
+    })
+
     test('_recoverAndRefresh downgrades a retryable failure in its outer catch to console.warn', async () => {
       // Defensive guard: if any step of session recovery throws a transient
       // network error (rather than returning it), the outer catch must warn
