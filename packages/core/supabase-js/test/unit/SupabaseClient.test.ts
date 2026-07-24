@@ -374,6 +374,12 @@ describe('SupabaseClient', () => {
         setAuthSpy.mockClear()
 
         // @ts-ignore - accessing private method for testing
+        client._handleTokenChanged('INITIAL_SESSION', 'CLIENT', 'initial-token')
+        expect(setAuthSpy).toHaveBeenCalledWith('initial-token')
+
+        setAuthSpy.mockClear()
+
+        // @ts-ignore - accessing private method for testing
         client._handleTokenChanged('SIGNED_IN', 'CLIENT', 'signin-token')
         expect(setAuthSpy).toHaveBeenCalledWith('signin-token')
 
