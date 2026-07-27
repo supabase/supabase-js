@@ -1335,4 +1335,42 @@ describe('online event handling', () => {
     // listener removed, so the seeded cooldown is untouched
     expect(client.lastRefreshFailure).not.toBeNull()
   })
+
+  test('dispose during pending initialization registers no lifecycle listeners', async () => {
+    const addSpy = jest.spyOn(window, 'addEventListener')
+
+    // Storage whose first read blocks until released, keeping _initialize
+    // pending across the dispose() call (React Strict Mode / HMR shape).
+    let releaseStorage: () => void = () => {}
+    const gate = new Promise<void>((resolve) => {
+      releaseStorage = resolve
+    })
+    const backing = memoryLocalStorageAdapter()
+    const delayedStorage = {
+      getItem: async (key: string) => {
+        await gate
+        return backing.getItem(key)
+      },
+      setItem: (key: string, value: string) => backing.setItem(key, value),
+      removeItem: (key: string) => backing.removeItem(key),
+    }
+
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      storage: delayedStorage,
+      autoRefreshToken: false,
+      persistSession: true,
+    })
+    const initPromise = client.initialize()
+    await client.dispose()
+    releaseStorage()
+    await initPromise
+
+    const lifecycleListeners = addSpy.mock.calls.filter(
+      ([type]) => type === 'online' || type === 'visibilitychange',
+    )
+    expect(lifecycleListeners).toHaveLength(0)
+
+    addSpy.mockRestore()
+  })
 })

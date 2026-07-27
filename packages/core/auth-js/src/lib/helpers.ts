@@ -42,6 +42,36 @@ export const isBrowser = () => typeof window !== 'undefined' && typeof document 
 export const isProvablyOffline = () =>
   typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine
 
+export interface OnlineEventTarget {
+  addEventListener(type: 'online', listener: () => unknown): void
+  removeEventListener(type: 'online', listener: () => unknown): void
+}
+
+/**
+ * Returns the global object to observe reconnection on, or null when the
+ * environment cannot observe it. Documents receive the `online` event on
+ * `window`, Web Workers on the worker global scope; `globalThis` is both, and
+ * the same environments expose the boolean `navigator.onLine` that
+ * `isProvablyOffline` reads, so fail-fast and reconnection handling stay
+ * active in the same set of environments. Environments without a boolean
+ * `navigator.onLine` or without global listener support (React Native,
+ * Node.js, Deno) return null.
+ */
+export function getOnlineEventTarget(): OnlineEventTarget | null {
+  if (typeof navigator === 'undefined' || typeof navigator.onLine !== 'boolean') {
+    return null
+  }
+
+  if (
+    typeof globalThis.addEventListener !== 'function' ||
+    typeof globalThis.removeEventListener !== 'function'
+  ) {
+    return null
+  }
+
+  return globalThis
+}
+
 const localStorageWriteTests = {
   tested: false,
   writable: false,

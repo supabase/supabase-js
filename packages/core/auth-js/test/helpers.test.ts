@@ -4,6 +4,7 @@ import {
   generateCallbackId,
   getAlgorithm,
   getItemAsync,
+  getOnlineEventTarget,
   isProvablyOffline,
   parseParametersFromURL,
   parseResponseAPIVersion,
@@ -429,5 +430,50 @@ describe('isProvablyOffline', () => {
       delete (globalThis as any).navigator
     }
     expect(isProvablyOffline()).toBe(false)
+  })
+})
+
+describe('getOnlineEventTarget', () => {
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+  const originalAdd = Object.getOwnPropertyDescriptor(globalThis, 'addEventListener')
+  const originalRemove = Object.getOwnPropertyDescriptor(globalThis, 'removeEventListener')
+
+  const defineGlobal = (name: string, value: unknown) => {
+    Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
+  }
+
+  const restore = (name: string, descriptor: PropertyDescriptor | undefined) => {
+    if (descriptor) {
+      Object.defineProperty(globalThis, name, descriptor)
+    } else {
+      delete (globalThis as any)[name]
+    }
+  }
+
+  afterEach(() => {
+    restore('navigator', originalNavigator)
+    restore('addEventListener', originalAdd)
+    restore('removeEventListener', originalRemove)
+  })
+
+  it('returns the global scope when navigator.onLine and global listeners exist (window, workers)', () => {
+    defineGlobal('navigator', { onLine: true })
+    defineGlobal('addEventListener', () => {})
+    defineGlobal('removeEventListener', () => {})
+    expect(getOnlineEventTarget()).toBe(globalThis)
+  })
+
+  it('returns null without a boolean navigator.onLine (React Native, Node.js, Deno)', () => {
+    defineGlobal('navigator', { product: 'ReactNative' })
+    defineGlobal('addEventListener', () => {})
+    defineGlobal('removeEventListener', () => {})
+    expect(getOnlineEventTarget()).toBeNull()
+  })
+
+  it('returns null without global listener support', () => {
+    defineGlobal('navigator', { onLine: true })
+    if (originalAdd) delete (globalThis as any).addEventListener
+    if (originalRemove) delete (globalThis as any).removeEventListener
+    expect(getOnlineEventTarget()).toBeNull()
   })
 })

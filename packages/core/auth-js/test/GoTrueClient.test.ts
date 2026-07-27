@@ -5072,5 +5072,64 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
         jest.useRealTimers()
       }
     })
+
+    test('worker-style global (no window): online listener registers, clears cooldown, removed on dispose', async () => {
+      // Simulates a Web Worker: window/document are undefined, but the
+      // environment exposes a boolean navigator.onLine (WorkerNavigator)
+      // and global online events (WorkerGlobalScope). Fail-fast activates
+      // there, so reconnection handling must too.
+      setNavigator({ onLine: true })
+
+      const added: Array<[string, () => unknown]> = []
+      const removed: Array<[string, () => unknown]> = []
+      const originalAdd = Object.getOwnPropertyDescriptor(globalThis, 'addEventListener')
+      const originalRemove = Object.getOwnPropertyDescriptor(globalThis, 'removeEventListener')
+      Object.defineProperty(globalThis, 'addEventListener', {
+        value: (type: string, listener: () => unknown) => added.push([type, listener]),
+        configurable: true,
+        writable: true,
+      })
+      Object.defineProperty(globalThis, 'removeEventListener', {
+        value: (type: string, listener: () => unknown) => removed.push([type, listener]),
+        configurable: true,
+        writable: true,
+      })
+
+      try {
+        const storage = memoryLocalStorageAdapter()
+        const client = buildClientWithFetch(storage, jest.fn())
+        await client.initialize()
+
+        const onlineListeners = added.filter(([type]) => type === 'online')
+        expect(onlineListeners).toHaveLength(1)
+
+        // An offline refresh failure caches a cooldown entry...
+        // @ts-expect-error access protected for test
+        client.lastRefreshFailure = {
+          refreshToken: 'refresh-token-r1',
+          result: { data: null, error: { name: 'AuthRetryableFetchError' } } as any,
+          expiresAt: Date.now() + 60_000,
+        }
+
+        // ...and the worker-global online event clears it on reconnection.
+        await onlineListeners[0][1]()
+        // @ts-expect-error access protected for test
+        expect(client.lastRefreshFailure).toBeNull()
+
+        await client.dispose()
+        expect(removed.filter(([type]) => type === 'online')).toHaveLength(1)
+      } finally {
+        if (originalAdd) {
+          Object.defineProperty(globalThis, 'addEventListener', originalAdd)
+        } else {
+          delete (globalThis as any).addEventListener
+        }
+        if (originalRemove) {
+          Object.defineProperty(globalThis, 'removeEventListener', originalRemove)
+        } else {
+          delete (globalThis as any).removeEventListener
+        }
+      }
+    })
   })
 })

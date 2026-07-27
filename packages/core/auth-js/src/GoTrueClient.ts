@@ -45,6 +45,7 @@ import {
   getAlgorithm,
   getCodeChallengeAndMethod,
   getItemAsync,
+  getOnlineEventTarget,
   insecureUserWarningProxy,
   isBrowser,
   isProvablyOffline,
@@ -291,6 +292,14 @@ export default class GoTrueClient {
   protected autoRefreshTickTimeout: ReturnType<typeof setTimeout> | null = null
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected onlineChangedCallback: (() => Promise<any>) | null = null
+  /**
+   * Set by `dispose()`. `_initialize()` checks it before registering the
+   * visibilitychange / online listeners so a dispose that runs while
+   * initialization is still pending (React Strict Mode, HMR) does not leak
+   * listeners or start background work on a client that was already torn
+   * down.
+   */
+  protected _disposed = false
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
    * Cache of the most recent refresh failure, keyed by the refresh token
@@ -719,8 +728,10 @@ export default class GoTrueClient {
         error: new AuthUnknownError('Unexpected error during initialization', error),
       })
     } finally {
-      await this._handleVisibilityChange()
-      this._handleOnlineStatusChange()
+      if (!this._disposed) {
+        await this._handleVisibilityChange()
+        this._handleOnlineStatusChange()
+      }
       this._debug('#_initialize()', 'end')
     }
   }
@@ -5414,6 +5425,9 @@ export default class GoTrueClient {
    * ```
    */
   async dispose(): Promise<void> {
+    // Set before any await so an initialization that is still pending sees
+    // it and skips its late listener registration (see _initialize).
+    this._disposed = true
     this._removeVisibilityChangedCallback()
     this._removeOnlineStatusChangeCallback()
     await this._stopAutoRefresh()
@@ -5610,14 +5624,18 @@ export default class GoTrueClient {
   }
 
   /**
-   * Registers the browser `online` event so refreshing resumes the moment
+   * Registers the `online` event so refreshing resumes the moment
    * connectivity returns, instead of waiting out the failure cooldown plus
-   * the next auto-refresh tick. No-op outside browsers. No `offline`
-   * listener is needed: while the environment reports being offline,
-   * refresh attempts fail fast (see `_refreshAccessToken`).
+   * the next auto-refresh tick. The event target comes from
+   * `getOnlineEventTarget`: `window` in documents, the worker global scope
+   * in Web Workers, which are exactly the environments whose
+   * `navigator.onLine` makes `_refreshAccessToken` fail fast. No-op
+   * elsewhere. No `offline` listener is needed: while the environment
+   * reports being offline, refresh attempts fail fast.
    */
   private _handleOnlineStatusChange() {
-    if (!isBrowser() || !window?.addEventListener) {
+    const target = getOnlineEventTarget()
+    if (!target) {
       return
     }
 
@@ -5630,7 +5648,7 @@ export default class GoTrueClient {
         }
       }
 
-      window?.addEventListener('online', this.onlineChangedCallback)
+      target.addEventListener('online', this.onlineChangedCallback)
     } catch (error) {
       console.error('_handleOnlineStatusChange', error)
     }
@@ -5669,8 +5687,9 @@ export default class GoTrueClient {
     this.onlineChangedCallback = null
 
     try {
-      if (callback && isBrowser() && window?.removeEventListener) {
-        window.removeEventListener('online', callback)
+      const target = getOnlineEventTarget()
+      if (callback && target) {
+        target.removeEventListener('online', callback)
       }
     } catch (e) {
       console.error('removing online callback failed', e)
