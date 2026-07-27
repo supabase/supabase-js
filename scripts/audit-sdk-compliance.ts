@@ -19,6 +19,11 @@
  * To wire a new public class into the matrix: add its name (or a source-file
  * regex) to the AREAS list below. To suppress a method that appears in multiple
  * classes as boilerplate, add it to DENYLIST.
+ *
+ * Capabilities with no method to derive from — behaviours configured through a
+ * constructor or call option, and capabilities we have not implemented — are
+ * declared by hand in MANUAL_ENTRIES and merged into the output. Without that
+ * table a regenerate would silently drop them.
  */
 
 import * as fs from 'fs'
@@ -561,6 +566,245 @@ const SYMBOL_OVERRIDES: Record<string, string[]> = {
   ],
 }
 
+interface ManualEntry {
+  status: 'implemented' | 'partially_implemented' | 'not_implemented' | 'not_applicable'
+  symbols?: string[]
+  // Required by the canonical validator when status is partially_implemented.
+  note?: string
+}
+
+// Capabilities that cannot be derived from a typedoc method, and so have to be
+// declared by hand. Two kinds end up here:
+//
+//   1. Behaviours configured through a constructor or call option rather than
+//      their own method (`invoke` with a `region`, `copy` with a
+//      `destinationBucket`). collectMethods emits one capability per method, so
+//      it can never see these.
+//   2. Capabilities with no implementation at all, recorded so the gap is
+//      declared rather than silently defaulted.
+//
+// Symbols are the option's *type*, paired with the method that consumes it. The
+// canonical symbol normalizer skips constructors outright, so `X.constructor`
+// never resolves and would trip the drift check — type names do resolve, including
+// type aliases. Verify any addition against packages/core/*/docs/v2/spec.json.
+const MANUAL_ENTRIES: Record<string, ManualEntry> = {
+  // client — cross-cutting SupabaseClient construction options. This whole area
+  // is option-shaped, which is why there is no `client` entry in AREAS.
+  'client.authentication_integration.cross_client_token_sync': {
+    status: 'implemented',
+    symbols: ['SupabaseClientOptions', 'RealtimeClient.setAuth', 'GoTrueClient.onAuthStateChange'],
+  },
+  'client.authentication_integration.oauth_flow_type': {
+    status: 'implemented',
+    symbols: ['AuthFlowType', 'GoTrueClientOptions'],
+  },
+  'client.authentication_integration.session_url_detection': {
+    status: 'implemented',
+    symbols: ['GoTrueClientOptions', 'GoTrueClient.exchangeCodeForSession'],
+  },
+  'client.authentication_integration.third_party_auth': {
+    status: 'implemented',
+    symbols: ['SupabaseClientOptions'],
+  },
+  'client.observability.trace_propagation': {
+    status: 'implemented',
+    symbols: ['TracePropagationOptions'],
+  },
+  'client.request_configuration.custom_http_client': {
+    status: 'implemented',
+    symbols: ['SupabaseClientOptions'],
+  },
+  'client.request_configuration.global_headers': {
+    status: 'implemented',
+    symbols: ['SupabaseClientOptions'],
+  },
+  'client.session_management.custom_storage': {
+    status: 'implemented',
+    symbols: ['GoTrueClientOptions', 'SupportedStorage'],
+  },
+  'client.session_management.persist_session': {
+    status: 'implemented',
+    symbols: ['GoTrueClientOptions'],
+  },
+
+  // auth — signOut() takes only a scope, and AuthChangeEvent has a single flat
+  // SIGNED_OUT that carries no cause, so listeners cannot tell a voluntary
+  // sign-out from an involuntary one.
+  'auth.session.sign_out_reason': { status: 'not_implemented' },
+
+  // database
+  'database.configuration.auto_retry': {
+    status: 'implemented',
+    symbols: ['PostgrestBuilder.retry', 'PostgrestClientOptions'],
+  },
+  'database.configuration.request_timeout': {
+    status: 'implemented',
+    symbols: ['PostgrestClientOptions'],
+  },
+  'database.mutate.select_after_mutation': {
+    status: 'implemented',
+    symbols: ['PostgrestTransformBuilder.select'],
+  },
+  'database.using_modifiers.relationship_embed': {
+    status: 'implemented',
+    symbols: ['PostgrestQueryBuilder.select', 'PostgrestTransformBuilder.select'],
+  },
+  'database.using_modifiers.request_cancellation': {
+    status: 'implemented',
+    symbols: ['PostgrestTransformBuilder.abortSignal'],
+  },
+  'database.using_modifiers.strip_nulls': {
+    status: 'implemented',
+    symbols: ['PostgrestBuilder.stripNulls'],
+  },
+
+  // storage — StorageAnalyticsClient, StorageBucketApi and StorageFileApi are all
+  // default-exported, so they collapse into one `default.*` symbol namespace and
+  // `default.createBucket` cannot distinguish a file bucket from an analytics one.
+  // The symbols still resolve; disambiguating them belongs in the canonical
+  // normalizer, not here.
+  'storage.analytics.create_analytics_bucket': {
+    status: 'implemented',
+    symbols: ['default.createBucket'],
+  },
+  'storage.analytics.delete_analytics_bucket': {
+    status: 'implemented',
+    symbols: ['default.deleteBucket'],
+  },
+  // Namespace and table CRUD comes from the iceberg-js package; storage-js supplies
+  // the bucket-name validation, URL and auth wiring, and { data, error } conversion.
+  'storage.analytics.iceberg_namespace': { status: 'implemented', symbols: ['default.from'] },
+  'storage.analytics.iceberg_table': { status: 'implemented', symbols: ['default.from'] },
+  'storage.analytics.list_analytics_buckets': {
+    status: 'implemented',
+    symbols: ['default.listBuckets'],
+  },
+  'storage.file_buckets.copy_cross_bucket': {
+    status: 'implemented',
+    symbols: ['default.copy', 'DestinationOptions'],
+  },
+  'storage.file_buckets.download_as_stream': {
+    status: 'implemented',
+    symbols: ['default.asStream'],
+  },
+  'storage.file_buckets.download_with_transform': {
+    status: 'implemented',
+    symbols: ['default.download', 'TransformOptions'],
+  },
+  'storage.file_buckets.move_cross_bucket': {
+    status: 'implemented',
+    symbols: ['default.move', 'DestinationOptions'],
+  },
+  'storage.file_buckets.upload_with_metadata': {
+    status: 'implemented',
+    symbols: ['default.upload', 'FileOptions.metadata'],
+  },
+  'storage.file_buckets.url_cache_nonce': {
+    status: 'implemented',
+    symbols: ['default.createSignedUrl', 'default.createSignedUrls', 'default.getPublicUrl'],
+  },
+  'storage.vector_buckets.create_vector_bucket': {
+    status: 'implemented',
+    symbols: ['StorageVectorsClient.createBucket'],
+  },
+  'storage.vector_buckets.delete_vector_bucket': {
+    status: 'implemented',
+    symbols: ['StorageVectorsClient.deleteBucket'],
+  },
+  'storage.vector_buckets.list_vector_buckets': {
+    status: 'implemented',
+    symbols: ['StorageVectorsClient.listBuckets', 'ListVectorBucketsOptions'],
+  },
+  // Segmented scanning is a parameter mode of listVectors, not its own method.
+  'storage.vector_buckets.parallel_scan': {
+    status: 'implemented',
+    symbols: ['VectorIndexScope.listVectors', 'ListVectorsOptions'],
+  },
+
+  // realtime
+  'realtime.configuration.access_token_callback': {
+    status: 'implemented',
+    symbols: ['RealtimeClientOptions', 'RealtimeClient.setAuth'],
+  },
+  'realtime.configuration.binary_protocol': {
+    status: 'implemented',
+    symbols: ['RealtimeClientOptions'],
+  },
+  'realtime.configuration.custom_logger': {
+    status: 'implemented',
+    symbols: ['RealtimeClientOptions'],
+  },
+  'realtime.configuration.custom_websocket_transport': {
+    status: 'implemented',
+    symbols: ['RealtimeClientOptions'],
+  },
+  'realtime.configuration.deferred_disconnect': {
+    status: 'implemented',
+    symbols: ['RealtimeClientOptions'],
+  },
+  'realtime.configuration.heartbeat_interval': {
+    status: 'implemented',
+    symbols: ['RealtimeClientOptions'],
+  },
+  'realtime.configuration.reconnect_backoff': {
+    status: 'implemented',
+    symbols: ['RealtimeClientOptions'],
+  },
+  'realtime.presence.presence_key': {
+    status: 'implemented',
+    symbols: ['RealtimeChannelOptions', 'RealtimeChannel.track'],
+  },
+  'realtime.subscriptions.broadcast_ack': {
+    status: 'implemented',
+    symbols: ['RealtimeChannelOptions', 'RealtimeChannel.send'],
+  },
+  'realtime.subscriptions.broadcast_replay': {
+    status: 'implemented',
+    symbols: ['RealtimeChannelOptions', 'RealtimeChannel.on'],
+  },
+  'realtime.subscriptions.broadcast_self': {
+    status: 'implemented',
+    symbols: ['RealtimeChannelOptions', 'RealtimeChannel.subscribe'],
+  },
+  'realtime.subscriptions.postgres_changes_filter': {
+    status: 'implemented',
+    symbols: ['RealtimePostgresFilterBuilder', 'RealtimeChannel.on'],
+  },
+  'realtime.subscriptions.private_channel': {
+    status: 'implemented',
+    symbols: ['RealtimeChannelOptions', 'RealtimeChannel.subscribe'],
+  },
+
+  // functions — every one of these is an option on invoke().
+  'functions.invocation.method_override': {
+    status: 'implemented',
+    symbols: ['FunctionsClient.invoke', 'FunctionInvokeOptions'],
+  },
+  'functions.invocation.region_selection': {
+    status: 'implemented',
+    symbols: ['FunctionsClient.invoke', 'FunctionInvokeOptions', 'FunctionRegion'],
+  },
+  'functions.invocation.request_cancellation': {
+    status: 'implemented',
+    symbols: ['FunctionsClient.invoke', 'FunctionInvokeOptions'],
+  },
+  'functions.invocation.streaming_response': {
+    status: 'implemented',
+    symbols: ['FunctionsClient.invoke', 'FunctionInvokeOptions'],
+  },
+  'functions.invocation.timeout': {
+    status: 'implemented',
+    symbols: ['FunctionsClient.invoke', 'FunctionInvokeOptions'],
+  },
+}
+
+// Areas whose capabilities are all manual, so they have no AREAS entry to derive
+// from but still need a section in the emitted file.
+const MANUAL_ONLY_AREAS = ['client']
+
+// Section order: manual-only areas first, then every area we derive methods from.
+const SECTION_ORDER = [...MANUAL_ONLY_AREAS, ...AREAS.map((a) => a.area)]
+
 function emitYaml(areaIds: Map<string, { id: string; symbols: string[] }[]>, out: string): void {
   const lines: string[] = [
     '# Compliance with the canonical Supabase SDK capability matrix.',
@@ -579,20 +823,46 @@ function emitYaml(areaIds: Map<string, { id: string; symbols: string[] }[]>, out
     'features:',
   ]
 
-  for (const { area } of AREAS) {
-    const entries = areaIds.get(area) ?? []
+  for (const area of SECTION_ORDER) {
+    const auto = areaIds.get(area) ?? []
+    const autoIds = new Set(auto.map((e) => e.id))
+    const manual = Object.entries(MANUAL_ENTRIES).filter(([id]) => id.startsWith(`${area}.`))
+
+    // A capability that became method-backed no longer needs its manual entry —
+    // leaving both in place would emit it twice.
+    for (const [id] of manual) {
+      if (autoIds.has(id)) {
+        throw new Error(
+          `${id} is both auto-derived and listed in MANUAL_ENTRIES — drop the manual entry.`
+        )
+      }
+    }
+
+    const entries = [
+      ...auto.map(({ id, symbols: autoSymbols }) => ({
+        id,
+        // Auto-derived symbols, unioned with any manual override for ids that
+        // don't map 1:1 (e.g. realtime.subscriptions.postgres_changes). Set
+        // iteration preserves insertion order, so overrides append after auto.
+        entry: {
+          status: 'implemented' as const,
+          symbols: [...new Set([...autoSymbols, ...(SYMBOL_OVERRIDES[id] ?? [])])],
+        } as ManualEntry,
+      })),
+      ...manual.map(([id, entry]) => ({ id, entry })),
+    ]
     if (entries.length === 0) continue
+
     lines.push(`  # ${area}`)
     const sorted = entries.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
-    for (const { id, symbols: autoSymbols } of sorted) {
-      // Auto-derived symbols, unioned with any manual override for ids that
-      // don't map 1:1 (e.g. realtime.subscriptions.postgres_changes). Set
-      // iteration preserves insertion order, so overrides append after auto.
-      const symbols = [...new Set([...autoSymbols, ...(SYMBOL_OVERRIDES[id] ?? [])])]
+    for (const { id, entry } of sorted) {
       lines.push(`  ${id}:`)
-      lines.push(`    status: implemented`)
-      lines.push(`    symbols:`)
-      for (const sym of symbols) lines.push(`      - ${sym}`)
+      lines.push(`    status: ${entry.status}`)
+      if (entry.note) lines.push(`    note: ${JSON.stringify(entry.note)}`)
+      if (entry.symbols?.length) {
+        lines.push(`    symbols:`)
+        for (const sym of entry.symbols) lines.push(`      - ${sym}`)
+      }
     }
     lines.push('')
   }
