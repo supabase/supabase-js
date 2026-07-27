@@ -4984,10 +4984,16 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
         fetch: fetchSpy as any,
       })
 
-    test('refresh fails fast without network attempts or backoff sleeps', async () => {
+    // Simulates the user agent's own transport failing while offline.
+    const buildRejectingFetchSpy = () =>
+      jest.fn(async () => {
+        throw new TypeError('Failed to fetch')
+      })
+
+    test('offline refresh probes the transport once and skips the backoff loop', async () => {
       setNavigator({ onLine: false })
       const storage = memoryLocalStorageAdapter()
-      const fetchSpy = jest.fn()
+      const fetchSpy = buildRejectingFetchSpy()
       const client = buildClientWithFetch(storage, fetchSpy)
       await client.initialize()
       await plantSession(storage, { secondsUntilExpiry: -60 })
@@ -4999,8 +5005,9 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
       expect(result.data).toBeNull()
       expect((result.error as AuthError)?.name).toBe('AuthRetryableFetchError')
-      // no request went out and the ~25s retry/backoff loop did not run
-      expect(fetchSpy).not.toHaveBeenCalled()
+      // exactly one probe went through the configured transport; the ~25s
+      // retry/backoff loop did not run
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
       expect(elapsed).toBeLessThan(1000)
 
       // the failure enters the regular cooldown so subsequent ticks stay quiet
@@ -5015,7 +5022,7 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
     test('getSession() offline with access token still valid → preserved session, no error', async () => {
       setNavigator({ onLine: false })
       const storage = memoryLocalStorageAdapter()
-      const fetchSpy = jest.fn()
+      const fetchSpy = buildRejectingFetchSpy()
       const client = buildClientWithFetch(storage, fetchSpy)
       await client.initialize()
       // inside EXPIRY_MARGIN_MS (triggers proactive refresh) but not expired
@@ -5025,13 +5032,13 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
       expect(error).toBeNull()
       expect(data.session?.access_token).toBe('jwt.accesstoken.signature')
-      expect(fetchSpy).not.toHaveBeenCalled()
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
     })
 
     test('getSession() offline with access token fully expired → null + retryable error, storage kept', async () => {
       setNavigator({ onLine: false })
       const storage = memoryLocalStorageAdapter()
-      const fetchSpy = jest.fn()
+      const fetchSpy = buildRejectingFetchSpy()
       const client = buildClientWithFetch(storage, fetchSpy)
       await client.initialize()
       await plantSession(storage, { secondsUntilExpiry: -60 })
@@ -5042,10 +5049,42 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       // from "signed out" (null session, null error).
       expect(data.session).toBeNull()
       expect((error as AuthError)?.name).toBe('AuthRetryableFetchError')
-      expect(fetchSpy).not.toHaveBeenCalled()
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
 
       const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
       expect(stored?.refresh_token).toBe('refresh-token-r1')
+    })
+
+    test('custom transport that succeeds while navigator reports offline is honored', async () => {
+      setNavigator({ onLine: false })
+      const storage = memoryLocalStorageAdapter()
+      // e.g. request interception, a service-worker-backed transport, or a
+      // loopback endpoint: reachable even though navigator.onLine is false
+      const fetchSpy = jest.fn(async () => ({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({
+          access_token: 'jwt.rotated.signature',
+          refresh_token: 'refresh-token-r2',
+          token_type: 'bearer',
+          expires_in: 3600,
+          user: { id: 'user-1', aud: 'authenticated', email: 'u@example.com' },
+        }),
+      }))
+      const client = buildClientWithFetch(storage, fetchSpy)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      // @ts-expect-error access protected for test
+      const result = await client._callRefreshToken('refresh-token-r1')
+
+      expect(result.error).toBeNull()
+      expect(result.data?.refresh_token).toBe('refresh-token-r2')
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+      const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+      expect(stored?.refresh_token).toBe('refresh-token-r2')
     })
 
     test('navigator without boolean onLine → requests still attempted (React Native / Node)', async () => {

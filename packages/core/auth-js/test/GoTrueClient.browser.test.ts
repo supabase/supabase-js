@@ -1367,7 +1367,7 @@ describe('online event handling', () => {
     await initPromise
 
     const lifecycleListeners = addSpy.mock.calls.filter(
-      ([type]) => type === 'online' || type === 'visibilitychange',
+      ([type]) => type === 'online' || type === 'visibilitychange'
     )
     expect(lifecycleListeners).toHaveLength(0)
 

@@ -18,7 +18,6 @@ import {
   AuthPKCECodeVerifierMissingError,
   AuthPKCEGrantCodeExchangeError,
   AuthRefreshDiscardedError,
-  AuthRetryableFetchError,
   AuthSessionMissingError,
   AuthUnknownError,
   isAuthApiError,
@@ -4716,22 +4715,6 @@ export default class GoTrueClient {
             await sleep(200 * Math.pow(2, attempt - 1)) // 200, 400, 800, ...
           }
 
-          // The environment affirmatively reports having no network
-          // connectivity, so the request is guaranteed to fail. Fail fast
-          // with the same retryable error an actual network failure would
-          // produce, instead of running fetches and backoff sleeps that
-          // block `getSession()` callers for up to the full tick duration.
-          // Session preservation, the failure cooldown and callers' error
-          // handling behave exactly as if the request had been sent and
-          // failed; the `online` listener resumes refreshing when
-          // connectivity returns.
-          if (isProvablyOffline()) {
-            throw new AuthRetryableFetchError(
-              'Token refresh skipped because the environment reports being offline',
-              0
-            )
-          }
-
           this._debug(debugName, 'refreshing attempt', attempt)
 
           return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=refresh_token`, {
@@ -4745,9 +4728,15 @@ export default class GoTrueClient {
           return (
             error &&
             isAuthRetryableFetchError(error) &&
-            // no point retrying while provably offline: attempts can't
-            // succeed until connectivity returns, and the `online` listener
-            // picks up from there
+            // Stop after an actual failure while the environment
+            // affirmatively reports being offline: retries through the user
+            // agent's own transport cannot succeed until connectivity
+            // returns, and the `online` listener resumes refreshing then.
+            // Only the retries are gated, never the first attempt, so
+            // custom `fetch` transports and loopback endpoints that work
+            // while `navigator.onLine` is false are still honored, while
+            // the backoff loop that blocked `getSession()` callers for up
+            // to the full tick duration no longer runs offline.
             !isProvablyOffline() &&
             // retryable only if the request can be sent before the backoff overflows the tick duration
             Date.now() + nextBackOffInterval - startedAt < AUTO_REFRESH_TICK_DURATION_MS
@@ -5645,9 +5634,10 @@ export default class GoTrueClient {
    * the next auto-refresh tick. The event target comes from
    * `getOnlineEventTarget`: `window` in documents, the worker global scope
    * in Web Workers, which are exactly the environments whose
-   * `navigator.onLine` makes `_refreshAccessToken` fail fast. No-op
+   * `navigator.onLine` makes `_refreshAccessToken` stop retrying. No-op
    * elsewhere. No `offline` listener is needed: while the environment
-   * reports being offline, refresh attempts fail fast.
+   * reports being offline, a failed refresh is not retried, so there is no
+   * loop to cancel.
    */
   private _handleOnlineStatusChange() {
     const target = getOnlineEventTarget()

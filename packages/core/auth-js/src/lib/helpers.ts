@@ -33,11 +33,14 @@ export const isBrowser = () => typeof window !== 'undefined' && typeof document 
  * network connectivity (`navigator.onLine === false`).
  *
  * Per the HTML spec, `onLine === false` means the user agent will not contact
- * the network, so a request is guaranteed to fail. The opposite is not true:
- * `onLine === true` may be reported while the network is unreachable, so a
- * `true` value is never used to make decisions. Environments without a boolean
- * `navigator.onLine` (React Native, Node.js, Deno) always return false and are
- * unaffected by callers that branch on this.
+ * the network for remote requests, so retrying such a request through the
+ * user agent's own transport cannot succeed until connectivity returns. The
+ * guarantee does not extend to custom `fetch` transports or loopback
+ * endpoints, and `onLine === true` may be reported while the network is
+ * unreachable, so callers only use this to stop retrying after an actual
+ * failure, never to skip a request. Environments without a boolean
+ * `navigator.onLine` (React Native, Node.js, Deno) always return false and
+ * are unaffected by callers that branch on this.
  */
 export const isProvablyOffline = () =>
   typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine
