@@ -94,7 +94,9 @@ export default class PresenceAdapter {
 
 function transformState(presences: PresenceState) {
   return presences.metas.map((presence) => {
-    const transformedPresence = { ...presence }
+    // Object spread compiles to Object.assign for ES2017, which treats __proto__ as a setter.
+    const descriptors = Object.getOwnPropertyDescriptors(presence)
+    const transformedPresence = Object.defineProperties({}, descriptors) as typeof presence
     transformedPresence['presence_ref'] = transformedPresence['phx_ref']
 
     delete transformedPresence['phx_ref']

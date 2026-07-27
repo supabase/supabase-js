@@ -112,6 +112,17 @@ describe('transformState', () => {
 })
 
 describe('presence diff payloads', () => {
+  test('preserves __proto__ metadata as an own property', () => {
+    const meta = JSON.parse('{"phx_ref":"device-1","__proto__":{"is_admin":true}}')
+    const payload = PresenceAdapter.onJoinPayload('user-123', { metas: [] }, { metas: [meta] })
+    const transformedPresence = payload.newPresences[0]
+
+    expect(Object.getPrototypeOf(transformedPresence)).toBe(Object.prototype)
+    expect(Object.hasOwn(transformedPresence, '__proto__')).toBe(true)
+    expect(Reflect.get(transformedPresence, '__proto__')).toEqual({ is_admin: true })
+    expect('is_admin' in transformedPresence).toBe(false)
+  })
+
   test('removes a presence key after all of its metas leave', () => {
     const key = 'user-123'
     // Each server message is decoded into fresh meta objects.
@@ -119,34 +130,15 @@ describe('presence diff payloads', () => {
     let state: PresenceStates = {
       [key]: { metas: [meta('device-1')] },
     }
+    const onJoin = PresenceAdapter.onJoinPayload
+    const onLeave = PresenceAdapter.onLeavePayload
+    const syncDiff = (joins: PresenceStates, leaves: PresenceStates) => {
+      state = Presence.syncDiff(state, { joins, leaves }, onJoin, onLeave)
+    }
 
-    state = Presence.syncDiff(
-      state,
-      {
-        joins: { [key]: { metas: [meta('device-2')] } },
-        leaves: {},
-      },
-      PresenceAdapter.onJoinPayload,
-      PresenceAdapter.onLeavePayload
-    )
-    state = Presence.syncDiff(
-      state,
-      {
-        joins: {},
-        leaves: { [key]: { metas: [meta('device-2')] } },
-      },
-      PresenceAdapter.onJoinPayload,
-      PresenceAdapter.onLeavePayload
-    )
-    state = Presence.syncDiff(
-      state,
-      {
-        joins: {},
-        leaves: { [key]: { metas: [meta('device-1')] } },
-      },
-      PresenceAdapter.onJoinPayload,
-      PresenceAdapter.onLeavePayload
-    )
+    syncDiff({ [key]: { metas: [meta('device-2')] } }, {})
+    syncDiff({}, { [key]: { metas: [meta('device-2')] } })
+    syncDiff({}, { [key]: { metas: [meta('device-1')] } })
 
     expect(state).not.toHaveProperty(key)
   })
