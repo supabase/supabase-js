@@ -28,9 +28,11 @@ overrides:
   unrun: '>=0.2.39 <0.3.0'
   # Avoid the libvips advisory (GHSA-f88m-g3jw-g9cj) in sharp <0.35.0
   sharp: '>=0.35.0'
-  # Avoid the sourceMappingURL file-read advisory (GHSA-6g55-p6wh-862q) in
-  # postcss <8.5.12; next pins the old 8.4.31 transitively in the realtime example.
-  postcss: '>=8.5.12'
+  # Avoid the sourceMappingURL advisories in postcss: file-read
+  # (GHSA-6g55-p6wh-862q, fixed in 8.5.12) and the follow-up path traversal
+  # (GHSA-r28c-9q8g-f849, fixed in 8.5.18); next pins the old 8.4.31
+  # transitively in the realtime example.
+  postcss: '>=8.5.18'
   # Avoid the sourceMappingURL file-read advisory (GHSA-4x5r-pxfx-6jf8) in
   # @babel/core <=7.29.0; reached via next>styled-jsx in the realtime example.
   # (No 7.29.1 was ever published; 7.29.7 is the first fixed 7.x release.)
