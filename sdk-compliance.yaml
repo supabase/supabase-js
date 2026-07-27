@@ -210,6 +210,7 @@ features:
     status: implemented
     symbols:
       - GoTrueClient.updateUser
+  auth.session.sign_out_reason: not_implemented
   auth.sign_in.exchange_code_for_session:
     status: implemented
     symbols:
@@ -280,6 +281,7 @@ features:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.upsert
+  database.mutate.select_after_mutation: not_implemented
   database.query.from_table:
     status: implemented
     symbols:
@@ -461,6 +463,9 @@ features:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.single
+  database.using_modifiers.relationship_embed: not_implemented
+  database.using_modifiers.request_cancellation: not_implemented
+  database.using_modifiers.strip_nulls: not_implemented
 
   # storage
   storage.file_buckets.access_bucket:
@@ -564,6 +569,12 @@ features:
     status: implemented
     symbols:
       - default.uploadToSignedUrl
+  storage.file_buckets.copy_cross_bucket: not_implemented
+  storage.file_buckets.download_as_stream: not_implemented
+  storage.file_buckets.download_with_transform: not_implemented
+  storage.file_buckets.move_cross_bucket: not_implemented
+  storage.file_buckets.upload_with_metadata: not_implemented
+  storage.file_buckets.url_cache_nonce: not_implemented
   storage.vector_buckets.access_vector_index:
     status: implemented
     symbols:
@@ -604,6 +615,10 @@ features:
     status: implemented
     symbols:
       - VectorIndexScope.queryVectors
+  storage.vector_buckets.create_vector_bucket: not_implemented
+  storage.vector_buckets.delete_vector_bucket: not_implemented
+  storage.vector_buckets.list_vector_buckets: not_implemented
+  storage.vector_buckets.parallel_scan: not_implemented
 
   # realtime
   realtime.channel.broadcast_http:
@@ -670,6 +685,7 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.untrack
+  realtime.presence.presence_key: not_implemented
   realtime.subscriptions.broadcast:
     status: implemented
     symbols:
@@ -700,6 +716,11 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.on
+  realtime.subscriptions.broadcast_ack: not_implemented
+  realtime.subscriptions.broadcast_replay: not_implemented
+  realtime.subscriptions.broadcast_self: not_implemented
+  realtime.subscriptions.postgres_changes_filter: not_implemented
+  realtime.subscriptions.private_channel: not_implemented
 
   # functions
   functions.invocation.invoke:
@@ -710,3 +731,32 @@ features:
     status: implemented
     symbols:
       - FunctionsClient.setAuth
+  functions.invocation.method_override: not_implemented
+  functions.invocation.region_selection: not_implemented
+  functions.invocation.request_cancellation: not_implemented
+  functions.invocation.streaming_response: not_implemented
+  functions.invocation.timeout: not_implemented
+  # Newly synced from the canonical spec; no local group yet, place manually.
+  client.authentication_integration.cross_client_token_sync: not_implemented
+  client.authentication_integration.oauth_flow_type: not_implemented
+  client.authentication_integration.session_url_detection: not_implemented
+  client.authentication_integration.third_party_auth: not_implemented
+  client.observability.trace_propagation: not_implemented
+  client.request_configuration.custom_http_client: not_implemented
+  client.request_configuration.global_headers: not_implemented
+  client.session_management.custom_storage: not_implemented
+  client.session_management.persist_session: not_implemented
+  database.configuration.auto_retry: not_implemented
+  database.configuration.request_timeout: not_implemented
+  realtime.configuration.access_token_callback: not_implemented
+  realtime.configuration.binary_protocol: not_implemented
+  realtime.configuration.custom_logger: not_implemented
+  realtime.configuration.custom_websocket_transport: not_implemented
+  realtime.configuration.deferred_disconnect: not_implemented
+  realtime.configuration.heartbeat_interval: not_implemented
+  realtime.configuration.reconnect_backoff: not_implemented
+  storage.analytics.create_analytics_bucket: not_implemented
+  storage.analytics.delete_analytics_bucket: not_implemented
+  storage.analytics.iceberg_namespace: not_implemented
+  storage.analytics.iceberg_table: not_implemented
+  storage.analytics.list_analytics_buckets: not_implemented
