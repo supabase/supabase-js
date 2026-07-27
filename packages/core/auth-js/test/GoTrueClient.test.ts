@@ -5006,9 +5006,18 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       }
     })
 
-    const buildDefaultTransportClient = (storage: ReturnType<typeof memoryLocalStorageAdapter>) =>
+    // A remote-looking auth URL: offline retry suppression never applies to
+    // loopback hosts (they stay reachable while navigator.onLine is false),
+    // and the docker GoTrue test URL is loopback. The rejecting global-fetch
+    // spy intercepts every request, so nothing is actually contacted.
+    const REMOTE_AUTH_URL = 'https://project.example.com/auth/v1'
+
+    const buildDefaultTransportClient = (
+      storage: ReturnType<typeof memoryLocalStorageAdapter>,
+      url: string = REMOTE_AUTH_URL
+    ) =>
       new GoTrueClient({
-        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        url,
         storage,
         autoRefreshToken: false,
         persistSession: true,
@@ -5152,6 +5161,44 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       expect(result.error).toBeNull()
       expect(result.data?.refresh_token).toBe('refresh-token-r2')
       // one transient failure, one successful retry: not suppressed by onLine
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+    })
+
+    test('loopback auth URL keeps the retry loop on the default transport while offline', async () => {
+      setNavigator({ onLine: false })
+      // Loopback stays reachable while navigator.onLine is false, so a
+      // transient first failure against a local Supabase instance must keep
+      // the regular retry loop instead of caching a failure for the
+      // cooldown window with no online event in sight.
+      const fetchSpy = jest
+        .fn(async () => ({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: async () => ({
+            access_token: 'jwt.rotated.signature',
+            refresh_token: 'refresh-token-r2',
+            token_type: 'bearer',
+            expires_in: 3600,
+            user: { id: 'user-1', aud: 'authenticated', email: 'u@example.com' },
+          }),
+        }))
+        .mockImplementationOnce(async () => {
+          throw new TypeError('transient failure')
+        })
+      setGlobalFetch(fetchSpy)
+      const storage = memoryLocalStorageAdapter()
+      // the docker GoTrue test URL is loopback (127.0.0.1)
+      const client = buildDefaultTransportClient(storage, GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      // @ts-expect-error access protected for test
+      const result = await client._callRefreshToken('refresh-token-r1')
+
+      expect(result.error).toBeNull()
+      expect(result.data?.refresh_token).toBe('refresh-token-r2')
+      // one transient failure, one successful retry: not suppressed for loopback
       expect(fetchSpy).toHaveBeenCalledTimes(2)
     })
 

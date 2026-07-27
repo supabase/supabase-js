@@ -5,6 +5,7 @@ import {
   getAlgorithm,
   getItemAsync,
   getOnlineEventTarget,
+  isLoopbackHost,
   isProvablyOffline,
   parseParametersFromURL,
   parseResponseAPIVersion,
@@ -475,5 +476,28 @@ describe('getOnlineEventTarget', () => {
     if (originalAdd) delete (globalThis as any).addEventListener
     if (originalRemove) delete (globalThis as any).removeEventListener
     expect(getOnlineEventTarget()).toBeNull()
+  })
+})
+
+describe('isLoopbackHost', () => {
+  it('recognizes loopback hosts', () => {
+    expect(isLoopbackHost('http://localhost:54321/auth/v1')).toBe(true)
+    expect(isLoopbackHost('http://project.localhost/auth/v1')).toBe(true)
+    expect(isLoopbackHost('http://127.0.0.1:54321/auth/v1')).toBe(true)
+    expect(isLoopbackHost('http://127.255.0.42/auth/v1')).toBe(true)
+    expect(isLoopbackHost('http://[::1]:54321/auth/v1')).toBe(true)
+  })
+
+  it('rejects remote hosts', () => {
+    expect(isLoopbackHost('https://project.supabase.co/auth/v1')).toBe(false)
+    expect(isLoopbackHost('https://example.com/auth/v1')).toBe(false)
+    // resembles but is not loopback
+    expect(isLoopbackHost('https://localhost.example.com/auth/v1')).toBe(false)
+    expect(isLoopbackHost('http://128.0.0.1/auth/v1')).toBe(false)
+  })
+
+  it('returns false for unparseable URLs', () => {
+    expect(isLoopbackHost('not a url')).toBe(false)
+    expect(isLoopbackHost('')).toBe(false)
   })
 })

@@ -46,6 +46,28 @@ export const isBrowser = () => typeof window !== 'undefined' && typeof document 
 export const isProvablyOffline = () =>
   typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine
 
+/**
+ * Whether a URL targets a loopback host: `localhost`, `*.localhost`,
+ * `127.0.0.0/8` or `[::1]`, mirroring the loopback rules of the W3C
+ * "potentially trustworthy origin" definition. Loopback stays reachable
+ * while `navigator.onLine === false` (the signal describes connectivity to
+ * the network, not to the local machine), so offline retry suppression must
+ * not apply to it. Unparseable URLs return false.
+ */
+export function isLoopbackHost(url: string): boolean {
+  try {
+    const { hostname } = new URL(url)
+    return (
+      hostname === 'localhost' ||
+      hostname.endsWith('.localhost') ||
+      hostname === '[::1]' ||
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)
+    )
+  } catch {
+    return false
+  }
+}
+
 export interface OnlineEventTarget {
   addEventListener(type: 'online', listener: () => unknown): void
   removeEventListener(type: 'online', listener: () => unknown): void

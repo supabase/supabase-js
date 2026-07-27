@@ -47,6 +47,7 @@ import {
   getOnlineEventTarget,
   insecureUserWarningProxy,
   isBrowser,
+  isLoopbackHost,
   isProvablyOffline,
   parseParametersFromURL,
   removeItemAsync,
@@ -301,13 +302,15 @@ export default class GoTrueClient {
    */
   protected _disposed = false
   /**
-   * True when no custom `fetch` was supplied and requests go through the
-   * environment's own transport. Offline retry suppression in
-   * `_refreshAccessToken` applies only in that case: `navigator.onLine`
-   * describes the user agent's network stack, not custom transports, which
-   * may fail transiently and succeed on a later attempt regardless of it.
+   * True when offline retry suppression in `_refreshAccessToken` can apply:
+   * requests go through the environment's own transport (no custom `fetch`
+   * was supplied) toward a non-loopback host. `navigator.onLine` describes
+   * the user agent's connectivity to the network, so neither bound applies
+   * elsewhere: custom transports may fail transiently and succeed on a later
+   * attempt regardless of it, and loopback endpoints stay reachable without
+   * it. Both keep the full retry loop.
    */
-  protected readonly usesDefaultFetch: boolean
+  protected readonly offlineRetrySuppressionApplies: boolean
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
    * Cache of the most recent refresh failure, keyed by the refresh token
@@ -453,7 +456,7 @@ export default class GoTrueClient {
     this.url = settings.url
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
-    this.usesDefaultFetch = settings.fetch == null
+    this.offlineRetrySuppressionApplies = settings.fetch == null && !isLoopbackHost(settings.url)
     this.detectSessionInUrl = settings.detectSessionInUrl
     this.flowType = settings.flowType
     this.hasCustomAuthorizationHeader = settings.hasCustomAuthorizationHeader
@@ -4738,17 +4741,17 @@ export default class GoTrueClient {
             error &&
             isAuthRetryableFetchError(error) &&
             // Stop after an actual failure while the environment
-            // affirmatively reports being offline, but only on the default
-            // transport: retries through the user agent's own network stack
-            // cannot succeed until connectivity returns, and the `online`
-            // listener resumes refreshing then. A custom `fetch` is not
-            // bound by `navigator.onLine` (it may fail transiently and
-            // succeed on the next attempt even while offline), so it keeps
-            // the full retry loop. First attempts are never gated either
-            // way, which also keeps loopback endpoints working; what no
-            // longer runs offline is the backoff loop that blocked
-            // `getSession()` callers for up to the full tick duration.
-            !(this.usesDefaultFetch && isProvablyOffline()) &&
+            // affirmatively reports being offline, but only where the
+            // signal is binding: the default transport toward a
+            // non-loopback host, whose retries cannot succeed until
+            // connectivity returns (the `online` listener resumes
+            // refreshing then). Custom `fetch` transports are not bound by
+            // `navigator.onLine` and loopback endpoints stay reachable
+            // without it, so both keep the full retry loop; first attempts
+            // are never gated anywhere. What no longer runs offline is the
+            // backoff loop that blocked `getSession()` callers for up to
+            // the full tick duration.
+            !(this.offlineRetrySuppressionApplies && isProvablyOffline()) &&
             // retryable only if the request can be sent before the backoff overflows the tick duration
             Date.now() + nextBackOffInterval - startedAt < AUTO_REFRESH_TICK_DURATION_MS
           )
