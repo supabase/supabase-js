@@ -1,3 +1,13 @@
+## 2.110.9 (2026-07-27)
+
+### 🩹 Fixes
+
+- **realtime:** preserve presence refs ([#2566](https://github.com/supabase/supabase-js/pull/2566))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.110.8 (2026-07-21)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
