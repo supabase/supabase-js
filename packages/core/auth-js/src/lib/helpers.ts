@@ -47,16 +47,27 @@ export const isProvablyOffline = () =>
   typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine
 
 /**
- * Whether a URL targets a loopback host: `localhost`, `*.localhost`,
- * `127.0.0.0/8` or `[::1]`, mirroring the loopback rules of the W3C
- * "potentially trustworthy origin" definition. Loopback stays reachable
- * while `navigator.onLine === false` (the signal describes connectivity to
- * the network, not to the local machine), so offline retry suppression must
- * not apply to it. Unparseable URLs return false.
+ * Whether a URL targets a loopback host: `localhost`, `*.localhost` (also
+ * their fully qualified trailing-dot forms), `127.0.0.0/8` or `[::1]`,
+ * mirroring the loopback rules of the W3C "potentially trustworthy origin"
+ * definition. Loopback stays reachable while `navigator.onLine === false`
+ * (the signal describes connectivity to the network, not to the local
+ * machine), so offline retry suppression must not apply to it. Unparseable
+ * URLs return false.
  */
 export function isLoopbackHost(url: string): boolean {
   try {
-    const { hostname } = new URL(url)
+    let { hostname } = new URL(url)
+
+    // The URL parser keeps the trailing dot of fully qualified name forms
+    // ("localhost.", "project.localhost."); Secure Contexts includes them in
+    // its loopback matching, so strip exactly one before comparing. IPv4
+    // hosts are already normalized by the parser ("127.0.0.1." parses to
+    // "127.0.0.1").
+    if (hostname.endsWith('.')) {
+      hostname = hostname.slice(0, -1)
+    }
+
     return (
       hostname === 'localhost' ||
       hostname.endsWith('.localhost') ||

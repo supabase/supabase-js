@@ -488,9 +488,18 @@ describe('isLoopbackHost', () => {
     expect(isLoopbackHost('http://[::1]:54321/auth/v1')).toBe(true)
   })
 
+  it('recognizes fully qualified (trailing-dot) loopback names', () => {
+    expect(isLoopbackHost('http://localhost.:54321/auth/v1')).toBe(true)
+    expect(isLoopbackHost('http://project.localhost./auth/v1')).toBe(true)
+    // the URL parser normalizes trailing-dot IPv4 itself
+    expect(isLoopbackHost('http://127.0.0.1./auth/v1')).toBe(true)
+  })
+
   it('rejects remote hosts', () => {
     expect(isLoopbackHost('https://project.supabase.co/auth/v1')).toBe(false)
     expect(isLoopbackHost('https://example.com/auth/v1')).toBe(false)
+    // fully qualified remote names stay remote after normalization
+    expect(isLoopbackHost('https://example.com./auth/v1')).toBe(false)
     // resembles but is not loopback
     expect(isLoopbackHost('https://localhost.example.com/auth/v1')).toBe(false)
     expect(isLoopbackHost('http://128.0.0.1/auth/v1')).toBe(false)
