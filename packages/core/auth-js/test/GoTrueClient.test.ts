@@ -4984,17 +4984,48 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
         fetch: fetchSpy as any,
       })
 
+    // Offline retry suppression applies only to the environment's own
+    // transport, so those tests observe it by overriding the global fetch
+    // (bound by resolveFetch at construction) instead of passing a custom
+    // `fetch` option, which keeps the full retry loop.
+    const originalFetchDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'fetch')
+
+    const setGlobalFetch = (impl: unknown) => {
+      Object.defineProperty(globalThis, 'fetch', {
+        value: impl,
+        configurable: true,
+        writable: true,
+      })
+    }
+
+    afterEach(() => {
+      if (originalFetchDescriptor) {
+        Object.defineProperty(globalThis, 'fetch', originalFetchDescriptor)
+      } else {
+        delete (globalThis as any).fetch
+      }
+    })
+
+    const buildDefaultTransportClient = (storage: ReturnType<typeof memoryLocalStorageAdapter>) =>
+      new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+      })
+
     // Simulates the user agent's own transport failing while offline.
     const buildRejectingFetchSpy = () =>
       jest.fn(async () => {
         throw new TypeError('Failed to fetch')
       })
 
-    test('offline refresh probes the transport once and skips the backoff loop', async () => {
+    test('offline refresh probes the default transport once and skips the backoff loop', async () => {
       setNavigator({ onLine: false })
-      const storage = memoryLocalStorageAdapter()
       const fetchSpy = buildRejectingFetchSpy()
-      const client = buildClientWithFetch(storage, fetchSpy)
+      setGlobalFetch(fetchSpy)
+      const storage = memoryLocalStorageAdapter()
+      const client = buildDefaultTransportClient(storage)
       await client.initialize()
       await plantSession(storage, { secondsUntilExpiry: -60 })
 
@@ -5005,7 +5036,7 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
       expect(result.data).toBeNull()
       expect((result.error as AuthError)?.name).toBe('AuthRetryableFetchError')
-      // exactly one probe went through the configured transport; the ~25s
+      // exactly one probe went through the default transport; the ~25s
       // retry/backoff loop did not run
       expect(fetchSpy).toHaveBeenCalledTimes(1)
       expect(elapsed).toBeLessThan(1000)
@@ -5021,9 +5052,10 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
     test('getSession() offline with access token still valid → preserved session, no error', async () => {
       setNavigator({ onLine: false })
-      const storage = memoryLocalStorageAdapter()
       const fetchSpy = buildRejectingFetchSpy()
-      const client = buildClientWithFetch(storage, fetchSpy)
+      setGlobalFetch(fetchSpy)
+      const storage = memoryLocalStorageAdapter()
+      const client = buildDefaultTransportClient(storage)
       await client.initialize()
       // inside EXPIRY_MARGIN_MS (triggers proactive refresh) but not expired
       await plantSession(storage, { secondsUntilExpiry: 30 })
@@ -5037,9 +5069,10 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
     test('getSession() offline with access token fully expired → null + retryable error, storage kept', async () => {
       setNavigator({ onLine: false })
-      const storage = memoryLocalStorageAdapter()
       const fetchSpy = buildRejectingFetchSpy()
-      const client = buildClientWithFetch(storage, fetchSpy)
+      setGlobalFetch(fetchSpy)
+      const storage = memoryLocalStorageAdapter()
+      const client = buildDefaultTransportClient(storage)
       await client.initialize()
       await plantSession(storage, { secondsUntilExpiry: -60 })
 
@@ -5087,15 +5120,51 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       expect(stored?.refresh_token).toBe('refresh-token-r2')
     })
 
-    test('navigator without boolean onLine → requests still attempted (React Native / Node)', async () => {
+    test('custom transport retries while offline: fails once, succeeds on the second attempt', async () => {
+      setNavigator({ onLine: false })
+      const storage = memoryLocalStorageAdapter()
+      // A custom transport is not bound by navigator.onLine, so a transient
+      // first failure must keep the regular retry loop instead of caching a
+      // failure that a second attempt would have avoided.
+      const fetchSpy = jest
+        .fn(async () => ({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: async () => ({
+            access_token: 'jwt.rotated.signature',
+            refresh_token: 'refresh-token-r2',
+            token_type: 'bearer',
+            expires_in: 3600,
+            user: { id: 'user-1', aud: 'authenticated', email: 'u@example.com' },
+          }),
+        }))
+        .mockImplementationOnce(async () => {
+          throw new TypeError('transient failure')
+        })
+      const client = buildClientWithFetch(storage, fetchSpy)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      // @ts-expect-error access protected for test
+      const result = await client._callRefreshToken('refresh-token-r1')
+
+      expect(result.error).toBeNull()
+      expect(result.data?.refresh_token).toBe('refresh-token-r2')
+      // one transient failure, one successful retry: not suppressed by onLine
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+    })
+
+    test('navigator without boolean onLine → default transport keeps the retry loop (React Native / Node)', async () => {
       setNavigator({ product: 'ReactNative' })
       jest.useFakeTimers({ doNotFake: ['setImmediate'] })
       try {
-        const storage = memoryLocalStorageAdapter()
         const fetchSpy = jest.fn(async () => {
           throw new TypeError('fetch failed')
         })
-        const client = buildClientWithFetch(storage, fetchSpy)
+        setGlobalFetch(fetchSpy)
+        const storage = memoryLocalStorageAdapter()
+        const client = buildDefaultTransportClient(storage)
         await client.initialize()
         await plantSession(storage, { secondsUntilExpiry: -60 })
 
@@ -5105,8 +5174,9 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
         const result = await resultPromise
 
         expect((result.error as AuthError)?.name).toBe('AuthRetryableFetchError')
-        // the point: absence of onLine must not short-circuit the request
-        expect(fetchSpy).toHaveBeenCalled()
+        // the point: absence of onLine must not suppress requests or
+        // retries, even on the default transport
+        expect(fetchSpy.mock.calls.length).toBeGreaterThan(1)
       } finally {
         jest.useRealTimers()
       }

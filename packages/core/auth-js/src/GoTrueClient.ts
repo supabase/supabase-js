@@ -300,6 +300,14 @@ export default class GoTrueClient {
    * restart background work on a client that was already torn down.
    */
   protected _disposed = false
+  /**
+   * True when no custom `fetch` was supplied and requests go through the
+   * environment's own transport. Offline retry suppression in
+   * `_refreshAccessToken` applies only in that case: `navigator.onLine`
+   * describes the user agent's network stack, not custom transports, which
+   * may fail transiently and succeed on a later attempt regardless of it.
+   */
+  protected readonly usesDefaultFetch: boolean
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
    * Cache of the most recent refresh failure, keyed by the refresh token
@@ -445,6 +453,7 @@ export default class GoTrueClient {
     this.url = settings.url
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
+    this.usesDefaultFetch = settings.fetch == null
     this.detectSessionInUrl = settings.detectSessionInUrl
     this.flowType = settings.flowType
     this.hasCustomAuthorizationHeader = settings.hasCustomAuthorizationHeader
@@ -4729,15 +4738,17 @@ export default class GoTrueClient {
             error &&
             isAuthRetryableFetchError(error) &&
             // Stop after an actual failure while the environment
-            // affirmatively reports being offline: retries through the user
-            // agent's own transport cannot succeed until connectivity
-            // returns, and the `online` listener resumes refreshing then.
-            // Only the retries are gated, never the first attempt, so
-            // custom `fetch` transports and loopback endpoints that work
-            // while `navigator.onLine` is false are still honored, while
-            // the backoff loop that blocked `getSession()` callers for up
-            // to the full tick duration no longer runs offline.
-            !isProvablyOffline() &&
+            // affirmatively reports being offline, but only on the default
+            // transport: retries through the user agent's own network stack
+            // cannot succeed until connectivity returns, and the `online`
+            // listener resumes refreshing then. A custom `fetch` is not
+            // bound by `navigator.onLine` (it may fail transiently and
+            // succeed on the next attempt even while offline), so it keeps
+            // the full retry loop. First attempts are never gated either
+            // way, which also keeps loopback endpoints working; what no
+            // longer runs offline is the backoff loop that blocked
+            // `getSession()` callers for up to the full tick duration.
+            !(this.usesDefaultFetch && isProvablyOffline()) &&
             // retryable only if the request can be sent before the backoff overflows the tick duration
             Date.now() + nextBackOffInterval - startedAt < AUTO_REFRESH_TICK_DURATION_MS
           )
@@ -5634,8 +5645,8 @@ export default class GoTrueClient {
    * the next auto-refresh tick. The event target comes from
    * `getOnlineEventTarget`: `window` in documents, the worker global scope
    * in Web Workers, which are exactly the environments whose
-   * `navigator.onLine` makes `_refreshAccessToken` stop retrying. No-op
-   * elsewhere. No `offline` listener is needed: while the environment
+   * `navigator.onLine` makes `_refreshAccessToken` stop retrying the
+   * default transport. No-op elsewhere. No `offline` listener is needed: while the environment
    * reports being offline, a failed refresh is not retried, so there is no
    * loop to cancel.
    */

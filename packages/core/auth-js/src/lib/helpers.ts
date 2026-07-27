@@ -37,8 +37,9 @@ export const isBrowser = () => typeof window !== 'undefined' && typeof document 
  * user agent's own transport cannot succeed until connectivity returns. The
  * guarantee does not extend to custom `fetch` transports or loopback
  * endpoints, and `onLine === true` may be reported while the network is
- * unreachable, so callers only use this to stop retrying after an actual
- * failure, never to skip a request. Environments without a boolean
+ * unreachable, so callers only use this to stop retrying default-transport
+ * requests after an actual failure, never to skip a request and never for
+ * custom transports. Environments without a boolean
  * `navigator.onLine` (React Native, Node.js, Deno) always return false and
  * are unaffected by callers that branch on this.
  */
