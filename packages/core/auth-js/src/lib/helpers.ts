@@ -28,6 +28,20 @@ export function generateCallbackId(): symbol {
 
 export const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined'
 
+/**
+ * Returns true only when the environment affirmatively reports having no
+ * network connectivity (`navigator.onLine === false`).
+ *
+ * Per the HTML spec, `onLine === false` means the user agent will not contact
+ * the network, so a request is guaranteed to fail. The opposite is not true:
+ * `onLine === true` may be reported while the network is unreachable, so a
+ * `true` value is never used to make decisions. Environments without a boolean
+ * `navigator.onLine` (React Native, Node.js, Deno) always return false and are
+ * unaffected by callers that branch on this.
+ */
+export const isProvablyOffline = () =>
+  typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine
+
 const localStorageWriteTests = {
   tested: false,
   writable: false,

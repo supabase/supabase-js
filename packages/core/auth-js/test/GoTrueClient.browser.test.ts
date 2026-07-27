@@ -1264,3 +1264,75 @@ describe('MFA Complex Branches', () => {
     expect(mockFetch).toHaveBeenCalled()
   })
 })
+
+describe('online event handling', () => {
+  const GoTrueClient = require('../src/GoTrueClient').default
+  const { memoryLocalStorageAdapter } = require('../src/lib/local-storage')
+
+  const buildClient = () =>
+    new GoTrueClient({
+      url: 'http://localhost:9999',
+      storage: memoryLocalStorageAdapter(),
+      autoRefreshToken: false,
+      persistSession: true,
+    })
+
+  const seedCooldown = (client: any) => {
+    client.lastRefreshFailure = {
+      refreshToken: 'refresh-token-r1',
+      result: { data: null, error: { name: 'AuthRetryableFetchError' } },
+      expiresAt: Date.now() + 60_000,
+    }
+  }
+
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+  test('online event clears the refresh-failure cooldown', async () => {
+    const client = buildClient()
+    await client.initialize()
+    seedCooldown(client)
+
+    window.dispatchEvent(new Event('online'))
+    await flush()
+
+    expect(client.lastRefreshFailure).toBeNull()
+
+    await client.dispose()
+  })
+
+  test('online event ticks only while the auto-refresh ticker is active', async () => {
+    const client = buildClient()
+    await client.initialize()
+
+    const tickSpy = jest.spyOn(client, '_autoRefreshTokenTick').mockResolvedValue(undefined)
+
+    // Ticker not running (e.g. background tab): no proactive refresh.
+    window.dispatchEvent(new Event('online'))
+    await flush()
+    expect(tickSpy).not.toHaveBeenCalled()
+
+    await client.startAutoRefresh()
+    await flush() // let startAutoRefresh's own initial tick fire
+    tickSpy.mockClear()
+
+    window.dispatchEvent(new Event('online'))
+    await flush()
+    expect(tickSpy).toHaveBeenCalled()
+
+    await client.stopAutoRefresh()
+    await client.dispose()
+  })
+
+  test('dispose removes the online listener', async () => {
+    const client = buildClient()
+    await client.initialize()
+    await client.dispose()
+
+    seedCooldown(client)
+    window.dispatchEvent(new Event('online'))
+    await flush()
+
+    // listener removed, so the seeded cooldown is untouched
+    expect(client.lastRefreshFailure).not.toBeNull()
+  })
+})

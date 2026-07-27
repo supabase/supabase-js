@@ -4,6 +4,7 @@ import {
   generateCallbackId,
   getAlgorithm,
   getItemAsync,
+  isProvablyOffline,
   parseParametersFromURL,
   parseResponseAPIVersion,
   getCodeChallengeAndMethod,
@@ -383,5 +384,50 @@ describe('getItemAsync', () => {
     // valid behavior. We are only guarding against parse failures here.
     const storage = makeStorage({ session: '"hello"' })
     expect(await getItemAsync(storage, 'session')).toEqual('hello')
+  })
+})
+
+describe('isProvablyOffline', () => {
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+
+  const setNavigator = (value: unknown) => {
+    Object.defineProperty(globalThis, 'navigator', {
+      value,
+      configurable: true,
+      writable: true,
+    })
+  }
+
+  afterEach(() => {
+    if (originalNavigator) {
+      Object.defineProperty(globalThis, 'navigator', originalNavigator)
+    } else {
+      delete (globalThis as any).navigator
+    }
+  })
+
+  it('returns true only when navigator.onLine is exactly false', () => {
+    setNavigator({ onLine: false })
+    expect(isProvablyOffline()).toBe(true)
+  })
+
+  it('returns false when navigator.onLine is true', () => {
+    setNavigator({ onLine: true })
+    expect(isProvablyOffline()).toBe(false)
+  })
+
+  it('returns false when navigator has no boolean onLine (React Native, Node.js)', () => {
+    setNavigator({ product: 'ReactNative' })
+    expect(isProvablyOffline()).toBe(false)
+
+    setNavigator({ onLine: undefined })
+    expect(isProvablyOffline()).toBe(false)
+  })
+
+  it('returns false when navigator is not defined', () => {
+    if (originalNavigator) {
+      delete (globalThis as any).navigator
+    }
+    expect(isProvablyOffline()).toBe(false)
   })
 })

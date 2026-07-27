@@ -18,6 +18,7 @@ import {
   AuthPKCECodeVerifierMissingError,
   AuthPKCEGrantCodeExchangeError,
   AuthRefreshDiscardedError,
+  AuthRetryableFetchError,
   AuthSessionMissingError,
   AuthUnknownError,
   isAuthApiError,
@@ -46,6 +47,7 @@ import {
   getItemAsync,
   insecureUserWarningProxy,
   isBrowser,
+  isProvablyOffline,
   parseParametersFromURL,
   removeItemAsync,
   resolveFetch,
@@ -288,6 +290,7 @@ export default class GoTrueClient {
   protected autoRefreshTicker: ReturnType<typeof setInterval> | null = null
   protected autoRefreshTickTimeout: ReturnType<typeof setTimeout> | null = null
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
+  protected onlineChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
    * Cache of the most recent refresh failure, keyed by the refresh token
@@ -717,6 +720,7 @@ export default class GoTrueClient {
       })
     } finally {
       await this._handleVisibilityChange()
+      this._handleOnlineStatusChange()
       this._debug('#_initialize()', 'end')
     }
   }
@@ -4692,6 +4696,22 @@ export default class GoTrueClient {
             await sleep(200 * Math.pow(2, attempt - 1)) // 200, 400, 800, ...
           }
 
+          // The environment affirmatively reports having no network
+          // connectivity, so the request is guaranteed to fail. Fail fast
+          // with the same retryable error an actual network failure would
+          // produce, instead of running fetches and backoff sleeps that
+          // block `getSession()` callers for up to the full tick duration.
+          // Session preservation, the failure cooldown and callers' error
+          // handling behave exactly as if the request had been sent and
+          // failed; the `online` listener resumes refreshing when
+          // connectivity returns.
+          if (isProvablyOffline()) {
+            throw new AuthRetryableFetchError(
+              'Token refresh skipped because the environment reports being offline',
+              0
+            )
+          }
+
           this._debug(debugName, 'refreshing attempt', attempt)
 
           return await _request(this.fetch, 'POST', `${this.url}/token?grant_type=refresh_token`, {
@@ -4705,6 +4725,10 @@ export default class GoTrueClient {
           return (
             error &&
             isAuthRetryableFetchError(error) &&
+            // no point retrying while provably offline: attempts can't
+            // succeed until connectivity returns, and the `online` listener
+            // picks up from there
+            !isProvablyOffline() &&
             // retryable only if the request can be sent before the backoff overflows the tick duration
             Date.now() + nextBackOffInterval - startedAt < AUTO_REFRESH_TICK_DURATION_MS
           )
@@ -5391,6 +5415,7 @@ export default class GoTrueClient {
    */
   async dispose(): Promise<void> {
     this._removeVisibilityChangedCallback()
+    this._removeOnlineStatusChangeCallback()
     await this._stopAutoRefresh()
     this.broadcastChannel?.close()
     this.broadcastChannel = null
@@ -5581,6 +5606,74 @@ export default class GoTrueClient {
       if (this.autoRefreshToken) {
         this._stopAutoRefresh()
       }
+    }
+  }
+
+  /**
+   * Registers the browser `online` event so refreshing resumes the moment
+   * connectivity returns, instead of waiting out the failure cooldown plus
+   * the next auto-refresh tick. No-op outside browsers. No `offline`
+   * listener is needed: while the environment reports being offline,
+   * refresh attempts fail fast (see `_refreshAccessToken`).
+   */
+  private _handleOnlineStatusChange() {
+    if (!isBrowser() || !window?.addEventListener) {
+      return
+    }
+
+    try {
+      this.onlineChangedCallback = async () => {
+        try {
+          await this._onOnline()
+        } catch (error) {
+          this._debug('#onlineChangedCallback', 'error', error)
+        }
+      }
+
+      window?.addEventListener('online', this.onlineChangedCallback)
+    } catch (error) {
+      console.error('_handleOnlineStatusChange', error)
+    }
+  }
+
+  /**
+   * Callback registered with `window.addEventListener('online')`.
+   */
+  private async _onOnline() {
+    this._debug('#_onOnline()', 'network connectivity restored')
+
+    // The failure cooldown exists to stop refresh storms against the same
+    // broken refresh token; a connectivity transition invalidates that
+    // cached outcome, so the next caller attempts a real refresh
+    // immediately instead of receiving a stale offline failure.
+    this.lastRefreshFailure = null
+
+    await this.initializePromise
+
+    if (this.autoRefreshTicker) {
+      // Refresh proactively only where the ticker is already running (in
+      // browsers: the foreground tab), matching the single-tab discipline
+      // of the visibilitychange handler. Background tabs still benefit from
+      // the cooldown reset above and refresh on their next getSession().
+      await this._autoRefreshTokenTick()
+    }
+  }
+
+  /**
+   * Removes any registered `online` event callback.
+   */
+  private _removeOnlineStatusChangeCallback() {
+    this._debug('#_removeOnlineStatusChangeCallback()')
+
+    const callback = this.onlineChangedCallback
+    this.onlineChangedCallback = null
+
+    try {
+      if (callback && isBrowser() && window?.removeEventListener) {
+        window.removeEventListener('online', callback)
+      }
+    } catch (e) {
+      console.error('removing online callback failed', e)
     }
   }
 

@@ -4952,4 +4952,125 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       errorSpy.mockRestore()
     })
   })
+
+  describe('offline fail-fast (provably offline)', () => {
+    const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+
+    const setNavigator = (value: unknown) => {
+      Object.defineProperty(globalThis, 'navigator', {
+        value,
+        configurable: true,
+        writable: true,
+      })
+    }
+
+    afterEach(() => {
+      if (originalNavigator) {
+        Object.defineProperty(globalThis, 'navigator', originalNavigator)
+      } else {
+        delete (globalThis as any).navigator
+      }
+    })
+
+    const buildClientWithFetch = (
+      storage: ReturnType<typeof memoryLocalStorageAdapter>,
+      fetchSpy: jest.Mock
+    ) =>
+      new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+        fetch: fetchSpy as any,
+      })
+
+    test('refresh fails fast without network attempts or backoff sleeps', async () => {
+      setNavigator({ onLine: false })
+      const storage = memoryLocalStorageAdapter()
+      const fetchSpy = jest.fn()
+      const client = buildClientWithFetch(storage, fetchSpy)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const startedAt = Date.now()
+      // @ts-expect-error access protected for test
+      const result = await client._callRefreshToken('refresh-token-r1')
+      const elapsed = Date.now() - startedAt
+
+      expect(result.data).toBeNull()
+      expect((result.error as AuthError)?.name).toBe('AuthRetryableFetchError')
+      // no request went out and the ~25s retry/backoff loop did not run
+      expect(fetchSpy).not.toHaveBeenCalled()
+      expect(elapsed).toBeLessThan(1000)
+
+      // the failure enters the regular cooldown so subsequent ticks stay quiet
+      // @ts-expect-error access protected for test
+      expect(client.lastRefreshFailure).not.toBeNull()
+
+      // retryable failure: session must survive in storage
+      const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+      expect(stored?.refresh_token).toBe('refresh-token-r1')
+    })
+
+    test('getSession() offline with access token still valid → preserved session, no error', async () => {
+      setNavigator({ onLine: false })
+      const storage = memoryLocalStorageAdapter()
+      const fetchSpy = jest.fn()
+      const client = buildClientWithFetch(storage, fetchSpy)
+      await client.initialize()
+      // inside EXPIRY_MARGIN_MS (triggers proactive refresh) but not expired
+      await plantSession(storage, { secondsUntilExpiry: 30 })
+
+      const { data, error } = await client.getSession()
+
+      expect(error).toBeNull()
+      expect(data.session?.access_token).toBe('jwt.accesstoken.signature')
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    test('getSession() offline with access token fully expired → null + retryable error, storage kept', async () => {
+      setNavigator({ onLine: false })
+      const storage = memoryLocalStorageAdapter()
+      const fetchSpy = jest.fn()
+      const client = buildClientWithFetch(storage, fetchSpy)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const { data, error } = await client.getSession()
+
+      // Callers can distinguish "can't verify right now" (retryable error)
+      // from "signed out" (null session, null error).
+      expect(data.session).toBeNull()
+      expect((error as AuthError)?.name).toBe('AuthRetryableFetchError')
+      expect(fetchSpy).not.toHaveBeenCalled()
+
+      const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+      expect(stored?.refresh_token).toBe('refresh-token-r1')
+    })
+
+    test('navigator without boolean onLine → requests still attempted (React Native / Node)', async () => {
+      setNavigator({ product: 'ReactNative' })
+      jest.useFakeTimers({ doNotFake: ['setImmediate'] })
+      try {
+        const storage = memoryLocalStorageAdapter()
+        const fetchSpy = jest.fn(async () => {
+          throw new TypeError('fetch failed')
+        })
+        const client = buildClientWithFetch(storage, fetchSpy)
+        await client.initialize()
+        await plantSession(storage, { secondsUntilExpiry: -60 })
+
+        // @ts-expect-error access protected for test
+        const resultPromise = client._callRefreshToken('refresh-token-r1')
+        await jest.runAllTimersAsync()
+        const result = await resultPromise
+
+        expect((result.error as AuthError)?.name).toBe('AuthRetryableFetchError')
+        // the point: absence of onLine must not short-circuit the request
+        expect(fetchSpy).toHaveBeenCalled()
+      } finally {
+        jest.useRealTimers()
+      }
+    })
+  })
 })
