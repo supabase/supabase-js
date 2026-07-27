@@ -7,7 +7,7 @@
     "serve:node-browser": "serve . -p 8004"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
+    "@playwright/test": "^1.53.0",
     "serve": "^14.2.1"
   }
 }
