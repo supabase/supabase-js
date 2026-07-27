@@ -123,6 +123,32 @@ describe('presence diff payloads', () => {
     expect('is_admin' in transformedPresence).toBe(false)
   })
 
+  test('collapses a presence update instead of duplicating the member', () => {
+    const key = 'user-123'
+    let state: PresenceStates = {
+      [key]: { metas: [{ phx_ref: 'r1', status: 'online' }] },
+    }
+    const onJoin = PresenceAdapter.onJoinPayload
+    const onLeave = PresenceAdapter.onLeavePayload
+    const syncDiff = (joins: PresenceStates, leaves: PresenceStates) => {
+      state = Presence.syncDiff(state, { joins, leaves }, onJoin, onLeave)
+    }
+    const updateJoins = {
+      [key]: { metas: [{ phx_ref: 'r2', phx_ref_prev: 'r1', status: 'away' }] },
+    }
+    const updateLeaves = {
+      [key]: { metas: [{ phx_ref: 'r1', status: 'online' }] },
+    }
+
+    // track() with a changed payload: the server sends Presence.update as join + leave.
+    syncDiff(updateJoins, updateLeaves)
+
+    expect(state[key].metas).toHaveLength(1)
+
+    syncDiff({}, { [key]: { metas: [{ phx_ref: 'r2', status: 'away' }] } })
+    expect(state).not.toHaveProperty(key)
+  })
+
   test('removes a presence key after all of its metas leave', () => {
     const key = 'user-123'
     // Each server message is decoded into fresh meta objects.
