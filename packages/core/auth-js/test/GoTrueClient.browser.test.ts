@@ -1373,4 +1373,58 @@ describe('online event handling', () => {
 
     addSpy.mockRestore()
   })
+
+  test('dispose during visibility setup: no online listener, no restarted ticker', async () => {
+    const addSpy = jest.spyOn(window, 'addEventListener')
+
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      storage: memoryLocalStorageAdapter(),
+      autoRefreshToken: true,
+      persistSession: true,
+      skipAutoInitialize: true,
+    })
+
+    // Gate _onVisibilityChanged so dispose() interleaves inside
+    // _handleVisibilityChange's await, after initialization already passed
+    // its first _disposed check. The original then resumes on the disposed
+    // client and reaches _startAutoRefresh.
+    let release: () => void = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const original = (client as any)._onVisibilityChanged.bind(client)
+    jest
+      .spyOn(client as any, '_onVisibilityChanged')
+      .mockImplementation(async (...args: unknown[]) => {
+        await gate
+        return original(...args)
+      })
+
+    const initPromise = client.initialize()
+    await flush() // let initialize reach the gated await
+    await client.dispose()
+    release()
+    await initPromise
+    await flush() // let the fire-and-forget _startAutoRefresh settle
+
+    expect(addSpy.mock.calls.filter(([type]) => type === 'online')).toHaveLength(0)
+    expect((client as any).autoRefreshTicker).toBeNull()
+    expect((client as any).autoRefreshTickTimeout).toBeNull()
+
+    addSpy.mockRestore()
+  })
+
+  test('_startAutoRefresh resumed after dispose creates no timers', async () => {
+    const client = buildClient()
+    await client.initialize()
+
+    // Suspended at its internal await when dispose() runs.
+    const startPromise = (client as any)._startAutoRefresh()
+    await client.dispose()
+    await startPromise
+
+    expect((client as any).autoRefreshTicker).toBeNull()
+    expect((client as any).autoRefreshTickTimeout).toBeNull()
+  })
 })

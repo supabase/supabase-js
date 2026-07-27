@@ -294,10 +294,11 @@ export default class GoTrueClient {
   protected onlineChangedCallback: (() => Promise<any>) | null = null
   /**
    * Set by `dispose()`. `_initialize()` checks it before registering the
-   * visibilitychange / online listeners so a dispose that runs while
-   * initialization is still pending (React Strict Mode, HMR) does not leak
-   * listeners or start background work on a client that was already torn
-   * down.
+   * visibilitychange / online listeners (re-checking after each await, since
+   * dispose can interleave with them), and `_startAutoRefresh()` checks it
+   * before creating timers, so a dispose that runs while initialization is
+   * still pending (React Strict Mode, HMR) does not leak listeners or
+   * restart background work on a client that was already torn down.
    */
   protected _disposed = false
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
@@ -730,8 +731,16 @@ export default class GoTrueClient {
     } finally {
       if (!this._disposed) {
         await this._handleVisibilityChange()
+      }
+
+      // Re-checked rather than hoisted: dispose() may have run while
+      // _handleVisibilityChange was awaited, and its cleanup has already
+      // completed by then, so registering the online listener now would
+      // leak it on a torn-down client.
+      if (!this._disposed) {
         this._handleOnlineStatusChange()
       }
+
       this._debug('#_initialize()', 'end')
     }
   }
@@ -5248,6 +5257,13 @@ export default class GoTrueClient {
    */
   private async _startAutoRefresh() {
     await this._stopAutoRefresh()
+
+    if (this._disposed) {
+      // dispose() interleaved with the await above; its own _stopAutoRefresh
+      // has already run, so timers created now would leak on a torn-down
+      // client with nothing left to clear them.
+      return
+    }
 
     this._debug('#_startAutoRefresh()')
 
