@@ -1,3 +1,13 @@
+## 2.110.9 (2026-07-27)
+
+### 🩹 Fixes
+
+- **auth:** downgrade stale refresh token console noise ([#2559](https://github.com/supabase/supabase-js/pull/2559))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.110.8 (2026-07-21)
 
 ### 🩹 Fixes

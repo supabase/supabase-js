@@ -1,3 +1,18 @@
+## 2.110.9 (2026-07-27)
+
+### 🩹 Fixes
+
+- **auth:** downgrade stale refresh token console noise ([#2559](https://github.com/supabase/supabase-js/pull/2559))
+- **realtime:** preserve presence refs ([#2566](https://github.com/supabase/supabase-js/pull/2566))
+- **repo:** override sharp to >=0.35.0 to clear libvips advisory ([#2548](https://github.com/supabase/supabase-js/pull/2548))
+- **repo:** populate symbols in sdk-compliance so capabilities are verifiable ([#2547](https://github.com/supabase/supabase-js/pull/2547))
+- **repo:** bump postcss, babel, next to clear audit advisories ([#2561](https://github.com/supabase/supabase-js/pull/2561))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.110.8 (2026-07-21)
 
 ### 🩹 Fixes
