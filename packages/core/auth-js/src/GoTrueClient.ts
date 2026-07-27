@@ -4290,10 +4290,18 @@ export default class GoTrueClient {
       } catch (err) {
         await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
         this._debug('INITIAL_SESSION', 'callback id', id, 'error', err)
-        if (isAuthSessionMissingError(err) || isAuthRetryableFetchError(err)) {
-          // A missing session or a transient/aborted network failure (e.g. a
-          // superseded page navigation cancelling the in-flight request) is
-          // not an application error — warn rather than surface it raw.
+        if (
+          isAuthSessionMissingError(err) ||
+          isAuthRetryableFetchError(err) ||
+          (isAuthApiError(err) &&
+            (err.code === 'refresh_token_not_found' ||
+              err.code === 'refresh_token_already_used' ||
+              err.code === 'session_expired'))
+        ) {
+          // A missing session, a transient/aborted network failure (e.g. a
+          // superseded page navigation cancelling the in-flight request), or
+          // a dead refresh token (e.g. stale SSR cookies) is not an
+          // application error — warn rather than surface it raw.
           console.warn(err)
         } else {
           console.error(err)
