@@ -111,6 +111,47 @@ describe('transformState', () => {
   })
 })
 
+describe('presence diff payloads', () => {
+  test('removes a presence key after all of its metas leave', () => {
+    const key = 'user-123'
+    // Each server message is decoded into fresh meta objects.
+    const meta = (phx_ref: string) => ({ phx_ref, user_id: key })
+    let state: PresenceStates = {
+      [key]: { metas: [meta('device-1')] },
+    }
+
+    state = Presence.syncDiff(
+      state,
+      {
+        joins: { [key]: { metas: [meta('device-2')] } },
+        leaves: {},
+      },
+      PresenceAdapter.onJoinPayload,
+      PresenceAdapter.onLeavePayload
+    )
+    state = Presence.syncDiff(
+      state,
+      {
+        joins: {},
+        leaves: { [key]: { metas: [meta('device-2')] } },
+      },
+      PresenceAdapter.onJoinPayload,
+      PresenceAdapter.onLeavePayload
+    )
+    state = Presence.syncDiff(
+      state,
+      {
+        joins: {},
+        leaves: { [key]: { metas: [meta('device-1')] } },
+      },
+      PresenceAdapter.onJoinPayload,
+      PresenceAdapter.onLeavePayload
+    )
+
+    expect(state).not.toHaveProperty(key)
+  })
+})
+
 // Reproduces GHSA-63mc-hw7g-86rr: @supabase/phoenix's Presence.syncState/syncDiff look up
 // presence keys with a bare `state[key]` check, so a key matching an Object.prototype
 // member (e.g. "constructor") resolves to the inherited prototype value instead of
