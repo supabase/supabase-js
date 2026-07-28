@@ -157,11 +157,12 @@ export default class PostgrestTransformBuilder<
     column: ColumnName,
     options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: undefined }
   ): this
-  order<
-    ReferencedTable extends string & keyof TablesAndViews<Schema>,
-    ColumnName extends string & keyof TablesAndViews<Schema>[ReferencedTable]['Row'],
-  >(
-    column: ColumnName,
+  order<ReferencedTable extends string & keyof TablesAndViews<Schema>, Column extends string>(
+    column: Column extends keyof TablesAndViews<Schema>[ReferencedTable]['Row']
+      ? Column
+      : string extends Column
+        ? string
+        : keyof TablesAndViews<Schema>[ReferencedTable]['Row'] & string,
     options: { ascending?: boolean; nullsFirst?: boolean; referencedTable: ReferencedTable }
   ): this
   order<ReferencedTable extends string>(
@@ -184,11 +185,12 @@ export default class PostgrestTransformBuilder<
   /**
    * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
    */
-  order<
-    ReferencedTable extends string & keyof TablesAndViews<Schema>,
-    ColumnName extends string & keyof TablesAndViews<Schema>[ReferencedTable]['Row'],
-  >(
-    column: ColumnName,
+  order<ReferencedTable extends string & keyof TablesAndViews<Schema>, Column extends string>(
+    column: Column extends keyof TablesAndViews<Schema>[ReferencedTable]['Row']
+      ? Column
+      : string extends Column
+        ? string
+        : keyof TablesAndViews<Schema>[ReferencedTable]['Row'] & string,
     options: { ascending?: boolean; nullsFirst?: boolean; foreignTable: ReferencedTable }
   ): this
   /**

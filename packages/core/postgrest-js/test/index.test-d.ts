@@ -612,4 +612,17 @@ type WithThrowOnError<T> =
     .select('channels(*)')
     // @ts-expect-error No overload matches this call.
     .order('bad_col', { referencedTable: 'channels', ascending: true })
+
+  // Dynamic (non-literal) column with a known referencedTable should compile
+  const sortColumn: string = 'channel_id'
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    .order(sortColumn, { referencedTable: 'messages', ascending: false })
+
+  // Dynamic column with deprecated foreignTable should also compile
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    .order(sortColumn, { foreignTable: 'messages', ascending: false })
 }
