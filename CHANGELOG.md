@@ -1,3 +1,13 @@
+## 2.111.0 (2026-07-28)
+
+### 🚀 Features
+
+- **auth:** store PKCE verifiers in per-flow slots to survive overlapping flows ([#2569](https://github.com/supabase/supabase-js/pull/2569))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.110.9 (2026-07-27)
 
 ### 🩹 Fixes
