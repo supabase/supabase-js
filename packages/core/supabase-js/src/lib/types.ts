@@ -124,6 +124,11 @@ export type SupabaseClientOptions<SchemaName> = {
      * ```
      */
     urlLengthLimit?: number
+    /**
+     * Enable or disable automatic retries for transient PostgREST errors.
+     * Defaults to `true`.
+     */
+    retry?: boolean
   }
 
   auth?: {

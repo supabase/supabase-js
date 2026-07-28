@@ -398,6 +398,7 @@ export default class SupabaseClient<
       fetch: this.fetch,
       timeout: settings.db.timeout,
       urlLengthLimit: settings.db.urlLengthLimit,
+      retry: settings.db.retry,
     })
 
     this.storage = new SupabaseStorageClient(

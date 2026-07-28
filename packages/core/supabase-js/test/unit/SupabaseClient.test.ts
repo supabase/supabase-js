@@ -110,6 +110,19 @@ describe('SupabaseClient', () => {
     })
   })
 
+  describe('PostgREST Configuration', () => {
+    test('should forward the retry option to PostgrestClient', () => {
+      const client = createClient(URL, KEY, {
+        db: { retry: false },
+      })
+
+      // @ts-expect-error rest is protected
+      expect(client.rest.retry).toBe(false)
+      // @ts-expect-error retryEnabled is protected
+      expect(client.from('users').select().retryEnabled).toBe(false)
+    })
+  })
+
   describe('Custom Headers', () => {
     test('should have custom header set', () => {
       const customHeader = { 'X-Test-Header': 'value' }
