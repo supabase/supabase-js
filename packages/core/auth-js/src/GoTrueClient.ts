@@ -50,6 +50,7 @@ import {
   isBrowser,
   parseParametersFromURL,
   pkceVerifierSlotKey,
+  removeAllPKCEVerifiers,
   removeItemAsync,
   removePKCEVerifier,
   resolveFetch,
@@ -1019,10 +1020,7 @@ export default class GoTrueClient {
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce') {
-          ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
-            this.storage,
-            this.storageKey
-          )
+          ;[codeChallenge, codeChallengeMethod, flowId] = await this._getCodeChallengeAndMethod()
         }
         res = await _request(this.fetch, 'POST', `${this.url}/signup`, {
           headers: this.headers,
@@ -1369,13 +1367,17 @@ export default class GoTrueClient {
    *
    * @remarks
    * - Used when `flowType` is set to `pkce` in client options.
-   * - When several PKCE flows are in flight at once, pass `options.flowId`
-   *   (the value of the reserved `sb_flow_id` query parameter on your
-   *   callback URL, present when `experimental.appendPkceFlowIdToRedirects`
-   *   is enabled) so the code is exchanged with the verifier created by that
-   *   specific flow. In a browser the parameter is read from the current URL
-   *   automatically; without a flow id the most recently stored verifier is
-   *   used.
+   * - When several PKCE flows are in flight at once, pass `options.flowId` so
+   *   the code is exchanged with the verifier created by that specific flow.
+   *   The flow id is returned by `signInWithOAuth`, and with
+   *   `experimental.appendPkceFlowIdToRedirects` enabled it also arrives on
+   *   your callback URL as the reserved `sb_flow_id` query parameter (read
+   *   automatically in a browser).
+   * - When a flow id is present but its stored verifier is gone (evicted,
+   *   already used, or from another device), the call fails with a verifier
+   *   missing error instead of trying another flow's verifier — a mismatched
+   *   verifier would consume the single-use code. Without any flow id the
+   *   most recently stored verifier is used, as before.
    *
    * @example Exchange Auth Code
    * ```js
@@ -2001,16 +2003,29 @@ export default class GoTrueClient {
       }
     | { data: { session: null; user: null; redirectType: null }; error: AuthError }
   > {
-    const requestedFlowId =
-      validatePKCEFlowId(options?.flowId) ??
-      (isBrowser()
+    const hasExplicitFlowId = options?.flowId != null
+    const requestedFlowId = hasExplicitFlowId
+      ? validatePKCEFlowId(options?.flowId)
+      : isBrowser()
         ? validatePKCEFlowId(parseParametersFromURL(window.location.href)[PKCE_FLOW_ID_PARAM])
-        : null)
-    const { verifier: storageItem, flowId } = await retrievePKCEVerifier(
-      this.storage,
-      this.storageKey,
-      requestedFlowId
-    )
+        : null
+
+    if (hasExplicitFlowId && !requestedFlowId) {
+      this._debug(
+        '#_exchangeCodeForSession()',
+        'provided flowId is not a valid flow id',
+        options?.flowId
+      )
+    }
+
+    // With a flow id (explicit or from the callback URL) the lookup is
+    // slot-only and a miss fails fast — see retrievePKCEVerifier. An invalid
+    // explicit flow id also fails fast rather than borrowing another flow's
+    // verifier.
+    const { verifier: storageItem, flowId } =
+      hasExplicitFlowId && !requestedFlowId
+        ? { verifier: null, flowId: null }
+        : await retrievePKCEVerifier(this.storage, this.storageKey, requestedFlowId)
     const [codeVerifier, redirectType] = (storageItem ?? '').split('/')
 
     try {
@@ -2258,10 +2273,7 @@ export default class GoTrueClient {
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce') {
-          ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
-            this.storage,
-            this.storageKey
-          )
+          ;[codeChallenge, codeChallengeMethod, flowId] = await this._getCodeChallengeAndMethod()
         }
         const { error } = await _request(this.fetch, 'POST', `${this.url}/otp`, {
           headers: this.headers,
@@ -2548,10 +2560,7 @@ export default class GoTrueClient {
       let codeChallenge: string | null = null
       let codeChallengeMethod: string | null = null
       if (this.flowType === 'pkce') {
-        ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
-          this.storage,
-          this.storageKey
-        )
+        ;[codeChallenge, codeChallengeMethod, flowId] = await this._getCodeChallengeAndMethod()
       }
 
       const result = await _request(this.fetch, 'POST', `${this.url}/sso`, {
@@ -2711,10 +2720,7 @@ export default class GoTrueClient {
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce') {
-          ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
-            this.storage,
-            this.storageKey
-          )
+          ;[codeChallenge, codeChallengeMethod, flowId] = await this._getCodeChallengeAndMethod()
         }
         const { error } = await _request(this.fetch, 'POST', endpoint, {
           headers: this.headers,
@@ -3245,7 +3251,6 @@ export default class GoTrueClient {
           // session in the database, indicating the user is signed out.
 
           await this._removeSession()
-          await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
         }
 
         return this._returnResult({ data: { user: null }, error })
@@ -3407,10 +3412,7 @@ export default class GoTrueClient {
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce' && attributes.email != null) {
-          ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
-            this.storage,
-            this.storageKey
-          )
+          ;[codeChallenge, codeChallengeMethod, flowId] = await this._getCodeChallengeAndMethod()
         }
 
         const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
@@ -4056,7 +4058,6 @@ export default class GoTrueClient {
     return await this._useSession(async (result) => {
       const removeCurrentSession = async () => {
         await this._removeSession()
-        await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
       }
       const { data, error: sessionError } = result
       if (sessionError && !isAuthSessionMissingError(sessionError)) {
@@ -4449,9 +4450,7 @@ export default class GoTrueClient {
     let flowId: string | null = null
 
     if (this.flowType === 'pkce') {
-      ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
-        this.storage,
-        this.storageKey,
+      ;[codeChallenge, codeChallengeMethod, flowId] = await this._getCodeChallengeAndMethod(
         true // isPasswordRecovery
       )
     }
@@ -4585,10 +4584,11 @@ export default class GoTrueClient {
 
   private async linkIdentityOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
     try {
+      let flowId: string | null = null
       const { data, error } = await this._useSession(async (result) => {
         const { data, error } = result
         if (error) throw error
-        const url: string = await this._getUrlForProvider(
+        const { url, flowId: urlFlowId } = await this._getUrlForProvider(
           `${this.url}/user/identities/authorize`,
           credentials.provider,
           {
@@ -4598,6 +4598,7 @@ export default class GoTrueClient {
             skipBrowserRedirect: true,
           }
         )
+        flowId = urlFlowId
         return await _request(this.fetch, 'GET', url, {
           headers: this.headers,
           jwt: data.session?.access_token ?? undefined,
@@ -4608,7 +4609,7 @@ export default class GoTrueClient {
         window.location.assign(data?.url)
       }
       return this._returnResult({
-        data: { provider: credentials.provider, url: data?.url },
+        data: { provider: credentials.provider, url: data?.url, flowId },
         error: null,
       })
     } catch (error) {
@@ -4661,7 +4662,7 @@ export default class GoTrueClient {
         }
         return this._returnResult({ data, error })
       } catch (error) {
-        await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+        await removePKCEVerifier(this.storage, this.storageKey, null)
         if (isAuthError(error)) {
           return this._returnResult({ data: { user: null, session: null }, error })
         }
@@ -4797,7 +4798,7 @@ export default class GoTrueClient {
       skipBrowserRedirect?: boolean
     }
   ) {
-    const url: string = await this._getUrlForProvider(`${this.url}/authorize`, provider, {
+    const { url, flowId } = await this._getUrlForProvider(`${this.url}/authorize`, provider, {
       redirectTo: options.redirectTo,
       scopes: options.scopes,
       queryParams: options.queryParams,
@@ -4810,7 +4811,7 @@ export default class GoTrueClient {
       window.location.assign(url)
     }
 
-    return { data: { provider, url }, error: null }
+    return { data: { provider, url, flowId }, error: null }
   }
 
   /**
@@ -5231,7 +5232,7 @@ export default class GoTrueClient {
     this.suppressGetSessionWarning = false
 
     await removeItemAsync(this.storage, this.storageKey)
-    await removeItemAsync(this.storage, this.storageKey + '-code-verifier')
+    await removeAllPKCEVerifiers(this.storage, this.storageKey)
     await removeItemAsync(this.storage, this.storageKey + '-user')
 
     if (this.userStorage) {
@@ -5658,12 +5659,9 @@ export default class GoTrueClient {
     let redirectTo = options?.redirectTo
     let codeChallenge: string | null = null
     let codeChallengeMethod: string | null = null
+    let flowId: string | null = null
     if (this.flowType === 'pkce') {
-      let flowId: string
-      ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
-        this.storage,
-        this.storageKey
-      )
+      ;[codeChallenge, codeChallengeMethod, flowId] = await this._getCodeChallengeAndMethod()
       redirectTo = this._maybeAppendFlowIdToRedirect(redirectTo, flowId)
     }
 
@@ -5689,7 +5687,7 @@ export default class GoTrueClient {
       urlParams.push(`skip_http_redirect=${options.skipBrowserRedirect}`)
     }
 
-    return `${url}?${urlParams.join('&')}`
+    return { url: `${url}?${urlParams.join('&')}`, flowId }
   }
 
   /**
@@ -5704,9 +5702,29 @@ export default class GoTrueClient {
     flowId: string | null
   ): string | undefined {
     if (!redirectTo || !flowId || !this.experimental.appendPkceFlowIdToRedirects) {
-      return redirectTo
+      return redirectTo ?? undefined
     }
     return appendFlowIdToRedirectTo(redirectTo, flowId)
+  }
+
+  /**
+   * Generates and stores a PKCE challenge/verifier pair for a new flow,
+   * logging any pending verifier the bounded slot ring evicts.
+   */
+  private async _getCodeChallengeAndMethod(
+    isPasswordRecovery = false
+  ): Promise<[string, string, string]> {
+    return getCodeChallengeAndMethod(
+      this.storage,
+      this.storageKey,
+      isPasswordRecovery,
+      (evictedFlowId) =>
+        this._debug(
+          '#_getCodeChallengeAndMethod()',
+          'evicted oldest pending PKCE verifier slot',
+          evictedFlowId
+        )
+    )
   }
 
   private async _unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse> {

@@ -206,8 +206,12 @@ export type ExperimentalFeatureFlags = {
    * your Site URL. Redirects to the Site URL's own origin always pass.
    *
    * Defaults to `false`. Without it, concurrent flows still keep separate
-   * verifiers in storage, but a callback can only be matched to its verifier
-   * when you pass `flowId` to `exchangeCodeForSession` yourself.
+   * verifiers in storage, but no flow id travels through the redirect: to
+   * match a callback to its verifier you must carry the `flowId` returned by
+   * `signInWithOAuth` (or `linkIdentity`) through your own channel and pass
+   * it to `exchangeCodeForSession`. Flows that offer no way to obtain the
+   * flow id (email OTP, password recovery, sign-up confirmation) can only be
+   * correlated via this flag.
    */
   appendPkceFlowIdToRedirects?: boolean
 }
@@ -295,6 +299,15 @@ export type OAuthResponse =
       data: {
         provider: Provider
         url: string
+        /**
+         * Identifier of the PKCE flow started by this call, usable as the
+         * `flowId` option of {@link GoTrueClient#exchangeCodeForSession} to
+         * select this flow's code verifier when several flows are in flight.
+         * `null` on the implicit flow. The id is a selector for a verifier
+         * kept in storage — it is not a secret and never contains the
+         * verifier itself.
+         */
+        flowId?: string | null
       }
       error: null
     }
@@ -302,6 +315,7 @@ export type OAuthResponse =
       data: {
         provider: Provider
         url: null
+        flowId?: string | null
       }
       error: AuthError
     }
