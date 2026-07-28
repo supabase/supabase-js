@@ -3596,13 +3596,15 @@ describe('Storage adapter edge cases', () => {
   test('should build provider URL with _getUrlForProvider', async () => {
     const client = getClientWithSpecificStorage(memoryLocalStorageAdapter())
     // @ts-expect-error private method
-    const url = await client._getUrlForProvider(
+    const { url, flowId } = await client._getUrlForProvider(
       GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
       'google',
       { redirectTo: 'http://localhost' }
     )
     expect(typeof url).toBe('string')
     expect(url).toContain('google')
+    // implicit flow: no PKCE flow is started
+    expect(flowId).toBeNull()
   })
 
   test('_getUrlForProvider builds correct URL with PKCE flow', async () => {
@@ -3613,13 +3615,18 @@ describe('Storage adapter edge cases', () => {
       flowType: 'pkce',
     })
 
-    const url = await client['_getUrlForProvider']('https://example.com/authorize', 'github', {
-      redirectTo: 'http://localhost:3000/callback',
-    })
+    const { url, flowId } = await client['_getUrlForProvider'](
+      'https://example.com/authorize',
+      'github',
+      {
+        redirectTo: 'http://localhost:3000/callback',
+      }
+    )
 
     expect(url).toContain('provider=github')
     expect(url).toContain('code_challenge=')
     expect(url).toContain('code_challenge_method=')
+    expect(flowId).toMatch(/^[a-f0-9]{32}$/)
   })
 
   test('should handle localStorage not supported', async () => {
@@ -3722,9 +3729,7 @@ describe('Lockless coordination (default) and legacy lock opt-in', () => {
   test('legacy path: custom `lock` is invoked when supplied', async () => {
     const mockLock = jest
       .fn()
-      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) =>
-        fn()
-      )
+      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => fn())
 
     const client = new GoTrueClient({
       url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
