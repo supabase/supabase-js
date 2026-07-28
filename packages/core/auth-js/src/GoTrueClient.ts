@@ -1294,7 +1294,8 @@ export default class GoTrueClient {
    * {
    *   data: {
    *     provider: 'github',
-   *     url: <PROVIDER_URL_TO_REDIRECT_TO>
+   *     url: <PROVIDER_URL_TO_REDIRECT_TO>,
+   *     flowId: <PKCE_FLOW_ID_OR_NULL>
    *   },
    *   error: null
    * }
@@ -4568,7 +4569,8 @@ export default class GoTrueClient {
    * {
    *   data: {
    *     provider: 'github',
-   *     url: <PROVIDER_URL_TO_REDIRECT_TO>
+   *     url: <PROVIDER_URL_TO_REDIRECT_TO>,
+   *     flowId: <PKCE_FLOW_ID_OR_NULL>
    *   },
    *   error: null
    * }

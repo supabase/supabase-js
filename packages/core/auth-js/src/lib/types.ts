@@ -306,8 +306,12 @@ export type OAuthResponse =
          * `null` on the implicit flow. The id is a selector for a verifier
          * kept in storage — it is not a secret and never contains the
          * verifier itself.
+         *
+         * Always set at runtime; optional in the type so existing code that
+         * constructs `OAuthResponse` values (e.g. test mocks) keeps
+         * compiling.
          */
-        flowId: string | null
+        flowId?: string | null
       }
       error: null
     }
@@ -315,7 +319,7 @@ export type OAuthResponse =
       data: {
         provider: Provider
         url: null
-        flowId: string | null
+        flowId?: string | null
       }
       error: AuthError
     }
