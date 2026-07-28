@@ -1,14 +1,21 @@
 import { AuthInvalidJwtError } from '../src'
 import {
+  appendFlowIdToRedirectTo,
   decodeJWT,
   generateCallbackId,
+  generatePKCEFlowId,
   getAlgorithm,
   getItemAsync,
   parseParametersFromURL,
   parseResponseAPIVersion,
   getCodeChallengeAndMethod,
+  removePKCEVerifier,
+  retrievePKCEVerifier,
+  storePKCEVerifier,
+  validatePKCEFlowId,
   validateUUID,
 } from '../src/lib/helpers'
+import { memoryLocalStorageAdapter } from '../src/lib/local-storage'
 
 describe('generateCallbackId', () => {
   it('should return a Symbol', () => {
@@ -286,15 +293,24 @@ describe('getCodeChallengeAndMethod', () => {
       removeItem: jest.fn(),
     }
 
-    const [codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+    const [codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
       mockStorage,
       'test-storage-key',
       isPasswordRecovery
     )
 
-    const setItemCall = mockStorage.setItem.mock.calls[0]
-    expect(setItemCall[0]).toBe('test-storage-key-code-verifier')
-    const storedValue = JSON.parse(setItemCall[1])
+    const setItemKeys = mockStorage.setItem.mock.calls.map((call) => call[0])
+    expect(setItemKeys).toContain('test-storage-key-code-verifier')
+    expect(setItemKeys).toContain(`test-storage-key-code-verifier-${flowId}`)
+
+    const legacyCall = mockStorage.setItem.mock.calls.find(
+      (call) => call[0] === 'test-storage-key-code-verifier'
+    )!
+    const slotCall = mockStorage.setItem.mock.calls.find(
+      (call) => call[0] === `test-storage-key-code-verifier-${flowId}`
+    )!
+    const storedValue = JSON.parse(legacyCall[1])
+    expect(JSON.parse(slotCall[1])).toEqual(storedValue)
     if (isPasswordRecovery) {
       expect(storedValue).toContain('/recovery')
     } else {
@@ -302,6 +318,142 @@ describe('getCodeChallengeAndMethod', () => {
     }
     expect(codeChallenge).toBeDefined()
     expect(codeChallengeMethod).toBeDefined()
+    expect(flowId).toMatch(/^[a-f0-9]{32}$/)
+  })
+})
+
+describe('PKCE verifier slots', () => {
+  const storageKey = 'test-storage-key'
+  const legacyKey = `${storageKey}-code-verifier`
+  const indexKey = `${storageKey}-code-verifier-flows`
+
+  it('storePKCEVerifier keeps one slot per flow plus the legacy key', async () => {
+    const store: { [key: string]: string } = {}
+    const storage = memoryLocalStorageAdapter(store)
+
+    await storePKCEVerifier(storage, storageKey, 'flow-id-aaaa', 'verifier-a')
+    await storePKCEVerifier(storage, storageKey, 'flow-id-bbbb', 'verifier-b')
+
+    expect(await getItemAsync(storage, `${legacyKey}-flow-id-aaaa`)).toBe('verifier-a')
+    expect(await getItemAsync(storage, `${legacyKey}-flow-id-bbbb`)).toBe('verifier-b')
+    expect(await getItemAsync(storage, legacyKey)).toBe('verifier-b')
+    expect(await getItemAsync(storage, indexKey)).toEqual(['flow-id-aaaa', 'flow-id-bbbb'])
+  })
+
+  it('storePKCEVerifier evicts the oldest slot beyond the bound', async () => {
+    const store: { [key: string]: string } = {}
+    const storage = memoryLocalStorageAdapter(store)
+
+    const flowIds = ['flow-1111', 'flow-2222', 'flow-3333', 'flow-4444', 'flow-5555', 'flow-6666']
+    for (const flowId of flowIds) {
+      await storePKCEVerifier(storage, storageKey, flowId, `verifier-${flowId}`)
+    }
+
+    expect(await getItemAsync(storage, `${legacyKey}-flow-1111`)).toBeNull()
+    expect(await getItemAsync(storage, indexKey)).toEqual(flowIds.slice(1))
+    const slotKeys = Object.keys(store).filter(
+      (key) => key.startsWith(`${legacyKey}-`) && key !== indexKey
+    )
+    expect(slotKeys).toHaveLength(5)
+  })
+
+  it('retrievePKCEVerifier prefers the slot and falls back to the legacy key', async () => {
+    const storage = memoryLocalStorageAdapter()
+
+    await storePKCEVerifier(storage, storageKey, 'flow-id-aaaa', 'verifier-a')
+    await storePKCEVerifier(storage, storageKey, 'flow-id-bbbb', 'verifier-b')
+
+    expect(await retrievePKCEVerifier(storage, storageKey, 'flow-id-aaaa')).toEqual({
+      verifier: 'verifier-a',
+      flowId: 'flow-id-aaaa',
+    })
+    // unknown flow id falls back to the most recent (legacy) verifier
+    expect(await retrievePKCEVerifier(storage, storageKey, 'flow-id-gone')).toEqual({
+      verifier: 'verifier-b',
+      flowId: null,
+    })
+    expect(await retrievePKCEVerifier(storage, storageKey, null)).toEqual({
+      verifier: 'verifier-b',
+      flowId: null,
+    })
+  })
+
+  it('removePKCEVerifier removes only its own slot', async () => {
+    const storage = memoryLocalStorageAdapter()
+
+    await storePKCEVerifier(storage, storageKey, 'flow-id-aaaa', 'verifier-a')
+    await storePKCEVerifier(storage, storageKey, 'flow-id-bbbb', 'verifier-b')
+
+    await removePKCEVerifier(storage, storageKey, 'flow-id-aaaa')
+
+    expect(await getItemAsync(storage, `${legacyKey}-flow-id-aaaa`)).toBeNull()
+    expect(await getItemAsync(storage, `${legacyKey}-flow-id-bbbb`)).toBe('verifier-b')
+    // the legacy key holds flow b's verifier, so it must survive flow a's cleanup
+    expect(await getItemAsync(storage, legacyKey)).toBe('verifier-b')
+    expect(await getItemAsync(storage, indexKey)).toEqual(['flow-id-bbbb'])
+  })
+
+  it('removePKCEVerifier drops the legacy key when it belongs to the removed flow', async () => {
+    const storage = memoryLocalStorageAdapter()
+
+    await storePKCEVerifier(storage, storageKey, 'flow-id-aaaa', 'verifier-a')
+    await removePKCEVerifier(storage, storageKey, 'flow-id-aaaa')
+
+    expect(await getItemAsync(storage, legacyKey)).toBeNull()
+    expect(await getItemAsync(storage, indexKey)).toBeNull()
+  })
+
+  it('removePKCEVerifier without a flow id only touches the legacy key', async () => {
+    const storage = memoryLocalStorageAdapter()
+
+    await storePKCEVerifier(storage, storageKey, 'flow-id-aaaa', 'verifier-a')
+    await storePKCEVerifier(storage, storageKey, 'flow-id-bbbb', 'verifier-b')
+
+    await removePKCEVerifier(storage, storageKey, null)
+
+    expect(await getItemAsync(storage, legacyKey)).toBeNull()
+    expect(await getItemAsync(storage, `${legacyKey}-flow-id-aaaa`)).toBe('verifier-a')
+    expect(await getItemAsync(storage, `${legacyKey}-flow-id-bbbb`)).toBe('verifier-b')
+  })
+})
+
+describe('validatePKCEFlowId', () => {
+  it('accepts generated flow ids', () => {
+    const flowId = generatePKCEFlowId()
+    expect(validatePKCEFlowId(flowId)).toBe(flowId)
+  })
+
+  it.each([null, undefined, 42, '', 'short', 'has spaces here', 'a'.repeat(65), 'slash/../evil'])(
+    'rejects %p',
+    (value) => {
+      expect(validatePKCEFlowId(value)).toBeNull()
+    }
+  )
+})
+
+describe('appendFlowIdToRedirectTo', () => {
+  it('appends as the first query parameter', () => {
+    expect(appendFlowIdToRedirectTo('https://app.example.com/callback', 'abc12345')).toBe(
+      'https://app.example.com/callback?sb_flow_id=abc12345'
+    )
+  })
+
+  it('appends after existing query parameters', () => {
+    expect(
+      appendFlowIdToRedirectTo('https://app.example.com/callback?next=/home', 'abc12345')
+    ).toBe('https://app.example.com/callback?next=/home&sb_flow_id=abc12345')
+  })
+
+  it('keeps a fragment at the end', () => {
+    expect(appendFlowIdToRedirectTo('https://app.example.com/callback#section', 'abc12345')).toBe(
+      'https://app.example.com/callback?sb_flow_id=abc12345#section'
+    )
+  })
+
+  it('works with custom schemes', () => {
+    expect(appendFlowIdToRedirectTo('myapp://auth/callback', 'abc12345')).toBe(
+      'myapp://auth/callback?sb_flow_id=abc12345'
+    )
   })
 })
 

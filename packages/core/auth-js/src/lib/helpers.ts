@@ -1,4 +1,9 @@
-import { API_VERSION_HEADER_NAME, BASE64URL_REGEX } from './constants'
+import {
+  API_VERSION_HEADER_NAME,
+  BASE64URL_REGEX,
+  PKCE_FLOW_ID_PARAM,
+  PKCE_MAX_CONCURRENT_FLOWS,
+} from './constants'
 import { AuthInvalidJwtError } from './errors'
 import { base64UrlToUint8Array, stringFromBase64URL } from './base64url'
 import { JwtHeader, JwtPayload, SupportedStorage, User } from './types'
@@ -301,20 +306,150 @@ export async function generatePKCEChallenge(verifier: string) {
   return btoa(hashed).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
+const PKCE_FLOW_ID_PATTERN = /^[a-zA-Z0-9_-]{8,64}$/
+
+/**
+ * Returns the flow id if it is a plausible flow id, `null` otherwise. Flow
+ * ids can arrive via URL parameters, so anything outside the expected shape
+ * is discarded before it is used to build a storage key.
+ */
+export function validatePKCEFlowId(flowId: unknown): string | null {
+  return typeof flowId === 'string' && PKCE_FLOW_ID_PATTERN.test(flowId) ? flowId : null
+}
+
+export function generatePKCEFlowId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(16)
+    crypto.getRandomValues(bytes)
+    return Array.from(bytes, dec2hex).join('')
+  }
+  let flowId = ''
+  for (let i = 0; i < 32; i++) {
+    flowId += Math.floor(Math.random() * 16).toString(16)
+  }
+  return flowId
+}
+
+// Hyphen-delimited on purpose: @supabase/ssr splits oversized cookies into
+// chunks named `<key>.<number>`, so a dot-delimited slot key could be
+// mistaken for a chunk of the fixed `-code-verifier` cookie and get clobbered
+// by its chunk management.
+export const pkceVerifierSlotKey = (storageKey: string, flowId: string) =>
+  `${storageKey}-code-verifier-${flowId}`
+
+const pkceFlowIndexKey = (storageKey: string) => `${storageKey}-code-verifier-flows`
+
+/**
+ * Storage adapters cannot enumerate keys, so the ids of pending verifier
+ * slots are tracked in an index entry, oldest first.
+ */
+async function getPKCEFlowIndex(storage: SupportedStorage, storageKey: string): Promise<string[]> {
+  const index = await getItemAsync(storage, pkceFlowIndexKey(storageKey))
+  return Array.isArray(index) ? index.filter((id): id is string => typeof id === 'string') : []
+}
+
+export async function storePKCEVerifier(
+  storage: SupportedStorage,
+  storageKey: string,
+  flowId: string,
+  verifier: string
+): Promise<void> {
+  await setItemAsync(storage, pkceVerifierSlotKey(storageKey, flowId), verifier)
+
+  const index = (await getPKCEFlowIndex(storage, storageKey)).filter((id) => id !== flowId)
+  index.push(flowId)
+  while (index.length > PKCE_MAX_CONCURRENT_FLOWS) {
+    const evicted = index.shift()!
+    await removeItemAsync(storage, pkceVerifierSlotKey(storageKey, evicted))
+  }
+  await setItemAsync(storage, pkceFlowIndexKey(storageKey), index)
+
+  // Deprecation-window dual write: exchanges that cannot identify their flow
+  // (older SDK versions, redirects without the flow id parameter) read the
+  // fixed key, which mirrors the most recently started flow.
+  await setItemAsync(storage, `${storageKey}-code-verifier`, verifier)
+}
+
+/**
+ * Looks up the verifier for `flowId`, falling back to the fixed legacy key
+ * when no slot matches. The returned `flowId` is `null` when the legacy key
+ * was used, so cleanup can be scoped accordingly.
+ */
+export async function retrievePKCEVerifier(
+  storage: SupportedStorage,
+  storageKey: string,
+  flowId: string | null
+): Promise<{ verifier: string | null; flowId: string | null }> {
+  if (flowId) {
+    const verifier = await getItemAsync(storage, pkceVerifierSlotKey(storageKey, flowId))
+    if (typeof verifier === 'string') {
+      return { verifier, flowId }
+    }
+  }
+  const verifier = await getItemAsync(storage, `${storageKey}-code-verifier`)
+  return { verifier: typeof verifier === 'string' ? verifier : null, flowId: null }
+}
+
+/**
+ * Removes a single flow's verifier. Never clears other flows' slots: with a
+ * `flowId` only that slot is deleted (plus the legacy fixed key when it holds
+ * the same verifier); without one, only the legacy fixed key is deleted.
+ */
+export async function removePKCEVerifier(
+  storage: SupportedStorage,
+  storageKey: string,
+  flowId: string | null
+): Promise<void> {
+  const legacyKey = `${storageKey}-code-verifier`
+  if (!flowId) {
+    await removeItemAsync(storage, legacyKey)
+    return
+  }
+
+  const slotKey = pkceVerifierSlotKey(storageKey, flowId)
+  const slotValue = await getItemAsync(storage, slotKey)
+  await removeItemAsync(storage, slotKey)
+
+  const index = (await getPKCEFlowIndex(storage, storageKey)).filter((id) => id !== flowId)
+  if (index.length > 0) {
+    await setItemAsync(storage, pkceFlowIndexKey(storageKey), index)
+  } else {
+    await removeItemAsync(storage, pkceFlowIndexKey(storageKey))
+  }
+
+  if (slotValue != null && slotValue === (await getItemAsync(storage, legacyKey))) {
+    await removeItemAsync(storage, legacyKey)
+  }
+}
+
+/**
+ * Appends the reserved flow id parameter to a `redirectTo` URL. String-based
+ * so custom schemes (native deep links) survive untouched; an existing
+ * fragment stays at the end of the URL.
+ */
+export function appendFlowIdToRedirectTo(redirectTo: string, flowId: string): string {
+  const hashIndex = redirectTo.indexOf('#')
+  const base = hashIndex === -1 ? redirectTo : redirectTo.slice(0, hashIndex)
+  const fragment = hashIndex === -1 ? '' : redirectTo.slice(hashIndex)
+  const separator = base.includes('?') ? '&' : '?'
+  return `${base}${separator}${PKCE_FLOW_ID_PARAM}=${encodeURIComponent(flowId)}${fragment}`
+}
+
 export async function getCodeChallengeAndMethod(
   storage: SupportedStorage,
   storageKey: string,
   isPasswordRecovery = false
-) {
+): Promise<[string, string, string]> {
   const codeVerifier = generatePKCEVerifier()
   let storedCodeVerifier = codeVerifier
   if (isPasswordRecovery) {
     storedCodeVerifier += '/recovery'
   }
-  await setItemAsync(storage, `${storageKey}-code-verifier`, storedCodeVerifier)
+  const flowId = generatePKCEFlowId()
+  await storePKCEVerifier(storage, storageKey, flowId, storedCodeVerifier)
   const codeChallenge = await generatePKCEChallenge(codeVerifier)
   const codeChallengeMethod = codeVerifier === codeChallenge ? 'plain' : 's256'
-  return [codeChallenge, codeChallengeMethod]
+  return [codeChallenge, codeChallengeMethod, flowId]
 }
 
 /** Parses the API version which is 2YYY-MM-DD. */

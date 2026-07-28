@@ -6,6 +6,7 @@ import {
   EXPIRY_MARGIN_MS,
   GOTRUE_URL,
   JWKS_TTL,
+  PKCE_FLOW_ID_PARAM,
   REFRESH_FAILURE_COOLDOWN_MS,
   STORAGE_KEY,
 } from './lib/constants'
@@ -36,6 +37,7 @@ import {
   _userResponse,
 } from './lib/fetch'
 import {
+  appendFlowIdToRedirectTo,
   assertPasskeyExperimentalEnabled,
   decodeJWT,
   deepClone,
@@ -47,14 +49,18 @@ import {
   insecureUserWarningProxy,
   isBrowser,
   parseParametersFromURL,
+  pkceVerifierSlotKey,
   removeItemAsync,
+  removePKCEVerifier,
   resolveFetch,
+  retrievePKCEVerifier,
   retryable,
   setItemAsync,
   sleep,
   supportsLocalStorage,
   userNotAvailableProxy,
   validateExp,
+  validatePKCEFlowId,
 } from './lib/helpers'
 import { memoryLocalStorageAdapter } from './lib/local-storage'
 import { LockAcquireTimeoutError, navigatorLock } from './lib/locks'
@@ -1005,6 +1011,7 @@ export default class GoTrueClient {
    * ```
    */
   async signUp(credentials: SignUpWithPasswordCredentials): Promise<AuthResponse> {
+    let flowId: string | null = null
     try {
       let res: AuthResponse
       if ('email' in credentials) {
@@ -1012,14 +1019,14 @@ export default class GoTrueClient {
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce') {
-          ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+          ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
             this.storage,
             this.storageKey
           )
         }
         res = await _request(this.fetch, 'POST', `${this.url}/signup`, {
           headers: this.headers,
-          redirectTo: options?.emailRedirectTo,
+          redirectTo: this._maybeAppendFlowIdToRedirect(options?.emailRedirectTo, flowId),
           body: {
             email,
             password,
@@ -1052,7 +1059,7 @@ export default class GoTrueClient {
       const { data, error } = res
 
       if (error || !data) {
-        await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+        await removePKCEVerifier(this.storage, this.storageKey, flowId)
         return this._returnResult({ data: { user: null, session: null }, error: error })
       }
 
@@ -1066,7 +1073,7 @@ export default class GoTrueClient {
 
       return this._returnResult({ data: { user, session }, error: null })
     } catch (error) {
-      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      await removePKCEVerifier(this.storage, this.storageKey, flowId)
       if (isAuthError(error)) {
         return this._returnResult({ data: { user: null, session: null }, error })
       }
@@ -1362,10 +1369,23 @@ export default class GoTrueClient {
    *
    * @remarks
    * - Used when `flowType` is set to `pkce` in client options.
+   * - When several PKCE flows are in flight at once, pass `options.flowId`
+   *   (the value of the reserved `sb_flow_id` query parameter on your
+   *   callback URL, present when `experimental.appendPkceFlowIdToRedirects`
+   *   is enabled) so the code is exchanged with the verifier created by that
+   *   specific flow. In a browser the parameter is read from the current URL
+   *   automatically; without a flow id the most recently stored verifier is
+   *   used.
    *
    * @example Exchange Auth Code
    * ```js
    * supabase.auth.exchangeCodeForSession('34e770dd-9ff9-416c-87fa-43b31d7ef225')
+   * ```
+   *
+   * @example Exchange Auth Code for a specific flow (e.g. in a server-side callback handler)
+   * ```js
+   * const flowId = requestUrl.searchParams.get('sb_flow_id')
+   * supabase.auth.exchangeCodeForSession(code, flowId ? { flowId } : undefined)
    * ```
    *
    * @exampleResponse Exchange Auth Code
@@ -1525,17 +1545,20 @@ export default class GoTrueClient {
    * }
    * ```
    */
-  async exchangeCodeForSession(authCode: string): Promise<AuthTokenResponse> {
+  async exchangeCodeForSession(
+    authCode: string,
+    options?: { flowId?: string }
+  ): Promise<AuthTokenResponse> {
     await this.initializePromise
 
     if (this.lock != null) {
       // TODO(v3): remove legacy lock path
       return this._acquireLock(this.lockAcquireTimeout, async () => {
-        return this._exchangeCodeForSession(authCode)
+        return this._exchangeCodeForSession(authCode, options)
       })
     }
 
-    return this._exchangeCodeForSession(authCode)
+    return this._exchangeCodeForSession(authCode, options)
   }
 
   /**
@@ -1968,15 +1991,27 @@ export default class GoTrueClient {
     }
   }
 
-  private async _exchangeCodeForSession(authCode: string): Promise<
+  private async _exchangeCodeForSession(
+    authCode: string,
+    options?: { flowId?: string }
+  ): Promise<
     | {
         data: { session: Session; user: User; redirectType: string | null }
         error: null
       }
     | { data: { session: null; user: null; redirectType: null }; error: AuthError }
   > {
-    const storageItem = await getItemAsync(this.storage, `${this.storageKey}-code-verifier`)
-    const [codeVerifier, redirectType] = ((storageItem ?? '') as string).split('/')
+    const requestedFlowId =
+      validatePKCEFlowId(options?.flowId) ??
+      (isBrowser()
+        ? validatePKCEFlowId(parseParametersFromURL(window.location.href)[PKCE_FLOW_ID_PARAM])
+        : null)
+    const { verifier: storageItem, flowId } = await retrievePKCEVerifier(
+      this.storage,
+      this.storageKey,
+      requestedFlowId
+    )
+    const [codeVerifier, redirectType] = (storageItem ?? '').split('/')
 
     try {
       if (!codeVerifier && this.flowType === 'pkce') {
@@ -1996,7 +2031,7 @@ export default class GoTrueClient {
           xform: _sessionResponse,
         }
       )
-      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      await removePKCEVerifier(this.storage, this.storageKey, flowId)
       if (error) {
         throw error
       }
@@ -2016,7 +2051,7 @@ export default class GoTrueClient {
       }
       return this._returnResult({ data: { ...data, redirectType: redirectType ?? null }, error })
     } catch (error) {
-      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      await removePKCEVerifier(this.storage, this.storageKey, flowId)
       if (isAuthError(error)) {
         return this._returnResult({
           data: { user: null, session: null, redirectType: null },
@@ -2216,13 +2251,14 @@ export default class GoTrueClient {
    * ```
    */
   async signInWithOtp(credentials: SignInWithPasswordlessCredentials): Promise<AuthOtpResponse> {
+    let flowId: string | null = null
     try {
       if ('email' in credentials) {
         const { email, options } = credentials
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce') {
-          ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+          ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
             this.storage,
             this.storageKey
           )
@@ -2237,7 +2273,7 @@ export default class GoTrueClient {
             code_challenge: codeChallenge,
             code_challenge_method: codeChallengeMethod,
           },
-          redirectTo: options?.emailRedirectTo,
+          redirectTo: this._maybeAppendFlowIdToRedirect(options?.emailRedirectTo, flowId),
         })
         return this._returnResult({ data: { user: null, session: null }, error })
       }
@@ -2260,7 +2296,7 @@ export default class GoTrueClient {
       }
       throw new AuthInvalidCredentialsError('You must provide either an email or phone number.')
     } catch (error) {
-      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      await removePKCEVerifier(this.storage, this.storageKey, flowId)
       if (isAuthError(error)) {
         return this._returnResult({ data: { user: null, session: null }, error })
       }
@@ -2507,11 +2543,12 @@ export default class GoTrueClient {
    * ```
    */
   async signInWithSSO(params: SignInWithSSO): Promise<SSOResponse> {
+    let flowId: string | null = null
     try {
       let codeChallenge: string | null = null
       let codeChallengeMethod: string | null = null
       if (this.flowType === 'pkce') {
-        ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+        ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
           this.storage,
           this.storageKey
         )
@@ -2521,7 +2558,7 @@ export default class GoTrueClient {
         body: {
           ...('providerId' in params ? { provider_id: params.providerId } : null),
           ...('domain' in params ? { domain: params.domain } : null),
-          redirect_to: params.options?.redirectTo ?? undefined,
+          redirect_to: this._maybeAppendFlowIdToRedirect(params.options?.redirectTo, flowId),
           ...(params?.options?.captchaToken
             ? { gotrue_meta_security: { captcha_token: params.options.captchaToken } }
             : null),
@@ -2540,7 +2577,7 @@ export default class GoTrueClient {
 
       return this._returnResult(result)
     } catch (error) {
-      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      await removePKCEVerifier(this.storage, this.storageKey, flowId)
       if (isAuthError(error)) {
         return this._returnResult({ data: null, error })
       }
@@ -2666,6 +2703,7 @@ export default class GoTrueClient {
    * ```
    */
   async resend(credentials: ResendParams): Promise<AuthOtpResponse> {
+    let flowId: string | null = null
     try {
       const endpoint = `${this.url}/resend`
       if ('email' in credentials) {
@@ -2673,7 +2711,7 @@ export default class GoTrueClient {
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce') {
-          ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+          ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
             this.storage,
             this.storageKey
           )
@@ -2687,10 +2725,10 @@ export default class GoTrueClient {
             code_challenge: codeChallenge,
             code_challenge_method: codeChallengeMethod,
           },
-          redirectTo: options?.emailRedirectTo,
+          redirectTo: this._maybeAppendFlowIdToRedirect(options?.emailRedirectTo, flowId),
         })
         if (error) {
-          await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+          await removePKCEVerifier(this.storage, this.storageKey, flowId)
         }
         return this._returnResult({ data: { user: null, session: null }, error })
       } else if ('phone' in credentials) {
@@ -2712,7 +2750,7 @@ export default class GoTrueClient {
         'You must provide either an email or phone number and a type'
       )
     } catch (error) {
-      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      await removePKCEVerifier(this.storage, this.storageKey, flowId)
       if (isAuthError(error)) {
         return this._returnResult({ data: { user: null, session: null }, error })
       }
@@ -3355,6 +3393,7 @@ export default class GoTrueClient {
       emailRedirectTo?: string | undefined
     } = {}
   ): Promise<UserResponse> {
+    let flowId: string | null = null
     try {
       return await this._useSession(async (result) => {
         const { data: sessionData, error: sessionError } = result
@@ -3368,7 +3407,7 @@ export default class GoTrueClient {
         let codeChallenge: string | null = null
         let codeChallengeMethod: string | null = null
         if (this.flowType === 'pkce' && attributes.email != null) {
-          ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+          ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
             this.storage,
             this.storageKey
           )
@@ -3376,7 +3415,7 @@ export default class GoTrueClient {
 
         const { data, error: userError } = await _request(this.fetch, 'PUT', `${this.url}/user`, {
           headers: this.headers,
-          redirectTo: options?.emailRedirectTo,
+          redirectTo: this._maybeAppendFlowIdToRedirect(options?.emailRedirectTo, flowId),
           body: {
             ...attributes,
             code_challenge: codeChallenge,
@@ -3394,7 +3433,7 @@ export default class GoTrueClient {
         return this._returnResult({ data: { user: session.user }, error: null })
       })
     } catch (error) {
-      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      await removePKCEVerifier(this.storage, this.storageKey, flowId)
       if (isAuthError(error)) {
         return this._returnResult({ data: { user: null }, error })
       }
@@ -3826,11 +3865,14 @@ export default class GoTrueClient {
       if (callbackUrlType === 'pkce') {
         this._debug('#_initialize()', 'begin', 'is PKCE flow', true)
         if (!params.code) throw new AuthPKCEGrantCodeExchangeError('No code detected.')
-        const { data, error } = await this._exchangeCodeForSession(params.code)
+        const { data, error } = await this._exchangeCodeForSession(params.code, {
+          flowId: params[PKCE_FLOW_ID_PARAM],
+        })
         if (error) throw error
 
         const url = new URL(window.location.href)
         url.searchParams.delete('code')
+        url.searchParams.delete(PKCE_FLOW_ID_PARAM)
 
         window.history.replaceState(window.history.state, '', url.toString())
 
@@ -3934,12 +3976,24 @@ export default class GoTrueClient {
    * Checks if the current URL and backing storage contain parameters given by a PKCE flow
    */
   private async _isPKCECallback(params: { [parameter: string]: string }): Promise<boolean> {
+    if (!params.code) {
+      return false
+    }
+
+    const flowId = validatePKCEFlowId(params[PKCE_FLOW_ID_PARAM])
+    if (
+      flowId &&
+      (await getItemAsync(this.storage, pkceVerifierSlotKey(this.storageKey, flowId)))
+    ) {
+      return true
+    }
+
     const currentStorageContent = await getItemAsync(
       this.storage,
       `${this.storageKey}-code-verifier`
     )
 
-    return !!(params.code && currentStorageContent)
+    return !!currentStorageContent
   }
 
   /**
@@ -4392,9 +4446,10 @@ export default class GoTrueClient {
   > {
     let codeChallenge: string | null = null
     let codeChallengeMethod: string | null = null
+    let flowId: string | null = null
 
     if (this.flowType === 'pkce') {
-      ;[codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
+      ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
         this.storage,
         this.storageKey,
         true // isPasswordRecovery
@@ -4409,10 +4464,10 @@ export default class GoTrueClient {
           gotrue_meta_security: { captcha_token: options.captchaToken },
         },
         headers: this.headers,
-        redirectTo: options.redirectTo,
+        redirectTo: this._maybeAppendFlowIdToRedirect(options.redirectTo, flowId),
       })
     } catch (error) {
-      await removeItemAsync(this.storage, `${this.storageKey}-code-verifier`)
+      await removePKCEVerifier(this.storage, this.storageKey, flowId)
       if (isAuthError(error)) {
         return this._returnResult({ data: null, error })
       }
@@ -5600,19 +5655,26 @@ export default class GoTrueClient {
       skipBrowserRedirect?: boolean
     }
   ) {
+    let redirectTo = options?.redirectTo
+    let codeChallenge: string | null = null
+    let codeChallengeMethod: string | null = null
+    if (this.flowType === 'pkce') {
+      let flowId: string
+      ;[codeChallenge, codeChallengeMethod, flowId] = await getCodeChallengeAndMethod(
+        this.storage,
+        this.storageKey
+      )
+      redirectTo = this._maybeAppendFlowIdToRedirect(redirectTo, flowId)
+    }
+
     const urlParams: string[] = [`provider=${encodeURIComponent(provider)}`]
-    if (options?.redirectTo) {
-      urlParams.push(`redirect_to=${encodeURIComponent(options.redirectTo)}`)
+    if (redirectTo) {
+      urlParams.push(`redirect_to=${encodeURIComponent(redirectTo)}`)
     }
     if (options?.scopes) {
       urlParams.push(`scopes=${encodeURIComponent(options.scopes)}`)
     }
-    if (this.flowType === 'pkce') {
-      const [codeChallenge, codeChallengeMethod] = await getCodeChallengeAndMethod(
-        this.storage,
-        this.storageKey
-      )
-
+    if (codeChallenge != null && codeChallengeMethod != null) {
       const flowParams = new URLSearchParams({
         code_challenge: `${encodeURIComponent(codeChallenge)}`,
         code_challenge_method: `${encodeURIComponent(codeChallengeMethod)}`,
@@ -5628,6 +5690,23 @@ export default class GoTrueClient {
     }
 
     return `${url}?${urlParams.join('&')}`
+  }
+
+  /**
+   * Appends the reserved flow id parameter to a redirect URL so the callback
+   * can be matched to the verifier stored for its flow. Opt-in via
+   * `experimental.appendPkceFlowIdToRedirects`: redirect URLs are validated
+   * against the project's allow list including the query string, so an extra
+   * parameter can stop exact (non-wildcard) entries from matching.
+   */
+  private _maybeAppendFlowIdToRedirect(
+    redirectTo: string | undefined,
+    flowId: string | null
+  ): string | undefined {
+    if (!redirectTo || !flowId || !this.experimental.appendPkceFlowIdToRedirects) {
+      return redirectTo
+    }
+    return appendFlowIdToRedirectTo(redirectTo, flowId)
   }
 
   private async _unenroll(params: MFAUnenrollParams): Promise<AuthMFAUnenrollResponse> {

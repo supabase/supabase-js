@@ -190,6 +190,26 @@ export type ExperimentalFeatureFlags = {
    * disabled throws a descriptive error at call time.
    */
   passkey?: boolean
+  /**
+   * Appends a reserved `sb_flow_id` query parameter to `redirectTo` URLs on
+   * PKCE flows. The parameter round-trips through the auth server back to
+   * your callback URL, where the client uses it to select the code verifier
+   * created by that specific flow — so multiple sign-in flows (e.g. two OAuth
+   * providers started in different tabs) can be in flight at the same time
+   * without overwriting each other.
+   *
+   * Before enabling, make sure your [redirect URL allow
+   * list](https://supabase.com/docs/guides/auth/redirect-urls) tolerates the
+   * extra query parameter: allow-list entries are matched against the full
+   * URL including the query string, so an exact entry (no wildcard) stops
+   * matching once the parameter is appended and the redirect falls back to
+   * your Site URL. Redirects to the Site URL's own origin always pass.
+   *
+   * Defaults to `false`. Without it, concurrent flows still keep separate
+   * verifiers in storage, but a callback can only be matched to its verifier
+   * when you pass `flowId` to `exchangeCodeForSession` yourself.
+   */
+  appendPkceFlowIdToRedirects?: boolean
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
