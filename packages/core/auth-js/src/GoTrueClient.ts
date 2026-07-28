@@ -4583,8 +4583,8 @@ export default class GoTrueClient {
   }
 
   private async linkIdentityOAuth(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse> {
+    let flowId: string | null = null
     try {
-      let flowId: string | null = null
       const { data, error } = await this._useSession(async (result) => {
         const { data, error } = result
         if (error) throw error
@@ -4614,7 +4614,10 @@ export default class GoTrueClient {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return this._returnResult({ data: { provider: credentials.provider, url: null }, error })
+        return this._returnResult({
+          data: { provider: credentials.provider, url: null, flowId },
+          error,
+        })
       }
       throw error
     }

@@ -357,9 +357,11 @@ async function getPKCEFlowIndex(storage: SupportedStorage, storageKey: string): 
 /**
  * The index is read-modify-write without a lock: two concurrent starts (e.g.
  * two tabs) can lose one index update. The losing flow still works — its slot
- * is addressed directly by key — but is never ring-evicted, leaving a
- * bounded orphan entry. Accepted trade-off: locking every flow start is far
- * more intrusive than the leak.
+ * is addressed directly by key — but its entry is missing from the index, so
+ * it escapes both ring eviction and removeAllPKCEVerifiers: the orphaned slot
+ * persists for the storage medium's lifetime (up to the cookie max age in
+ * cookie storage) and repeated races accumulate one orphan each. Accepted
+ * trade-off: locking every flow start is far more intrusive than the leak.
  */
 export async function storePKCEVerifier(
   storage: SupportedStorage,
@@ -425,11 +427,17 @@ export async function removePKCEVerifier(
   const slotValue = await getItemAsync(storage, slotKey)
   await removeItemAsync(storage, slotKey)
 
-  const index = (await getPKCEFlowIndex(storage, storageKey)).filter((id) => id !== flowId)
-  if (index.length > 0) {
-    await setItemAsync(storage, pkceFlowIndexKey(storageKey), index)
-  } else {
-    await removeItemAsync(storage, pkceFlowIndexKey(storageKey))
+  // Skip the index rewrite when the flow was never indexed (e.g. a failed
+  // exchange for an absent slot): on cookie storage every write is a full
+  // Set-Cookie cycle.
+  const index = await getPKCEFlowIndex(storage, storageKey)
+  const remaining = index.filter((id) => id !== flowId)
+  if (remaining.length !== index.length) {
+    if (remaining.length > 0) {
+      await setItemAsync(storage, pkceFlowIndexKey(storageKey), remaining)
+    } else {
+      await removeItemAsync(storage, pkceFlowIndexKey(storageKey))
+    }
   }
 
   if (slotValue != null && slotValue === (await getItemAsync(storage, legacyKey))) {

@@ -307,7 +307,7 @@ export type OAuthResponse =
          * kept in storage — it is not a secret and never contains the
          * verifier itself.
          */
-        flowId?: string | null
+        flowId: string | null
       }
       error: null
     }
@@ -315,7 +315,7 @@ export type OAuthResponse =
       data: {
         provider: Provider
         url: null
-        flowId?: string | null
+        flowId: string | null
       }
       error: AuthError
     }
