@@ -155,3 +155,25 @@ test('createClient should accept auth.skipAutoInitialize and wire it to auth cli
     initializeSpy.mockRestore()
   }
 })
+
+test('_initSupabaseAuthClient should pass through maxAutoRefreshFailures option', () => {
+  const client = new SupabaseClient('https://example.supabase.com', 'supabaseKey')
+  const authClient = client['_initSupabaseAuthClient'](
+    { ...authSettings, maxAutoRefreshFailures: 5 },
+    undefined,
+    undefined
+  )
+
+  expect((authClient as unknown as { maxAutoRefreshFailures: number }).maxAutoRefreshFailures).toBe(
+    5
+  )
+})
+
+test('createClient should accept auth.maxAutoRefreshFailures and wire it to auth client', () => {
+  const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey', {
+    auth: { maxAutoRefreshFailures: 5 },
+  })
+  expect((supa.auth as unknown as { maxAutoRefreshFailures: number }).maxAutoRefreshFailures).toBe(
+    5
+  )
+})
