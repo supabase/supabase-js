@@ -1101,8 +1101,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return {
       data: {
         publicUrl:
-          encodeURI(`${this.url}/${renderPath}/public/${_path}`) +
-          (queryString ? `?${queryString}` : ''),
+          `${this.url}/${renderPath}/public/${_path}` + (queryString ? `?${queryString}` : ''),
       },
     }
   }
@@ -1216,7 +1215,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      const _path = encodeStoragePath(this._getFinalPath(path))
+      const _path = this._getFinalPath(path)
       const query = new URLSearchParams()
       if (options?.transformations) {
         query.set('transformations', 'true')
@@ -1493,7 +1492,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   }
 
   private _getFinalPath(path: string) {
-    return `${this.bucketId}/${path.replace(/^\/+/, '')}`
+    return encodeStoragePath(`${this.bucketId}/${path.replace(/^\/+/, '')}`)
   }
 
   private _removeEmptyFolders(path: string) {
