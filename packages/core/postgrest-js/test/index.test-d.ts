@@ -625,4 +625,17 @@ type WithThrowOnError<T> =
     .from('users')
     .select('messages(*)')
     .order(sortColumn, { foreignTable: 'messages', ascending: false })
+
+  // Aliased referencedTable that does NOT match a real table name
+  // falls through to the unchecked string overload (any column name accepted)
+  postgrest
+    .from('users')
+    .select('archived:messages(*)')
+    .order('anything_goes', { referencedTable: 'archived', ascending: false })
+
+  // Aliased referencedTable with deprecated foreignTable also falls through
+  postgrest
+    .from('users')
+    .select('archived:messages(*)')
+    .order('anything_goes', { foreignTable: 'archived', ascending: false })
 }
