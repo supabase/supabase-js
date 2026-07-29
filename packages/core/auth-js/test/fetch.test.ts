@@ -303,3 +303,49 @@ describe('_sessionResponse', () => {
     expect(result.data.user).toEqual(user)
   })
 })
+
+describe('header merging', () => {
+  // Header names are case-insensitive (RFC 9110), but an object spread only
+  // overrides on an exact key match, so two entries differing only in case both
+  // survive and `fetch` joins them into one comma-separated value.
+  const capture = () => {
+    const sent: Record<string, string>[] = []
+    const fetcher = (async (_url: string, init: RequestInit) => {
+      sent.push(init.headers as Record<string, string>)
+      return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } })
+    }) as unknown as typeof fetch
+    return { fetcher, headerValue: (name: string) => new Headers(sent[0]).get(name) }
+  }
+
+  test('a caller-supplied lowercase authorization is not duplicated by the jwt', async () => {
+    const { fetcher, headerValue } = capture()
+
+    await _request(fetcher, 'GET', 'http://localhost/user', {
+      headers: { authorization: 'Bearer caller' },
+      jwt: 'from-jwt-option',
+    })
+
+    expect(headerValue('authorization')).toBe('Bearer from-jwt-option')
+  })
+
+  test('a caller-supplied api version header is not duplicated by the default', async () => {
+    const { fetcher, headerValue } = capture()
+
+    await _request(fetcher, 'GET', 'http://localhost/user', {
+      headers: { [API_VERSION_HEADER_NAME.toLowerCase()]: '2024-01-01' },
+    })
+
+    expect(headerValue(API_VERSION_HEADER_NAME)).toBe('2024-01-01')
+  })
+
+  test('a caller-supplied content-type is not duplicated by the json default', async () => {
+    const { fetcher, headerValue } = capture()
+
+    await _request(fetcher, 'POST', 'http://localhost/user', {
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: { a: 1 },
+    })
+
+    expect(headerValue('content-type')).toBe('application/x-www-form-urlencoded')
+  })
+})

@@ -9,6 +9,53 @@ import { base64UrlToUint8Array, stringFromBase64URL } from './base64url'
 import { JwtHeader, JwtPayload, SupportedStorage, User } from './types'
 import { Uint8Array_ } from './webauthn.dom'
 
+/**
+ * Returns true when `headers` already carries `name`, compared case-insensitively.
+ *
+ * @param headers - Headers object to inspect
+ * @param name - Header name to look for
+ */
+export function hasHeader(headers: Record<string, string>, name: string): boolean {
+  const nameLower = name.toLowerCase()
+  return Object.keys(headers).some((key) => key.toLowerCase() === nameLower)
+}
+
+/**
+ * Sets a header, first dropping any entry whose name matches case-insensitively,
+ * and keeps `name` spelled as given. Does not mutate the input object.
+ *
+ * Header names are case-insensitive (RFC 9110), but a plain assignment only
+ * replaces on an exact key match, so a differently-cased entry would survive
+ * alongside the new one and `fetch` would join the two into a single
+ * comma-separated value.
+ *
+ * Unlike the equivalent helper in storage-js this preserves the caller-supplied
+ * spelling rather than lowercasing it, so the header names this SDK puts on the
+ * wire stay unchanged.
+ *
+ * @param headers - Existing headers object
+ * @param name - Header name to set
+ * @param value - Header value
+ * @returns New headers object with the header set
+ */
+export function setHeader(
+  headers: Record<string, string>,
+  name: string,
+  value: string
+): Record<string, string> {
+  const nameLower = name.toLowerCase()
+  const result: Record<string, string> = {}
+
+  for (const [key, existing] of Object.entries(headers)) {
+    if (key.toLowerCase() !== nameLower) {
+      result[key] = existing
+    }
+  }
+
+  result[name] = value
+  return result
+}
+
 export function expiresAt(expiresIn: number) {
   const timeNow = Math.round(Date.now() / 1000)
   return timeNow + expiresIn

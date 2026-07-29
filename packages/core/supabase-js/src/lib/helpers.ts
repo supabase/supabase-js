@@ -28,6 +28,40 @@ export type ResolvedSupabaseClientOptions<SchemaName> = Omit<
   tracePropagation: TracePropagationOptions
 }
 
+/**
+ * Merges header objects so that later sources override earlier ones even when
+ * the two spellings differ in case, keeping the spelling of the winning source.
+ *
+ * Header names are case-insensitive (RFC 9110), but an object spread only
+ * overrides on an exact key match, so unmerged sources produce two entries that
+ * `fetch` joins into a single comma-separated value.
+ *
+ * @param sources - Header objects, lowest precedence first
+ * @returns New headers object
+ */
+export function mergeHeaders(
+  ...sources: (Record<string, string> | undefined)[]
+): Record<string, string> {
+  const result: Record<string, string> = {}
+  const keyByLowercase = new Map<string, string>()
+
+  for (const source of sources) {
+    for (const [name, value] of Object.entries(source ?? {})) {
+      const lowercase = name.toLowerCase()
+      const previous = keyByLowercase.get(lowercase)
+
+      if (previous !== undefined) {
+        delete result[previous]
+      }
+
+      result[name] = value
+      keyByLowercase.set(lowercase, name)
+    }
+  }
+
+  return result
+}
+
 export function applySettingDefaults<
   Database = any,
   SchemaName extends string & keyof Database = 'public' extends keyof Database
@@ -71,10 +105,7 @@ export function applySettingDefaults<
     global: {
       ...DEFAULT_GLOBAL_OPTIONS,
       ...globalOptions,
-      headers: {
-        ...(DEFAULT_GLOBAL_OPTIONS?.headers ?? {}),
-        ...(globalOptions?.headers ?? {}),
-      },
+      headers: mergeHeaders(DEFAULT_GLOBAL_OPTIONS?.headers, globalOptions?.headers),
     },
     tracePropagation: {
       enabled:
