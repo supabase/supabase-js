@@ -16,8 +16,8 @@ if (typeof Deno !== 'undefined') {
   JS_ENV = 'react-native'
 } else {
   JS_ENV = 'node'
-  JS_RUNTIME_VERSION =
-    typeof process !== 'undefined' ? process.version?.replace(/^v/, '') : undefined
+  const _process = (globalThis as any)['process']
+  JS_RUNTIME_VERSION = _process?.['version']?.replace(/^v/, '')
 }
 
 const _runtimeMeta = [`runtime=${JS_ENV}`]

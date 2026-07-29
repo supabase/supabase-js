@@ -1,3 +1,43 @@
+## 2.111.0 (2026-07-28)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.9 (2026-07-27)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.8 (2026-07-21)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **postgrest:** correct self-reference inference ([#2525](https://github.com/supabase/supabase-js/pull/2525))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **postgrest:** type hinted self-referencing embeds as arrays ([#2520](https://github.com/supabase/supabase-js/pull/2520))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.5 (2026-07-14)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.4 (2026-07-14)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
 ## 2.110.3 (2026-07-13)
 
 ### 🩹 Fixes

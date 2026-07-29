@@ -26,14 +26,14 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/cz-commitlint": "^19.8.1",
     "@eslint/js": "^10.0.1",
-    "@nx/eslint": "22.7.1",
-    "@nx/eslint-plugin": "22.7.1",
-    "@nx/jest": "22.7.1",
-    "@nx/js": "22.7.1",
-    "@nx/playwright": "22.7.1",
-    "@nx/vite": "22.7.1",
-    "@nx/vitest": "22.7.1",
-    "@nx/web": "22.7.1",
+    "@nx/eslint": "23.1.0",
+    "@nx/eslint-plugin": "23.1.0",
+    "@nx/jest": "23.1.0",
+    "@nx/js": "23.1.0",
+    "@nx/playwright": "23.1.0",
+    "@nx/vite": "23.1.0",
+    "@nx/vitest": "23.1.0",
+    "@nx/web": "23.1.0",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.8",
     "@swc/helpers": "0.5.21",
@@ -48,7 +48,7 @@
     "jiti": "2.4.2",
     "jsonc-eslint-parser": "^2.1.0",
     "jsr": "^0.13.5",
-    "nx": "22.7.1",
+    "nx": "23.1.0",
     "prettier": "^3.6.2",
     "supabase": "2.105.0",
     "ts-node": "^10.9.1",
@@ -57,10 +57,5 @@
     "typescript-eslint": "^8.21.0",
     "vite": "7.3.5"
   },
-  "dependencies": {},
-  "pnpm": {
-    "overrides": {
-      "unrun": ">=0.2.39 <0.3.0"
-    }
-  }
+  "dependencies": {}
 }

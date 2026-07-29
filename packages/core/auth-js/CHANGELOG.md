@@ -1,3 +1,49 @@
+## 2.111.0 (2026-07-28)
+
+### 🚀 Features
+
+- **auth:** store PKCE verifiers in per-flow slots to survive overlapping flows ([#2569](https://github.com/supabase/supabase-js/pull/2569))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.9 (2026-07-27)
+
+### 🩹 Fixes
+
+- **auth:** downgrade stale refresh token console noise ([#2559](https://github.com/supabase/supabase-js/pull/2559))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.8 (2026-07-21)
+
+### 🩹 Fixes
+
+- **auth:** downgrade aborted/transient fetch failures from console.error to warn ([#2544](https://github.com/supabase/supabase-js/pull/2544))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.7 (2026-07-16)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.110.6 (2026-07-15)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.110.5 (2026-07-14)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.110.4 (2026-07-14)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
 ## 2.110.3 (2026-07-13)
 
 ### 🩹 Fixes

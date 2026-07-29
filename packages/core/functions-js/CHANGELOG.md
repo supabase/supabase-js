@@ -1,3 +1,45 @@
+## 2.111.0 (2026-07-28)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.110.9 (2026-07-27)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.110.8 (2026-07-21)
+
+### 🩹 Fixes
+
+- **functions:** match response Content-Type case-insensitively ([#2515](https://github.com/supabase/supabase-js/pull/2515))
+- **functions:** clean up cross-signal abort listener on invoke() return ([#2487](https://github.com/supabase/supabase-js/pull/2487))
+
+### ❤️ Thank You
+
+- Franco Kaddour @FrancoKaddour
+- Pedro Henrique
+
+## 2.110.7 (2026-07-16)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.110.6 (2026-07-15)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.110.5 (2026-07-14)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.110.4 (2026-07-14)
+
+### 🩹 Fixes
+
+- **functions:** stop sending API key in Authorization header for function calls ([#2511](https://github.com/supabase/supabase-js/pull/2511))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.110.3 (2026-07-13)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.

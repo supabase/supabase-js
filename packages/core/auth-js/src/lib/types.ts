@@ -190,6 +190,30 @@ export type ExperimentalFeatureFlags = {
    * disabled throws a descriptive error at call time.
    */
   passkey?: boolean
+  /**
+   * Appends a reserved `sb_flow_id` query parameter to `redirectTo` URLs on
+   * PKCE flows. The parameter round-trips through the auth server back to
+   * your callback URL, where the client uses it to select the code verifier
+   * created by that specific flow — so multiple sign-in flows (e.g. two OAuth
+   * providers started in different tabs) can be in flight at the same time
+   * without overwriting each other.
+   *
+   * Before enabling, make sure your [redirect URL allow
+   * list](https://supabase.com/docs/guides/auth/redirect-urls) tolerates the
+   * extra query parameter: allow-list entries are matched against the full
+   * URL including the query string, so an exact entry (no wildcard) stops
+   * matching once the parameter is appended and the redirect falls back to
+   * your Site URL. Redirects to the Site URL's own origin always pass.
+   *
+   * Defaults to `false`. Without it, concurrent flows still keep separate
+   * verifiers in storage, but no flow id travels through the redirect: to
+   * match a callback to its verifier you must carry the `flowId` returned by
+   * `signInWithOAuth` (or `linkIdentity`) through your own channel and pass
+   * it to `exchangeCodeForSession`. Flows that offer no way to obtain the
+   * flow id (email OTP, password recovery, sign-up confirmation) can only be
+   * correlated via this flag.
+   */
+  appendPkceFlowIdToRedirects?: boolean
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
@@ -275,6 +299,19 @@ export type OAuthResponse =
       data: {
         provider: Provider
         url: string
+        /**
+         * Identifier of the PKCE flow started by this call, usable as the
+         * `flowId` option of {@link GoTrueClient#exchangeCodeForSession} to
+         * select this flow's code verifier when several flows are in flight.
+         * `null` on the implicit flow. The id is a selector for a verifier
+         * kept in storage — it is not a secret and never contains the
+         * verifier itself.
+         *
+         * Always set at runtime; optional in the type so existing code that
+         * constructs `OAuthResponse` values (e.g. test mocks) keeps
+         * compiling.
+         */
+        flowId?: string | null
       }
       error: null
     }
@@ -282,6 +319,7 @@ export type OAuthResponse =
       data: {
         provider: Provider
         url: null
+        flowId?: string | null
       }
       error: AuthError
     }

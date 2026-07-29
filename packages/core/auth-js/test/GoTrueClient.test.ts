@@ -3596,13 +3596,15 @@ describe('Storage adapter edge cases', () => {
   test('should build provider URL with _getUrlForProvider', async () => {
     const client = getClientWithSpecificStorage(memoryLocalStorageAdapter())
     // @ts-expect-error private method
-    const url = await client._getUrlForProvider(
+    const { url, flowId } = await client._getUrlForProvider(
       GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
       'google',
       { redirectTo: 'http://localhost' }
     )
     expect(typeof url).toBe('string')
     expect(url).toContain('google')
+    // implicit flow: no PKCE flow is started
+    expect(flowId).toBeNull()
   })
 
   test('_getUrlForProvider builds correct URL with PKCE flow', async () => {
@@ -3613,13 +3615,18 @@ describe('Storage adapter edge cases', () => {
       flowType: 'pkce',
     })
 
-    const url = await client['_getUrlForProvider']('https://example.com/authorize', 'github', {
-      redirectTo: 'http://localhost:3000/callback',
-    })
+    const { url, flowId } = await client['_getUrlForProvider'](
+      'https://example.com/authorize',
+      'github',
+      {
+        redirectTo: 'http://localhost:3000/callback',
+      }
+    )
 
     expect(url).toContain('provider=github')
     expect(url).toContain('code_challenge=')
     expect(url).toContain('code_challenge_method=')
+    expect(flowId).toMatch(/^[a-f0-9]{32}$/)
   })
 
   test('should handle localStorage not supported', async () => {
@@ -3722,9 +3729,7 @@ describe('Lockless coordination (default) and legacy lock opt-in', () => {
   test('legacy path: custom `lock` is invoked when supplied', async () => {
     const mockLock = jest
       .fn()
-      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) =>
-        fn()
-      )
+      .mockImplementation(async (name: string, timeout: number, fn: () => Promise<unknown>) => fn())
 
     const client = new GoTrueClient({
       url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
@@ -4830,6 +4835,126 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
       const signedOutCount = events.filter((e) => e === 'SIGNED_OUT').length
       expect(signedOutCount).toBe(1)
+    })
+  })
+
+  describe('console noise on transient failures', () => {
+    const retryableFetchError = () =>
+      Object.assign(new AuthError('Failed to fetch', 0), {
+        name: 'AuthRetryableFetchError',
+        __isAuthError: true,
+      })
+
+    test('_emitInitialSession downgrades a retryable network failure to console.warn', async () => {
+      // A full page load starts session recovery, the user navigates away,
+      // and the in-flight auth request is aborted, surfacing as an
+      // AuthRetryableFetchError. The INITIAL_SESSION emission must warn, not
+      // error, so it doesn't pollute production consoles or break strict
+      // zero-console-error E2E gates.
+      const storage = memoryLocalStorageAdapter()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+        skipAutoInitialize: true,
+      })
+      stubNetworkError(client)
+
+      await client.initialize()
+
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // Drive the INITIAL_SESSION emission directly so the assertion doesn't
+      // race the fire-and-forget emission scheduled by onAuthStateChange.
+      // @ts-expect-error access private for test
+      await client._emitInitialSession(Symbol('test-transient-init'))
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+
+      errorSpy.mockRestore()
+      warnSpy.mockRestore()
+    })
+
+    test('_emitInitialSession downgrades an expired/rotated refresh token to console.warn', async () => {
+      const storage = memoryLocalStorageAdapter()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+        skipAutoInitialize: true,
+      })
+      stubInvalidGrant(client)
+
+      await client.initialize()
+
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // Drive the INITIAL_SESSION emission directly so the assertion doesn't
+      // race the fire-and-forget emission scheduled by onAuthStateChange.
+      // @ts-expect-error access private for test
+      await client._emitInitialSession(Symbol('test-invalid-grant-init'))
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+
+      errorSpy.mockRestore()
+      warnSpy.mockRestore()
+    })
+
+    test('_recoverAndRefresh downgrades a retryable failure in its outer catch to console.warn', async () => {
+      // Defensive guard: if any step of session recovery throws a transient
+      // network error (rather than returning it), the outer catch must warn
+      // rather than surface it raw. Drive the branch by making the first
+      // storage read throw a retryable error.
+      const storage = memoryLocalStorageAdapter()
+      const client = buildClient(storage)
+      await client.initialize()
+
+      jest.spyOn(storage, 'getItem').mockImplementationOnce(() => {
+        throw retryableFetchError()
+      })
+
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // @ts-expect-error access private for test
+      await client._recoverAndRefresh()
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+
+      errorSpy.mockRestore()
+      warnSpy.mockRestore()
+    })
+
+    test('_recoverAndRefresh still logs a genuine (non-retryable) error via console.error', async () => {
+      // Guard the guard: a non-retryable throw must remain a console.error so
+      // we don't silently swallow real problems.
+      const storage = memoryLocalStorageAdapter()
+      const client = buildClient(storage)
+      await client.initialize()
+
+      jest.spyOn(storage, 'getItem').mockImplementationOnce(() => {
+        throw new Error('boom')
+      })
+
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+      // @ts-expect-error access private for test
+      await client._recoverAndRefresh()
+
+      expect(errorSpy).toHaveBeenCalled()
+
+      errorSpy.mockRestore()
     })
   })
 })

@@ -71,8 +71,8 @@ export const createClient = <
 
 // Check for Node.js <= 20 deprecation
 function shouldShowDeprecationWarning(): boolean {
-  // Skip in browser environments
-  if (typeof window !== 'undefined') {
+  // Skip in browser and Deno environments
+  if (typeof window !== 'undefined' || (globalThis as any)['Deno'] !== undefined) {
     return false
   }
 

@@ -1,3 +1,55 @@
+## 2.111.0 (2026-07-28)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.110.9 (2026-07-27)
+
+### 🩹 Fixes
+
+- **realtime:** preserve presence refs ([#2566](https://github.com/supabase/supabase-js/pull/2566))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.8 (2026-07-21)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **realtime:** update phoenix to fix presence issue ([#2532](https://github.com/supabase/supabase-js/pull/2532))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **realtime:** forward opts to send() in track() ([#2490](https://github.com/supabase/supabase-js/pull/2490))
+
+### ❤️ Thank You
+
+- Franco Kaddour @FrancoKaddour
+
+## 2.110.5 (2026-07-14)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.110.4 (2026-07-14)
+
+### 🩹 Fixes
+
+- **realtime:** encode broadcast header fields as UTF-8 ([#2516](https://github.com/supabase/supabase-js/pull/2516))
+
+### ❤️ Thank You
+
+- Pedro Henrique
+
 ## 2.110.3 (2026-07-13)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

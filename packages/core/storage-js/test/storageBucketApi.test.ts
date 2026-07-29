@@ -650,5 +650,24 @@ describe('Bucket API Error Handling', () => {
         expect.objectContaining({ method: 'DELETE', signal: controller.signal })
       )
     })
+
+    it('percent-encodes URL delimiters in the bucket id', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const { error } = await client.purgeBucketCache('my?bucket')
+
+      expect(error).toBeNull()
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${PURGE_URL}/cdn/my%3Fbucket`,
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
   })
 })

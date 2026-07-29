@@ -29,15 +29,27 @@ describe('SupabaseClient', () => {
     expect(() => createClient(URL, '')).toThrow('supabaseKey is required.')
   })
 
-  test('should validate the API key format', () => {
-    // Unrecognized sb_ subtype → fail fast, signalling an SDK upgrade is needed.
-    expect(() => createClient(URL, 'sb_unknown_abc123')).toThrow(
-      'Unrecognized Supabase API key format'
-    )
-    // Recognized new-format keys and legacy JWT keys are accepted.
-    expect(() => createClient(URL, 'sb_publishable_abc123')).not.toThrow()
-    expect(() => createClient(URL, 'sb_secret_abc123')).not.toThrow()
-    expect(() => createClient(URL, KEY)).not.toThrow()
+  test('should check the API key format without ever throwing', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      // Platform-issued temporary keys are accepted silently.
+      expect(() => createClient(URL, 'sb_temp_nonce123_payload456')).not.toThrow()
+      // Recognized new-format keys and legacy JWT keys are accepted silently.
+      expect(() => createClient(URL, 'sb_publishable_abc123')).not.toThrow()
+      expect(() => createClient(URL, 'sb_secret_abc123')).not.toThrow()
+      expect(() => createClient(URL, KEY)).not.toThrow()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      // Unrecognized sb_ subtype → the client is still created; a one-time warning
+      // signals that an SDK upgrade may be needed.
+      expect(createClient(URL, 'sb_unknown_abc123')).toBeInstanceOf(SupabaseClient)
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/Unrecognized Supabase API key format/)
+      )
+    } finally {
+      warnSpy.mockRestore()
+    }
   })
 
   test('should validate supabaseUrl', () => {
@@ -370,6 +382,15 @@ describe('SupabaseClient', () => {
         // @ts-ignore - accessing private method for testing
         client._handleTokenChanged('SIGNED_OUT', 'CLIENT')
         expect(setAuthSpy).toHaveBeenCalledWith()
+      })
+
+      test('should call setAuth() on INITIAL_SESSION event', async () => {
+        const client = createClient(URL, KEY)
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
+
+        // @ts-ignore - accessing private method for testing
+        client._handleTokenChanged('INITIAL_SESSION', 'CLIENT', 'initial-token')
+        expect(setAuthSpy).toHaveBeenCalledWith('initial-token')
       })
 
       test('should update token in realtime client when setAuth is called', async () => {

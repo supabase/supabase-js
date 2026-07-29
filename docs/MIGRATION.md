@@ -19,10 +19,6 @@ Nothing for the vast majority of users — authenticated calls still send the us
 
 The only impacted case is code that **reads the API key out of the `Authorization` header inside an Edge Function** (e.g. a server-side check on `Bearer sb_...`). Those cases should read the `apikey` header instead, or migrate to [`@supabase/server`](https://supabase.com/blog/introducing-supabase-server) for edge functions.
 
-### Unrecognized API key formats now throw
-
-To keep the header handling correct as the `sb_` key family grows, `createClient()` now validates the key format at construction. A key that starts with `sb_` but is **not** a recognized subtype (`sb_publishable_…` / `sb_secret_…`) throws immediately, indicating that `@supabase/supabase-js` must be upgraded to a version that supports the new key type. Legacy JWT keys (which do not start with `sb_`) are unaffected.
-
 ## Node.js 18 support dropped (v2.79.0, 2025-10-31)
 
 Starting with version `2.79.0`, all Supabase JavaScript libraries require **Node.js 20 or later**. The `@supabase/node-fetch` polyfill has been removed and native `fetch` is now required.

@@ -3,6 +3,7 @@ import { CustomUserDataTypeSchema, Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 import { Json } from '../src/select-query-parser/types'
+import type { SelectQueryError } from '../src/select-query-parser/utils'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
@@ -539,6 +540,156 @@ test('self reference relation via column', async () => {
   }
   expectType<TypeEqual<typeof result, typeof crippledExpected>>(true)
   ExpectedSchema.parse(res.data)
+})
+
+test('self reference relation via aliased column with multiple foreign keys', async () => {
+  const res = await postgrest.from('lab').select('*, parents:parent(*)').eq('id', 2).single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "id": 2,
+        "main": null,
+        "name": "First Task",
+        "parent": 1,
+        "parents": {
+          "id": 1,
+          "main": null,
+          "name": "Main Board",
+          "parent": null,
+          "type": "board",
+        },
+        "type": "task",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+      "success": true,
+    }
+  `)
+  type Result = Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    main: z.number().nullable(),
+    name: z.string().nullable(),
+    parent: z.number().nullable(),
+    parents: z
+      .object({
+        id: z.number(),
+        main: z.number().nullable(),
+        name: z.string().nullable(),
+        parent: z.number().nullable(),
+        type: z.string().nullable(),
+      })
+      .nullable(),
+    type: z.string().nullable(),
+  })
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
+  ExpectedSchema.parse(res.data)
+
+  const ambiguousRes = await postgrest.from('lab').select('children:lab(*)')
+  expect(ambiguousRes.error?.code).toBe('PGRST201')
+  type AmbiguousResult = Exclude<typeof ambiguousRes.data, null>
+  type ExpectedAmbiguousResult = {
+    children: SelectQueryError<"Could not embed because more than one relationship was found for 'lab' and 'lab' you need to hint the column with lab!<columnName> ?">
+  }[]
+  expectType<TypeEqual<AmbiguousResult, ExpectedAmbiguousResult>>(true)
+})
+
+test('self reference relation via hint matching column name', async () => {
+  const res = await postgrest
+    .from('collections')
+    .select('*, collections!parent_id(*)')
+    .eq('id', 1)
+    .limit(1)
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "collections": [
+          {
+            "description": "Child of Root",
+            "id": 2,
+            "parent_id": 1,
+          },
+          {
+            "description": "Another Child of Root",
+            "id": 3,
+            "parent_id": 1,
+          },
+        ],
+        "description": "Root Collection",
+        "id": 1,
+        "parent_id": null,
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+      "success": true,
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    description: z.string().nullable(),
+    parent_id: z.number().nullable(),
+    collections: z.array(
+      z.object({
+        description: z.string().nullable(),
+        id: z.number(),
+        parent_id: z.number().nullable(),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+// Documents a known PostgREST limitation: a self-referencing embed cannot be
+// disambiguated by its foreign key constraint name, so this
+// query fails at runtime with PGRST200. Use the column name hint instead (see the
+// test above). The inferred type is still (correctly) an array. See
+// https://github.com/supabase/supabase-js/issues/2517
+test('self reference relation via hint matching fk constraint name fails at runtime', async () => {
+  const res = await postgrest
+    .from('collections')
+    .select('*, collections!collections_parent_id_fkey(*)')
+    .eq('id', 1)
+    .limit(1)
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": null,
+      "error": {
+        "code": "PGRST200",
+        "details": "Searched for a foreign key relationship between 'collections' and 'collections' using the hint 'collections_parent_id_fkey' in the schema 'public', but no matches were found.",
+        "hint": null,
+        "message": "Could not find a relationship between 'collections' and 'collections' in the schema cache",
+      },
+      "status": 400,
+      "statusText": "Bad Request",
+      "success": false,
+    }
+  `)
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    description: z.string().nullable(),
+    parent_id: z.number().nullable(),
+    collections: z.array(
+      z.object({
+        description: z.string().nullable(),
+        id: z.number(),
+        parent_id: z.number().nullable(),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('many-to-many with join table', async () => {
