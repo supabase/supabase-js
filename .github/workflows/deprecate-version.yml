@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to deprecate (e.g. 2.80.0, 2.80.0-canary.0)"
+        description: 'Version to deprecate (e.g. 2.80.0, 2.80.0-canary.0)'
         required: true
         type: string
       message:
-        description: "Deprecation message"
+        description: 'Deprecation message'
         required: true
         type: string
 
@@ -68,8 +68,8 @@ jobs:
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version-file: ".nvmrc"
-          registry-url: "https://registry.npmjs.org"
+          node-version-file: '.nvmrc'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Update npm
         run: corepack enable npm && corepack prepare npm@11 --activate
@@ -123,8 +123,8 @@ jobs:
     if: success()
     uses: ./.github/workflows/slack-notify.yml
     with:
-      title: "SDK Deprecation"
-      status: "success"
+      title: 'SDK Deprecation'
+      status: 'success'
       version: ${{ inputs.version }}
     secrets:
       SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
@@ -134,8 +134,8 @@ jobs:
     if: failure()
     uses: ./.github/workflows/slack-notify.yml
     with:
-      title: "SDK Deprecation"
-      status: "failure"
+      title: 'SDK Deprecation'
+      status: 'failure'
       version: ${{ inputs.version }}
     secrets:
       SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
