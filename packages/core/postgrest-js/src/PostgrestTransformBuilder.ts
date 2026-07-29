@@ -6,6 +6,23 @@ import { ClientServerOptions, GenericSchema } from './types/common/common'
 import type { MaxAffectedEnabled } from './types/feature-flags'
 import type { TablesAndViews } from './select-query-parser/types'
 
+/**
+ * Resolves the column type for `order()` when a known `referencedTable` is provided.
+ *
+ * - If `Column` is a valid column of the referenced table → accepts it (autocomplete works)
+ * - If `Column` is a wide `string` type (e.g. from a variable) → accepts it (dynamic usage)
+ * - If `Column` is an invalid string literal → constrains to valid columns (compile error)
+ */
+type OrderColumnForTable<
+  Schema extends GenericSchema,
+  ReferencedTable extends string,
+  Column extends string,
+> = Column extends keyof TablesAndViews<Schema>[ReferencedTable]['Row']
+  ? Column
+  : string extends Column
+    ? string
+    : keyof TablesAndViews<Schema>[ReferencedTable]['Row'] & string
+
 export default class PostgrestTransformBuilder<
   ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
@@ -148,7 +165,13 @@ export default class PostgrestTransformBuilder<
    * @param options.nullsFirst - If `true`, `null`s appear first. If `false`,
    * `null`s appear last.
    * @param options.referencedTable - Set this to order a referenced table by
-   * its columns
+   * its columns. When `referencedTable` matches a known table or view in the
+   * schema, column names are validated at compile time. If the embedded relation
+   * uses an alias (e.g. `.select('archived:messages(*)')`) and the alias does
+   * not coincide with a real table name, it falls through to the unchecked
+   * `string` overload. If the alias happens to match a different real table,
+   * columns will be validated against that unrelated table — use a plain
+   * `string` variable for the column in that case to bypass checking.
    *
    * @category Database
    * @subcategory Using modifiers
@@ -158,11 +181,7 @@ export default class PostgrestTransformBuilder<
     options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: undefined }
   ): this
   order<ReferencedTable extends string & keyof TablesAndViews<Schema>, Column extends string>(
-    column: Column extends keyof TablesAndViews<Schema>[ReferencedTable]['Row']
-      ? Column
-      : string extends Column
-        ? string
-        : keyof TablesAndViews<Schema>[ReferencedTable]['Row'] & string,
+    column: OrderColumnForTable<Schema, ReferencedTable, Column>,
     options: { ascending?: boolean; nullsFirst?: boolean; referencedTable: ReferencedTable }
   ): this
   order<ReferencedTable extends string>(
@@ -186,11 +205,7 @@ export default class PostgrestTransformBuilder<
    * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
    */
   order<ReferencedTable extends string & keyof TablesAndViews<Schema>, Column extends string>(
-    column: Column extends keyof TablesAndViews<Schema>[ReferencedTable]['Row']
-      ? Column
-      : string extends Column
-        ? string
-        : keyof TablesAndViews<Schema>[ReferencedTable]['Row'] & string,
+    column: OrderColumnForTable<Schema, ReferencedTable, Column>,
     options: { ascending?: boolean; nullsFirst?: boolean; foreignTable: ReferencedTable }
   ): this
   /**
