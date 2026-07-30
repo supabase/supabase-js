@@ -1,11 +1,11 @@
 import {
-  extractTraceContext,
   parseTraceParent,
   shouldPropagateToTarget,
   getDefaultPropagationTargets,
   type TraceContext,
   type TracePropagationTarget,
 } from '@supabase/tracing'
+import { getTraceContextExtractor } from './tracingRegistry'
 import type { TracePropagationOptions } from './types'
 
 type Fetch = typeof fetch
@@ -95,7 +95,7 @@ export const fetchWithAuth = (
     }
 
     if (traceTargets) {
-      const traceHeaders = await getTraceHeaders(input, traceTargets, respectSampling)
+      const traceHeaders = getTraceHeaders(input, traceTargets, respectSampling)
 
       if (traceHeaders) {
         if (traceHeaders.traceparent && !headers.has('traceparent')) {
@@ -114,11 +114,43 @@ export const fetchWithAuth = (
   }
 }
 
-async function getTraceHeaders(
+let warnedMissingTracingRuntime = false
+
+/**
+ * For tests only. Resets the one-time missing-tracing-runtime warning.
+ *
+ * @internal
+ */
+export function _resetTracingRuntimeWarning(): void {
+  warnedMissingTracingRuntime = false
+}
+
+function getTraceHeaders(
   input: RequestInfo | URL,
   targets: TracePropagationTarget[],
   respectSampling: boolean
-): Promise<TraceContext | null> {
+): TraceContext | null {
+  // Read the registry before the target check so the warning fires on the
+  // first request with tracing enabled, not only on Supabase-target ones.
+  // Reading per request (one globalThis property access) deliberately
+  // supports late registration: with ESM evaluation order, `createClient`
+  // can run in a module evaluated before the application entry point's
+  // `import '@supabase/supabase-js/tracing'`.
+  const extractTraceContext = getTraceContextExtractor()
+
+  if (!extractTraceContext) {
+    if (!warnedMissingTracingRuntime) {
+      warnedMissingTracingRuntime = true
+      console.warn(
+        '@supabase/supabase-js: tracePropagation is enabled but the tracing runtime is not loaded, ' +
+          "so trace headers will not be attached. Add `import '@supabase/supabase-js/tracing'` at " +
+          'your application entry point (requires the OpenTelemetry API package to be installed). ' +
+          'The CDN/UMD build does not support trace propagation.'
+      )
+    }
+    return null
+  }
+
   const targetUrl: string | URL =
     typeof input === 'string' ? input : input instanceof URL ? input : input.url
 
@@ -126,7 +158,7 @@ async function getTraceHeaders(
     return null
   }
 
-  const traceContext = await extractTraceContext()
+  const traceContext = extractTraceContext()
 
   if (!traceContext || !traceContext.traceparent) {
     return null

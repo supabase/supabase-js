@@ -3,17 +3,12 @@ import {
   resolveHeadersConstructor,
   fetchWithAuth,
   checkApiKeyFormat,
+  _resetTracingRuntimeWarning,
 } from '../../src/lib/fetch'
-
-jest.mock('@supabase/tracing', () => {
-  const actual = jest.requireActual('@supabase/tracing')
-  return {
-    ...actual,
-    extractTraceContext: jest.fn().mockResolvedValue({
-      traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00',
-    }),
-  }
-})
+import {
+  registerTraceContextExtractor,
+  _unregisterTraceContextExtractor,
+} from '../../src/lib/tracingRegistry'
 
 // Mock fetch for testing
 const mockFetch = jest.fn()
@@ -353,6 +348,22 @@ describe('fetch module', () => {
     })
 
     describe('trace propagation', () => {
+      // Same traceparent the OTel runtime would extract; trace flags `00` =
+      // not sampled, so the sampling-gate tests exercise both branches.
+      const UNSAMPLED_TRACEPARENT = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00'
+      const SAMPLED_TRACEPARENT = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'
+
+      beforeEach(() => {
+        // What `import '@supabase/supabase-js/tracing'` does at runtime,
+        // minus the OpenTelemetry dependency.
+        registerTraceContextExtractor(() => ({ traceparent: UNSAMPLED_TRACEPARENT }))
+      })
+
+      afterEach(() => {
+        _unregisterTraceContextExtractor()
+        _resetTracingRuntimeWarning()
+      })
+
       test('should not inject trace headers by default (no options)', async () => {
         const mockResponse = { ok: true }
         const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)
@@ -578,6 +589,89 @@ describe('fetch module', () => {
 
         // Should not override existing traceparent
         expect(mockSet).not.toHaveBeenCalledWith('traceparent', expect.anything())
+      })
+
+      test('warns once and skips tracing when enabled without the tracing runtime', async () => {
+        _unregisterTraceContextExtractor()
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+        const mockSet = jest.fn()
+        ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
+        ;(global as any).Headers = jest.fn().mockReturnValue({
+          has: jest.fn().mockReturnValue(false),
+          set: mockSet,
+        })
+
+        const authFetch = fetchWithAuth(
+          'test-key',
+          'https://myproject.supabase.co',
+          jest.fn().mockResolvedValue('test-token'),
+          undefined,
+          { enabled: true, respectSamplingDecision: false }
+        )
+        await authFetch('https://myproject.supabase.co/rest/v1/table')
+        await authFetch('https://myproject.supabase.co/rest/v1/table')
+
+        expect(mockSet).not.toHaveBeenCalledWith('traceparent', expect.anything())
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+        expect(warnSpy.mock.calls[0][0]).toContain("import '@supabase/supabase-js/tracing'")
+
+        warnSpy.mockRestore()
+      })
+
+      test('does not warn when trace propagation is disabled', async () => {
+        _unregisterTraceContextExtractor()
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+        ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
+        ;(global as any).Headers = jest.fn().mockReturnValue({
+          has: jest.fn().mockReturnValue(false),
+          set: jest.fn(),
+        })
+
+        const authFetch = fetchWithAuth(
+          'test-key',
+          'https://myproject.supabase.co',
+          jest.fn().mockResolvedValue('test-token')
+        )
+        await authFetch('https://myproject.supabase.co/rest/v1/table')
+
+        expect(warnSpy).not.toHaveBeenCalled()
+
+        warnSpy.mockRestore()
+      })
+
+      test('picks up an extractor registered after the client was created', async () => {
+        _unregisterTraceContextExtractor()
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+        const mockSet = jest.fn()
+        ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
+        ;(global as any).Headers = jest.fn().mockReturnValue({
+          has: jest.fn().mockReturnValue(false),
+          set: mockSet,
+        })
+
+        const authFetch = fetchWithAuth(
+          'test-key',
+          'https://myproject.supabase.co',
+          jest.fn().mockResolvedValue('test-token'),
+          undefined,
+          { enabled: true, respectSamplingDecision: false }
+        )
+
+        // Before registration: warns and sends without trace headers.
+        await authFetch('https://myproject.supabase.co/rest/v1/table')
+        expect(mockSet).not.toHaveBeenCalledWith('traceparent', expect.anything())
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+
+        // After registration (e.g. the tracing subpath finished evaluating):
+        // the same fetch instance starts attaching headers.
+        registerTraceContextExtractor(() => ({ traceparent: SAMPLED_TRACEPARENT }))
+        await authFetch('https://myproject.supabase.co/rest/v1/table')
+        expect(mockSet).toHaveBeenCalledWith('traceparent', SAMPLED_TRACEPARENT)
+
+        warnSpy.mockRestore()
       })
     })
   })

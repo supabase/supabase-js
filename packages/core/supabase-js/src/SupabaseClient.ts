@@ -288,10 +288,12 @@ export default class SupabaseClient<
    * Opt in to W3C trace context propagation so the `trace_id` from your
    * client-side spans is attached to Supabase requests and appears in API
    * Gateway and Edge Function logs. Requires `@opentelemetry/api` to be
-   * installed in your application. See [Tracing with the JS SDK](https://supabase.com/docs/guides/telemetry/client-side-tracing).
+   * installed in your application and the tracing runtime to be loaded via
+   * `import '@supabase/supabase-js/tracing'`. See [Tracing with the JS SDK](https://supabase.com/docs/guides/telemetry/client-side-tracing).
    *
    * @example With OpenTelemetry tracing
    * ```ts
+   * import '@supabase/supabase-js/tracing'
    * import { createClient } from '@supabase/supabase-js'
    * import { trace } from '@opentelemetry/api'
    *
