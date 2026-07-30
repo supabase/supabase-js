@@ -336,7 +336,7 @@ This allows you to test package changes without waiting for an official release,
 
 ### Official Releases
 
-Official releases are handled by maintainers using Nx Release. You can read more in the [RELEASE.md](./RELEASE.md)
+Official releases are handled by maintainers using Nx Release. You can read more in the [RELEASE.md](./docs/RELEASE.md)
 
 ## Getting Help
 
