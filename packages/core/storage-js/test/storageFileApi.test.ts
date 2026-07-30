@@ -1024,6 +1024,159 @@ describe('error handling', () => {
   })
 })
 
+describe('purgeCache', () => {
+  const PURGE_URL = 'http://localhost:8000/storage/v1'
+  const BUCKET = 'avatars'
+  const PATH = 'folder/avatar.png'
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it('issues DELETE to /cdn/{bucket}/{path} and returns the server message', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { data, error } = await client.from(BUCKET).purgeCache(PATH)
+
+    expect(error).toBeNull()
+    expect(data?.message).toBe('success')
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/${PATH}`,
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('surfaces server errors via StorageApiError', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ statusCode: '403', error: 'Forbidden', message: 'Feature not enabled' }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { data, error } = await client.from(BUCKET).purgeCache(PATH)
+
+    expect(data).toBeNull()
+    expect(error).toBeInstanceOf(StorageApiError)
+    expect(error?.message).toBe('Feature not enabled')
+  })
+
+  it('appends transformations query param when transformations option is true', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { data, error } = await client.from(BUCKET).purgeCache(PATH, { transformations: true })
+
+    expect(error).toBeNull()
+    expect(data?.message).toBe('success')
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/${PATH}?transformations=true`,
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('omits transformations query param when transformations option is not provided', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { data, error } = await client.from(BUCKET).purgeCache(PATH)
+
+    expect(error).toBeNull()
+    expect(data?.message).toBe('success')
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/${PATH}`,
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('forwards the AbortController signal to fetch', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const controller = new AbortController()
+    const { error } = await client
+      .from(BUCKET)
+      .purgeCache(PATH, undefined, { signal: controller.signal })
+
+    expect(error).toBeNull()
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/${PATH}`,
+      expect.objectContaining({ method: 'DELETE', signal: controller.signal })
+    )
+  })
+
+  it('percent-encodes URL delimiters in the key while keeping path separators literal', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { error } = await client.from(BUCKET).purgeCache('folder/a?b#c.png')
+
+    expect(error).toBeNull()
+    // `?` and `#` are encoded so they can't be parsed as querystring/fragment,
+    // but `/` stays literal so the server still routes on the real path segments.
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/folder/a%3Fb%23c.png`,
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+
+  it('appends the transformations query after an encoded key', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ message: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    )
+    global.fetch = fetchMock
+
+    const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+    const { error } = await client.from(BUCKET).purgeCache('folder/a?b.png', {
+      transformations: true,
+    })
+
+    expect(error).toBeNull()
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${PURGE_URL}/cdn/${BUCKET}/folder/a%3Fb.png?transformations=true`,
+      expect.objectContaining({ method: 'DELETE' })
+    )
+  })
+})
+
 describe('StorageFileApi Edge Cases', () => {
   let storage: StorageClient
 

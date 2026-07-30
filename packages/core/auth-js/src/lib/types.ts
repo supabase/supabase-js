@@ -190,6 +190,30 @@ export type ExperimentalFeatureFlags = {
    * disabled throws a descriptive error at call time.
    */
   passkey?: boolean
+  /**
+   * Appends a reserved `sb_flow_id` query parameter to `redirectTo` URLs on
+   * PKCE flows. The parameter round-trips through the auth server back to
+   * your callback URL, where the client uses it to select the code verifier
+   * created by that specific flow — so multiple sign-in flows (e.g. two OAuth
+   * providers started in different tabs) can be in flight at the same time
+   * without overwriting each other.
+   *
+   * Before enabling, make sure your [redirect URL allow
+   * list](https://supabase.com/docs/guides/auth/redirect-urls) tolerates the
+   * extra query parameter: allow-list entries are matched against the full
+   * URL including the query string, so an exact entry (no wildcard) stops
+   * matching once the parameter is appended and the redirect falls back to
+   * your Site URL. Redirects to the Site URL's own origin always pass.
+   *
+   * Defaults to `false`. Without it, concurrent flows still keep separate
+   * verifiers in storage, but no flow id travels through the redirect: to
+   * match a callback to its verifier you must carry the `flowId` returned by
+   * `signInWithOAuth` (or `linkIdentity`) through your own channel and pass
+   * it to `exchangeCodeForSession`. Flows that offer no way to obtain the
+   * flow id (email OTP, password recovery, sign-up confirmation) can only be
+   * correlated via this flag.
+   */
+  appendPkceFlowIdToRedirects?: boolean
 }
 
 const WeakPasswordReasons = ['length', 'characters', 'pwned'] as const
@@ -228,7 +252,7 @@ export type RequestResult<T, ErrorType extends Error = AuthError> =
 
 /**
  * similar to RequestResult except it allows you to destructure the possible shape of the success response
- *  {@see RequestResult}
+ *  {@link RequestResult}
  */
 export type RequestResultSafeDestructure<T> =
   | { data: T; error: null }
@@ -251,7 +275,7 @@ export type AuthResponsePassword = RequestResultSafeDestructure<{
 /**
  * AuthOtpResponse is returned when OTP is used.
  *
- * {@see AuthResponse}
+ * {@link AuthResponse}
  */
 export type AuthOtpResponse = RequestResultSafeDestructure<{
   user: null
@@ -275,6 +299,19 @@ export type OAuthResponse =
       data: {
         provider: Provider
         url: string
+        /**
+         * Identifier of the PKCE flow started by this call, usable as the
+         * `flowId` option of {@link GoTrueClient#exchangeCodeForSession} to
+         * select this flow's code verifier when several flows are in flight.
+         * `null` on the implicit flow. The id is a selector for a verifier
+         * kept in storage — it is not a secret and never contains the
+         * verifier itself.
+         *
+         * Always set at runtime; optional in the type so existing code that
+         * constructs `OAuthResponse` values (e.g. test mocks) keeps
+         * compiling.
+         */
+        flowId?: string | null
       }
       error: null
     }
@@ -282,6 +319,7 @@ export type OAuthResponse =
       data: {
         provider: Provider
         url: null
+        flowId?: string | null
       }
       error: AuthError
     }
@@ -407,7 +445,7 @@ type FactorVerificationStatus = (typeof FactorVerificationStatuses)[number]
  *
  * @see {@link GoTrueMFAApi#enroll}
  * @see {@link GoTrueMFAApi#listFactors}
- * @see {@link GoTrueMFAAdminApi#listFactors}
+ * @see {@link GoTrueAdminMFAApi#listFactors}
  */
 export type Factor<
   Type extends FactorType = FactorType,
@@ -1691,14 +1729,14 @@ export interface GoTrueMFAApi {
 }
 
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminDeleteFactorResponse = RequestResult<{
   /** ID of the factor that was successfully deleted. */
   id: string
 }>
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminDeleteFactorParams = {
   /** ID of the MFA factor to delete. */
@@ -1709,7 +1747,7 @@ export type AuthMFAAdminDeleteFactorParams = {
 }
 
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminListFactorsResponse = RequestResult<{
   /** All factors attached to the user. */
@@ -1717,7 +1755,7 @@ export type AuthMFAAdminListFactorsResponse = RequestResult<{
 }>
 
 /**
- * @expermental
+ * @experimental
  */
 export type AuthMFAAdminListFactorsParams = {
   /** ID of the user. */
@@ -1727,7 +1765,7 @@ export type AuthMFAAdminListFactorsParams = {
 /**
  * Contains the full multi-factor authentication administration API.
  *
- * @expermental
+ * @experimental
  */
 export interface GoTrueAdminMFAApi {
   /**
@@ -1769,7 +1807,7 @@ export interface GoTrueAdminMFAApi {
    *
    * @see {@link GoTrueMFAApi#unenroll}
    *
-   * @expermental
+   * @experimental
    *
    * @category Auth
    * @subcategory Auth Admin
@@ -2250,6 +2288,14 @@ export type CustomOAuthProvider = {
   acceptable_client_ids?: string[]
   /** OAuth scopes requested during authorization */
   scopes?: string[]
+  /**
+   * Allowlist of raw identity provider claim keys to copy verbatim into the
+   * user's `custom_claims` field (within `identity_data` and
+   * `raw_user_meta_data`), e.g. `["groups", "org_id", "mail"]`. This is an
+   * opt-in allowlist that defaults to empty (no claims captured) and operates
+   * independently from `attribute_mapping`.
+   */
+  custom_claims_allowlist?: string[]
   /** Whether PKCE is enabled */
   pkce_enabled?: boolean
   /** Mapping of provider attributes to Supabase user attributes */
@@ -2300,6 +2346,14 @@ export type CreateCustomProviderParams = {
   acceptable_client_ids?: string[]
   /** OAuth scopes requested during authorization */
   scopes?: string[]
+  /**
+   * Allowlist of raw identity provider claim keys to copy verbatim into the
+   * user's `custom_claims` field (within `identity_data` and
+   * `raw_user_meta_data`), e.g. `["groups", "org_id", "mail"]`. This is an
+   * opt-in allowlist that defaults to empty (no claims captured) and operates
+   * independently from `attribute_mapping`.
+   */
+  custom_claims_allowlist?: string[]
   /** Whether PKCE is enabled */
   pkce_enabled?: boolean
   /** Mapping of provider attributes to Supabase user attributes */
@@ -2342,6 +2396,14 @@ export type UpdateCustomProviderParams = {
   acceptable_client_ids?: string[]
   /** OAuth scopes requested during authorization */
   scopes?: string[]
+  /**
+   * Allowlist of raw identity provider claim keys to copy verbatim into the
+   * user's `custom_claims` field (within `identity_data` and
+   * `raw_user_meta_data`), e.g. `["groups", "org_id", "mail"]`. This is an
+   * opt-in allowlist that defaults to empty (no claims captured) and operates
+   * independently from `attribute_mapping`.
+   */
+  custom_claims_allowlist?: string[]
   /** Whether PKCE is enabled */
   pkce_enabled?: boolean
   /** Mapping of provider attributes to Supabase user attributes */

@@ -1,4 +1,5 @@
-import { describe, test, assert } from 'vitest'
+import { describe, test, assert, expect } from 'vitest'
+import { Presence } from '@supabase/phoenix'
 import type { RealtimePresenceState } from '../../src/RealtimePresence'
 import PresenceAdapter from '../../src/phoenix/presenceAdapter'
 import { PresenceStates } from '../../src/phoenix/types'
@@ -107,5 +108,97 @@ describe('transformState', () => {
     PresenceAdapter.transformState(originalState)
 
     assert.deepEqual(originalState, originalStateDeepCopy)
+  })
+})
+
+describe('presence diff payloads', () => {
+  test('preserves __proto__ metadata as an own property', () => {
+    const meta = JSON.parse('{"phx_ref":"device-1","__proto__":{"is_admin":true}}')
+    const payload = PresenceAdapter.onJoinPayload('user-123', { metas: [] }, { metas: [meta] })
+    const transformedPresence = payload.newPresences[0]
+
+    expect(Object.getPrototypeOf(transformedPresence)).toBe(Object.prototype)
+    expect(Object.hasOwn(transformedPresence, '__proto__')).toBe(true)
+    expect(Reflect.get(transformedPresence, '__proto__')).toEqual({ is_admin: true })
+    expect('is_admin' in transformedPresence).toBe(false)
+  })
+
+  test('collapses a presence update instead of duplicating the member', () => {
+    const key = 'user-123'
+    let state: PresenceStates = {
+      [key]: { metas: [{ phx_ref: 'r1', status: 'online' }] },
+    }
+    const onJoin = PresenceAdapter.onJoinPayload
+    const onLeave = PresenceAdapter.onLeavePayload
+    const syncDiff = (joins: PresenceStates, leaves: PresenceStates) => {
+      state = Presence.syncDiff(state, { joins, leaves }, onJoin, onLeave)
+    }
+    const updateJoins = {
+      [key]: { metas: [{ phx_ref: 'r2', phx_ref_prev: 'r1', status: 'away' }] },
+    }
+    const updateLeaves = {
+      [key]: { metas: [{ phx_ref: 'r1', status: 'online' }] },
+    }
+
+    // track() with a changed payload: the server sends Presence.update as join + leave.
+    syncDiff(updateJoins, updateLeaves)
+
+    expect(state[key].metas).toHaveLength(1)
+
+    syncDiff({}, { [key]: { metas: [{ phx_ref: 'r2', status: 'away' }] } })
+    expect(state).not.toHaveProperty(key)
+  })
+
+  test('removes a presence key after all of its metas leave', () => {
+    const key = 'user-123'
+    // Each server message is decoded into fresh meta objects.
+    const meta = (phx_ref: string) => ({ phx_ref, user_id: key })
+    let state: PresenceStates = {
+      [key]: { metas: [meta('device-1')] },
+    }
+    const onJoin = PresenceAdapter.onJoinPayload
+    const onLeave = PresenceAdapter.onLeavePayload
+    const syncDiff = (joins: PresenceStates, leaves: PresenceStates) => {
+      state = Presence.syncDiff(state, { joins, leaves }, onJoin, onLeave)
+    }
+
+    syncDiff({ [key]: { metas: [meta('device-2')] } }, {})
+    syncDiff({}, { [key]: { metas: [meta('device-2')] } })
+    syncDiff({}, { [key]: { metas: [meta('device-1')] } })
+
+    expect(state).not.toHaveProperty(key)
+  })
+})
+
+// Reproduces GHSA-63mc-hw7g-86rr: @supabase/phoenix's Presence.syncState/syncDiff look up
+// presence keys with a bare `state[key]` check, so a key matching an Object.prototype
+// member (e.g. "constructor") resolves to the inherited prototype value instead of
+// `undefined`. The code then calls `.metas` on it and crashes. Any authenticated presence
+// channel participant can join under such a key to break presence sync for every viewer.
+describe('Presence prototype pollution (GHSA-63mc-hw7g-86rr)', () => {
+  test('syncState should not crash when a presence key collides with Object.prototype', () => {
+    const maliciousState = {
+      constructor: { metas: [{ phx_ref: '1', user_id: 'attacker' }] },
+    }
+
+    expect(() => Presence.syncState({}, maliciousState)).not.toThrow()
+  })
+
+  test('syncDiff should not crash when a joining presence key collides with Object.prototype', () => {
+    const maliciousDiff = {
+      joins: { constructor: { metas: [{ phx_ref: '1', user_id: 'attacker' }] } },
+      leaves: {},
+    }
+
+    expect(() => Presence.syncDiff({}, maliciousDiff)).not.toThrow()
+  })
+
+  test('syncDiff should not crash when a leaving presence key collides with Object.prototype', () => {
+    const maliciousDiff = {
+      joins: {},
+      leaves: { constructor: { metas: [{ phx_ref: '1', user_id: 'attacker' }] } },
+    }
+
+    expect(() => Presence.syncDiff({}, maliciousDiff)).not.toThrow()
   })
 })

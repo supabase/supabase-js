@@ -87,18 +87,20 @@ describe('index module', () => {
       require('../../src/index')
 
       expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Node.js 18 and below are deprecated')
+        expect.stringContaining('Node.js 20 and below are deprecated')
       )
     })
 
-    test('should not show warning for Node.js 20', () => {
+    test('should show warning for Node.js 20', () => {
       global.process = { version: 'v20.0.0' } as any
 
       // Re-import to trigger the deprecation check
       jest.resetModules()
       require('../../src/index')
 
-      expect(console.warn).not.toHaveBeenCalled()
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Node.js 20 and below are deprecated')
+      )
     })
 
     test('should not show warning in browser environment', () => {

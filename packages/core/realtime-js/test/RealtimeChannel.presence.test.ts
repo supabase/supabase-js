@@ -320,6 +320,47 @@ describe('Presence helper methods', () => {
 
     expect(resp).toBe('ok')
   })
+
+  test('track forwards a custom timeout from opts to send', async () => {
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+
+    const pushSpy = vi.spyOn(channel.channelAdapter.getChannel(), 'push')
+
+    await channel.track({ id: 123 }, { timeout: 2500 })
+
+    expect(pushSpy).toHaveBeenCalledWith(
+      'presence',
+      { type: 'presence', event: 'track', payload: { id: 123 } },
+      2500
+    )
+  })
+
+  test('track falls back to the channel timeout when opts has no timeout', async () => {
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+
+    const pushSpy = vi.spyOn(channel.channelAdapter.getChannel(), 'push')
+
+    await channel.track({ id: 123 })
+
+    expect(pushSpy).toHaveBeenCalledWith(
+      'presence',
+      { type: 'presence', event: 'track', payload: { id: 123 } },
+      defaultTimeout
+    )
+  })
+
+  test('untrack forwards a custom timeout from opts to send', async () => {
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+
+    const pushSpy = vi.spyOn(channel.channelAdapter.getChannel(), 'push')
+
+    await channel.untrack({ timeout: 2500 })
+
+    expect(pushSpy).toHaveBeenCalledWith('presence', { type: 'presence', event: 'untrack' }, 2500)
+  })
 })
 
 describe('Presence configuration override', () => {

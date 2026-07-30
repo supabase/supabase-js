@@ -235,7 +235,6 @@ export default class RealtimeClient {
    * Initializes the Socket.
    *
    * @param endPoint The string WebSocket endpoint, ie, "ws://example.com/socket", "wss://example.com", "/socket" (inherited host & protocol)
-   * @param httpEndpoint The string HTTP endpoint, ie, "https://example.com", "/" (inherited host & protocol)
    * @param options.transport The Websocket Transport, for example WebSocket. This can be a custom implementation
    * @param options.timeout The default timeout in milliseconds to trigger push timeouts.
    * @param options.params The optional params to pass when connecting.
@@ -313,22 +312,6 @@ export default class RealtimeClient {
       this.socketAdapter.connect()
     } catch (error) {
       const errorMessage = (error as Error).message
-
-      // Provide helpful error message based on environment
-      if (errorMessage.includes('Node.js')) {
-        throw new Error(
-          `${errorMessage}\n\n` +
-            'To use Realtime in Node.js, you need to provide a WebSocket implementation:\n\n' +
-            'Option 1: Use Node.js 22+ which has native WebSocket support\n' +
-            'Option 2: Install and provide the "ws" package:\n\n' +
-            '  npm install ws\n\n' +
-            '  import ws from "ws"\n' +
-            '  const client = new RealtimeClient(url, {\n' +
-            '    ...options,\n' +
-            '    transport: ws\n' +
-            '  })'
-        )
-      }
       throw new Error(`WebSocket not available: ${errorMessage}`)
     }
 
@@ -543,7 +526,7 @@ export default class RealtimeClient {
 
   /**
    * Sets a callback that receives lifecycle events for internal heartbeat messages.
-   * Useful for instrumenting connection health (e.g. sent/ok/timeout/disconnected).
+   * Useful for instrumenting connection health (e.g. sent/ok/timeout).
    *
    * @category Realtime
    */
@@ -730,6 +713,7 @@ export default class RealtimeClient {
   /** @internal */
   private _wrapHeartbeatCallback(heartbeatCallback?: HeartbeatCallback): HeartbeatCallback {
     return (status, latency) => {
+      if (status === 'disconnected') return
       if (status == 'sent') this._setAuthSafely()
       if (heartbeatCallback) heartbeatCallback(status, latency)
     }

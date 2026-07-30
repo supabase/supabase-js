@@ -1,6 +1,7 @@
 import assert from 'assert'
 import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
 import RealtimeChannel from '../src/RealtimeChannel'
+import { postgresChangesFilter } from '../src/RealtimePostgresFilterBuilder'
 import { CHANNEL_STATES } from '../src/lib/constants'
 import {
   phxJoinReply,
@@ -644,5 +645,233 @@ describe('PostgreSQL payload transformation', () => {
 
     expect(deletePayload.eventType).toBe('DELETE')
     expect(deletePayload.old).toStrictEqual({ id: 2, name: 'deleted' })
+  })
+})
+
+describe('PostgreSQL new filter features (select, AND, operators)', () => {
+  const getJoinedPostgresChanges = () => channel.joinPush.payload().config.postgres_changes
+
+  test('should forward `select` columns in the join payload', () => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'users',
+        select: ['id', 'first_name'],
+      },
+      vi.fn()
+    )
+
+    channel.subscribe()
+
+    expect(getJoinedPostgresChanges()).toEqual([
+      { event: '*', schema: 'public', table: 'users', select: ['id', 'first_name'] },
+    ])
+  })
+
+  test('should forward comma-separated AND filters verbatim', () => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: 'amount=gt.100,status=in.(open,pending)',
+      },
+      vi.fn()
+    )
+
+    channel.subscribe()
+
+    expect(getJoinedPostgresChanges()[0].filter).toBe('amount=gt.100,status=in.(open,pending)')
+  })
+
+  test.each([
+    'title=like.%foo%',
+    'name=ilike.%BAR%',
+    'deleted_at=is.null',
+    'title=match.^foo',
+    'status=not.in.(draft,archived)',
+    'deleted_at=not.is.null',
+  ])('should forward the `%s` filter verbatim (operators evaluated server-side)', (filter) => {
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'posts', filter },
+      vi.fn()
+    )
+
+    channel.subscribe()
+
+    expect(getJoinedPostgresChanges()[0].filter).toBe(filter)
+  })
+
+  test('should subscribe successfully when the server echoes the `select` option', async () => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'users',
+        select: ['id'],
+      },
+      vi.fn()
+    )
+
+    const serverResponse = {
+      postgres_changes: [
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'users',
+          filter: undefined,
+          select: ['id'],
+          id: 'server-id-1',
+        },
+      ],
+    }
+
+    channel.subscribe()
+
+    testSetup.mockServer.emit('message', phxJoinReply(channel, serverResponse))
+
+    await waitForChannelSubscribed(channel)
+    expect(channel.bindings.postgres_changes.length).toBe(1)
+    expect(channel.bindings.postgres_changes[0].id).toBe('server-id-1')
+    expect((channel.bindings.postgres_changes[0].filter as any).select).toEqual(['id'])
+  })
+
+  test('should serialize a postgresChangesFilter() builder into the join payload', () => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: postgresChangesFilter()
+          .gt('amount', 100)
+          .not('status', 'in', ['draft', 'archived']),
+      },
+      vi.fn()
+    )
+
+    channel.subscribe()
+
+    // The builder is normalized to a string before reaching the binding/payload.
+    expect(channel.bindings.postgres_changes[0].filter.filter).toBe(
+      'amount=gt.100,status=not.in.(draft,archived)'
+    )
+    expect(getJoinedPostgresChanges()[0].filter).toBe(
+      'amount=gt.100,status=not.in.(draft,archived)'
+    )
+  })
+
+  test('a string filter and the equivalent builder produce identical wire output', () => {
+    const stringChannel = testSetup.client.channel('string-filter')
+    stringChannel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'users', filter: 'id=eq.1' },
+      vi.fn()
+    )
+    stringChannel.subscribe()
+    const stringFilter = stringChannel.joinPush.payload().config.postgres_changes[0].filter
+
+    const builderChannel = testSetup.client.channel('builder-filter')
+    builderChannel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'users',
+        filter: postgresChangesFilter().eq('id', 1),
+      },
+      vi.fn()
+    )
+    builderChannel.subscribe()
+    const builderFilter = builderChannel.joinPush.payload().config.postgres_changes[0].filter
+
+    // Backward compatible: string is forwarded as-is and matches the builder output.
+    expect(stringFilter).toBe('id=eq.1')
+    expect(builderFilter).toBe(stringFilter)
+
+    stringChannel.unsubscribe()
+    builderChannel.unsubscribe()
+  })
+
+  test('should match server bindings when a builder filter is used', async () => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'users',
+        filter: postgresChangesFilter().eq('id', 1),
+      },
+      vi.fn()
+    )
+
+    const serverResponse = {
+      postgres_changes: [
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'users',
+          filter: 'id=eq.1',
+          id: 'server-id-1',
+        },
+      ],
+    }
+
+    channel.subscribe()
+
+    testSetup.mockServer.emit('message', phxJoinReply(channel, serverResponse))
+
+    await waitForChannelSubscribed(channel)
+    expect(channel.bindings.postgres_changes[0].id).toBe('server-id-1')
+  })
+
+  test('does not mutate the caller-provided options object', () => {
+    const builder = postgresChangesFilter().eq('id', 1)
+    const options = { event: 'INSERT' as const, schema: 'public', table: 'users', filter: builder }
+
+    channel.on('postgres_changes', options, vi.fn())
+    channel.subscribe()
+
+    // The caller's object still references the builder; only the stored binding is a string.
+    expect(options.filter).toBe(builder)
+    expect(channel.bindings.postgres_changes[0].filter.filter).toBe('id=eq.1')
+  })
+
+  test('snapshots the builder at on() — later mutation does not affect the binding', () => {
+    const builder = postgresChangesFilter().eq('id', 1)
+
+    channel.on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'users', filter: builder },
+      vi.fn()
+    )
+    channel.subscribe()
+
+    // Mutating the builder afterwards must not change the already-stored filter.
+    builder.gt('age', 18)
+    expect(channel.bindings.postgres_changes[0].filter.filter).toBe('id=eq.1')
+    expect(builder.build()).toBe('id=eq.1,age=gt.18')
+  })
+
+  test('normalizes any object exposing build() (duck-typed, cross-realm safe)', () => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'users',
+        // Simulates a builder from a duplicate package copy where `instanceof` fails.
+        filter: { build: () => 'id=eq.1' } as any,
+      },
+      vi.fn()
+    )
+    channel.subscribe()
+
+    expect(getJoinedPostgresChanges()[0].filter).toBe('id=eq.1')
   })
 })

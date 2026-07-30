@@ -38,7 +38,7 @@ export interface WebSocketLike {
 }
 
 export interface WebSocketEnvironment {
-  type: 'native' | 'ws' | 'cloudflare' | 'unsupported'
+  type: 'native' | 'cloudflare' | 'unsupported'
   /** WebSocket constructor for this environment, if available. */
   wsConstructor?: typeof WebSocket
   error?: string
@@ -113,32 +113,13 @@ export class WebSocketFactory {
     if (_process) {
       const processVersions = _process['versions']
       if (processVersions && processVersions['node']) {
-        // Remove 'v' prefix if present and parse the major version
-        const versionString = processVersions['node']
-        const nodeVersion = parseInt(versionString.replace(/^v/, '').split('.')[0])
-
-        // Node.js 22+ should have native WebSocket
-        if (nodeVersion >= 22) {
-          // Check if native WebSocket is available (should be in Node.js 22+)
-          if (typeof globalThis.WebSocket !== 'undefined') {
-            return { type: 'native', wsConstructor: globalThis.WebSocket }
-          }
-          // If not available, user needs to provide it
-          return {
-            type: 'unsupported',
-            error: `Node.js ${nodeVersion} detected but native WebSocket not found.`,
-            workaround: 'Provide a WebSocket implementation via the transport option.',
-          }
-        }
-
-        // Node.js < 22 doesn't have native WebSocket
+        // Reaching here means an earlier check did not find a native WebSocket,
+        // so this Node.js process is missing the global WebSocket (Node.js 22+).
         return {
           type: 'unsupported',
-          error: `Node.js ${nodeVersion} detected without native WebSocket support.`,
+          error: 'Node.js detected but native WebSocket not found.',
           workaround:
-            'For Node.js < 22, install "ws" package and provide it via the transport option:\n' +
-            'import ws from "ws"\n' +
-            'new RealtimeClient(url, { transport: ws })',
+            'Ensure you are running Node.js 22+ or provide a WebSocket implementation via the transport option.',
         }
       }
     }
@@ -194,7 +175,7 @@ export class WebSocketFactory {
   public static isWebSocketSupported(): boolean {
     try {
       const env = this.detectEnvironment()
-      return env.type === 'native' || env.type === 'ws'
+      return env.type === 'native'
     } catch {
       return false
     }

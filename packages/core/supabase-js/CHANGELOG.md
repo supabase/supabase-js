@@ -1,3 +1,93 @@
+## 2.111.0 (2026-07-28)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.110.9 (2026-07-27)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.110.8 (2026-07-21)
+
+### 🩹 Fixes
+
+- **supabase:** skip Node warning in Deno ([#2541](https://github.com/supabase/supabase-js/pull/2541))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **realtime:** trigger set auth on INITIAL_SESSION event ([#2531](https://github.com/supabase/supabase-js/pull/2531))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **supabase:** warn instead of throw for unrecognized sb_ API key subtypes ([#2526](https://github.com/supabase/supabase-js/pull/2526))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.5 (2026-07-14)
+
+### 🩹 Fixes
+
+- **supabase:** avoid edge runtime warning ([#2522](https://github.com/supabase/supabase-js/pull/2522))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.4 (2026-07-14)
+
+### 🩹 Fixes
+
+- **functions:** stop sending API key in Authorization header for function calls ([#2511](https://github.com/supabase/supabase-js/pull/2511))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.3 (2026-07-13)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.110.2 (2026-07-09)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.110.1 (2026-07-07)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.110.0 (2026-06-30)
+
+### 🚀 Features
+
+- **repo:** drop Node.js 20 support ([#2482](https://github.com/supabase/supabase-js/pull/2482))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.109.0 (2026-06-30)
+
+### 🩹 Fixes
+
+- **realtime:** pin @supabase/phoenix and browser test CDN deps ([#2457](https://github.com/supabase/supabase-js/pull/2457))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.108.2 (2026-06-15)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.

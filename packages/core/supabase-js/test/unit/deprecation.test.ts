@@ -7,7 +7,9 @@ export {}
 
 describe('Node.js deprecation warning', () => {
   const originalProcess = global.process
+  const originalProcessVersion = Object.getOwnPropertyDescriptor(global.process, 'version')
   const originalWindow = global.window
+  const originalDeno = (globalThis as any).Deno
   const originalConsoleWarn = console.warn
 
   beforeEach(() => {
@@ -20,7 +22,11 @@ describe('Node.js deprecation warning', () => {
   afterEach(() => {
     // Restore original values
     global.process = originalProcess
+    if (originalProcessVersion) {
+      Object.defineProperty(global.process, 'version', originalProcessVersion)
+    }
     global.window = originalWindow
+    ;(globalThis as any).Deno = originalDeno
     console.warn = originalConsoleWarn
     jest.resetModules()
   })
@@ -28,6 +34,19 @@ describe('Node.js deprecation warning', () => {
   it('should not show warning in browser environment', () => {
     // Simulate browser environment
     global.window = {} as any
+
+    require('../../src/index')
+
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  it('should not show warning in Deno environment with Node compatibility process', () => {
+    Object.defineProperty(global.process, 'version', {
+      value: 'v20.11.1',
+      configurable: true,
+    })
+    ;(globalThis as any).Deno = {}
+    delete (global as any).window
 
     require('../../src/index')
 
@@ -74,7 +93,7 @@ describe('Node.js deprecation warning', () => {
     require('../../src/index')
 
     expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Node.js 18 and below are deprecated')
+      expect.stringContaining('Node.js 20 and below are deprecated')
     )
   })
 
@@ -88,11 +107,11 @@ describe('Node.js deprecation warning', () => {
     require('../../src/index')
 
     expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Node.js 18 and below are deprecated')
+      expect.stringContaining('Node.js 20 and below are deprecated')
     )
   })
 
-  it('should not show warning for Node.js 20', () => {
+  it('should show warning for Node.js 20', () => {
     Object.defineProperty(global.process, 'version', {
       value: 'v20.0.0',
       configurable: true,
@@ -101,7 +120,9 @@ describe('Node.js deprecation warning', () => {
 
     require('../../src/index')
 
-    expect(console.warn).not.toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Node.js 20 and below are deprecated')
+    )
   })
 
   it('should not show warning for Node.js 22', () => {

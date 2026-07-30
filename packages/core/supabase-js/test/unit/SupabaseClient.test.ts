@@ -29,6 +29,29 @@ describe('SupabaseClient', () => {
     expect(() => createClient(URL, '')).toThrow('supabaseKey is required.')
   })
 
+  test('should check the API key format without ever throwing', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      // Platform-issued temporary keys are accepted silently.
+      expect(() => createClient(URL, 'sb_temp_nonce123_payload456')).not.toThrow()
+      // Recognized new-format keys and legacy JWT keys are accepted silently.
+      expect(() => createClient(URL, 'sb_publishable_abc123')).not.toThrow()
+      expect(() => createClient(URL, 'sb_secret_abc123')).not.toThrow()
+      expect(() => createClient(URL, KEY)).not.toThrow()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      // Unrecognized sb_ subtype → the client is still created; a one-time warning
+      // signals that an SDK upgrade may be needed.
+      expect(createClient(URL, 'sb_unknown_abc123')).toBeInstanceOf(SupabaseClient)
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/Unrecognized Supabase API key format/)
+      )
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+
   test('should validate supabaseUrl', () => {
     expect(() => createClient('https://xyz123.supabase.co', KEY)).not.toThrow()
     expect(() => createClient('http://localhost:54321', KEY)).not.toThrow()
@@ -84,6 +107,19 @@ describe('SupabaseClient', () => {
       const client = createClient('https://localhost:3000', KEY)
       // @ts-ignore
       expect(client.realtimeUrl.toString()).toEqual('wss://localhost:3000/realtime/v1')
+    })
+  })
+
+  describe('PostgREST Configuration', () => {
+    test('should forward the retry option to PostgrestClient', () => {
+      const client = createClient(URL, KEY, {
+        db: { retry: false },
+      })
+
+      // @ts-expect-error rest is protected
+      expect(client.rest.retry).toBe(false)
+      // @ts-expect-error retryEnabled is protected
+      expect(client.from('users').select().retryEnabled).toBe(false)
     })
   })
 
@@ -357,6 +393,15 @@ describe('SupabaseClient', () => {
         expect(setAuthSpy).toHaveBeenCalledWith()
       })
 
+      test('should call setAuth() on INITIAL_SESSION event', async () => {
+        const client = createClient(URL, KEY)
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
+
+        // @ts-ignore - accessing private method for testing
+        client._handleTokenChanged('INITIAL_SESSION', 'CLIENT', 'initial-token')
+        expect(setAuthSpy).toHaveBeenCalledWith('initial-token')
+      })
+
       test('should update token in realtime client when setAuth is called', async () => {
         const client = createClient(URL, KEY)
         const testToken = 'test-realtime-token'
@@ -483,6 +528,38 @@ describe('SupabaseClient', () => {
         const [, options] = mockFetch.mock.calls[0]
         expect(options.headers.get('Authorization')).toBe(`Bearer ${KEY}`)
         expect(options.headers.get('apikey')).toBe(KEY)
+      })
+
+      test('functions omit Authorization for a new-format key without a session, other services do not', async () => {
+        const NEW_KEY = 'sb_publishable_test123'
+        const mockFetch = jest.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          text: () => Promise.resolve('{}'),
+          headers: new Headers(),
+          json: () => Promise.resolve({}),
+        })
+
+        const client = createClient(URL, NEW_KEY, {
+          global: { fetch: mockFetch },
+        })
+
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: null },
+        })
+
+        // Functions: no session + new-format key → apikey only, no Authorization.
+        await client.functions.invoke('test-function')
+        const [, functionsOptions] = mockFetch.mock.calls[0]
+        expect(functionsOptions.headers.get('apikey')).toBe(NEW_KEY)
+        expect(functionsOptions.headers.get('Authorization')).toBeNull()
+
+        // Other services stay uniform: the key is still sent in Authorization.
+        await client.from('test').select('*')
+        const [, restOptions] = mockFetch.mock.calls[1]
+        expect(restOptions.headers.get('Authorization')).toBe(`Bearer ${NEW_KEY}`)
+        expect(restOptions.headers.get('apikey')).toBe(NEW_KEY)
       })
     })
   })

@@ -21,12 +21,47 @@ export const resolveHeadersConstructor = () => {
   return Headers
 }
 
+/**
+ * New-format Supabase API keys (`sb_publishable_…` / `sb_secret_…`) are not JWTs and
+ * must never be sent as a Bearer token — they belong only in the `apikey` header.
+ * All other keys (legacy JWT keys, `sb_temp_…` temporary keys, unrecognized `sb_`
+ * subtypes) keep the Bearer fallback.
+ */
+const isNewApiKey = (key: string): boolean =>
+  key.startsWith('sb_publishable_') || key.startsWith('sb_secret_')
+
+const TEMP_KEY_PREFIX = 'sb_temp_'
+
+const warnedKeySubtypes = new Set<string>()
+
+/**
+ * Warn (once per subtype) when an `sb_` key isn't a subtype this SDK version recognizes.
+ * Never throws — the server, not the SDK, decides key validity. The key value is never
+ * included in the message.
+ */
+export const checkApiKeyFormat = (key: string): void => {
+  if (!key.startsWith('sb_') || isNewApiKey(key) || key.startsWith(TEMP_KEY_PREFIX)) {
+    return
+  }
+  const subtype = key.match(/^sb_[a-zA-Z0-9]+_/)?.[0] ?? 'unknown'
+  if (warnedKeySubtypes.has(subtype)) {
+    return
+  }
+  warnedKeySubtypes.add(subtype)
+  console.warn(
+    '@supabase/supabase-js: Unrecognized Supabase API key format. The client will proceed ' +
+      'and send this key as-is; if you see authentication errors you may need to upgrade ' +
+      '@supabase/supabase-js to a version that recognizes this key type.'
+  )
+}
+
 export const fetchWithAuth = (
   supabaseKey: string,
   supabaseUrl: string,
   getAccessToken: () => Promise<string | null>,
   customFetch?: Fetch,
-  tracePropagationOptions?: TracePropagationOptions
+  tracePropagationOptions?: TracePropagationOptions,
+  options?: { omitApiKeyAsBearer?: boolean }
 ): Fetch => {
   const fetch = resolveFetch(customFetch)
   const HeadersConstructor = resolveHeadersConstructor()
@@ -39,8 +74,13 @@ export const fetchWithAuth = (
     ? getDefaultPropagationTargets(supabaseUrl)
     : null
 
+  // Whether the API key may be used as the `Authorization` Bearer fallback when there is no
+  // session token. Disabled for Edge Functions with a new-format key (see `isNewApiKey`).
+  // Static per instance, so it is computed once here rather than on every request.
+  const allowKeyAsBearer = !(options?.omitApiKeyAsBearer && isNewApiKey(supabaseKey))
+
   return async (input, init) => {
-    const accessToken = (await getAccessToken()) ?? supabaseKey
+    const realToken = await getAccessToken()
     let headers = new HeadersConstructor(init?.headers)
 
     if (!headers.has('apikey')) {
@@ -48,7 +88,10 @@ export const fetchWithAuth = (
     }
 
     if (!headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${accessToken}`)
+      const bearer = realToken ?? (allowKeyAsBearer ? supabaseKey : null)
+      if (bearer) {
+        headers.set('Authorization', `Bearer ${bearer}`)
+      }
     }
 
     if (traceTargets) {

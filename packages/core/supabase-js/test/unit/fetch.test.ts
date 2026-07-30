@@ -1,4 +1,9 @@
-import { resolveFetch, resolveHeadersConstructor, fetchWithAuth } from '../../src/lib/fetch'
+import {
+  resolveFetch,
+  resolveHeadersConstructor,
+  fetchWithAuth,
+  checkApiKeyFormat,
+} from '../../src/lib/fetch'
 
 jest.mock('@supabase/tracing', () => {
   const actual = jest.requireActual('@supabase/tracing')
@@ -145,6 +150,206 @@ describe('fetch module', () => {
       await authFetch('https://example.com')
 
       expect(mockSet).not.toHaveBeenCalledWith('Authorization', expect.stringContaining('Bearer'))
+    })
+
+    describe('omitApiKeyAsBearer option', () => {
+      const setupHeaders = (existing: string[] = []) => {
+        const mockSet = jest.fn()
+        const mockHeadersImpl = jest.fn().mockReturnValue({
+          has: jest.fn().mockImplementation((key) => existing.includes(key)),
+          set: mockSet,
+        })
+        ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
+        ;(global as any).Headers = mockHeadersImpl
+        return mockSet
+      }
+
+      test('omits Authorization for a new-format key when there is no session', async () => {
+        const mockSet = setupHeaders()
+        const supabaseKey = 'sb_publishable_abc123'
+        const getAccessToken = jest.fn().mockResolvedValue(null)
+
+        const authFetch = fetchWithAuth(
+          supabaseKey,
+          'https://myproject.supabase.co',
+          getAccessToken,
+          undefined,
+          undefined,
+          { omitApiKeyAsBearer: true }
+        )
+        await authFetch('https://example.com')
+
+        expect(mockSet).toHaveBeenCalledWith('apikey', supabaseKey)
+        expect(mockSet).not.toHaveBeenCalledWith('Authorization', expect.stringContaining('Bearer'))
+      })
+
+      test('sends Authorization for a new-format key when a session token exists', async () => {
+        const mockSet = setupHeaders()
+        const supabaseKey = 'sb_publishable_abc123'
+        const getAccessToken = jest.fn().mockResolvedValue('user-jwt')
+
+        const authFetch = fetchWithAuth(
+          supabaseKey,
+          'https://myproject.supabase.co',
+          getAccessToken,
+          undefined,
+          undefined,
+          { omitApiKeyAsBearer: true }
+        )
+        await authFetch('https://example.com')
+
+        expect(mockSet).toHaveBeenCalledWith('Authorization', 'Bearer user-jwt')
+      })
+
+      test('keeps sending a legacy (JWT) key in Authorization when there is no session', async () => {
+        const mockSet = setupHeaders()
+        const supabaseKey = 'header.payload.signature'
+        const getAccessToken = jest.fn().mockResolvedValue(null)
+
+        const authFetch = fetchWithAuth(
+          supabaseKey,
+          'https://myproject.supabase.co',
+          getAccessToken,
+          undefined,
+          undefined,
+          { omitApiKeyAsBearer: true }
+        )
+        await authFetch('https://example.com')
+
+        expect(mockSet).toHaveBeenCalledWith('Authorization', `Bearer ${supabaseKey}`)
+      })
+
+      test('preserves a caller-supplied Authorization header', async () => {
+        const mockSet = setupHeaders(['Authorization'])
+        const supabaseKey = 'sb_publishable_abc123'
+        const getAccessToken = jest.fn().mockResolvedValue('user-jwt')
+
+        const authFetch = fetchWithAuth(
+          supabaseKey,
+          'https://myproject.supabase.co',
+          getAccessToken,
+          undefined,
+          undefined,
+          { omitApiKeyAsBearer: true }
+        )
+        await authFetch('https://example.com')
+
+        expect(mockSet).not.toHaveBeenCalledWith('Authorization', expect.anything())
+      })
+
+      test('without the option, a new-format key is still sent in Authorization (scoping guard)', async () => {
+        const mockSet = setupHeaders()
+        const supabaseKey = 'sb_publishable_abc123'
+        const getAccessToken = jest.fn().mockResolvedValue(null)
+
+        const authFetch = fetchWithAuth(
+          supabaseKey,
+          'https://myproject.supabase.co',
+          getAccessToken
+        )
+        await authFetch('https://example.com')
+
+        expect(mockSet).toHaveBeenCalledWith('Authorization', `Bearer ${supabaseKey}`)
+      })
+
+      test('sends a temporary key as apikey AND Bearer fallback on the regular path', async () => {
+        const mockSet = setupHeaders()
+        const supabaseKey = 'sb_temp_nonce123_payload456'
+        const getAccessToken = jest.fn().mockResolvedValue(null)
+
+        const authFetch = fetchWithAuth(
+          supabaseKey,
+          'https://myproject.supabase.co',
+          getAccessToken
+        )
+        await authFetch('https://example.com')
+
+        expect(mockSet).toHaveBeenCalledWith('apikey', supabaseKey)
+        expect(mockSet).toHaveBeenCalledWith('Authorization', `Bearer ${supabaseKey}`)
+      })
+
+      test('omitApiKeyAsBearer does not suppress Bearer for a temporary key', async () => {
+        // Bearer omission is scoped to new-format keys; temp keys keep the legacy fallback.
+        const mockSet = setupHeaders()
+        const supabaseKey = 'sb_temp_nonce123_payload456'
+        const getAccessToken = jest.fn().mockResolvedValue(null)
+
+        const authFetch = fetchWithAuth(
+          supabaseKey,
+          'https://myproject.supabase.co',
+          getAccessToken,
+          undefined,
+          undefined,
+          { omitApiKeyAsBearer: true }
+        )
+        await authFetch('https://example.com')
+
+        expect(mockSet).toHaveBeenCalledWith('Authorization', `Bearer ${supabaseKey}`)
+      })
+    })
+
+    describe('checkApiKeyFormat', () => {
+      // NOTE: warn deduplication is per subtype and module-scoped, so every test in this
+      // block must use a key subtype not used anywhere else in this file.
+      let warnSpy: jest.SpyInstance
+
+      beforeEach(() => {
+        warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+      })
+
+      afterEach(() => {
+        warnSpy.mockRestore()
+      })
+
+      test('accepts a temporary key silently', () => {
+        expect(() => checkApiKeyFormat('sb_temp_nonce123_payload456')).not.toThrow()
+        expect(warnSpy).not.toHaveBeenCalled()
+      })
+
+      test('warns, but does not throw, for an unrecognized sb_ key subtype', () => {
+        expect(() => checkApiKeyFormat('sb_unknown_abc123')).not.toThrow()
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringMatching(/Unrecognized Supabase API key format/)
+        )
+      })
+
+      test('never includes the key in the warning message', () => {
+        const key = 'sb_futuretype_supersecretvalue'
+        checkApiKeyFormat(key)
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+        expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining(key))
+      })
+
+      test('warns only once per subtype', () => {
+        checkApiKeyFormat('sb_once_key1')
+        checkApiKeyFormat('sb_once_key2')
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+
+        checkApiKeyFormat('sb_other_key1')
+        expect(warnSpy).toHaveBeenCalledTimes(2)
+      })
+
+      test.each([
+        'sb_publishable_abc123',
+        'sb_secret_abc123',
+        'sb_temp_abc123',
+        'header.payload.signature',
+        'anon-key',
+      ])('accepts recognized / legacy key %p without warning', (key) => {
+        expect(() => checkApiKeyFormat(key)).not.toThrow()
+        expect(warnSpy).not.toHaveBeenCalled()
+      })
+
+      test('warns once for all sb_ keys without a parseable subtype', () => {
+        // Keys with no second underscore share one dedup bucket ('unknown'), so the
+        // full key value is never stored for deduplication.
+        expect(() => checkApiKeyFormat('sb_')).not.toThrow()
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+
+        expect(() => checkApiKeyFormat('sb_unknowntype')).not.toThrow()
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+      })
     })
 
     describe('trace propagation', () => {

@@ -1,3 +1,76 @@
+## 2.111.0 (2026-07-28)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.110.9 (2026-07-27)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.110.8 (2026-07-21)
+
+### 🩹 Fixes
+
+- **storage:** url-encode object key in CDN purge methods ([#2545](https://github.com/supabase/supabase-js/pull/2545))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.7 (2026-07-16)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.110.6 (2026-07-15)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.110.5 (2026-07-14)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.110.4 (2026-07-14)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.110.3 (2026-07-13)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.110.2 (2026-07-09)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.110.1 (2026-07-07)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.110.0 (2026-06-30)
+
+### 🚀 Features
+
+- **repo:** drop Node.js 20 support ([#2482](https://github.com/supabase/supabase-js/pull/2482))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.109.0 (2026-06-30)
+
+### 🚀 Features
+
+- **storage:** expose purgeCache for buckets and single objects ([#2429](https://github.com/supabase/supabase-js/pull/2429))
+
+### 🩹 Fixes
+
+- **storage:** keep sortBy defaults when list() is given a partial sortBy ([#2454](https://github.com/supabase/supabase-js/pull/2454))
+
+### ❤️ Thank You
+
+- Anubhav Anand @i-anubhav-anand
+- Katerina Skroumpelou @mandarini
+- Lenny
+- Rodrigo Mansueli @mansueli
+
 ## 2.108.2 (2026-06-15)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.

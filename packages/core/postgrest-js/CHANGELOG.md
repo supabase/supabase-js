@@ -1,3 +1,75 @@
+## 2.111.0 (2026-07-28)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.9 (2026-07-27)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.8 (2026-07-21)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **postgrest:** correct self-reference inference ([#2525](https://github.com/supabase/supabase-js/pull/2525))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **postgrest:** type hinted self-referencing embeds as arrays ([#2520](https://github.com/supabase/supabase-js/pull/2520))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.5 (2026-07-14)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.4 (2026-07-14)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.3 (2026-07-13)
+
+### 🩹 Fixes
+
+- **postgrest:** pin tstyche target off floating latest ([#2509](https://github.com/supabase/supabase-js/pull/2509))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.2 (2026-07-09)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.1 (2026-07-07)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.0 (2026-06-30)
+
+### 🚀 Features
+
+- **repo:** drop Node.js 20 support ([#2482](https://github.com/supabase/supabase-js/pull/2482))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.109.0 (2026-06-30)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
 ## 2.108.2 (2026-06-15)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.

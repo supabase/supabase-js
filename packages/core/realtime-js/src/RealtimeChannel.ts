@@ -13,6 +13,14 @@ import { normalizeChannelError } from './lib/normalizeChannelError'
 import ChannelAdapter from './phoenix/channelAdapter'
 import { ChannelBindingCallback, ChannelOnErrorCallback } from './phoenix/types'
 import type { Timer } from './phoenix/types'
+import { RealtimePostgresFilterBuilder } from './RealtimePostgresFilterBuilder'
+import type { RealtimePostgresChangesFilterOperator } from './RealtimePostgresFilterBuilder'
+
+export type { RealtimePostgresChangesFilterOperator } from './RealtimePostgresFilterBuilder'
+export {
+  RealtimePostgresFilterBuilder,
+  postgresChangesFilter,
+} from './RealtimePostgresFilterBuilder'
 
 type ReplayOption = {
   since: number
@@ -25,10 +33,32 @@ export type RealtimeChannelOptions = {
      * self option enables client to receive message it broadcast
      * ack option instructs server to acknowledge that broadcast message was received
      * replay option instructs server to replay broadcast messages
+     * replication_ready option instructs the server to emit a `system` event once the
+     * Postgres replication connection backing this channel is established and ready to
+     * stream changes. Listen for it with `channel.on('system', {}, (payload) => ...)`;
+     * the payload's `status` is `'ok'` (`message: 'Replication connection established'`)
+     * on success or `'error'` if the connection is not ready in time.
      */
-    broadcast?: { self?: boolean; ack?: boolean; replay?: ReplayOption }
+    broadcast?: {
+      self?: boolean
+      ack?: boolean
+      replay?: ReplayOption
+      replication_ready?: boolean
+    }
     /**
      * key option is used to track presence payload across clients
+     *
+     * enabled controls whether this client receives presence state and updates from other
+     * clients — set it to true (or add an `.on('presence', ...)` listener, which enables it
+     * automatically) if you want to see who else is present. Without it, this client's
+     * `presenceState()` stays empty and no `presence` events fire for you, because the
+     * underlying presence state machine buffers incoming updates until it has received an
+     * initial snapshot, which is only requested when this flag is set.
+     *
+     * It does not gate the other direction: calling `track()` always makes this client
+     * visible to other subscribers that have presence enabled, regardless of this client's
+     * own `enabled` setting. On RLS-protected (private) channels, receiving presence updates
+     * additionally requires the `presence.read` policy to authorize this client.
      */
     presence?: { key?: string; enabled?: boolean }
     /**
@@ -120,12 +150,66 @@ export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES
    */
   table?: string
   /**
-   * Receive database changes when filter is matched.
+   * Receive database changes only when the filter is matched.
+   *
+   * A filter is a `column=operator.value` expression, e.g. `id=eq.1` or
+   * `title=like.%foo%`. See {@link RealtimePostgresChangesFilterOperator} for
+   * the available operators.
+   *
+   * Multiple filters can be combined with commas; they are applied as an `AND`
+   * condition: `filter: 'id=gt.0,id=lt.100'`.
+   *
+   * Any operator can be negated with the `not.` prefix: `filter: 'status=not.in.(draft,archived)'`.
+   *
+   * The server splits conditions on commas outside quotes/parentheses. To
+   * include a reserved character (`,`, `(`, `)`) in a value, wrap it in double
+   * quotes PostgREST-style: `name=eq."a,b"`. The {@link RealtimePostgresFilterBuilder}
+   * does this quoting for you.
+   *
+   * Instead of a raw string you can pass a {@link RealtimePostgresFilterBuilder}
+   * (via `postgresChangesFilter()`) for a type-checked, ergonomic way to compose filters; the
+   * SDK serializes it to a string automatically.
    */
-  filter?: string
+  filter?: string | RealtimePostgresFilterBuilder
+  /**
+   * Restrict the change payload to a subset of columns instead of receiving the
+   * full row. Reduces payload size (helpful for large `bytea`/`jsonb` columns)
+   * and the data transferred per event.
+   *
+   * The listed columns must be selectable by the subscribing role.
+   *
+   * @example
+   * channel.on('postgres_changes', {
+   *   event: '*',
+   *   schema: 'public',
+   *   table: 'users',
+   *   select: ['id', 'first_name'],
+   * }, (payload) => {
+   *   // payload.new only contains { id, first_name }
+   * })
+   */
+  select?: string[]
 }
 
 export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'error' | (string & {})
+
+/**
+ * Payload of a `system` event emitted by the server.
+ *
+ * Most notably, when a channel is created with `config.broadcast.replication_ready: true`,
+ * the server sends one of these once the Postgres replication connection is ready
+ * (`status: 'ok'`) or fails to become ready in time (`status: 'error'`).
+ */
+export type RealtimeSystemPayload = {
+  /** The extension that produced the message, e.g. `'system'` or `'postgres_changes'`. */
+  extension: 'system' | 'postgres_changes' | (string & {})
+  /** `'ok'` on success, `'error'` on failure. */
+  status: 'ok' | 'error' | (string & {})
+  /** Human-readable description, e.g. `'Replication connection established'`. */
+  message: string
+  /** The channel (sub)topic the message refers to. */
+  channel: string
+}
 
 export enum REALTIME_POSTGRES_CHANGES_LISTEN_EVENT {
   ALL = '*',
@@ -157,6 +241,7 @@ type PostgresChangesFilters = {
     schema?: string
     table?: string
     filter?: string
+    select?: string[]
   }[]
 }
 
@@ -416,6 +501,11 @@ export default class RealtimeChannel {
    * Sends the supplied payload to the presence tracker so other subscribers can see that this
    * client is online. Use `untrack` to stop broadcasting presence for the same key.
    *
+   * Tracking makes this client visible to other subscribers immediately, regardless of this
+   * channel's `config.presence.enabled` setting or whether it has a `presence` listener — that
+   * flag only affects whether *this* client receives presence updates from others (and, on
+   * RLS-protected channels, whether it's authorized to do so).
+   *
    * @category Realtime
    */
   async track(
@@ -428,7 +518,7 @@ export default class RealtimeChannel {
         event: 'track',
         payload,
       },
-      opts.timeout || this.timeout
+      opts
     )
   }
 
@@ -569,6 +659,31 @@ export default class RealtimeChannel {
       payload: RealtimeBroadcastDeletePayload<T>
     }) => void
   ): RealtimeChannel
+  /**
+   * Listen for `system` events on this channel.
+   *
+   * The payload follows the {@link RealtimeSystemPayload} shape. Opt in to the replication-ready
+   * notification with `config.broadcast.replication_ready: true` when creating the channel, then
+   * watch for `payload.status === 'ok'` to know the Postgres replication connection is ready.
+   *
+   * @example Know when the replication connection is ready
+   * ```js
+   * const channel = supabase.channel('room1', {
+   *   config: { broadcast: { replication_ready: true } },
+   * })
+   *
+   * channel
+   *   .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
+   *     console.log('Change received!', payload)
+   *   })
+   *   .on('system', {}, (payload) => {
+   *     if (payload.extension === 'system' && payload.status === 'ok') {
+   *       console.log('Replication connection is ready:', payload.message)
+   *     }
+   *   })
+   *   .subscribe()
+   * ```
+   */
   on<T extends { [key: string]: any }>(
     type: `${REALTIME_LISTEN_TYPES.SYSTEM}`,
     filter: {},
@@ -735,7 +850,7 @@ export default class RealtimeChannel {
    */
   on(
     type: `${REALTIME_LISTEN_TYPES}`,
-    filter: { event: string; [key: string]: string },
+    filter: { event: string; [key: string]: any },
     callback: (payload: any) => void
   ): RealtimeChannel {
     const stateCheck = this.channelAdapter.isJoined() || this.channelAdapter.isJoining()
@@ -1006,6 +1121,20 @@ export default class RealtimeChannel {
   /** @internal */
   _on(type: string, filter: { [key: string]: any }, callback: ChannelBindingCallback) {
     const typeLower = type.toLocaleLowerCase()
+
+    // Serialize a postgres_changes filter builder into its string form so the
+    // rest of the pipeline (join payload, server binding match) sees a string.
+    // Duck-type `build()` in addition to `instanceof` so a builder constructed
+    // against a duplicate copy of the package (separate module realm) still works.
+    const filterValue = filter?.filter
+    if (
+      filterValue instanceof RealtimePostgresFilterBuilder ||
+      (typeof filterValue === 'object' &&
+        filterValue !== null &&
+        typeof (filterValue as { build?: unknown }).build === 'function')
+    ) {
+      filter = { ...filter, filter: (filterValue as RealtimePostgresFilterBuilder).build() }
+    }
 
     const ref = this.channelAdapter.on(type, callback)
 

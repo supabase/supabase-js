@@ -9,7 +9,15 @@ import { ClientServerOptions } from './common/common'
  * {@link https://github.com/supabase/supabase-js/issues/32}
  */
 interface PostgrestResponseBase {
+  /** HTTP status code of the response. */
   status: number
+  /**
+   * HTTP reason phrase of the response, e.g. `"OK"`.
+   *
+   * May be an empty string: HTTP/2 and HTTP/3 don't carry reason phrases, so
+   * responses over those protocols (e.g. browser requests to Supabase) have no
+   * `statusText`. Rely on `status` instead of this value.
+   */
   statusText: string
 }
 export interface PostgrestResponseSuccess<T> extends PostgrestResponseBase {

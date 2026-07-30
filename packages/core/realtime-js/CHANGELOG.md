@@ -1,3 +1,99 @@
+## 2.111.0 (2026-07-28)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.110.9 (2026-07-27)
+
+### 🩹 Fixes
+
+- **realtime:** preserve presence refs ([#2566](https://github.com/supabase/supabase-js/pull/2566))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.8 (2026-07-21)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **realtime:** update phoenix to fix presence issue ([#2532](https://github.com/supabase/supabase-js/pull/2532))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **realtime:** forward opts to send() in track() ([#2490](https://github.com/supabase/supabase-js/pull/2490))
+
+### ❤️ Thank You
+
+- Franco Kaddour @FrancoKaddour
+
+## 2.110.5 (2026-07-14)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.110.4 (2026-07-14)
+
+### 🩹 Fixes
+
+- **realtime:** encode broadcast header fields as UTF-8 ([#2516](https://github.com/supabase/supabase-js/pull/2516))
+
+### ❤️ Thank You
+
+- Pedro Henrique
+
+## 2.110.3 (2026-07-13)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.110.2 (2026-07-09)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.110.1 (2026-07-07)
+
+### 🩹 Fixes
+
+- **realtime:** suppress disconnected status from onHeartbeat consumers ([#2496](https://github.com/supabase/supabase-js/pull/2496))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.0 (2026-06-30)
+
+### 🚀 Features
+
+- **repo:** drop Node.js 20 support ([#2482](https://github.com/supabase/supabase-js/pull/2482))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.109.0 (2026-06-30)
+
+### 🚀 Features
+
+- **realtime:** add postgres_changes filter builder, new operators and select ([#2463](https://github.com/supabase/supabase-js/pull/2463))
+
+### 🩹 Fixes
+
+- **realtime:** add replication connection system message option ([#2470](https://github.com/supabase/supabase-js/pull/2470))
+- **realtime:** pin @supabase/phoenix and browser test CDN deps ([#2457](https://github.com/supabase/supabase-js/pull/2457))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+- Katerina Skroumpelou @mandarini
+
 ## 2.108.2 (2026-06-15)
 
 ### 🩹 Fixes
