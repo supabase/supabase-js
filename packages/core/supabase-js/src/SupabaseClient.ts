@@ -386,7 +386,9 @@ export default class SupabaseClient<
     })
     if (this.accessToken) {
       // Start auth immediately to avoid a race with channel subscriptions
-      this.realtime.setAuth()
+      this.realtime
+        .setAuth()
+        .catch((e) => console.warn('Failed to set initial Realtime auth token:', e))
     }
 
     this.rest = new PostgrestClient(new URL('rest/v1', baseUrl).href, {
