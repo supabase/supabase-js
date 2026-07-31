@@ -49,10 +49,28 @@
         "default": "./dist/cors.cjs"
       }
     },
+    "./tracing": {
+      "react-native": {
+        "types": "./dist/tracing.d.cts",
+        "default": "./dist/tracing.cjs"
+      },
+      "import": {
+        "types": "./dist/tracing.d.mts",
+        "default": "./dist/tracing.mjs"
+      },
+      "require": {
+        "types": "./dist/tracing.d.cts",
+        "default": "./dist/tracing.cjs"
+      }
+    },
     "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/tracing.cjs",
+    "./dist/tracing.mjs",
+    "./src/tracing.ts"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/supabase/supabase-js.git",
@@ -75,14 +93,14 @@
     "test:bun": "cd test/integration/bun && bun install && bun test",
     "test:expo": "cd test/integration/expo && npm test",
     "test:next": "cd test/integration/next && npm test",
-    "test:types": "tsd --files test/types/index.test-d.ts && tsd --typings dist/cors.d.cts --files test/types/cors.test-d.ts && jsr publish --dry-run --allow-dirty",
+    "test:types": "tsd --files test/types/index.test-d.ts && tsd --typings dist/cors.d.cts --files test/types/cors.test-d.ts && tsd --typings dist/tracing.d.cts --files test/types/tracing.test-d.ts && jsr publish --dry-run --allow-dirty",
     "test:exports": "attw --pack . --ignore-rules no-resolution",
-    "test:esm": "node test/module-resolution.test.mjs && node test/module-resolution-cors.test.mjs",
-    "test:cjs": "node test/module-resolution.test.cjs && node test/module-resolution-cors.test.cjs",
+    "test:esm": "node test/module-resolution.test.mjs && node test/module-resolution-cors.test.mjs && node test/module-resolution-tracing.test.mjs",
+    "test:cjs": "node test/module-resolution.test.cjs && node test/module-resolution-cors.test.cjs && node test/module-resolution-tracing.test.cjs",
     "test:hermes-compat": "node test/bundle-hermes-compat.test.cjs",
     "test:module-resolution": "npm run test:exports && npm run test:esm && npm run test:cjs && npm run test:hermes-compat",
-    "docs": "typedoc --options ../../../typedoc.base.mjs --entryPoints src/index.ts --entryPoints src/cors.ts --out docs/v2",
-    "docs:json": "typedoc --options ../../../typedoc.base.mjs --entryPoints src/index.ts --entryPoints src/cors.ts --json docs/v2/spec.json --excludeExternals",
+    "docs": "typedoc --options ../../../typedoc.base.mjs --entryPoints src/index.ts --entryPoints src/cors.ts --entryPoints src/tracing.ts --out docs/v2",
+    "docs:json": "typedoc --options ../../../typedoc.base.mjs --entryPoints src/index.ts --entryPoints src/cors.ts --entryPoints src/tracing.ts --json docs/v2/spec.json --excludeExternals",
     "serve:coverage": "pnpm nx test:coverage supabase-js && pnpm dlx serve test/coverage",
     "update:test-deps": "pnpm run update:test-deps:expo && pnpm run update:test-deps:next && pnpm run update:test-deps:deno && pnpm run update:test-deps:bun",
     "update:test-deps:expo": "cd test/integration/expo && pnpm install --ignore-workspace",
@@ -97,10 +115,19 @@
     "@supabase/realtime-js": "workspace:*",
     "@supabase/storage-js": "workspace:*"
   },
+  "peerDependencies": {
+    "@opentelemetry/api": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@opentelemetry/api": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@jest/globals": "catalog:",
     "@jest/types": "catalog:",
+    "@opentelemetry/api": "^1.9.0",
     "@supabase/tracing": "workspace:*",
     "@types/jest": "catalog:",
     "@types/jsonwebtoken": "^8.5.8",

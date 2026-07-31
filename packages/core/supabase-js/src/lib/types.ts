@@ -35,12 +35,17 @@ export type Fetch = typeof fetch
  * Gateway and Edge Function logs, so logs forwarded through Log Drains can
  * be correlated back to the originating client-side span.
  *
- * Requires `@opentelemetry/api` to be installed in the consuming application.
- * If it is not installed, or there is no active context at request time,
- * propagation silently no-ops.
+ * Requires two opt-in steps: install `@opentelemetry/api` in the consuming
+ * application, and load the tracing runtime with
+ * `import '@supabase/supabase-js/tracing'` at the application entry point.
+ * If the runtime is not loaded, the SDK logs a one-time warning and sends
+ * requests without trace headers; if there is no active context at request
+ * time, propagation silently no-ops. Not available via the CDN/UMD build.
  *
  * @example Enable with defaults
  * ```ts
+ * import '@supabase/supabase-js/tracing'
+ *
  * const supabase = createClient(url, key, {
  *   tracePropagation: { enabled: true },
  * })
@@ -63,6 +68,8 @@ export interface TracePropagationOptions {
    *
    * @example
    * ```ts
+   * import '@supabase/supabase-js/tracing'
+   *
    * const supabase = createClient(url, key, {
    *   tracePropagation: { enabled: true },
    * })
@@ -85,6 +92,8 @@ export interface TracePropagationOptions {
    *
    * @example Always propagate, ignore sampling
    * ```ts
+   * import '@supabase/supabase-js/tracing'
+   *
    * const supabase = createClient(url, key, {
    *   tracePropagation: { enabled: true, respectSamplingDecision: false },
    * })
@@ -262,10 +271,13 @@ export type SupabaseClientOptions<SchemaName> = {
    * active OpenTelemetry context and inject `traceparent` / `tracestate` /
    * `baggage` headers) or an object for fine-grained control.
    *
-   * Requires `@opentelemetry/api` to be installed in your application; if
-   * not present, the SDK silently no-ops. Trace headers are only attached
-   * to requests targeting Supabase domains, so third-party hosts called
-   * through a custom `fetch` are never tagged.
+   * Requires `@opentelemetry/api` to be installed in your application AND
+   * the tracing runtime to be loaded with
+   * `import '@supabase/supabase-js/tracing'` at your application entry
+   * point. Without that import, the SDK logs a one-time warning and sends
+   * requests without trace headers. Not available via the CDN/UMD build.
+   * Trace headers are only attached to requests targeting Supabase domains,
+   * so third-party hosts called through a custom `fetch` are never tagged.
    *
    * The resulting `trace_id` appears in Supabase logs (API Gateway, Edge
    * Functions), letting you correlate client-side spans with server-side
@@ -273,6 +285,7 @@ export type SupabaseClientOptions<SchemaName> = {
    *
    * @example Shorthand — opt in with defaults
    * ```ts
+   * import '@supabase/supabase-js/tracing'
    * import { createClient } from '@supabase/supabase-js'
    *
    * const supabase = createClient(url, key, { tracePropagation: true })
@@ -280,6 +293,7 @@ export type SupabaseClientOptions<SchemaName> = {
    *
    * @example With an active OpenTelemetry span
    * ```ts
+   * import '@supabase/supabase-js/tracing'
    * import { createClient } from '@supabase/supabase-js'
    * import { trace } from '@opentelemetry/api'
    *
@@ -295,6 +309,8 @@ export type SupabaseClientOptions<SchemaName> = {
    *
    * @example Advanced — always propagate, even for non-sampled traces
    * ```ts
+   * import '@supabase/supabase-js/tracing'
+   *
    * const supabase = createClient(url, key, {
    *   tracePropagation: { enabled: true, respectSamplingDecision: false },
    * })

@@ -118,7 +118,10 @@ Trace propagation is **opt-in** and disabled by default. When enabled, headers a
 
 #### Enable trace propagation
 
+Opting in takes two steps: install `@opentelemetry/api`, and load the tracing runtime by importing the `@supabase/supabase-js/tracing` subpath once at your application entry point. The main bundle contains no OpenTelemetry code — the subpath import is what wires it up.
+
 ```js
+import '@supabase/supabase-js/tracing'
 import { createClient } from '@supabase/supabase-js'
 import { trace } from '@opentelemetry/api'
 
@@ -134,7 +137,9 @@ await tracer.startActiveSpan('fetch-users', async (span) => {
 })
 ```
 
-If `@opentelemetry/api` is not installed or no active context exists, the SDK silently no-ops.
+The subpath imports `@opentelemetry/api` directly, so module resolution fails loudly if it is not installed. If `tracePropagation` is enabled without the subpath import, the SDK logs a one-time warning and sends requests without trace headers; if no active context exists at request time, it silently no-ops.
+
+Trace propagation is not available via the CDN/UMD build (`https://cdn.jsdelivr.net/.../supabase.js`) — there is no way to load the tracing runtime there.
 
 #### Advanced configuration
 

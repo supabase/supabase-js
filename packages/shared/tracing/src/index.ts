@@ -1,5 +1,5 @@
 export * from './types'
-export * from './extract'
+export * from './create-extractor'
 export * from './parse'
 export * from './validate'
 export * from './defaults'
