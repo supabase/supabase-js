@@ -554,6 +554,11 @@ features:
     status: implemented
     symbols:
       - default.listBuckets
+  storage.errors.error_codes:
+    status: implemented
+    symbols:
+      - StorageApiError.code
+      - StorageVectorsApiError.code
   storage.file_buckets.access_bucket:
     status: implemented
     symbols:
