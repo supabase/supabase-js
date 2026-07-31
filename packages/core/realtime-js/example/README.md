@@ -22,7 +22,7 @@ Create a new project at [database.new](https://database.new)
 
 ### 2. Run the Database Migration
 
-Go to the [SQL Editor](https://supabase.com/dashboard/project/_/sql) in your Supabase dashboard and run the migration you find in [supabase/migrations/001_create_messages_table.sql](packages/core/realtime-js/example/supabase/migrations/001_create_messages_table.sql).
+Go to the [SQL Editor](https://supabase.com/dashboard/project/_/sql) in your Supabase dashboard and run the migration you find in [supabase/migrations/001_create_messages_table.sql](./supabase/migrations/001_create_messages_table.sql).
 
 ### 3. Configure Environment Variables
 
