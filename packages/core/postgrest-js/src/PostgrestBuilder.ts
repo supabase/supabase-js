@@ -529,6 +529,12 @@ export default abstract class PostgrestBuilder<
           count = null
           status = 406
           statusText = 'Not Acceptable'
+
+          if (this.shouldThrowOnError) {
+            // `hint` is null in the returned error to match PostgREST, but
+            // PostgrestError types it as a string, like the other throws here.
+            throw new PostgrestError({ ...error, hint: error.hint ?? '' })
+          }
         } else if (data.length === 1) {
           data = data[0]
         } else {
