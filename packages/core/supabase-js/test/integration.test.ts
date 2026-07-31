@@ -1,6 +1,11 @@
 import { assert } from 'console'
 import { createClient, RealtimeChannel, SupabaseClient } from '../src/index'
 import { sign } from 'jsonwebtoken'
+import '../src/tracing'
+import { context, propagation, trace } from '@opentelemetry/api'
+import { AsyncHooksContextManager } from '@opentelemetry/context-async-hooks'
+import { W3CTraceContextPropagator } from '@opentelemetry/core'
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 // These tests assume that a local Supabase server is already running
 // Start a local Supabase instance with 'supabase start' before running these tests
 // Default local dev credentials from Supabase CLI
@@ -69,6 +74,65 @@ describe('Supabase Integration Tests', () => {
 
       expect(fetchError).not.toBeNull()
       expect(fetchedTodo).toBeNull()
+    })
+  })
+
+  describe('Trace propagation (real OTel SDK, real server)', () => {
+    const contextManager = new AsyncHooksContextManager()
+    const provider = new NodeTracerProvider()
+    const tracingClient = createClient(SUPABASE_URL, PUBLISHABLE_KEY, {
+      tracePropagation: true,
+    })
+
+    beforeAll(() => {
+      contextManager.enable()
+      provider.register({
+        contextManager,
+        propagator: new W3CTraceContextPropagator(),
+      })
+    })
+
+    afterAll(async () => {
+      await provider.shutdown()
+      contextManager.disable()
+      trace.disable()
+      context.disable()
+      propagation.disable()
+    })
+
+    test('server receives the traceparent of the active span', async () => {
+      const tracer = trace.getTracer('integration-test')
+      await tracer.startActiveSpan('trace-echo', async (span) => {
+        const { traceId, spanId } = span.spanContext()
+
+        // The get_req_trace_headers() function echoes back the trace headers
+        // PostgREST received, proving propagation through the real gateway.
+        const { data, error } = await tracingClient.rpc('get_req_trace_headers')
+
+        expect(error).toBeNull()
+        expect(data.traceparent).toBe(`00-${traceId}-${spanId}-01`)
+
+        span.end()
+      })
+    })
+
+    test('regular queries succeed with trace headers attached', async () => {
+      const tracer = trace.getTracer('integration-test')
+      await tracer.startActiveSpan('todos-with-tracing', async (span) => {
+        const { data, error } = await tracingClient.from('todos').select('*').limit(1)
+
+        expect(error).toBeNull()
+        expect(Array.isArray(data)).toBe(true)
+
+        span.end()
+      })
+    })
+
+    test('server receives no trace headers without an active span', async () => {
+      const { data, error } = await tracingClient.rpc('get_req_trace_headers')
+
+      expect(error).toBeNull()
+      expect(data.traceparent).toBeNull()
     })
   })
 
