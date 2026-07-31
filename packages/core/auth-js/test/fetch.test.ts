@@ -65,6 +65,32 @@ describe('fetch', () => {
       expect(route).toHaveBeenCalledTimes(1)
     })
 
+    test('should preserve the server-sent JSON message on a retryable 500 error', async () => {
+      const route = server
+        .get('/')
+        .mockImplementationOnce((ctx) => {
+          ctx.status = 500
+          ctx.body = {
+            code: 500,
+            error_code: 'unexpected_failure',
+            msg: 'Error sending confirmation email',
+          }
+        })
+        .mockImplementation((ctx) => {
+          ctx.status = 200
+        })
+
+      const url = server.getURL().toString()
+
+      const error = await _request(fetch, 'GET', url).catch((e) => e)
+
+      expect(error).toBeInstanceOf(AuthRetryableFetchError)
+      expect(error.status).toEqual(500)
+      expect(error.message).toEqual('Error sending confirmation email')
+
+      expect(route).toHaveBeenCalledTimes(1)
+    })
+
     test('should throw AuthRetryableFetchError upon Cloudflare edge errors (525)', async () => {
       const route = server
         .get('/')
@@ -256,6 +282,35 @@ describe('handleError', () => {
       expect(error.name).toEqual(example.ename)
       expect(error.code).toEqual(example.code)
     })
+  })
+
+  it('preserves the server-sent message for a retryable 5xx with a JSON body', async () => {
+    const response = new Response(
+      JSON.stringify({
+        code: 500,
+        error_code: 'unexpected_failure',
+        msg: 'Error sending confirmation email',
+      }),
+      { status: 500, statusText: 'Internal Server Error' }
+    )
+
+    const error: any = await handleError(response).catch((e) => e)
+
+    expect(error).toBeInstanceOf(AuthRetryableFetchError)
+    expect(error.status).toEqual(500)
+    expect(error.message).toEqual('Error sending confirmation email')
+  })
+
+  it('stays retryable for a 5xx without a JSON body', async () => {
+    const response = new Response('<html><body><h1>502 Bad Gateway</h1></body></html>', {
+      status: 502,
+      statusText: 'Bad Gateway',
+    })
+
+    const error: any = await handleError(response).catch((e) => e)
+
+    expect(error).toBeInstanceOf(AuthRetryableFetchError)
+    expect(error.status).toEqual(502)
   })
 })
 

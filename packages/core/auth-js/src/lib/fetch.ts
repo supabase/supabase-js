@@ -81,16 +81,19 @@ export async function handleError(error: unknown) {
     throw new AuthRetryableFetchError(_getErrorMessage(error), 0)
   }
 
-  if (NETWORK_ERROR_CODES.includes(error.status)) {
-    // status in 500...599 range - server had an error, request might be retryed.
-    throw new AuthRetryableFetchError(_getErrorMessage(error), error.status)
-  }
-
   let data: any
   try {
     data = await error.json()
   } catch (e) {
+    if (NETWORK_ERROR_CODES.includes(error.status)) {
+      throw new AuthRetryableFetchError(_getErrorMessage(error), error.status)
+    }
     throw new AuthUnknownError(_getErrorMessage(e), e)
+  }
+
+  if (NETWORK_ERROR_CODES.includes(error.status)) {
+    // status in 500...599 range - server had an error, request might be retryed.
+    throw new AuthRetryableFetchError(_getErrorMessage(data), error.status)
   }
 
   let errorCode: string | undefined = undefined
