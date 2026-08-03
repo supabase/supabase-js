@@ -22,7 +22,7 @@ jobs:
       functions: ${{ steps.affected.outputs.functions }}
       realtime: ${{ steps.affected.outputs.realtime }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-affected
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -121,7 +121,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.functions != '0' || needs.check-affected.outputs.realtime != '0'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -154,7 +154,7 @@ jobs:
         run: pnpm nx affected --target=test:ci
         timeout-minutes: 15
       - name: Upload coverage for functions-js
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./packages/core/functions-js/coverage/lcov.info
@@ -163,7 +163,7 @@ jobs:
           fail-on-error: false
         continue-on-error: true
       - name: Upload coverage for realtime-js
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./packages/core/realtime-js/coverage/lcov.info
@@ -181,7 +181,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.auth != '0'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -239,7 +239,7 @@ jobs:
                 docker image save "$img" | zstd -T0 -3 -o "/tmp/supabase-docker-images/${name}.tar.zst"
               done
       - name: Upload coverage for auth-js
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./packages/core/auth-js/coverage/lcov.info
@@ -257,7 +257,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.storage != '0'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -313,7 +313,7 @@ jobs:
                 docker image save "$img" | zstd -T0 -3 -o "/tmp/supabase-docker-images/${name}.tar.zst"
               done
       - name: Upload coverage for storage-js
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./packages/core/storage-js/coverage/lcov.info
@@ -331,7 +331,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.auth != '0'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -401,7 +401,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.postgrest != '0'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -479,7 +479,7 @@ jobs:
         if: steps.check_codegen.outputs.changed != 'true'
         run: echo "⏭️  Skipping codegen check — no database schema changes detected"
       - name: Upload coverage for postgrest-js
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./packages/core/postgrest-js/coverage/lcov.info
@@ -498,7 +498,7 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.postgrest != '0'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
@@ -563,7 +563,7 @@ jobs:
     if: always()
     needs: [test-fast, test-auth-cli, test-storage, test-postgrest-js]
     steps:
-      - uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+      - uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
