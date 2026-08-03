@@ -1,3 +1,13 @@
+## 2.112.0 (2026-08-03)
+
+### 🩹 Fixes
+
+- **auth:** accept uppercase UUIDs in validateUUID ([#2467](https://github.com/supabase/supabase-js/pull/2467))
+
+### ❤️ Thank You
+
+- Anubhav Anand @i-anubhav-anand
+
 ## 2.111.0 (2026-07-28)
 
 ### 🚀 Features

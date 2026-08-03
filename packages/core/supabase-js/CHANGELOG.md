@@ -1,3 +1,18 @@
+## 2.112.0 (2026-08-03)
+
+### 🚀 Features
+
+- **supabase:** move OpenTelemetry tracing to opt-in /tracing subpath ([#2583](https://github.com/supabase/supabase-js/pull/2583))
+
+### 🩹 Fixes
+
+- **supabase:** forward db retry option ([#2571](https://github.com/supabase/supabase-js/pull/2571))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.111.0 (2026-07-28)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.

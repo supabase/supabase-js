@@ -1,3 +1,14 @@
+## 2.112.0 (2026-08-03)
+
+### 🩹 Fixes
+
+- **postgrest:** honour throwOnError when maybeSingle finds multiple rows ([#2580](https://github.com/supabase/supabase-js/pull/2580))
+
+### ❤️ Thank You
+
+- Juhef @juheff
+- Zuhef Ahmed @Zuhef
+
 ## 2.111.0 (2026-07-28)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
