@@ -86,7 +86,8 @@ export async function handleError(error: unknown) {
     data = await error.json()
   } catch (e) {
     if (NETWORK_ERROR_CODES.includes(error.status)) {
-      throw new AuthRetryableFetchError(_getErrorMessage(error), error.status)
+      // statusText can be empty — HTTP/2 has no reason phrase
+      throw new AuthRetryableFetchError(error.statusText || `HTTP ${error.status}`, error.status)
     }
     throw new AuthUnknownError(_getErrorMessage(e), e)
   }

@@ -70,10 +70,10 @@ describe('fetch', () => {
         .get('/')
         .mockImplementationOnce((ctx) => {
           ctx.status = 500
+          ctx.set(API_VERSION_HEADER_NAME, '2024-01-01')
           ctx.body = {
-            code: 500,
-            error_code: 'unexpected_failure',
-            msg: 'Error sending confirmation email',
+            code: 'unexpected_failure',
+            message: 'Error sending confirmation email',
           }
         })
         .mockImplementation((ctx) => {
@@ -284,7 +284,29 @@ describe('handleError', () => {
     })
   })
 
-  it('preserves the server-sent message for a retryable 5xx with a JSON body', async () => {
+  it('preserves the server-sent message for a retryable 5xx with API version 2024-01-01', async () => {
+    const response = new Response(
+      JSON.stringify({
+        code: 'unexpected_failure',
+        message: 'Error sending confirmation email',
+      }),
+      {
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: {
+          [API_VERSION_HEADER_NAME]: '2024-01-01',
+        },
+      }
+    )
+
+    const error: any = await handleError(response).catch((e) => e)
+
+    expect(error).toBeInstanceOf(AuthRetryableFetchError)
+    expect(error.status).toEqual(500)
+    expect(error.message).toEqual('Error sending confirmation email')
+  })
+
+  it('preserves the server-sent message for a retryable 5xx without API version', async () => {
     const response = new Response(
       JSON.stringify({
         code: 500,
@@ -301,7 +323,7 @@ describe('handleError', () => {
     expect(error.message).toEqual('Error sending confirmation email')
   })
 
-  it('stays retryable for a 5xx without a JSON body', async () => {
+  it('falls back to the status text for a 5xx without a JSON body', async () => {
     const response = new Response('<html><body><h1>502 Bad Gateway</h1></body></html>', {
       status: 502,
       statusText: 'Bad Gateway',
@@ -311,6 +333,19 @@ describe('handleError', () => {
 
     expect(error).toBeInstanceOf(AuthRetryableFetchError)
     expect(error.status).toEqual(502)
+    expect(error.message).toEqual('Bad Gateway')
+  })
+
+  it('falls back to the status code when there is no status text (HTTP/2)', async () => {
+    const response = new Response('<html><body><h1>502 Bad Gateway</h1></body></html>', {
+      status: 502,
+    })
+
+    const error: any = await handleError(response).catch((e) => e)
+
+    expect(error).toBeInstanceOf(AuthRetryableFetchError)
+    expect(error.status).toEqual(502)
+    expect(error.message).toEqual('HTTP 502')
   })
 })
 
