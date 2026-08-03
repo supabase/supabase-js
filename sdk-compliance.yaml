@@ -903,6 +903,12 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.on
+  realtime.subscriptions.postgres_changes_multiple_filters:
+    status: implemented
+    symbols:
+      - RealtimeChannel.on
+      - RealtimePostgresFilterBuilder
+      - postgresChangesFilter
 
   # functions
   functions.invocation.invoke:
