@@ -32,7 +32,9 @@ export function Chat() {
   const [username, setUsername] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const supabase = createClient();
+  // A stable client instance — recreating it on each render retriggers the
+  // subscription effect below, tearing down and reopening the channel in a loop.
+  const [supabase] = useState(() => createClient());
 
   // Get username on mount
   useEffect(() => {
