@@ -1,3 +1,27 @@
+## 2.112.0 (2026-08-03)
+
+### 🚀 Features
+
+- **supabase:** move OpenTelemetry tracing to opt-in /tracing subpath ([#2583](https://github.com/supabase/supabase-js/pull/2583))
+
+### 🩹 Fixes
+
+- **auth:** accept uppercase UUIDs in validateUUID ([#2467](https://github.com/supabase/supabase-js/pull/2467))
+- **postgrest:** honour throwOnError when maybeSingle finds multiple rows ([#2580](https://github.com/supabase/supabase-js/pull/2580))
+- **storage:** resolve createSignedUrls return type mismatch ([#2474](https://github.com/supabase/supabase-js/pull/2474))
+- **storage:** expose service error code on StorageApiError ([#2537](https://github.com/supabase/supabase-js/pull/2537))
+- **supabase:** forward db retry option ([#2571](https://github.com/supabase/supabase-js/pull/2571))
+
+### ❤️ Thank You
+
+- Anubhav Anand @i-anubhav-anand
+- Gourab Singha @gourabsingha1
+- Juhef @juheff
+- Katerina Skroumpelou @mandarini
+- Thribhuvan
+- Vaibhav @7ttp
+- Zuhef Ahmed @Zuhef
+
 ## 2.111.0 (2026-07-28)
 
 ### 🚀 Features

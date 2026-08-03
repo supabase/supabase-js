@@ -1,3 +1,16 @@
+## 2.112.0 (2026-08-03)
+
+### 🩹 Fixes
+
+- **storage:** expose service error code on StorageApiError ([#2537](https://github.com/supabase/supabase-js/pull/2537))
+- **storage:** resolve createSignedUrls return type mismatch ([#2474](https://github.com/supabase/supabase-js/pull/2474))
+
+### ❤️ Thank You
+
+- Gourab Singha @gourabsingha1
+- Katerina Skroumpelou
+- Thribhuvan
+
 ## 2.111.0 (2026-07-28)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
