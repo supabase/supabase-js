@@ -903,6 +903,7 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.on
+  realtime.subscriptions.postgres_changes_multiple_filters: not_implemented
 
   # functions
   functions.invocation.invoke:
