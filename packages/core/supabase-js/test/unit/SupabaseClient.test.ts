@@ -317,6 +317,22 @@ describe('SupabaseClient', () => {
         client.realtime.disconnect()
       })
 
+      test('keeps Realtime in callback mode (auto-refresh enabled) after the accessToken bootstrap', async () => {
+        const customToken = 'custom-jwt-token'
+        const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
+
+        const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
+
+        // Wait for the constructor's async setAuth bootstrap to complete.
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        // Still in callback mode -> the accessToken callback will keep being
+        // invoked on heartbeat to refresh the token.
+        expect((client.realtime as any)._isManualToken()).toBe(false)
+
+        client.realtime.disconnect()
+      })
+
       test('should automatically populate token in channels when using custom JWT', async () => {
         const customToken = 'custom-channel-token'
         const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)

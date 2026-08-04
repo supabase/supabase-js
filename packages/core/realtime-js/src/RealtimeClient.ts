@@ -482,14 +482,18 @@ export default class RealtimeClient {
    *
    * On callback used, it will set the value of the token internal to the client.
    *
-   * When a token is explicitly provided, it will be preserved across channel operations
-   * (including removeChannel and resubscribe). The `accessToken` callback will not be
-   * invoked until `setAuth()` is called without arguments.
+   * When a token is explicitly provided AND no `accessToken` callback is configured,
+   * it will be preserved across channel operations (including removeChannel and
+   * resubscribe) and the client stays in manual-token mode.
+   *
+   * When an `accessToken` callback IS configured, the callback is the source of truth:
+   * the client remains in callback mode and continues to refresh from it on heartbeat,
+   * even after a bootstrap/override `setAuth(token)` call.
    *
    * @param token A JWT string to override the token set on the client.
    *
    * @example Setting the authorization header
-   * // Use a manual token (preserved across resubscribes, ignores accessToken callback)
+   * // Use a manual token (preserved across resubscribes when no accessToken callback is set)
    * client.realtime.setAuth('my-custom-jwt')
    *
    * // Switch back to using the accessToken callback
@@ -625,12 +629,12 @@ export default class RealtimeClient {
       tokenToSend = this.accessTokenValue
     }
 
-    // Track whether this token was manually set or fetched via callback
-    if (isManualToken) {
-      this._manuallySetToken = true
-    } else if (this.accessToken) {
-      // If we used the callback, clear the manual flag
+    // Track whether this token was manually set or fetched via callback.
+    // The callback is the source of truth for token refresh
+    if (this.accessToken) {
       this._manuallySetToken = false
+    } else if (isManualToken) {
+      this._manuallySetToken = true
     }
 
     if (this.accessTokenValue != tokenToSend) {
