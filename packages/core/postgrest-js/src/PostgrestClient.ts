@@ -4,8 +4,10 @@ import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common
 import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
 import PostgrestError from './PostgrestError'
 import { fetchWithRetry } from './fetchWithRetry'
+import { mergeHeaders } from './utils'
 import {
   PostgrestOpenApiSpec,
+  PostgrestQueryBuilderOptions,
   PostgrestResponseFailure,
   PostgrestSingleResponse,
 } from './types/types'
@@ -212,12 +214,17 @@ export default class PostgrestClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName],
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
+  >(
+    relation: TableName,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
+    relation: ViewName,
+    options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   from(
-    relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views'])
+    relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views']),
+    options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
     if (!relation || typeof relation !== 'string' || relation.trim() === '') {
       throw new Error('Invalid relation name: relation must be a non-empty string.')
@@ -225,11 +232,11 @@ export default class PostgrestClient<
 
     const url = new URL(`${this.url}/${relation}`)
     return new PostgrestQueryBuilder(url, {
-      headers: new Headers(this.headers),
+      headers: mergeHeaders(this.headers, options?.headers),
       schema: this.schemaName,
-      fetch: this.fetch,
-      urlLengthLimit: this.urlLengthLimit,
-      retry: this.retry,
+      fetch: options?.fetch ?? this.fetch,
+      urlLengthLimit: options?.urlLengthLimit ?? this.urlLengthLimit,
+      retry: options?.retry ?? this.retry,
     })
   }
 
