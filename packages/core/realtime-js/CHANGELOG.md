@@ -1,3 +1,13 @@
+## 2.112.1 (2026-08-05)
+
+### 🩹 Fixes
+
+- **realtime:** ensure setAuth doesn't disable token refresh ([#2592](https://github.com/supabase/supabase-js/pull/2592))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
 ## 2.112.0 (2026-08-03)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
