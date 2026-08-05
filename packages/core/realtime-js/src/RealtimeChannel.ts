@@ -245,6 +245,18 @@ type PostgresChangesFilters = {
   }[]
 }
 
+/**
+ * The `postgres_changes` filter fields that determine whether the server collapses two
+ * subscriptions into one. `filter` is always the serialized string form by the time it is compared.
+ */
+type PostgresChangesFilterShape = {
+  event?: string
+  schema?: string
+  table?: string
+  filter?: string
+  select?: string[]
+}
+
 type Binding = {
   type: string
   filter: { [key: string]: any }
@@ -759,6 +771,10 @@ export default class RealtimeChannel {
    *   })
    * ```
    *
+   * Registering the same `postgres_changes` filter more than once on a channel is a no-op: the
+   * duplicate is ignored and an error is logged, since the server only ever creates one
+   * subscription per distinct filter.
+   *
    * @example Listen to all database changes
    * ```js
    * supabase
@@ -1136,6 +1152,23 @@ export default class RealtimeChannel {
       filter = { ...filter, filter: (filterValue as RealtimePostgresFilterBuilder).build() }
     }
 
+    // The server collapses identical postgres_changes filters, so keeping a duplicate here would
+    // desync the client and server binding lists and make `subscribe()` fail with a mismatch.
+    if (typeLower === REALTIME_LISTEN_TYPES.POSTGRES_CHANGES) {
+      const duplicate = this.bindings[typeLower]?.find((bind) =>
+        RealtimeChannel.isSamePostgresFilter(bind.filter, filter)
+      )
+
+      if (duplicate) {
+        this.socket.log(
+          'error',
+          `duplicate \`postgres_changes\` binding for ${this.topic} ignored`,
+          filter
+        )
+        return this
+      }
+    }
+
     const ref = this.channelAdapter.on(type, callback)
 
     const binding: Binding = {
@@ -1264,6 +1297,27 @@ export default class RealtimeChannel {
     const normalizedServer = serverValue ?? undefined
     const normalizedClient = clientValue ?? undefined
     return normalizedServer === normalizedClient
+  }
+
+  /**
+   * Two `postgres_changes` filters are the same when the server would collapse them into a single
+   * subscription.
+   * @internal
+   */
+  private static isSamePostgresFilter(
+    a: PostgresChangesFilterShape,
+    b: PostgresChangesFilterShape
+  ): boolean {
+    const selectA = a?.select?.join() ?? undefined
+    const selectB = b?.select?.join() ?? undefined
+
+    return (
+      a?.event === b?.event &&
+      RealtimeChannel.isFilterValueEqual(a?.schema, b?.schema) &&
+      RealtimeChannel.isFilterValueEqual(a?.table, b?.table) &&
+      RealtimeChannel.isFilterValueEqual(a?.filter, b?.filter) &&
+      selectA === selectB
+    )
   }
 
   /** @internal */
