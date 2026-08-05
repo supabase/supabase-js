@@ -1,3 +1,13 @@
+## 2.112.1 (2026-08-05)
+
+### 🩹 Fixes
+
+- **auth:** preserve 5xx error message ([#2587](https://github.com/supabase/supabase-js/pull/2587))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
 ## 2.112.0 (2026-08-03)
 
 ### 🩹 Fixes
