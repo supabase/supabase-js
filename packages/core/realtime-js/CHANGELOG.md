@@ -1,3 +1,15 @@
+## 2.112.2 (2026-08-06)
+
+### 🩹 Fixes
+
+- **realtime:** clear stale join payload on sign-out ([#2597](https://github.com/supabase/supabase-js/pull/2597))
+- **realtime:** prevent duplicate on bindings ([#2594](https://github.com/supabase/supabase-js/pull/2594))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+- Vaibhav @7ttp
+
 ## 2.112.1 (2026-08-05)
 
 ### 🩹 Fixes
