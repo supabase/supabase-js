@@ -119,6 +119,41 @@ describe('token setting and updates', () => {
     testSetup.cleanup()
   })
 
+  test("clears joined channels' auth payload when the access token callback returns null", async () => {
+    const token = utils.generateJWT('3h')
+    let currentToken: string | null = token
+    const testSetup = setupRealtimeTest({
+      accessToken: () => Promise.resolve(currentToken),
+    })
+    const channel = await testHelpers.setupAuthTestChannel(testSetup.client)
+
+    await vi.waitFor(() => expect(testSetup.client.accessTokenValue).toBe(token))
+
+    currentToken = null
+    await testSetup.client.setAuth()
+
+    expect(testSetup.client.accessTokenValue).toBeNull()
+    expect(channel.joinPush.payload()).toStrictEqual({
+      config: expect.any(Object),
+      access_token: null,
+      version: DEFAULT_VERSION,
+    })
+
+    testSetup.emitters.message.mockClear()
+    channel.channelAdapter.getChannel().rejoin()
+    await vi.waitFor(() => expect(testSetup.emitters.message).toHaveBeenCalled())
+    const [topic, event, payload] = testSetup.emitters.message.mock.calls.at(-1)!
+    expect(topic).toBe('realtime:test-topic')
+    expect(event).toBe('phx_join')
+    expect(payload).toStrictEqual({
+      config: expect.any(Object),
+      access_token: null,
+      version: DEFAULT_VERSION,
+    })
+
+    testSetup.cleanup()
+  })
+
   test("overrides access token, updates channels' join payload, and pushes token to channels", async () => {
     const testSetup = setupRealtimeTest()
 
