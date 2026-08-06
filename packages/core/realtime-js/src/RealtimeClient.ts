@@ -226,6 +226,7 @@ export default class RealtimeClient {
 
   private _manuallySetToken: boolean = false
   private _authPromise: Promise<void> | null = null
+  private _authGeneration: number = 0
   private _workerHeartbeatTimer: HeartbeatTimer = undefined
   private _pendingWorkerHeartbeatRef: string | null = null
   private _pendingDisconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -502,11 +503,17 @@ export default class RealtimeClient {
    * @category Realtime
    */
   async setAuth(token: string | null = null): Promise<void> {
-    this._authPromise = this._performAuth(token)
+    const authGeneration = ++this._authGeneration
+    const authPromise = this._performAuth(token, authGeneration)
+    if (authGeneration === this._authGeneration) {
+      this._authPromise = authPromise
+    }
     try {
-      await this._authPromise
+      await authPromise
     } finally {
-      this._authPromise = null
+      if (this._authPromise === authPromise) {
+        this._authPromise = null
+      }
     }
   }
 
@@ -608,7 +615,7 @@ export default class RealtimeClient {
    * Perform the actual auth operation
    * @internal
    */
-  private async _performAuth(token: string | null = null): Promise<void> {
+  private async _performAuth(token: string | null, authGeneration: number): Promise<void> {
     let tokenToSend: string | null
     let isManualToken = false
 
@@ -629,6 +636,10 @@ export default class RealtimeClient {
       tokenToSend = this.accessTokenValue
     }
 
+    if (authGeneration !== this._authGeneration) {
+      return
+    }
+
     // Track whether this token was manually set or fetched via callback.
     // The callback is the source of truth for token refresh
     if (this.accessToken) {
@@ -645,7 +656,7 @@ export default class RealtimeClient {
           version: DEFAULT_VERSION,
         }
 
-        tokenToSend && channel.updateJoinPayload(payload)
+        channel.updateJoinPayload(payload)
 
         if (channel.joinedOnce && channel.channelAdapter.isJoined()) {
           channel.channelAdapter.push(CHANNEL_EVENTS.access_token, {
