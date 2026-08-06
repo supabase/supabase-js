@@ -154,6 +154,120 @@ describe('token setting and updates', () => {
     testSetup.cleanup()
   })
 
+  test('ignores stale access token callback results after sign-out', async () => {
+    const token = utils.generateJWT('3h')
+    const tokenResolvers: Array<(token: string | null) => void> = []
+    const testSetup = setupRealtimeTest({
+      accessToken: () =>
+        new Promise((resolve) => {
+          tokenResolvers.push(resolve)
+        }),
+    })
+    const channel = testSetup.client.channel('test-topic')
+
+    await testSetup.client.setAuth(token)
+
+    const staleAuth = testSetup.client.setAuth()
+    const signOutAuth = testSetup.client.setAuth()
+    expect(tokenResolvers).toHaveLength(2)
+
+    tokenResolvers[1](null)
+    await signOutAuth
+
+    expect(testSetup.client.accessTokenValue).toBeNull()
+
+    tokenResolvers[0](token)
+    await staleAuth
+
+    expect(testSetup.client.accessTokenValue).toBeNull()
+    expect(channel.joinPush.payload()).toStrictEqual({
+      config: expect.any(Object),
+      access_token: null,
+      version: DEFAULT_VERSION,
+    })
+
+    testSetup.cleanup()
+  })
+
+  test('keeps callback auth enabled after an explicit token supersedes a pending result', async () => {
+    const staleToken = utils.generateJWT('1h')
+    const explicitToken = utils.generateJWT('2h')
+    const refreshedToken = utils.generateJWT('3h')
+    let resolveToken!: (token: string | null) => void
+    const testSetup = setupRealtimeTest({
+      accessToken: () =>
+        new Promise((resolve) => {
+          resolveToken = resolve
+        }),
+    })
+
+    const staleAuth = testSetup.client.setAuth()
+    await testSetup.client.setAuth(explicitToken)
+    resolveToken(staleToken)
+    await staleAuth
+
+    expect(testSetup.client.accessTokenValue).toBe(explicitToken)
+    expect(testSetup.client._isManualToken()).toBe(false)
+
+    const refreshedAuth = testSetup.client.setAuth()
+    resolveToken(refreshedToken)
+    await refreshedAuth
+
+    expect(testSetup.client.accessTokenValue).toBe(refreshedToken)
+
+    testSetup.cleanup()
+  })
+
+  test('keeps the latest auth request tracked when a stale request resolves first', async () => {
+    const staleToken = utils.generateJWT('1h')
+    const latestToken = utils.generateJWT('2h')
+    const tokenResolvers: Array<(token: string | null) => void> = []
+    const accessToken = () => new Promise<string | null>((resolve) => tokenResolvers.push(resolve))
+    const testSetup = setupRealtimeTest({ accessToken })
+
+    const staleAuth = testSetup.client.setAuth()
+    const latestAuth = testSetup.client.setAuth()
+    tokenResolvers[0](staleToken)
+    await staleAuth
+
+    testSetup.connect()
+    expect(tokenResolvers).toHaveLength(2)
+
+    tokenResolvers[1](latestToken)
+    await latestAuth
+    expect(testSetup.client.accessTokenValue).toBe(latestToken)
+
+    testSetup.cleanup()
+  })
+
+  test('does not track stale auth work after a callback re-enters setAuth', async () => {
+    const explicitToken = utils.generateJWT('2h')
+    let resolveStaleToken!: (token: string | null) => void
+    const accessToken = vi.fn(() => {
+      if (accessToken.mock.calls.length === 1) {
+        void testSetup.client.setAuth(explicitToken)
+        return new Promise<string | null>((resolve) => {
+          resolveStaleToken = resolve
+        })
+      }
+      return Promise.resolve(explicitToken)
+    })
+    const testSetup = setupRealtimeTest({ accessToken })
+
+    const staleAuth = testSetup.client.setAuth()
+    expect(testSetup.client.accessTokenValue).toBe(explicitToken)
+    await Promise.resolve()
+
+    testSetup.connect()
+    expect(accessToken).toHaveBeenCalledTimes(2)
+
+    resolveStaleToken(null)
+    await staleAuth
+    expect(testSetup.client.accessTokenValue).toBe(explicitToken)
+
+    testSetup.cleanup()
+  })
+
   test("overrides access token, updates channels' join payload, and pushes token to channels", async () => {
     const testSetup = setupRealtimeTest()
 
