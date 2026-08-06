@@ -875,3 +875,113 @@ describe('PostgreSQL new filter features (select, AND, operators)', () => {
     expect(getJoinedPostgresChanges()[0].filter).toBe('id=eq.1')
   })
 })
+
+describe('Duplicate postgres_changes bindings', () => {
+  const pgFilter = {
+    event: 'INSERT' as const,
+    schema: 'public',
+    table: 'comments',
+    filter: 'pechakucha_id=eq.1',
+  }
+
+  test('should ignore a re-registered identical filter and log an error', () => {
+    const logSpy = vi.spyOn(testSetup.client, 'log')
+    const callbackSpy1 = vi.fn()
+    const callbackSpy2 = vi.fn()
+
+    channel.on('postgres_changes', pgFilter, callbackSpy1)
+    channel.on('postgres_changes', pgFilter, callbackSpy2)
+
+    expect(channel.bindings.postgres_changes.length).toBe(1)
+    expect(channel.bindings.postgres_changes[0].callback).toBe(callbackSpy1)
+    expect(logSpy).toHaveBeenCalledWith(
+      'error',
+      expect.stringContaining('duplicate `postgres_changes` binding'),
+      pgFilter
+    )
+  })
+
+  test('should send the deduplicated filter list in the join payload', () => {
+    channel.on('postgres_changes', pgFilter, vi.fn())
+    channel.on('postgres_changes', pgFilter, vi.fn())
+
+    channel.subscribe()
+
+    expect(channel.joinPush.payload().config.postgres_changes).toEqual([pgFilter])
+  })
+
+  test('should subscribe without a binding mismatch when a duplicate was registered', async () => {
+    const subscribeSpy = vi.fn()
+
+    channel.on('postgres_changes', pgFilter, vi.fn())
+    channel.on('postgres_changes', pgFilter, vi.fn())
+
+    channel.subscribe(subscribeSpy)
+
+    testSetup.mockServer.emit(
+      'message',
+      phxJoinReply(channel, { postgres_changes: [{ ...pgFilter, id: 'server-id-1' }] })
+    )
+
+    await waitForChannelSubscribed(channel)
+    expect(subscribeSpy).not.toHaveBeenCalledWith('CHANNEL_ERROR', expect.any(Error))
+    expect(channel.bindings.postgres_changes[0].id).toBe('server-id-1')
+  })
+
+  test('should treat a builder filter as a duplicate of the equivalent string filter', () => {
+    channel.on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'orders', filter: 'amount=gt.100' },
+      vi.fn()
+    )
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: postgresChangesFilter().gt('amount', 100),
+      },
+      vi.fn()
+    )
+
+    expect(channel.bindings.postgres_changes.length).toBe(1)
+  })
+
+  test.each([
+    ['event', { ...pgFilter, event: 'UPDATE' as const }],
+    ['schema', { ...pgFilter, schema: 'private' }],
+    ['table', { ...pgFilter, table: 'posts' }],
+    ['filter', { ...pgFilter, filter: 'pechakucha_id=eq.2' }],
+    ['select', { ...pgFilter, select: ['id'] }],
+  ])('should keep both bindings when %s differs', (_field, otherFilter) => {
+    channel.on('postgres_changes', pgFilter, vi.fn())
+    channel.on('postgres_changes', otherFilter, vi.fn())
+
+    expect(channel.bindings.postgres_changes.length).toBe(2)
+  })
+
+  test('should treat an absent optional value and an explicit undefined as the same filter', () => {
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, vi.fn())
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'users', filter: undefined },
+      vi.fn()
+    )
+
+    expect(channel.bindings.postgres_changes.length).toBe(1)
+  })
+
+  test('should not deduplicate broadcast or presence bindings', () => {
+    const broadcastCallback1 = vi.fn()
+    const broadcastCallback2 = vi.fn()
+
+    channel.on('broadcast', { event: 'cursor' }, broadcastCallback1)
+    channel.on('broadcast', { event: 'cursor' }, broadcastCallback2)
+    channel.on('presence', { event: 'sync' }, vi.fn())
+    channel.on('presence', { event: 'sync' }, vi.fn())
+
+    expect(channel.bindings.broadcast.length).toBe(2)
+    expect(channel.bindings.presence.length).toBe(2)
+  })
+})
