@@ -387,10 +387,9 @@ export default class SupabaseClient<
       ...settings.realtime,
     })
     if (this.accessToken) {
-      // Start auth immediately to avoid race condition with channel subscriptions
-      // Wrap Promise to avoid Firefox extension cross-context Promise access errors
-      Promise.resolve(this.accessToken())
-        .then((token) => this.realtime.setAuth(token))
+      // Start auth immediately to avoid a race with channel subscriptions
+      this.realtime
+        .setAuth()
         .catch((e) => console.warn('Failed to set initial Realtime auth token:', e))
     }
 
