@@ -267,7 +267,7 @@ features:
     status: implemented
     symbols:
       - GoTrueClient.resend
-  auth.sign_in.reset_password:
+  auth.sign_in.send_password_reset_email:
     status: implemented
     symbols:
       - GoTrueClient.resetPasswordForEmail
@@ -542,11 +542,39 @@ features:
     status: implemented
     symbols:
       - default.deleteBucket
-  storage.analytics.iceberg_namespace:
+  storage.analytics.create_namespace:
     status: implemented
     symbols:
       - default.from
-  storage.analytics.iceberg_table:
+  storage.analytics.list_namespaces:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.delete_namespace:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.create_table:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.list_tables:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.load_table:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.update_table:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.rename_table:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.delete_table:
     status: implemented
     symbols:
       - default.from
@@ -638,9 +666,6 @@ features:
     status: implemented
     symbols:
       - default.list
-  storage.file_buckets.list_files_paginated:
-    status: implemented
-    symbols:
       - default.listV2
   storage.file_buckets.move:
     status: implemented
@@ -754,7 +779,7 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.httpSend
-  realtime.channel.send:
+  realtime.channel.broadcast:
     status: implemented
     symbols:
       - RealtimeChannel.send
