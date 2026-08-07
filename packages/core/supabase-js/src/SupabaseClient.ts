@@ -23,6 +23,7 @@ import {
 import { checkApiKeyFormat, fetchWithAuth } from './lib/fetch'
 import {
   applySettingDefaults,
+  mergeHeaders,
   validateSupabaseUrl,
   type ResolvedSupabaseClientOptions,
 } from './lib/helpers'
@@ -627,9 +628,10 @@ export default class SupabaseClient<
       Authorization: `Bearer ${this.supabaseKey}`,
       apikey: `${this.supabaseKey}`,
     }
+
     return new SupabaseAuthClient({
       url: this.authUrl.href,
-      headers: { ...authHeaders, ...headers },
+      headers: mergeHeaders(authHeaders, headers),
       storageKey: storageKey,
       autoRefreshToken,
       persistSession,
