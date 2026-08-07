@@ -4,6 +4,7 @@ import {
   decodeJWT,
   generateCallbackId,
   generatePKCEFlowId,
+  generatePKCEVerifier,
   getAlgorithm,
   getItemAsync,
   parseParametersFromURL,
@@ -272,6 +273,24 @@ describe('getAlgorithm', () => {
   })
   it('should throw if invalid alg claim', () => {
     expect(() => getAlgorithm('EdDSA' as any)).toThrow(new Error('Invalid alg claim'))
+  })
+})
+
+describe('generatePKCEVerifier', () => {
+  it('should generate a verifier within the RFC 7636 length range', () => {
+    const verifier = generatePKCEVerifier()
+    expect(verifier.length).toBeGreaterThanOrEqual(43)
+    expect(verifier.length).toBeLessThanOrEqual(128)
+  })
+
+  it('should only use RFC 7636 unreserved characters', () => {
+    const verifier = generatePKCEVerifier()
+    // unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
+    expect(verifier).toMatch(/^[A-Za-z0-9\-._~]+$/)
+  })
+
+  it('should generate a unique verifier on each call', () => {
+    expect(generatePKCEVerifier()).not.toEqual(generatePKCEVerifier())
   })
 })
 
