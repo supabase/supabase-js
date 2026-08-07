@@ -4957,4 +4957,340 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       errorSpy.mockRestore()
     })
   })
+
+  describe('offline fail-fast (provably offline)', () => {
+    const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+
+    const setNavigator = (value: unknown) => {
+      Object.defineProperty(globalThis, 'navigator', {
+        value,
+        configurable: true,
+        writable: true,
+      })
+    }
+
+    afterEach(() => {
+      if (originalNavigator) {
+        Object.defineProperty(globalThis, 'navigator', originalNavigator)
+      } else {
+        delete (globalThis as any).navigator
+      }
+    })
+
+    const buildClientWithFetch = (
+      storage: ReturnType<typeof memoryLocalStorageAdapter>,
+      fetchSpy: jest.Mock
+    ) =>
+      new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+        fetch: fetchSpy as any,
+      })
+
+    // Offline retry suppression applies only to the environment's own
+    // transport, so those tests observe it by overriding the global fetch
+    // (bound by resolveFetch at construction) instead of passing a custom
+    // `fetch` option, which keeps the full retry loop.
+    const originalFetchDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'fetch')
+
+    const setGlobalFetch = (impl: unknown) => {
+      Object.defineProperty(globalThis, 'fetch', {
+        value: impl,
+        configurable: true,
+        writable: true,
+      })
+    }
+
+    afterEach(() => {
+      if (originalFetchDescriptor) {
+        Object.defineProperty(globalThis, 'fetch', originalFetchDescriptor)
+      } else {
+        delete (globalThis as any).fetch
+      }
+    })
+
+    // A remote-looking auth URL: offline retry suppression never applies to
+    // loopback hosts (they stay reachable while navigator.onLine is false),
+    // and the docker GoTrue test URL is loopback. The rejecting global-fetch
+    // spy intercepts every request, so nothing is actually contacted.
+    const REMOTE_AUTH_URL = 'https://project.example.com/auth/v1'
+
+    const buildDefaultTransportClient = (
+      storage: ReturnType<typeof memoryLocalStorageAdapter>,
+      url: string = REMOTE_AUTH_URL
+    ) =>
+      new GoTrueClient({
+        url,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+      })
+
+    // Simulates the user agent's own transport failing while offline.
+    const buildRejectingFetchSpy = () =>
+      jest.fn(async () => {
+        throw new TypeError('Failed to fetch')
+      })
+
+    test('offline refresh probes the default transport once and skips the backoff loop', async () => {
+      setNavigator({ onLine: false })
+      const fetchSpy = buildRejectingFetchSpy()
+      setGlobalFetch(fetchSpy)
+      const storage = memoryLocalStorageAdapter()
+      const client = buildDefaultTransportClient(storage)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const startedAt = Date.now()
+      // @ts-expect-error access protected for test
+      const result = await client._callRefreshToken('refresh-token-r1')
+      const elapsed = Date.now() - startedAt
+
+      expect(result.data).toBeNull()
+      expect((result.error as AuthError)?.name).toBe('AuthRetryableFetchError')
+      // exactly one probe went through the default transport; the ~25s
+      // retry/backoff loop did not run
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      expect(elapsed).toBeLessThan(1000)
+
+      // the failure enters the regular cooldown so subsequent ticks stay quiet
+      // @ts-expect-error access protected for test
+      expect(client.lastRefreshFailure).not.toBeNull()
+
+      // retryable failure: session must survive in storage
+      const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+      expect(stored?.refresh_token).toBe('refresh-token-r1')
+    })
+
+    test('getSession() offline with access token still valid → preserved session, no error', async () => {
+      setNavigator({ onLine: false })
+      const fetchSpy = buildRejectingFetchSpy()
+      setGlobalFetch(fetchSpy)
+      const storage = memoryLocalStorageAdapter()
+      const client = buildDefaultTransportClient(storage)
+      await client.initialize()
+      // inside EXPIRY_MARGIN_MS (triggers proactive refresh) but not expired
+      await plantSession(storage, { secondsUntilExpiry: 30 })
+
+      const { data, error } = await client.getSession()
+
+      expect(error).toBeNull()
+      expect(data.session?.access_token).toBe('jwt.accesstoken.signature')
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+    })
+
+    test('getSession() offline with access token fully expired → null + retryable error, storage kept', async () => {
+      setNavigator({ onLine: false })
+      const fetchSpy = buildRejectingFetchSpy()
+      setGlobalFetch(fetchSpy)
+      const storage = memoryLocalStorageAdapter()
+      const client = buildDefaultTransportClient(storage)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const { data, error } = await client.getSession()
+
+      // Callers can distinguish "can't verify right now" (retryable error)
+      // from "signed out" (null session, null error).
+      expect(data.session).toBeNull()
+      expect((error as AuthError)?.name).toBe('AuthRetryableFetchError')
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+      const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+      expect(stored?.refresh_token).toBe('refresh-token-r1')
+    })
+
+    test('custom transport that succeeds while navigator reports offline is honored', async () => {
+      setNavigator({ onLine: false })
+      const storage = memoryLocalStorageAdapter()
+      // e.g. request interception, a service-worker-backed transport, or a
+      // loopback endpoint: reachable even though navigator.onLine is false
+      const fetchSpy = jest.fn(async () => ({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({
+          access_token: 'jwt.rotated.signature',
+          refresh_token: 'refresh-token-r2',
+          token_type: 'bearer',
+          expires_in: 3600,
+          user: { id: 'user-1', aud: 'authenticated', email: 'u@example.com' },
+        }),
+      }))
+      const client = buildClientWithFetch(storage, fetchSpy)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      // @ts-expect-error access protected for test
+      const result = await client._callRefreshToken('refresh-token-r1')
+
+      expect(result.error).toBeNull()
+      expect(result.data?.refresh_token).toBe('refresh-token-r2')
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+      const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+      expect(stored?.refresh_token).toBe('refresh-token-r2')
+    })
+
+    test('custom transport retries while offline: fails once, succeeds on the second attempt', async () => {
+      setNavigator({ onLine: false })
+      const storage = memoryLocalStorageAdapter()
+      // A custom transport is not bound by navigator.onLine, so a transient
+      // first failure must keep the regular retry loop instead of caching a
+      // failure that a second attempt would have avoided.
+      const fetchSpy = jest
+        .fn(async () => ({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: async () => ({
+            access_token: 'jwt.rotated.signature',
+            refresh_token: 'refresh-token-r2',
+            token_type: 'bearer',
+            expires_in: 3600,
+            user: { id: 'user-1', aud: 'authenticated', email: 'u@example.com' },
+          }),
+        }))
+        .mockImplementationOnce(async () => {
+          throw new TypeError('transient failure')
+        })
+      const client = buildClientWithFetch(storage, fetchSpy)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      // @ts-expect-error access protected for test
+      const result = await client._callRefreshToken('refresh-token-r1')
+
+      expect(result.error).toBeNull()
+      expect(result.data?.refresh_token).toBe('refresh-token-r2')
+      // one transient failure, one successful retry: not suppressed by onLine
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+    })
+
+    test('loopback auth URL keeps the retry loop on the default transport while offline', async () => {
+      setNavigator({ onLine: false })
+      // Loopback stays reachable while navigator.onLine is false, so a
+      // transient first failure against a local Supabase instance must keep
+      // the regular retry loop instead of caching a failure for the
+      // cooldown window with no online event in sight.
+      const fetchSpy = jest
+        .fn(async () => ({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: async () => ({
+            access_token: 'jwt.rotated.signature',
+            refresh_token: 'refresh-token-r2',
+            token_type: 'bearer',
+            expires_in: 3600,
+            user: { id: 'user-1', aud: 'authenticated', email: 'u@example.com' },
+          }),
+        }))
+        .mockImplementationOnce(async () => {
+          throw new TypeError('transient failure')
+        })
+      setGlobalFetch(fetchSpy)
+      const storage = memoryLocalStorageAdapter()
+      // the docker GoTrue test URL is loopback (127.0.0.1)
+      const client = buildDefaultTransportClient(storage, GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      // @ts-expect-error access protected for test
+      const result = await client._callRefreshToken('refresh-token-r1')
+
+      expect(result.error).toBeNull()
+      expect(result.data?.refresh_token).toBe('refresh-token-r2')
+      // one transient failure, one successful retry: not suppressed for loopback
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+    })
+
+    test('navigator without boolean onLine → default transport keeps the retry loop (React Native / Node)', async () => {
+      setNavigator({ product: 'ReactNative' })
+      jest.useFakeTimers({ doNotFake: ['setImmediate'] })
+      try {
+        const fetchSpy = jest.fn(async () => {
+          throw new TypeError('fetch failed')
+        })
+        setGlobalFetch(fetchSpy)
+        const storage = memoryLocalStorageAdapter()
+        const client = buildDefaultTransportClient(storage)
+        await client.initialize()
+        await plantSession(storage, { secondsUntilExpiry: -60 })
+
+        // @ts-expect-error access protected for test
+        const resultPromise = client._callRefreshToken('refresh-token-r1')
+        await jest.runAllTimersAsync()
+        const result = await resultPromise
+
+        expect((result.error as AuthError)?.name).toBe('AuthRetryableFetchError')
+        // the point: absence of onLine must not suppress requests or
+        // retries, even on the default transport
+        expect(fetchSpy.mock.calls.length).toBeGreaterThan(1)
+      } finally {
+        jest.useRealTimers()
+      }
+    })
+
+    test('worker-style global (no window): online listener registers, clears cooldown, removed on dispose', async () => {
+      // Simulates a Web Worker: window/document are undefined, but the
+      // environment exposes a boolean navigator.onLine (WorkerNavigator)
+      // and global online events (WorkerGlobalScope). Fail-fast activates
+      // there, so reconnection handling must too.
+      setNavigator({ onLine: true })
+
+      const added: Array<[string, () => unknown]> = []
+      const removed: Array<[string, () => unknown]> = []
+      const originalAdd = Object.getOwnPropertyDescriptor(globalThis, 'addEventListener')
+      const originalRemove = Object.getOwnPropertyDescriptor(globalThis, 'removeEventListener')
+      Object.defineProperty(globalThis, 'addEventListener', {
+        value: (type: string, listener: () => unknown) => added.push([type, listener]),
+        configurable: true,
+        writable: true,
+      })
+      Object.defineProperty(globalThis, 'removeEventListener', {
+        value: (type: string, listener: () => unknown) => removed.push([type, listener]),
+        configurable: true,
+        writable: true,
+      })
+
+      try {
+        const storage = memoryLocalStorageAdapter()
+        const client = buildClientWithFetch(storage, jest.fn())
+        await client.initialize()
+
+        const onlineListeners = added.filter(([type]) => type === 'online')
+        expect(onlineListeners).toHaveLength(1)
+
+        // An offline refresh failure caches a cooldown entry...
+        // @ts-expect-error access protected for test
+        client.lastRefreshFailure = {
+          refreshToken: 'refresh-token-r1',
+          result: { data: null, error: { name: 'AuthRetryableFetchError' } } as any,
+          expiresAt: Date.now() + 60_000,
+        }
+
+        // ...and the worker-global online event clears it on reconnection.
+        await onlineListeners[0][1]()
+        // @ts-expect-error access protected for test
+        expect(client.lastRefreshFailure).toBeNull()
+
+        await client.dispose()
+        expect(removed.filter(([type]) => type === 'online')).toHaveLength(1)
+      } finally {
+        if (originalAdd) {
+          Object.defineProperty(globalThis, 'addEventListener', originalAdd)
+        } else {
+          delete (globalThis as any).addEventListener
+        }
+        if (originalRemove) {
+          Object.defineProperty(globalThis, 'removeEventListener', originalRemove)
+        } else {
+          delete (globalThis as any).removeEventListener
+        }
+      }
+    })
+  })
 })

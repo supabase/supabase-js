@@ -46,8 +46,11 @@ import {
   getAlgorithm,
   getCodeChallengeAndMethod,
   getItemAsync,
+  getOnlineEventTarget,
   insecureUserWarningProxy,
   isBrowser,
+  isLoopbackHost,
+  isProvablyOffline,
   parseParametersFromURL,
   pkceVerifierSlotKey,
   removeAllPKCEVerifiers,
@@ -295,6 +298,26 @@ export default class GoTrueClient {
   protected autoRefreshTicker: ReturnType<typeof setInterval> | null = null
   protected autoRefreshTickTimeout: ReturnType<typeof setTimeout> | null = null
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
+  protected onlineChangedCallback: (() => Promise<any>) | null = null
+  /**
+   * Set by `dispose()`. `_initialize()` checks it before registering the
+   * visibilitychange / online listeners (re-checking after each await, since
+   * dispose can interleave with them), and `_startAutoRefresh()` checks it
+   * before creating timers, so a dispose that runs while initialization is
+   * still pending (React Strict Mode, HMR) does not leak listeners or
+   * restart background work on a client that was already torn down.
+   */
+  protected _disposed = false
+  /**
+   * True when offline retry suppression in `_refreshAccessToken` can apply:
+   * requests go through the environment's own transport (no custom `fetch`
+   * was supplied) toward a non-loopback host. `navigator.onLine` describes
+   * the user agent's connectivity to the network, so neither bound applies
+   * elsewhere: custom transports may fail transiently and succeed on a later
+   * attempt regardless of it, and loopback endpoints stay reachable without
+   * it. Both keep the full retry loop.
+   */
+  protected readonly offlineRetrySuppressionApplies: boolean
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
    * Cache of the most recent refresh failure, keyed by the refresh token
@@ -440,6 +463,7 @@ export default class GoTrueClient {
     this.url = settings.url
     this.headers = settings.headers
     this.fetch = resolveFetch(settings.fetch)
+    this.offlineRetrySuppressionApplies = settings.fetch == null && !isLoopbackHost(settings.url)
     this.detectSessionInUrl = settings.detectSessionInUrl
     this.flowType = settings.flowType
     this.hasCustomAuthorizationHeader = settings.hasCustomAuthorizationHeader
@@ -723,7 +747,18 @@ export default class GoTrueClient {
         error: new AuthUnknownError('Unexpected error during initialization', error),
       })
     } finally {
-      await this._handleVisibilityChange()
+      if (!this._disposed) {
+        await this._handleVisibilityChange()
+      }
+
+      // Re-checked rather than hoisted: dispose() may have run while
+      // _handleVisibilityChange was awaited, and its cleanup has already
+      // completed by then, so registering the online listener now would
+      // leak it on a torn-down client.
+      if (!this._disposed) {
+        this._handleOnlineStatusChange()
+      }
+
       this._debug('#_initialize()', 'end')
     }
   }
@@ -4766,6 +4801,18 @@ export default class GoTrueClient {
           return (
             error &&
             isAuthRetryableFetchError(error) &&
+            // Stop after an actual failure while the environment
+            // affirmatively reports being offline, but only where the
+            // signal is binding: the default transport toward a
+            // non-loopback host, whose retries cannot succeed until
+            // connectivity returns (the `online` listener resumes
+            // refreshing then). Custom `fetch` transports are not bound by
+            // `navigator.onLine` and loopback endpoints stay reachable
+            // without it, so both keep the full retry loop; first attempts
+            // are never gated anywhere. What no longer runs offline is the
+            // backoff loop that blocked `getSession()` callers for up to
+            // the full tick duration.
+            !(this.offlineRetrySuppressionApplies && isProvablyOffline()) &&
             // retryable only if the request can be sent before the backoff overflows the tick duration
             Date.now() + nextBackOffInterval - startedAt < AUTO_REFRESH_TICK_DURATION_MS
           )
@@ -5275,6 +5322,13 @@ export default class GoTrueClient {
   private async _startAutoRefresh() {
     await this._stopAutoRefresh()
 
+    if (this._disposed) {
+      // dispose() interleaved with the await above; its own _stopAutoRefresh
+      // has already run, so timers created now would leak on a torn-down
+      // client with nothing left to clear them.
+      return
+    }
+
     this._debug('#_startAutoRefresh()')
 
     const ticker = setInterval(() => this._autoRefreshTokenTick(), AUTO_REFRESH_TICK_DURATION_MS)
@@ -5451,7 +5505,11 @@ export default class GoTrueClient {
    * ```
    */
   async dispose(): Promise<void> {
+    // Set before any await so an initialization that is still pending sees
+    // it and skips its late listener registration (see _initialize).
+    this._disposed = true
     this._removeVisibilityChangedCallback()
+    this._removeOnlineStatusChangeCallback()
     await this._stopAutoRefresh()
     this.broadcastChannel?.close()
     this.broadcastChannel = null
@@ -5642,6 +5700,80 @@ export default class GoTrueClient {
       if (this.autoRefreshToken) {
         this._stopAutoRefresh()
       }
+    }
+  }
+
+  /**
+   * Registers the `online` event so refreshing resumes the moment
+   * connectivity returns, instead of waiting out the failure cooldown plus
+   * the next auto-refresh tick. The event target comes from
+   * `getOnlineEventTarget`: `window` in documents, the worker global scope
+   * in Web Workers, which are exactly the environments whose
+   * `navigator.onLine` makes `_refreshAccessToken` stop retrying the
+   * default transport. No-op elsewhere. No `offline` listener is needed: while the environment
+   * reports being offline, a failed refresh is not retried, so there is no
+   * loop to cancel.
+   */
+  private _handleOnlineStatusChange() {
+    const target = getOnlineEventTarget()
+    if (!target) {
+      return
+    }
+
+    try {
+      this.onlineChangedCallback = async () => {
+        try {
+          await this._onOnline()
+        } catch (error) {
+          this._debug('#onlineChangedCallback', 'error', error)
+        }
+      }
+
+      target.addEventListener('online', this.onlineChangedCallback)
+    } catch (error) {
+      console.error('_handleOnlineStatusChange', error)
+    }
+  }
+
+  /**
+   * Callback registered with `window.addEventListener('online')`.
+   */
+  private async _onOnline() {
+    this._debug('#_onOnline()', 'network connectivity restored')
+
+    // The failure cooldown exists to stop refresh storms against the same
+    // broken refresh token; a connectivity transition invalidates that
+    // cached outcome, so the next caller attempts a real refresh
+    // immediately instead of receiving a stale offline failure.
+    this.lastRefreshFailure = null
+
+    await this.initializePromise
+
+    if (this.autoRefreshTicker) {
+      // Refresh proactively only where the ticker is already running (in
+      // browsers: the foreground tab), matching the single-tab discipline
+      // of the visibilitychange handler. Background tabs still benefit from
+      // the cooldown reset above and refresh on their next getSession().
+      await this._autoRefreshTokenTick()
+    }
+  }
+
+  /**
+   * Removes any registered `online` event callback.
+   */
+  private _removeOnlineStatusChangeCallback() {
+    this._debug('#_removeOnlineStatusChangeCallback()')
+
+    const callback = this.onlineChangedCallback
+    this.onlineChangedCallback = null
+
+    try {
+      const target = getOnlineEventTarget()
+      if (callback && target) {
+        target.removeEventListener('online', callback)
+      }
+    } catch (e) {
+      console.error('removing online callback failed', e)
     }
   }
 
