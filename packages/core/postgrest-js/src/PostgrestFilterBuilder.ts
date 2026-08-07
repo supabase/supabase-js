@@ -548,7 +548,12 @@ export default class PostgrestFilterBuilder<
   ): this
   likeAllOf(column: string, patterns: readonly string[]): this
   likeAllOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `like(all).{${patterns.join(',')}}`)
+    const cleanedPatterns = patterns.map((s) => {
+      if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+        return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+      return `${s}`
+    })
+    this.url.searchParams.append(column, `like(all).{${cleanedPatterns.join(',')}}`)
     return this
   }
 
@@ -567,7 +572,12 @@ export default class PostgrestFilterBuilder<
   ): this
   likeAnyOf(column: string, patterns: readonly string[]): this
   likeAnyOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `like(any).{${patterns.join(',')}}`)
+    const cleanedPatterns = patterns.map((s) => {
+      if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+        return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+      return `${s}`
+    })
+    this.url.searchParams.append(column, `like(any).{${cleanedPatterns.join(',')}}`)
     return this
   }
 
@@ -637,7 +647,12 @@ export default class PostgrestFilterBuilder<
   ): this
   ilikeAllOf(column: string, patterns: readonly string[]): this
   ilikeAllOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `ilike(all).{${patterns.join(',')}}`)
+    const cleanedPatterns = patterns.map((s) => {
+      if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+        return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+      return `${s}`
+    })
+    this.url.searchParams.append(column, `ilike(all).{${cleanedPatterns.join(',')}}`)
     return this
   }
 
@@ -656,7 +671,12 @@ export default class PostgrestFilterBuilder<
   ): this
   ilikeAnyOf(column: string, patterns: readonly string[]): this
   ilikeAnyOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `ilike(any).{${patterns.join(',')}}`)
+    const cleanedPatterns = patterns.map((s) => {
+      if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+        return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+      return `${s}`
+    })
+    this.url.searchParams.append(column, `ilike(any).{${cleanedPatterns.join(',')}}`)
     return this
   }
 
@@ -838,8 +858,9 @@ export default class PostgrestFilterBuilder<
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
         // handle postgrest reserved characters
-        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+        // https://postgrest.org/en/stable/references/api/url_grammar.html#reserved-characters
+        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+          return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
         else return `${s}`
       })
       .join(',')
@@ -866,8 +887,9 @@ export default class PostgrestFilterBuilder<
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
         // handle postgrest reserved characters
-        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+        // https://postgrest.org/en/stable/references/api/url_grammar.html#reserved-characters
+        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+          return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
         else return `${s}`
       })
       .join(',')
