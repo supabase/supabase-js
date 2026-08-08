@@ -4,6 +4,7 @@ import {
   PostgrestClient,
   type PostgrestFilterBuilder,
   type PostgrestQueryBuilder,
+  type PostgrestQueryBuilderOptions,
 } from '@supabase/postgrest-js'
 import {
   type RealtimeChannel,
@@ -429,17 +430,38 @@ export default class SupabaseClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName],
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
+  >(
+    relation: TableName,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
+    relation: ViewName,
+    options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
+   * @param options - Per-request options that override client-level defaults
    */
-  from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any> {
-    return this.rest.from(relation)
+  from(
+    relation: string,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, any> {
+    const resolvedOptions: PostgrestQueryBuilderOptions | undefined = options?.fetch
+      ? {
+          ...options,
+          fetch: fetchWithAuth(
+            this.supabaseKey,
+            this.supabaseUrl,
+            this._getSessionToken.bind(this),
+            options.fetch,
+            this.settings?.tracePropagation
+          ),
+        }
+      : options
+
+    return this.rest.from(relation, resolvedOptions)
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.schema
