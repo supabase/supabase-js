@@ -1,9 +1,10 @@
 /**
  * Canonical CORS configuration for Supabase Edge Functions
  *
- * This module exports CORS headers that stay synchronized with the Supabase SDK.
- * When new headers are added to the SDK, they are automatically included here,
- * preventing CORS errors in Edge Functions.
+ * This module exports CORS headers kept in sync with the headers the Supabase
+ * SDK sends. Using it in Edge Functions prevents CORS preflight errors when the
+ * SDK adds new headers — update SUPABASE_HEADERS whenever the SDK starts
+ * sending one (enforced by the unit tests).
  *
  * @example Basic usage
  * ```typescript
@@ -34,6 +35,9 @@
  * - apikey: Project API key
  * - content-type: Standard HTTP content type
  * - x-retry-count: Retry attempt number sent by postgrest-js on retried requests
+ * - traceparent: W3C trace context sent when `tracePropagation` is enabled
+ * - tracestate: Vendor-specific trace data sent alongside traceparent
+ * - baggage: W3C baggage sent alongside traceparent
  */
 const SUPABASE_HEADERS = [
   'authorization',
@@ -41,6 +45,9 @@ const SUPABASE_HEADERS = [
   'apikey',
   'content-type',
   'x-retry-count',
+  'traceparent',
+  'tracestate',
+  'baggage',
 ].join(', ')
 
 /**

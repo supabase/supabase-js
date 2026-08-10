@@ -16,12 +16,29 @@ describe('CORS Module', () => {
     it('should include all Supabase custom headers', () => {
       const allowedHeaders = corsHeaders['Access-Control-Allow-Headers']
 
-      // All 10 Supabase headers must be present
-      expect(allowedHeaders).toContain('authorization')
-      expect(allowedHeaders).toContain('x-client-info')
-      expect(allowedHeaders).toContain('apikey')
-      expect(allowedHeaders).toContain('content-type')
-      expect(allowedHeaders).toContain('x-retry-count')
+      // Pin the exact list: when the SDK starts sending a new header, this
+      // test must fail until the header is added to SUPABASE_HEADERS —
+      // otherwise browser preflights break for Edge Functions using corsHeaders.
+      expect(allowedHeaders.split(', ').sort()).toEqual(
+        [
+          'authorization',
+          'x-client-info',
+          'apikey',
+          'content-type',
+          'x-retry-count',
+          'traceparent',
+          'tracestate',
+          'baggage',
+        ].sort()
+      )
+    })
+
+    it('should include the trace context headers sent when tracePropagation is enabled', () => {
+      const allowedHeaders = corsHeaders['Access-Control-Allow-Headers']
+
+      expect(allowedHeaders).toContain('traceparent')
+      expect(allowedHeaders).toContain('tracestate')
+      expect(allowedHeaders).toContain('baggage')
     })
 
     it('should include all HTTP methods including OPTIONS', () => {
