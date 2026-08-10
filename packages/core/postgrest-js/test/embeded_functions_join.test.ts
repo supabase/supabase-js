@@ -1434,9 +1434,14 @@ describe('embeded functions select', () => {
     >(true)
   })
 
-  test('scalar_computed_count - non-SETOF non-nullable scalar returns number (not null)', async () => {
-    const res = await postgrest.from('users').select('username, scalar_computed_count()')
-    let result: Exclude<typeof res.data, null>
+  // The two tests below are type-only. They cover the scalar computed field contract declared by
+  // hand in types.override.ts — PostgREST does not expose scalar computed fields in its schema
+  // cache, so pg-meta cannot emit these entries and there is no live function to call. The query
+  // builder is deliberately left un-awaited: it is lazy (PostgrestBuilder only fetches in then()),
+  // so no request is made, and the assertions read the resolved type via Awaited<>.
+  test('scalar_computed_count - non-SETOF non-nullable scalar returns number (not null)', () => {
+    const query = postgrest.from('users').select('username, scalar_computed_count()')
+    let result: Exclude<Awaited<typeof query>['data'], null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -1447,9 +1452,9 @@ describe('embeded functions select', () => {
     expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 
-  test('scalar_computed_ids - SETOF scalar returns string[] (not null)', async () => {
-    const res = await postgrest.from('users').select('username, scalar_computed_ids()')
-    let result: Exclude<typeof res.data, null>
+  test('scalar_computed_ids - SETOF scalar returns string[] (not null)', () => {
+    const query = postgrest.from('users').select('username, scalar_computed_ids()')
+    let result: Exclude<Awaited<typeof query>['data'], null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
