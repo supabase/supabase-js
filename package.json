@@ -10,7 +10,7 @@
     "codegen": "node scripts/sync-common-types.js",
     "codegen:check": "node scripts/sync-common-types.js && git diff --exit-code packages/core/supabase-js/src/lib/rest/types/common && echo '\n✅ Generated types are in sync!' || (echo '\n❌ Generated types are out of sync.\n   Run: pnpm codegen\n   Then commit the changes.\n' && exit 1)",
     "codegen:postgrest": "node scripts/generate-postgrest-types.js",
-    "codegen:check:postgrest": "node scripts/generate-postgrest-types.js && git diff --exit-code packages/core/postgrest-js/test/types.generated.ts && echo '\n✅ Postgrest generated types are in sync!' || (echo '\n❌ Postgrest generated types are out of sync.\n   Run: pnpm codegen:postgrest\n   Then commit the changes.\n' && exit 1)",
+    "codegen:check:postgrest": "node scripts/generate-postgrest-types.js || { echo '\n❌ Type generation itself failed — see the error above. This is NOT a drift failure; re-running codegen will not help.\n'; exit 1; }; git diff --exit-code packages/core/postgrest-js/test/types.generated.ts && echo '\n✅ Postgrest generated types are in sync!' || { echo '\n❌ Postgrest generated types are out of sync.\n   Run: pnpm codegen:postgrest\n   Then commit the changes.\n'; exit 1; }",
     "release-canary": "pnpm exec tsx scripts/release-canary.ts",
     "release-beta": "pnpm exec tsx scripts/release-beta.ts",
     "release-stable": "pnpm exec tsx scripts/release-stable.ts"
