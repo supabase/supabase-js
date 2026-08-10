@@ -465,11 +465,21 @@ jobs:
           REF: ${{ github.base_ref || github.ref_name }}
         run: |
           BASE_REF="${REF}"
-          git fetch origin "$BASE_REF" 2>/dev/null || true
+          # Fail closed. If the base cannot be fetched or diffed we must not fall through to
+          # "nothing changed" and skip the gate: a silently skipped codegen check is exactly how
+          # the drift this step guards against went unnoticed for months.
+          if ! git fetch origin "$BASE_REF"; then
+            echo "::error::Could not fetch origin/${BASE_REF}, so we cannot tell whether the generated types need checking."
+            exit 1
+          fi
+          if ! CHANGED_FILES=$(git diff --name-only "origin/${BASE_REF}...HEAD"); then
+            echo "::error::Could not diff against origin/${BASE_REF}, refusing to skip the codegen check."
+            exit 1
+          fi
           # types.generated.ts depends on the test schema AND on the pinned Supabase CLI version,
           # which selects the postgres-meta image that does the introspection. Watch both, or a
           # CLI bump silently changes the generated output with nothing to catch it.
-          if git diff --name-only "origin/${BASE_REF}...HEAD" 2>/dev/null \
+          if printf '%s\n' "$CHANGED_FILES" \
             | grep -qE '^packages/core/postgrest-js/test/supabase/|^package\.json$'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
