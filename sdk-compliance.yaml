@@ -582,11 +582,22 @@ features:
     status: implemented
     symbols:
       - default.listBuckets
-  storage.analytics.load_namespace_metadata: not_implemented
-  storage.analytics.namespace_exists: not_implemented
-  storage.analytics.register_table: not_implemented
-  storage.analytics.table_exists: not_implemented
-  storage.analytics.update_namespace_properties: not_implemented
+  storage.analytics.load_namespace_metadata:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.namespace_exists:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.register_table:
+    status: not_implemented
+  storage.analytics.table_exists:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.update_namespace_properties:
+    status: not_implemented
   storage.errors.error_codes:
     status: implemented
     symbols:
