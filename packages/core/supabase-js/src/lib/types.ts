@@ -80,17 +80,20 @@ export interface TracePropagationOptions {
   /**
    * Respect upstream sampling decisions.
    *
-   * When true (the default), trace context is not propagated if the upstream
-   * trace indicates non-sampling (sampled flag = `0` in the `traceparent`
-   * header). This avoids overhead when traces are being recorded but dropped.
+   * When true (the default), requests whose upstream trace is not sampled
+   * (sampled flag = `0` in the `traceparent` header) carry only the
+   * `traceparent` header — the sampled flag is preserved, so downstream
+   * tracing never records them, while Supabase logs still get a `trace_id`
+   * to correlate on. The `tracestate` and `baggage` headers are withheld on
+   * these requests.
    *
-   * Set to `false` to always propagate, regardless of the sampling decision
-   * — useful when you want every Supabase request tagged with a `trace_id`
-   * for log correlation, even if the trace itself will not be exported.
+   * Set to `false` to always propagate the full trace context
+   * (`traceparent`, `tracestate`, `baggage`) regardless of the sampling
+   * decision.
    *
    * @default true
    *
-   * @example Always propagate, ignore sampling
+   * @example Always propagate the full context, ignore sampling
    * ```ts
    * import '@supabase/supabase-js/tracing'
    *

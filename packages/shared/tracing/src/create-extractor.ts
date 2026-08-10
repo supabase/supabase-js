@@ -18,16 +18,33 @@ export interface OtelApiLike {
 }
 
 /**
+ * Result of a trace context extraction attempt.
+ *
+ * Extends the W3C headers with diagnostic metadata: when a propagator is
+ * registered and wrote headers to the carrier but none of them is a W3C
+ * `traceparent`, `carrierKeys` lists the header *names* it wrote (never the
+ * values), so callers can explain why no trace headers will be attached —
+ * e.g. Sentry's propagator writes `sentry-trace` but omits `traceparent`
+ * unless `propagateTraceparent: true` is set.
+ */
+export interface TraceExtractionResult extends TraceContext {
+  carrierKeys?: string[]
+}
+
+/**
  * Reads the active trace context, or null when there is none.
  */
-export type TraceContextExtractor = () => TraceContext | null
+export type TraceContextExtractor = () => TraceExtractionResult | null
 
 /**
  * Build a {@link TraceContextExtractor} from an OpenTelemetry API object.
  *
  * The extractor injects the active context into a fresh carrier on every
- * call and returns the W3C trace headers found there, or null when there is
- * no active trace (no `traceparent`) or the API throws.
+ * call and returns the W3C trace headers found there. When there is no
+ * `traceparent`, it returns null for an empty carrier (no active trace) or
+ * a headerless result carrying only {@link TraceExtractionResult.carrierKeys}
+ * when the propagator wrote non-W3C headers. Returns null when the API
+ * throws.
  */
 export function createTraceContextExtractor(otel: OtelApiLike): TraceContextExtractor {
   return () => {
@@ -37,7 +54,11 @@ export function createTraceContextExtractor(otel: OtelApiLike): TraceContextExtr
 
       const traceparent = carrier['traceparent']
       if (!traceparent) {
-        return null
+        const carrierKeys = Object.keys(carrier)
+        if (carrierKeys.length === 0) {
+          return null
+        }
+        return { carrierKeys }
       }
 
       return {

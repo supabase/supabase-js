@@ -4,6 +4,7 @@ import {
   fetchWithAuth,
   checkApiKeyFormat,
   _resetTracingRuntimeWarning,
+  _resetNonW3CPropagatorWarning,
 } from '../../src/lib/fetch'
 import {
   registerTraceContextExtractor,
@@ -362,6 +363,7 @@ describe('fetch module', () => {
       afterEach(() => {
         _unregisterTraceContextExtractor()
         _resetTracingRuntimeWarning()
+        _resetNonW3CPropagatorWarning()
       })
 
       test('should not inject trace headers by default (no options)', async () => {
@@ -487,7 +489,14 @@ describe('fetch module', () => {
         expect(mockSet).not.toHaveBeenCalledWith('traceparent', expect.anything())
       })
 
-      test('should respect sampling decision when enabled', async () => {
+      test('should send only traceparent for non-sampled traces by default', async () => {
+        // Full context from the propagator; only traceparent may go out.
+        registerTraceContextExtractor(() => ({
+          traceparent: UNSAMPLED_TRACEPARENT,
+          tracestate: 'vendor1=value1',
+          baggage: 'key1=value1',
+        }))
+
         const mockResponse = { ok: true }
         const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)
         const mockSet = jest.fn()
@@ -517,11 +526,20 @@ describe('fetch module', () => {
         )
         await authFetch('https://myproject.supabase.co/rest/v1/table')
 
-        // Should not inject because trace is not sampled
-        expect(mockSet).not.toHaveBeenCalledWith('traceparent', expect.anything())
+        // trace_id still flows for log correlation, sampled flag untouched…
+        expect(mockSet).toHaveBeenCalledWith('traceparent', UNSAMPLED_TRACEPARENT)
+        // …but the vendor/application data channels are withheld.
+        expect(mockSet).not.toHaveBeenCalledWith('tracestate', expect.anything())
+        expect(mockSet).not.toHaveBeenCalledWith('baggage', expect.anything())
       })
 
-      test('should inject trace headers when sampling decision is disabled', async () => {
+      test('should inject the full trace context when sampling decision is disabled', async () => {
+        registerTraceContextExtractor(() => ({
+          traceparent: UNSAMPLED_TRACEPARENT,
+          tracestate: 'vendor1=value1',
+          baggage: 'key1=value1',
+        }))
+
         const mockResponse = { ok: true }
         const mockFetchImpl = jest.fn().mockResolvedValue(mockResponse)
         const mockSet = jest.fn()
@@ -551,11 +569,10 @@ describe('fetch module', () => {
         )
         await authFetch('https://myproject.supabase.co/rest/v1/table')
 
-        // Should inject even though trace is not sampled
-        expect(mockSet).toHaveBeenCalledWith(
-          'traceparent',
-          '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00'
-        )
+        // All three headers go out even though the trace is not sampled
+        expect(mockSet).toHaveBeenCalledWith('traceparent', UNSAMPLED_TRACEPARENT)
+        expect(mockSet).toHaveBeenCalledWith('tracestate', 'vendor1=value1')
+        expect(mockSet).toHaveBeenCalledWith('baggage', 'key1=value1')
       })
 
       test('should not override existing trace headers', async () => {
@@ -670,6 +687,92 @@ describe('fetch module', () => {
         registerTraceContextExtractor(() => ({ traceparent: SAMPLED_TRACEPARENT }))
         await authFetch('https://myproject.supabase.co/rest/v1/table')
         expect(mockSet).toHaveBeenCalledWith('traceparent', SAMPLED_TRACEPARENT)
+
+        warnSpy.mockRestore()
+      })
+
+      test('warns once when an active propagator emits no traceparent', async () => {
+        // What the extractor returns under a Sentry propagator with the
+        // default `propagateTraceparent: false`: vendor headers were written
+        // to the carrier, but no W3C traceparent.
+        registerTraceContextExtractor(() => ({ carrierKeys: ['sentry-trace', 'baggage'] }))
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+        const mockSet = jest.fn()
+        ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
+        ;(global as any).Headers = jest.fn().mockReturnValue({
+          has: jest.fn().mockReturnValue(false),
+          set: mockSet,
+        })
+
+        const authFetch = fetchWithAuth(
+          'test-key',
+          'https://myproject.supabase.co',
+          jest.fn().mockResolvedValue('test-token'),
+          undefined,
+          { enabled: true }
+        )
+        await authFetch('https://myproject.supabase.co/rest/v1/table')
+        await authFetch('https://myproject.supabase.co/rest/v1/table')
+
+        expect(mockSet).not.toHaveBeenCalledWith('traceparent', expect.anything())
+        expect(mockSet).not.toHaveBeenCalledWith('baggage', expect.anything())
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+        expect(warnSpy.mock.calls[0][0]).toContain('sentry-trace')
+        expect(warnSpy.mock.calls[0][0]).toContain('propagateTraceparent: true')
+
+        warnSpy.mockRestore()
+      })
+
+      test('non-traceparent warning is generic when the propagator is not Sentry', async () => {
+        registerTraceContextExtractor(() => ({ carrierKeys: ['b3'] }))
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+        ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
+        ;(global as any).Headers = jest.fn().mockReturnValue({
+          has: jest.fn().mockReturnValue(false),
+          set: jest.fn(),
+        })
+
+        const authFetch = fetchWithAuth(
+          'test-key',
+          'https://myproject.supabase.co',
+          jest.fn().mockResolvedValue('test-token'),
+          undefined,
+          { enabled: true }
+        )
+        await authFetch('https://myproject.supabase.co/rest/v1/table')
+
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+        expect(warnSpy.mock.calls[0][0]).toContain('b3')
+        expect(warnSpy.mock.calls[0][0]).not.toContain('Sentry')
+        expect(warnSpy.mock.calls[0][0]).toContain('W3C trace context')
+
+        warnSpy.mockRestore()
+      })
+
+      test('does not warn when there is no active trace', async () => {
+        // Empty carrier: the propagator had nothing to write. Normal — the
+        // warning must not fire for apps that simply have no span open.
+        registerTraceContextExtractor(() => null)
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+        ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
+        ;(global as any).Headers = jest.fn().mockReturnValue({
+          has: jest.fn().mockReturnValue(false),
+          set: jest.fn(),
+        })
+
+        const authFetch = fetchWithAuth(
+          'test-key',
+          'https://myproject.supabase.co',
+          jest.fn().mockResolvedValue('test-token'),
+          undefined,
+          { enabled: true }
+        )
+        await authFetch('https://myproject.supabase.co/rest/v1/table')
+
+        expect(warnSpy).not.toHaveBeenCalled()
 
         warnSpy.mockRestore()
       })

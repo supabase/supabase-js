@@ -115,6 +115,7 @@ export const fetchWithAuth = (
 }
 
 let warnedMissingTracingRuntime = false
+let warnedNonW3CPropagator = false
 
 /**
  * For tests only. Resets the one-time missing-tracing-runtime warning.
@@ -123,6 +124,15 @@ let warnedMissingTracingRuntime = false
  */
 export function _resetTracingRuntimeWarning(): void {
   warnedMissingTracingRuntime = false
+}
+
+/**
+ * For tests only. Resets the one-time non-W3C-propagator warning.
+ *
+ * @internal
+ */
+export function _resetNonW3CPropagatorWarning(): void {
+  warnedNonW3CPropagator = false
 }
 
 function getTraceHeaders(
@@ -161,13 +171,34 @@ function getTraceHeaders(
   const traceContext = extractTraceContext()
 
   if (!traceContext || !traceContext.traceparent) {
+    // An active propagator that writes vendor headers but no W3C
+    // `traceparent` (e.g. Sentry without `propagateTraceparent: true`) is
+    // otherwise indistinguishable from "no active trace" — warn once so the
+    // user learns why no trace headers are attached. An empty carrier means
+    // no active trace: normal, stay silent.
+    if (traceContext?.carrierKeys?.length && !warnedNonW3CPropagator) {
+      warnedNonW3CPropagator = true
+      const sentryHint = traceContext.carrierKeys.includes('sentry-trace')
+        ? ' Sentry detected: set `propagateTraceparent: true` in Sentry.init() to emit it.'
+        : ' Configure your tracing SDK to emit W3C trace context on outgoing requests.'
+      console.warn(
+        '@supabase/supabase-js: tracePropagation is enabled and a tracing SDK is active, but its ' +
+          `propagator wrote [${traceContext.carrierKeys.join(', ')}] and no W3C traceparent header, ` +
+          'so trace headers will not be attached.' +
+          sentryHint
+      )
+    }
     return null
   }
 
   if (respectSampling) {
     const parsed = parseTraceParent(traceContext.traceparent)
     if (parsed && !parsed.isSampled) {
-      return null
+      // Unsampled traces still carry `traceparent` so Supabase logs get a
+      // trace_id to correlate on; the flag stays `00`, so downstream tracing
+      // never records it as sampled. `tracestate` and `baggage` (the
+      // vendor/application data channels) are withheld on these requests.
+      return { traceparent: traceContext.traceparent }
     }
   }
 
