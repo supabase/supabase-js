@@ -466,7 +466,7 @@ jobs:
         run: |
           BASE_REF="${REF}"
           git fetch origin "$BASE_REF" 2>/dev/null || true
-          if git diff --name-only "origin/${BASE_REF}...HEAD" 2>/dev/null | grep -q "packages/core/postgrest-js/test/db/"; then
+          if git diff --name-only "origin/${BASE_REF}...HEAD" 2>/dev/null | grep -q "packages/core/postgrest-js/test/supabase/"; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
