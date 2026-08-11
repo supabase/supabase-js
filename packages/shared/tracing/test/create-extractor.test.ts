@@ -40,14 +40,23 @@ describe('createTraceContextExtractor', () => {
     expect(seen).toEqual([{ marker: 'active-context' }])
   })
 
-  it('returns null when no traceparent is injected', () => {
+  it('returns null when the carrier is empty (no active trace)', () => {
+    const extract = createTraceContextExtractor(fakeOtel(() => {}))
+
+    expect(extract()).toBeNull()
+  })
+
+  it('returns the carrier key names when headers are injected without a traceparent', () => {
     const extract = createTraceContextExtractor(
       fakeOtel((_context, carrier) => {
-        carrier['tracestate'] = 'vendor1=value1'
+        // A Sentry-like propagator: vendor headers, no W3C traceparent.
+        carrier['sentry-trace'] = '0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331'
+        carrier['baggage'] = 'sentry-public_key=abc'
       })
     )
 
-    expect(extract()).toBeNull()
+    // Key names only — header values must never leak into the result.
+    expect(extract()).toEqual({ carrierKeys: ['sentry-trace', 'baggage'] })
   })
 
   it('returns null when inject throws', () => {

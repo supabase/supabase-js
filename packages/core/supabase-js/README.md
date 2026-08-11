@@ -149,13 +149,15 @@ interface TracePropagationOptions {
   enabled?: boolean
 
   // Respect upstream sampling decisions (default: true).
-  // When true, headers are skipped if the upstream trace is not sampled.
+  // When true, non-sampled requests carry only `traceparent` (flag preserved,
+  // so nothing is recorded downstream) — Supabase logs still get a trace_id,
+  // while `tracestate` and `baggage` are withheld.
   respectSamplingDecision?: boolean
 }
 ```
 
 ```js
-// Always propagate, even for non-sampled traces.
+// Always propagate the full trace context, even for non-sampled traces.
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
   tracePropagation: { enabled: true, respectSamplingDecision: false },
 })
