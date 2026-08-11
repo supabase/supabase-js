@@ -1,3 +1,7 @@
+## 2.112.3 (2026-08-11)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
 ## 2.112.2 (2026-08-06)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
