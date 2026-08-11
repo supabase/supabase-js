@@ -459,14 +459,38 @@ jobs:
                 name=$(echo "$img" | tr '/:' '_')
                 docker image save "$img" | zstd -T0 -3 -o "/tmp/supabase-docker-images/${name}.tar.zst"
               done
-      - name: Check if database schema changed
+      - name: Check if database schema or Supabase CLI version changed
         id: check_codegen
         env:
-          REF: ${{ github.base_ref || github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          BASE_REF="${REF}"
-          git fetch origin "$BASE_REF" 2>/dev/null || true
-          if git diff --name-only "origin/${BASE_REF}...HEAD" 2>/dev/null | grep -q "packages/core/postgrest-js/test/db/"; then
+          # This is a pre-merge gate, so it only has a meaningful base to diff against on
+          # pull_request runs. publish.yml calls this same reusable workflow from a push to master
+          # (and from workflow_dispatch), where github.base_ref is empty and HEAD is already the
+          # branch tip. Skip explicitly there rather than relying on the diff coming back empty:
+          # the pull request that produced the commit already ran this check.
+          if [ -z "$BASE_REF" ]; then
+            echo "Not a pull request run (no base ref), so there is nothing to diff against."
+            echo "The codegen check already ran on the pull request for this commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Fail closed. If the base cannot be fetched or diffed we must not fall through to
+          # "nothing changed" and skip the gate: a silently skipped codegen check is exactly how
+          # the drift this step guards against went unnoticed for months.
+          if ! git fetch origin "$BASE_REF"; then
+            echo "::error::Could not fetch origin/${BASE_REF}, so we cannot tell whether the generated types need checking."
+            exit 1
+          fi
+          if ! CHANGED_FILES=$(git diff --name-only "origin/${BASE_REF}...HEAD"); then
+            echo "::error::Could not diff against origin/${BASE_REF}, refusing to skip the codegen check."
+            exit 1
+          fi
+          # types.generated.ts depends on the test schema AND on the pinned Supabase CLI version,
+          # which selects the postgres-meta image that does the introspection. Watch both, or a
+          # CLI bump silently changes the generated output with nothing to catch it.
+          if printf '%s\n' "$CHANGED_FILES" \
+            | grep -qE '^packages/core/postgrest-js/test/supabase/|^package\.json$'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -477,7 +501,7 @@ jobs:
         timeout-minutes: 5
       - name: Skip codegen check
         if: steps.check_codegen.outputs.changed != 'true'
-        run: echo "⏭️  Skipping codegen check — no database schema changes detected"
+        run: echo "⏭️  Skipping codegen check — no test schema or Supabase CLI version changes detected"
       - name: Upload coverage for postgrest-js
         uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
