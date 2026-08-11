@@ -1,3 +1,14 @@
+## 2.112.3 (2026-08-11)
+
+### 🩹 Fixes
+
+- **supabase:** improve trace propagation sampling and diagnostics ([#2604](https://github.com/supabase/supabase-js/pull/2604))
+- **supabase:** add trace context headers to canonical CORS allow-list ([#2603](https://github.com/supabase/supabase-js/pull/2603))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.112.2 (2026-08-06)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
