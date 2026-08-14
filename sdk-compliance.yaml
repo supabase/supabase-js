@@ -856,6 +856,8 @@ features:
     status: implemented
     symbols:
       - RealtimeClientOptions
+    supporting_symbols:
+      - RealtimeClient.hasLogger
   realtime.configuration.custom_websocket_transport:
     status: implemented
     symbols:

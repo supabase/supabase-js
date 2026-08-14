@@ -343,6 +343,10 @@ describe('send', () => {
   })
 
   describe('HTTP fallback scenarios', () => {
+    afterEach(() => {
+      testSetup.cleanup()
+    })
+
     test.each([
       {
         description: 'without access token',
@@ -403,6 +407,51 @@ describe('send', () => {
         expect(fetchStub).toHaveBeenCalledWith(expectedUrl, expectedBody)
       }
     )
+
+    test('warns via console.warn when no custom logger is configured', async () => {
+      const fetchStub = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { cancel: vi.fn() },
+      })
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      testSetup = setupRealtimeTest({ fetch: fetchStub as unknown as typeof fetch })
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.send({ type: 'broadcast', event: 'test' })
+
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('httpSend()'))
+
+      warnSpy.mockRestore()
+    })
+
+    test('routes the fallback warning through a custom logger instead of console.warn', async () => {
+      const fetchStub = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { cancel: vi.fn() },
+      })
+      const loggerStub = vi.fn()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      testSetup = setupRealtimeTest({
+        fetch: fetchStub as unknown as typeof fetch,
+        logger: loggerStub,
+      })
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.send({ type: 'broadcast', event: 'test' })
+
+      expect(loggerStub).toHaveBeenCalledTimes(1)
+      const [kind, message] = loggerStub.mock.calls[0]
+      expect(kind).toBe('channel')
+      expect(message).toContain('httpSend()')
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
+    })
   })
 
   describe('Error handling scenarios', () => {
