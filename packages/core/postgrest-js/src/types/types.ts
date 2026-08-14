@@ -55,12 +55,6 @@ export type PostgrestQueryBuilderOptions = {
   retry?: boolean
 }
 
-/** @internal */
-export type PostgrestQueryBuilderOptionsWithSchema<TSchema extends string> =
-  PostgrestQueryBuilderOptions & {
-    schema?: TSchema
-  }
-
 export type DatabaseWithOptions<Database, Options extends ClientServerOptions> = {
   db: Database
   options: Options
