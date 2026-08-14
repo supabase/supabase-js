@@ -7,16 +7,9 @@ export function mergeHeaders(left: Headers, right?: HeadersInit): Headers {
 
   if (!right) return merged
 
-  const entries =
-    right instanceof Headers
-      ? right.entries()
-      : Array.isArray(right)
-        ? right
-        : Object.entries(right)
-
-  for (const [key, value] of entries) {
+  new Headers(right).forEach((value, key) => {
     merged.set(key, value)
-  }
+  })
 
   return merged
 }
