@@ -125,22 +125,18 @@ describe('SupabaseClient', () => {
 
   describe('PostgREST per-request options', () => {
     test('should use custom fetch passed via options parameter', async () => {
-      const clientFetch = jest
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify([]), {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
-          })
-        )
-      const requestFetch = jest
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify([]), {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
-          })
-        )
+      const clientFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
 
       const client = createClient(URL, KEY, {
         global: { fetch: clientFetch },
@@ -153,14 +149,12 @@ describe('SupabaseClient', () => {
     })
 
     test('should prefer per-request header over client-level header with same name', async () => {
-      const mockFetch = jest
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify([]), {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
-          })
-        )
+      const mockFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
 
       const client = createClient(URL, KEY, {
         global: {
@@ -177,14 +171,12 @@ describe('SupabaseClient', () => {
     })
 
     test('should inject auth headers when a custom per-request fetch is provided', async () => {
-      const requestFetch = jest
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify([]), {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
-          })
-        )
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
 
       const client = createClient(URL, KEY)
 
@@ -211,14 +203,12 @@ describe('SupabaseClient', () => {
     })
 
     test('should not mutate the caller options object', async () => {
-      const requestFetch = jest
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify([]), {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
-          })
-        )
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
 
       const client = createClient(URL, KEY)
       const options = { fetch: requestFetch }
