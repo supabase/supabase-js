@@ -406,6 +406,15 @@ export default class RealtimeClient {
   }
 
   /**
+   * Returns true if a custom `logger` has been configured on this client.
+   *
+   * @category Realtime
+   */
+  hasLogger(): boolean {
+    return this.socketAdapter.hasLogger()
+  }
+
+  /**
    * Returns the current state of the socket.
    *
    * @category Realtime

@@ -1017,11 +1017,16 @@ export default class RealtimeChannel {
     opts: { [key: string]: any } = {}
   ): Promise<RealtimeChannelSendResponse> {
     if (!this.channelAdapter.canPush() && args.type === 'broadcast') {
-      console.warn(
+      const fallbackWarning =
         'Realtime send() is automatically falling back to REST API. ' +
-          'This behavior will be deprecated in the future. ' +
-          'Please use httpSend() explicitly for REST delivery.'
-      )
+        'This behavior will be deprecated in the future. ' +
+        'Please use httpSend() explicitly for REST delivery.'
+
+      if (this.socket.hasLogger()) {
+        this.socket.log('channel', fallbackWarning)
+      } else {
+        console.warn(fallbackWarning)
+      }
 
       const { event, payload: endpoint_payload } = args
       const headers: Record<string, string> = {
