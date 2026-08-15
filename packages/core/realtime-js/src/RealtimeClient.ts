@@ -869,6 +869,21 @@ export default class RealtimeClient {
   /** @internal */
   private async _reconnectAuth() {
     await this._waitForAuthIfNeeded()
+    // `_waitForAuthIfNeeded()` only awaits a refresh that is *already* in flight, so
+    // when nothing is pending it falls straight through and the rejoin goes out with
+    // whatever `accessTokenValue` was cached before the socket dropped. That is the
+    // common case after a tab has been hidden: `auth-js` stops its refresh ticker
+    // while hidden, so the token is refreshed on wake and the reconnect races it.
+    if (!this._isManualToken()) {
+      try {
+        await this.setAuth()
+      } catch (e) {
+        // A failed refresh must not prevent the reconnect: reconnecting with a stale
+        // token still recovers (the heartbeat refresh takes over), whereas not
+        // reconnecting at all does not.
+        this.log('error', 'Error refreshing auth before reconnect', e)
+      }
+    }
     if (!this.isConnected()) {
       this.connect()
     }
