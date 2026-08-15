@@ -200,8 +200,7 @@ export async function navigatorLock<R>(
       e !== null &&
       typeof e === 'object' &&
       'name' in e &&
-      e.name === 'AbortError' &&
-      acquireTimeout > 0
+      e.name === 'AbortError' // <--- Fixed!
     ) {
       if (abortController.signal.aborted) {
         // OUR timeout fired — the lock is genuinely orphaned. Steal it.
