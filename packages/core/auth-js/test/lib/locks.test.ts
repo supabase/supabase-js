@@ -131,6 +131,33 @@ describe('navigatorLock', () => {
     // Should only be called once (no steal retry for negative timeout)
     expect(globalThis.navigator.locks.request).toHaveBeenCalledTimes(1)
   })
+
+  it('should convert stolen-lock AbortError to typed error when acquireTimeout is 0', async () => {
+    // acquireTimeout=0 uses { ifAvailable: true } with no abort signal, so a
+    // steal by another request rejects with a raw AbortError. It should be
+    // converted to NavigatorLockAcquireTimeoutError instead of leaking.
+    const mockFn = jest.fn(async () => 'result')
+    ; (globalThis.navigator.locks.request as jest.Mock).mockImplementation(
+      (_name: string, options: any, callback: (lock: any) => Promise<any>) => {
+        expect(options.ifAvailable).toBe(true)
+        // Invoke callback so fn() runs (we held the lock)
+        callback({ name: 'test' })
+        // Outer promise rejects independently — another request stole the lock
+        return Promise.reject(
+          new DOMException("Lock broken by another request with the 'steal' option.", 'AbortError')
+        )
+      }
+    )
+
+    await expect(navigatorLock('test', 0, mockFn)).rejects.toMatchObject({
+      isAcquireTimeout: true,
+    })
+
+    // fn() ran exactly once (while we held the lock) — no steal-back re-execution
+    expect(mockFn).toHaveBeenCalledTimes(1)
+    // Must NOT have tried to steal back (no second call to navigator.locks.request)
+    expect(globalThis.navigator.locks.request).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('processLock', () => {
