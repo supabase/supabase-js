@@ -294,7 +294,13 @@ describe('trigger', () => {
 describe('send', () => {
   describe('WebSocket connection scenarios', () => {
     beforeEach(async () => {
-      testSetup = setupRealtimeTest()
+      const fetchStub = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { cancel: vi.fn() },
+      })
+
+      testSetup = setupRealtimeTest({ fetch: fetchStub as unknown as typeof fetch })
       testSetup.connect()
       await testSetup.socketConnected()
     })
