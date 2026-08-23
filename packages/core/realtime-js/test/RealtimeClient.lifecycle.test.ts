@@ -328,7 +328,7 @@ describe('Race condition prevention', () => {
     expect(client.pendingHeartbeatRef).toBe('stale-ref-from-previous-conn')
 
     // Simulate onOpen event (e.g. reconnect)
-    // @ts-ignore
+    // @ts-expect-error - triggering private phoenix socket callback in tests
     client.socketAdapter.getSocket().triggerStateCallbacks('open')
     expect(client.pendingHeartbeatRef).toBeNull()
 
@@ -337,7 +337,7 @@ describe('Race condition prevention', () => {
     expect(client.pendingHeartbeatRef).toBe('another-pending-ref')
 
     // Simulate onClose event (e.g. disconnect)
-    // @ts-ignore
+    // @ts-expect-error - triggering private phoenix socket callback in tests
     client.socketAdapter.getSocket().triggerStateCallbacks('close')
     expect(client.pendingHeartbeatRef).toBeNull()
 
