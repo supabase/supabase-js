@@ -6,9 +6,11 @@ import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   Bucket,
   BucketType,
+  CreateSettableVersioningStatus,
   FetchParameters,
   ListBucketOptions,
   PurgeCacheOptions,
+  UpdateSettableVersioningStatus,
 } from '../lib/types'
 import { StorageClientOptions } from '../StorageClient'
 
@@ -163,6 +165,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    * Each mime type specified can be a wildcard, e.g. image/*, or a specific mime type, e.g. image/png.
    * @param options.type (private-beta) specifies the bucket type. see `BucketType` for more details.
    *   - default bucket type is `STANDARD`
+   * @param options.versioningStatus the bucket's initial object versioning status.
+   * The default value is `DISABLED`
    * @returns Promise with response containing newly created bucket name or error
    *
    * @example Create bucket
@@ -199,6 +203,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
       fileSizeLimit?: number | string | null
       allowedMimeTypes?: string[] | null
       type?: BucketType
+      versioningStatus?: CreateSettableVersioningStatus
     } = {
       public: false,
     }
@@ -223,6 +228,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
           public: options.public,
           file_size_limit: options.fileSizeLimit,
           allowed_mime_types: options.allowedMimeTypes,
+          versioning_status: options.versioningStatus,
         },
         { headers: this.headers }
       )
@@ -242,6 +248,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    * @param options.allowedMimeTypes specifies the allowed mime types that this bucket can accept during upload.
    * The default value is null, which allows files with all mime types to be uploaded.
    * Each mime type specified can be a wildcard, e.g. image/*, or a specific mime type, e.g. image/png.
+   * @param options.versioningStatus the bucket's new object versioning status. `DISABLED` is not
+   * valid here, there's no transition back to it once versioning has been touched.
    * @returns Promise with response containing success message or error
    *
    * @example Update bucket
@@ -277,6 +285,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
       public: boolean
       fileSizeLimit?: number | string | null
       allowedMimeTypes?: string[] | null
+      versioningStatus?: UpdateSettableVersioningStatus
     }
   ): Promise<
     | {
@@ -298,6 +307,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
           public: options.public,
           file_size_limit: options.fileSizeLimit,
           allowed_mime_types: options.allowedMimeTypes,
+          versioning_status: options.versioningStatus,
         },
         { headers: this.headers }
       )

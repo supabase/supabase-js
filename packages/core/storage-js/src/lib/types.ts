@@ -7,6 +7,29 @@ import { StorageError } from './common/errors'
  */
 export type BucketType = 'STANDARD' | 'ANALYTICS' | (string & {})
 
+/**
+ * Bucket-level object versioning status, as reported by the API.
+ * - DISABLED: versioning has never been enabled for the bucket (the implicit starting state)
+ * - ENABLED: new object writes create new versions
+ * - SUSPENDED: versioning was enabled, then suspended
+ */
+export type VersioningStatus = 'DISABLED' | 'ENABLED' | 'SUSPENDED'
+
+/**
+ * Bucket-level object versioning status that can be set via `createBucket`.
+ * `SUSPENDED` is excluded: it only makes sense for a bucket that has already
+ * had versioning enabled at some point - a brand-new bucket with no history
+ * should just start `DISABLED` instead.
+ */
+export type CreateSettableVersioningStatus = Exclude<VersioningStatus, 'SUSPENDED'>
+
+/**
+ * Bucket-level object versioning status that can be set via `updateBucket`.
+ * `DISABLED` is excluded: it's never a legal destination, since there's no
+ * transition back to it once versioning has been touched.
+ */
+export type UpdateSettableVersioningStatus = Exclude<VersioningStatus, 'DISABLED'>
+
 export interface Bucket {
   id: string
   type?: BucketType
@@ -17,6 +40,7 @@ export interface Bucket {
   created_at: string
   updated_at: string
   public: boolean
+  versioning_status?: VersioningStatus
 }
 
 export interface ListBucketOptions {
@@ -110,6 +134,14 @@ export interface FileObject {
    * This field should not be relied upon.
    */
   buckets?: Bucket
+  /** Version identifier for this object (null for folders, omitted on older schemas) */
+  version?: string | null
+  /** Timestamp at which this version was archived */
+  archived_at?: string | null
+  /** Whether this entry is a delete marker rather than a real object version (null for folders, omitted on older schemas) */
+  is_delete_marker?: boolean | null
+  /** Whether this object was created while the bucket had versioning enabled (null for folders, omitted on older schemas) */
+  is_versioned?: boolean | null
 }
 
 /**
@@ -144,6 +176,12 @@ export interface FileObjectV2 {
    * This field may not be present in responses.
    */
   updated_at?: string
+  /** Timestamp at which this version was archived */
+  archived_at?: string | null
+  /** Whether this entry is a delete marker rather than a real object version */
+  is_delete_marker?: boolean
+  /** Whether this object was created while the bucket had versioning enabled */
+  is_versioned?: boolean
 }
 
 export interface SortBy {
@@ -180,8 +218,18 @@ export interface FileOptions {
   headers?: Record<string, string>
 }
 
+/**
+ * An entry for `remove()`. Either a plain path (deletes whichever row is currently
+ * at that path), or an object targeting an exact `(path, versionId)`
+ */
+export type DeleteObjectEntry = string | { path: string; versionId: string }
+
 export interface DestinationOptions {
   destinationBucket?: string
+  /**
+   * The version id of the source object to move/restore.
+   */
+  sourceVersionId?: string
 }
 
 export interface SearchOptions {
@@ -205,6 +253,23 @@ export interface SearchOptions {
    * The search string to filter files by.
    */
   search?: string
+
+  /**
+   * Controls whether noncurrent object versions are included in the results.
+   * @default 'exclude'
+   */
+  noncurrentVersions?: 'exclude' | 'include' | 'only'
+
+  /**
+   * Controls whether delete markers are included in the results.
+   * @default 'exclude'
+   */
+  deleteMarkers?: 'exclude' | 'include' | 'only'
+
+  /**
+   * When true, only returns objects whose key exactly matches the given prefix.
+   */
+  exactMatch?: boolean
 }
 
 export interface SortByV2 {
@@ -245,6 +310,23 @@ export interface SearchV2Options {
    * @default 'name asc'
    */
   sortBy?: SortByV2
+
+  /**
+   * Controls whether noncurrent object versions are included in the results.
+   * @default 'exclude'
+   */
+  noncurrentVersions?: 'exclude' | 'include' | 'only'
+
+  /**
+   * Controls whether delete markers are included in the results.
+   * @default 'exclude'
+   */
+  deleteMarkers?: 'exclude' | 'include' | 'only'
+
+  /**
+   * When true, only returns objects whose key exactly matches the given prefix.
+   */
+  exactMatch?: boolean
 }
 
 /**
@@ -267,6 +349,14 @@ export interface SearchV2Object {
   metadata: FileMetadata | null
   /** @deprecated Last access timestamp */
   last_accessed_at: string
+  /** Version identifier for this object */
+  version?: string
+  /** Timestamp at which this version was archived */
+  archived_at?: string | null
+  /** Whether this entry is a delete marker rather than a real object version */
+  is_delete_marker?: boolean
+  /** Whether this object was created while the bucket had versioning enabled */
+  is_versioned?: boolean
 }
 
 /**
