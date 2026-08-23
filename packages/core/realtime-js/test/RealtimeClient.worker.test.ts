@@ -2,6 +2,7 @@ import { beforeAll, afterAll, beforeEach, afterEach, test, expect, vi, describe 
 import { type TestSetup, setupRealtimeTest } from './helpers/setup'
 import Worker from 'web-worker'
 import path from 'path'
+import { pathToFileURL } from 'url'
 import RealtimeClient from '../src/RealtimeClient'
 
 let testSetup: TestSetup
@@ -10,7 +11,7 @@ beforeAll(() => {
   window.Worker = Worker
 })
 
-const workerUrl = path.join(__dirname, '/helpers/test_worker.js')
+const workerUrl = pathToFileURL(path.join(__dirname, '/helpers/test_worker.js')).href
 
 beforeEach(() => {
   testSetup = setupRealtimeTest({
@@ -36,7 +37,7 @@ test('sets worker URL', () => {
 })
 
 describe('when no workerUrl provided', () => {
-  const mockObjectURL = `file://${workerUrl}`
+  const mockObjectURL = workerUrl.startsWith('file://') ? workerUrl : `file://${workerUrl}`
   let originalCreateObjectURL: any
 
   beforeAll(() => {

@@ -184,11 +184,13 @@ export default class RealtimeClient {
     return this.socketAdapter.heartbeatTimer
   }
 
-  get pendingHeartbeatRef() {
-    if (this.worker) {
-      return this._pendingWorkerHeartbeatRef
-    }
+  get pendingHeartbeatRef(): string | null {
     return this.socketAdapter.pendingHeartbeatRef
+  }
+
+  set pendingHeartbeatRef(ref: string | null) {
+    this.socketAdapter.pendingHeartbeatRef = ref
+    this._pendingWorkerHeartbeatRef = ref
   }
 
   get reconnectTimer(): Timer {
@@ -702,6 +704,8 @@ export default class RealtimeClient {
   /** @internal */
   private _setupConnectionHandlers(): void {
     this.socketAdapter.onOpen(() => {
+      this.pendingHeartbeatRef = null
+
       const authPromise =
         this._authPromise ||
         (this.accessToken && !this.accessTokenValue ? this.setAuth() : Promise.resolve())
@@ -715,6 +719,7 @@ export default class RealtimeClient {
       }
     })
     this.socketAdapter.onClose(() => {
+      this.pendingHeartbeatRef = null
       if (this.worker && this.workerRef) {
         this._terminateWorker()
       }
