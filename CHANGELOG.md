@@ -1,3 +1,17 @@
+## 2.112.4 (2026-08-24)
+
+### 🩹 Fixes
+
+- **auth:** convert stolen-lock AbortError when acquireTimeout is 0 ([#2616](https://github.com/supabase/supabase-js/pull/2616))
+- **auth:** warn on deprecated lock option and prevent unhandled refresh rejection ([#2627](https://github.com/supabase/supabase-js/pull/2627))
+- **postgrest:** move override fixtures out of generated types, repair codegen ([#2605](https://github.com/supabase/supabase-js/pull/2605))
+- **realtime:** respect custom logger for send() REST fallback warning ([#2612](https://github.com/supabase/supabase-js/pull/2612))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- mmustafasenoglu @mmustafasenoglu
+
 ## 2.112.3 (2026-08-11)
 
 ### 🩹 Fixes

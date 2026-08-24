@@ -1,3 +1,13 @@
+## 2.112.4 (2026-08-24)
+
+### 🩹 Fixes
+
+- **realtime:** respect custom logger for send() REST fallback warning ([#2612](https://github.com/supabase/supabase-js/pull/2612))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.112.3 (2026-08-11)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

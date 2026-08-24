@@ -1,3 +1,13 @@
+## 2.112.4 (2026-08-24)
+
+### 🩹 Fixes
+
+- **postgrest:** move override fixtures out of generated types, repair codegen ([#2605](https://github.com/supabase/supabase-js/pull/2605))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.112.3 (2026-08-11)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
