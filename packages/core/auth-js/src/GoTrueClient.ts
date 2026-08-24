@@ -230,6 +230,10 @@ async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promi
  */
 const GLOBAL_JWKS: { [storageKey: string]: { cachedAt: number; jwks: { keys: JWK[] } } } = {}
 
+// Warn once per JS realm, not per client instance — server-side apps can
+// construct many clients per process and must not be spammed.
+let deprecatedLockWarned = false
+
 export default class GoTrueClient {
   private static nextInstanceID: Record<string, number> = {}
 
@@ -457,6 +461,13 @@ export default class GoTrueClient {
     // by default, no implicit `processLock`.
     if (settings.lock != null) {
       this.lock = settings.lock
+
+      if (!deprecatedLockWarned) {
+        deprecatedLockWarned = true
+        console.warn(
+          `${this._logPrefix()} The "lock" option is deprecated and will be removed in v3. The client now coordinates session refreshes without a lock, so most apps can drop the option. See https://github.com/supabase/supabase-js/blob/master/packages/core/auth-js/migrations/lockless-coordination.md`
+        )
+      }
     }
 
     if (!this.jwks) {
@@ -4992,6 +5003,14 @@ export default class GoTrueClient {
 
     try {
       this.refreshingDeferred = new Deferred<CallRefreshTokenResult>()
+
+      // Only callers that arrive while this refresh is in flight await the
+      // deferred; the original caller is served by the `throw` in the catch
+      // below. Pre-attach a no-op rejection handler so a failing refresh with
+      // no concurrent callers cannot surface as an unhandled rejection —
+      // concurrent callers attach their own handlers via `.promise` and still
+      // observe the rejection.
+      this.refreshingDeferred.promise.then(undefined, () => {})
 
       // Snapshot storage before the fetch. The commit guard discards the
       // rotated tokens only when a non-null pre-fetch snapshot changed under

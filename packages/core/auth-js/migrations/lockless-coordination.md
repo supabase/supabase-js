@@ -1,6 +1,6 @@
 # Lockless auth coordination
 
-**Since:** v2.X.Y (update at release time)
+**Since:** v2.107.0
 **Action required by:** v3.0.0
 
 `@supabase/auth-js` now coordinates session refreshes without a shared mutex by default. The legacy `lock` option is still honored when supplied, but it is deprecated and will be removed in v3.
@@ -19,7 +19,7 @@
 
 **Callers passing a custom `lock`** (typically React Native `processLock`, Node multi-process setups with shared AsyncStorage, or a custom lock implementation):
 
-- v2.x (this release): your custom `lock` is still invoked exactly as before. The legacy `_acquireLock` machinery is preserved on an opt-in path gated by `settings.lock != null`. No code change required.
+- v2.x (since v2.107.0): your custom `lock` is still invoked exactly as before. The legacy `_acquireLock` machinery is preserved on an opt-in path gated by `settings.lock != null`. No code change required. Since v2.112.4 the client logs a one-time deprecation warning when a `lock` is supplied.
 - v3.0.0 (planned): the `lock` and `lockAcquireTimeout` options will be removed entirely. Drop them from your client options before upgrading to v3.
 
 ## New APIs worth knowing
