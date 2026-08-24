@@ -191,18 +191,10 @@ export async function navigatorLock<R>(
   } catch (e) {
     // Always clear the acquire timeout once the request settles, so it cannot
     // fire later and incorrectly abort/log after a rejection.
-    if (acquireTimeout > 0) {
-      clearTimeout(acquireTimeoutTimer)
-    }
+    clearTimeout(acquireTimeoutTimer)
 
     // DOMException does not extend Error in Node.js, so use structural check
-    if (
-      e !== null &&
-      typeof e === 'object' &&
-      'name' in e &&
-      e.name === 'AbortError' &&
-      acquireTimeout > 0
-    ) {
+    if (e !== null && typeof e === 'object' && 'name' in e && e.name === 'AbortError') {
       if (abortController.signal.aborted) {
         // OUR timeout fired — the lock is genuinely orphaned. Steal it.
         //
