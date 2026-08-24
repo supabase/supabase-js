@@ -1,3 +1,15 @@
+## 2.112.4 (2026-08-24)
+
+### 🩹 Fixes
+
+- **auth:** warn on deprecated lock option and prevent unhandled refresh rejection ([#2627](https://github.com/supabase/supabase-js/pull/2627))
+- **auth:** convert stolen-lock AbortError when acquireTimeout is 0 ([#2616](https://github.com/supabase/supabase-js/pull/2616))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- mmustafasenoglu @mmustafasenoglu
+
 ## 2.112.3 (2026-08-11)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
