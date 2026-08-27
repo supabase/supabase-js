@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   validate:
-    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-javascript.yml@63c1ac1d44959bfd02e4fc70a09df287db4a425a # v1.1.1
+    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-javascript.yml@4d74492587bde35691e8a85470c0a7ebd7badb3e # v1.3.0
     with:
       build-command: |
         corepack enable
