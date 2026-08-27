@@ -30,6 +30,26 @@ test('not', async () => {
   `)
 })
 
+test('not with in formats array values', () => {
+  const q = postgrest.from('users').select('id').not('id', 'in', ['a', 'b'])
+  expect((q as any).url.searchParams.get('id')).toBe('not.in.(a,b)')
+})
+
+test('not with in quotes reserved characters in array values', () => {
+  const q = postgrest.from('users').select('id').not('id', 'in', ['a,b', 'c'])
+  expect((q as any).url.searchParams.get('id')).toBe('not.in.("a,b",c)')
+})
+
+test('not with in passes pre-formatted string through unchanged', () => {
+  const q = postgrest.from('users').select('id').not('id', 'in', '(a,b)')
+  expect((q as any).url.searchParams.get('id')).toBe('not.in.(a,b)')
+})
+
+test('not with non-in operator leaves value as-is', () => {
+  const q = postgrest.from('users').select('status').not('status', 'eq', 'OFFLINE')
+  expect((q as any).url.searchParams.get('status')).toBe('not.eq.OFFLINE')
+})
+
 test('or', async () => {
   const res = await postgrest
     .from('users')

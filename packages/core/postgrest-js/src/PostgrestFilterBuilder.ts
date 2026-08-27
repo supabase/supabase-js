@@ -35,6 +35,23 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
 
 const PostgrestReservedCharsRegexp = new RegExp('[,()]')
 
+/**
+ * Deduplicate filter values and quote strings that contain PostgREST reserved
+ * characters (comma or parentheses), then join with commas for `in` filters.
+ *
+ * @see https://postgrest.org/en/stable/references/api/tables_views.html#operators
+ */
+function cleanFilterValues(values: ReadonlyArray<unknown>): string {
+  return Array.from(new Set(values))
+    .map((s) => {
+      // handle postgrest reserved characters
+      // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
+      if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+      else return `${s}`
+    })
+    .join(',')
+}
+
 // Match relationship filters with `table.column` syntax and resolve underlying
 // column value. If not matched, fallback to generic type.
 // TODO: Validate the relationship itself ala select-query-parser. Currently we
@@ -835,15 +852,7 @@ export default class PostgrestFilterBuilder<
             never
     >
   ): this {
-    const cleanedValues = Array.from(new Set(values))
-      .map((s) => {
-        // handle postgrest reserved characters
-        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
-        else return `${s}`
-      })
-      .join(',')
-    this.url.searchParams.append(column, `in.(${cleanedValues})`)
+    this.url.searchParams.append(column, `in.(${cleanFilterValues(values)})`)
     return this
   }
 
@@ -863,15 +872,7 @@ export default class PostgrestFilterBuilder<
           : never
     >
   ): this {
-    const cleanedValues = Array.from(new Set(values))
-      .map((s) => {
-        // handle postgrest reserved characters
-        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
-        else return `${s}`
-      })
-      .join(',')
-    this.url.searchParams.append(column, `not.in.(${cleanedValues})`)
+    this.url.searchParams.append(column, `not.in.(${cleanFilterValues(values)})`)
     return this
   }
 
@@ -1789,10 +1790,15 @@ export default class PostgrestFilterBuilder<
   /**
    * Match only rows which doesn't satisfy the filter.
    *
-   * Unlike most filters, `opearator` and `value` are used as-is and need to
+   * Unlike most filters, `operator` and `value` are used as-is and need to
    * follow [PostgREST
    * syntax](https://postgrest.org/en/stable/api.html#operators). You also need
    * to make sure they are properly sanitized.
+   *
+   * When `operator` is `'in'` and `value` is an array, the array is formatted
+   * the same way as `.in()` (deduped, parentheses-wrapped, reserved characters
+   * quoted). Pre-formatted strings such as `'(a,b)'` are still passed through
+   * unchanged.
    *
    * @param column - The column to filter on
    * @param operator - The operator to be negated to filter with, following
@@ -1826,10 +1832,15 @@ export default class PostgrestFilterBuilder<
   /**
    * Match only rows which doesn't satisfy the filter.
    *
-   * Unlike most filters, `opearator` and `value` are used as-is and need to
+   * Unlike most filters, `operator` and `value` are used as-is and need to
    * follow [PostgREST
    * syntax](https://postgrest.org/en/stable/api.html#operators). You also need
    * to make sure they are properly sanitized.
+   *
+   * When `operator` is `'in'` and `value` is an array, the array is formatted
+   * the same way as `.in()` (deduped, parentheses-wrapped, reserved characters
+   * quoted). Pre-formatted strings such as `'(a,b)'` are still passed through
+   * unchanged.
    *
    * @param column - The column to filter on
    * @param operator - The operator to be negated to filter with, following
@@ -1840,10 +1851,12 @@ export default class PostgrestFilterBuilder<
    * @subcategory Using filters
    *
    * @remarks
-   * not() expects you to use the raw PostgREST syntax for the filter values.
+   * not() expects you to use the raw PostgREST syntax for the filter values,
+   * except when using the `in` operator with an array (see above).
    *
    * ```ts
-   * .not('id', 'in', '(5,6,7)')  // Use `()` for `in` filter
+   * .not('id', 'in', '(5,6,7)')  // Use `()` for `in` filter (pre-formatted string)
+   * .not('id', 'in', [5, 6, 7])  // Arrays are auto-formatted like `.in()`
    * .not('arraycol', 'cs', '{"a","b"}')  // Use `cs` for `contains()`, `{}` for array values
    * ```
    *
@@ -1897,7 +1910,11 @@ export default class PostgrestFilterBuilder<
     ThrowOnError
   > &
     this {
-    this.url.searchParams.append(column, `not.${operator}.${value}`)
+    if (operator === 'in' && Array.isArray(value)) {
+      this.url.searchParams.append(column, `not.in.(${cleanFilterValues(value)})`)
+    } else {
+      this.url.searchParams.append(column, `not.${operator}.${value}`)
+    }
     return this as any
   }
 
