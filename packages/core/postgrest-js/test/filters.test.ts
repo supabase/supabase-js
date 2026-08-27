@@ -50,6 +50,27 @@ test('not with non-in operator leaves value as-is', () => {
   expect((q as any).url.searchParams.get('status')).toBe('not.eq.OFFLINE')
 })
 
+test('in escapes embedded double quotes when quoting reserved chars', () => {
+  // Value must include a reserved char (comma) so quoting is applied; embedded " is escaped.
+  const q = postgrest.from('users').select('id').in('id', ['a"b,c', 'd'])
+  expect((q as any).url.searchParams.get('id')).toBe('in.("a\\"b,c",d)')
+})
+
+test('in escapes embedded backslashes when quoting reserved chars', () => {
+  const q = postgrest.from('users').select('id').in('id', ['a\\b,c'])
+  expect((q as any).url.searchParams.get('id')).toBe('in.("a\\\\b,c")')
+})
+
+test('not with in escapes quote+comma so value cannot split', () => {
+  const q = postgrest.from('users').select('id').not('id', 'in', ['a",b'])
+  expect((q as any).url.searchParams.get('id')).toBe('not.in.("a\\",b")')
+})
+
+test('in still quotes plain comma values without extra escaping', () => {
+  const q = postgrest.from('users').select('id').in('id', ['a,b', 'c'])
+  expect((q as any).url.searchParams.get('id')).toBe('in.("a,b",c)')
+})
+
 test('or', async () => {
   const res = await postgrest
     .from('users')

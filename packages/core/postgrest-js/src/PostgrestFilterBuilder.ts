@@ -46,7 +46,9 @@ function cleanFilterValues(values: ReadonlyArray<unknown>): string {
     .map((s) => {
       // handle postgrest reserved characters
       // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-      if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+      // Escape \ then " before wrapping so embedded quotes cannot break out of quoting.
+      if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+        return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
       else return `${s}`
     })
     .join(',')
