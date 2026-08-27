@@ -413,6 +413,90 @@ describe('Automatic Retries', () => {
     })
   })
 
+  describe('Retry-After header', () => {
+    // `Retry-After` is either delay-seconds or an HTTP-date (RFC 9110 §10.2.3).
+    // Capture the delay actually slept so each form can be asserted directly.
+    let delaysSeen: number[]
+
+    beforeEach(() => {
+      delaysSeen = []
+      const realSetTimeout = globalThis.setTimeout
+      jest.spyOn(globalThis, 'setTimeout').mockImplementation(((fn: any, delay?: number) => {
+        delaysSeen.push(delay as number)
+        return realSetTimeout(fn, 0)
+      }) as any)
+    })
+
+    const unavailable = (retryAfter: string) => ({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: new Headers({ 'Retry-After': retryAfter, 'Content-Type': 'application/json' }),
+      text: () => Promise.resolve(JSON.stringify({ code: 'PGRST002', message: 'retrying' })),
+    })
+
+    const success = () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+      text: () => Promise.resolve('[]'),
+    })
+
+    /** Delay slept before the single retry triggered by a 503 carrying `retryAfter`. */
+    async function delayFor(retryAfter: string): Promise<number> {
+      fetchMock.mockResolvedValueOnce(unavailable(retryAfter)).mockResolvedValueOnce(success())
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+      expect(result.error).toBeNull()
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      return delaysSeen[0]
+    }
+
+    it('should honour delay-seconds', async () => {
+      expect(await delayFor('2')).toBe(2000)
+    })
+
+    it('should treat delay-seconds of 0 as an immediate retry', async () => {
+      expect(await delayFor('0')).toBe(0)
+    })
+
+    it('should honour an HTTP-date instead of retrying immediately', async () => {
+      const retryAt = new Date(Date.now() + 5000).toUTCString()
+      const delay = await delayFor(retryAt)
+      // Whole-second header resolution means the delay lands just under 5s.
+      expect(delay).toBeGreaterThan(3000)
+      expect(delay).toBeLessThanOrEqual(5000)
+    })
+
+    it('should retry immediately for an HTTP-date already in the past', async () => {
+      expect(await delayFor(new Date(Date.now() - 60_000).toUTCString())).toBe(0)
+    })
+
+    it('should fall back to exponential backoff for an unparseable value', async () => {
+      // Previously parsed as 0 via `parseInt`, producing an immediate hot retry.
+      expect(await delayFor('soon')).toBe(1000)
+    })
+
+    it('should fall back to exponential backoff for an empty value', async () => {
+      expect(await delayFor('')).toBe(1000)
+    })
+
+    it('should not read a trailing-unit value as a bare number of seconds', async () => {
+      expect(await delayFor('30s')).toBe(1000)
+    })
+
+    it('should cap a very large delay-seconds value', async () => {
+      // A day-long Retry-After previously stalled the request for 24 hours.
+      expect(await delayFor('86400')).toBe(30000)
+    })
+
+    it('should cap a far-future HTTP-date', async () => {
+      const farFuture = new Date(Date.now() + 86_400_000).toUTCString()
+      expect(await delayFor(farFuture)).toBe(30000)
+    })
+  })
+
   describe('AbortError handling', () => {
     it('should rethrow AbortError immediately without retrying', async () => {
       const abortError = new Error('The operation was aborted')
