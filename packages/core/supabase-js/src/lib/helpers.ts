@@ -21,9 +21,11 @@ export function ensureTrailingSlash(url: string): string {
 
 export const isBrowser = () => typeof window !== 'undefined'
 
+// `plugins` is excluded: it is not a defaultable setting — the client
+// constructor reads it from the raw options and attaches namespaces directly.
 export type ResolvedSupabaseClientOptions<SchemaName> = Omit<
   Required<SupabaseClientOptions<SchemaName>>,
-  'tracePropagation'
+  'tracePropagation' | 'plugins'
 > & {
   tracePropagation: TracePropagationOptions
 }
