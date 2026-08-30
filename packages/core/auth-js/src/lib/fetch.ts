@@ -1,5 +1,11 @@
 import { API_VERSIONS, API_VERSION_HEADER_NAME } from './constants'
-import { expiresAt, looksLikeFetchResponse, parseResponseAPIVersion } from './helpers'
+import {
+  expiresAt,
+  hasHeader,
+  looksLikeFetchResponse,
+  parseResponseAPIVersion,
+  setHeader,
+} from './helpers'
 import {
   AuthResponse,
   AuthResponsePassword,
@@ -157,7 +163,9 @@ const _getRequestParams = (
     return params
   }
 
-  params.headers = { 'Content-Type': 'application/json;charset=UTF-8', ...options?.headers }
+  params.headers = hasHeader(options?.headers ?? {}, 'Content-Type')
+    ? { ...options?.headers }
+    : setHeader({ ...options?.headers }, 'Content-Type', 'application/json;charset=UTF-8')
   params.body = JSON.stringify(body)
   return { ...params, ...parameters }
 }
@@ -179,16 +187,14 @@ export async function _request(
   url: string,
   options?: GotrueRequestOptions
 ) {
-  const headers = {
-    ...options?.headers,
-  }
+  let headers: Record<string, string> = { ...options?.headers }
 
-  if (!headers[API_VERSION_HEADER_NAME]) {
-    headers[API_VERSION_HEADER_NAME] = API_VERSIONS['2024-01-01'].name
+  if (!hasHeader(headers, API_VERSION_HEADER_NAME)) {
+    headers = setHeader(headers, API_VERSION_HEADER_NAME, API_VERSIONS['2024-01-01'].name)
   }
 
   if (options?.jwt) {
-    headers['Authorization'] = `Bearer ${options.jwt}`
+    headers = setHeader(headers, 'Authorization', `Bearer ${options.jwt}`)
   }
 
   const qs = options?.query ?? {}
