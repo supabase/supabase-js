@@ -892,6 +892,9 @@ export class WebAuthnApi {
       })
 
       if (!factor) {
+        // Clean up only an unverified leftover from a previous failed attempt so the
+        // user can retry; a verified factor with this name is an active credential
+        // and must never be deleted here.
         await this.client.mfa
           .listFactors()
           .then((factors) =>
@@ -899,7 +902,7 @@ export class WebAuthnApi {
               (v) =>
                 v.factor_type === 'webauthn' &&
                 v.friendly_name === friendlyName &&
-                v.status !== 'unverified'
+                v.status === 'unverified'
             )
           )
           .then((factor) => (factor ? this.client.mfa.unenroll({ factorId: factor?.id }) : void 0))
