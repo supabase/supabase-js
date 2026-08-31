@@ -697,3 +697,61 @@ describe('admin.passkey', () => {
     expect((error as AuthApiError).code).toEqual('passkey_not_found')
   })
 })
+
+describe('mfa.webauthn.register cleanup after a failed enrollment', () => {
+  let browser: ReturnType<typeof setupBrowserEnvironment>
+
+  beforeEach(() => {
+    browser = setupBrowserEnvironment()
+  })
+
+  afterEach(() => {
+    browser.restore()
+    jest.restoreAllMocks()
+  })
+
+  const existingFactor = (status: string, id: string) => ({
+    id,
+    factor_type: 'webauthn',
+    friendly_name: 'My YubiKey',
+    status,
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+  })
+
+  const registerAgainstFailedEnroll = async (existing: ReturnType<typeof existingFactor>) => {
+    const { client, mockFetch } = await createPasskeyClient({ withSession: true })
+    mockFetch.mockResolvedValueOnce(apiErrorResponse('enrollment failed', 422))
+
+    jest.spyOn(client.mfa, 'listFactors').mockResolvedValue({
+      data: { all: [existing], totp: [], phone: [] },
+      error: null,
+    } as any)
+    const unenroll = jest
+      .spyOn(client.mfa, 'unenroll')
+      .mockResolvedValue({ data: null, error: null } as any)
+
+    await client.mfa.webauthn.register({
+      friendlyName: 'My YubiKey',
+      webauthn: { rpId: 'localhost' },
+    })
+
+    return unenroll
+  }
+
+  it('leaves an existing verified factor of the same name alone', async () => {
+    const unenroll = await registerAgainstFailedEnroll(
+      existingFactor('verified', 'verified-factor-id')
+    )
+
+    expect(unenroll).not.toHaveBeenCalled()
+  })
+
+  it('removes the leftover unverified factor', async () => {
+    const unenroll = await registerAgainstFailedEnroll(
+      existingFactor('unverified', 'unverified-factor-id')
+    )
+
+    expect(unenroll).toHaveBeenCalledWith({ factorId: 'unverified-factor-id' })
+  })
+})

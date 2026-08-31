@@ -899,7 +899,7 @@ export class WebAuthnApi {
               (v) =>
                 v.factor_type === 'webauthn' &&
                 v.friendly_name === friendlyName &&
-                v.status !== 'unverified'
+                v.status === 'unverified'
             )
           )
           .then((factor) => (factor ? this.client.mfa.unenroll({ factorId: factor?.id }) : void 0))
