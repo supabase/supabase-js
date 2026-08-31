@@ -892,6 +892,10 @@ export class WebAuthnApi {
       })
 
       if (!factor) {
+        // Enrollment failed (commonly a friendly-name conflict). Clean up only a
+        // stale *unverified* factor left by a previous incomplete attempt so a
+        // retry can succeed. Never touch a verified factor: deleting the user's
+        // working passkey because a new enrollment failed would be data loss.
         await this.client.mfa
           .listFactors()
           .then((factors) =>
@@ -899,7 +903,7 @@ export class WebAuthnApi {
               (v) =>
                 v.factor_type === 'webauthn' &&
                 v.friendly_name === friendlyName &&
-                v.status !== 'unverified'
+                v.status === 'unverified'
             )
           )
           .then((factor) => (factor ? this.client.mfa.unenroll({ factorId: factor?.id }) : void 0))
