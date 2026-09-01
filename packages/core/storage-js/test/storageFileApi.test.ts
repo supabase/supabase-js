@@ -1427,6 +1427,27 @@ describe('StorageFileApi Edge Cases', () => {
       expect(Buffer.from(withoutBuffer, 'base64').toString('utf8')).toBe(input)
     })
 
+    test('toBase64 handles metadata large enough to overflow a spread call', () => {
+      const fileApi = storage.from('test-bucket')
+      // Well past the ~64k argument ceiling of String.fromCharCode, and in the
+      // range the Storage API still accepts (metadata limit is 1 MiB).
+      const input = JSON.stringify({ note: 'é'.repeat(200_000) })
+
+      const withBuffer = fileApi.toBase64(input)
+
+      const originalBuffer = globalThis.Buffer
+      ;(globalThis as any).Buffer = undefined
+      let withoutBuffer: string
+      try {
+        withoutBuffer = fileApi.toBase64(input)
+      } finally {
+        ;(globalThis as any).Buffer = originalBuffer
+      }
+
+      expect(withoutBuffer).toBe(withBuffer)
+      expect(Buffer.from(withoutBuffer, 'base64').toString('utf8')).toBe(input)
+    })
+
     test('uploadToSignedUrl passes headers', async () => {
       const testFormData = new FormData()
       testFormData.append('file', 'test content')
