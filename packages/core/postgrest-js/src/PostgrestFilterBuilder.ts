@@ -33,6 +33,9 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
   ? true
   : false
 
+// List-context quoting for in()/notIn()/not(col, 'in', arr): only `,()` affect
+// parsing here. The wider PostgREST reserved-char set is unnecessary and can
+// over-quote in this context. See #2633.
 const PostgrestReservedCharsRegexp = new RegExp('[,()]')
 
 /**
@@ -1789,27 +1792,6 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
-  /**
-   * Match only rows which doesn't satisfy the filter.
-   *
-   * Unlike most filters, `operator` and `value` are used as-is and need to
-   * follow [PostgREST
-   * syntax](https://postgrest.org/en/stable/api.html#operators). You also need
-   * to make sure they are properly sanitized.
-   *
-   * When `operator` is `'in'` and `value` is an array, the array is formatted
-   * the same way as `.in()` (deduped, parentheses-wrapped, reserved characters
-   * quoted). Pre-formatted strings such as `'(a,b)'` are still passed through
-   * unchanged.
-   *
-   * @param column - The column to filter on
-   * @param operator - The operator to be negated to filter with, following
-   * PostgREST syntax
-   * @param value - The value to filter with, following PostgREST syntax
-   *
-   * @category Database
-   * @subcategory Using filters
-   */
   not<ColumnName extends string & keyof Row>(
     column: ColumnName,
     operator: 'is',
@@ -2087,7 +2069,7 @@ export default class PostgrestFilterBuilder<
    * Match only rows which satisfy the filter. This is an escape hatch - you
    * should use the specific filter methods wherever possible.
    *
-   * Unlike most filters, `opearator` and `value` are used as-is and need to
+   * Unlike most filters, `operator` and `value` are used as-is and need to
    * follow [PostgREST
    * syntax](https://postgrest.org/en/stable/api.html#operators). You also need
    * to make sure they are properly sanitized.
