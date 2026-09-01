@@ -719,12 +719,12 @@ describe('mfa.webauthn.register cleanup after a failed enrollment', () => {
     updated_at: '2026-01-01T00:00:00.000Z',
   })
 
-  const registerAgainstFailedEnroll = async (existing: ReturnType<typeof existingFactor>) => {
+  const registerAgainstFailedEnroll = async (existing: ReturnType<typeof existingFactor>[]) => {
     const { client, mockFetch } = await createPasskeyClient({ withSession: true })
     mockFetch.mockResolvedValueOnce(apiErrorResponse('enrollment failed', 422))
 
     jest.spyOn(client.mfa, 'listFactors').mockResolvedValue({
-      data: { all: [existing], totp: [], phone: [] },
+      data: { all: existing, totp: [], phone: [] },
       error: null,
     } as any)
     const unenroll = jest
@@ -740,18 +740,34 @@ describe('mfa.webauthn.register cleanup after a failed enrollment', () => {
   }
 
   it('leaves an existing verified factor of the same name alone', async () => {
-    const unenroll = await registerAgainstFailedEnroll(
-      existingFactor('verified', 'verified-factor-id')
-    )
+    const unenroll = await registerAgainstFailedEnroll([
+      existingFactor('verified', 'verified-factor-id'),
+    ])
 
     expect(unenroll).not.toHaveBeenCalled()
   })
 
   it('removes the leftover unverified factor', async () => {
-    const unenroll = await registerAgainstFailedEnroll(
-      existingFactor('unverified', 'unverified-factor-id')
-    )
+    const unenroll = await registerAgainstFailedEnroll([
+      existingFactor('unverified', 'unverified-factor-id'),
+    ])
 
     expect(unenroll).toHaveBeenCalledWith({ factorId: 'unverified-factor-id' })
+  })
+
+  it('removes only the unverified one when both share a name', async () => {
+    const unenroll = await registerAgainstFailedEnroll([
+      existingFactor('verified', 'verified-factor-id'),
+      existingFactor('unverified', 'unverified-factor-id'),
+    ])
+
+    expect(unenroll).toHaveBeenCalledTimes(1)
+    expect(unenroll).toHaveBeenCalledWith({ factorId: 'unverified-factor-id' })
+  })
+
+  it('does nothing when no factor of that name exists', async () => {
+    const unenroll = await registerAgainstFailedEnroll([])
+
+    expect(unenroll).not.toHaveBeenCalled()
   })
 })
