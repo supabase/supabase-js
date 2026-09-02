@@ -118,6 +118,24 @@ describe('array literal elements are quoted when needed', () => {
     expect(filter()).toBe('select=*&ids=cs.{1,true,null}')
   })
 
+  // Postgres reads a bare null, in any casing, as the SQL NULL token, so the
+  // text has to be quoted to survive as text.
+  test.each(['null', 'NULL', 'NuLl'])('quotes the string %p so it stays text', async (value) => {
+    const { client, filter } = captureUrl()
+
+    await client.from('marks').select().contains('tags', [value])
+
+    expect(filter()).toBe(`select=*&tags=cs.{"${value}"}`)
+  })
+
+  test('leaves a value that merely starts with null unquoted', async () => {
+    const { client, filter } = captureUrl()
+
+    await client.from('marks').select().contains('tags', ['nulls', 'null2'])
+
+    expect(filter()).toBe('select=*&tags=cs.{nulls,null2}')
+  })
+
   test('does not touch the range and json forms', async () => {
     const range = captureUrl()
     await range.client.from('marks').select().contains('period', '[2000-01-01,2000-01-02)')
