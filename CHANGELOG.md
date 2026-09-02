@@ -1,3 +1,20 @@
+## 2.114.0 (2026-09-02)
+
+### 🚀 Features
+
+- **storage:** object versioning updates ([#2644](https://github.com/supabase/supabase-js/pull/2644))
+
+### 🩹 Fixes
+
+- **auth:** unenroll the unverified factor after a failed registration ([#2641](https://github.com/supabase/supabase-js/pull/2641))
+- **deps:** override browserslist to patch high-severity advisories ([#2652](https://github.com/supabase/supabase-js/pull/2652))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Miodrag Obradovic @Kjubikstronk
+- Tyler Hillery
+
 ## 2.113.0 (2026-09-02)
 
 ### 🚀 Features
