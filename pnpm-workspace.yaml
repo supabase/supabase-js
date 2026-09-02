@@ -37,6 +37,12 @@ overrides:
   # @babel/core <=7.29.0; reached via next>styled-jsx in the realtime example.
   # (No 7.29.1 was ever published; 7.29.7 is the first fixed 7.x release.)
   '@babel/core': '>=7.29.1 <8'
+  # Avoid the unbounded cache growth (GHSA-c83g-rgw3-j3cx) and
+  # normalizeStats prototype-write crash (GHSA-73wf-gq98-2v4g) in
+  # browserslist <=4.28.6; reached via
+  # next>styled-jsx>@babel/core>@babel/helper-compilation-targets in the
+  # realtime example.
+  browserslist: '>=4.28.7'
 
 # Resolver / layout
 preferWorkspacePackages: true # prefer the in-tree version over the registry when both satisfy
