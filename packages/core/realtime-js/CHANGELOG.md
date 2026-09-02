@@ -1,3 +1,13 @@
+## 2.113.0 (2026-09-02)
+
+### 🚀 Features
+
+- **realtime:** allow wait for pg changes ([#2630](https://github.com/supabase/supabase-js/pull/2630))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+
 ## 2.112.4 (2026-08-24)
 
 ### 🩹 Fixes
