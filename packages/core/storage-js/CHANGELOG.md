@@ -1,3 +1,13 @@
+## 2.114.0 (2026-09-02)
+
+### 🚀 Features
+
+- **storage:** object versioning updates ([#2644](https://github.com/supabase/supabase-js/pull/2644))
+
+### ❤️ Thank You
+
+- Tyler Hillery
+
 ## 2.113.0 (2026-09-02)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.

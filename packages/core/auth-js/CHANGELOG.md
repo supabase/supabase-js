@@ -1,3 +1,13 @@
+## 2.114.0 (2026-09-02)
+
+### 🩹 Fixes
+
+- **auth:** unenroll the unverified factor after a failed registration ([#2641](https://github.com/supabase/supabase-js/pull/2641))
+
+### ❤️ Thank You
+
+- Miodrag Obradovic @Kjubikstronk
+
 ## 2.113.0 (2026-09-02)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
