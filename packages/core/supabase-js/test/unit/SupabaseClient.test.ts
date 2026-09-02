@@ -123,6 +123,104 @@ describe('SupabaseClient', () => {
     })
   })
 
+  describe('PostgREST per-request options', () => {
+    test('should use custom fetch passed via options parameter', async () => {
+      const clientFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY, {
+        global: { fetch: clientFetch },
+      })
+
+      await client.from('users', { fetch: requestFetch }).select()
+
+      expect(requestFetch).toHaveBeenCalled()
+      expect(clientFetch).not.toHaveBeenCalled()
+    })
+
+    test('should prefer per-request header over client-level header with same name', async () => {
+      const mockFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY, {
+        global: {
+          headers: { 'X-Custom': 'client-value' },
+          fetch: mockFetch,
+        },
+      })
+
+      await client.from('users', { headers: { 'X-Custom': 'request-value' } }).select()
+
+      const calledHeaders = mockFetch.mock.calls[0][1]?.headers
+      const headers = calledHeaders instanceof Headers ? calledHeaders : new Headers(calledHeaders)
+      expect(headers.get('X-Custom')).toBe('request-value')
+    })
+
+    test('should inject auth headers when a custom per-request fetch is provided', async () => {
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY)
+
+      await client.from('users', { fetch: requestFetch }).select()
+
+      expect(requestFetch).toHaveBeenCalled()
+      const calledHeaders = requestFetch.mock.calls[0][1]?.headers
+      const headers = calledHeaders instanceof Headers ? calledHeaders : new Headers(calledHeaders)
+      expect(headers.get('apikey')).toBe(KEY)
+    })
+
+    test('should forward per-request retry option', () => {
+      const client = createClient(URL, KEY)
+
+      // Default retry is true
+      // @ts-expect-error retryEnabled is protected
+      const defaultRetry = client.from('users').select().retryEnabled
+      expect(defaultRetry).toBe(true)
+
+      // Per-request override to false
+      // @ts-expect-error retryEnabled is protected
+      const overriddenRetry = client.from('users', { retry: false }).select().retryEnabled
+      expect(overriddenRetry).toBe(false)
+    })
+
+    test('should not mutate the caller options object', async () => {
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY)
+      const options = { fetch: requestFetch }
+      const originalFetch = options.fetch
+
+      await client.from('users', options).select()
+
+      // The options object should not have been mutated
+      expect(options.fetch).toBe(originalFetch)
+    })
+  })
+
   describe('Custom Headers', () => {
     test('should have custom header set', () => {
       const customHeader = { 'X-Test-Header': 'value' }

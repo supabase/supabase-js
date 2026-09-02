@@ -342,6 +342,8 @@ features:
     status: implemented
     symbols:
       - PostgrestClient.from
+    supporting_symbols:
+      - PostgrestQueryBuilderOptions
   database.query.rpc:
     status: implemented
     symbols:
