@@ -2,6 +2,31 @@ import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common'
 import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
+import PostgrestError from './PostgrestError'
+import { PostgrestOpenApiSpec, PostgrestSingleResponse } from './types/types'
+
+/**
+ * Build the error for a failed OpenAPI request. PostgREST answers with a JSON
+ * error object when it produced the failure itself; proxies and disabled
+ * OpenAPI output answer with plain text or an empty body, in which case the
+ * body (or, failing that, the status text) becomes the message.
+ */
+function toOpenApiError(body: string, statusText: string): PostgrestError {
+  try {
+    const parsed = JSON.parse(body)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return new PostgrestError({
+        message: String(parsed.message ?? body),
+        details: parsed.details ?? '',
+        hint: parsed.hint ?? '',
+        code: parsed.code ?? '',
+      })
+    }
+  } catch {
+    // Not JSON; fall through to the plain-text message.
+  }
+  return new PostgrestError({ message: body || statusText, details: '', hint: '', code: '' })
+}
 
 /**
  * PostgREST client.
@@ -201,6 +226,79 @@ export default class PostgrestClient<
       urlLengthLimit: this.urlLengthLimit,
       retry: this.retry,
     })
+  }
+
+  /**
+   * Fetch the OpenAPI description PostgREST publishes for this client's schema.
+   *
+   * The document lists only the tables, views and functions the caller's role
+   * holds privileges on; PostgREST applies that filtering server-side. The
+   * schema is the one this client was created with, so call `.schema()` first
+   * to describe a different one.
+   *
+   * @example
+   * ```ts
+   * const { data, error } = await supabase.getOpenApiSpec()
+   * ```
+   *
+   * @example Describe a schema other than the client default
+   * ```ts
+   * const { data, error } = await supabase.schema('billing').getOpenApiSpec()
+   * ```
+   *
+   * @category Database
+   */
+  async getOpenApiSpec(): Promise<PostgrestSingleResponse<PostgrestOpenApiSpec>> {
+    const headers = new Headers(this.headers)
+    headers.set('Accept', 'application/openapi+json')
+    if (this.schemaName) {
+      headers.set('Accept-Profile', this.schemaName)
+    }
+
+    const fetchImpl = this.fetch ?? globalThis.fetch
+    let res: Response
+    try {
+      res = await fetchImpl(`${this.url}/`, { method: 'GET', headers })
+    } catch (fetchError: any) {
+      return {
+        success: false,
+        error: new PostgrestError({
+          message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
+          details: '',
+          hint: '',
+          code: '',
+        }),
+        data: null,
+        count: null,
+        status: 0,
+        statusText: '',
+      }
+    }
+
+    const body = await res.text()
+    if (res.ok) {
+      try {
+        return {
+          success: true,
+          error: null,
+          data: JSON.parse(body) as PostgrestOpenApiSpec,
+          count: null,
+          status: res.status,
+          statusText: res.statusText,
+        }
+      } catch {
+        // A 2xx status does not guarantee a JSON body; report it like a failure.
+      }
+    }
+
+    return {
+      success: false,
+      error: toOpenApiError(body, res.statusText),
+      data: null,
+      count: null,
+      status: res.status,
+      statusText: res.statusText,
+    }
   }
 
   /**

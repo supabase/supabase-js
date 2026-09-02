@@ -40,6 +40,27 @@ export type PostgrestSingleResponse<T> = PostgrestResponseSuccess<T> | Postgrest
 export type PostgrestMaybeSingleResponse<T> = PostgrestSingleResponse<T | null>
 export type PostgrestResponse<T> = PostgrestSingleResponse<T[]>
 
+/**
+ * OpenAPI description served by PostgREST at the REST root (`GET /`).
+ *
+ * PostgREST emits OpenAPI 2.0 (Swagger), so the version lives in `swagger`.
+ * Only the top level is typed here; the contents of `paths`, `definitions`
+ * and `parameters` follow the OpenAPI 2.0 specification and vary with the
+ * PostgREST version.
+ *
+ * {@link https://docs.postgrest.org/en/stable/references/api/openapi.html}
+ */
+export interface PostgrestOpenApiSpec {
+  swagger: string
+  info: Record<string, unknown>
+  host?: string
+  basePath?: string
+  paths: Record<string, Record<string, unknown>>
+  definitions: Record<string, Record<string, unknown>>
+  parameters?: Record<string, Record<string, unknown>>
+  [key: string]: unknown
+}
+
 export type DatabaseWithOptions<Database, Options extends ClientServerOptions> = {
   db: Database
   options: Options

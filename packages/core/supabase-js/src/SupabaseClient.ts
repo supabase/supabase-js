@@ -3,7 +3,9 @@ import { FunctionsClient } from '@supabase/functions-js'
 import {
   PostgrestClient,
   type PostgrestFilterBuilder,
+  type PostgrestOpenApiSpec,
   type PostgrestQueryBuilder,
+  type PostgrestSingleResponse,
 } from '@supabase/postgrest-js'
 import {
   type RealtimeChannel,
@@ -459,6 +461,25 @@ export default class SupabaseClient<
     Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
   > {
     return this.rest.schema<DynamicSchema>(schema)
+  }
+
+  // NOTE: signatures must be kept in sync with PostgrestClient.getOpenApiSpec
+  /**
+   * Fetch the OpenAPI description PostgREST publishes for this client's schema.
+   *
+   * The document lists only the tables, views and functions the caller's role
+   * holds privileges on. The request carries the same `apikey` and
+   * `Authorization` headers as every other query, so the description is scoped
+   * to the signed-in user. Call `.schema()` first to describe a schema other
+   * than the client default.
+   *
+   * @example
+   * ```ts
+   * const { data, error } = await supabase.getOpenApiSpec()
+   * ```
+   */
+  getOpenApiSpec(): Promise<PostgrestSingleResponse<PostgrestOpenApiSpec>> {
+    return this.rest.getOpenApiSpec()
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.rpc

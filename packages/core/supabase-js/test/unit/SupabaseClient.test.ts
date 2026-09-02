@@ -583,4 +583,35 @@ describe('SupabaseClient', () => {
       })
     })
   })
+
+  describe('getOpenApiSpec', () => {
+    test('fetches the REST root for the client schema with the caller credentials', async () => {
+      const spec = { swagger: '2.0', info: {}, paths: {}, definitions: {} }
+      const mockFetch = jest
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(spec), { status: 200, statusText: 'OK' }))
+
+      const client = createClient(URL, KEY, {
+        db: { schema: 'billing' },
+        global: { fetch: mockFetch },
+      })
+      client.auth.getSession = jest.fn().mockResolvedValue({
+        data: { session: { access_token: 'user-token' } },
+      })
+
+      const { data, error } = await client.getOpenApiSpec()
+
+      expect(error).toBeNull()
+      expect(data).toEqual(spec)
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      const [input, options] = mockFetch.mock.calls[0]
+      expect(String(input)).toBe(`${URL}/rest/v1/`)
+      expect(options.method).toBe('GET')
+      expect(options.headers.get('Accept')).toBe('application/openapi+json')
+      expect(options.headers.get('Accept-Profile')).toBe('billing')
+      expect(options.headers.get('apikey')).toBe(KEY)
+      expect(options.headers.get('Authorization')).toBe('Bearer user-token')
+    })
+  })
 })
