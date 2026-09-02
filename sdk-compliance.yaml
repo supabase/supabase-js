@@ -603,6 +603,18 @@ features:
     symbols:
       - StorageApiError.code
       - StorageVectorsApiError.code
+  storage.file_buckets.bucket_versioning_status:
+    status: implemented
+    symbols:
+      - default.createBucket
+      - default.updateBucket
+      - default.getBucket
+      - default.listBuckets
+    supporting_symbols:
+      - Bucket.versioning_status
+      - CreateSettableVersioningStatus
+      - UpdateSettableVersioningStatus
+      - VersioningStatus
   storage.file_buckets.access_bucket:
     status: implemented
     symbols:
@@ -612,6 +624,12 @@ features:
     status: implemented
     symbols:
       - default.copy
+  storage.file_buckets.copy_specific_version:
+    status: implemented
+    symbols:
+      - default.copy
+    supporting_symbols:
+      - DestinationOptions.sourceVersionId
   storage.file_buckets.copy_cross_bucket:
     status: implemented
     symbols:
@@ -643,6 +661,10 @@ features:
     status: implemented
     symbols:
       - default.download
+  storage.file_buckets.download_specific_version:
+    status: implemented
+    symbols:
+      - default.download
   storage.file_buckets.download_as_stream:
     status: implemented
     symbols:
@@ -664,6 +686,14 @@ features:
     status: implemented
     symbols:
       - default.info
+  storage.file_buckets.file_info_specific_version:
+    status: implemented
+    symbols:
+      - default.info
+    supporting_symbols:
+      - FileObjectV2.archived_at
+      - FileObjectV2.is_delete_marker
+      - FileObjectV2.is_versioned
   storage.file_buckets.get_bucket:
     status: implemented
     symbols:
@@ -683,10 +713,36 @@ features:
     symbols:
       - default.list
       - default.listV2
+  storage.file_buckets.list_file_versions:
+    status: implemented
+    symbols:
+      - default.list
+      - default.listV2
+    supporting_symbols:
+      - FileObject.version
+      - FileObject.archived_at
+      - FileObject.is_delete_marker
+      - FileObject.is_versioned
+      - SearchOptions.noncurrentVersions
+      - SearchOptions.deleteMarkers
+      - SearchOptions.exactMatch
+      - SearchV2Object.version
+      - SearchV2Object.archived_at
+      - SearchV2Object.is_delete_marker
+      - SearchV2Object.is_versioned
+      - SearchV2Options.noncurrentVersions
+      - SearchV2Options.deleteMarkers
+      - SearchV2Options.exactMatch
   storage.file_buckets.move:
     status: implemented
     symbols:
       - default.move
+  storage.file_buckets.move_specific_version:
+    status: implemented
+    symbols:
+      - default.move
+    supporting_symbols:
+      - DestinationOptions.sourceVersionId
   storage.file_buckets.move_cross_bucket:
     status: implemented
     symbols:
@@ -704,6 +760,12 @@ features:
     status: implemented
     symbols:
       - default.remove
+  storage.file_buckets.remove_specific_version:
+    status: implemented
+    symbols:
+      - default.remove
+    supporting_symbols:
+      - DeleteObjectEntry
   storage.file_buckets.update_bucket:
     status: implemented
     symbols:
