@@ -51,6 +51,7 @@
 - **Image Transformations**: On-the-fly image resizing and optimization
 - **Vector Embeddings**: Store and query high-dimensional embeddings with similarity search
 - **Analytics Buckets**: Iceberg table-based buckets optimized for analytical queries and data processing
+- **Lifecycle**: Expire previous versions of objects after a number of days
 
 ## Quick Start Guide
 
@@ -227,6 +228,27 @@ await storageClient.analytics.deleteBucket('analytics-data')
     sortOrder: 'desc',
     search: 'prod',
   })
+  ```
+
+- Manage a bucket's lifecycle policy. Rules expire **previous versions** of objects after a number of days, so versioning needs to be enabled or the policy has nothing to act on. This is Standard buckets only, and the project must have lifecycle enabled.
+
+  ```js
+  // Replaces every existing rule
+  const { data, error } = await storageClient.updateBucketLifecycle('test_bucket', {
+    rules: [
+      {
+        id: 'expire-old-versions',
+        status: 'Enabled',
+        filter: {},
+        noncurrentVersionExpiration: { noncurrentDays: 30 },
+      },
+    ],
+  })
+
+  // Fails with NoSuchLifecycleConfiguration when the bucket has no policy
+  const { data: config, error: configError } = await storageClient.getBucketLifecycle('test_bucket')
+
+  await storageClient.deleteBucketLifecycle('test_bucket')
   ```
 
 #### Handling Files
