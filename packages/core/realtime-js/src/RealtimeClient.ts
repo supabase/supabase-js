@@ -680,10 +680,18 @@ export default class RealtimeClient {
    * Wait for any in-flight auth operations to complete
    * @internal
    */
-  private async _waitForAuthIfNeeded(): Promise<void> {
+  async _waitForAuthIfNeeded(): Promise<void> {
     if (this._authPromise) {
       await this._authPromise
     }
+  }
+
+  /**
+   * Whether an auth call is currently in flight.
+   * @internal
+   */
+  _hasPendingAuth(): boolean {
+    return this._authPromise !== null
   }
 
   /**

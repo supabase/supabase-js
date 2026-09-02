@@ -437,7 +437,6 @@ export default class RealtimeChannel {
         (!!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] &&
           this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0) ||
         this.params.config.presence?.enabled === true
-      const accessTokenPayload: { access_token?: string } = {}
       const config = {
         broadcast,
         presence: { ...presence, enabled: presence_enabled },
@@ -446,19 +445,11 @@ export default class RealtimeChannel {
         ...(postgres_changes_options ? { postgres_changes_options } : {}),
       }
 
-      if (this.socket.accessTokenValue) {
-        accessTokenPayload.access_token = this.socket.accessTokenValue
-      }
-
       this._onError((reason: unknown) => {
         callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, normalizeChannelError(reason))
       })
 
       this._onClose(() => callback?.(REALTIME_SUBSCRIBE_STATES.CLOSED))
-
-      this.updateJoinPayload({ ...{ config }, ...accessTokenPayload })
-
-      this._updateFilterMessage()
 
       const joinTimeout =
         postgres_changes_options?.wait && postgres_changes.length > 0
@@ -469,28 +460,53 @@ export default class RealtimeChannel {
             )
           : timeout
 
-      this.channelAdapter
-        .subscribe(joinTimeout)
-        .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
-          // Only refresh auth if using callback-based tokens
-          if (!this.socket._isManualToken()) {
-            this.socket.setAuth()
-          }
-          if (postgres_changes === undefined) {
-            callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
-            return
-          }
+      const sendJoin = () => {
+        const accessTokenPayload: { access_token?: string } = {}
 
-          this._updatePostgresBindings(postgres_changes, callback)
-        })
-        .receive('error', (error: { [key: string]: any }) => {
-          this.state = CHANNEL_STATES.errored
-          const message = Object.values(error).join(', ') || 'error'
-          callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, new Error(message, { cause: error }))
-        })
-        .receive('timeout', () => {
-          callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
-        })
+        if (this.socket.accessTokenValue) {
+          accessTokenPayload.access_token = this.socket.accessTokenValue
+        }
+
+        this.updateJoinPayload({ ...{ config }, ...accessTokenPayload })
+
+        this._updateFilterMessage()
+
+        this.channelAdapter
+          .subscribe(joinTimeout)
+          .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
+            // Only refresh auth if using callback-based tokens
+            if (!this.socket._isManualToken()) {
+              this.socket.setAuth()
+            }
+            if (postgres_changes === undefined) {
+              callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+              return
+            }
+
+            this._updatePostgresBindings(postgres_changes, callback)
+          })
+          .receive('error', (error: { [key: string]: any }) => {
+            this.state = CHANNEL_STATES.errored
+            const message = Object.values(error).join(', ') || 'error'
+            callback?.(
+              REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
+              new Error(message, { cause: error })
+            )
+          })
+          .receive('timeout', () => {
+            callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
+          })
+      }
+
+      // Joining while an auth call is still in flight sends the join without an
+      // access token, so the server falls back to the anon apikey and RLS filters
+      // everything out while the channel still reports SUBSCRIBED. Only defer when
+      // there is something to wait for, so the common path stays synchronous.
+      if (this.socket._hasPendingAuth()) {
+        this.socket._waitForAuthIfNeeded().then(sendJoin, sendJoin)
+      } else {
+        sendJoin()
+      }
     }
     return this
   }
