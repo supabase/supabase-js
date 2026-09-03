@@ -27,6 +27,9 @@ let warnedTopLevelSchema = false
  * Warn (once per process) when `schema` is passed at the top level of the client options
  * instead of under `db`. A top-level `schema` is not part of the options shape and is
  * ignored, so queries silently go to the default schema. Never throws.
+ *
+ * Only `undefined` counts as unset, matching `db.schema`, where any other value is sent
+ * as the profile header.
  */
 export function checkTopLevelSchemaOption(options: unknown): void {
   if (warnedTopLevelSchema) {
