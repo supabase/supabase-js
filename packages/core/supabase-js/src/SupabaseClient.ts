@@ -25,6 +25,7 @@ import {
 import { checkApiKeyFormat, fetchWithAuth } from './lib/fetch'
 import {
   applySettingDefaults,
+  checkTopLevelSchemaOption,
   validateSupabaseUrl,
   type ResolvedSupabaseClientOptions,
 } from './lib/helpers'
@@ -320,6 +321,7 @@ export default class SupabaseClient<
     const baseUrl = validateSupabaseUrl(supabaseUrl)
     if (!supabaseKey) throw new Error('supabaseKey is required.')
     checkApiKeyFormat(supabaseKey)
+    checkTopLevelSchemaOption(options)
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
