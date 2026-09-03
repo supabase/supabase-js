@@ -3,6 +3,7 @@ import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common'
 import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
 import PostgrestError from './PostgrestError'
+import { fetchWithRetry } from './fetchWithRetry'
 import {
   PostgrestOpenApiSpec,
   PostgrestResponseFailure,
@@ -264,7 +265,8 @@ export default class PostgrestClient<
    * The document lists only the tables, views and functions the caller's role
    * holds privileges on; PostgREST applies that filtering server-side. The
    * schema is the one this client was created with, so call `.schema()` first
-   * to describe a different one.
+   * to describe a different one. Transient failures are retried according to
+   * the client's `retry` option, like any other idempotent request.
    *
    * @example
    * ```ts
@@ -296,7 +298,12 @@ export default class PostgrestClient<
     const fetchImpl = this.fetch ?? globalThis.fetch
     let res: Response
     try {
-      res = await fetchImpl(`${this.url}/`, { method: 'GET', headers: requestHeaders })
+      res = await fetchWithRetry(
+        fetchImpl,
+        `${this.url}/`,
+        { method: 'GET', headers: requestHeaders },
+        this.retry ?? true
+      )
     } catch (fetchError) {
       return toTransportFailure(fetchError, 0, '')
     }

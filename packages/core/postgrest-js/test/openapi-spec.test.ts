@@ -189,4 +189,94 @@ describe('getOpenApiSpec', () => {
     expect(res.error).toBeInstanceOf(PostgrestError)
     expect(res.error).toMatchObject({ message: 'TypeError: terminated', code: '' })
   })
+
+  describe('retries', () => {
+    beforeEach(() => {
+      jest.useFakeTimers()
+    })
+
+    afterEach(() => {
+      jest.useRealTimers()
+    })
+
+    /** Minimal response stand-in; the client reads only these members. */
+    const replyWith = (
+      status: number,
+      statusText: string,
+      body: string,
+      headers: Record<string, string> = {}
+    ) =>
+      ({
+        ok: status >= 200 && status < 300,
+        status,
+        statusText,
+        headers: new Headers(headers),
+        text: () => Promise.resolve(body),
+      }) as unknown as Response
+
+    /** Advance the fake clock until the request settles. */
+    async function settle<T>(pending: Promise<T>): Promise<T> {
+      let settled = false
+      const tracked = pending.finally(() => {
+        settled = true
+      })
+      while (!settled) {
+        await jest.advanceTimersByTimeAsync(1000)
+      }
+      return tracked
+    }
+
+    test('retries a 503 after the Retry-After delay and marks the retry attempt', async () => {
+      const replies: Array<() => Response> = [
+        () =>
+          replyWith(503, 'Service Unavailable', '{"code":"PGRST002","message":"schema cache"}', {
+            'Retry-After': '1',
+          }),
+        () => replyWith(200, 'OK', JSON.stringify(SPEC)),
+      ]
+      const { calls, fetchImpl } = fetchReplying(() => replies.shift()!())
+      const postgrest = new PostgrestClient(REST_URL, { fetch: fetchImpl })
+
+      const res = await settle(postgrest.getOpenApiSpec())
+
+      expect(calls).toHaveLength(2)
+      expect((calls[1].init?.headers as Record<string, string>)['X-Retry-Count']).toBe('1')
+      expect(res).toMatchObject({ success: true, data: SPEC, status: 200 })
+    })
+
+    test('retries a rejected fetch and succeeds on the next attempt', async () => {
+      const replies: Array<() => Response | Promise<never>> = [
+        () => Promise.reject(new TypeError('fetch failed')),
+        () => replyWith(200, 'OK', JSON.stringify(SPEC)),
+      ]
+      const { calls, fetchImpl } = fetchReplying(() => replies.shift()!())
+      const postgrest = new PostgrestClient(REST_URL, { fetch: fetchImpl })
+
+      const res = await settle(postgrest.getOpenApiSpec())
+
+      expect(calls).toHaveLength(2)
+      expect(res).toMatchObject({ success: true, data: SPEC })
+    })
+
+    test('does not retry when the client disables retries', async () => {
+      const { calls, fetchImpl } = fetchReplying(() => replyWith(520, '', 'origin error'))
+      const postgrest = new PostgrestClient(REST_URL, { fetch: fetchImpl, retry: false })
+
+      const res = await settle(postgrest.getOpenApiSpec())
+
+      expect(calls).toHaveLength(1)
+      expect(res).toMatchObject({ success: false, status: 520 })
+      expect(res.error).toMatchObject({ message: 'origin error' })
+    })
+
+    test('gives up after the maximum number of retries', async () => {
+      const { calls, fetchImpl } = fetchReplying(() => replyWith(520, '', 'origin error'))
+      const postgrest = new PostgrestClient(REST_URL, { fetch: fetchImpl })
+
+      const res = await settle(postgrest.getOpenApiSpec())
+
+      expect(calls).toHaveLength(4)
+      expect(res).toMatchObject({ success: false, status: 520 })
+    })
+  })
 })
