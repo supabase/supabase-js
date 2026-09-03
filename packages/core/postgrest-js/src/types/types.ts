@@ -44,9 +44,10 @@ export type PostgrestResponse<T> = PostgrestSingleResponse<T[]>
  * OpenAPI description served by PostgREST at the REST root (`GET /`).
  *
  * PostgREST emits OpenAPI 2.0 (Swagger), so the version lives in `swagger`.
- * Only the top level is typed here; the contents of `paths`, `definitions`
- * and `parameters` follow the OpenAPI 2.0 specification and vary with the
- * PostgREST version.
+ * OpenAPI 2.0 requires only `swagger`, `info` and `paths`; a PostgREST
+ * `db-root-spec` override may leave out any other field. Only the top level
+ * is typed here; the contents of `paths`, `definitions` and `parameters`
+ * follow the OpenAPI 2.0 specification and vary with the PostgREST version.
  *
  * {@link https://docs.postgrest.org/en/stable/references/api/openapi.html}
  */
@@ -56,7 +57,7 @@ export interface PostgrestOpenApiSpec {
   host?: string
   basePath?: string
   paths: Record<string, Record<string, unknown>>
-  definitions: Record<string, Record<string, unknown>>
+  definitions?: Record<string, Record<string, unknown>>
   parameters?: Record<string, Record<string, unknown>>
   [key: string]: unknown
 }

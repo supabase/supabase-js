@@ -3,7 +3,11 @@ import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common'
 import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
 import PostgrestError from './PostgrestError'
-import { PostgrestOpenApiSpec, PostgrestSingleResponse } from './types/types'
+import {
+  PostgrestOpenApiSpec,
+  PostgrestResponseFailure,
+  PostgrestSingleResponse,
+} from './types/types'
 
 /**
  * Build the error for a failed OpenAPI request. PostgREST answers with a JSON
@@ -26,6 +30,32 @@ function toOpenApiError(body: string, statusText: string): PostgrestError {
     // Not JSON; fall through to the plain-text message.
   }
   return new PostgrestError({ message: body || statusText, details: '', hint: '', code: '' })
+}
+
+/**
+ * Build the response for a request that yielded no readable body: the fetch
+ * itself rejected (no status is known, so it is 0), or the body stream failed
+ * while being read (the response status is preserved).
+ */
+function toTransportFailure(
+  cause: unknown,
+  status: number,
+  statusText: string
+): PostgrestResponseFailure {
+  const err = cause as { name?: string; message?: string } | null | undefined
+  return {
+    success: false,
+    error: new PostgrestError({
+      message: `${err?.name ?? 'FetchError'}: ${err?.message}`,
+      details: '',
+      hint: '',
+      code: '',
+    }),
+    data: null,
+    count: null,
+    status,
+    statusText,
+  }
 }
 
 /**
@@ -259,23 +289,17 @@ export default class PostgrestClient<
     let res: Response
     try {
       res = await fetchImpl(`${this.url}/`, { method: 'GET', headers })
-    } catch (fetchError: any) {
-      return {
-        success: false,
-        error: new PostgrestError({
-          message: `${fetchError?.name ?? 'FetchError'}: ${fetchError?.message}`,
-          details: '',
-          hint: '',
-          code: '',
-        }),
-        data: null,
-        count: null,
-        status: 0,
-        statusText: '',
-      }
+    } catch (fetchError) {
+      return toTransportFailure(fetchError, 0, '')
     }
 
-    const body = await res.text()
+    let body: string
+    try {
+      body = await res.text()
+    } catch (readError) {
+      return toTransportFailure(readError, res.status, res.statusText)
+    }
+
     if (res.ok) {
       try {
         return {

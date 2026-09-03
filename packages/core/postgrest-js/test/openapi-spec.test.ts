@@ -158,4 +158,23 @@ describe('getOpenApiSpec', () => {
     expect(res.error).toBeInstanceOf(PostgrestError)
     expect(res.error).toMatchObject({ message: 'TypeError: fetch failed', code: '' })
   })
+
+  test('reports a body that cannot be read as an error without throwing', async () => {
+    const body = new ReadableStream({
+      start(controller) {
+        controller.error(new TypeError('terminated'))
+      },
+    })
+    const { fetchImpl } = fetchReplying(() => new Response(body, { status: 200, statusText: 'OK' }))
+    const postgrest = new PostgrestClient(REST_URL, { fetch: fetchImpl })
+
+    const res = await postgrest.getOpenApiSpec()
+
+    expect(res.success).toBe(false)
+    expect(res.data).toBeNull()
+    expect(res.status).toBe(200)
+    expect(res.statusText).toBe('OK')
+    expect(res.error).toBeInstanceOf(PostgrestError)
+    expect(res.error).toMatchObject({ message: 'TypeError: terminated', code: '' })
+  })
 })
