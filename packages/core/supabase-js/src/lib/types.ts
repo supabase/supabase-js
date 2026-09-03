@@ -108,6 +108,8 @@ export interface TracePropagationOptions {
 export type SupabaseClientOptions<SchemaName> = {
   /**
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to `public`.
+   *
+   * With generated `Database` types, this type-checks against schemas other than `public` only when the schema name is also passed as the second generic to `createClient`, e.g. `createClient<Database, 'myschema'>(url, key, { db: { schema: 'myschema' } })`. `supabase.schema('myschema').from(...)` infers its schema per call and needs no second generic.
    */
   db?: {
     schema?: SchemaName
