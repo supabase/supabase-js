@@ -342,6 +342,20 @@ features:
     status: implemented
     symbols:
       - PostgrestClient.from
+  database.query.openapi_spec:
+    status: implemented
+    symbols:
+      - PostgrestClient.getOpenApiSpec
+      - SupabaseClient.getOpenApiSpec
+    supporting_symbols:
+      - PostgrestOpenApiSpec
+      - PostgrestOpenApiSpec.swagger
+      - PostgrestOpenApiSpec.info
+      - PostgrestOpenApiSpec.host
+      - PostgrestOpenApiSpec.basePath
+      - PostgrestOpenApiSpec.paths
+      - PostgrestOpenApiSpec.definitions
+      - PostgrestOpenApiSpec.parameters
   database.query.rpc:
     status: implemented
     symbols:
