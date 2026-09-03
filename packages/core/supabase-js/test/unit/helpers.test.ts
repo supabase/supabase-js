@@ -41,6 +41,49 @@ test('override setting defaults', async () => {
   expect(settings.db.schema).toBe(defaults.db.schema)
 })
 
+describe('checkTopLevelSchemaOption', () => {
+  let warnSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    helpers._resetTopLevelSchemaWarning()
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    warnSpy.mockRestore()
+  })
+
+  test('is silent when schema is nested under db', () => {
+    helpers.checkTopLevelSchemaOption({ db: { schema: 'myschema' } })
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  test('is silent for undefined, empty, and non-object options', () => {
+    helpers.checkTopLevelSchemaOption(undefined)
+    helpers.checkTopLevelSchemaOption({})
+    helpers.checkTopLevelSchemaOption(null)
+    helpers.checkTopLevelSchemaOption('nope')
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  test('is silent when a top-level schema is explicitly undefined', () => {
+    helpers.checkTopLevelSchemaOption({ schema: undefined })
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  test('warns, but does not throw, for a top-level schema', () => {
+    expect(() => helpers.checkTopLevelSchemaOption({ schema: 'myschema' })).not.toThrow()
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/must be nested under "db"/))
+  })
+
+  test('warns only once per process', () => {
+    helpers.checkTopLevelSchemaOption({ schema: 'one' })
+    helpers.checkTopLevelSchemaOption({ schema: 'two' })
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+  })
+})
+
 test('applySettingDefaults with accessToken', () => {
   const defaults = {
     db: { schema: 'public' },
