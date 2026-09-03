@@ -1,5 +1,6 @@
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { createClient, SupabaseClient } from '../../src/index'
+import { _resetTopLevelSchemaWarning } from '../../src/lib/helpers'
 import { Database } from '../types'
 
 const URL = 'http://localhost:3000'
@@ -230,6 +231,29 @@ describe('SupabaseClient', () => {
       const schemaClient = client.schema('personal')
       expect(schemaClient).toBeDefined()
       expect(schemaClient).toBeInstanceOf(PostgrestClient)
+    })
+
+    test('warns, but does not throw, when schema is passed outside db', () => {
+      _resetTopLevelSchemaWarning()
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+      try {
+        expect(() => createClient(URL, KEY, { schema: 'personal' } as any)).not.toThrow()
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/must be nested under "db"/))
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
+
+    test('does not warn when schema is nested under db', () => {
+      _resetTopLevelSchemaWarning()
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+      try {
+        createClient<Database, 'personal'>(URL, KEY, { db: { schema: 'personal' } })
+        expect(warnSpy).not.toHaveBeenCalled()
+      } finally {
+        warnSpy.mockRestore()
+      }
     })
   })
 

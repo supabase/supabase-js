@@ -46,7 +46,7 @@ describe('checkTopLevelSchemaOption', () => {
 
   beforeEach(() => {
     helpers._resetTopLevelSchemaWarning()
-    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
   })
 
   afterEach(() => {
