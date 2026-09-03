@@ -629,6 +629,30 @@ features:
       - CreateSettableVersioningStatus
       - UpdateSettableVersioningStatus
       - VersioningStatus
+  storage.file_buckets.get_bucket_lifecycle:
+    status: implemented
+    symbols:
+      - default.getBucketLifecycle
+    supporting_symbols:
+      - BucketLifecycleConfiguration
+      - LifecycleRule
+      - LifecycleRuleFilter
+      - LifecycleRuleStatus
+      - NoncurrentVersionExpiration
+  storage.file_buckets.update_bucket_lifecycle:
+    status: implemented
+    symbols:
+      - default.updateBucketLifecycle
+    supporting_symbols:
+      - BucketLifecycleConfiguration
+      - LifecycleRule
+      - LifecycleRuleFilter
+      - LifecycleRuleStatus
+      - NoncurrentVersionExpiration
+  storage.file_buckets.delete_bucket_lifecycle:
+    status: implemented
+    symbols:
+      - default.deleteBucketLifecycle
   storage.file_buckets.access_bucket:
     status: implemented
     symbols:
