@@ -10,6 +10,8 @@ import {
   Fetch,
   DEFAULT_MAX_RETRIES,
   getRetryDelay,
+  MAX_RETRY_AFTER_DELAY,
+  parseRetryAfter,
   RETRYABLE_STATUS_CODES,
   RETRYABLE_METHODS,
 } from './types/common/common'
@@ -370,10 +372,12 @@ export default abstract class PostgrestBuilder<
 
         // Check if we should retry this HTTP response
         if (shouldRetry(this.method, res.status, attemptCount, this.retryEnabled)) {
-          const retryAfterHeader = res.headers?.get('Retry-After') ?? null
+          // `Retry-After` may be delay-seconds or an HTTP-date; anything else
+          // falls back to exponential backoff rather than retrying immediately.
+          const retryAfter = parseRetryAfter(res.headers?.get('Retry-After') ?? null)
           const delay =
-            retryAfterHeader !== null
-              ? Math.max(0, parseInt(retryAfterHeader, 10) || 0) * 1000
+            retryAfter !== null
+              ? Math.min(retryAfter, MAX_RETRY_AFTER_DELAY)
               : getRetryDelay(attemptCount)
           await res.text()
           attemptCount++
