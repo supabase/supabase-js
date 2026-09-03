@@ -285,10 +285,18 @@ export default class PostgrestClient<
       headers.set('Accept-Profile', this.schemaName)
     }
 
+    // Headers reach the fetch implementation as a plain object, as in
+    // PostgrestBuilder: React Native's XHR-based fetch drops headers that are
+    // supplied as a Headers instance.
+    const requestHeaders: Record<string, string> = {}
+    headers.forEach((value, key) => {
+      requestHeaders[key] = value
+    })
+
     const fetchImpl = this.fetch ?? globalThis.fetch
     let res: Response
     try {
-      res = await fetchImpl(`${this.url}/`, { method: 'GET', headers })
+      res = await fetchImpl(`${this.url}/`, { method: 'GET', headers: requestHeaders })
     } catch (fetchError) {
       return toTransportFailure(fetchError, 0, '')
     }

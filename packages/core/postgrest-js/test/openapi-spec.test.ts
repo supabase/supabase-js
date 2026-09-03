@@ -75,6 +75,18 @@ describe('getOpenApiSpec', () => {
     expect(headers.get('Accept-Profile')).toBe('billing')
   })
 
+  test('hands headers to fetch as a plain object', async () => {
+    const { calls, fetchImpl } = fetchReplying(() => jsonResponse(SPEC))
+    const postgrest = new PostgrestClient(REST_URL, { schema: 'public', fetch: fetchImpl })
+
+    await postgrest.getOpenApiSpec()
+
+    const headers = calls[0].init?.headers as Record<string, string>
+    expect(headers).not.toBeInstanceOf(Headers)
+    expect(headers['accept']).toBe('application/openapi+json')
+    expect(headers['accept-profile']).toBe('public')
+  })
+
   test('returns a PostgrestError built from the PostgREST error body', async () => {
     const pgrstError = {
       code: 'PGRST301',
