@@ -632,27 +632,24 @@ features:
   storage.file_buckets.get_bucket_lifecycle:
     status: implemented
     symbols:
-      - default.getBucketLifecycle
+      - StorageClient.getBucketLifecycle
     supporting_symbols:
-      - BucketLifecycleConfiguration
-      - LifecycleRule
-      - LifecycleRuleFilter
-      - LifecycleRuleStatus
-      - NoncurrentVersionExpiration
+      - BucketLifecycleConfiguration.rules
+      - LifecycleRule.id
+      - LifecycleRule.status
+      - LifecycleRule.filter
+      - LifecycleRule.legacyPrefix
+      - LifecycleRule.noncurrentVersionExpiration
+      - NoncurrentVersionExpiration.noncurrentDays
+      - NoncurrentVersionExpiration.newerNoncurrentVersions
   storage.file_buckets.update_bucket_lifecycle:
     status: implemented
     symbols:
-      - default.updateBucketLifecycle
-    supporting_symbols:
-      - BucketLifecycleConfiguration
-      - LifecycleRule
-      - LifecycleRuleFilter
-      - LifecycleRuleStatus
-      - NoncurrentVersionExpiration
+      - StorageClient.updateBucketLifecycle
   storage.file_buckets.delete_bucket_lifecycle:
     status: implemented
     symbols:
-      - default.deleteBucketLifecycle
+      - StorageClient.deleteBucketLifecycle
   storage.file_buckets.access_bucket:
     status: implemented
     symbols:
