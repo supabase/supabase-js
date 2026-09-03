@@ -1,3 +1,7 @@
+## 2.115.0 (2026-09-03)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
 ## 2.114.0 (2026-09-02)
 
 ### 🩹 Fixes

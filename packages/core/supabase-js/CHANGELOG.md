@@ -1,3 +1,13 @@
+## 2.115.0 (2026-09-03)
+
+### 🚀 Features
+
+- **postgrest:** add getOpenApiSpec() ([#2651](https://github.com/supabase/supabase-js/pull/2651))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.114.0 (2026-09-02)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
