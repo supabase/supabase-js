@@ -311,6 +311,10 @@ export default class RealtimeChannel {
   presence: RealtimePresence
   /** @internal */
   channelAdapter: ChannelAdapter
+  /** Set once the caller leaves the channel, so a deferred join cannot resurrect it.
+   * @internal
+   */
+  private _leaveRequested = false
 
   get state() {
     return this.channelAdapter.state
@@ -503,7 +507,13 @@ export default class RealtimeChannel {
       // everything out while the channel still reports SUBSCRIBED. Only defer when
       // there is something to wait for, so the common path stays synchronous.
       if (this.socket._hasPendingAuth()) {
-        this.socket._waitForAuthIfNeeded().then(sendJoin, sendJoin)
+        // The caller can leave before the deferred join runs (a logout, a component
+        // unmounting). phoenix's leave() puts a never-joined channel straight back
+        // into `closed`, so the state alone cannot tell the two apart.
+        const sendJoinUnlessLeft = () => {
+          if (!this._leaveRequested) sendJoin()
+        }
+        this.socket._waitForAuthIfNeeded().then(sendJoinUnlessLeft, sendJoinUnlessLeft)
       } else {
         sendJoin()
       }
@@ -1165,6 +1175,7 @@ export default class RealtimeChannel {
    * @category Realtime
    */
   async unsubscribe(timeout = this.timeout) {
+    this._leaveRequested = true
     return new Promise<RealtimeChannelSendResponse>((resolve) => {
       this.channelAdapter
         .unsubscribe(timeout)
@@ -1180,6 +1191,7 @@ export default class RealtimeChannel {
    * @category Realtime
    */
   teardown() {
+    this._leaveRequested = true
     this.channelAdapter.teardown()
   }
 

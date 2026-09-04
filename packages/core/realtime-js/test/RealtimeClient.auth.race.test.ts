@@ -106,3 +106,60 @@ describe('a setAuth that lands while another is in flight', () => {
     testSetup.cleanup()
   })
 })
+
+describe('unsubscribing while the deferred join is still pending', () => {
+  test('does not join a channel the caller already unsubscribed', async () => {
+    // Deferring the join means subscribe() can return before phx_join is sent.
+    // If the caller unsubscribes in that window - a logout, a component
+    // unmounting - the deferred callback must not resurrect the channel.
+    const token = utils.generateJWT('1h')
+    const testSetup = setupRealtimeTest({
+      accessToken: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20))
+        return token
+      },
+    })
+
+    const topic = 'db-changes'
+    const channel = testSetup.client.channel(topic, { config: { private: true } })
+
+    channel.subscribe()
+    await channel.unsubscribe()
+
+    await new Promise((resolve) => setTimeout(resolve, 60))
+
+    const join = testSetup.emitters.message.mock.calls.find(
+      ([channelTopic, event]) => channelTopic === `realtime:${topic}` && event === 'phx_join'
+    )
+
+    expect(join).toBeUndefined()
+
+    testSetup.cleanup()
+  })
+
+  test('does not join a channel the caller already removed', async () => {
+    const token = utils.generateJWT('1h')
+    const testSetup = setupRealtimeTest({
+      accessToken: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20))
+        return token
+      },
+    })
+
+    const topic = 'db-changes'
+    const channel = testSetup.client.channel(topic, { config: { private: true } })
+
+    channel.subscribe()
+    await testSetup.client.removeChannel(channel)
+
+    await new Promise((resolve) => setTimeout(resolve, 60))
+
+    const join = testSetup.emitters.message.mock.calls.find(
+      ([channelTopic, event]) => channelTopic === `realtime:${topic}` && event === 'phx_join'
+    )
+
+    expect(join).toBeUndefined()
+
+    testSetup.cleanup()
+  })
+})
