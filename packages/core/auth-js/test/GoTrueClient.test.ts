@@ -7,7 +7,7 @@ import {
   REFRESH_FAILURE_COOLDOWN_MS,
   STORAGE_KEY,
 } from '../src/lib/constants'
-import { getItemAsync, setItemAsync } from '../src/lib/helpers'
+import { getItemAsync, removeItemAsync, setItemAsync } from '../src/lib/helpers'
 import { memoryLocalStorageAdapter } from '../src/lib/local-storage'
 import {
   deserializeCredentialCreationOptions,
@@ -4486,6 +4486,33 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
     return spy
   }
 
+  const stubDiscardedRefresh = (
+    client: GoTrueClient,
+    storage: ReturnType<typeof memoryLocalStorageAdapter>
+  ) => {
+    const spy = jest.fn(async () => {
+      // Simulate a concurrent signOut clearing storage while this refresh is in flight.
+      await removeItemAsync(storage, STORAGE_KEY)
+      return {
+        data: {
+          session: {
+            access_token: 'jwt.accesstoken.signature2',
+            refresh_token: 'refresh-token-r2',
+            token_type: 'bearer',
+            expires_in: 60,
+            expires_at: Math.floor(Date.now() / 1000) + 60,
+            user: { id: 'user-1', email: 'u@example.com' } as any,
+          },
+          user: { id: 'user-1', email: 'u@example.com' } as any,
+        },
+        error: null,
+      }
+    })
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = spy
+    return spy
+  }
+
   describe('storage preservation (Fix A)', () => {
     test('non-retryable refresh failure + access token still valid → storage preserved', async () => {
       const storage = memoryLocalStorageAdapter()
@@ -4905,6 +4932,37 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
       expect(errorSpy).not.toHaveBeenCalled()
       expect(warnSpy).toHaveBeenCalled()
+
+      errorSpy.mockRestore()
+      warnSpy.mockRestore()
+    })
+
+    test('_emitInitialSession does not log a commit-guard-discarded refresh', async () => {
+      // Concurrent signOut clears storage while a refresh is in flight; the
+      // commit guard discards the rotated tokens. This is a successful no-op,
+      // not an application error — it must not hit console.warn or console.error.
+      const storage = memoryLocalStorageAdapter()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+        skipAutoInitialize: true,
+      })
+      stubDiscardedRefresh(client, storage)
+
+      await client.initialize()
+
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // @ts-expect-error access private for test
+      await client._emitInitialSession(Symbol('test-discarded-refresh-init'))
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(warnSpy).not.toHaveBeenCalled()
 
       errorSpy.mockRestore()
       warnSpy.mockRestore()

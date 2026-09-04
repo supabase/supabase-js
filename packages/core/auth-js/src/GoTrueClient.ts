@@ -4357,6 +4357,12 @@ export default class GoTrueClient {
       } catch (err) {
         await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
         this._debug('INITIAL_SESSION', 'callback id', id, 'error', err)
+        if (isAuthRefreshDiscardedError(err)) {
+          // Same successful no-op _recoverAndRefresh treats as debug-only: the
+          // commit guard discarded a refresh because a concurrent signOut
+          // changed session state mid-flight.
+          return
+        }
         if (
           isAuthSessionMissingError(err) ||
           isAuthRetryableFetchError(err) ||
