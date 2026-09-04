@@ -1521,7 +1521,17 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     if (typeof Buffer !== 'undefined') {
       return Buffer.from(data).toString('base64')
     }
-    return btoa(data)
+    // `btoa` operates on Latin-1: it throws on code points > 255 and mangles
+    // 128-255, so encode to UTF-8 bytes first to match the `Buffer` path above.
+    const bytes = new TextEncoder().encode(data)
+    // Spreading the whole array into String.fromCharCode overflows the call stack
+    // for metadata approaching the 1 MiB limit, so build the string in chunks.
+    const CHUNK_SIZE = 0x8000
+    let binary = ''
+    for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK_SIZE))
+    }
+    return btoa(binary)
   }
 
   private _getFinalPath(path: string) {

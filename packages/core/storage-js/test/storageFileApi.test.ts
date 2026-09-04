@@ -1404,6 +1404,50 @@ describe('StorageFileApi Edge Cases', () => {
       )
     })
 
+    test('toBase64 encodes non-ASCII metadata as UTF-8 in environments without Buffer (browser/Deno)', () => {
+      const fileApi = storage.from('test-bucket')
+      const input = JSON.stringify({ title: 'café', emoji: '🎉' })
+
+      // Node path (Buffer available) is the reference encoding.
+      const withBuffer = fileApi.toBase64(input)
+
+      // Simulate a runtime where Buffer is undefined so the `btoa` branch runs.
+      const originalBuffer = globalThis.Buffer
+      ;(globalThis as any).Buffer = undefined
+      let withoutBuffer: string
+      try {
+        withoutBuffer = fileApi.toBase64(input)
+      } finally {
+        ;(globalThis as any).Buffer = originalBuffer
+      }
+
+      // The browser branch must match the Node branch and round-trip cleanly.
+      // Without the UTF-8 encoding, `btoa` throws on the emoji (or mangles 'café').
+      expect(withoutBuffer).toBe(withBuffer)
+      expect(Buffer.from(withoutBuffer, 'base64').toString('utf8')).toBe(input)
+    })
+
+    test('toBase64 handles metadata large enough to overflow a spread call', () => {
+      const fileApi = storage.from('test-bucket')
+      // Well past the ~64k argument ceiling of String.fromCharCode, and in the
+      // range the Storage API still accepts (metadata limit is 1 MiB).
+      const input = JSON.stringify({ note: 'é'.repeat(200_000) })
+
+      const withBuffer = fileApi.toBase64(input)
+
+      const originalBuffer = globalThis.Buffer
+      ;(globalThis as any).Buffer = undefined
+      let withoutBuffer: string
+      try {
+        withoutBuffer = fileApi.toBase64(input)
+      } finally {
+        ;(globalThis as any).Buffer = originalBuffer
+      }
+
+      expect(withoutBuffer).toBe(withBuffer)
+      expect(Buffer.from(withoutBuffer, 'base64').toString('utf8')).toBe(input)
+    })
+
     test('uploadToSignedUrl passes headers', async () => {
       const testFormData = new FormData()
       testFormData.append('file', 'test content')
