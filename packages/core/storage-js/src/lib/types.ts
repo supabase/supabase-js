@@ -30,6 +30,56 @@ export type CreateSettableVersioningStatus = Exclude<VersioningStatus, 'SUSPENDE
  */
 export type UpdateSettableVersioningStatus = Exclude<VersioningStatus, 'DISABLED'>
 
+/**
+ * Whether a lifecycle rule runs.
+ * `Enabled` applies the rule. `Disabled` keeps it stored but inactive.
+ */
+export type LifecycleRuleStatus = 'Enabled' | 'Disabled'
+
+/**
+ * When to expire noncurrent object versions (previous versions of an object).
+ *
+ * `noncurrentDays` is how old a noncurrent version must be before it can
+ * expire. `newerNoncurrentVersions` keeps that many of the newest noncurrent
+ * versions regardless of age, then expires the rest. Allowed range is 1 to 100.
+ */
+export interface NoncurrentVersionExpiration {
+  noncurrentDays: number
+  newerNoncurrentVersions?: number
+}
+
+/**
+ * Object filter for a lifecycle rule.
+ *
+ * Currently only `{}` is accepted. Prefix, tag, and size filters are rejected.
+ */
+export type LifecycleRuleFilter = Record<string, never>
+
+/**
+ * One lifecycle rule.
+ *
+ * Today the only action is `noncurrentVersionExpiration`. Include `filter: {}`
+ * on each rule. `id` is optional. The server generates one if you omit it.
+ */
+export interface LifecycleRule {
+  id?: string
+  status: LifecycleRuleStatus
+  filter?: LifecycleRuleFilter
+  /**
+   * Empty-prefix selector from S3 Lifecycle V1. Prefer `filter: {}`.
+   */
+  legacyPrefix?: ''
+  noncurrentVersionExpiration: NoncurrentVersionExpiration
+}
+
+/**
+ * Lifecycle policy stored on a bucket.
+ * 1 to 1000 rules. Rule IDs must be unique when you set them.
+ */
+export interface BucketLifecycleConfiguration {
+  rules: LifecycleRule[]
+}
+
 export interface Bucket {
   id: string
   type?: BucketType
