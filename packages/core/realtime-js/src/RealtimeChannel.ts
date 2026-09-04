@@ -311,10 +311,11 @@ export default class RealtimeChannel {
   presence: RealtimePresence
   /** @internal */
   channelAdapter: ChannelAdapter
-  /** Set once the caller leaves the channel, so a deferred join cannot resurrect it.
+  /** Bumped on every deferred join and on every leave, so a join that was
+   * deferred for an earlier attempt cannot land after the caller moved on.
    * @internal
    */
-  private _leaveRequested = false
+  private _joinGeneration = 0
 
   get state() {
     return this.channelAdapter.state
@@ -509,11 +510,16 @@ export default class RealtimeChannel {
       if (this.socket._hasPendingAuth()) {
         // The caller can leave before the deferred join runs (a logout, a component
         // unmounting). phoenix's leave() puts a never-joined channel straight back
-        // into `closed`, so the state alone cannot tell the two apart.
-        const sendJoinUnlessLeft = () => {
-          if (!this._leaveRequested) sendJoin()
+        // into `closed`, so the state alone cannot tell the two apart; a generation
+        // token can, and it still lets a later subscribe() join normally.
+        this._joinGeneration++
+        const generation = this._joinGeneration
+        const sendJoinIfCurrent = () => {
+          if (generation === this._joinGeneration) {
+            sendJoin()
+          }
         }
-        this.socket._waitForAuthIfNeeded().then(sendJoinUnlessLeft, sendJoinUnlessLeft)
+        this.socket._waitForAuthIfNeeded().then(sendJoinIfCurrent, sendJoinIfCurrent)
       } else {
         sendJoin()
       }
@@ -1175,7 +1181,7 @@ export default class RealtimeChannel {
    * @category Realtime
    */
   async unsubscribe(timeout = this.timeout) {
-    this._leaveRequested = true
+    this._joinGeneration++
     return new Promise<RealtimeChannelSendResponse>((resolve) => {
       this.channelAdapter
         .unsubscribe(timeout)
@@ -1191,7 +1197,7 @@ export default class RealtimeChannel {
    * @category Realtime
    */
   teardown() {
-    this._leaveRequested = true
+    this._joinGeneration++
     this.channelAdapter.teardown()
   }
 

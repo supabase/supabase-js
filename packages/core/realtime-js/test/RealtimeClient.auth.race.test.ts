@@ -137,6 +137,36 @@ describe('unsubscribing while the deferred join is still pending', () => {
     testSetup.cleanup()
   })
 
+  test('still joins when the caller subscribes again after leaving', async () => {
+    // The cancellation is scoped to one attempt: a later subscribe() has to be
+    // able to join, otherwise leaving once would leave the channel unusable.
+    const token = utils.generateJWT('1h')
+    const testSetup = setupRealtimeTest({
+      accessToken: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20))
+        return token
+      },
+    })
+
+    const topic = 'db-changes'
+    const channel = testSetup.client.channel(topic, { config: { private: true } })
+
+    channel.subscribe()
+    await channel.unsubscribe()
+    channel.subscribe()
+
+    await vi.waitFor(() => {
+      const join = testSetup.emitters.message.mock.calls.find(
+        ([channelTopic, event]) => channelTopic === `realtime:${topic}` && event === 'phx_join'
+      )
+
+      expect(join).toBeDefined()
+      expect(join![2].access_token).toBe(token)
+    })
+
+    testSetup.cleanup()
+  })
+
   test('does not join a channel the caller already removed', async () => {
     const token = utils.generateJWT('1h')
     const testSetup = setupRealtimeTest({
