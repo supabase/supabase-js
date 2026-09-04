@@ -350,6 +350,12 @@ test('stripNulls throws when used with csv', () => {
   )
 })
 
+test('stripNulls throws when csv is called after stripNulls', () => {
+  expect(() => postgrest.from('users').select().stripNulls().csv()).toThrow(
+    'stripNulls() cannot be used with csv()'
+  )
+})
+
 test('geojson', async () => {
   const res = await postgrest.from('shops').select().geojson()
   expect(res).toMatchInlineSnapshot(`
