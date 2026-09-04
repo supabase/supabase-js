@@ -742,7 +742,8 @@ export type VectorFilter = Record<string, any>
  * @property vectorBucketName - Name of the vector bucket
  * @property indexName - Name of the index
  * @property queryVector - Query vector to find similar vectors
- * @property topK - Number of nearest neighbors to return (default: 10)
+ * @property topK - Number of nearest neighbors to return (S3 vector buckets support 1-10,000; other backends may have a lower limit)
+ * @property nextToken - S3 Vectors pagination token from a previous query response
  * @property filter - Optional JSON filter for metadata
  * @property returnDistance - Whether to include distance scores
  * @property returnMetadata - Whether to include metadata in results
@@ -751,7 +752,8 @@ export interface QueryVectorsOptions {
   vectorBucketName: string
   indexName: string
   queryVector: VectorData
-  topK?: number
+  topK: number
+  nextToken?: string
   filter?: VectorFilter
   returnDistance?: boolean
   returnMetadata?: boolean
@@ -761,10 +763,12 @@ export interface QueryVectorsOptions {
  * Response from vector similarity query
  * @property vectors - Array of similar vectors ordered by distance
  * @property distanceMetric - The distance metric used for the similarity search
+ * @property nextToken - Token for fetching the next page of S3 Vectors results
  */
 export interface QueryVectorsResponse {
   vectors: VectorMatch[]
   distanceMetric?: DistanceMetric
+  nextToken?: string
 }
 
 /**

@@ -622,7 +622,8 @@ function handleQueryVectors(body: any): MockResponse {
   const {
     vectorBucketName,
     indexName,
-    topK = 10,
+    topK,
+    nextToken,
     filter,
     returnDistance = false,
     returnMetadata = true,
@@ -662,6 +663,9 @@ function handleQueryVectors(body: any): MockResponse {
   }
 
   // Calculate cosine similarity (simplified mock)
+  const queryOffset = nextToken ? Number(nextToken.replace('mock-query-next-token-', '')) : 0
+  const queryLimit = Math.min(allVectors.length, topK)
+  const pageEnd = Math.min(queryOffset + 100, queryLimit)
   const vectors = allVectors
     .map((vector, index) => {
       const result: any = { key: vector.key }
@@ -672,11 +676,15 @@ function handleQueryVectors(body: any): MockResponse {
       if (returnMetadata) result.metadata = vector.metadata
       return result
     })
-    .slice(0, topK)
+    .slice(queryOffset, pageEnd)
 
   return {
     status: 200,
-    data: { vectors, distanceMetric: 'cosine' },
+    data: {
+      vectors,
+      distanceMetric: 'cosine',
+      nextToken: pageEnd < queryLimit ? `mock-query-next-token-${pageEnd}` : undefined,
+    },
   }
 }
 
