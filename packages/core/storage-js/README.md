@@ -777,7 +777,7 @@ const { data, error } = await index.queryVectors({
 })
 
 if (data) {
-  data.matches.forEach((match) => {
+  data.vectors.forEach((match) => {
     console.log(`${match.key}: distance=${match.distance}`)
     console.log('Metadata:', match.metadata)
   })
@@ -996,10 +996,35 @@ const { data, error } = await index.queryVectors({
 })
 
 // Results ordered by similarity
-data?.matches.forEach((match) => {
+data?.vectors.forEach((match) => {
   console.log(`${match.key}: distance=${match.distance}`)
 })
 ```
+
+S3 vector buckets support deep queries with `topK` up to 10,000, returning at most 100 vectors per response. Pass the response's `nextToken` with the same query to retrieve the next page:
+
+```typescript
+const query = {
+  queryVector: { float32: embedding },
+  topK: 1000,
+  returnDistance: true,
+}
+
+let nextToken: string | undefined
+
+do {
+  const { data, error } = await index.queryVectors({ ...query, nextToken })
+  if (error) throw error
+
+  for (const vector of data.vectors) {
+    console.log(`${vector.key}: distance=${vector.distance}`)
+  }
+
+  nextToken = data.nextToken
+} while (nextToken)
+```
+
+The pgvector backend supports `topK` up to 100 and does not support `nextToken` pagination.
 
 **Filter Syntax:**
 The `filter` parameter accepts arbitrary JSON for metadata filtering. Non-filterable keys (configured at index creation) cannot be used in filters but can still be returned.

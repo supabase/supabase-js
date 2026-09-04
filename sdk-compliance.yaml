@@ -894,6 +894,9 @@ features:
     status: implemented
     symbols:
       - VectorIndexScope.queryVectors
+    supporting_symbols:
+      - QueryVectorsOptions.nextToken
+      - QueryVectorsResponse.nextToken
 
   # realtime
   realtime.channel.broadcast_http:
