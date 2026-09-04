@@ -116,6 +116,19 @@ describe('push', () => {
     expect(timeoutSpy).toHaveBeenCalled()
   })
 
+  test('send() forwards an explicit opts.timeout of 0 to the underlying push', async () => {
+    channel.subscribe()
+    testSetup.mockServer.emit('message', phxJoinReply(channel, {}))
+    await waitForChannelSubscribed(channel)
+
+    const pushSpy = vi.spyOn(channel.channelAdapter, 'push')
+
+    channel.send({ type: 'broadcast', event: 'test-event', payload: {} }, { timeout: 0 })
+
+    // 0 is a caller-supplied value, not an absent option.
+    expect(pushSpy).toHaveBeenCalledWith('broadcast', expect.anything(), 0)
+  })
+
   test("does not time out after receiving 'ok'", async () => {
     channel.subscribe()
     testSetup.mockServer.emit('message', phxJoinReply(channel, {}))
