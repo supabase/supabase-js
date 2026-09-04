@@ -2,6 +2,7 @@ import { beforeAll, afterAll, beforeEach, afterEach, test, expect, vi, describe 
 import { type TestSetup, setupRealtimeTest } from './helpers/setup'
 import Worker from 'web-worker'
 import path from 'path'
+import { pathToFileURL } from 'url'
 import RealtimeClient from '../src/RealtimeClient'
 
 let testSetup: TestSetup
@@ -10,7 +11,7 @@ beforeAll(() => {
   window.Worker = Worker
 })
 
-const workerUrl = path.join(__dirname, '/helpers/test_worker.js')
+const workerUrl = pathToFileURL(path.join(__dirname, '/helpers/test_worker.js')).href
 
 beforeEach(() => {
   testSetup = setupRealtimeTest({
@@ -36,7 +37,7 @@ test('sets worker URL', () => {
 })
 
 describe('when no workerUrl provided', () => {
-  const mockObjectURL = `file://${workerUrl}`
+  const mockObjectURL = workerUrl.startsWith('file://') ? workerUrl : `file://${workerUrl}`
   let originalCreateObjectURL: any
 
   beforeAll(() => {
@@ -115,3 +116,39 @@ test('terminates worker on disconnect', async () => {
   expect(spy).toHaveBeenCalled()
   expect(testSetup.client.workerRef).toBeFalsy()
 })
+
+test('worker reconnect: in-flight heartbeat on socket A does not cause heartbeat timeout teardown on socket B after reconnect', async () => {
+  const heartbeatEvents: string[] = []
+  testSetup.cleanup()
+  testSetup = setupRealtimeTest({
+    worker: true,
+    workerUrl,
+    heartbeatCallback: (status: string) => {
+      heartbeatEvents.push(status)
+    },
+  })
+
+  testSetup.connect()
+  await testSetup.socketConnected()
+
+  // 1. Send first heartbeat on socket A
+  testSetup.client.sendHeartbeat()
+  expect(heartbeatEvents).toContain('sent')
+
+  // 2. Disconnect socket A while heartbeat was in flight (without reply or timeout)
+  await testSetup.disconnect()
+  await testSetup.socketClosed()
+
+  // 3. Reconnect on socket B
+  testSetup.connect()
+  await testSetup.socketConnected()
+
+  // 4. Send heartbeat on socket B - should send cleanly without teardown
+  expect(testSetup.client.pendingHeartbeatRef).toBeNull()
+  testSetup.client.sendHeartbeat()
+
+  // Verify connection remains open and exactly two sent events occurred
+  expect(testSetup.client.isConnected()).toBe(true)
+  expect(heartbeatEvents.filter((s) => s === 'sent').length).toBe(2)
+})
+
