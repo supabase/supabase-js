@@ -680,10 +680,34 @@ export default class RealtimeClient {
    * Wait for any in-flight auth operations to complete
    * @internal
    */
-  private async _waitForAuthIfNeeded(): Promise<void> {
-    if (this._authPromise) {
-      await this._authPromise
+  async _waitForAuthIfNeeded(): Promise<void> {
+    // A setAuth() that lands while we are waiting replaces _authPromise, and the
+    // superseded call returns without applying its token because of the
+    // generation check in _performAuth. Awaiting once would therefore return
+    // with no token applied at all, so keep going until the promise we awaited
+    // is still the current one.
+    while (this._authPromise) {
+      const pending = this._authPromise
+
+      try {
+        await pending
+      } catch {
+        // Whoever called setAuth() reports the failure; here we only need the
+        // operation to be finished so the token in play is the settled one.
+      }
+
+      if (this._authPromise === pending) {
+        return
+      }
     }
+  }
+
+  /**
+   * Whether an auth call is currently in flight.
+   * @internal
+   */
+  _hasPendingAuth(): boolean {
+    return this._authPromise !== null
   }
 
   /**
