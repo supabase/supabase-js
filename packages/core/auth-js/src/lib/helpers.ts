@@ -33,6 +33,87 @@ export function generateCallbackId(): symbol {
 
 export const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined'
 
+/**
+ * Returns true only when the environment affirmatively reports having no
+ * network connectivity (`navigator.onLine === false`).
+ *
+ * Per the HTML spec, `onLine === false` means the user agent will not contact
+ * the network for remote requests, so retrying such a request through the
+ * user agent's own transport cannot succeed until connectivity returns. The
+ * guarantee does not extend to custom `fetch` transports or loopback
+ * endpoints, and `onLine === true` may be reported while the network is
+ * unreachable, so callers only use this to stop retrying default-transport
+ * requests after an actual failure, never to skip a request and never for
+ * custom transports. Environments without a boolean
+ * `navigator.onLine` (React Native, Node.js, Deno) always return false and
+ * are unaffected by callers that branch on this.
+ */
+export const isProvablyOffline = () =>
+  typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine
+
+/**
+ * Whether a URL targets a loopback host: `localhost`, `*.localhost` (also
+ * their fully qualified trailing-dot forms), `127.0.0.0/8` or `[::1]`,
+ * mirroring the loopback rules of the W3C "potentially trustworthy origin"
+ * definition. Loopback stays reachable while `navigator.onLine === false`
+ * (the signal describes connectivity to the network, not to the local
+ * machine), so offline retry suppression must not apply to it. Unparseable
+ * URLs return false.
+ */
+export function isLoopbackHost(url: string): boolean {
+  try {
+    let { hostname } = new URL(url)
+
+    // The URL parser keeps the trailing dot of fully qualified name forms
+    // ("localhost.", "project.localhost."); Secure Contexts includes them in
+    // its loopback matching, so strip exactly one before comparing. IPv4
+    // hosts are already normalized by the parser ("127.0.0.1." parses to
+    // "127.0.0.1").
+    if (hostname.endsWith('.')) {
+      hostname = hostname.slice(0, -1)
+    }
+
+    return (
+      hostname === 'localhost' ||
+      hostname.endsWith('.localhost') ||
+      hostname === '[::1]' ||
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)
+    )
+  } catch {
+    return false
+  }
+}
+
+export interface OnlineEventTarget {
+  addEventListener(type: 'online', listener: () => unknown): void
+  removeEventListener(type: 'online', listener: () => unknown): void
+}
+
+/**
+ * Returns the global object to observe reconnection on, or null when the
+ * environment cannot observe it. Documents receive the `online` event on
+ * `window`, Web Workers on the worker global scope; `globalThis` is both, and
+ * the same environments expose the boolean `navigator.onLine` that
+ * `isProvablyOffline` reads, so fail-fast and reconnection handling stay
+ * active in the same set of environments. Environments without a boolean
+ * `navigator.onLine` or without global listener support (React Native,
+ * Node.js, Deno) return null.
+ */
+export function getOnlineEventTarget(): OnlineEventTarget | null {
+  if (typeof navigator === 'undefined' || typeof navigator.onLine !== 'boolean') {
+    return null
+  }
+
+  if (
+    typeof globalThis.addEventListener !== 'function' ||
+    typeof globalThis.removeEventListener !== 'function'
+  ) {
+    return null
+  }
+
+  return globalThis
+}
+
 const localStorageWriteTests = {
   tested: false,
   writable: false,
