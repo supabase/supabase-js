@@ -33,7 +33,10 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
   ? true
   : false
 
-const PostgrestReservedCharsRegexp = new RegExp('[,()]')
+// Values containing any of these must be double-quoted in `in`/`notIn` lists, and any
+// embedded `"`/`\` escaped, per PostgREST's grammar:
+// https://docs.postgrest.org/en/stable/references/api/url_grammar.html
+const PostgrestReservedCharsRegexp = new RegExp('[,()"\\\\]')
 
 // Match relationship filters with `table.column` syntax and resolve underlying
 // column value. If not matched, fallback to generic type.
@@ -837,9 +840,11 @@ export default class PostgrestFilterBuilder<
   ): this {
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
-        // handle postgrest reserved characters
-        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+        // Wrap values with PostgREST reserved characters in double quotes, and escape
+        // embedded double quotes and backslashes. Previously an embedded `"` was left
+        // unescaped, producing malformed output such as `in.("a,b"c")` for `a,b"c`.
+        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+          return `"${s.replace(/["\\]/g, '\\$&')}"`
         else return `${s}`
       })
       .join(',')
@@ -865,9 +870,11 @@ export default class PostgrestFilterBuilder<
   ): this {
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
-        // handle postgrest reserved characters
-        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+        // Wrap values with PostgREST reserved characters in double quotes, and escape
+        // embedded double quotes and backslashes. Previously an embedded `"` was left
+        // unescaped, producing malformed output such as `in.("a,b"c")` for `a,b"c`.
+        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+          return `"${s.replace(/["\\]/g, '\\$&')}"`
         else return `${s}`
       })
       .join(',')
