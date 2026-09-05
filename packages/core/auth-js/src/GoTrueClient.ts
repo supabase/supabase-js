@@ -207,6 +207,7 @@ const DEFAULT_OPTIONS: Omit<
   throwOnError: false,
   lockAcquireTimeout: 5000, // 5 seconds. Only used when a custom `lock` is supplied. TODO(v3): remove.
   skipAutoInitialize: false,
+  maxAutoRefreshFailures: 0,
   experimental: {},
 }
 
@@ -376,6 +377,16 @@ export default class GoTrueClient {
    */
   protected lockAcquireTimeout: number
   /**
+   * Maximum consecutive auto-refresh tick failures before the client stops
+   * retrying and emits `TOKEN_REFRESH_FAILED`. 0 means no limit (default).
+   */
+  protected maxAutoRefreshFailures: number
+  /**
+   * Tracks consecutive auto-refresh tick failures. Reset to 0 on any
+   * successful token refresh.
+   */
+  protected autoRefreshFailureCount: number = 0
+  /**
    * Opt-in flags for experimental features. Defaults to an empty object.
    * See `GoTrueClientOptions.experimental`.
    */
@@ -453,6 +464,7 @@ export default class GoTrueClient {
     // (including supabase-js tests) read it off the client to verify option
     // flow-through.
     this.lockAcquireTimeout = settings.lockAcquireTimeout
+    this.maxAutoRefreshFailures = settings.maxAutoRefreshFailures
 
     // TODO(v3): remove. Legacy opt-in path preserved for backwards
     // compatibility with callers passing a custom `lock` (typically React
@@ -5213,6 +5225,16 @@ export default class GoTrueClient {
     // _saveSession is always called whenever a new session has been acquired
     // so we can safely suppress the warning returned by future getSession calls
     this.suppressGetSessionWarning = true
+
+    // A new session means auth is working — reset the failure counter.
+    this.autoRefreshFailureCount = 0
+
+    // In non-browser environments (React Native, Node) nothing restarts the
+    // ticker after the limit was hit. Re-enable it here so that a successful
+    // sign-in or setSession recovers auto-refresh.
+    if (this.autoRefreshToken && this.autoRefreshTicker === null && !isBrowser()) {
+      void this._startAutoRefresh()
+    }
     // Create a shallow copy to work with, to avoid mutating the original session object if it's used elsewhere
     const sessionToProcess = { ...session }
 
@@ -5258,6 +5280,7 @@ export default class GoTrueClient {
     // The session is gone — no point holding on to a cached refresh failure
     // for a token that no longer exists. Synchronous, before any `await`.
     this.lastRefreshFailure = null
+    this.autoRefreshFailureCount = 0
 
     this.suppressGetSessionWarning = false
 
@@ -5502,10 +5525,19 @@ export default class GoTrueClient {
               return await this._useSession(async (result) => {
                 const {
                   data: { session },
+                  error,
                 } = result
 
                 if (!session || !session.refresh_token || !session.expires_at) {
                   this._debug('#_autoRefreshTokenTick()', 'no session')
+                  if (error && isAuthRetryableFetchError(error)) {
+                    this.autoRefreshFailureCount++
+                    this._debug(
+                      '#_autoRefreshTokenTick()',
+                      `session load failed, consecutive failures: ${this.autoRefreshFailureCount}`
+                    )
+                    await this._handleAutoRefreshFailure(session ?? null)
+                  }
                   return
                 }
 
@@ -5519,14 +5551,30 @@ export default class GoTrueClient {
                 )
 
                 if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-                  await this._callRefreshToken(session.refresh_token)
+                  const refreshResult = await this._callRefreshToken(session.refresh_token)
+                  if (refreshResult.error) {
+                    if (isAuthRetryableFetchError(refreshResult.error)) {
+                      this.autoRefreshFailureCount++
+                      this._debug(
+                        '#_autoRefreshTokenTick()',
+                        `refresh failed, consecutive failures: ${this.autoRefreshFailureCount}`
+                      )
+                      await this._handleAutoRefreshFailure(session ?? null)
+                    }
+                  }
                 }
               })
             } catch (e) {
+              this.autoRefreshFailureCount++
+              this._debug(
+                '#_autoRefreshTokenTick()',
+                `tick threw, consecutive failures: ${this.autoRefreshFailureCount}`
+              )
               console.error(
                 'Auto refresh tick failed with error. This is likely a transient error.',
                 e
               )
+              await this._handleAutoRefreshFailure()
             }
           } finally {
             this._debug('#_autoRefreshTokenTick()', 'end')
@@ -5557,10 +5605,22 @@ export default class GoTrueClient {
         await this._useSession(async (result) => {
           const {
             data: { session },
+            error,
           } = result
 
           if (!session || !session.refresh_token || !session.expires_at) {
             this._debug('#_autoRefreshTokenTick()', 'no session')
+            // If __loadSession returned an error, it means an internal refresh
+            // was attempted and failed (e.g. expired session). Only count
+            // retryable errors (network/5xx) toward the limit.
+            if (error && isAuthRetryableFetchError(error)) {
+              this.autoRefreshFailureCount++
+              this._debug(
+                '#_autoRefreshTokenTick()',
+                `session load failed, consecutive failures: ${this.autoRefreshFailureCount}`
+              )
+              await this._handleAutoRefreshFailure(session ?? null)
+            }
             return
           }
 
@@ -5575,14 +5635,67 @@ export default class GoTrueClient {
           )
 
           if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-            await this._callRefreshToken(session.refresh_token)
+            const refreshResult = await this._callRefreshToken(session.refresh_token)
+            if (refreshResult.error) {
+              // Only count retryable errors (network/5xx) toward the limit.
+              // Non-retryable errors (revoked token, rate limit) have their
+              // own handling in _callRefreshToken and should not stop auto-refresh.
+              if (isAuthRetryableFetchError(refreshResult.error)) {
+                this.autoRefreshFailureCount++
+                this._debug(
+                  '#_autoRefreshTokenTick()',
+                  `refresh failed, consecutive failures: ${this.autoRefreshFailureCount}`
+                )
+                await this._handleAutoRefreshFailure(session ?? null)
+              }
+            }
           }
         })
       } catch (e) {
+        this.autoRefreshFailureCount++
+        this._debug(
+          '#_autoRefreshTokenTick()',
+          `tick threw, consecutive failures: ${this.autoRefreshFailureCount}`
+        )
         console.error('Auto refresh tick failed with error. This is likely a transient error.', e)
+        await this._handleAutoRefreshFailure()
       }
     } finally {
       this._debug('#_autoRefreshTokenTick()', 'end')
+    }
+  }
+
+  /**
+   * Checks whether the consecutive auto-refresh failure count has reached
+   * `maxAutoRefreshFailures`. If so, stops the auto-refresh ticker and
+   * emits a `TOKEN_REFRESH_FAILED` event so the application can react
+   * (e.g. redirect to login, show a banner).
+   *
+   * This is a no-op when `maxAutoRefreshFailures` is 0 (the default),
+   * preserving the existing "retry forever" behavior.
+   *
+   * Note: in browsers, visibility changes restart the auto-refresh ticker
+   * (which resets the counter), so the stop is not permanent — the next tab
+   * focus will resume refresh attempts with a fresh budget.
+   */
+  private async _handleAutoRefreshFailure(session: Session | null = null): Promise<void> {
+    if (
+      this.maxAutoRefreshFailures > 0 &&
+      this.autoRefreshFailureCount >= this.maxAutoRefreshFailures &&
+      this.autoRefreshTicker !== null
+    ) {
+      this._debug(
+        '#_handleAutoRefreshFailure()',
+        `max failures reached (${this.maxAutoRefreshFailures}), stopping auto-refresh`
+      )
+      await this._stopAutoRefresh()
+      try {
+        await this._notifyAllSubscribers('TOKEN_REFRESH_FAILED', session, false)
+      } catch (e) {
+        // Swallow subscriber errors so the failure handler cannot re-enter
+        // itself via the tick's catch block.
+        console.error('Error in TOKEN_REFRESH_FAILED subscriber:', e)
+      }
     }
   }
 

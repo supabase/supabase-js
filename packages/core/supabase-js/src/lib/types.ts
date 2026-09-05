@@ -241,6 +241,25 @@ export type SupabaseClientOptions<SchemaName> = {
      * @default false
      */
     skipAutoInitialize?: SupabaseAuthClientOptions['skipAutoInitialize']
+    /**
+     * Maximum number of consecutive auto-refresh tick failures before the
+     * client stops attempting to refresh the token and emits a
+     * `TOKEN_REFRESH_FAILED` event via `onAuthStateChange`.
+     *
+     * Only retryable errors (network failures, 5xx) count toward the limit.
+     * Non-retryable errors (revoked token, rate limits) do not. Each tick is
+     * ~30 seconds, so `maxAutoRefreshFailures: 5` means roughly 2.5 minutes
+     * of consecutive failures before the event fires.
+     *
+     * In browsers, tab refocus restarts the ticker and resets the counter.
+     * In non-browser environments (React Native, Node), a successful
+     * `setSession` or sign-in restarts auto-refresh automatically.
+     *
+     * Set to `0` to disable the limit (retry forever, which is the default).
+     *
+     * @default 0
+     */
+    maxAutoRefreshFailures?: SupabaseAuthClientOptions['maxAutoRefreshFailures']
   }
   /**
    * Options passed to the realtime-js instance
