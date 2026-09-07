@@ -259,7 +259,11 @@ export type SupabaseClientOptions<SchemaName> = {
   }
   /**
    * Optional function for using a third-party authentication system with
-   * Supabase. The function should return an access token or ID token (JWT) by
+   * Supabase. Leave unset when using Supabase Auth — session tokens are
+   * refreshed automatically. Only needed when integrating a third-party
+   * provider (e.g. Clerk, Auth0, Firebase).
+   *
+   * The function should return an access token or ID token (JWT) by
    * obtaining it from the third-party auth SDK. Note that this
    * function may be called concurrently and many times. Use memoization and
    * locking techniques if this is not supported by the SDKs.
@@ -267,6 +271,13 @@ export type SupabaseClientOptions<SchemaName> = {
    * When set, the `auth` namespace of the Supabase client cannot be used.
    * Create another client if you wish to use Supabase Auth and third-party
    * authentications concurrently in the same application.
+   *
+   * For Realtime: also called on connect and on every heartbeat
+   * (`realtime.heartbeatIntervalMs`, default 25000ms). The token must stay valid
+   * past the next call, or Realtime closes the channel at expiry with no
+   * automatic resubscribe. So, plan for some call time and overhead,
+   * i.e. if hearbeats happen every 25 seconds and your token is still valid for 27
+   * seconds it's probably safer to refresh right now rather than risk a race condition.
    */
   accessToken?: () => Promise<string | null>
   /**
