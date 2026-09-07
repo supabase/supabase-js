@@ -496,6 +496,8 @@ describe('signInWithPasskey', () => {
       expect(getOptions.publicKey.rpId).toEqual('localhost')
       expect(getOptions.publicKey.challenge).toBeInstanceOf(ArrayBuffer)
       expect(getOptions.signal).toBeInstanceOf(AbortSignal)
+      // no mediation requested, so the browser keeps its default (modal) behavior
+      expect(getOptions.mediation).toBeUndefined()
 
       // The serialized credential was sent to the verify endpoint
       expect(mockFetch).toHaveBeenCalledTimes(2)
@@ -505,6 +507,36 @@ describe('signInWithPasskey', () => {
         challenge_id: TEST_PASSKEY_UUID,
         credential: webauthnAssertionCredentialResponse.credentialResponse,
       })
+    })
+
+    it('forwards options.mediation to navigator.credentials.get', async () => {
+      const { client, mockFetch } = await createPasskeyClient()
+      mockFetch
+        .mockResolvedValueOnce(
+          jsonResponse({
+            challenge_id: TEST_PASSKEY_UUID,
+            options: serverRequestOptions,
+            expires_at: Math.floor(Date.now() / 1000) + 300,
+          })
+        )
+        .mockResolvedValueOnce(jsonResponse(sessionServerResponse))
+      browser.credentialsGet.mockResolvedValueOnce(
+        browser.asPublicKeyCredential(webauthnAssertionMockCredential)
+      )
+
+      const { data, error } = await client.signInWithPasskey({
+        options: { mediation: 'conditional' },
+      })
+
+      expect(error).toBeNull()
+      expect(data?.session?.access_token).toEqual('new-access-token')
+
+      // Conditional UI is requested from the browser, everything else is unchanged
+      const getOptions = browser.credentialsGet.mock.calls[0][0]
+      expect(getOptions.mediation).toEqual('conditional')
+      expect(getOptions.publicKey.rpId).toEqual('localhost')
+      expect(getOptions.signal).toBeInstanceOf(AbortSignal)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
     it('returns the options error without invoking the authenticator', async () => {

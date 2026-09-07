@@ -6803,6 +6803,10 @@ export default class GoTrueClient {
    * 2. Prompts user via navigator.credentials.get()
    * 3. Verifies credential with server and creates session
    *
+   * Pass `options.mediation: 'conditional'` to use WebAuthn Conditional UI
+   * (passkey autofill) instead of the modal picker; the value is forwarded to
+   * `navigator.credentials.get()` unchanged.
+   *
    * Requires `auth.experimental.passkey: true`.
    *
    * @category Auth
@@ -6833,6 +6837,7 @@ export default class GoTrueClient {
       const { data: credential, error: credentialError } = await getCredential({
         publicKey: publicKeyOptions,
         signal,
+        mediation: credentials?.options?.mediation,
       })
       if (credentialError || !credential) {
         return this._returnResult({

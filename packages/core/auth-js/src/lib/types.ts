@@ -3164,6 +3164,18 @@ export type SignInWithPasskeyCredentials = {
   options?: {
     captchaToken?: string
     signal?: AbortSignal
+    /**
+     * Forwarded to `navigator.credentials.get()` as `mediation`.
+     *
+     * Use `'conditional'` to opt into WebAuthn Conditional UI, where the browser
+     * offers passkeys through the autofill prompt instead of a modal picker. The
+     * page also needs an input with `autocomplete="username webauthn"`.
+     *
+     * When omitted the browser's default (modal) behavior is used.
+     *
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/CredentialsContainer/get#mediation MDN - mediation}
+     */
+    mediation?: CredentialMediationRequirement
   }
 }
 
