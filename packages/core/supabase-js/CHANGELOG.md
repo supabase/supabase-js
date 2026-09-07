@@ -1,3 +1,18 @@
+## 2.116.0 (2026-09-07)
+
+### 🚀 Features
+
+- **auth:** add MFA recovery codes API ([#2676](https://github.com/supabase/supabase-js/pull/2676))
+
+### 🩹 Fixes
+
+- **supabase:** warn when schema is passed outside db options ([#2663](https://github.com/supabase/supabase-js/pull/2663))
+
+### ❤️ Thank You
+
+- fadymak
+- Katerina Skroumpelou @mandarini
+
 ## 2.115.0 (2026-09-03)
 
 ### 🚀 Features
