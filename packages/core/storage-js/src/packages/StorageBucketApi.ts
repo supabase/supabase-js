@@ -478,8 +478,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    * is overwritten. Send at least one rule. Call {@link deleteBucketLifecycle}
    * to remove the policy.
    *
-   * Each rule currently supports only `noncurrentVersionExpiration`. Set
-   * `filter` to `{}`. Prefix filters, tag filters, and current-object
+   * Each rule currently supports only `noncurrentVersionExpiration`. `filter`
+   * is required and must be `{}`. Prefix filters, tag filters, and current-object
    * expiration are rejected. Rule IDs must be unique. Omit `id` and the
    * server generates one.
    *
