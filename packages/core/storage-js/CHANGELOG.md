@@ -1,3 +1,20 @@
+## 2.116.0 (2026-09-07)
+
+### 🚀 Features
+
+- **storage:** add versionId support to create URL methods ([#2678](https://github.com/supabase/supabase-js/pull/2678))
+- **storage:** topk 10k support ([#2667](https://github.com/supabase/supabase-js/pull/2667))
+- **storage:** add bucket lifecycle configuration ([#2659](https://github.com/supabase/supabase-js/pull/2659))
+
+### 🩹 Fixes
+
+- **storage:** drop legacy prefix from lifecycles ([#2674](https://github.com/supabase/supabase-js/pull/2674))
+
+### ❤️ Thank You
+
+- Ferhat Elmas
+- Tyler Hillery
+
 ## 2.115.0 (2026-09-03)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.

@@ -1,3 +1,25 @@
+## 2.116.0 (2026-09-07)
+
+### 🚀 Features
+
+- **auth:** add MFA recovery codes API ([#2676](https://github.com/supabase/supabase-js/pull/2676))
+- **storage:** add bucket lifecycle configuration ([#2659](https://github.com/supabase/supabase-js/pull/2659))
+- **storage:** topk 10k support ([#2667](https://github.com/supabase/supabase-js/pull/2667))
+- **storage:** add versionId support to create URL methods ([#2678](https://github.com/supabase/supabase-js/pull/2678))
+
+### 🩹 Fixes
+
+- **auth:** silence commit-guard-discarded refresh in initial session ([#2668](https://github.com/supabase/supabase-js/pull/2668))
+- **storage:** drop legacy prefix from lifecycles ([#2674](https://github.com/supabase/supabase-js/pull/2674))
+- **supabase:** warn when schema is passed outside db options ([#2663](https://github.com/supabase/supabase-js/pull/2663))
+
+### ❤️ Thank You
+
+- fadymak
+- Ferhat Elmas
+- Katerina Skroumpelou @mandarini
+- Tyler Hillery
+
 ## 2.115.0 (2026-09-03)
 
 ### 🚀 Features
