@@ -191,6 +191,16 @@ export type ExperimentalFeatureFlags = {
    */
   passkey?: boolean
   /**
+   * Enables MFA recovery codes support:
+   *   - `auth.mfa.recoveryCodes.*`
+   *
+   * Defaults to `false`. Calling any recovery codes method while this flag is
+   * disabled throws a descriptive error at call time.
+   *
+   * @experimental
+   */
+  recoveryCodes?: boolean
+  /**
    * Appends a reserved `sb_flow_id` query parameter to `redirectTo` URLs on
    * PKCE flows. The parameter round-trips through the auth server back to
    * your callback URL, where the client uses it to select the code verifier
@@ -381,6 +391,7 @@ const AMRMethods = [
   'mfa/totp',
   'mfa/phone',
   'mfa/webauthn',
+  'mfa/recovery_code',
   'anonymous',
   'sso/saml',
   'magiclink',
@@ -426,10 +437,14 @@ export interface UserIdentity {
   updated_at?: string
 }
 
-const FactorTypes = ['totp', 'phone', 'webauthn'] as const
+const FactorTypes = ['totp', 'phone', 'webauthn', 'recovery_code'] as const
 
 /**
- * Type of factor. `totp` and `phone` supported with this version
+ * Type of factor. `totp`, `phone`, `webauthn` and `recovery_code` are supported.
+ *
+ * `recovery_code` factors are managed through {@link AuthMFARecoveryCodesApi}
+ * (`mfa.recoveryCodes.*`) and cannot be used with `enroll()`, `challenge()`,
+ * `verify()` or `unenroll()`.
  */
 export type FactorType = (typeof FactorTypes)[number]
 
@@ -458,7 +473,7 @@ export type Factor<
   friendly_name?: string
 
   /**
-   * Type of factor. `totp` and `phone` supported with this version
+   * Type of factor. `totp`, `phone`, `webauthn` and `recovery_code` are supported.
    */
   factor_type: Type
 
@@ -1180,6 +1195,105 @@ export type AuthMFAUnenrollResponse = RequestResult<{
   id: string
 }>
 
+/**
+ * Parameters for generating a set of MFA recovery codes.
+ *
+ * @see {@link AuthMFARecoveryCodesApi#generate}
+ *
+ * @experimental
+ */
+export type MFARecoveryCodesGenerateParams = {
+  /**
+   * Friendly name for the recovery codes factor, as shown in `user.factors`
+   * and `mfa.listFactors()`. Must be unique among the user's factors. The
+   * server defaults it to `Recovery codes` when omitted.
+   */
+  friendlyName?: string
+}
+
+/**
+ * Parameters for verifying a single MFA recovery code.
+ *
+ * @see {@link AuthMFARecoveryCodesApi#verify}
+ *
+ * @experimental
+ */
+export type MFARecoveryCodesVerifyParams = {
+  /**
+   * One of the user's unused recovery codes, exactly as entered by the user.
+   * Letter case, whitespace and `-` separators are ignored by the server.
+   * Each code can be used only once.
+   */
+  code: string
+}
+
+/**
+ * Enrollment status of a user's recovery codes. Never contains code values.
+ *
+ * @experimental
+ */
+export type AuthMFARecoveryCodesStatusResponseData = {
+  /** ID of the recovery codes factor, as it appears in `user.factors`. */
+  id: string
+
+  /** Type of factor, always `recovery_code`. */
+  type: 'recovery_code'
+
+  /** Number of codes in the current set. */
+  total: number
+
+  /**
+   * Number of codes in the current set that have not been used yet. `0` when
+   * every code has been consumed.
+   */
+  remaining: number
+}
+
+/**
+ * Response type for {@link AuthMFARecoveryCodesApi#getStatus}.
+ *
+ * @experimental
+ */
+export type AuthMFARecoveryCodesStatusResponse =
+  RequestResult<AuthMFARecoveryCodesStatusResponseData>
+
+/**
+ * A newly generated set of recovery codes. The `codes` are returned exactly
+ * once and cannot be retrieved again; use `regenerate()` to issue a new set.
+ *
+ * @experimental
+ */
+export type AuthMFARecoveryCodesGenerateResponseData = {
+  /** ID of the recovery codes factor. */
+  id: string
+
+  /** Type of factor, always `recovery_code`. */
+  type: 'recovery_code'
+
+  /** Friendly name of the recovery codes factor. */
+  friendly_name?: string
+
+  /** Number of codes in the set. */
+  total: number
+
+  /**
+   * The plaintext recovery codes in canonical form.
+   * They are returned exactly once and cannot be retrieved again. Show them to
+   * the user in a copy/download-friendly layout and ask them to store the codes
+   * safely.
+   */
+  codes: string[]
+}
+
+/**
+ * Response type for {@link AuthMFARecoveryCodesApi#generate} and
+ * {@link AuthMFARecoveryCodesApi#regenerate}.
+ *
+ * @experimental
+ */
+export type AuthMFARecoveryCodesGenerateResponse =
+  RequestResult<AuthMFARecoveryCodesGenerateResponseData>
+
 type AuthMFAChallengeResponseBase<T extends FactorType> = {
   /** ID of the newly created challenge. */
   id: string
@@ -1297,6 +1411,251 @@ export type AuthMFAGetAuthenticatorAssuranceLevelResponse = RequestResult<{
    */
   currentAuthenticationMethods: AMREntry[] | string[]
 }>
+
+/**
+ * Contains the MFA recovery codes API.
+ *
+ * Recovery codes are single-use backup codes that let a user reach `aal2`
+ * when they cannot use their other MFA factors (for example, a lost
+ * authenticator app). A user has a single set of recovery codes; the codes
+ * are shown exactly once when generated.
+ *
+ * Requires `auth.experimental.recoveryCodes: true`; otherwise all methods
+ * throw. Recovery codes must also be enabled on the Supabase Auth server.
+ *
+ * @experimental
+ */
+export interface AuthMFARecoveryCodesApi {
+  /**
+   * Returns the enrollment status of the user's recovery codes: the total
+   * number of codes in the current set and how many are still unused. Never
+   * returns the codes themselves.
+   *
+   * Requires `auth.experimental.recoveryCodes: true`.
+   *
+   * @experimental
+   *
+   * @category Auth
+   * @subcategory Auth MFA Recovery Codes
+   *
+   * @remarks
+   * - Works at any authenticator assurance level (`aal1` or `aal2`).
+   * - Returns an error with code `mfa_factor_not_found` when the user has not generated recovery codes yet.
+   * - `remaining` can be `0` once every code has been used; prompt the user to call `mfa.recoveryCodes.regenerate()`.
+   *
+   * @example Get the recovery codes status
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.recoveryCodes.getStatus()
+   * ```
+   *
+   * @exampleResponse Get the recovery codes status
+   * ```json
+   * {
+   *   data: {
+   *     id: '<FACTOR_ID>',
+   *     type: 'recovery_code',
+   *     total: 10,
+   *     remaining: 7
+   *   },
+   *   error: null
+   * }
+   * ```
+   */
+  getStatus(): Promise<AuthMFARecoveryCodesStatusResponse>
+
+  /**
+   * Generates the user's set of recovery codes. The plaintext codes are
+   * returned exactly once in the response and cannot be retrieved again, so
+   * show them to the user and ask them to store the codes safely.
+   *
+   * Requires `auth.experimental.recoveryCodes: true`.
+   *
+   * @experimental
+   *
+   * @category Auth
+   * @subcategory Auth MFA Recovery Codes
+   *
+   * @remarks
+   * - The session must be at `aal2` (verify another factor first), otherwise an error with code `insufficient_aal` is returned.
+   * - The user must already have another verified factor (for example a TOTP factor): recovery codes can never be the only factor. Otherwise an error with code `mfa_recovery_codes_sole_factor` is returned.
+   * - A user can only have one set of recovery codes. If one already exists, an error with code `mfa_verified_factor_exists` is returned; use `mfa.recoveryCodes.regenerate()` to replace it.
+   * - The codes are returned in canonical form (lowercase, no separators). For display you can group them, for example in blocks of four characters. Avoid logging them to the console.
+   * - Returns an error with code `mfa_recovery_codes_enroll_not_enabled` when recovery codes are disabled on the server.
+   *
+   * @example Generate recovery codes
+   * ```js
+   * const supabase = createClient(supabaseUrl, supabaseKey, {
+   *   auth: { experimental: { recoveryCodes: true } },
+   * })
+   *
+   * const { data, error } = await supabase.auth.mfa.recoveryCodes.generate({
+   *   friendlyName: 'Backup codes',
+   * })
+   *
+   * // Show the codes once, for example grouped in blocks of four characters
+   * const formatted = data.codes.map((code) => code.match(/.{1,4}/g).join('-'))
+   * ```
+   *
+   * @exampleResponse Generate recovery codes
+   * ```json
+   * {
+   *   data: {
+   *     id: '<FACTOR_ID>',
+   *     type: 'recovery_code',
+   *     friendly_name: 'Backup codes',
+   *     total: 10,
+   *     codes: [
+   *       'k4m9x7qp2ab8ht3z',
+   *       '9wze6r5npd4cmq7v',
+   *       '...'
+   *     ]
+   *   },
+   *   error: null
+   * }
+   * ```
+   */
+  generate(params?: MFARecoveryCodesGenerateParams): Promise<AuthMFARecoveryCodesGenerateResponse>
+
+  /**
+   * Verifies one of the user's recovery codes and upgrades the current
+   * session to `aal2`. Each code can be used only once.
+   *
+   * Requires `auth.experimental.recoveryCodes: true`.
+   *
+   * @experimental
+   *
+   * @category Auth
+   * @subcategory Auth MFA Recovery Codes
+   *
+   * @remarks
+   * - On success the current session is upgraded to `aal2` in place and persisted, and the `MFA_CHALLENGE_VERIFIED` event is emitted. The user's other `aal1` sessions are signed out.
+   * - The new access token includes `mfa/recovery_code` in its `amr` claim.
+   * - The code can be passed exactly as the user typed it: letter case, whitespace and `-` separators are ignored.
+   * - A wrong, already used, or missing code returns an error with code `mfa_verification_failed`.
+   * - After too many failed attempts, verification is locked for a period and an error with code `mfa_recovery_codes_locked` (status `429`) is returned. Ask the user to wait or to use another factor.
+   * - Returns an error with code `mfa_recovery_codes_verify_not_enabled` when recovery code verification is disabled on the server.
+   *
+   * @example Verify a recovery code
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.recoveryCodes.verify({
+   *   code: 'K4M9-X7QP-2AB8-HT3Z',
+   * })
+   * ```
+   *
+   * @exampleResponse Verify a recovery code
+   * ```json
+   * {
+   *   data: {
+   *     access_token: '<ACCESS_TOKEN>',
+   *     token_type: 'bearer',
+   *     expires_in: 3600,
+   *     refresh_token: '<REFRESH_TOKEN>',
+   *     user: {
+   *       id: '11111111-1111-1111-1111-111111111111',
+   *       aud: 'authenticated',
+   *       role: 'authenticated',
+   *       email: 'example@email.com',
+   *       factors: [
+   *         {
+   *           id: '<TOTP_FACTOR_ID>',
+   *           friendly_name: 'Authenticator app',
+   *           factor_type: 'totp',
+   *           status: 'verified',
+   *           created_at: '2024-01-01T00:00:00Z',
+   *           updated_at: '2024-01-01T00:00:00Z'
+   *         },
+   *         {
+   *           id: '<RECOVERY_CODES_FACTOR_ID>',
+   *           friendly_name: 'Backup codes',
+   *           factor_type: 'recovery_code',
+   *           status: 'verified',
+   *           created_at: '2024-01-01T00:00:00Z',
+   *           updated_at: '2024-01-01T00:00:00Z'
+   *         }
+   *       ]
+   *     }
+   *   },
+   *   error: null
+   * }
+   * ```
+   */
+  verify(params: MFARecoveryCodesVerifyParams): Promise<AuthMFAVerifyResponse>
+
+  /**
+   * Replaces the user's recovery codes with a brand new set. All remaining
+   * codes from the previous set stop working immediately. The new plaintext
+   * codes are returned exactly once.
+   *
+   * Requires `auth.experimental.recoveryCodes: true`.
+   *
+   * @experimental
+   *
+   * @category Auth
+   * @subcategory Auth MFA Recovery Codes
+   *
+   * @remarks
+   * - The session must be at `aal2`, otherwise an error with code `insufficient_aal` is returned.
+   * - The factor `id` and `friendly_name` are preserved; only the codes change.
+   * - Also clears any verification lockout on the recovery codes.
+   * - Returns an error with code `mfa_factor_not_found` when the user has no recovery codes to regenerate; use `mfa.recoveryCodes.generate()` instead.
+   * - Returns an error with code `mfa_recovery_codes_enroll_not_enabled` when recovery codes are disabled on the server.
+   *
+   * @example Regenerate recovery codes
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.recoveryCodes.regenerate()
+   * ```
+   *
+   * @exampleResponse Regenerate recovery codes
+   * ```json
+   * {
+   *   data: {
+   *     id: '<FACTOR_ID>',
+   *     type: 'recovery_code',
+   *     friendly_name: 'Backup codes',
+   *     total: 10,
+   *     codes: [
+   *       '2h8kqw3m7xt49rpn',
+   *       'nq5v7xk2m9tp4wzs',
+   *       '...'
+   *     ]
+   *   },
+   *   error: null
+   * }
+   * ```
+   */
+  regenerate(): Promise<AuthMFARecoveryCodesGenerateResponse>
+
+  /**
+   * Removes the user's recovery codes factor together with all of its codes.
+   *
+   * Requires `auth.experimental.recoveryCodes: true`.
+   *
+   * @experimental
+   *
+   * @category Auth
+   * @subcategory Auth MFA Recovery Codes
+   *
+   * @remarks
+   * - The session must be at `aal2`, otherwise an error with code `insufficient_aal` is returned.
+   * - Returns an error with code `mfa_factor_not_found` when the user has no recovery codes.
+   *
+   * @example Unenroll recovery codes
+   * ```js
+   * const { data, error } = await supabase.auth.mfa.recoveryCodes.unenroll()
+   * ```
+   *
+   * @exampleResponse Unenroll recovery codes
+   * ```json
+   * {
+   *   data: {
+   *     id: '<FACTOR_ID>'
+   *   },
+   *   error: null
+   * }
+   * ```
+   */
+  unenroll(): Promise<AuthMFAUnenrollResponse>
+}
 
 /**
  * Contains the full multi-factor authentication API.
@@ -1726,6 +2085,17 @@ export interface GoTrueMFAApi {
 
   // namespace for the webauthn methods
   webauthn: WebAuthnApi
+
+  /**
+   * Namespace for the MFA recovery codes methods.
+   *
+   * Requires `auth.experimental.recoveryCodes: true`; otherwise all methods throw.
+   *
+   * @see {@link AuthMFARecoveryCodesApi}
+   *
+   * @experimental
+   */
+  recoveryCodes: AuthMFARecoveryCodesApi
 }
 
 /**

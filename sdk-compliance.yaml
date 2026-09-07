@@ -156,6 +156,26 @@ features:
     status: implemented
     symbols:
       - GoTrueMFAApi.verify
+  auth.mfa_recovery_codes.generate:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.generate
+  auth.mfa_recovery_codes.get_status:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.getStatus
+  auth.mfa_recovery_codes.regenerate:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.regenerate
+  auth.mfa_recovery_codes.unenroll:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.unenroll
+  auth.mfa_recovery_codes.verify:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.verify
   auth.oauth_admin.create_client:
     status: implemented
     symbols:

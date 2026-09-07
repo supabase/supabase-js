@@ -577,6 +577,16 @@ export function assertPasskeyExperimentalEnabled(experimental: { passkey?: boole
   }
 }
 
+export function assertRecoveryCodesExperimentalEnabled(experimental: {
+  recoveryCodes?: boolean
+}): void {
+  if (!experimental.recoveryCodes) {
+    throw new Error(
+      '@supabase/auth-js: the MFA recovery codes API is experimental and disabled by default. Enable it by passing `auth: { experimental: { recoveryCodes: true } }` to createClient (or to the GoTrueClient constructor).'
+    )
+  }
+}
+
 export function userNotAvailableProxy(): User {
   const proxyTarget = {} as User
 

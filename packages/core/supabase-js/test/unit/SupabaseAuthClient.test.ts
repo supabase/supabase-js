@@ -155,3 +155,37 @@ test('createClient should accept auth.skipAutoInitialize and wire it to auth cli
     initializeSpy.mockRestore()
   }
 })
+
+test('createClient gates MFA recovery codes methods when auth.experimental.recoveryCodes is not set', async () => {
+  const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey')
+  await expect(supa.auth.mfa.recoveryCodes.getStatus()).rejects.toThrow(
+    /experimental.*recoveryCodes/
+  )
+})
+
+test('createClient with auth.experimental.recoveryCodes enables the MFA recovery codes API', async () => {
+  const statusResponse = {
+    id: '00000000-0000-0000-0000-000000000000',
+    type: 'recovery_code',
+    total: 10,
+    remaining: 7,
+  }
+  const mockFetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    headers: new Headers(),
+    json: () => Promise.resolve(statusResponse),
+  })
+  const supa = new SupabaseClient('https://example.supabase.com', 'supabaseKey', {
+    auth: { experimental: { recoveryCodes: true }, persistSession: false, autoRefreshToken: false },
+    global: { fetch: mockFetch },
+  })
+
+  const { data, error } = await supa.auth.mfa.recoveryCodes.getStatus()
+
+  expect(error).toBeNull()
+  expect(data).toEqual(statusResponse)
+  const [url, params] = mockFetch.mock.calls[0]
+  expect(url).toBe('https://example.supabase.com/auth/v1/factors/recovery-codes')
+  expect(params.method).toBe('GET')
+})
