@@ -39,9 +39,11 @@ import {
 import {
   appendFlowIdToRedirectTo,
   assertPasskeyExperimentalEnabled,
+  assertRecoveryCodesExperimentalEnabled,
   decodeJWT,
   deepClone,
   Deferred,
+  expiresAt,
   generateCallbackId,
   getAlgorithm,
   getCodeChallengeAndMethod,
@@ -84,6 +86,8 @@ import type {
   AuthMFAEnrollWebauthnResponse,
   AuthMFAGetAuthenticatorAssuranceLevelResponse,
   AuthMFAListFactorsResponse,
+  AuthMFARecoveryCodesGenerateResponse,
+  AuthMFARecoveryCodesStatusResponse,
   AuthMFAUnenrollResponse,
   AuthMFAVerifyResponse,
   AuthOtpResponse,
@@ -111,6 +115,8 @@ import type {
   MFAEnrollPhoneParams,
   MFAEnrollTOTPParams,
   MFAEnrollWebauthnParams,
+  MFARecoveryCodesGenerateParams,
+  MFARecoveryCodesVerifyParams,
   MFAUnenrollParams,
   MFAVerifyParams,
   MFAVerifyPhoneParams,
@@ -484,6 +490,13 @@ export default class GoTrueClient {
       challengeAndVerify: this._challengeAndVerify.bind(this),
       getAuthenticatorAssuranceLevel: this._getAuthenticatorAssuranceLevel.bind(this),
       webauthn: new WebAuthnApi(this),
+      recoveryCodes: {
+        getStatus: this._getRecoveryCodesStatus.bind(this),
+        generate: this._generateRecoveryCodes.bind(this),
+        verify: this._verifyRecoveryCode.bind(this),
+        regenerate: this._regenerateRecoveryCodes.bind(this),
+        unenroll: this._unenrollRecoveryCodes.bind(this),
+      },
     }
 
     this.oauth = {
@@ -6046,12 +6059,18 @@ export default class GoTrueClient {
       phone: [],
       totp: [],
       webauthn: [],
+      recovery_code: [],
     }
 
     // loop over the factors ONCE
     for (const factor of user?.factors ?? []) {
       data.all.push(factor)
-      if (factor.status === 'verified') {
+      // Types that are not recognized are pushed to `all` bucket.
+      if (
+        factor.status === 'verified' &&
+        factor.factor_type in data &&
+        Array.isArray(data[factor.factor_type])
+      ) {
         ;(data[factor.factor_type] as (typeof factor)[]).push(factor)
       }
     }
@@ -6141,6 +6160,200 @@ export default class GoTrueClient {
     const currentAuthenticationMethods = payload.amr || []
 
     return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
+  }
+
+  /**
+   * {@link AuthMFARecoveryCodesApi#getStatus}
+   */
+  private async _getRecoveryCodesStatus(): Promise<AuthMFARecoveryCodesStatusResponse> {
+    assertRecoveryCodesExperimentalEnabled(this.experimental)
+    try {
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        const { data, error } = await _request(
+          this.fetch,
+          'GET',
+          `${this.url}/factors/recovery-codes`,
+          {
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * {@link AuthMFARecoveryCodesApi#generate}
+   */
+  private async _generateRecoveryCodes(
+    params?: MFARecoveryCodesGenerateParams
+  ): Promise<AuthMFARecoveryCodesGenerateResponse> {
+    assertRecoveryCodesExperimentalEnabled(this.experimental)
+    try {
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        const { data, error } = await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/factors/recovery-codes`,
+          {
+            // The body is optional server-side; only send one when a name was given.
+            body: params?.friendlyName ? { friendly_name: params.friendlyName } : undefined,
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * {@link AuthMFARecoveryCodesApi#verify}
+   */
+  private async _verifyRecoveryCode(
+    params: MFARecoveryCodesVerifyParams
+  ): Promise<AuthMFAVerifyResponse> {
+    assertRecoveryCodesExperimentalEnabled(this.experimental)
+    const run = async (): Promise<AuthMFAVerifyResponse> => {
+      try {
+        return await this._useSession(async (result) => {
+          const { data: sessionData, error: sessionError } = result
+          if (sessionError) {
+            return this._returnResult({ data: null, error: sessionError })
+          }
+
+          const { data, error } = await _request(
+            this.fetch,
+            'POST',
+            `${this.url}/factors/recovery-codes/verify`,
+            {
+              body: { code: params.code },
+              headers: this.headers,
+              jwt: sessionData?.session?.access_token,
+            }
+          )
+          if (error) {
+            return this._returnResult({ data: null, error })
+          }
+
+          // A server-provided expires_at takes precedence over the computed one.
+          const session: Session = { expires_at: expiresAt(data.expires_in), ...data }
+          await this._saveSession(session)
+          await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', session)
+
+          return this._returnResult({ data, error: null })
+        })
+      } catch (error) {
+        if (isAuthError(error)) {
+          return this._returnResult({ data: null, error })
+        }
+        throw error
+      }
+    }
+
+    if (this.lock != null) {
+      return this._acquireLock(this.lockAcquireTimeout, run)
+    }
+    return run()
+  }
+
+  /**
+   * {@link AuthMFARecoveryCodesApi#regenerate}
+   */
+  private async _regenerateRecoveryCodes(): Promise<AuthMFARecoveryCodesGenerateResponse> {
+    assertRecoveryCodesExperimentalEnabled(this.experimental)
+    try {
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        const { data, error } = await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/factors/recovery-codes/regenerate`,
+          {
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * {@link AuthMFARecoveryCodesApi#unenroll}
+   */
+  private async _unenrollRecoveryCodes(): Promise<AuthMFAUnenrollResponse> {
+    assertRecoveryCodesExperimentalEnabled(this.experimental)
+    try {
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        const { data, error } = await _request(
+          this.fetch,
+          'DELETE',
+          `${this.url}/factors/recovery-codes`,
+          {
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
   }
 
   /**

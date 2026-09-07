@@ -1819,6 +1819,9 @@ describe('MFA', () => {
             { factor_type: 'totp', status: 'unverified' },
             { factor_type: 'phone', status: 'verified' },
             { factor_type: 'phone', status: 'unverified' },
+            { factor_type: 'recovery_code', status: 'verified' },
+            // A factor type introduced by a newer server must not throw here.
+            { factor_type: 'future_factor_type', status: 'verified' },
           ],
         },
       },
@@ -1830,9 +1833,12 @@ describe('MFA', () => {
     expect(result.error).toBeNull()
     expect(result.data).not.toBeNull()
     if (result.data) {
-      expect(result.data.all).toHaveLength(4)
+      expect(result.data.all).toHaveLength(6)
       expect(result.data.totp).toHaveLength(1)
       expect(result.data.phone).toHaveLength(1)
+      expect(result.data.webauthn).toHaveLength(0)
+      expect(result.data.recovery_code).toHaveLength(1)
+      expect((result.data as Record<string, unknown>).future_factor_type).toBeUndefined()
     }
   })
 
