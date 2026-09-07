@@ -643,6 +643,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
    * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @param options.versionId Create a signed URL for a specific object version rather than the current one.
    * @returns Promise with response containing signed URL or error
    *
    * @example Create Signed URL
@@ -699,6 +700,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       download?: string | boolean
       transform?: TransformOptions
       cacheNonce?: string
+      versionId?: string
     }
   ): Promise<
     | {
@@ -721,7 +723,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       let data = await post(
         this.fetch,
         `${this.url}/object/sign/${_path}`,
-        { expiresIn, ...(hasTransform ? { transform: options!.transform } : {}) },
+        {
+          expiresIn,
+          ...(hasTransform ? { transform: options!.transform } : {}),
+          ...(options?.versionId != null ? { versionId: options.versionId } : {}),
+        },
         { headers: this.headers }
       )
 
@@ -1049,6 +1055,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param options.download Triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
    * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @param options.versionId Return the URL for a specific object version rather than the current one.
    * @returns Object with public URL
    *
    * @example Returns the URL for an asset in a public bucket
@@ -1104,6 +1111,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       download?: string | boolean
       transform?: TransformOptions
       cacheNonce?: string
+      versionId?: string
     }
   ): { data: { publicUrl: string } } {
     const _path = this._getFinalPath(path)
@@ -1112,6 +1120,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     if (options?.download) query.set('download', options.download === true ? '' : options.download)
     if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
     if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+    if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
 
     const wantsTransformation =

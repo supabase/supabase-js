@@ -154,6 +154,46 @@ describe('Object API', () => {
       expect(res.data?.[0].signedUrl).toContain(`${URL}/object/sign/${bucketName}/${uploadPath}`)
       expect(res.data?.[0].signedUrl).not.toMatch(/&$/)
     })
+
+    it('will append a versionId parameter to getPublicUrl', () => {
+      const versionId = 'test-version-id'
+      const res = storage.from(bucketName).getPublicUrl(uploadPath, {
+        versionId,
+      })
+
+      assert(res.data)
+
+      const parsedUrl = global.URL.parse(res.data.publicUrl)
+      assert(parsedUrl)
+      assert(parsedUrl.searchParams.has('versionId', versionId))
+    })
+
+    it('createSignedUrl sends versionId in the request body', async () => {
+      const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
+      expect(uploadRes.error).toBeNull()
+
+      const versionId = 'test-version-id'
+      const originalFetch = global.fetch
+      const mockFetch = jest.fn(originalFetch)
+      global.fetch = mockFetch
+
+      try {
+        const res = await storage.from(bucketName).createSignedUrl(uploadPath, 60000, {
+          versionId,
+        })
+
+        expect(res.error).toBeNull()
+        assert(res.data)
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining('/object/sign/'),
+          expect.objectContaining({
+            body: expect.stringContaining(`"versionId":"${versionId}"`),
+          })
+        )
+      } finally {
+        global.fetch = originalFetch
+      }
+    })
   })
 
   describe('Upload files', () => {
