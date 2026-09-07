@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   validate:
-    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-javascript.yml@1f5fd0a64e982886aeeb6cad2c3b64cbb499d080 # capability-matrix-v1.8.0
+    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-javascript.yml@ad910cfa7b87ed7dab32b409f5509611d64168c9 # capability-matrix-v1.9.0
     with:
       build-command: |
         corepack enable
