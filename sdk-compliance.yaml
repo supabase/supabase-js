@@ -160,10 +160,15 @@ features:
     status: implemented
     symbols:
       - AuthMFARecoveryCodesApi.generate
+    supporting_symbols:
+      - MFARecoveryCodesGenerateParams
   auth.mfa_recovery_codes.get_status:
     status: implemented
     symbols:
       - AuthMFARecoveryCodesApi.getStatus
+    supporting_symbols:
+      - AuthMFARecoveryCodesStatusResponse
+      - AuthMFARecoveryCodesStatusResponseData
   auth.mfa_recovery_codes.regenerate:
     status: implemented
     symbols:
@@ -176,6 +181,8 @@ features:
     status: implemented
     symbols:
       - AuthMFARecoveryCodesApi.verify
+    supporting_symbols:
+      - MFARecoveryCodesVerifyParams
   auth.oauth_admin.create_client:
     status: implemented
     symbols:
@@ -1115,3 +1122,10 @@ features:
     symbols:
       - FunctionsClient.invoke
       - FunctionInvokeOptions
+
+# Shared across auth.mfa_recovery_codes.{generate,get_status,regenerate,unenroll,verify}.
+supporting_symbols:
+  - AuthMFARecoveryCodesApi
+  - GoTrueMFAApi.recoveryCodes
+  - AuthMFARecoveryCodesGenerateResponse
+  - AuthMFARecoveryCodesGenerateResponseData
