@@ -641,7 +641,6 @@ features:
       - LifecycleRule.id
       - LifecycleRule.status
       - LifecycleRule.filter
-      - LifecycleRule.legacyPrefix
       - LifecycleRule.noncurrentVersionExpiration
       - LifecycleRuleFilter
       - LifecycleRuleStatus

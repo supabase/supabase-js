@@ -58,17 +58,13 @@ export type LifecycleRuleFilter = Record<string, never>
 /**
  * One lifecycle rule.
  *
- * Today the only action is `noncurrentVersionExpiration`. Include `filter: {}`
- * on each rule. `id` is optional. The server generates one if you omit it.
+ * Today the only action is `noncurrentVersionExpiration`. `filter` is required
+ * and must be `{}`. `id` is optional. The server generates one if you omit it.
  */
 export interface LifecycleRule {
   id?: string
   status: LifecycleRuleStatus
-  filter?: LifecycleRuleFilter
-  /**
-   * Empty-prefix selector from S3 Lifecycle V1. Prefer `filter: {}`.
-   */
-  legacyPrefix?: ''
+  filter: LifecycleRuleFilter
   noncurrentVersionExpiration: NoncurrentVersionExpiration
 }
 
