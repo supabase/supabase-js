@@ -79,6 +79,15 @@ export type RealtimeClientOptions = {
   fetch?: Fetch
   worker?: boolean
   workerUrl?: string
+  /**
+   * Callback returning a fresh token for channel subscription authorization and Realtime RLS.
+   *
+   * Called on connect and on every heartbeat (`heartbeatIntervalMs`, default 25000ms).
+   * The token must stay valid past the next call, or the server closes the channel at
+   * expiry with no automatic resubscribe. So, plan for some call time and overhead,
+   * i.e. if hearbeats happen every 25 seconds and your token is still valid for 27
+   * seconds it's probably safer to refresh right now rather than risk a race condition.
+   */
   accessToken?: () => Promise<string | null>
   disconnectOnEmptyChannelsAfterMs?: number
   /**
@@ -499,6 +508,10 @@ export default class RealtimeClient {
    * When an `accessToken` callback IS configured, the callback is the source of truth:
    * the client remains in callback mode and continues to refresh from it on heartbeat,
    * even after a bootstrap/override `setAuth(token)` call.
+   *
+   * The callback is called on connect and on every heartbeat (`heartbeatIntervalMs`,
+   * default 25000ms). Its token must stay valid past the next call, or the server closes
+   * the channel at expiry with no automatic resubscribe.
    *
    * @param token A JWT string to override the token set on the client.
    *
