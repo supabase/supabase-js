@@ -81,7 +81,7 @@ test('ensures single worker ref is started even with multiple connect calls', as
   await testSetup.socketConnected()
   const ref = testSetup.client.workerRef
 
-  // @ts-ignore - simulate another onOpen call
+  // @ts-expect-error - simulate another onOpen call
   testSetup.client.socketAdapter.getSocket().triggerStateCallbacks('open')
 
   expect(testSetup.client.workerRef).toBe(ref)
@@ -90,7 +90,7 @@ test('ensures single worker ref is started even with multiple connect calls', as
 test('throws error when Web Worker is not supported', () => {
   // Temporarily remove Worker from window
   const originalWorker = window.Worker
-  // @ts-ignore - Deliberately setting to undefined to test error case
+  // @ts-expect-error - Deliberately setting to undefined to test error case
   window.Worker = undefined
 
   expect(() => {
@@ -117,8 +117,9 @@ test('terminates worker on disconnect', async () => {
   expect(testSetup.client.workerRef).toBeFalsy()
 })
 
-test('worker reconnect: in-flight heartbeat on socket A does not cause heartbeat timeout teardown on socket B after reconnect', async () => {
+test('worker reconnect: in-flight heartbeat on socket A does not tear down socket B', async () => {
   const heartbeatEvents: string[] = []
+  let heartbeatsSeen = 0
   testSetup.cleanup()
   testSetup = setupRealtimeTest({
     worker: true,
@@ -126,29 +127,39 @@ test('worker reconnect: in-flight heartbeat on socket A does not cause heartbeat
     heartbeatCallback: (status: string) => {
       heartbeatEvents.push(status)
     },
+    socketHandlers: {
+      heartbeat: (socket, message) => {
+        heartbeatsSeen += 1
+        if (heartbeatsSeen === 1) return // leave socket A's heartbeat in flight
+        const msg = JSON.parse(message as string)
+        socket.send(
+          JSON.stringify({
+            topic: msg.topic,
+            event: 'phx_reply',
+            ref: msg.ref,
+            payload: { status: 'ok', response: {} },
+          })
+        )
+      },
+    },
   })
 
   testSetup.connect()
-  await testSetup.socketConnected()
-
-  // 1. Send first heartbeat on socket A
+  await vi.waitFor(() => expect(testSetup.client.isConnected()).toBe(true))
   testSetup.client.sendHeartbeat()
-  expect(heartbeatEvents).toContain('sent')
+  expect(heartbeatEvents).toEqual(['sent'])
 
-  // 2. Disconnect socket A while heartbeat was in flight (without reply or timeout)
   await testSetup.disconnect()
   await testSetup.socketClosed()
 
-  // 3. Reconnect on socket B
   testSetup.connect()
-  await testSetup.socketConnected()
-
-  // 4. Send heartbeat on socket B - should send cleanly without teardown
+  await vi.waitFor(() => expect(testSetup.client.isConnected()).toBe(true))
   expect(testSetup.client.pendingHeartbeatRef).toBeNull()
   testSetup.client.sendHeartbeat()
 
-  // Verify connection remains open and exactly two sent events occurred
   expect(testSetup.client.isConnected()).toBe(true)
   expect(heartbeatEvents.filter((s) => s === 'sent').length).toBe(2)
+  expect(heartbeatEvents).not.toContain('timeout')
+  await vi.waitFor(() => expect(heartbeatEvents).toContain('ok'))
+  expect(testSetup.client.isConnected()).toBe(true)
 })
-
