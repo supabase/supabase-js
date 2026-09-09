@@ -35,6 +35,32 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
 
 const PostgrestReservedCharsRegexp = new RegExp('[,()]')
 
+// A `{...}` filter value is a Postgres array literal, not a PostgREST list, so
+// it has its own set of characters that end an element. Whitespace is included
+// because Postgres trims it off an unquoted element, and the empty string
+// because `{}` is an empty array rather than an array holding one empty value.
+// `null` in any casing is the SQL NULL token, so the text has to be quoted to
+// stay text.
+const PostgrestArrayLiteralReservedCharsRegexp = /[,{}"\\\s]|^$|^null$/i
+
+/**
+ * Quotes an element of a Postgres array literal when it carries a character
+ * that would otherwise change how Postgres parses the literal.
+ *
+ * Only strings are quoted, so a real `null` value still reaches Postgres bare
+ * and stays SQL NULL. The string `'null'` is quoted for the opposite reason:
+ * bare, Postgres would read it as SQL NULL rather than as text.
+ */
+const quoteArrayLiteralElement = (value: unknown): string => {
+  if (typeof value !== 'string') return `${value}`
+  if (!PostgrestArrayLiteralReservedCharsRegexp.test(value)) return value
+
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
+const toArrayLiteral = (values: readonly unknown[]): string =>
+  values.map(quoteArrayLiteralElement).join(',')
+
 // Match relationship filters with `table.column` syntax and resolve underlying
 // column value. If not matched, fallback to generic type.
 // TODO: Validate the relationship itself ala select-query-parser. Currently we
@@ -548,7 +574,7 @@ export default class PostgrestFilterBuilder<
   ): this
   likeAllOf(column: string, patterns: readonly string[]): this
   likeAllOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `like(all).{${patterns.join(',')}}`)
+    this.url.searchParams.append(column, `like(all).{${toArrayLiteral(patterns)}}`)
     return this
   }
 
@@ -567,7 +593,7 @@ export default class PostgrestFilterBuilder<
   ): this
   likeAnyOf(column: string, patterns: readonly string[]): this
   likeAnyOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `like(any).{${patterns.join(',')}}`)
+    this.url.searchParams.append(column, `like(any).{${toArrayLiteral(patterns)}}`)
     return this
   }
 
@@ -637,7 +663,7 @@ export default class PostgrestFilterBuilder<
   ): this
   ilikeAllOf(column: string, patterns: readonly string[]): this
   ilikeAllOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `ilike(all).{${patterns.join(',')}}`)
+    this.url.searchParams.append(column, `ilike(all).{${toArrayLiteral(patterns)}}`)
     return this
   }
 
@@ -656,7 +682,7 @@ export default class PostgrestFilterBuilder<
   ): this
   ilikeAnyOf(column: string, patterns: readonly string[]): this
   ilikeAnyOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `ilike(any).{${patterns.join(',')}}`)
+    this.url.searchParams.append(column, `ilike(any).{${toArrayLiteral(patterns)}}`)
     return this
   }
 
@@ -1016,7 +1042,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `cs.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(column, `cs.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `cs.{${toArrayLiteral(value)}}`)
     } else {
       // json
       this.url.searchParams.append(column, `cs.${JSON.stringify(value)}`)
@@ -1165,7 +1191,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `cd.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(column, `cd.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `cd.{${toArrayLiteral(value)}}`)
     } else {
       // json
       this.url.searchParams.append(column, `cd.${JSON.stringify(value)}`)
@@ -1592,7 +1618,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `ov.${value}`)
     } else {
       // array
-      this.url.searchParams.append(column, `ov.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `ov.{${toArrayLiteral(value)}}`)
     }
     return this
   }
