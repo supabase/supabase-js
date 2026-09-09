@@ -44,6 +44,56 @@ describe('push', () => {
     )
   })
 
+  test('keeps the original error as `cause` when pushed before joining', () => {
+    const original = new Error('Some error')
+    vi.spyOn(channelAdapter.getChannel(), 'push').mockImplementation(() => {
+      throw original
+    })
+
+    expect(() => channelAdapter.push('event', { payload: true })).toThrowError(/before joining/)
+    try {
+      channelAdapter.push('event', { payload: true })
+    } catch (error) {
+      expect((error as Error).cause).toBe(original)
+    }
+  })
+
+  test('rethrows the original error once the channel has joined', async () => {
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+    expect(channelAdapter.joinedOnce).toBe(true)
+
+    const original = new TypeError('Converting circular structure to JSON')
+    vi.spyOn(channelAdapter.getChannel(), 'push').mockImplementation(() => {
+      throw original
+    })
+
+    // A push that fails for any reason other than "not joined" must keep its own
+    // message and stack — reporting it as a missing subscribe() sends the
+    // developer after a problem they do not have.
+    expect(() => channelAdapter.push('event', { payload: true })).toThrowError(original)
+    try {
+      channelAdapter.push('event', { payload: true })
+    } catch (error) {
+      expect(error).toBe(original)
+      expect((error as Error).message).not.toMatch(/before joining/)
+    }
+  })
+
+  test('surfaces the encoder error when send() is given an unencodable payload', async () => {
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+
+    // A self-referencing payload is an ordinary mistake (a DOM node, a React
+    // ref, an object with a parent pointer) and JSON.stringify rejects it.
+    const circular: Record<string, unknown> = { name: 'node' }
+    circular.self = circular
+
+    await expect(
+      channel.send({ type: 'broadcast', event: 'ping', payload: circular })
+    ).rejects.toThrowError(/circular/i)
+  })
+
   test('should maintain buffer within size limit', async () => {
     channel.subscribe()
     await waitForChannelSubscribed(channel)
