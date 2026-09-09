@@ -325,5 +325,5 @@ export function _noResolveJsonResponse(data: Response): Response {
  * @returns true if a session is in the response
  */
 function hasSession(data: GoTrueSessionData): boolean {
-  return !!data.access_token && !!data.refresh_token && !!data.expires_in
+  return !!data.access_token && !!data.refresh_token && typeof data.expires_in === 'number'
 }
