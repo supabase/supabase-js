@@ -1172,14 +1172,14 @@ export default class RealtimeChannel {
     const controller = new AbortController()
     const id = setTimeout(() => controller.abort(), timeout)
 
-    const response = await this.socket.fetch(url, {
-      ...options,
-      signal: controller.signal,
-    })
-
-    clearTimeout(id)
-
-    return response
+    try {
+      return await this.socket.fetch(url, {
+        ...options,
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(id)
+    }
   }
 
   /** @internal */
