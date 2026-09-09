@@ -6821,6 +6821,16 @@ export default class GoTrueClient {
    * Requires `auth.experimental.passkey: true`.
    *
    * @category Auth
+   *
+   * @example Sign in with Conditional UI (passkey autofill)
+   * ```js
+   * // <input autocomplete="username webauthn" /> somewhere on the page
+   * const { data, error } = await supabase.auth.signInWithPasskey({
+   *   options: {
+   *     mediation: 'conditional'
+   *   }
+   * });
+   * ```
    */
   async signInWithPasskey(
     credentials?: SignInWithPasskeyCredentials

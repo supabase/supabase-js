@@ -3181,6 +3181,15 @@ export type SignInWithPasskeyCredentials = {
      * `signInWithPasskey()` again. See `signInWithPasskey` for details.
      *
      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/CredentialsContainer/get#mediation MDN - mediation}
+     *
+     * @example
+     * ```ts
+     * const credentials: SignInWithPasskeyCredentials = {
+     *   options: {
+     *     mediation: 'conditional'
+     *   }
+     * }
+     * ```
      */
     mediation?: CredentialMediationRequirement
   }
