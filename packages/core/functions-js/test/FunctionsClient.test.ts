@@ -1,7 +1,26 @@
 import { FunctionsClient } from '../src/index'
 
 describe('FunctionsClient', () => {
-  describe('invoke – abort listener cleanup when timeout + signal are both set', () => {
+  describe('invoke – timeout and signal composition', () => {
+    it('passes an aborted signal to fetch when the caller signal was already aborted', async () => {
+      const mockFetch = jest.fn().mockImplementation((_url, init) => {
+        expect(init.signal.aborted).toBe(true)
+        return Promise.reject(init.signal.reason)
+      })
+
+      const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+      const controller = new AbortController()
+      controller.abort()
+
+      const { error } = await client.invoke('test-fn', {
+        timeout: 5000,
+        signal: controller.signal,
+      })
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(error).not.toBeNull()
+    })
+
     it('removes the listener from the caller signal after a successful invoke', async () => {
       const mockFetch = jest.fn().mockResolvedValue({
         ok: true,
