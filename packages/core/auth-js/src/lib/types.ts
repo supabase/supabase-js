@@ -3141,6 +3141,7 @@ export type PasskeyMetadata = {
 export type PasskeyAuthenticationOptionsResponse = {
   challenge_id: string
   options: ServerCredentialRequestOptions
+  /** Timestamp in UNIX seconds when this challenge will no longer be usable. */
   expires_at: number
 }
 
@@ -3164,6 +3165,33 @@ export type SignInWithPasskeyCredentials = {
   options?: {
     captchaToken?: string
     signal?: AbortSignal
+    /**
+     * Forwarded to `navigator.credentials.get()` as `mediation`.
+     *
+     * Use `'conditional'` to opt into WebAuthn Conditional UI, where the browser
+     * offers passkeys through the autofill prompt instead of a modal picker. The
+     * page also needs an input with `autocomplete="username webauthn"`.
+     *
+     * When omitted the browser's default (modal) behavior is used.
+     *
+     * Note that the server-side challenge expires (5 minutes by default) while
+     * the autofill prompt can stay pending indefinitely; if the user picks a
+     * passkey after that, verification fails with
+     * `error_code: "webauthn_challenge_expired"` and the app should call
+     * `signInWithPasskey()` again. See `signInWithPasskey` for details.
+     *
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/CredentialsContainer/get#mediation MDN - mediation}
+     *
+     * @example
+     * ```ts
+     * const credentials: SignInWithPasskeyCredentials = {
+     *   options: {
+     *     mediation: 'conditional'
+     *   }
+     * }
+     * ```
+     */
+    mediation?: CredentialMediationRequirement
   }
 }
 
