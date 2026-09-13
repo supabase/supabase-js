@@ -3112,15 +3112,37 @@ export default class GoTrueClient {
 
       const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
       if (error) {
+        // A discarded refresh means `_callRefreshToken`'s commit guard rejected
+        // the rotated tokens because storage was rewritten mid-flight (another
+        // tab or an SSR cookie handoff already committed a newer session, which
+        // the guard deliberately left in place). Adopt whatever storage holds
+        // now instead of surfacing the discard as `session: null`; the rotation
+        // succeeded, just not through this caller. Only adopt a session whose
+        // access token has not itself expired (every other return path gates
+        // expiry; handing back a dead token as `error: null` just moves the
+        // failure downstream). A concurrent `signOut` clears storage instead,
+        // leaving nothing to adopt, so both cases fall through to the error.
+        if (isAuthRefreshDiscardedError(error)) {
+          const stored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+          const storedAccessTokenValid = !!(
+            stored?.expires_at && stored.expires_at * 1000 > Date.now()
+          )
+          if (stored && this._isValidSession(stored) && storedAccessTokenValid) {
+            return this._returnResult({ data: { session: stored }, error: null })
+          }
+          return this._returnResult({ data: { session: null }, error })
+        }
+
         // Proactive-preserve mirror: `_callRefreshToken` keeps the session
         // in storage when refresh fails non-retryably but the access token
         // is still inside its real expiry window. Hand the caller the
         // still-valid session instead of translating the refresh error
         // into `session: null`. If the access token has actually expired,
-        // the session is genuinely dead and the error stands. Explicit
-        // refresh entry points (`refreshSession`, `setSession`)
-        // intentionally bypass this fallback — they want to know the
-        // refresh failed.
+        // the session is genuinely dead and the error stands. `setSession`
+        // and `refreshSession({ refresh_token })` pass their own token to
+        // `_callRefreshToken` directly and never reach this fallback; no-arg
+        // `refreshSession()` reads it back through `__loadSession` and refreshes
+        // the preserved (or discard-adopted) session rather than erroring.
         const accessTokenStillValid = !!(
           currentSession.expires_at && currentSession.expires_at * 1000 > Date.now()
         )
