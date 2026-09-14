@@ -25,6 +25,7 @@ export {
 } from '@supabase/functions-js'
 export * from '@supabase/realtime-js'
 export { default as SupabaseClient } from './SupabaseClient'
+export { getDefaultStorageKey } from './lib/helpers'
 export type {
   SupabaseClientOptions,
   TracePropagationOptions,

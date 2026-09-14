@@ -179,3 +179,63 @@ test('isBrowser function', () => {
   // Restore
   if (originalWindow) global.window = originalWindow
 })
+
+describe('shortHash', () => {
+  test('returns 8 lowercase hex characters and is deterministic', () => {
+    const a = helpers.shortHash('https://project-ref.supabase.co')
+    expect(a).toMatch(/^[0-9a-f]{8}$/)
+    expect(helpers.shortHash('https://project-ref.supabase.co')).toBe(a)
+  })
+
+  test('is FNV-1a 32-bit', () => {
+    // Known FNV-1a 32-bit vectors.
+    expect(helpers.shortHash('')).toBe('811c9dc5')
+    expect(helpers.shortHash('a')).toBe('e40c292c')
+    expect(helpers.shortHash('foobar')).toBe('bf9cf968')
+  })
+
+  test('distinguishes origins that share a hostname label', () => {
+    expect(helpers.shortHash('http://localhost:54321')).not.toBe(
+      helpers.shortHash('http://localhost:8000')
+    )
+  })
+})
+
+describe('getDefaultStorageKey', () => {
+  test('has the sb-<hash>-auth-token shape', () => {
+    expect(helpers.getDefaultStorageKey('https://project-ref.supabase.co')).toMatch(
+      /^sb-[0-9a-f]{8}-auth-token$/
+    )
+  })
+
+  test('depends on the origin only', () => {
+    const base = helpers.getDefaultStorageKey('https://project-ref.supabase.co')
+    expect(helpers.getDefaultStorageKey('https://project-ref.supabase.co/')).toBe(base)
+    expect(helpers.getDefaultStorageKey('https://project-ref.supabase.co/some/path')).toBe(base)
+    expect(helpers.getDefaultStorageKey(new URL('https://project-ref.supabase.co/'))).toBe(base)
+  })
+
+  test('differs for different ports and hosts', () => {
+    expect(helpers.getDefaultStorageKey('http://localhost:54321')).not.toBe(
+      helpers.getDefaultStorageKey('http://localhost:8000')
+    )
+    expect(helpers.getDefaultStorageKey('https://api.a.com')).not.toBe(
+      helpers.getDefaultStorageKey('https://api.b.com')
+    )
+  })
+
+  test('validates string input like the client constructor', () => {
+    expect(() => helpers.getDefaultStorageKey('not a url')).toThrow('Invalid supabaseUrl')
+  })
+})
+
+describe('getLegacyDefaultStorageKey', () => {
+  test('uses the first hostname label', () => {
+    expect(helpers.getLegacyDefaultStorageKey('https://project-ref.supabase.co')).toBe(
+      'sb-project-ref-auth-token'
+    )
+    expect(helpers.getLegacyDefaultStorageKey('http://localhost:54321')).toBe(
+      'sb-localhost-auth-token'
+    )
+  })
+})
