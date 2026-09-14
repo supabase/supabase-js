@@ -50,6 +50,7 @@ import {
   getItemAsync,
   insecureUserWarningProxy,
   isBrowser,
+  migratePKCEVerifiers,
   parseParametersFromURL,
   pkceVerifierSlotKey,
   removeAllPKCEVerifiers,
@@ -203,6 +204,7 @@ const DEFAULT_OPTIONS: Omit<
 > = {
   url: GOTRUE_URL,
   storageKey: STORAGE_KEY,
+  legacyStorageKeys: [],
   autoRefreshToken: true,
   persistSession: true,
   detectSessionInUrl: true,
@@ -271,6 +273,12 @@ export default class GoTrueClient {
    * The storage key used to identify the values saved in localStorage
    */
   protected storageKey: string
+  /**
+   * Storage keys a previous default persisted the session under. Migrated to
+   * `storageKey` once, at the top of `_initialize()`. See
+   * `GoTrueClientOptions.legacyStorageKeys`.
+   */
+  protected legacyStorageKeys: string[]
 
   protected flowType: AuthFlowType
 
@@ -420,6 +428,9 @@ export default class GoTrueClient {
   constructor(options: GoTrueClientOptions) {
     const settings = { ...DEFAULT_OPTIONS, ...options }
     this.storageKey = settings.storageKey
+    this.legacyStorageKeys = (settings.legacyStorageKeys ?? []).filter(
+      (key) => key && key !== this.storageKey
+    )
 
     this.instanceID = GoTrueClient.nextInstanceID[this.storageKey] ?? 0
     GoTrueClient.nextInstanceID[this.storageKey] = this.instanceID + 1
@@ -673,6 +684,15 @@ export default class GoTrueClient {
    */
   private async _initialize(): Promise<InitializeResult> {
     try {
+      // Runs before the PKCE callback detection below: `_isPKCECallback` looks
+      // up verifier slots under `storageKey`, and a flow started under a legacy
+      // key must still be found after the redirect. Guarded here (not only
+      // inside) so clients without legacy keys keep the exact pre-existing
+      // initialization timing — no extra await before the first storage read.
+      if (this.persistSession && this.legacyStorageKeys.length > 0) {
+        await this._migrateLegacyStorageKeys()
+      }
+
       let params: { [parameter: string]: string } = {}
       let callbackUrlType = 'none'
 
@@ -4847,6 +4867,68 @@ export default class GoTrueClient {
     }
 
     return { data: { provider, url, flowId }, error: null }
+  }
+
+  /**
+   * One-time move of persisted state from `legacyStorageKeys` to `storageKey`.
+   *
+   * - `storageKey` empty: the first legacy key holding a session-shaped value
+   *   is copied to `storageKey`, along with its `-user` entry (in `storage`
+   *   and `userStorage`) and pending PKCE verifiers.
+   * - `storageKey` populated: nothing is copied; the new key wins.
+   *
+   * In both cases the legacy entries are removed afterwards. Leaving them
+   * behind would keep a stale refresh token in storage that an old-SDK tab
+   * could later rotate, tripping GoTrue's refresh-token reuse detection for
+   * the whole token family. Never throws — a failed migration must not block
+   * initialization.
+   */
+  private async _migrateLegacyStorageKeys() {
+    const debugName = '#_migrateLegacyStorageKeys()'
+
+    try {
+      let hasCurrentSession = (await getItemAsync(this.storage, this.storageKey)) !== null
+
+      for (const legacyKey of this.legacyStorageKeys) {
+        const legacySession = await getItemAsync(this.storage, legacyKey)
+
+        if (legacySession === null) {
+          continue
+        }
+
+        if (!hasCurrentSession && this._isValidSession(legacySession)) {
+          this._debug(debugName, 'moving session from', legacyKey, 'to', this.storageKey)
+
+          await setItemAsync(this.storage, this.storageKey, legacySession)
+          hasCurrentSession = true
+
+          const legacyUser = await getItemAsync(this.storage, legacyKey + '-user')
+          if (legacyUser !== null) {
+            await setItemAsync(this.storage, this.storageKey + '-user', legacyUser)
+          }
+
+          if (this.userStorage) {
+            const legacyStoredUser = await getItemAsync(this.userStorage, legacyKey + '-user')
+            if (legacyStoredUser !== null) {
+              await setItemAsync(this.userStorage, this.storageKey + '-user', legacyStoredUser)
+            }
+          }
+
+          await migratePKCEVerifiers(this.storage, legacyKey, this.storageKey)
+        } else {
+          this._debug(debugName, 'discarding stale entries under', legacyKey)
+          await removeAllPKCEVerifiers(this.storage, legacyKey)
+        }
+
+        await removeItemAsync(this.storage, legacyKey)
+        await removeItemAsync(this.storage, legacyKey + '-user')
+        if (this.userStorage) {
+          await removeItemAsync(this.userStorage, legacyKey + '-user')
+        }
+      }
+    } catch (error) {
+      this._debug(debugName, 'failed to migrate legacy storage keys', error)
+    }
   }
 
   /**
