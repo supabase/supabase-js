@@ -69,7 +69,7 @@ export interface PostgrestOpenApiSpec {
 export type PostgrestQueryBuilderOptions = {
   /** Additional headers to merge with the client-level headers. Per-request headers take precedence. */
   headers?: HeadersInit
-  /** A custom fetch implementation for this request only. Auth headers are injected automatically. */
+  /** A custom fetch implementation for this request only. It replaces the client-level fetch. */
   fetch?: Fetch
   /** Override the client-level URL length limit for this request. */
   urlLengthLimit?: number

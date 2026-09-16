@@ -445,8 +445,23 @@ export default class SupabaseClient<
   /**
    * Perform a query on a table or a view.
    *
+   * A per-request `fetch` is wrapped the same way as the client-level fetch: the
+   * `apikey`, `Authorization` and trace headers are added before it is called.
+   * Headers already present on the request win, so a per-request `Authorization`
+   * header takes precedence over the session token. Clients returned by
+   * `.schema()` call a per-request `fetch` as given, without this wrapping.
+   *
    * @param relation - The table or view name to query
    * @param options - Per-request options that override client-level defaults
+   *
+   * @example Per-request fetch options
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries', {
+   *     fetch: (input, init) => fetch(input, { ...init, cache: 'force-cache' }),
+   *   })
+   *   .select('*')
+   * ```
    */
   from(
     relation: string,
@@ -473,6 +488,10 @@ export default class SupabaseClient<
    * Select a schema to query or perform an function (rpc) call.
    *
    * The schema needs to be on the list of exposed schemas inside Supabase.
+   *
+   * The returned client applies per-request `from()` options as given: a
+   * per-request `fetch` is called without the `apikey` and `Authorization`
+   * header injection that `supabase.from()` performs.
    *
    * @param schema - The schema to query
    */
