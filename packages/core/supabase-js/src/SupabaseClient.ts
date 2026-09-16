@@ -23,7 +23,7 @@ import {
   DEFAULT_REALTIME_OPTIONS,
   DEFAULT_TRACE_PROPAGATION_OPTIONS,
 } from './lib/constants'
-import { checkApiKeyFormat, fetchWithAuth } from './lib/fetch'
+import { checkApiKeyFormat, fetchWithAuth, resolveFetch } from './lib/fetch'
 import {
   applySettingDefaults,
   checkTopLevelSchemaOption,
@@ -399,10 +399,20 @@ export default class SupabaseClient<
         .catch((e) => console.warn('Failed to set initial Realtime auth token:', e))
     }
 
+    // The PostgREST client applies the auth wrapper itself, so a per-request fetch
+    // passed to `from()` carries the same headers as the client-level fetch.
     this.rest = new PostgrestClient(new URL('rest/v1', baseUrl).href, {
       headers: this.headers,
       schema: settings.db.schema,
-      fetch: this.fetch,
+      fetch: resolveFetch(settings.global.fetch),
+      wrapFetch: (fetch) =>
+        fetchWithAuth(
+          supabaseKey,
+          supabaseUrl,
+          this._getSessionToken.bind(this),
+          fetch,
+          settings.tracePropagation
+        ),
       timeout: settings.db.timeout,
       urlLengthLimit: settings.db.urlLengthLimit,
       retry: settings.db.retry,
@@ -448,8 +458,8 @@ export default class SupabaseClient<
    * A per-request `fetch` is wrapped the same way as the client-level fetch: the
    * `apikey`, `Authorization` and trace headers are added before it is called.
    * Headers already present on the request win, so a per-request `Authorization`
-   * header takes precedence over the session token. Clients returned by
-   * `.schema()` call a per-request `fetch` as given, without this wrapping.
+   * header takes precedence over the session token. The same applies to clients
+   * returned by `.schema()`.
    *
    * @param relation - The table or view name to query
    * @param options - Per-request options that override client-level defaults
@@ -467,20 +477,7 @@ export default class SupabaseClient<
     relation: string,
     options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, any> {
-    const resolvedOptions: PostgrestQueryBuilderOptions | undefined = options?.fetch
-      ? {
-          ...options,
-          fetch: fetchWithAuth(
-            this.supabaseKey,
-            this.supabaseUrl,
-            this._getSessionToken.bind(this),
-            options.fetch,
-            this.settings?.tracePropagation
-          ),
-        }
-      : options
-
-    return this.rest.from(relation, resolvedOptions)
+    return this.rest.from(relation, options)
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.schema
@@ -488,10 +485,6 @@ export default class SupabaseClient<
    * Select a schema to query or perform an function (rpc) call.
    *
    * The schema needs to be on the list of exposed schemas inside Supabase.
-   *
-   * The returned client applies per-request `from()` options as given: a
-   * per-request `fetch` is called without the `apikey` and `Authorization`
-   * header injection that `supabase.from()` performs.
    *
    * @param schema - The schema to query
    */

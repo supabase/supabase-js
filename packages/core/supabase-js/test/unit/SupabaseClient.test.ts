@@ -220,6 +220,40 @@ describe('SupabaseClient', () => {
       // The options object should not have been mutated
       expect(options.fetch).toBe(originalFetch)
     })
+
+    test('should inject auth headers for a per-request fetch on a schema client', async () => {
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY)
+
+      await client.schema('personal').from('users', { fetch: requestFetch }).select()
+
+      expect(requestFetch).toHaveBeenCalled()
+      const calledHeaders = requestFetch.mock.calls[0][1]?.headers
+      const headers = calledHeaders instanceof Headers ? calledHeaders : new Headers(calledHeaders)
+      expect(headers.get('apikey')).toBe(KEY)
+      expect(headers.get('Authorization')).toBe(`Bearer ${KEY}`)
+    })
+
+    test('should apply db.timeout to a per-request fetch', async () => {
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY, { db: { timeout: 5000 } })
+
+      await client.from('users', { fetch: requestFetch }).select()
+
+      expect(requestFetch.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal)
+    })
   })
 
   describe('Custom Headers', () => {
