@@ -208,6 +208,7 @@ export default class PostgrestClient<
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
+   * @param options - Per-request options that override client-level defaults
    *
    * @category Database
    */
