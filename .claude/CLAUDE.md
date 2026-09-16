@@ -8,7 +8,7 @@ You are assisting with development in a unified Nx monorepo that consolidates al
 > - **[TESTING.md](../docs/TESTING.md)** - Complete testing guide with Docker requirements
 > - **[RELEASE.md](../docs/RELEASE.md)** - Release workflows and versioning strategy
 > - **[MIGRATION.md](../docs/MIGRATION.md)** - Cross-cutting migration notes (one H2 per theme). Per-package migrations live at `packages/core/<package>/migrations/`.
-> - **[SECURITY.md](../docs/SECURITY.md)** - Security policies and responsible disclosure
+> - **[Security Policy](https://github.com/supabase/supabase-js/security/policy)** - Security policies and responsible disclosure
 
 ## Repository Architecture
 
@@ -28,7 +28,6 @@ supabase-js/
 │   ├── TESTING.md        # Testing guide
 │   ├── RELEASE.md        # Release workflows
 │   ├── MIGRATION.md      # Migration guide
-│   ├── SECURITY.md       # Security policy
 │   └── JSR_PUBLISHING.md # JSR publishing guide
 ├── scripts/              # Automation scripts
 │   ├── release-canary.ts # Canary release automation
@@ -746,7 +745,7 @@ nx test supabase-js --testFile=client.test.ts
 - **[TESTING.md](../docs/TESTING.md)** - Comprehensive testing documentation
 - **[RELEASE.md](../docs/RELEASE.md)** - Release workflows and automation
 - **[MIGRATION.md](../docs/MIGRATION.md)** - Cross-cutting migration notes; per-package migrations live at `packages/core/<package>/migrations/`
-- **[SECURITY.md](../docs/SECURITY.md)** - Security policy and reporting
+- **[Security Policy](https://github.com/supabase/supabase-js/security/policy)** - Security policy and reporting
 - **[Supabase Documentation](https://supabase.com/docs)** - Official Supabase docs
 - **[Nx Documentation](https://nx.dev)** - Nx monorepo documentation
 - **[Conventional Commits](https://www.conventionalcommits.org/)** - Commit format specification

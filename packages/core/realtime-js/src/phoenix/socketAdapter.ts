@@ -114,6 +114,10 @@ export default class SocketAdapter {
     this.socket.log(kind, msg, data)
   }
 
+  hasLogger(): boolean {
+    return this.socket.hasLogger()
+  }
+
   makeRef(): string {
     return this.socket.makeRef()
   }

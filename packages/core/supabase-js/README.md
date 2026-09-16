@@ -97,7 +97,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 ### Custom `fetch` implementation
 
-`supabase-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is most useful in environments where `cross-fetch` is not compatible, for instance Cloudflare Workers:
+`supabase-js` uses the runtime's global `fetch` to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is useful in environments where the global `fetch` is unavailable or where you want to customize request behavior:
 
 ```js
 import { createClient } from '@supabase/supabase-js'
@@ -118,7 +118,10 @@ Trace propagation is **opt-in** and disabled by default. When enabled, headers a
 
 #### Enable trace propagation
 
+Opting in takes two steps: install `@opentelemetry/api`, and load the tracing runtime by importing the `@supabase/supabase-js/tracing` subpath once at your application entry point. The main bundle contains no OpenTelemetry code — the subpath import is what wires it up.
+
 ```js
+import '@supabase/supabase-js/tracing'
 import { createClient } from '@supabase/supabase-js'
 import { trace } from '@opentelemetry/api'
 
@@ -134,7 +137,9 @@ await tracer.startActiveSpan('fetch-users', async (span) => {
 })
 ```
 
-If `@opentelemetry/api` is not installed or no active context exists, the SDK silently no-ops.
+The subpath imports `@opentelemetry/api` directly, so module resolution fails loudly if it is not installed. If `tracePropagation` is enabled without the subpath import, the SDK logs a one-time warning and sends requests without trace headers; if no active context exists at request time, it silently no-ops.
+
+Trace propagation is not available via the CDN/UMD build (`https://cdn.jsdelivr.net/.../supabase.js`) — there is no way to load the tracing runtime there.
 
 #### Advanced configuration
 
@@ -144,13 +149,15 @@ interface TracePropagationOptions {
   enabled?: boolean
 
   // Respect upstream sampling decisions (default: true).
-  // When true, headers are skipped if the upstream trace is not sampled.
+  // When true, non-sampled requests carry only `traceparent` (flag preserved,
+  // so nothing is recorded downstream) — Supabase logs still get a trace_id,
+  // while `tracestate` and `baggage` are withheld.
   respectSamplingDecision?: boolean
 }
 ```
 
 ```js
-// Always propagate, even for non-sampled traces.
+// Always propagate the full trace context, even for non-sampled traces.
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
   tracePropagation: { enabled: true, respectSamplingDecision: false },
 })
@@ -171,6 +178,12 @@ When a Node.js version reaches end-of-life and is no longer in Active LTS or Mai
 > Node.js 18 reached end-of-life on April 30, 2025. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/37217), support for Node.js 18 was dropped in version `2.79.0`.
 >
 > If you must use Node.js 18, please use version `2.78.0`, which is the last version that supported Node.js 18.
+
+> ⚠️ **Node.js 20 Deprecation Notice**
+>
+> Node.js 20 reached end-of-life on April 30, 2026. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/45715), support for Node.js 20 was dropped in version `2.110.0`.
+>
+> If you must use Node.js 20, please use version `2.109.0`, which is the last version that supported Node.js 20.
 
 ### Deno
 

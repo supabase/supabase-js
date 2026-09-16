@@ -55,6 +55,12 @@ When a Node.js version reaches end-of-life and is no longer in Active LTS or Mai
 >
 > If you must use Node.js 18, please use version `2.78.0`, which is the last version that supported Node.js 18.
 
+> ⚠️ **Node.js 20 Deprecation Notice**
+>
+> Node.js 20 reached end-of-life on April 30, 2026. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/45715), support for Node.js 20 was dropped in version `2.110.0`.
+>
+> If you must use Node.js 20, please use version `2.109.0`, which is the last version that supported Node.js 20.
+
 ### Deno
 
 We support Deno versions that are currently receiving active development and security updates. We follow the [official Deno release schedule](https://docs.deno.com/runtime/fundamentals/stability_and_releases/) and only support versions from the `stable` and `lts` release channels.
@@ -134,7 +140,7 @@ Testing varies per package. See the top-level [TESTING.md](docs/TESTING.md) for 
 - **[Contributing](./CONTRIBUTING.md)** - Development guidelines
 - **[Release Workflows](./docs/RELEASE.md)** - Release and publishing process
 - **[Migration Guide](./docs/MIGRATION.md)** - Cross-cutting migration notes (per-package migrations live alongside each package under `packages/core/<package>/migrations/`)
-- **[Security Policy](./docs/SECURITY.md)** - Vulnerability reporting and disclosure policy
+- **[Security Policy](https://github.com/supabase/supabase-js/security/policy)** - Vulnerability reporting and disclosure policy
 - **[Securing your npm installs](https://supabase.com/docs/guides/security/npm-security)** - Consumer-side guide to defending your install against npm supply-chain attacks
 
 ## 🔐 Verifying provenance attestations

@@ -191,18 +191,10 @@ export async function navigatorLock<R>(
   } catch (e) {
     // Always clear the acquire timeout once the request settles, so it cannot
     // fire later and incorrectly abort/log after a rejection.
-    if (acquireTimeout > 0) {
-      clearTimeout(acquireTimeoutTimer)
-    }
+    clearTimeout(acquireTimeoutTimer)
 
     // DOMException does not extend Error in Node.js, so use structural check
-    if (
-      e !== null &&
-      typeof e === 'object' &&
-      'name' in e &&
-      e.name === 'AbortError' &&
-      acquireTimeout > 0
-    ) {
+    if (e !== null && typeof e === 'object' && 'name' in e && e.name === 'AbortError') {
       if (abortController.signal.aborted) {
         // OUR timeout fired — the lock is genuinely orphaned. Steal it.
         //
@@ -302,7 +294,7 @@ const PROCESS_LOCKS: { [name: string]: Promise<any> } = {}
  * Useful for environments like React Native or other non-browser
  * single-process (i.e. no concept of "tabs") environments.
  *
- * Use {@link #navigatorLock} in browser environments.
+ * Use {@link navigatorLock} in browser environments.
  *
  * @param name Name of the lock to be acquired.
  * @param acquireTimeout If negative, no timeout. If 0 an error is thrown if

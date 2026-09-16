@@ -248,7 +248,9 @@ test('RPC call with field aggregate', async () => {
 })
 
 test('RPC call with bigint param is accepted by a bigint Postgres argument', async () => {
-  const res = await postgrest.rpc('echo_bigint_as_text' as any, { bigint_param: BIGINT_PARAM } as any)
+  // The args cast is deliberate: pg-meta types a Postgres bigint column as `number`, and this test
+  // exercises passing a JS bigint through to it. Only the function name no longer needs casting.
+  const res = await postgrest.rpc('echo_bigint_as_text', { bigint_param: BIGINT_PARAM } as any)
 
   expect(res).toMatchInlineSnapshot(`
     {
@@ -263,10 +265,9 @@ test('RPC call with bigint param is accepted by a bigint Postgres argument', asy
 })
 
 test('RPC call with bigint nested in jsonb param is serialized as a JSON string', async () => {
-  const res = await postgrest.rpc(
-    'extract_jsonb_bigint_as_text' as any,
-    { payload: { id: BIGINT_PARAM } } as any
-  )
+  const res = await postgrest.rpc('extract_jsonb_bigint_as_text', {
+    payload: { id: BIGINT_PARAM },
+  })
 
   expect(res).toMatchInlineSnapshot(`
     {

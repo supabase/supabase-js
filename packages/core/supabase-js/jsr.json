@@ -4,10 +4,12 @@
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
-    "./cors": "./src/cors.ts"
+    "./cors": "./src/cors.ts",
+    "./tracing": "./src/tracing.ts"
   },
   "imports": {
-    "@supabase/tracing": "./src/_internal/tracing/index.ts"
+    "@supabase/tracing": "./src/_internal/tracing/index.ts",
+    "@opentelemetry/api": "npm:@opentelemetry/api@^1.0.0"
   },
   "exclude": ["examples"],
   "publish": {

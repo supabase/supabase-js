@@ -1,8 +1,18 @@
 import { DEFAULT_HEADERS } from '../lib/constants'
 import { StorageError } from '../lib/common/errors'
 import { Fetch, get, post, put, remove } from '../lib/common/fetch'
+import { encodeStoragePath } from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
-import { Bucket, BucketType, ListBucketOptions } from '../lib/types'
+import {
+  Bucket,
+  BucketLifecycleConfiguration,
+  BucketType,
+  CreateSettableVersioningStatus,
+  FetchParameters,
+  ListBucketOptions,
+  PurgeCacheOptions,
+  UpdateSettableVersioningStatus,
+} from '../lib/types'
 import { StorageClientOptions } from '../StorageClient'
 
 export default class StorageBucketApi extends BaseApiClient<StorageError> {
@@ -156,6 +166,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    * Each mime type specified can be a wildcard, e.g. image/*, or a specific mime type, e.g. image/png.
    * @param options.type (private-beta) specifies the bucket type. see `BucketType` for more details.
    *   - default bucket type is `STANDARD`
+   * @param options.versioningStatus the bucket's initial object versioning status.
+   * The default value is `DISABLED`
    * @returns Promise with response containing newly created bucket name or error
    *
    * @example Create bucket
@@ -192,6 +204,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
       fileSizeLimit?: number | string | null
       allowedMimeTypes?: string[] | null
       type?: BucketType
+      versioningStatus?: CreateSettableVersioningStatus
     } = {
       public: false,
     }
@@ -216,6 +229,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
           public: options.public,
           file_size_limit: options.fileSizeLimit,
           allowed_mime_types: options.allowedMimeTypes,
+          versioning_status: options.versioningStatus,
         },
         { headers: this.headers }
       )
@@ -235,6 +249,8 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
    * @param options.allowedMimeTypes specifies the allowed mime types that this bucket can accept during upload.
    * The default value is null, which allows files with all mime types to be uploaded.
    * Each mime type specified can be a wildcard, e.g. image/*, or a specific mime type, e.g. image/png.
+   * @param options.versioningStatus the bucket's new object versioning status. `DISABLED` is not
+   * valid here, there's no transition back to it once versioning has been touched.
    * @returns Promise with response containing success message or error
    *
    * @example Update bucket
@@ -270,6 +286,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
       public: boolean
       fileSizeLimit?: number | string | null
       allowedMimeTypes?: string[] | null
+      versioningStatus?: UpdateSettableVersioningStatus
     }
   ): Promise<
     | {
@@ -291,6 +308,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
           public: options.public,
           file_size_limit: options.fileSizeLimit,
           allowed_mime_types: options.allowedMimeTypes,
+          versioning_status: options.versioningStatus,
         },
         { headers: this.headers }
       )
@@ -388,6 +406,256 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
     return this.handleOperation(async () => {
       return await remove(this.fetch, `${this.url}/bucket/${id}`, {}, { headers: this.headers })
     })
+  }
+
+  /**
+   * Returns the lifecycle policy stored on a bucket.
+   *
+   * Fails with `NoSuchLifecycleConfiguration` when the bucket has no policy.
+   *
+   * These rules expire previous versions of objects, not the current one.
+   * Turn versioning on or there is nothing for the policy to act on.
+   * Standard buckets only. Returns `FeatureNotEnabled` if lifecycle is off
+   * for the project.
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param id The unique identifier of the bucket.
+   * @returns Promise with the lifecycle configuration or error
+   *
+   * @example Get lifecycle configuration
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .getBucketLifecycle('avatars')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "rules": [
+   *       {
+   *         "id": "expire-history",
+   *         "status": "Enabled",
+   *         "filter": {},
+   *         "noncurrentVersionExpiration": {
+   *           "noncurrentDays": 30,
+   *           "newerNoncurrentVersions": 2
+   *         }
+   *       }
+   *     ]
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
+   */
+  async getBucketLifecycle(id: string): Promise<
+    | {
+        data: BucketLifecycleConfiguration
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    return this.handleOperation(async () => {
+      return await get(this.fetch, this.bucketLifecycleUrl(id), { headers: this.headers })
+    })
+  }
+
+  /**
+   * Replaces the lifecycle policy on a bucket.
+   *
+   * The `rules` array you send is the whole policy. Anything previously stored
+   * is overwritten. Send at least one rule. Call {@link deleteBucketLifecycle}
+   * to remove the policy.
+   *
+   * Each rule currently supports only `noncurrentVersionExpiration`. `filter`
+   * is required and must be `{}`. Prefix filters, tag filters, and current-object
+   * expiration are rejected. Rule IDs must be unique. Omit `id` and the
+   * server generates one.
+   *
+   * Standard buckets only. Returns `FeatureNotEnabled` if lifecycle is off
+   * for the project.
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param id The unique identifier of the bucket.
+   * @param configuration The full lifecycle configuration to store.
+   * @returns Promise with the stored configuration or error
+   *
+   * @example Replace lifecycle configuration
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .updateBucketLifecycle('avatars', {
+   *     rules: [
+   *       {
+   *         id: 'expire-history',
+   *         status: 'Enabled',
+   *         filter: {},
+   *         noncurrentVersionExpiration: {
+   *           noncurrentDays: 30,
+   *           newerNoncurrentVersions: 2,
+   *         },
+   *       },
+   *     ],
+   *   })
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select` and `update`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
+   */
+  async updateBucketLifecycle(
+    id: string,
+    configuration: BucketLifecycleConfiguration
+  ): Promise<
+    | {
+        data: BucketLifecycleConfiguration
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    return this.handleOperation(async () => {
+      return await put(this.fetch, this.bucketLifecycleUrl(id), configuration, {
+        headers: this.headers,
+      })
+    })
+  }
+
+  /**
+   * Removes the lifecycle policy from a bucket.
+   *
+   * Safe to call when no policy is stored. The response is still success.
+   * Standard buckets only. Returns `FeatureNotEnabled` if lifecycle is off
+   * for the project.
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param id The unique identifier of the bucket.
+   * @returns Promise with success message or error
+   *
+   * @example Delete lifecycle configuration
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .deleteBucketLifecycle('avatars')
+   * ```
+   *
+   * Response:
+   * ```json
+   * {
+   *   "data": {
+   *     "message": "Successfully deleted"
+   *   },
+   *   "error": null
+   * }
+   * ```
+   *
+   * @remarks
+   * - RLS policy permissions required:
+   *   - `buckets` table permissions: `select` and `update`
+   *   - `objects` table permissions: none
+   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
+   */
+  async deleteBucketLifecycle(id: string): Promise<
+    | {
+        data: { message: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    return this.handleOperation(async () => {
+      return await remove(this.fetch, this.bucketLifecycleUrl(id), {}, { headers: this.headers })
+    })
+  }
+
+  /**
+   * Purges the CDN cache for an entire bucket.
+   *
+   * Maps to `DELETE /cdn/{bucket}` on the Storage API. The server
+   * issues a CDN invalidation for the bucket and returns `{ message: 'success' }`.
+   *
+   * **Requires the `service_role` key.** The underlying endpoint enforces
+   * `service_role` JWT — calls made with the anon key or a user JWT will be
+   * rejected by the server.
+   *
+   * **Hosted CDN feature.** On self-hosted Supabase, the Storage service must
+   * have `CDN_PURGE_ENDPOINT_URL` configured and the `purgeCache` tenant
+   * feature enabled, otherwise the server returns an error.
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param id The unique identifier of the bucket you would like to purge from cache.
+   * @param options Optional purge cache options.
+   * @param options.transformations If true, purges only transformations (resized/formatted variants), leaving original cached files intact.
+   * @param parameters Optional fetch parameters such as an `AbortController` signal.
+   * @returns Promise with `{ data: { message }, error: null }` on success or `{ data: null, error }` on failure.
+   *
+   * @example Purge cache for an entire bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .purgeBucketCache('avatars')
+   * ```
+   *
+   * @example Purge only transformations for an entire bucket
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .purgeBucketCache('avatars', { transformations: true })
+   * ```
+   */
+  async purgeBucketCache(
+    id: string,
+    options?: PurgeCacheOptions,
+    parameters?: FetchParameters
+  ): Promise<
+    | {
+        data: { message: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    return this.handleOperation(async () => {
+      const query = new URLSearchParams()
+      if (options?.transformations) {
+        query.set('transformations', 'true')
+      }
+      const queryString = query.toString()
+
+      return await remove(
+        this.fetch,
+        `${this.url}/cdn/${encodeStoragePath(id)}${queryString ? `?${queryString}` : ''}`,
+        {},
+        { headers: this.headers },
+        parameters
+      )
+    })
+  }
+
+  private bucketLifecycleUrl(id: string): string {
+    return `${this.url}/bucket/${encodeStoragePath(id)}/lifecycle`
   }
 
   private listBucketOptionsToQueryString(options?: ListBucketOptions): string {

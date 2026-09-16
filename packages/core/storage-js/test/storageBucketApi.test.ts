@@ -1,5 +1,5 @@
 import { StorageClient } from '../src/index'
-import { StorageUnknownError } from '../src/lib/common/errors'
+import { StorageApiError, StorageUnknownError } from '../src/lib/common/errors'
 
 // Create a simple Response implementation for testing
 class MockResponse {
@@ -537,6 +537,263 @@ describe('Bucket API Error Handling', () => {
 
       // Clean up
       mockFn.mockRestore()
+    })
+  })
+
+  describe('purgeBucketCache', () => {
+    const PURGE_URL = 'http://localhost:8000/storage/v1'
+    const BUCKET = 'avatars'
+
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('issues DELETE to /cdn/{bucket} and returns the server message', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.purgeBucketCache(BUCKET)
+
+      expect(error).toBeNull()
+      expect(data?.message).toBe('success')
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${PURGE_URL}/cdn/${BUCKET}`,
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+
+    it('surfaces server errors via StorageApiError', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            statusCode: '403',
+            error: 'Forbidden',
+            message: 'Feature not enabled',
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.purgeBucketCache(BUCKET)
+
+      expect(data).toBeNull()
+      expect(error).toBeInstanceOf(StorageApiError)
+      expect(error?.message).toBe('Feature not enabled')
+    })
+
+    it('appends transformations query param when transformations option is true', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.purgeBucketCache(BUCKET, { transformations: true })
+
+      expect(error).toBeNull()
+      expect(data?.message).toBe('success')
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${PURGE_URL}/cdn/${BUCKET}?transformations=true`,
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+
+    it('omits transformations query param when transformations option is not provided', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.purgeBucketCache(BUCKET)
+
+      expect(error).toBeNull()
+      expect(data?.message).toBe('success')
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${PURGE_URL}/cdn/${BUCKET}`,
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+
+    it('forwards the AbortController signal to fetch', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const controller = new AbortController()
+      const { error } = await client.purgeBucketCache(BUCKET, undefined, {
+        signal: controller.signal,
+      })
+
+      expect(error).toBeNull()
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${PURGE_URL}/cdn/${BUCKET}`,
+        expect.objectContaining({ method: 'DELETE', signal: controller.signal })
+      )
+    })
+
+    it('percent-encodes URL delimiters in the bucket id', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(PURGE_URL, { apikey: 'service-role-token' })
+      const { error } = await client.purgeBucketCache('my?bucket')
+
+      expect(error).toBeNull()
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${PURGE_URL}/cdn/my%3Fbucket`,
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+  })
+
+  describe('bucket lifecycle configuration', () => {
+    const LIFECYCLE_URL = 'http://localhost:8000/storage/v1'
+    const BUCKET = 'avatars'
+    const lifecycleConfiguration = {
+      rules: [
+        {
+          id: 'expire-history',
+          status: 'Enabled' as const,
+          filter: {},
+          noncurrentVersionExpiration: {
+            noncurrentDays: 30,
+            newerNoncurrentVersions: 2,
+          },
+        },
+      ],
+    }
+
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('gets lifecycle configuration from GET /bucket/{id}/lifecycle', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify(lifecycleConfiguration), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(LIFECYCLE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.getBucketLifecycle(BUCKET)
+
+      expect(error).toBeNull()
+      expect(data).toEqual(lifecycleConfiguration)
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${LIFECYCLE_URL}/bucket/${BUCKET}/lifecycle`,
+        expect.objectContaining({ method: 'GET' })
+      )
+    })
+
+    it('replaces lifecycle configuration via PUT /bucket/{id}/lifecycle', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify(lifecycleConfiguration), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(LIFECYCLE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.updateBucketLifecycle(BUCKET, lifecycleConfiguration)
+
+      expect(error).toBeNull()
+      expect(data).toEqual(lifecycleConfiguration)
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${LIFECYCLE_URL}/bucket/${BUCKET}/lifecycle`,
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify(lifecycleConfiguration),
+        })
+      )
+    })
+
+    it('deletes lifecycle configuration via DELETE /bucket/{id}/lifecycle', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'Successfully deleted' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(LIFECYCLE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.deleteBucketLifecycle(BUCKET)
+
+      expect(error).toBeNull()
+      expect(data).toEqual({ message: 'Successfully deleted' })
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${LIFECYCLE_URL}/bucket/${BUCKET}/lifecycle`,
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+
+    it('surfaces NoSuchLifecycleConfiguration as StorageApiError', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            statusCode: '400',
+            error: 'NoSuchLifecycleConfiguration',
+            message: 'The lifecycle configuration does not exist',
+            code: 'NoSuchLifecycleConfiguration',
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(LIFECYCLE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.getBucketLifecycle(BUCKET)
+
+      expect(data).toBeNull()
+      expect(error).toBeInstanceOf(StorageApiError)
+      expect(error?.message).toBe('The lifecycle configuration does not exist')
+    })
+
+    it('percent-encodes URL delimiters in the bucket id', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify(lifecycleConfiguration), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(LIFECYCLE_URL, { apikey: 'service-role-token' })
+      const { error } = await client.getBucketLifecycle('my?bucket')
+
+      expect(error).toBeNull()
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${LIFECYCLE_URL}/bucket/my%3Fbucket/lifecycle`,
+        expect.objectContaining({ method: 'GET' })
+      )
     })
   })
 })

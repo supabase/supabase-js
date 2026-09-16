@@ -3,7 +3,9 @@ import { FunctionsClient } from '@supabase/functions-js'
 import {
   PostgrestClient,
   type PostgrestFilterBuilder,
+  type PostgrestOpenApiSpec,
   type PostgrestQueryBuilder,
+  type PostgrestSingleResponse,
 } from '@supabase/postgrest-js'
 import {
   type RealtimeChannel,
@@ -20,9 +22,10 @@ import {
   DEFAULT_REALTIME_OPTIONS,
   DEFAULT_TRACE_PROPAGATION_OPTIONS,
 } from './lib/constants'
-import { fetchWithAuth } from './lib/fetch'
+import { checkApiKeyFormat, fetchWithAuth } from './lib/fetch'
 import {
   applySettingDefaults,
+  checkTopLevelSchemaOption,
   validateSupabaseUrl,
   type ResolvedSupabaseClientOptions,
 } from './lib/helpers'
@@ -89,6 +92,7 @@ export default class SupabaseClient<
   protected rest: PostgrestClient<Database, ClientOptions, SchemaName>
   protected storageKey: string
   protected fetch?: Fetch
+  protected functionsFetch?: Fetch
   protected changedAccessToken?: string
   protected accessToken?: () => Promise<string | null>
 
@@ -102,14 +106,15 @@ export default class SupabaseClient<
    *
    * @param supabaseUrl The unique Supabase URL which is supplied when you create a new project in your project dashboard.
    * @param supabaseKey The unique Supabase Key which is supplied when you create a new project in your project dashboard.
-   * @param options.db.schema You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
-   * @param options.auth.autoRefreshToken Set to "true" if you want to automatically refresh the token before expiring.
-   * @param options.auth.persistSession Set to "true" if you want to automatically save the user session into local storage.
-   * @param options.auth.detectSessionInUrl Set to "true" if you want to automatically detects OAuth grants in the URL and signs in the user.
-   * @param options.realtime Options passed along to realtime-js constructor.
-   * @param options.storage Options passed along to the storage-js constructor.
-   * @param options.global.fetch A custom fetch implementation.
-   * @param options.global.headers Any additional headers to send with each network request.
+   * @param options Optional configuration for the client:
+   * - `db.schema` — You can switch in between schemas. The schema needs to be on the list of exposed schemas inside Supabase.
+   * - `auth.autoRefreshToken` — Set to `true` if you want to automatically refresh the token before expiring.
+   * - `auth.persistSession` — Set to `true` if you want to automatically save the user session into local storage.
+   * - `auth.detectSessionInUrl` — Set to `true` if you want to automatically detect OAuth grants in the URL and sign in the user.
+   * - `realtime` — Options passed along to the realtime-js constructor.
+   * - `storage` — Options passed along to the storage-js constructor.
+   * - `global.fetch` — A custom fetch implementation.
+   * - `global.headers` — Any additional headers to send with each network request.
    *
    * @example Creating a client
    * ```js
@@ -164,9 +169,9 @@ export default class SupabaseClient<
    * ```
    *
    * @exampleDescription Custom fetch implementation
-   * `supabase-js` uses the [`cross-fetch`](https://www.npmjs.com/package/cross-fetch) library to make HTTP requests,
+   * `supabase-js` uses the runtime's global `fetch` to make HTTP requests,
    * but an alternative `fetch` implementation can be provided as an option.
-   * This is most useful in environments where `cross-fetch` is not compatible (for instance Cloudflare Workers).
+   * This is useful in environments where the global `fetch` is unavailable or where you want to customize request behavior.
    *
    * @example Custom fetch implementation
    * ```js
@@ -286,10 +291,12 @@ export default class SupabaseClient<
    * Opt in to W3C trace context propagation so the `trace_id` from your
    * client-side spans is attached to Supabase requests and appears in API
    * Gateway and Edge Function logs. Requires `@opentelemetry/api` to be
-   * installed in your application. See [Tracing with the JS SDK](https://supabase.com/docs/guides/telemetry/client-side-tracing).
+   * installed in your application and the tracing runtime to be loaded via
+   * `import '@supabase/supabase-js/tracing'`. See [Tracing with the JS SDK](https://supabase.com/docs/guides/telemetry/client-side-tracing).
    *
    * @example With OpenTelemetry tracing
    * ```ts
+   * import '@supabase/supabase-js/tracing'
    * import { createClient } from '@supabase/supabase-js'
    * import { trace } from '@opentelemetry/api'
    *
@@ -313,6 +320,8 @@ export default class SupabaseClient<
   ) {
     const baseUrl = validateSupabaseUrl(supabaseUrl)
     if (!supabaseKey) throw new Error('supabaseKey is required.')
+    checkApiKeyFormat(supabaseKey)
+    checkTopLevelSchemaOption(options)
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
@@ -356,12 +365,24 @@ export default class SupabaseClient<
       })
     }
 
+    // The fetch wrappers receive the raw session token (null when there is no session) and
+    // decide the `Authorization` fallback themselves, so the API-key fallback lives in one place.
     this.fetch = fetchWithAuth(
       supabaseKey,
       supabaseUrl,
-      this._getAccessToken.bind(this),
+      this._getSessionToken.bind(this),
       settings.global.fetch,
       settings.tracePropagation
+    )
+    // Edge Functions use a dedicated fetch that never falls back to a new-format API key in
+    // the Authorization header (see `isNewApiKey` in ./lib/fetch). Other services use `this.fetch`.
+    this.functionsFetch = fetchWithAuth(
+      supabaseKey,
+      supabaseUrl,
+      this._getSessionToken.bind(this),
+      settings.global.fetch,
+      settings.tracePropagation,
+      { omitApiKeyAsBearer: true }
     )
     this.realtime = this._initRealtimeClient({
       headers: this.headers,
@@ -383,6 +404,7 @@ export default class SupabaseClient<
       fetch: this.fetch,
       timeout: settings.db.timeout,
       urlLengthLimit: settings.db.urlLengthLimit,
+      retry: settings.db.retry,
     })
 
     this.storage = new SupabaseStorageClient(
@@ -403,7 +425,7 @@ export default class SupabaseClient<
   get functions(): FunctionsClient {
     return new FunctionsClient(this.functionsUrl.href, {
       headers: this.headers,
-      customFetch: this.fetch,
+      customFetch: this.functionsFetch,
     })
   }
 
@@ -441,6 +463,25 @@ export default class SupabaseClient<
     Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
   > {
     return this.rest.schema<DynamicSchema>(schema)
+  }
+
+  // NOTE: signatures must be kept in sync with PostgrestClient.getOpenApiSpec
+  /**
+   * Fetch the OpenAPI description PostgREST publishes for this client's schema.
+   *
+   * The document lists only the tables, views and functions the caller's role
+   * holds privileges on. The request carries the same `apikey` and
+   * `Authorization` headers as every other query, so the description is scoped
+   * to the signed-in user. Call `.schema()` first to describe a schema other
+   * than the client default.
+   *
+   * @example
+   * ```ts
+   * const { data, error } = await supabase.getOpenApiSpec()
+   * ```
+   */
+  getOpenApiSpec(): Promise<PostgrestSingleResponse<PostgrestOpenApiSpec>> {
+    return this.rest.getOpenApiSpec()
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.rpc
@@ -567,14 +608,23 @@ export default class SupabaseClient<
     return this.realtime.removeAllChannels()
   }
 
-  private async _getAccessToken() {
+  /**
+   * The raw session token — the custom `accessToken` result or the signed-in user's JWT —
+   * or `null` when there is no session. Unlike {@link _getAccessToken} it does not fall back
+   * to `supabaseKey`, so callers can distinguish "no session" from "has session".
+   */
+  private async _getSessionToken(): Promise<string | null> {
     if (this.accessToken) {
       return await this.accessToken()
     }
 
     const { data } = await this.auth.getSession()
 
-    return data.session?.access_token ?? this.supabaseKey
+    return data.session?.access_token ?? null
+  }
+
+  private async _getAccessToken() {
+    return (await this._getSessionToken()) ?? this.supabaseKey
   }
 
   private _initSupabaseAuthClient(
@@ -645,7 +695,7 @@ export default class SupabaseClient<
     token?: string
   ) {
     if (
-      (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
+      (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') &&
       this.changedAccessToken !== token
     ) {
       this.changedAccessToken = token

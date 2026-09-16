@@ -40,4 +40,19 @@ export const API_VERSIONS = {
 
 export const BASE64URL_REGEX = /^([a-z0-9_-]{4})*($|[a-z0-9_-]{3}$|[a-z0-9_-]{2}$)$/i
 
+/**
+ * Reserved query parameter appended to `redirectTo` URLs (behind
+ * `experimental.appendPkceFlowIdToRedirects`) that correlates a PKCE callback
+ * with the code verifier stored when its flow started. It round-trips through
+ * the auth server untouched and identifies a verifier slot in storage — the
+ * verifier itself never appears in a URL.
+ */
+export const PKCE_FLOW_ID_PARAM = 'sb_flow_id'
+
+/**
+ * Maximum number of PKCE code verifiers kept in storage at once. Starting a
+ * new flow beyond this evicts the oldest pending verifier.
+ */
+export const PKCE_MAX_CONCURRENT_FLOWS = 5
+
 export const JWKS_TTL = 10 * 60 * 1000 // 10 minutes

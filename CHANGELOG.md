@@ -1,3 +1,294 @@
+## 2.116.0 (2026-09-07)
+
+### 🚀 Features
+
+- **auth:** add MFA recovery codes API ([#2676](https://github.com/supabase/supabase-js/pull/2676))
+- **storage:** add bucket lifecycle configuration ([#2659](https://github.com/supabase/supabase-js/pull/2659))
+- **storage:** topk 10k support ([#2667](https://github.com/supabase/supabase-js/pull/2667))
+- **storage:** add versionId support to create URL methods ([#2678](https://github.com/supabase/supabase-js/pull/2678))
+
+### 🩹 Fixes
+
+- **auth:** silence commit-guard-discarded refresh in initial session ([#2668](https://github.com/supabase/supabase-js/pull/2668))
+- **storage:** drop legacy prefix from lifecycles ([#2674](https://github.com/supabase/supabase-js/pull/2674))
+- **supabase:** warn when schema is passed outside db options ([#2663](https://github.com/supabase/supabase-js/pull/2663))
+
+### ❤️ Thank You
+
+- fadymak
+- Ferhat Elmas
+- Katerina Skroumpelou @mandarini
+- Tyler Hillery
+
+## 2.115.0 (2026-09-03)
+
+### 🚀 Features
+
+- **postgrest:** add getOpenApiSpec() ([#2651](https://github.com/supabase/supabase-js/pull/2651))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.114.0 (2026-09-02)
+
+### 🚀 Features
+
+- **storage:** object versioning updates ([#2644](https://github.com/supabase/supabase-js/pull/2644))
+
+### 🩹 Fixes
+
+- **auth:** unenroll the unverified factor after a failed registration ([#2641](https://github.com/supabase/supabase-js/pull/2641))
+- **deps:** override browserslist to patch high-severity advisories ([#2652](https://github.com/supabase/supabase-js/pull/2652))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Miodrag Obradovic @Kjubikstronk
+- Tyler Hillery
+
+## 2.113.0 (2026-09-02)
+
+### 🚀 Features
+
+- **realtime:** allow wait for pg changes ([#2630](https://github.com/supabase/supabase-js/pull/2630))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+
+## 2.112.4 (2026-08-24)
+
+### 🩹 Fixes
+
+- **auth:** convert stolen-lock AbortError when acquireTimeout is 0 ([#2616](https://github.com/supabase/supabase-js/pull/2616))
+- **auth:** warn on deprecated lock option and prevent unhandled refresh rejection ([#2627](https://github.com/supabase/supabase-js/pull/2627))
+- **postgrest:** move override fixtures out of generated types, repair codegen ([#2605](https://github.com/supabase/supabase-js/pull/2605))
+- **realtime:** respect custom logger for send() REST fallback warning ([#2612](https://github.com/supabase/supabase-js/pull/2612))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- mmustafasenoglu @mmustafasenoglu
+
+## 2.112.3 (2026-08-11)
+
+### 🩹 Fixes
+
+- **supabase:** add trace context headers to canonical CORS allow-list ([#2603](https://github.com/supabase/supabase-js/pull/2603))
+- **supabase:** improve trace propagation sampling and diagnostics ([#2604](https://github.com/supabase/supabase-js/pull/2604))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.112.2 (2026-08-06)
+
+### 🩹 Fixes
+
+- **realtime:** prevent duplicate on bindings ([#2594](https://github.com/supabase/supabase-js/pull/2594))
+- **realtime:** clear stale join payload on sign-out ([#2597](https://github.com/supabase/supabase-js/pull/2597))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+- Vaibhav @7ttp
+
+## 2.112.1 (2026-08-05)
+
+### 🩹 Fixes
+
+- **auth:** preserve 5xx error message ([#2587](https://github.com/supabase/supabase-js/pull/2587))
+- **realtime:** ensure setAuth doesn't disable token refresh ([#2592](https://github.com/supabase/supabase-js/pull/2592))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Vaibhav @7ttp
+
+## 2.112.0 (2026-08-03)
+
+### 🚀 Features
+
+- **supabase:** move OpenTelemetry tracing to opt-in /tracing subpath ([#2583](https://github.com/supabase/supabase-js/pull/2583))
+
+### 🩹 Fixes
+
+- **auth:** accept uppercase UUIDs in validateUUID ([#2467](https://github.com/supabase/supabase-js/pull/2467))
+- **postgrest:** honour throwOnError when maybeSingle finds multiple rows ([#2580](https://github.com/supabase/supabase-js/pull/2580))
+- **storage:** resolve createSignedUrls return type mismatch ([#2474](https://github.com/supabase/supabase-js/pull/2474))
+- **storage:** expose service error code on StorageApiError ([#2537](https://github.com/supabase/supabase-js/pull/2537))
+- **supabase:** forward db retry option ([#2571](https://github.com/supabase/supabase-js/pull/2571))
+
+### ❤️ Thank You
+
+- Anubhav Anand @i-anubhav-anand
+- Gourab Singha @gourabsingha1
+- Juhef @juheff
+- Katerina Skroumpelou @mandarini
+- Thribhuvan
+- Vaibhav @7ttp
+- Zuhef Ahmed @Zuhef
+
+## 2.111.0 (2026-07-28)
+
+### 🚀 Features
+
+- **auth:** store PKCE verifiers in per-flow slots to survive overlapping flows ([#2569](https://github.com/supabase/supabase-js/pull/2569))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.9 (2026-07-27)
+
+### 🩹 Fixes
+
+- **auth:** downgrade stale refresh token console noise ([#2559](https://github.com/supabase/supabase-js/pull/2559))
+- **realtime:** preserve presence refs ([#2566](https://github.com/supabase/supabase-js/pull/2566))
+- **repo:** override sharp to >=0.35.0 to clear libvips advisory ([#2548](https://github.com/supabase/supabase-js/pull/2548))
+- **repo:** populate symbols in sdk-compliance so capabilities are verifiable ([#2547](https://github.com/supabase/supabase-js/pull/2547))
+- **repo:** bump postcss, babel, next to clear audit advisories ([#2561](https://github.com/supabase/supabase-js/pull/2561))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
+## 2.110.8 (2026-07-21)
+
+### 🩹 Fixes
+
+- **auth:** downgrade aborted/transient fetch failures from console.error to warn ([#2544](https://github.com/supabase/supabase-js/pull/2544))
+- **functions:** clean up cross-signal abort listener on invoke() return ([#2487](https://github.com/supabase/supabase-js/pull/2487))
+- **functions:** match response Content-Type case-insensitively ([#2515](https://github.com/supabase/supabase-js/pull/2515))
+- **storage:** url-encode object key in CDN purge methods ([#2545](https://github.com/supabase/supabase-js/pull/2545))
+- **supabase:** skip Node warning in Deno ([#2541](https://github.com/supabase/supabase-js/pull/2541))
+
+### ❤️ Thank You
+
+- Franco Kaddour @FrancoKaddour
+- Katerina Skroumpelou @mandarini
+- Pedro Henrique
+- Vaibhav @7ttp
+
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **postgrest:** correct self-reference inference ([#2525](https://github.com/supabase/supabase-js/pull/2525))
+- **realtime:** trigger set auth on INITIAL_SESSION event ([#2531](https://github.com/supabase/supabase-js/pull/2531))
+- **realtime:** update phoenix to fix presence issue ([#2532](https://github.com/supabase/supabase-js/pull/2532))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Filipe Cabaço @filipecabaco
+- Vaibhav @7ttp
+
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **postgrest:** type hinted self-referencing embeds as arrays ([#2520](https://github.com/supabase/supabase-js/pull/2520))
+- **realtime:** forward opts to send() in track() ([#2490](https://github.com/supabase/supabase-js/pull/2490))
+- **supabase:** warn instead of throw for unrecognized sb_ API key subtypes ([#2526](https://github.com/supabase/supabase-js/pull/2526))
+
+### ❤️ Thank You
+
+- Franco Kaddour @FrancoKaddour
+- Katerina Skroumpelou @mandarini
+
+## 2.110.5 (2026-07-14)
+
+### 🩹 Fixes
+
+- **supabase:** avoid edge runtime warning ([#2522](https://github.com/supabase/supabase-js/pull/2522))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.4 (2026-07-14)
+
+### 🩹 Fixes
+
+- **functions:** stop sending API key in Authorization header for function calls ([#2511](https://github.com/supabase/supabase-js/pull/2511))
+- **realtime:** encode broadcast header fields as UTF-8 ([#2516](https://github.com/supabase/supabase-js/pull/2516))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Pedro Henrique
+
+## 2.110.3 (2026-07-13)
+
+### 🩹 Fixes
+
+- **auth:** preserve pkce verifier ([#2513](https://github.com/supabase/supabase-js/pull/2513))
+- **postgrest:** pin tstyche target off floating latest ([#2509](https://github.com/supabase/supabase-js/pull/2509))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
+## 2.110.2 (2026-07-09)
+
+### 🩹 Fixes
+
+- **auth:** clear local session on signout failures ([#2504](https://github.com/supabase/supabase-js/pull/2504))
+
+### ❤️ Thank You
+
+- Luc Peng
+
+## 2.110.1 (2026-07-07)
+
+### 🩹 Fixes
+
+- **auth:** defer init-time notifications until initializePromise resolves ([#2498](https://github.com/supabase/supabase-js/pull/2498))
+- **realtime:** suppress disconnected status from onHeartbeat consumers ([#2496](https://github.com/supabase/supabase-js/pull/2496))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.0 (2026-06-30)
+
+### 🚀 Features
+
+- **repo:** drop Node.js 20 support ([#2482](https://github.com/supabase/supabase-js/pull/2482))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.109.0 (2026-06-30)
+
+### 🚀 Features
+
+- **auth:** add custom_claims_allowlist to custom providers admin API ([#2473](https://github.com/supabase/supabase-js/pull/2473))
+- **realtime:** add postgres_changes filter builder, new operators and select ([#2463](https://github.com/supabase/supabase-js/pull/2463))
+- **storage:** expose purgeCache for buckets and single objects ([#2429](https://github.com/supabase/supabase-js/pull/2429))
+
+### 🩹 Fixes
+
+- **functions:** honor a caller's Content-Type override regardless of casing ([#2455](https://github.com/supabase/supabase-js/pull/2455))
+- **realtime:** pin @supabase/phoenix and browser test CDN deps ([#2457](https://github.com/supabase/supabase-js/pull/2457))
+- **realtime:** add replication connection system message option ([#2470](https://github.com/supabase/supabase-js/pull/2470))
+- **storage:** keep sortBy defaults when list() is given a partial sortBy ([#2454](https://github.com/supabase/supabase-js/pull/2454))
+
+### ❤️ Thank You
+
+- Anubhav Anand @i-anubhav-anand
+- Cemal Kılıç @cemalkilic
+- Claude Opus 4.8 (1M context)
+- Filipe Cabaço @filipecabaco
+- Katerina Skroumpelou @mandarini
+- Lenny
+- Rodrigo Mansueli @mansueli
+
 ## 2.108.2 (2026-06-15)
 
 ### 🩹 Fixes
