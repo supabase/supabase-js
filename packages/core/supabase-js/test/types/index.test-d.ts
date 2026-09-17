@@ -314,7 +314,6 @@ const supabase = createClient<Database>(URL, KEY)
 // per-request options on `.from()`
 {
   const options: PostgrestQueryBuilderOptions = {
-    headers: { 'X-Request-Id': 'abc' },
     fetch: (input, init) => fetch(input, init),
     urlLengthLimit: 4000,
     retry: false,

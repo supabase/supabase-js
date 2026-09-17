@@ -4,7 +4,6 @@ import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common
 import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
 import PostgrestError from './PostgrestError'
 import { fetchWithRetry } from './fetchWithRetry'
-import { mergeHeaders } from './utils'
 import {
   PostgrestOpenApiSpec,
   PostgrestQueryBuilderOptions,
@@ -262,7 +261,7 @@ export default class PostgrestClient<
 
     const url = new URL(`${this.url}/${relation}`)
     return new PostgrestQueryBuilder(url, {
-      headers: mergeHeaders(this.headers, options?.headers),
+      headers: new Headers(this.headers),
       schema: this.schemaName,
       fetch: options?.fetch ? this.decorateFetch(options.fetch) : this.fetch,
       urlLengthLimit: options?.urlLengthLimit ?? this.urlLengthLimit,

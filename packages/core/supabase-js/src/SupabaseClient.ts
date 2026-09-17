@@ -457,9 +457,7 @@ export default class SupabaseClient<
    *
    * A per-request `fetch` is wrapped the same way as the client-level fetch: the
    * `apikey`, `Authorization` and trace headers are added before it is called.
-   * Headers already present on the request win, so a per-request `Authorization`
-   * header takes precedence over the session token. The same applies to clients
-   * returned by `.schema()`.
+   * The same applies to clients returned by `.schema()`.
    *
    * @param relation - The table or view name to query
    * @param options - Per-request options that override client-level defaults

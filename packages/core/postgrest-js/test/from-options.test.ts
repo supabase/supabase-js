@@ -1,5 +1,4 @@
 import { PostgrestClient } from '../src/index'
-import { mergeHeaders } from '../src/utils'
 
 const REST_URL = 'http://localhost:3000'
 
@@ -19,35 +18,6 @@ function requestHeaders(mock: jest.Mock, call = 0): Record<string, string> {
   return init.headers as Record<string, string>
 }
 
-describe('mergeHeaders', () => {
-  test('returns a copy of the base headers when nothing is merged in', () => {
-    const base = new Headers({ 'X-Base': 'base' })
-    const merged = mergeHeaders(base)
-
-    expect(merged.get('X-Base')).toBe('base')
-    merged.set('X-Base', 'changed')
-    expect(base.get('X-Base')).toBe('base')
-  })
-
-  test('adds new keys and lets the merged side win on shared keys, case-insensitively', () => {
-    const base = new Headers({ 'X-Shared': 'base', 'X-Base-Only': 'kept' })
-    const merged = mergeHeaders(base, { 'x-shared': 'override', 'X-Extra': 'added' })
-
-    expect(merged.get('X-Shared')).toBe('override')
-    expect(merged.get('X-Base-Only')).toBe('kept')
-    expect(merged.get('X-Extra')).toBe('added')
-    expect(base.get('X-Shared')).toBe('base')
-  })
-
-  test('accepts every HeadersInit shape', () => {
-    const base = new Headers({ 'X-Base': 'base' })
-
-    expect(mergeHeaders(base, new Headers({ 'X-From': 'headers' })).get('X-From')).toBe('headers')
-    expect(mergeHeaders(base, [['X-From', 'tuples']]).get('X-From')).toBe('tuples')
-    expect(mergeHeaders(base, { 'X-From': 'record' }).get('X-From')).toBe('record')
-  })
-})
-
 describe('PostgrestClient.from per-request options', () => {
   test('without options the query uses the client defaults', async () => {
     const clientFetch = okFetch()
@@ -60,40 +30,6 @@ describe('PostgrestClient.from per-request options', () => {
 
     expect(clientFetch).toHaveBeenCalledTimes(1)
     expect(requestHeaders(clientFetch)['x-client']).toBe('client')
-  })
-
-  test('merges per-request headers over client headers, per-request winning on shared keys', async () => {
-    const clientFetch = okFetch()
-    const client = new PostgrestClient(REST_URL, {
-      fetch: clientFetch as any,
-      headers: { 'X-Client': 'client', 'X-Shared': 'client' },
-    })
-
-    await client
-      .from('users', { headers: { 'X-Shared': 'request', 'X-Request': 'request' } })
-      .select()
-
-    const headers = requestHeaders(clientFetch)
-    expect(headers['x-client']).toBe('client')
-    expect(headers['x-shared']).toBe('request')
-    expect(headers['x-request']).toBe('request')
-  })
-
-  test('per-request headers do not leak into the client or later queries', async () => {
-    const clientFetch = okFetch()
-    const client = new PostgrestClient(REST_URL, {
-      fetch: clientFetch as any,
-      headers: { 'X-Shared': 'client' },
-    })
-
-    await client.from('users', { headers: { 'X-Shared': 'request', 'X-Request': 'once' } }).select()
-    await client.from('users').select()
-
-    expect(client.headers.get('X-Shared')).toBe('client')
-    expect(client.headers.has('X-Request')).toBe(false)
-    const second = requestHeaders(clientFetch, 1)
-    expect(second['x-shared']).toBe('client')
-    expect(second['x-request']).toBeUndefined()
   })
 
   test('uses the per-request fetch instead of the client fetch', async () => {

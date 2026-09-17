@@ -149,28 +149,6 @@ describe('SupabaseClient', () => {
       expect(clientFetch).not.toHaveBeenCalled()
     })
 
-    test('should prefer per-request header over client-level header with same name', async () => {
-      const mockFetch = jest.fn().mockResolvedValue(
-        new Response(JSON.stringify([]), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        })
-      )
-
-      const client = createClient(URL, KEY, {
-        global: {
-          headers: { 'X-Custom': 'client-value' },
-          fetch: mockFetch,
-        },
-      })
-
-      await client.from('users', { headers: { 'X-Custom': 'request-value' } }).select()
-
-      const calledHeaders = mockFetch.mock.calls[0][1]?.headers
-      const headers = calledHeaders instanceof Headers ? calledHeaders : new Headers(calledHeaders)
-      expect(headers.get('X-Custom')).toBe('request-value')
-    })
-
     test('should inject auth headers when a custom per-request fetch is provided', async () => {
       const requestFetch = jest.fn().mockResolvedValue(
         new Response(JSON.stringify([]), {
