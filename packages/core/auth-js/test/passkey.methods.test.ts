@@ -496,6 +496,8 @@ describe('signInWithPasskey', () => {
       expect(getOptions.publicKey.rpId).toEqual('localhost')
       expect(getOptions.publicKey.challenge).toBeInstanceOf(ArrayBuffer)
       expect(getOptions.signal).toBeInstanceOf(AbortSignal)
+      // no mediation requested, so the browser keeps its default (modal) behavior
+      expect(getOptions.mediation).toBeUndefined()
 
       // The serialized credential was sent to the verify endpoint
       expect(mockFetch).toHaveBeenCalledTimes(2)
@@ -503,6 +505,101 @@ describe('signInWithPasskey', () => {
       expect(url).toEqual(`${TEST_URL}/passkeys/authentication/verify`)
       expect(body).toEqual({
         challenge_id: TEST_PASSKEY_UUID,
+        credential: webauthnAssertionCredentialResponse.credentialResponse,
+      })
+    })
+
+    it('forwards options.mediation to navigator.credentials.get', async () => {
+      const { client, mockFetch } = await createPasskeyClient()
+      mockFetch
+        .mockResolvedValueOnce(
+          jsonResponse({
+            challenge_id: TEST_PASSKEY_UUID,
+            options: serverRequestOptions,
+            expires_at: Math.floor(Date.now() / 1000) + 300,
+          })
+        )
+        .mockResolvedValueOnce(jsonResponse(sessionServerResponse))
+      browser.credentialsGet.mockResolvedValueOnce(
+        browser.asPublicKeyCredential(webauthnAssertionMockCredential)
+      )
+
+      const { data, error } = await client.signInWithPasskey({
+        options: { mediation: 'conditional' },
+      })
+
+      expect(error).toBeNull()
+      expect(data?.session?.access_token).toEqual('new-access-token')
+
+      // Conditional UI is requested from the browser, everything else is unchanged
+      const getOptions = browser.credentialsGet.mock.calls[0][0]
+      expect(getOptions.mediation).toEqual('conditional')
+      expect(getOptions.publicKey.rpId).toEqual('localhost')
+      expect(getOptions.signal).toBeInstanceOf(AbortSignal)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('retrying cancels a pending conditional ceremony and starts a fresh challenge', async () => {
+      const { client, mockFetch } = await createPasskeyClient()
+      const secondChallengeId = '11111111-2222-3333-4444-555555555555'
+      mockFetch
+        .mockResolvedValueOnce(
+          jsonResponse({
+            challenge_id: TEST_PASSKEY_UUID,
+            options: serverRequestOptions,
+            expires_at: Math.floor(Date.now() / 1000) + 300,
+          })
+        )
+        .mockResolvedValueOnce(
+          jsonResponse({
+            challenge_id: secondChallengeId,
+            options: serverRequestOptions,
+            expires_at: Math.floor(Date.now() / 1000) + 300,
+          })
+        )
+        .mockResolvedValueOnce(jsonResponse(sessionServerResponse))
+
+      // A conditional UI prompt stays pending until the user picks a passkey.
+      // Like a real browser, the first call only settles once its signal aborts.
+      browser.credentialsGet
+        .mockImplementationOnce(
+          (options: CredentialRequestOptions) =>
+            new Promise((_, reject) => {
+              options.signal?.addEventListener('abort', () => {
+                const abortError = new Error('The operation was aborted')
+                abortError.name = 'AbortError'
+                reject(abortError)
+              })
+            })
+        )
+        .mockResolvedValueOnce(browser.asPublicKeyCredential(webauthnAssertionMockCredential))
+
+      const first = client.signInWithPasskey({ options: { mediation: 'conditional' } })
+      // Let the first call fetch its challenge and hand the ceremony to the browser
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(browser.credentialsGet).toHaveBeenCalledTimes(1)
+
+      // Retrying (for example after the challenge expired) starts over
+      const second = await client.signInWithPasskey({ options: { mediation: 'conditional' } })
+      const firstResult = await first
+
+      // The pending ceremony was cancelled rather than left racing the new one
+      expect(firstResult.data).toBeNull()
+      expect(isWebAuthnError(firstResult.error)).toBe(true)
+      expect(firstResult.error?.code).toEqual('ERROR_CEREMONY_ABORTED')
+
+      // The retry ran a full ceremony against a fresh challenge
+      expect(second.error).toBeNull()
+      expect(second.data?.session?.access_token).toEqual('new-access-token')
+      expect(browser.credentialsGet).toHaveBeenCalledTimes(2)
+      const [firstGet, secondGet] = browser.credentialsGet.mock.calls.map((call) => call[0])
+      expect(firstGet.mediation).toEqual('conditional')
+      expect(secondGet.mediation).toEqual('conditional')
+      expect(secondGet.signal).not.toBe(firstGet.signal)
+      expect(firstGet.signal.aborted).toBe(true)
+      expect(mockFetch).toHaveBeenCalledTimes(3)
+      expect(lastRequest(mockFetch).body).toEqual({
+        challenge_id: secondChallengeId,
         credential: webauthnAssertionCredentialResponse.credentialResponse,
       })
     })
@@ -695,5 +792,79 @@ describe('admin.passkey', () => {
     expect(data).toBeNull()
     expect(error).toBeInstanceOf(AuthApiError)
     expect((error as AuthApiError).code).toEqual('passkey_not_found')
+  })
+})
+
+describe('mfa.webauthn.register cleanup after a failed enrollment', () => {
+  let browser: ReturnType<typeof setupBrowserEnvironment>
+
+  beforeEach(() => {
+    browser = setupBrowserEnvironment()
+  })
+
+  afterEach(() => {
+    browser.restore()
+    jest.restoreAllMocks()
+  })
+
+  const existingFactor = (status: string, id: string) => ({
+    id,
+    factor_type: 'webauthn',
+    friendly_name: 'My YubiKey',
+    status,
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+  })
+
+  const registerAgainstFailedEnroll = async (existing: ReturnType<typeof existingFactor>[]) => {
+    const { client, mockFetch } = await createPasskeyClient({ withSession: true })
+    mockFetch.mockResolvedValueOnce(apiErrorResponse('enrollment failed', 422))
+
+    jest.spyOn(client.mfa, 'listFactors').mockResolvedValue({
+      data: { all: existing, totp: [], phone: [] },
+      error: null,
+    } as any)
+    const unenroll = jest
+      .spyOn(client.mfa, 'unenroll')
+      .mockResolvedValue({ data: null, error: null } as any)
+
+    await client.mfa.webauthn.register({
+      friendlyName: 'My YubiKey',
+      webauthn: { rpId: 'localhost' },
+    })
+
+    return unenroll
+  }
+
+  it('leaves an existing verified factor of the same name alone', async () => {
+    const unenroll = await registerAgainstFailedEnroll([
+      existingFactor('verified', 'verified-factor-id'),
+    ])
+
+    expect(unenroll).not.toHaveBeenCalled()
+  })
+
+  it('removes the leftover unverified factor', async () => {
+    const unenroll = await registerAgainstFailedEnroll([
+      existingFactor('unverified', 'unverified-factor-id'),
+    ])
+
+    expect(unenroll).toHaveBeenCalledWith({ factorId: 'unverified-factor-id' })
+  })
+
+  it('removes only the unverified one when both share a name', async () => {
+    const unenroll = await registerAgainstFailedEnroll([
+      existingFactor('verified', 'verified-factor-id'),
+      existingFactor('unverified', 'unverified-factor-id'),
+    ])
+
+    expect(unenroll).toHaveBeenCalledTimes(1)
+    expect(unenroll).toHaveBeenCalledWith({ factorId: 'unverified-factor-id' })
+  })
+
+  it('does nothing when no factor of that name exists', async () => {
+    const unenroll = await registerAgainstFailedEnroll([])
+
+    expect(unenroll).not.toHaveBeenCalled()
   })
 })

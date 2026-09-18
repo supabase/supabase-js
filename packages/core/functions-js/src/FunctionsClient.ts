@@ -88,7 +88,9 @@ export class FunctionsClient {
    * @category Edge Functions
    *
    * @remarks
-   * - Requires an Authorization header.
+   * - The API key is sent in the `apikey` header. The `Authorization` header is reserved
+   *   for the signed-in user's JWT (or a custom auth token) — when there is no session, a
+   *   new-format API key (`sb_publishable_…` / `sb_secret_…`) is not sent as a Bearer token.
    * - Invoke params generally match the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) spec.
    * - When you pass in a body to your function, we automatically attach the Content-Type header for `Blob`, `ArrayBuffer`, `File`, `FormData` and `String`. If it doesn't match any of these types we assume the payload is `json`, serialize it and attach the `Content-Type` header as `application/json`. You can override this behavior by passing in a `Content-Type` header of your own.
    * - Responses are automatically parsed as `json`, `blob` and `form-data` depending on the `Content-Type` header sent by your function. Responses are parsed as `text` by default.
@@ -205,6 +207,7 @@ export class FunctionsClient {
   ): Promise<FunctionsResponse<T>> {
     let timeoutId: ReturnType<typeof setTimeout> | undefined
     let timeoutController: AbortController | undefined
+    let onAbort: (() => void) | undefined
 
     try {
       const { headers, method, body: functionArgs, signal, timeout } = options
@@ -269,8 +272,10 @@ export class FunctionsClient {
         // If user provided their own signal, we need to respect both
         if (signal) {
           effectiveSignal = timeoutController.signal
-          // If the user's signal is aborted, abort our timeout controller too
-          signal.addEventListener('abort', () => timeoutController!.abort())
+          // If the user's signal is aborted, abort our timeout controller too.
+          // Store the listener so we can clean it up in finally.
+          onAbort = () => timeoutController!.abort()
+          signal.addEventListener('abort', onAbort)
         } else {
           effectiveSignal = timeoutController.signal
         }
@@ -298,7 +303,12 @@ export class FunctionsClient {
         throw new FunctionsHttpError(response)
       }
 
-      let responseType = (response.headers.get('Content-Type') ?? 'text/plain').split(';')[0].trim()
+      // HTTP media types are case-insensitive (RFC 9110), so normalize before
+      // matching — otherwise an "Application/JSON" response falls through to text.
+      let responseType = (response.headers.get('Content-Type') ?? 'text/plain')
+        .split(';')[0]
+        .trim()
+        .toLowerCase()
       let data: any
       if (responseType === 'application/json') {
         data = await response.json()
@@ -330,6 +340,11 @@ export class FunctionsClient {
       // Clear the timeout if it was set
       if (timeoutId) {
         clearTimeout(timeoutId)
+      }
+      // Remove the cross-signal listener to prevent memory leaks when the caller
+      // reuses the same AbortSignal across multiple invocations.
+      if (onAbort) {
+        options.signal?.removeEventListener('abort', onAbort)
       }
     }
   }

@@ -1,3 +1,116 @@
+## 2.116.0 (2026-09-07)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.115.0 (2026-09-03)
+
+### 🚀 Features
+
+- **postgrest:** add getOpenApiSpec() ([#2651](https://github.com/supabase/supabase-js/pull/2651))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.114.0 (2026-09-02)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.113.0 (2026-09-02)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.112.4 (2026-08-24)
+
+### 🩹 Fixes
+
+- **postgrest:** move override fixtures out of generated types, repair codegen ([#2605](https://github.com/supabase/supabase-js/pull/2605))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.112.3 (2026-08-11)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.112.2 (2026-08-06)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.112.1 (2026-08-05)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.112.0 (2026-08-03)
+
+### 🩹 Fixes
+
+- **postgrest:** honour throwOnError when maybeSingle finds multiple rows ([#2580](https://github.com/supabase/supabase-js/pull/2580))
+
+### ❤️ Thank You
+
+- Juhef @juheff
+- Zuhef Ahmed @Zuhef
+
+## 2.111.0 (2026-07-28)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.9 (2026-07-27)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.8 (2026-07-21)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **postgrest:** correct self-reference inference ([#2525](https://github.com/supabase/supabase-js/pull/2525))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **postgrest:** type hinted self-referencing embeds as arrays ([#2520](https://github.com/supabase/supabase-js/pull/2520))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.5 (2026-07-14)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.4 (2026-07-14)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.3 (2026-07-13)
+
+### 🩹 Fixes
+
+- **postgrest:** pin tstyche target off floating latest ([#2509](https://github.com/supabase/supabase-js/pull/2509))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.2 (2026-07-09)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.110.1 (2026-07-07)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
 ## 2.110.0 (2026-06-30)
 
 ### 🚀 Features

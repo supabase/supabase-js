@@ -140,7 +140,7 @@ Testing varies per package. See the top-level [TESTING.md](docs/TESTING.md) for 
 - **[Contributing](./CONTRIBUTING.md)** - Development guidelines
 - **[Release Workflows](./docs/RELEASE.md)** - Release and publishing process
 - **[Migration Guide](./docs/MIGRATION.md)** - Cross-cutting migration notes (per-package migrations live alongside each package under `packages/core/<package>/migrations/`)
-- **[Security Policy](./docs/SECURITY.md)** - Vulnerability reporting and disclosure policy
+- **[Security Policy](https://github.com/supabase/supabase-js/security/policy)** - Vulnerability reporting and disclosure policy
 - **[Securing your npm installs](https://supabase.com/docs/guides/security/npm-security)** - Consumer-side guide to defending your install against npm supply-chain attacks
 
 ## 🔐 Verifying provenance attestations

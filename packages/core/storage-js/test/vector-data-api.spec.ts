@@ -494,6 +494,42 @@ describe('VectorDataApi Integration Tests', () => {
       expect(data.vectors.length).toBeLessThanOrEqual(2)
     })
 
+    it('should query the next page with the response token', async () => {
+      const index = client.from(testBucket).index(testIndex)
+      await index.putVectors({
+        vectors: Array.from({ length: 97 }, (_, vectorIndex) => ({
+          key: `paginated-doc-${vectorIndex}`,
+          data: { float32: [0.1, 0.2, 0.3] },
+        })),
+      })
+
+      const query = {
+        queryVector: { float32: [0.5, 0.5, 0.5] },
+        topK: 101,
+      }
+      const firstResponse = await index.queryVectors(query)
+      const firstPage = assertSuccessResponse(firstResponse)
+
+      expect(firstPage.vectors).toHaveLength(100)
+      const nextToken = firstPage.nextToken
+      if (!nextToken) {
+        throw new Error('Expected the first query page to include a nextToken')
+      }
+
+      const secondResponse = await index.queryVectors({
+        ...query,
+        nextToken,
+      })
+      const secondPage = assertSuccessResponse(secondResponse)
+
+      expect(secondPage.vectors).toHaveLength(1)
+      expect(secondPage.nextToken).toBeUndefined()
+      const resultKeys = new Set(
+        [...firstPage.vectors, ...secondPage.vectors].map(({ key }) => key)
+      )
+      expect(resultKeys.size).toBe(101)
+    })
+
     it('should return empty matches when filter matches nothing', async () => {
       const index = client.from(testBucket).index(testIndex)
 

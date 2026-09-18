@@ -99,6 +99,11 @@ const AREAS: AreaConfig[] = [
       // (the area segment already says "auth"); strip it.
       { id: 'auth-admin', title: 'Auth Admin', namespace: 'admin' },
       { id: 'auth-mfa', title: 'Auth MFA', namespace: 'mfa' },
+      {
+        id: 'auth-mfa-recovery-codes',
+        title: 'Auth MFA Recovery Codes',
+        namespace: 'mfa_recovery_codes',
+      },
       { id: 'oauth-admin', title: 'OAuth Admin' },
       { id: 'oauth-server', title: 'OAuth Server' },
       { id: 'passkey-admin', title: 'Passkey Admin' },
@@ -111,6 +116,7 @@ const AREAS: AreaConfig[] = [
       'GoTrueAdminPasskeyApi',
       'GoTrueAdminCustomProvidersApi',
       'GoTrueMFAApi',
+      'AuthMFARecoveryCodesApi',
       'AuthOAuthServerApi',
       'WebAuthnApi',
     ],
@@ -124,6 +130,7 @@ const AREAS: AreaConfig[] = [
       GoTrueAdminPasskeyApi: 'passkey-admin',
       GoTrueAdminCustomProvidersApi: 'auth-admin',
       GoTrueMFAApi: 'auth-mfa',
+      AuthMFARecoveryCodesApi: 'auth-mfa-recovery-codes',
       AuthOAuthServerApi: 'oauth-server',
       WebAuthnApi: 'passkey',
     },

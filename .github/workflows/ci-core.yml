@@ -22,12 +22,12 @@ jobs:
       functions: ${{ steps.affected.outputs.functions }}
       realtime: ${{ steps.affected.outputs.realtime }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Configure Dependency Firewall registry
         shell: bash
@@ -44,9 +44,9 @@ jobs:
             echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
           fi
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -74,12 +74,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-affected
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Configure Dependency Firewall registry
         shell: bash
@@ -96,9 +96,9 @@ jobs:
             echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
           fi
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -121,12 +121,12 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.functions != '0' || needs.check-affected.outputs.realtime != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Configure Dependency Firewall registry
         shell: bash
@@ -143,9 +143,9 @@ jobs:
             echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
           fi
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -154,7 +154,7 @@ jobs:
         run: pnpm nx affected --target=test:ci
         timeout-minutes: 15
       - name: Upload coverage for functions-js
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./packages/core/functions-js/coverage/lcov.info
@@ -163,7 +163,7 @@ jobs:
           fail-on-error: false
         continue-on-error: true
       - name: Upload coverage for realtime-js
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./packages/core/realtime-js/coverage/lcov.info
@@ -181,12 +181,12 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.auth != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Configure Dependency Firewall registry
         shell: bash
@@ -203,15 +203,15 @@ jobs:
             echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
           fi
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
@@ -239,7 +239,7 @@ jobs:
                 docker image save "$img" | zstd -T0 -3 -o "/tmp/supabase-docker-images/${name}.tar.zst"
               done
       - name: Upload coverage for auth-js
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./packages/core/auth-js/coverage/lcov.info
@@ -257,12 +257,12 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.storage != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Configure Dependency Firewall registry
         shell: bash
@@ -279,15 +279,15 @@ jobs:
             echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
           fi
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
@@ -313,7 +313,7 @@ jobs:
                 docker image save "$img" | zstd -T0 -3 -o "/tmp/supabase-docker-images/${name}.tar.zst"
               done
       - name: Upload coverage for storage-js
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./packages/core/storage-js/coverage/lcov.info
@@ -331,12 +331,12 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.auth != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Configure Dependency Firewall registry
         shell: bash
@@ -353,15 +353,15 @@ jobs:
             echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
           fi
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
@@ -401,12 +401,12 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.postgrest != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Configure Dependency Firewall registry
         shell: bash
@@ -423,15 +423,15 @@ jobs:
             echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
           fi
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
@@ -459,14 +459,38 @@ jobs:
                 name=$(echo "$img" | tr '/:' '_')
                 docker image save "$img" | zstd -T0 -3 -o "/tmp/supabase-docker-images/${name}.tar.zst"
               done
-      - name: Check if database schema changed
+      - name: Check if database schema or Supabase CLI version changed
         id: check_codegen
         env:
-          REF: ${{ github.base_ref || github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          BASE_REF="${REF}"
-          git fetch origin "$BASE_REF" 2>/dev/null || true
-          if git diff --name-only "origin/${BASE_REF}...HEAD" 2>/dev/null | grep -q "packages/core/postgrest-js/test/db/"; then
+          # This is a pre-merge gate, so it only has a meaningful base to diff against on
+          # pull_request runs. publish.yml calls this same reusable workflow from a push to master
+          # (and from workflow_dispatch), where github.base_ref is empty and HEAD is already the
+          # branch tip. Skip explicitly there rather than relying on the diff coming back empty:
+          # the pull request that produced the commit already ran this check.
+          if [ -z "$BASE_REF" ]; then
+            echo "Not a pull request run (no base ref), so there is nothing to diff against."
+            echo "The codegen check already ran on the pull request for this commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Fail closed. If the base cannot be fetched or diffed we must not fall through to
+          # "nothing changed" and skip the gate: a silently skipped codegen check is exactly how
+          # the drift this step guards against went unnoticed for months.
+          if ! git fetch origin "$BASE_REF"; then
+            echo "::error::Could not fetch origin/${BASE_REF}, so we cannot tell whether the generated types need checking."
+            exit 1
+          fi
+          if ! CHANGED_FILES=$(git diff --name-only "origin/${BASE_REF}...HEAD"); then
+            echo "::error::Could not diff against origin/${BASE_REF}, refusing to skip the codegen check."
+            exit 1
+          fi
+          # types.generated.ts depends on the test schema AND on the pinned Supabase CLI version,
+          # which selects the postgres-meta image that does the introspection. Watch both, or a
+          # CLI bump silently changes the generated output with nothing to catch it.
+          if printf '%s\n' "$CHANGED_FILES" \
+            | grep -qE '^packages/core/postgrest-js/test/supabase/|^package\.json$'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -477,9 +501,9 @@ jobs:
         timeout-minutes: 5
       - name: Skip codegen check
         if: steps.check_codegen.outputs.changed != 'true'
-        run: echo "⏭️  Skipping codegen check — no database schema changes detected"
+        run: echo "⏭️  Skipping codegen check — no test schema or Supabase CLI version changes detected"
       - name: Upload coverage for postgrest-js
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./packages/core/postgrest-js/coverage/lcov.info
@@ -498,12 +522,12 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.postgrest != '0'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Configure Dependency Firewall registry
         shell: bash
@@ -520,15 +544,15 @@ jobs:
             echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
           fi
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Cache Supabase Docker images
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: docker-cache
         with:
           path: /tmp/supabase-docker-images
@@ -563,7 +587,7 @@ jobs:
     if: always()
     needs: [test-fast, test-auth-cli, test-storage, test-postgrest-js]
     steps:
-      - uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+      - uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true

@@ -354,6 +354,45 @@ export type Database = {
         }
         Relationships: []
       }
+      lab: {
+        Row: {
+          id: number
+          main: number | null
+          name: string | null
+          parent: number | null
+          type: string | null
+        }
+        Insert: {
+          id?: number
+          main?: number | null
+          name?: string | null
+          parent?: number | null
+          type?: string | null
+        }
+        Update: {
+          id?: number
+          main?: number | null
+          name?: string | null
+          parent?: number | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'lab_main_fkey'
+            columns: ['main']
+            isOneToOne: false
+            referencedRelation: 'lab'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'lab_parent_fkey'
+            columns: ['parent']
+            isOneToOne: false
+            referencedRelation: 'lab'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       messages: {
         Row: {
           channel_id: number
@@ -684,6 +723,8 @@ export type Database = {
           error: true
         } & 'the function public.days_since_event with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
       }
+      echo_bigint_as_text: { Args: { bigint_param: number }; Returns: string }
+      extract_jsonb_bigint_as_text: { Args: { payload: Json }; Returns: string }
       function_returning_row: {
         Args: never
         Returns: {
@@ -713,25 +754,6 @@ export type Database = {
           from: '*'
           to: 'users'
           isOneToOne: false
-          isSetofReturn: true
-        }
-      }
-      scalar_computed_count: {
-        Args: { '': Database['public']['Tables']['users']['Row'] }
-        Returns: number
-        SetofOptions: {
-          from: 'users'
-          to: ''
-          isSetofReturn: false
-          isNotNullable: true
-        }
-      }
-      scalar_computed_ids: {
-        Args: { '': Database['public']['Tables']['users']['Row'] }
-        Returns: string[]
-        SetofOptions: {
-          from: 'users'
-          to: ''
           isSetofReturn: true
         }
       }

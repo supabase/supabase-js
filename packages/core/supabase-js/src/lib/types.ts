@@ -35,12 +35,17 @@ export type Fetch = typeof fetch
  * Gateway and Edge Function logs, so logs forwarded through Log Drains can
  * be correlated back to the originating client-side span.
  *
- * Requires `@opentelemetry/api` to be installed in the consuming application.
- * If it is not installed, or there is no active context at request time,
- * propagation silently no-ops.
+ * Requires two opt-in steps: install `@opentelemetry/api` in the consuming
+ * application, and load the tracing runtime with
+ * `import '@supabase/supabase-js/tracing'` at the application entry point.
+ * If the runtime is not loaded, the SDK logs a one-time warning and sends
+ * requests without trace headers; if there is no active context at request
+ * time, propagation silently no-ops. Not available via the CDN/UMD build.
  *
  * @example Enable with defaults
  * ```ts
+ * import '@supabase/supabase-js/tracing'
+ *
  * const supabase = createClient(url, key, {
  *   tracePropagation: { enabled: true },
  * })
@@ -63,6 +68,8 @@ export interface TracePropagationOptions {
    *
    * @example
    * ```ts
+   * import '@supabase/supabase-js/tracing'
+   *
    * const supabase = createClient(url, key, {
    *   tracePropagation: { enabled: true },
    * })
@@ -73,18 +80,23 @@ export interface TracePropagationOptions {
   /**
    * Respect upstream sampling decisions.
    *
-   * When true (the default), trace context is not propagated if the upstream
-   * trace indicates non-sampling (sampled flag = `0` in the `traceparent`
-   * header). This avoids overhead when traces are being recorded but dropped.
+   * When true (the default), requests whose upstream trace is not sampled
+   * (sampled flag = `0` in the `traceparent` header) carry only the
+   * `traceparent` header — the sampled flag is preserved, so downstream
+   * tracing never records them, while Supabase logs still get a `trace_id`
+   * to correlate on. The `tracestate` and `baggage` headers are withheld on
+   * these requests.
    *
-   * Set to `false` to always propagate, regardless of the sampling decision
-   * — useful when you want every Supabase request tagged with a `trace_id`
-   * for log correlation, even if the trace itself will not be exported.
+   * Set to `false` to always propagate the full trace context
+   * (`traceparent`, `tracestate`, `baggage`) regardless of the sampling
+   * decision.
    *
    * @default true
    *
-   * @example Always propagate, ignore sampling
+   * @example Always propagate the full context, ignore sampling
    * ```ts
+   * import '@supabase/supabase-js/tracing'
+   *
    * const supabase = createClient(url, key, {
    *   tracePropagation: { enabled: true, respectSamplingDecision: false },
    * })
@@ -96,6 +108,8 @@ export interface TracePropagationOptions {
 export type SupabaseClientOptions<SchemaName> = {
   /**
    * The Postgres schema which your tables belong to. Must be on the list of exposed schemas in Supabase. Defaults to `public`.
+   *
+   * With generated `Database` types, this type-checks against schemas other than `public` only when the schema name is also passed as the second generic to `createClient`, e.g. `createClient<Database, 'myschema'>(url, key, { db: { schema: 'myschema' } })`. `supabase.schema('myschema').from(...)` infers its schema per call and needs no second generic.
    */
   db?: {
     schema?: SchemaName
@@ -124,6 +138,11 @@ export type SupabaseClientOptions<SchemaName> = {
      * ```
      */
     urlLengthLimit?: number
+    /**
+     * Enable or disable automatic retries for transient PostgREST errors.
+     * Defaults to `true`.
+     */
+    retry?: boolean
   }
 
   auth?: {
@@ -240,7 +259,11 @@ export type SupabaseClientOptions<SchemaName> = {
   }
   /**
    * Optional function for using a third-party authentication system with
-   * Supabase. The function should return an access token or ID token (JWT) by
+   * Supabase. Leave unset when using Supabase Auth — session tokens are
+   * refreshed automatically. Only needed when integrating a third-party
+   * provider (e.g. Clerk, Auth0, Firebase).
+   *
+   * The function should return an access token or ID token (JWT) by
    * obtaining it from the third-party auth SDK. Note that this
    * function may be called concurrently and many times. Use memoization and
    * locking techniques if this is not supported by the SDKs.
@@ -248,6 +271,13 @@ export type SupabaseClientOptions<SchemaName> = {
    * When set, the `auth` namespace of the Supabase client cannot be used.
    * Create another client if you wish to use Supabase Auth and third-party
    * authentications concurrently in the same application.
+   *
+   * For Realtime: also called on connect and on every heartbeat
+   * (`realtime.heartbeatIntervalMs`, default 25000ms). The token must stay valid
+   * past the next call, or Realtime closes the channel at expiry with no
+   * automatic resubscribe. So, plan for some call time and overhead,
+   * i.e. if hearbeats happen every 25 seconds and your token is still valid for 27
+   * seconds it's probably safer to refresh right now rather than risk a race condition.
    */
   accessToken?: () => Promise<string | null>
   /**
@@ -257,10 +287,13 @@ export type SupabaseClientOptions<SchemaName> = {
    * active OpenTelemetry context and inject `traceparent` / `tracestate` /
    * `baggage` headers) or an object for fine-grained control.
    *
-   * Requires `@opentelemetry/api` to be installed in your application; if
-   * not present, the SDK silently no-ops. Trace headers are only attached
-   * to requests targeting Supabase domains, so third-party hosts called
-   * through a custom `fetch` are never tagged.
+   * Requires `@opentelemetry/api` to be installed in your application AND
+   * the tracing runtime to be loaded with
+   * `import '@supabase/supabase-js/tracing'` at your application entry
+   * point. Without that import, the SDK logs a one-time warning and sends
+   * requests without trace headers. Not available via the CDN/UMD build.
+   * Trace headers are only attached to requests targeting Supabase domains,
+   * so third-party hosts called through a custom `fetch` are never tagged.
    *
    * The resulting `trace_id` appears in Supabase logs (API Gateway, Edge
    * Functions), letting you correlate client-side spans with server-side
@@ -268,6 +301,7 @@ export type SupabaseClientOptions<SchemaName> = {
    *
    * @example Shorthand — opt in with defaults
    * ```ts
+   * import '@supabase/supabase-js/tracing'
    * import { createClient } from '@supabase/supabase-js'
    *
    * const supabase = createClient(url, key, { tracePropagation: true })
@@ -275,6 +309,7 @@ export type SupabaseClientOptions<SchemaName> = {
    *
    * @example With an active OpenTelemetry span
    * ```ts
+   * import '@supabase/supabase-js/tracing'
    * import { createClient } from '@supabase/supabase-js'
    * import { trace } from '@opentelemetry/api'
    *
@@ -290,6 +325,8 @@ export type SupabaseClientOptions<SchemaName> = {
    *
    * @example Advanced — always propagate, even for non-sampled traces
    * ```ts
+   * import '@supabase/supabase-js/tracing'
+   *
    * const supabase = createClient(url, key, {
    *   tracePropagation: { enabled: true, respectSamplingDecision: false },
    * })

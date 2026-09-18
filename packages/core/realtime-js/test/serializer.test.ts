@@ -103,6 +103,38 @@ describe('binary', () => {
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
   })
 
+  it('encodes a non-ASCII user event as UTF-8', async () => {
+    const serializer = new Serializer()
+    const event = 'café-🎉'
+
+    const result = (await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        type: 'broadcast',
+        event,
+        payload: { a: 'b' },
+      },
+    })) as ArrayBuffer
+
+    const view = new DataView(result)
+    const joinRefLen = view.getUint8(1)
+    const refLen = view.getUint8(2)
+    const topicLen = view.getUint8(3)
+    const userEventLen = view.getUint8(4)
+
+    // The length prefix must be the UTF-8 byte length, not the JS string length.
+    const expectedBytes = new TextEncoder().encode(event)
+    expect(userEventLen).toBe(expectedBytes.length)
+
+    // The written bytes must round-trip through TextDecoder, as the decode side does.
+    const eventOffset = 1 + 6 + joinRefLen + refLen + topicLen
+    const eventBytes = new Uint8Array(result, eventOffset, userEventLen)
+    expect(new TextDecoder().decode(eventBytes)).toBe(event)
+  })
+
   it('encodes user broadcast push with JSON payload with allowed metadata', async () => {
     const serializer = new Serializer(['extra'])
 

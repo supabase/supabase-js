@@ -178,6 +178,13 @@ channel.subscribe(async (status) => {
 })
 ```
 
+> `config.presence.enabled` (set automatically if you add an `.on('presence', ...)` listener)
+> controls whether _this_ client receives presence state and updates from other clients —
+> without it, `presenceState()` stays empty for you. It does not affect whether other clients
+> see you: calling `track()` always makes you visible to subscribers that do have presence
+> enabled. On RLS-protected channels, receiving presence updates additionally requires the
+> `presence.read` policy to authorize this client.
+
 ## Postgres CDC
 
 Receive database changes on the client.

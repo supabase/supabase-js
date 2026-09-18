@@ -5,10 +5,11 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   validate:
-    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-javascript.yml@main
+    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-javascript.yml@ad910cfa7b87ed7dab32b409f5509611d64168c9 # capability-matrix-v1.9.0
     with:
       build-command: |
         corepack enable

@@ -54,14 +54,6 @@
     "ts-jest": "catalog:",
     "typescript": "catalog:"
   },
-  "peerDependencies": {
-    "@opentelemetry/api": ">=1.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@opentelemetry/api": {
-      "optional": true
-    }
-  },
   "publishConfig": {
     "access": "public"
   },

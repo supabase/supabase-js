@@ -1,3 +1,150 @@
+## 2.116.0 (2026-09-07)
+
+### 🚀 Features
+
+- **auth:** add MFA recovery codes API ([#2676](https://github.com/supabase/supabase-js/pull/2676))
+
+### 🩹 Fixes
+
+- **supabase:** warn when schema is passed outside db options ([#2663](https://github.com/supabase/supabase-js/pull/2663))
+
+### ❤️ Thank You
+
+- fadymak
+- Katerina Skroumpelou @mandarini
+
+## 2.115.0 (2026-09-03)
+
+### 🚀 Features
+
+- **postgrest:** add getOpenApiSpec() ([#2651](https://github.com/supabase/supabase-js/pull/2651))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.114.0 (2026-09-02)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.113.0 (2026-09-02)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.112.4 (2026-08-24)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.112.3 (2026-08-11)
+
+### 🩹 Fixes
+
+- **supabase:** improve trace propagation sampling and diagnostics ([#2604](https://github.com/supabase/supabase-js/pull/2604))
+- **supabase:** add trace context headers to canonical CORS allow-list ([#2603](https://github.com/supabase/supabase-js/pull/2603))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.112.2 (2026-08-06)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.112.1 (2026-08-05)
+
+### 🩹 Fixes
+
+- **realtime:** ensure setAuth doesn't disable token refresh ([#2592](https://github.com/supabase/supabase-js/pull/2592))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
+## 2.112.0 (2026-08-03)
+
+### 🚀 Features
+
+- **supabase:** move OpenTelemetry tracing to opt-in /tracing subpath ([#2583](https://github.com/supabase/supabase-js/pull/2583))
+
+### 🩹 Fixes
+
+- **supabase:** forward db retry option ([#2571](https://github.com/supabase/supabase-js/pull/2571))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
+## 2.111.0 (2026-07-28)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.110.9 (2026-07-27)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.110.8 (2026-07-21)
+
+### 🩹 Fixes
+
+- **supabase:** skip Node warning in Deno ([#2541](https://github.com/supabase/supabase-js/pull/2541))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.7 (2026-07-16)
+
+### 🩹 Fixes
+
+- **realtime:** trigger set auth on INITIAL_SESSION event ([#2531](https://github.com/supabase/supabase-js/pull/2531))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+
+## 2.110.6 (2026-07-15)
+
+### 🩹 Fixes
+
+- **supabase:** warn instead of throw for unrecognized sb_ API key subtypes ([#2526](https://github.com/supabase/supabase-js/pull/2526))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.5 (2026-07-14)
+
+### 🩹 Fixes
+
+- **supabase:** avoid edge runtime warning ([#2522](https://github.com/supabase/supabase-js/pull/2522))
+
+### ❤️ Thank You
+
+- Vaibhav @7ttp
+
+## 2.110.4 (2026-07-14)
+
+### 🩹 Fixes
+
+- **functions:** stop sending API key in Authorization header for function calls ([#2511](https://github.com/supabase/supabase-js/pull/2511))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.110.3 (2026-07-13)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.110.2 (2026-07-09)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.110.1 (2026-07-07)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
 ## 2.110.0 (2026-06-30)
 
 ### 🚀 Features

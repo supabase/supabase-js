@@ -110,7 +110,9 @@ async function publishGotrueLegacy(): Promise<void> {
     // nx-release-publish does for the other six packages — `npm publish` from
     // inside a pnpm workspace can sign provenance but then 404s on the registry
     // PUT (observed continuously since the pnpm migration).
-    const publishCommand = `pnpm publish --provenance --tag ${tag} --no-git-checks`
+    // --registry must be explicit: without it, pnpm inherits CI's dependency-firewall
+    // registry (a read-only proxy), which 405s on publish PUTs.
+    const publishCommand = `pnpm publish --provenance --tag ${tag} --no-git-checks --registry=https://registry.npmjs.org/`
 
     log(`\n🚀 Publishing to npm...`)
     log(`   Command: ${publishCommand}`)
