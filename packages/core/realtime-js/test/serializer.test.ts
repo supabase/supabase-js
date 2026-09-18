@@ -85,7 +85,7 @@ describe('binary', () => {
     // actual user event
     // no actual metadata
     // actual payload
-    let bin = '\x03\x02\x01\x03\x0a\x00\x01101topuser-event{"a":"b"}'
+    const bin = '\x03\x02\x01\x03\x0a\x00\x01101topuser-event{"a":"b"}'
 
     const result = await encodeAsync(serializer, {
       join_ref: '10',
@@ -170,6 +170,129 @@ describe('binary', () => {
       },
     })
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('forwards persist as metadata by default', async () => {
+    const serializer = new Serializer()
+
+    // 12 for metadata length, {"persist":true}
+    const bin = '\x03\x02\x01\x03\x0a\x10\x01101topuser-event{"persist":true}{"a":"b"}'
+
+    const result = await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        type: 'broadcast',
+        event: 'user-event',
+        persist: true,
+        payload: { a: 'b' },
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('leaves metadata empty when persist is not set', async () => {
+    const serializer = new Serializer()
+    const bin = '\x03\x02\x01\x03\x0a\x00\x01101topuser-event{"a":"b"}'
+
+    const result = await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: { type: 'broadcast', event: 'user-event', payload: { a: 'b' } },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('never puts persist inside the user payload', async () => {
+    const serializer = new Serializer()
+
+    const result = (await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        type: 'broadcast',
+        event: 'user-event',
+        persist: true,
+        payload: { a: 'b' },
+      },
+    })) as ArrayBuffer
+
+    const frame = decoder.decode(result)
+    // The payload a subscriber receives is the tail of the frame, and it carries no control key.
+    expect(frame.endsWith('{"a":"b"}')).toBe(true)
+    expect(frame).not.toContain('{"a":"b","persist"')
+  })
+
+  it('drops envelope keys that are not on the allowlist', async () => {
+    const serializer = new Serializer()
+
+    // `store` is not allowed, so metadata stays empty even though persist is absent too.
+    const bin = '\x03\x02\x01\x03\x0a\x00\x01101topuser-event{"a":"b"}'
+
+    const result = await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        type: 'broadcast',
+        event: 'user-event',
+        store: true,
+        whatever: 'nope',
+        payload: { a: 'b' },
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('an explicit allowlist replaces the default', async () => {
+    const serializer = new Serializer(['extra'])
+
+    // persist is no longer allowed, extra is
+    let bin = '\x03\x02\x01\x03\x0a\x0f\x01101topuser-event{"extra":"bit"}{"a":"b"}'
+
+    const result = await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        type: 'broadcast',
+        event: 'user-event',
+        extra: 'bit',
+        persist: true,
+        payload: { a: 'b' },
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('forwards persist alongside a binary payload', async () => {
+    const serializer = new Serializer()
+
+    const result = (await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        type: 'broadcast',
+        event: 'user-event',
+        persist: true,
+        payload: binPayload(),
+      },
+    })) as ArrayBuffer
+
+    const view = new DataView(result)
+    // metadata length header, then binary encoding marker
+    expect(view.getUint8(5)).toBe('{"persist":true}'.length)
+    expect(view.getUint8(6)).toBe(0)
   })
 
   it('encodes user broadcast push with JSON payload no refs', async () => {
