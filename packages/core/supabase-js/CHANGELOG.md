@@ -1,3 +1,13 @@
+## 2.117.0 (2026-09-22)
+
+### 🚀 Features
+
+- **auth:** enable passkey API by default and deprecate experimental passkey opt-in ([#2695](https://github.com/supabase/supabase-js/pull/2695))
+
+### ❤️ Thank You
+
+- fadymak
+
 ## 2.116.0 (2026-09-07)
 
 ### 🚀 Features

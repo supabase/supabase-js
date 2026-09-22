@@ -1,3 +1,16 @@
+## 2.117.0 (2026-09-22)
+
+### 🚀 Features
+
+- **auth:** enable passkey API by default and deprecate experimental passkey opt-in ([#2695](https://github.com/supabase/supabase-js/pull/2695))
+- **auth:** forward options.mediation to navigator.credentials.get in signInWithPasskey ([#2675](https://github.com/supabase/supabase-js/pull/2675))
+
+### ❤️ Thank You
+
+- fadymak
+- James Argarin
+- Katerina Skroumpelou
+
 ## 2.116.0 (2026-09-07)
 
 ### 🚀 Features
