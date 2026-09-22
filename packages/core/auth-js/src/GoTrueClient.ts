@@ -3075,84 +3075,36 @@ export default class GoTrueClient {
       )
 
       if (!hasExpired) {
-        if (this.userStorage) {
-          const maybeUser: { user?: User | null } | null = (await getItemAsync(
-            this.userStorage,
-            this.storageKey + '-user'
-          )) as any
-
-          if (maybeUser?.user) {
-            currentSession.user = maybeUser.user
-          } else {
-            currentSession.user = userNotAvailableProxy()
-          }
-        }
-
-        // Wrap the user object with a warning proxy on the server
-        // This warns when properties of the user are accessed, not when session.user itself is accessed
-        if (
-          this.storage.isServer &&
-          currentSession.user &&
-          !(currentSession.user as any).__isUserNotAvailableProxy
-        ) {
-          const suppressWarningRef = { value: this.suppressGetSessionWarning }
-          currentSession.user = insecureUserWarningProxy(currentSession.user, suppressWarningRef)
-
-          // Update the client-level suppression flag when the proxy suppresses the warning
-          if (suppressWarningRef.value) {
-            this.suppressGetSessionWarning = true
-          }
-        }
-
-        return { data: { session: currentSession }, error: null }
+        return { data: { session: await this._hydrateSessionUser(currentSession) }, error: null }
       }
 
       const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
       if (error) {
-        // Proactive-preserve mirror: `_callRefreshToken` keeps the session
-        // in storage when refresh fails non-retryably but the access token
-        // is still inside its real expiry window. Hand the caller the
-        // still-valid session instead of translating the refresh error
-        // into `session: null`. If the access token has actually expired,
-        // the session is genuinely dead and the error stands. Explicit
-        // refresh entry points (`refreshSession`, `setSession`)
-        // intentionally bypass this fallback — they want to know the
-        // refresh failed.
-        const accessTokenStillValid = !!(
-          currentSession.expires_at && currentSession.expires_at * 1000 > Date.now()
-        )
-        if (accessTokenStillValid) {
-          // Race guard: a concurrent `signOut` may have cleared storage
-          // during the refresh attempt. Don't hand back a session that no
-          // longer exists on disk.
-          const stillStored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
-          if (stillStored && stillStored.refresh_token === currentSession.refresh_token) {
-            return this._returnResult({ data: { session: currentSession }, error: null })
-          }
+        // A failed refresh does not mean there is no session. Storage is the
+        // source of truth at this point, because either:
+        //  - `_callRefreshToken` kept the original session in storage since
+        //    the access token is still inside its real expiry window (a
+        //    proactive refresh that failed non-retryably), or
+        //  - another caller, in this tab or a different one, committed its
+        //    own rotated session while this refresh was in flight, so this
+        //    one was discarded by the commit guard or rejected by the server
+        //    as already used.
+        // Empty storage (concurrent `signOut`) or an expired stored session
+        // means the session is genuinely gone and the error stands. Explicit
+        // refresh entry points (`refreshSession`, `setSession`) bypass this
+        // fallback; they want to know the refresh failed.
+        const stored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+        if (
+          stored &&
+          this._isValidSession(stored) &&
+          stored.expires_at &&
+          stored.expires_at * 1000 > Date.now()
+        ) {
+          return this._returnResult({
+            data: { session: await this._hydrateSessionUser(stored) },
+            error: null,
+          })
         }
-
-        // Rotation mirror: the commit guard in `_callRefreshToken` discards
-        // rotated tokens whenever storage changed mid-flight, whether that
-        // change was a concurrent `signOut` (storage now empty) or another
-        // caller's refresh winning the race (storage now holds a different,
-        // currently-valid session). Only the latter has something usable to
-        // hand back — surface that session instead of `null` for the one
-        // call that landed on the losing side of the race.
-        if (isAuthRefreshDiscardedError(error)) {
-          const rotatedSession = (await getItemAsync(
-            this.storage,
-            this.storageKey
-          )) as Session | null
-          if (
-            rotatedSession &&
-            this._isValidSession(rotatedSession) &&
-            rotatedSession.expires_at &&
-            rotatedSession.expires_at * 1000 > Date.now()
-          ) {
-            return this._returnResult({ data: { session: rotatedSession }, error: null })
-          }
-        }
-
         return this._returnResult({ data: { session: null }, error })
       }
 
@@ -3160,6 +3112,35 @@ export default class GoTrueClient {
     } finally {
       this._debug('#__loadSession()', 'end')
     }
+  }
+
+  /**
+   * Completes a session read back from storage so it matches what callers of
+   * `getSession()` expect: fills in `session.user` from `userStorage` when the
+   * client keeps the user in split storage, and wraps the user in the
+   * insecure-access warning proxy on the server.
+   */
+  private async _hydrateSessionUser(session: Session): Promise<Session> {
+    if (this.userStorage) {
+      const maybeUser: { user?: User | null } | null = (await getItemAsync(
+        this.userStorage,
+        this.storageKey + '-user'
+      )) as any
+
+      session.user = maybeUser?.user ? maybeUser.user : userNotAvailableProxy()
+    }
+
+    // Warns when properties of the user are accessed, not when session.user itself is accessed.
+    if (this.storage.isServer && session.user && !(session.user as any).__isUserNotAvailableProxy) {
+      const suppressWarningRef = { value: this.suppressGetSessionWarning }
+      session.user = insecureUserWarningProxy(session.user, suppressWarningRef)
+
+      if (suppressWarningRef.value) {
+        this.suppressGetSessionWarning = true
+      }
+    }
+
+    return session
   }
 
   /**

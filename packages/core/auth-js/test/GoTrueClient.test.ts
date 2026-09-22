@@ -4714,6 +4714,91 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       expect(data.session).toBeNull()
       expect((error as Error)?.name).toBe('AuthRefreshDiscardedError')
     })
+
+    test('another tab rotated first and the server rejects this refresh token → returns the winning session', async () => {
+      const storage = memoryLocalStorageAdapter()
+      const client = buildClient(storage)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const winningSession: Session = {
+        access_token: 'jwt.other-tab.signature',
+        refresh_token: 'refresh-token-other-tab',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        user: { id: 'user-1', email: 'u@example.com' } as any,
+      }
+
+      // Past the reuse interval the server answers the losing tab with
+      // `refresh_token_already_used` instead of a second rotation.
+      // @ts-expect-error access protected for test
+      client._refreshAccessToken = jest.fn(async () => {
+        await setItemAsync(storage, STORAGE_KEY, winningSession)
+        return {
+          data: { session: null, user: null },
+          error: Object.assign(new AuthError('Invalid Refresh Token: Already Used', 400), {
+            name: 'AuthApiError',
+            code: 'refresh_token_already_used',
+            __isAuthError: true,
+          }),
+        }
+      })
+
+      const { data, error } = await client.getSession()
+
+      expect(error).toBeNull()
+      expect(data.session?.refresh_token).toBe('refresh-token-other-tab')
+    })
+
+    test('rotation guard with userStorage → returns the winning session with its user attached', async () => {
+      const storage = memoryLocalStorageAdapter()
+      const userStorage = memoryLocalStorageAdapter()
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        userStorage,
+        autoRefreshToken: false,
+        persistSession: true,
+      })
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      // Mirrors what the winning tab's `_saveSession` writes in split-storage
+      // mode: tokens in `storage`, the user in `userStorage`.
+      const winningUser = { id: 'user-1', email: 'u@example.com' }
+      // @ts-expect-error access protected for test
+      client._refreshAccessToken = jest.fn(async () => {
+        await setItemAsync(storage, STORAGE_KEY, {
+          access_token: 'jwt.other-tab.signature',
+          refresh_token: 'refresh-token-other-tab',
+          token_type: 'bearer',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+        })
+        await setItemAsync(userStorage, STORAGE_KEY + '-user', { user: winningUser })
+        return {
+          data: {
+            session: {
+              access_token: 'jwt.this-tab.signature',
+              refresh_token: 'refresh-token-this-tab',
+              token_type: 'bearer',
+              expires_in: 3600,
+              expires_at: Math.floor(Date.now() / 1000) + 3600,
+              user: winningUser,
+            },
+            user: winningUser,
+          },
+          error: null,
+        }
+      })
+
+      const { data, error } = await client.getSession()
+
+      expect(error).toBeNull()
+      expect(data.session?.refresh_token).toBe('refresh-token-other-tab')
+      expect(data.session?.user?.id).toBe('user-1')
+    })
   })
 
   describe('explicit-caller contract (no semantic regression)', () => {
