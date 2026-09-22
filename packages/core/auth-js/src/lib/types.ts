@@ -181,13 +181,14 @@ export type GoTrueClientOptions = {
 
 export type ExperimentalFeatureFlags = {
   /**
-   * Enables passkey support:
-   *   - `auth.signInWithPasskey()`, `auth.registerPasskey()`
-   *   - `auth.passkey.*`
-   *   - `auth.admin.passkey.*`
+   * Previously required to enable the passkey API (`auth.signInWithPasskey()`,
+   * `auth.registerPasskey()`, `auth.passkey.*`, `auth.admin.passkey.*`).
    *
-   * Defaults to `false`. Calling any passkey method while this flag is
-   * disabled throws a descriptive error at call time.
+   * Passkeys are now enabled by default and this flag is ignored. It is kept
+   * only so existing code that sets it keeps compiling and will be removed in
+   * the next major version.
+   *
+   * @deprecated Passkeys are enabled by default; this flag has no effect.
    */
   passkey?: boolean
   /**

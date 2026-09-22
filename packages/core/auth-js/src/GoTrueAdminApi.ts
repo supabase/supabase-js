@@ -5,7 +5,7 @@ import {
   _request,
   _userResponse,
 } from './lib/fetch'
-import { assertPasskeyExperimentalEnabled, resolveFetch, validateUUID } from './lib/helpers'
+import { resolveFetch, validateUUID } from './lib/helpers'
 import {
   AdminUserAttributes,
   GenerateLinkParams,
@@ -56,8 +56,6 @@ export default class GoTrueAdminApi {
 
   /**
    * Contains all passkey administration methods.
-   *
-   * Requires `auth.experimental.passkey: true`; otherwise all methods throw.
    */
   passkey: GoTrueAdminPasskeyApi
 
@@ -1208,13 +1206,10 @@ export default class GoTrueAdminApi {
    * Lists all passkeys for a user.
    *
    * This function should only be called on a server. Never expose your secret key in the browser.
-   *
-   * Requires `auth.experimental.passkey: true`.
    */
   private async _adminListPasskeys(
     params: AuthPasskeyAdminListParams
   ): Promise<AuthPasskeyListResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     validateUUID(params.userId)
 
     try {
@@ -1236,13 +1231,10 @@ export default class GoTrueAdminApi {
    * Deletes a user's passkey.
    *
    * This function should only be called on a server. Never expose your secret key in the browser.
-   *
-   * Requires `auth.experimental.passkey: true`.
    */
   private async _adminDeletePasskey(
     params: AuthPasskeyAdminDeleteParams
   ): Promise<AuthPasskeyDeleteResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     validateUUID(params.userId)
     validateUUID(params.passkeyId)
 
