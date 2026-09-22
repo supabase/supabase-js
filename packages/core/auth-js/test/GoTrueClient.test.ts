@@ -4632,6 +4632,88 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       expect(data.session).toBeNull()
       expect(error).not.toBeNull()
     })
+
+    test('rotation guard: another tab wins the refresh race → returns the winning session', async () => {
+      const storage = memoryLocalStorageAdapter()
+      const client = buildClient(storage)
+      await client.initialize()
+      // Past its real expiry, not just the proactive margin — this is the
+      // reactive refresh path, same as the reported race.
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const winningSession: Session = {
+        access_token: 'jwt.other-tab.signature',
+        refresh_token: 'refresh-token-other-tab',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        user: { id: 'user-1', email: 'u@example.com' } as any,
+      }
+
+      // Another tab commits its own rotated session to storage while this
+      // refresh is in flight; the commit guard in `_callRefreshToken`
+      // discards this refresh's own (also successful) rotation.
+      // @ts-expect-error access protected for test
+      client._refreshAccessToken = jest.fn(async () => {
+        await setItemAsync(storage, STORAGE_KEY, winningSession)
+        return {
+          data: {
+            session: {
+              access_token: 'jwt.this-tab.signature',
+              refresh_token: 'refresh-token-this-tab',
+              token_type: 'bearer',
+              expires_in: 3600,
+              expires_at: Math.floor(Date.now() / 1000) + 3600,
+              user: { id: 'user-1', email: 'u@example.com' },
+            },
+            user: { id: 'user-1', email: 'u@example.com' },
+          },
+          error: null,
+        }
+      })
+
+      const { data, error } = await client.getSession()
+
+      expect(error).toBeNull()
+      expect(data.session?.refresh_token).toBe('refresh-token-other-tab')
+
+      const stored = (await getItemAsync(storage, STORAGE_KEY)) as Session | null
+      expect(stored?.refresh_token).toBe('refresh-token-other-tab')
+    })
+
+    test('rotation guard: storage cleared (signOut) rather than rotated → still returns null + error', async () => {
+      const storage = memoryLocalStorageAdapter()
+      const client = buildClient(storage)
+      await client.initialize()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      // Same commit-guard discard as above, but storage was cleared by a
+      // concurrent signOut rather than rotated by another tab. Nothing
+      // valid is left to hand back.
+      // @ts-expect-error access protected for test
+      client._refreshAccessToken = jest.fn(async () => {
+        await storage.removeItem(STORAGE_KEY)
+        return {
+          data: {
+            session: {
+              access_token: 'jwt.this-tab.signature',
+              refresh_token: 'refresh-token-this-tab',
+              token_type: 'bearer',
+              expires_in: 3600,
+              expires_at: Math.floor(Date.now() / 1000) + 3600,
+              user: { id: 'user-1', email: 'u@example.com' },
+            },
+            user: { id: 'user-1', email: 'u@example.com' },
+          },
+          error: null,
+        }
+      })
+
+      const { data, error } = await client.getSession()
+
+      expect(data.session).toBeNull()
+      expect((error as Error)?.name).toBe('AuthRefreshDiscardedError')
+    })
   })
 
   describe('explicit-caller contract (no semantic regression)', () => {

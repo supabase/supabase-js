@@ -3130,6 +3130,29 @@ export default class GoTrueClient {
             return this._returnResult({ data: { session: currentSession }, error: null })
           }
         }
+
+        // Rotation mirror: the commit guard in `_callRefreshToken` discards
+        // rotated tokens whenever storage changed mid-flight, whether that
+        // change was a concurrent `signOut` (storage now empty) or another
+        // caller's refresh winning the race (storage now holds a different,
+        // currently-valid session). Only the latter has something usable to
+        // hand back — surface that session instead of `null` for the one
+        // call that landed on the losing side of the race.
+        if (isAuthRefreshDiscardedError(error)) {
+          const rotatedSession = (await getItemAsync(
+            this.storage,
+            this.storageKey
+          )) as Session | null
+          if (
+            rotatedSession &&
+            this._isValidSession(rotatedSession) &&
+            rotatedSession.expires_at &&
+            rotatedSession.expires_at * 1000 > Date.now()
+          ) {
+            return this._returnResult({ data: { session: rotatedSession }, error: null })
+          }
+        }
+
         return this._returnResult({ data: { session: null }, error })
       }
 
