@@ -4188,6 +4188,194 @@ describe('Refresh commit guard (signOut-during-refresh race)', () => {
   })
 })
 
+describe('getSession() after a discarded mid-flight refresh', () => {
+  // A rotated refresh is discarded by the commit guard when another writer
+  // (another tab, an SSR cookie handoff) commits a newer session while the
+  // `/token` request is in flight. The session the guard left in storage is
+  // valid and newer, so getSession() must return it instead of null.
+  const makeSession = (overrides: Partial<Session>): Session => ({
+    access_token: 'jwt.accesstoken.signature',
+    refresh_token: 'refresh-token',
+    token_type: 'bearer',
+    expires_in: 1000,
+    expires_at: Math.floor(Date.now() / 1000) + 1000,
+    user: { id: 'user-1', email: 'u@example.com' } as any,
+    ...overrides,
+  })
+
+  const newClient = (storage: ReturnType<typeof memoryLocalStorageAdapter>) =>
+    new GoTrueClient({
+      url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+      storage,
+      autoRefreshToken: false,
+      persistSession: true,
+    })
+
+  test('returns the replacement session when the old access token is still within its expiry margin', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = newClient(storage)
+    await client.initialize()
+
+    // Session A sits inside EXPIRY_MARGIN_MS (forces a proactive refresh) but
+    // its access token has not actually expired yet.
+    const sessionA = makeSession({
+      refresh_token: 'refresh-token-a',
+      expires_at: Math.floor(Date.now() / 1000) + 60,
+    })
+    await setItemAsync(storage, STORAGE_KEY, sessionA)
+
+    // Another writer commits session B mid-flight; A's rotated tokens are then
+    // discarded by the commit guard.
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => {
+      await setItemAsync(storage, STORAGE_KEY, makeSession({ refresh_token: 'refresh-token-b' }))
+      return {
+        data: {
+          session: makeSession({ refresh_token: 'refresh-token-a-rotated' }),
+          user: sessionA.user,
+        },
+        error: null,
+      } as any
+    })
+
+    const { data, error } = await client.getSession()
+
+    expect(error).toBeNull()
+    expect(data.session?.refresh_token).toBe('refresh-token-b')
+  })
+
+  test('returns the replacement session even when the old access token has expired', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = newClient(storage)
+    await client.initialize()
+
+    const sessionA = makeSession({
+      refresh_token: 'refresh-token-a',
+      expires_at: Math.floor(Date.now() / 1000) - 10,
+    })
+    await setItemAsync(storage, STORAGE_KEY, sessionA)
+
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => {
+      await setItemAsync(storage, STORAGE_KEY, makeSession({ refresh_token: 'refresh-token-b' }))
+      return {
+        data: {
+          session: makeSession({ refresh_token: 'refresh-token-a-rotated' }),
+          user: sessionA.user,
+        },
+        error: null,
+      } as any
+    })
+
+    const { data, error } = await client.getSession()
+
+    expect(error).toBeNull()
+    expect(data.session?.refresh_token).toBe('refresh-token-b')
+  })
+
+  test('returns the session when the discarded response carried the same token now stored', async () => {
+    // GoTrue's parent-of-active path hands the already-issued child token to
+    // whoever reuses the parent, so the discarded response and the session the
+    // other writer stored can carry the *same* refresh token.
+    const storage = memoryLocalStorageAdapter()
+    const client = newClient(storage)
+    await client.initialize()
+
+    const child = 'refresh-token-child'
+    const sessionA = makeSession({
+      refresh_token: 'refresh-token-a',
+      expires_at: Math.floor(Date.now() / 1000) + 60,
+    })
+    await setItemAsync(storage, STORAGE_KEY, sessionA)
+
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => {
+      await setItemAsync(storage, STORAGE_KEY, makeSession({ refresh_token: child }))
+      return {
+        data: {
+          session: makeSession({ refresh_token: child }),
+          user: sessionA.user,
+        },
+        error: null,
+      } as any
+    })
+
+    const { data, error } = await client.getSession()
+
+    expect(error).toBeNull()
+    expect(data.session?.refresh_token).toBe(child)
+  })
+
+  test('still returns null when a concurrent signOut cleared storage mid-flight', async () => {
+    // Regression guard: adopting the stored session after a discard must not
+    // resurrect a session that signOut deliberately removed.
+    const storage = memoryLocalStorageAdapter()
+    const client = newClient(storage)
+    await client.initialize()
+
+    const sessionA = makeSession({
+      refresh_token: 'refresh-token-a',
+      expires_at: Math.floor(Date.now() / 1000) + 60,
+    })
+    await setItemAsync(storage, STORAGE_KEY, sessionA)
+
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => {
+      // @ts-expect-error access protected for test
+      await client._removeSession()
+      return {
+        data: {
+          session: makeSession({ refresh_token: 'refresh-token-a-rotated' }),
+          user: sessionA.user,
+        },
+        error: null,
+      } as any
+    })
+
+    const { data } = await client.getSession()
+
+    expect(data.session).toBeNull()
+  })
+
+  test('does not adopt a stored session whose access token has already expired', async () => {
+    const storage = memoryLocalStorageAdapter()
+    const client = newClient(storage)
+    await client.initialize()
+
+    const sessionA = makeSession({
+      refresh_token: 'refresh-token-a',
+      expires_at: Math.floor(Date.now() / 1000) + 60,
+    })
+    await setItemAsync(storage, STORAGE_KEY, sessionA)
+
+    // The mid-flight writer commits a session B whose access token is already
+    // past its expiry; adopting it would hand back a dead JWT as success.
+    // @ts-expect-error access protected for test
+    client._refreshAccessToken = jest.fn(async () => {
+      await setItemAsync(
+        storage,
+        STORAGE_KEY,
+        makeSession({
+          refresh_token: 'refresh-token-b',
+          expires_at: Math.floor(Date.now() / 1000) - 10,
+        })
+      )
+      return {
+        data: {
+          session: makeSession({ refresh_token: 'refresh-token-a-rotated' }),
+          user: sessionA.user,
+        },
+        error: null,
+      } as any
+    })
+
+    const { data, error } = await client.getSession()
+
+    expect(data.session).toBeNull()
+    expect(error).not.toBeNull()
+  })
+})
+
 describe('userNotAvailableProxy behavior', () => {
   test('should return proxy user when userStorage is set but user is not found', async () => {
     const storage = memoryLocalStorageAdapter()
