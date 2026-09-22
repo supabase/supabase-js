@@ -1,4 +1,4 @@
-import { resolveFetch } from './helper'
+import { normalizeHeaders, resolveFetch } from './helper'
 import {
   Fetch,
   FunctionInvokeOptions,
@@ -54,7 +54,7 @@ export class FunctionsClient {
     } = {}
   ) {
     this.url = url
-    this.headers = headers
+    this.headers = normalizeHeaders(headers)
     this.region = region
     this.fetch = resolveFetch(customFetch)
   }
@@ -71,7 +71,7 @@ export class FunctionsClient {
    * ```
    */
   setAuth(token: string) {
-    this.headers.Authorization = `Bearer ${token}`
+    this.headers = normalizeHeaders({ ...this.headers, authorization: `Bearer ${token}` })
   }
 
   /**
@@ -234,11 +234,11 @@ export class FunctionsClient {
         ) {
           // will work for File as File inherits Blob
           // also works for ArrayBuffer as it is the same underlying structure as a Blob
-          _headers['Content-Type'] = 'application/octet-stream'
+          _headers['content-type'] = 'application/octet-stream'
           body = functionArgs
         } else if (typeof functionArgs === 'string') {
           // plain string
-          _headers['Content-Type'] = 'text/plain'
+          _headers['content-type'] = 'text/plain'
           body = functionArgs
         } else if (typeof FormData !== 'undefined' && functionArgs instanceof FormData) {
           // don't set content-type headers
@@ -246,7 +246,7 @@ export class FunctionsClient {
           body = functionArgs
         } else {
           // default, assume this is JSON
-          _headers['Content-Type'] = 'application/json'
+          _headers['content-type'] = 'application/json'
           body = JSON.stringify(functionArgs)
         }
       } else {
@@ -287,7 +287,7 @@ export class FunctionsClient {
         // 1. invoke-level headers
         // 2. client-level headers
         // 3. default Content-Type header
-        headers: { ..._headers, ...this.headers, ...headers },
+        headers: { ..._headers, ...this.headers, ...normalizeHeaders(headers ?? {}) },
         body,
         signal: effectiveSignal,
       }).catch((fetchError) => {
