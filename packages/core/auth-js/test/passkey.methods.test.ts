@@ -57,10 +57,8 @@ type ClientSetup = {
 
 const createPasskeyClient = async ({
   withSession = false,
-  experimental = { passkey: true },
 }: {
   withSession?: boolean
-  experimental?: { passkey?: boolean }
 } = {}): Promise<ClientSetup> => {
   const mockFetch = jest.fn()
   const storage = memoryLocalStorageAdapter()
@@ -76,7 +74,6 @@ const createPasskeyClient = async ({
     autoRefreshToken: false,
     persistSession: true,
     fetch: mockFetch as unknown as typeof fetch,
-    experimental,
   })
   return { client, mockFetch }
 }
@@ -727,7 +724,6 @@ describe('admin.passkey', () => {
       url: TEST_URL,
       headers: { Authorization: 'Bearer secret-key-token' },
       fetch: mockFetch as unknown as typeof fetch,
-      experimental: { passkey: true },
     })
     return { admin, mockFetch }
   }

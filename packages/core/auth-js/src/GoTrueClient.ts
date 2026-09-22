@@ -38,7 +38,6 @@ import {
 } from './lib/fetch'
 import {
   appendFlowIdToRedirectTo,
-  assertPasskeyExperimentalEnabled,
   assertRecoveryCodesExperimentalEnabled,
   decodeJWT,
   deepClone,
@@ -263,8 +262,6 @@ export default class GoTrueClient {
   /**
    * Namespace for passkey methods.
    * Includes lower-level two-step registration/authentication and passkey management.
-   *
-   * Requires `auth.experimental.passkey: true`; otherwise all methods throw.
    */
   passkey: AuthPasskeyApi
   /**
@@ -6818,8 +6815,6 @@ export default class GoTrueClient {
    * resolves with a `WebAuthnError` whose code is `ERROR_CEREMONY_ABORTED`. If
    * you pass your own `signal`, abort it before retrying.
    *
-   * Requires `auth.experimental.passkey: true`.
-   *
    * @category Auth
    *
    * @example Sign in with Conditional UI (passkey autofill)
@@ -6835,7 +6830,6 @@ export default class GoTrueClient {
   async signInWithPasskey(
     credentials?: SignInWithPasskeyCredentials
   ): Promise<AuthPasskeyAuthenticationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       if (!browserSupportsWebAuthn()) {
         return this._returnResult({
@@ -6887,14 +6881,13 @@ export default class GoTrueClient {
    * 2. Prompts user via navigator.credentials.create()
    * 3. Verifies credential with server
    *
-   * Requires an active session. Requires `auth.experimental.passkey: true`.
+   * Requires an active session.
    *
    * @category Auth
    */
   async registerPasskey(
     credentials?: RegisterPasskeyCredentials
   ): Promise<AuthPasskeyRegistrationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       if (!browserSupportsWebAuthn()) {
         return this._returnResult({
@@ -6942,7 +6935,6 @@ export default class GoTrueClient {
    * Returns WebAuthn credential creation options to pass to navigator.credentials.create().
    */
   private async _startPasskeyRegistration(): Promise<AuthPasskeyRegistrationOptionsResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6985,7 +6977,6 @@ export default class GoTrueClient {
   private async _verifyPasskeyRegistration(
     params: VerifyPasskeyRegistrationParams
   ): Promise<AuthPasskeyRegistrationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -7031,7 +7022,6 @@ export default class GoTrueClient {
   private async _startPasskeyAuthentication(
     params?: StartPasskeyAuthenticationParams
   ): Promise<AuthPasskeyAuthenticationOptionsResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       const { data, error } = await _request(
         this.fetch,
@@ -7063,7 +7053,6 @@ export default class GoTrueClient {
   private async _verifyPasskeyAuthentication(
     params: VerifyPasskeyAuthenticationParams
   ): Promise<AuthPasskeyAuthenticationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       const { data, error } = await _request(
         this.fetch,
@@ -7098,7 +7087,6 @@ export default class GoTrueClient {
    * List all passkeys for the current user.
    */
   private async _listPasskeys(): Promise<AuthPasskeyListResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -7133,7 +7121,6 @@ export default class GoTrueClient {
    * Update a passkey.
    */
   private async _updatePasskey(params: PasskeyUpdateParams): Promise<AuthPasskeyUpdateResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -7173,7 +7160,6 @@ export default class GoTrueClient {
    * Delete a passkey.
    */
   private async _deletePasskey(params: PasskeyDeleteParams): Promise<AuthPasskeyDeleteResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
