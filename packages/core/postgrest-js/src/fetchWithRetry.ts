@@ -47,7 +47,7 @@ function shouldRetry(
     return false
   }
 
-  // Only retry on specific status codes (520 - Cloudflare errors)
+  // Only retry on specific status codes (520-524 - Cloudflare origin errors, 503 - schema cache)
   if (!RETRYABLE_STATUS_CODES.includes(status as (typeof RETRYABLE_STATUS_CODES)[number])) {
     return false
   }
@@ -68,7 +68,7 @@ export interface RetryableRequest {
  *
  * Idempotent methods (GET, HEAD, OPTIONS) are retried up to
  * `DEFAULT_MAX_RETRIES` times when the fetch rejects or the server answers
- * with a retryable status (503, 520). The wait honours the `Retry-After`
+ * with a retryable status (503, 520-524). The wait honours the `Retry-After`
  * header when present and backs off exponentially otherwise. Retried
  * attempts carry an `X-Retry-Count` header. Aborted requests and
  * non-idempotent methods are never retried: their rejection propagates
