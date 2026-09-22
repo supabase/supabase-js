@@ -3090,9 +3090,10 @@ export default class GoTrueClient {
         //    one was discarded by the commit guard or rejected by the server
         //    as already used.
         // Empty storage (concurrent `signOut`) or an expired stored session
-        // means the session is genuinely gone and the error stands. Explicit
-        // refresh entry points (`refreshSession`, `setSession`) bypass this
-        // fallback; they want to know the refresh failed.
+        // means the session is genuinely gone and the error stands. Callers
+        // that pass an explicit token (`setSession`,
+        // `refreshSession({ refresh_token })`) call `_callRefreshToken`
+        // directly and surface the failure instead.
         const stored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
         if (
           stored &&

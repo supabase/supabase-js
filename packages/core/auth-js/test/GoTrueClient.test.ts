@@ -4465,15 +4465,18 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       persistSession: true,
     })
 
-  const stubInvalidGrant = (client: GoTrueClient) => {
-    const spy = jest.fn(async () => ({
-      data: { session: null, user: null },
-      error: Object.assign(new AuthError('Invalid Refresh Token: Already Used', 400), {
-        name: 'AuthApiError',
-        code: 'refresh_token_already_used',
-        __isAuthError: true,
-      }),
-    }))
+  const stubInvalidGrant = (client: GoTrueClient, beforeReply?: () => Promise<void>) => {
+    const spy = jest.fn(async () => {
+      await beforeReply?.()
+      return {
+        data: { session: null, user: null },
+        error: Object.assign(new AuthError('Invalid Refresh Token: Already Used', 400), {
+          name: 'AuthApiError',
+          code: 'refresh_token_already_used',
+          __isAuthError: true,
+        }),
+      }
+    })
     // @ts-expect-error access protected for test
     client._refreshAccessToken = spy
     return spy
@@ -4637,8 +4640,8 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       const storage = memoryLocalStorageAdapter()
       const client = buildClient(storage)
       await client.initialize()
-      // Past its real expiry, not just the proactive margin — this is the
-      // reactive refresh path, same as the reported race.
+      // Past its real expiry, not just the proactive margin, so the reactive
+      // refresh path runs.
       await plantSession(storage, { secondsUntilExpiry: -60 })
 
       const winningSession: Session = {
@@ -4732,18 +4735,7 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
 
       // Past the reuse interval the server answers the losing tab with
       // `refresh_token_already_used` instead of a second rotation.
-      // @ts-expect-error access protected for test
-      client._refreshAccessToken = jest.fn(async () => {
-        await setItemAsync(storage, STORAGE_KEY, winningSession)
-        return {
-          data: { session: null, user: null },
-          error: Object.assign(new AuthError('Invalid Refresh Token: Already Used', 400), {
-            name: 'AuthApiError',
-            code: 'refresh_token_already_used',
-            __isAuthError: true,
-          }),
-        }
-      })
+      stubInvalidGrant(client, () => setItemAsync(storage, STORAGE_KEY, winningSession))
 
       const { data, error } = await client.getSession()
 
