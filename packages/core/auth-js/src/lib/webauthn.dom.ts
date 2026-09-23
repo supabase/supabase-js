@@ -527,6 +527,8 @@ export interface PublicKeyCredentialRequestOptionsFuture
  */
 export type PublicKeyCredentialJSON = RegistrationResponseJSON | AuthenticationResponseJSON
 
+type PublicKeyCredentialBase = Omit<PublicKeyCredential, 'toJSON'>
+
 /**
  * A super class of TypeScript's `PublicKeyCredential` that knows about upcoming WebAuthn features.
  * Includes WebAuthn Level 3 methods for JSON serialization and parsing.
@@ -536,7 +538,7 @@ export type PublicKeyCredentialJSON = RegistrationResponseJSON | AuthenticationR
  */
 export interface PublicKeyCredentialFuture<
   T extends PublicKeyCredentialJSON = PublicKeyCredentialJSON,
-> extends PublicKeyCredential {
+> extends PublicKeyCredentialBase {
   /**
    * The type of the credential (always "public-key").
    * @see {@link https://w3c.github.io/webauthn/#dom-credential-type W3C - type}
