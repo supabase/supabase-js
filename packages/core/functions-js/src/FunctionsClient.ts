@@ -272,10 +272,17 @@ export class FunctionsClient {
         // If user provided their own signal, we need to respect both
         if (signal) {
           effectiveSignal = timeoutController.signal
-          // If the user's signal is aborted, abort our timeout controller too.
-          // Store the listener so we can clean it up in finally.
-          onAbort = () => timeoutController!.abort()
-          signal.addEventListener('abort', onAbort)
+          if (signal.aborted) {
+            // A signal that was already aborted never fires another `abort`
+            // event, so mirror its state onto the timeout controller up front —
+            // otherwise the request would go out despite being cancelled.
+            timeoutController.abort(signal.reason)
+          } else {
+            // If the user's signal is aborted, abort our timeout controller too.
+            // Store the listener so we can clean it up in finally.
+            onAbort = () => timeoutController!.abort(signal.reason)
+            signal.addEventListener('abort', onAbort)
+          }
         } else {
           effectiveSignal = timeoutController.signal
         }
