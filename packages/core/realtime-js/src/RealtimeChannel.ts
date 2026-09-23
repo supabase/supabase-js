@@ -311,6 +311,11 @@ export default class RealtimeChannel {
   presence: RealtimePresence
   /** @internal */
   channelAdapter: ChannelAdapter
+  /** Bumped on every deferred join and on every leave, so a join that was
+   * deferred for an earlier attempt cannot land after the caller moved on.
+   * @internal
+   */
+  private _joinGeneration = 0
 
   get state() {
     return this.channelAdapter.state
@@ -437,7 +442,6 @@ export default class RealtimeChannel {
         (!!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] &&
           this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0) ||
         this.params.config.presence?.enabled === true
-      const accessTokenPayload: { access_token?: string } = {}
       const config = {
         broadcast,
         presence: { ...presence, enabled: presence_enabled },
@@ -446,19 +450,11 @@ export default class RealtimeChannel {
         ...(postgres_changes_options ? { postgres_changes_options } : {}),
       }
 
-      if (this.socket.accessTokenValue) {
-        accessTokenPayload.access_token = this.socket.accessTokenValue
-      }
-
       this._onError((reason: unknown) => {
         callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, normalizeChannelError(reason))
       })
 
       this._onClose(() => callback?.(REALTIME_SUBSCRIBE_STATES.CLOSED))
-
-      this.updateJoinPayload({ ...{ config }, ...accessTokenPayload })
-
-      this._updateFilterMessage()
 
       const joinTimeout =
         postgres_changes_options?.wait && postgres_changes.length > 0
@@ -469,28 +465,64 @@ export default class RealtimeChannel {
             )
           : timeout
 
-      this.channelAdapter
-        .subscribe(joinTimeout)
-        .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
-          // Only refresh auth if using callback-based tokens
-          if (!this.socket._isManualToken()) {
-            this.socket.setAuth()
-          }
-          if (postgres_changes === undefined) {
-            callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
-            return
-          }
+      const sendJoin = () => {
+        const accessTokenPayload: { access_token?: string } = {}
 
-          this._updatePostgresBindings(postgres_changes, callback)
-        })
-        .receive('error', (error: { [key: string]: any }) => {
-          this.state = CHANNEL_STATES.errored
-          const message = Object.values(error).join(', ') || 'error'
-          callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, new Error(message, { cause: error }))
-        })
-        .receive('timeout', () => {
-          callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
-        })
+        if (this.socket.accessTokenValue) {
+          accessTokenPayload.access_token = this.socket.accessTokenValue
+        }
+
+        this.updateJoinPayload({ ...{ config }, ...accessTokenPayload })
+
+        this._updateFilterMessage()
+
+        this.channelAdapter
+          .subscribe(joinTimeout)
+          .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
+            // Only refresh auth if using callback-based tokens
+            if (!this.socket._isManualToken()) {
+              this.socket.setAuth()
+            }
+            if (postgres_changes === undefined) {
+              callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+              return
+            }
+
+            this._updatePostgresBindings(postgres_changes, callback)
+          })
+          .receive('error', (error: { [key: string]: any }) => {
+            this.state = CHANNEL_STATES.errored
+            const message = Object.values(error).join(', ') || 'error'
+            callback?.(
+              REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR,
+              new Error(message, { cause: error })
+            )
+          })
+          .receive('timeout', () => {
+            callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
+          })
+      }
+
+      // Joining while an auth call is still in flight sends the join without an
+      // access token, so the server falls back to the anon apikey and RLS filters
+      // everything out while the channel still reports SUBSCRIBED. Only defer when
+      // there is something to wait for, so the common path stays synchronous.
+      if (this.socket._hasPendingAuth()) {
+        // The caller can leave before the deferred join runs (a logout, a component
+        // unmounting). phoenix's leave() puts a never-joined channel straight back
+        // into `closed`, so the state alone cannot tell the two apart; a generation
+        // token can, and it still lets a later subscribe() join normally.
+        this._joinGeneration++
+        const generation = this._joinGeneration
+        const sendJoinIfCurrent = () => {
+          if (generation === this._joinGeneration) {
+            sendJoin()
+          }
+        }
+        this.socket._waitForAuthIfNeeded().then(sendJoinIfCurrent, sendJoinIfCurrent)
+      } else {
+        sendJoin()
+      }
     }
     return this
   }
@@ -1149,6 +1181,7 @@ export default class RealtimeChannel {
    * @category Realtime
    */
   async unsubscribe(timeout = this.timeout) {
+    this._joinGeneration++
     return new Promise<RealtimeChannelSendResponse>((resolve) => {
       this.channelAdapter
         .unsubscribe(timeout)
@@ -1164,6 +1197,7 @@ export default class RealtimeChannel {
    * @category Realtime
    */
   teardown() {
+    this._joinGeneration++
     this.channelAdapter.teardown()
   }
 
