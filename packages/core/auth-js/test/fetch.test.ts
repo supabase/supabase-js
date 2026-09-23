@@ -392,4 +392,24 @@ describe('_sessionResponse', () => {
     expect(result.data.session).toBeNull()
     expect(result.data.user).toEqual(user)
   })
+
+  test('returns a session when expires_in is 0', () => {
+    // A response carrying a usable token pair is a session even when the
+    // token has no remaining lifetime.
+    const user = { id: 'user-id', email: 'user@example.com' } as any
+    const data = {
+      access_token: 'access-token',
+      refresh_token: 'refresh-token',
+      expires_in: 0,
+      token_type: 'bearer',
+      user,
+    } as any
+
+    const result = _sessionResponse(data)
+
+    expect(result.error).toBeNull()
+    expect(result.data.session).not.toBeNull()
+    expect(result.data.session?.access_token).toEqual('access-token')
+    expect(typeof result.data.session?.expires_at).toEqual('number')
+  })
 })
