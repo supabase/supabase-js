@@ -1,3 +1,7 @@
+## 2.117.1 (2026-09-23)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
 ## 2.117.0 (2026-09-22)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
