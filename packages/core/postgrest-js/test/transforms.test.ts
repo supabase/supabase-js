@@ -172,6 +172,18 @@ test('range', async () => {
   `)
 })
 
+test('limit, range and order agree on an empty referencedTable', () => {
+  const order = postgrest.from('users').select().order('username', { referencedTable: '' })
+  expect((order as any).url.searchParams.get('order')).toBe('username.asc')
+
+  const limit = postgrest.from('users').select().limit(1, { referencedTable: '' })
+  expect((limit as any).url.searchParams.get('limit')).toBe('1')
+
+  const range = postgrest.from('users').select().range(0, 1, { referencedTable: '' })
+  expect((range as any).url.searchParams.get('offset')).toBe('0')
+  expect((range as any).url.searchParams.get('limit')).toBe('2')
+})
+
 test('single', async () => {
   const res = await postgrest.from('users').select().limit(1).single()
   expect(res).toMatchInlineSnapshot(`
