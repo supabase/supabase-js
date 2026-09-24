@@ -26,6 +26,8 @@ import { checkApiKeyFormat, fetchWithAuth } from './lib/fetch'
 import {
   applySettingDefaults,
   checkTopLevelSchemaOption,
+  getDefaultStorageKey,
+  getLegacyDefaultStorageKey,
   validateSupabaseUrl,
   type ResolvedSupabaseClientOptions,
 } from './lib/helpers'
@@ -329,8 +331,8 @@ export default class SupabaseClient<
     this.storageUrl = new URL('storage/v1', baseUrl)
     this.functionsUrl = new URL('functions/v1', baseUrl)
 
-    // default storage key uses the supabase project ref as a namespace
-    const defaultStorageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token`
+    // default storage key is namespaced by a short hash of the project origin
+    const defaultStorageKey = getDefaultStorageKey(baseUrl)
     const DEFAULTS = {
       db: DEFAULT_DB_OPTIONS,
       realtime: DEFAULT_REALTIME_OPTIONS,
@@ -346,10 +348,15 @@ export default class SupabaseClient<
     this.headers = settings.global.headers ?? {}
 
     if (!settings.accessToken) {
+      // Only migrate sessions persisted under the pre-hash default key when the
+      // caller did not choose their own storage key.
+      const legacyStorageKeys =
+        this.storageKey === defaultStorageKey ? [getLegacyDefaultStorageKey(baseUrl)] : []
       this.auth = this._initSupabaseAuthClient(
         settings.auth ?? {},
         this.headers,
-        settings.global.fetch
+        settings.global.fetch,
+        legacyStorageKeys
       )
     } else {
       this.accessToken = settings.accessToken
@@ -644,7 +651,8 @@ export default class SupabaseClient<
       skipAutoInitialize,
     }: SupabaseAuthClientOptions,
     headers?: Record<string, string>,
-    fetch?: Fetch
+    fetch?: Fetch,
+    legacyStorageKeys: string[] = []
   ) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
@@ -654,6 +662,7 @@ export default class SupabaseClient<
       url: this.authUrl.href,
       headers: { ...authHeaders, ...headers },
       storageKey: storageKey,
+      legacyStorageKeys,
       autoRefreshToken,
       persistSession,
       detectSessionInUrl,
