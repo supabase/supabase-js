@@ -1,4 +1,5 @@
 import assert from 'assert'
+import { setImmediate } from 'node:timers'
 import { describe, test, beforeEach, afterEach, vi, expect } from 'vitest'
 import type RealtimeChannel from '../src/RealtimeChannel'
 import {
@@ -544,6 +545,41 @@ describe('send', () => {
 })
 
 describe('httpSend', () => {
+  test.each([202, 404])(
+    'does not wait for another response branch at status %i',
+    async (status) => {
+      const response = new Response(new ReadableStream(), { status })
+      const retained = response.clone()
+      const setup = setupRealtimeTest({ fetch: vi.fn().mockResolvedValue(response) })
+      const result = setup.client
+        .channel('topic')
+        .httpSend('test', { data: 'test' })
+        .then(
+          (value) => ({ value }),
+          (error: Error) => ({ error: error.message })
+        )
+
+      try {
+        // A pending cancellation must not delay handling the already-known status.
+        const outcome = await Promise.race([
+          result,
+          new Promise((resolve) => setImmediate(() => resolve('pending'))),
+        ])
+        if (status === 202) {
+          expect(outcome).toEqual({ value: { success: true } })
+        } else {
+          expect(outcome).toEqual({
+            error: expect.stringContaining('requires Realtime server v2.97.0 or newer'),
+          })
+        }
+      } finally {
+        await Promise.all([response.body?.cancel(), retained.body?.cancel()])
+        await result
+        setup.cleanup()
+      }
+    }
+  )
+
   test.each([202, 404])('releases the unused response body for status %i', async (status) => {
     const cancel = vi.fn()
     const body = new ReadableStream({

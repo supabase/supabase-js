@@ -981,8 +981,9 @@ export default class RealtimeChannel {
 
     if (response.status === 202 || response.status === 404) {
       // These paths do not read the body. Release it without replacing the
-      // response status with a cleanup error if the stream has already failed.
-      await response.body?.cancel().catch(() => {})
+      // response status with a cleanup error. Do not wait for another branch
+      // of a cloned response to close before returning the status.
+      void response.body?.cancel().catch(() => {})
     }
 
     if (response.status === 202) {
