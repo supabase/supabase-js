@@ -10,6 +10,15 @@ import PostgrestError from './PostgrestError'
 import { fetchWithRetry } from './fetchWithRetry'
 import { ContainsNull } from './select-query-parser/types'
 
+/**
+ * Matches the error code in a PostgREST `Proxy-Status` header, e.g.
+ * `PostgREST; error=PGRST100`. Entries from other proxies are skipped, since
+ * `code` holds PostgREST and PostgreSQL codes.
+ *
+ * {@link https://docs.postgrest.org/en/v14/references/errors.html#proxy-status-header}
+ */
+const POSTGREST_PROXY_STATUS_ERROR = /(?:^|,)\s*PostgREST\s*;[^,]*\berror="?([^";,\s]+)"?/
+
 export default abstract class PostgrestBuilder<
   ClientOptions extends ClientServerOptions,
   Result,
@@ -457,14 +466,18 @@ export default abstract class PostgrestBuilder<
           statusText = 'OK'
         }
       } catch {
-        // Workaround for https://github.com/supabase/postgrest-js/issues/295
-        if (res.status === 404 && body === '') {
+        // Workaround for https://github.com/supabase/postgrest-js/issues/295.
+        // A HEAD response never carries a body, so an empty one is not the
+        // no-match update this branch looks for.
+        if (this.method !== 'HEAD' && res.status === 404 && body === '') {
           status = 204
           statusText = 'No Content'
         } else {
-          error = {
-            message: body,
-          }
+          // An empty body carries no description of the failure, so fall back
+          // to the status. HEAD responses are always in that position.
+          const message = body === '' ? `HTTP ${res.status}` : body
+          const code = res.headers?.get('Proxy-Status')?.match(POSTGREST_PROXY_STATUS_ERROR)?.[1]
+          error = code ? { message, code } : { message }
         }
       }
 
