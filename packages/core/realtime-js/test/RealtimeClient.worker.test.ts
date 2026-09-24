@@ -2,6 +2,7 @@ import { beforeAll, afterAll, beforeEach, afterEach, test, expect, vi, describe 
 import { type TestSetup, setupRealtimeTest } from './helpers/setup'
 import Worker from 'web-worker'
 import path from 'path'
+import { pathToFileURL } from 'url'
 import RealtimeClient from '../src/RealtimeClient'
 
 let testSetup: TestSetup
@@ -10,7 +11,7 @@ beforeAll(() => {
   window.Worker = Worker
 })
 
-const workerUrl = path.join(__dirname, '/helpers/test_worker.js')
+const workerUrl = pathToFileURL(path.join(__dirname, 'helpers/test_worker.js')).href
 
 beforeEach(() => {
   testSetup = setupRealtimeTest({
@@ -36,7 +37,7 @@ test('sets worker URL', () => {
 })
 
 describe('when no workerUrl provided', () => {
-  const mockObjectURL = `file://${workerUrl}`
+  const mockObjectURL = workerUrl
   let originalCreateObjectURL: any
 
   beforeAll(() => {
@@ -68,11 +69,18 @@ describe('when no workerUrl provided', () => {
   })
 })
 
-test('starts worker on conenction open', async () => {
+test('starts worker and receives heartbeat messages on connection open', async () => {
   expect(testSetup.client.workerRef).toBeFalsy()
   testSetup.connect()
   await testSetup.socketConnected()
   expect(testSetup.client.workerRef).toBeTruthy()
+  const onMessage = vi.fn()
+  testSetup.client.workerRef!.addEventListener('message', onMessage)
+  testSetup.client.workerRef!.postMessage({ event: 'start', interval: 10 })
+  const heartbeatMessage = expect.objectContaining({ data: { event: 'keepAlive' } })
+  await vi.waitFor(() => {
+    expect(onMessage).toHaveBeenCalledWith(heartbeatMessage)
+  })
 })
 
 test('ensures single worker ref is started even with multiple connect calls', async () => {
