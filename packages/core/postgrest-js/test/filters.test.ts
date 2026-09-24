@@ -460,6 +460,30 @@ test('contains with array', async () => {
   `)
 })
 
+test('contains with an array element containing a comma', async () => {
+  const res = await postgrest
+    .from('cornercase')
+    .select('array_column')
+    .contains('array_column', ['Doe, John'])
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": [
+        {
+          "array_column": [
+            "Doe, John",
+            "admin",
+          ],
+        },
+      ],
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+      "success": true,
+    }
+  `)
+})
+
 test('containedBy', async () => {
   const res = await postgrest.from('users').select('age_range').containedBy('age_range', '[1,2)')
   expect(res).toMatchInlineSnapshot(`
