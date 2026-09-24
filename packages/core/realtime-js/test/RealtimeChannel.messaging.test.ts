@@ -544,6 +544,53 @@ describe('send', () => {
 })
 
 describe('httpSend', () => {
+  test.each([202, 404])('releases the unused response body for status %i', async (status) => {
+    const cancel = vi.fn()
+    const body = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('response body'))
+      },
+      cancel,
+    })
+    const response = new Response(body, { status })
+    const setup = setupRealtimeTest({ fetch: vi.fn().mockResolvedValue(response) })
+
+    try {
+      const result = setup.client.channel('topic').httpSend('test', { data: 'test' })
+      if (status === 202) {
+        await expect(result).resolves.toEqual({ success: true })
+      } else {
+        await expect(result).rejects.toThrow('requires Realtime server v2.97.0 or newer')
+      }
+      expect(cancel).toHaveBeenCalledTimes(1)
+    } finally {
+      await response.body?.cancel()
+      setup.cleanup()
+    }
+  })
+
+  test.each([202, 404])('preserves status %i when the body has already errored', async (status) => {
+    const body = new ReadableStream({
+      start(controller) {
+        controller.error(new Error('connection closed'))
+      },
+    })
+    const setup = setupRealtimeTest({
+      fetch: vi.fn().mockResolvedValue(new Response(body, { status })),
+    })
+
+    try {
+      const result = setup.client.channel('topic').httpSend('test', { data: 'test' })
+      if (status === 202) {
+        await expect(result).resolves.toEqual({ success: true })
+      } else {
+        await expect(result).rejects.toThrow('requires Realtime server v2.97.0 or newer')
+      }
+    } finally {
+      setup.cleanup()
+    }
+  })
+
   const createMockResponse = (status: number, statusText?: string, body?: any) => ({
     status,
     statusText: statusText || 'OK',
