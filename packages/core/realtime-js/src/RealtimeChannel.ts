@@ -944,7 +944,7 @@ export default class RealtimeChannel {
   async httpSend(
     event: string,
     payload: any,
-    opts: { timeout?: number } = {}
+    opts: { timeout?: number; persist?: boolean } = {}
   ): Promise<{ success: true } | { success: false; status: number; error: string }> {
     if (payload === undefined || payload === null) {
       return Promise.reject(new Error('Payload is required for httpSend()'))
@@ -965,6 +965,9 @@ export default class RealtimeChannel {
     url.pathname += `/${encodeURIComponent(this.subTopic)}/events/${encodeURIComponent(event)}`
     if (this.private) {
       url.searchParams.set('private', 'true')
+    }
+    if (opts.persist) {
+      url.searchParams.set('persist', 'true')
     }
 
     const options = {
@@ -1055,6 +1058,13 @@ export default class RealtimeChannel {
       type: 'broadcast' | 'presence' | 'postgres_changes'
       event: string
       payload?: any
+      /**
+       * Ask the server to persist this message to `realtime.messages`.
+       *
+       * Requires a private channel and an RLS policy on the `persistence` extension. Travels as
+       * frame metadata, not as part of your payload, so subscribers never see it.
+       */
+      persist?: boolean
       [key: string]: any
     },
     opts: { [key: string]: any } = {}
