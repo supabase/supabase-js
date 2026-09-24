@@ -28,6 +28,7 @@ export type {
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
   PostgrestOpenApiSpec,
+  PostgrestQueryBuilderOptions,
 } from './types/types'
 export type { ClientServerOptions as PostgrestClientOptions } from './types/common/common'
 // https://github.com/supabase/postgrest-js/issues/551
