@@ -55,6 +55,10 @@ export default class SocketAdapter {
     return this.socket.pendingHeartbeatRef
   }
 
+  set pendingHeartbeatRef(ref: string | null) {
+    this.socket.pendingHeartbeatRef = ref
+  }
+
   get reconnectTimer(): Timer {
     return this.socket.reconnectTimer
   }
