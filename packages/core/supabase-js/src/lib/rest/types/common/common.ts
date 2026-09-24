@@ -29,10 +29,11 @@ export const getRetryDelay = (attemptIndex: number): number =>
 
 /**
  * Status codes that are safe to retry.
- * 520 = Cloudflare timeout/connection errors (transient)
+ * 520-524 = Cloudflare origin errors (transient): the edge never received a
+ * usable response from the origin, so the request almost certainly did not run
  * 503 = PostgREST schema cache not yet loaded (transient, signals retry via Retry-After header)
  */
-export const RETRYABLE_STATUS_CODES = [520, 503] as const
+export const RETRYABLE_STATUS_CODES = [520, 521, 522, 523, 524, 503] as const
 
 /**
  * HTTP methods that are safe to retry (idempotent operations).

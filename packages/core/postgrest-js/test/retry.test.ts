@@ -413,6 +413,85 @@ describe('Automatic Retries', () => {
     })
   })
 
+  describe('Cloudflare 52x origin errors', () => {
+    // 521 (origin down), 522 (connection timed out), 523 (origin unreachable)
+    // and 524 (origin timeout) all mean the edge never received a usable
+    // response from the origin, so an idempotent request is safe to replay.
+    it.each([521, 522, 523, 524])(
+      'should retry GET requests on %i errors by default',
+      async (status) => {
+        fetchMock
+          .mockResolvedValueOnce({
+            ok: false,
+            status,
+            statusText: 'Origin Error',
+            text: () => Promise.resolve('Cloudflare origin error'),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers(),
+            text: () => Promise.resolve(JSON.stringify([{ id: 1 }])),
+          })
+
+        const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+        const result = await runWithTimers(client.from('users').select())
+
+        expect(result.error).toBeNull()
+        expect(result.data).toEqual([{ id: 1 }])
+        expect(fetchMock).toHaveBeenCalledTimes(2)
+      }
+    )
+
+    it.each([521, 522, 523, 524])('should NOT retry POST requests on %i errors', async (status) => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status,
+        statusText: 'Origin Error',
+        text: () => Promise.resolve('Cloudflare origin error'),
+      })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').insert({ name: 'test' }))
+
+      expect(result.error).not.toBeNull()
+      expect(fetchMock).toHaveBeenCalledTimes(1) // No retries: writes are never replayed
+    })
+
+    it('should stop retrying a persistent 522 after max retries', async () => {
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 522,
+        statusText: 'Connection Timed Out',
+        headers: new Headers(),
+        text: () => Promise.resolve('Cloudflare connection timed out'),
+      })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).not.toBeNull()
+      expect(result.status).toBe(522)
+      expect(fetchMock).toHaveBeenCalledTimes(4) // 1 original + 3 retries
+    })
+
+    it('should NOT retry on 525, which is not an origin-reachability error', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 525,
+        statusText: 'SSL Handshake Failed',
+        text: () => Promise.resolve('SSL handshake failed'),
+      })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).not.toBeNull()
+      expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
+    })
+  })
+
   describe('AbortError handling', () => {
     it('should rethrow AbortError immediately without retrying', async () => {
       const abortError = new Error('The operation was aborted')
