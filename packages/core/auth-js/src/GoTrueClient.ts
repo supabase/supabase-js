@@ -4359,8 +4359,11 @@ export default class GoTrueClient {
   }
 
   private async _emitInitialSession(id: string | symbol): Promise<void> {
-    return await this._useSession(async (result) => {
-      try {
+    try {
+      // `_useSession` can throw before `fn` runs (e.g. an expired stored
+      // session with no refresh token, or a malformed stored user), so the
+      // catch has to wrap it rather than live inside the callback.
+      await this._useSession(async (result) => {
         const {
           data: { session },
           error,
@@ -4369,33 +4372,33 @@ export default class GoTrueClient {
 
         await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', session)
         this._debug('INITIAL_SESSION', 'callback id', id, 'session', session)
-      } catch (err) {
-        await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
-        this._debug('INITIAL_SESSION', 'callback id', id, 'error', err)
-        if (isAuthRefreshDiscardedError(err)) {
-          // Same successful no-op _recoverAndRefresh treats as debug-only: the
-          // commit guard discarded a refresh because a concurrent signOut
-          // changed session state mid-flight.
-          return
-        }
-        if (
-          isAuthSessionMissingError(err) ||
-          isAuthRetryableFetchError(err) ||
-          (isAuthApiError(err) &&
-            (err.code === 'refresh_token_not_found' ||
-              err.code === 'refresh_token_already_used' ||
-              err.code === 'session_expired'))
-        ) {
-          // A missing session, a transient/aborted network failure (e.g. a
-          // superseded page navigation cancelling the in-flight request), or
-          // a dead refresh token (e.g. stale SSR cookies) is not an
-          // application error — warn rather than surface it raw.
-          console.warn(err)
-        } else {
-          console.error(err)
-        }
+      })
+    } catch (err) {
+      await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
+      this._debug('INITIAL_SESSION', 'callback id', id, 'error', err)
+      if (isAuthRefreshDiscardedError(err)) {
+        // Same successful no-op _recoverAndRefresh treats as debug-only: the
+        // commit guard discarded a refresh because a concurrent signOut
+        // changed session state mid-flight.
+        return
       }
-    })
+      if (
+        isAuthSessionMissingError(err) ||
+        isAuthRetryableFetchError(err) ||
+        (isAuthApiError(err) &&
+          (err.code === 'refresh_token_not_found' ||
+            err.code === 'refresh_token_already_used' ||
+            err.code === 'session_expired'))
+      ) {
+        // A missing session, a transient/aborted network failure (e.g. a
+        // superseded page navigation cancelling the in-flight request), or
+        // a dead refresh token (e.g. stale SSR cookies) is not an
+        // application error — warn rather than surface it raw.
+        console.warn(err)
+      } else {
+        console.error(err)
+      }
+    }
   }
 
   /**
