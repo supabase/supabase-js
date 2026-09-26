@@ -77,5 +77,48 @@ describe('FunctionsClient', () => {
 
       expect(fetchSignal?.aborted).toBe(true)
     })
+
+    const sseClient = (chunks: string[]) => {
+      const mockFetch = jest.fn().mockImplementation(() => {
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            for (const chunk of chunks) controller.enqueue(new TextEncoder().encode(chunk))
+            controller.close()
+          },
+        })
+        return Promise.resolve(
+          new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })
+        )
+      })
+      return new FunctionsClient('http://localhost', { customFetch: mockFetch })
+    }
+
+    it('removes the listener from the caller signal once the stream is fully read', async () => {
+      const controller = new AbortController()
+      const removeSpy = jest.spyOn(controller.signal, 'removeEventListener')
+
+      const { data, response } = await sseClient(['data: a\n\n', 'data: b\n\n']).invoke(
+        'stream-fn',
+        { timeout: 5000, signal: controller.signal }
+      )
+      expect(response).toBe(data)
+      expect(removeSpy.mock.calls.filter(([event]) => event === 'abort')).toHaveLength(0)
+
+      await expect((data as Response).text()).resolves.toBe('data: a\n\ndata: b\n\n')
+      expect(removeSpy.mock.calls.filter(([event]) => event === 'abort')).toHaveLength(1)
+    })
+
+    it('removes the listener from the caller signal when the stream is cancelled', async () => {
+      const controller = new AbortController()
+      const removeSpy = jest.spyOn(controller.signal, 'removeEventListener')
+
+      const { data } = await sseClient(['data: a\n\n']).invoke('stream-fn', {
+        timeout: 5000,
+        signal: controller.signal,
+      })
+      await (data as Response).body!.cancel()
+
+      expect(removeSpy.mock.calls.filter(([event]) => event === 'abort')).toHaveLength(1)
+    })
   })
 })
