@@ -540,6 +540,26 @@ describe('Bucket API Error Handling', () => {
     })
   })
 
+  describe('bucket id encoding', () => {
+    it('percent-encodes URL delimiters in the bucket id', async () => {
+      const fetchMock = jest.fn().mockImplementation(async () => new Response('{}'))
+      global.fetch = fetchMock
+
+      const storage = new StorageClient(URL, { apikey: KEY })
+      await storage.getBucket('my?bucket')
+      await storage.updateBucket('my?bucket', { public: true })
+      await storage.emptyBucket('my?bucket')
+      await storage.deleteBucket('my?bucket')
+
+      expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+        `${URL}/bucket/my%3Fbucket`,
+        `${URL}/bucket/my%3Fbucket`,
+        `${URL}/bucket/my%3Fbucket/empty`,
+        `${URL}/bucket/my%3Fbucket`,
+      ])
+    })
+  })
+
   describe('purgeBucketCache', () => {
     const PURGE_URL = 'http://localhost:8000/storage/v1'
     const BUCKET = 'avatars'
