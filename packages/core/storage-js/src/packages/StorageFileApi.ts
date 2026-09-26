@@ -985,7 +985,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         }
       )
 
-      return recursiveToCamel(data) as Camelize<FileObjectV2>
+      // `metadata` is the user metadata passed to upload(), so its keys are returned as-is.
+      const { metadata, ...fileInfo } = data
+      return { ...(recursiveToCamel(fileInfo) as object), metadata } as Camelize<FileObjectV2>
     })
   }
 
