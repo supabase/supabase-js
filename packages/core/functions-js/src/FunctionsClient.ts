@@ -208,6 +208,8 @@ export class FunctionsClient {
     let timeoutId: ReturnType<typeof setTimeout> | undefined
     let timeoutController: AbortController | undefined
     let onAbort: (() => void) | undefined
+    // Set when the response body is handed to the caller unread (event streams).
+    let bodyStillStreaming = false
 
     try {
       const { headers, method, body: functionArgs, signal, timeout } = options
@@ -319,6 +321,7 @@ export class FunctionsClient {
         data = await response.blob()
       } else if (responseType === 'text/event-stream') {
         data = response
+        bodyStillStreaming = true
       } else if (responseType === 'multipart/form-data') {
         data = await response.formData()
       } else {
@@ -343,7 +346,9 @@ export class FunctionsClient {
       }
       // Remove the cross-signal listener to prevent memory leaks when the caller
       // reuses the same AbortSignal across multiple invocations.
-      if (onAbort) {
+      // An event stream is still being read after we return, so the caller's
+      // signal has to keep reaching the request or it can no longer cancel it.
+      if (onAbort && !bodyStillStreaming) {
         options.signal?.removeEventListener('abort', onAbort)
       }
     }
