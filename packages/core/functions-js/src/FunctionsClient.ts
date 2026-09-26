@@ -402,9 +402,16 @@ function unlinkWhenBodyDone(
       return reader.cancel(reason)
     },
   })
-  return new Response(body, {
+  const wrapped = new Response(body, {
     status: response.status,
     statusText: response.statusText,
     headers: response.headers,
   })
+  // ResponseInit cannot carry fetch metadata such as the final URL or redirect history.
+  Object.defineProperties(wrapped, {
+    url: { get: () => response.url },
+    redirected: { get: () => response.redirected },
+    type: { get: () => response.type },
+  })
+  return wrapped
 }

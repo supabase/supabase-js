@@ -97,6 +97,38 @@ describe('FunctionsClient', () => {
       return new FunctionsClient('http://localhost', { customFetch: mockFetch })
     }
 
+    it('keeps the fetched response metadata on the streamed result', async () => {
+      const fetched = new Response('data: a\n\n', {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      })
+      // A redirected/cross-origin fetch response has metadata that ResponseInit cannot copy.
+      Object.defineProperties(fetched, {
+        url: { value: 'https://example.com/final' },
+        redirected: { value: true },
+        type: { value: 'cors' },
+      })
+      const client = new FunctionsClient('http://localhost', {
+        customFetch: jest.fn().mockResolvedValue(fetched),
+      })
+      const controller = new AbortController()
+      const removeSpy = jest.spyOn(controller.signal, 'removeEventListener')
+
+      const { data, response } = await client.invoke('stream-fn', {
+        timeout: 5000,
+        signal: controller.signal,
+      })
+      expect(response).toBe(data)
+      expect(data).not.toBe(fetched)
+      for (const result of [data as Response, response!]) {
+        expect(result.url).toBe(fetched.url)
+        expect(result.redirected).toBe(fetched.redirected)
+        expect(result.type).toBe(fetched.type)
+      }
+      expect(await (data as Response).text()).toBe('data: a\n\n')
+      expect(removeSpy.mock.calls.filter(([event]) => event === 'abort')).toHaveLength(1)
+    })
+
     it('removes the listener from the caller signal once the stream is fully read', async () => {
       const controller = new AbortController()
       const removeSpy = jest.spyOn(controller.signal, 'removeEventListener')
