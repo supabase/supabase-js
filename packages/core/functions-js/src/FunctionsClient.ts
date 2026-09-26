@@ -208,6 +208,8 @@ export class FunctionsClient {
     let timeoutId: ReturnType<typeof setTimeout> | undefined
     let timeoutController: AbortController | undefined
     let onAbort: (() => void) | undefined
+    // Set when the response body is handed to the caller unread (event streams).
+    let bodyStillStreaming = false
 
     try {
       const { headers, method, body: functionArgs, signal, timeout } = options
@@ -319,6 +321,18 @@ export class FunctionsClient {
         data = await response.blob()
       } else if (responseType === 'text/event-stream') {
         data = response
+        const callerSignal = options.signal
+        const listener = onAbort
+        if (callerSignal && listener && response.body) {
+          // The caller reads this body after we return, so the caller's signal has
+          // to keep reaching the request until the stream is done.
+          bodyStillStreaming = true
+          if (typeof ReadableStream !== 'undefined' && typeof Response !== 'undefined') {
+            data = unlinkWhenBodyDone(response, response.body, () =>
+              callerSignal.removeEventListener('abort', listener)
+            )
+          }
+        }
       } else if (responseType === 'multipart/form-data') {
         data = await response.formData()
       } else {
@@ -326,7 +340,7 @@ export class FunctionsClient {
         data = await response.text()
       }
 
-      return { data, error: null, response }
+      return { data, error: null, response: bodyStillStreaming ? data : response }
     } catch (error) {
       return {
         data: null,
@@ -342,10 +356,55 @@ export class FunctionsClient {
         clearTimeout(timeoutId)
       }
       // Remove the cross-signal listener to prevent memory leaks when the caller
-      // reuses the same AbortSignal across multiple invocations.
-      if (onAbort) {
+      // reuses the same AbortSignal across multiple invocations. For an event
+      // stream it is removed once the body is done (see unlinkWhenBodyDone).
+      if (onAbort && !bodyStillStreaming) {
         options.signal?.removeEventListener('abort', onAbort)
       }
     }
   }
+}
+
+/**
+ * Returns a Response that streams the same body and calls `unlink` once that body
+ * has finished, errored or been cancelled.
+ */
+function unlinkWhenBodyDone(
+  response: Response,
+  source: ReadableStream<Uint8Array>,
+  unlink: () => void
+): Response {
+  const reader = source.getReader()
+  let unlinked = false
+  const done = () => {
+    if (!unlinked) {
+      unlinked = true
+      unlink()
+    }
+  }
+  const body = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const { done: finished, value } = await reader.read()
+        if (finished) {
+          done()
+          controller.close()
+        } else {
+          controller.enqueue(value)
+        }
+      } catch (error) {
+        done()
+        controller.error(error)
+      }
+    },
+    cancel(reason) {
+      done()
+      return reader.cancel(reason)
+    },
+  })
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  })
 }
