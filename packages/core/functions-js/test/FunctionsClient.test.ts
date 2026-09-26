@@ -51,13 +51,17 @@ describe('FunctionsClient', () => {
   describe('invoke – text/event-stream response with timeout + signal', () => {
     it('forwards a caller abort that happens after invoke returns the stream', async () => {
       let fetchSignal: AbortSignal | undefined
-      const streamResponse = {
-        ok: true,
-        headers: { get: (name: string) => (name === 'Content-Type' ? 'text/event-stream' : null) },
-      }
       const mockFetch = jest.fn().mockImplementation((_url: string, init: RequestInit) => {
         fetchSignal = init.signal ?? undefined
-        return Promise.resolve(streamResponse)
+        // A body that stays open, like a live SSE stream.
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('data: first\n\n'))
+          },
+        })
+        return Promise.resolve(
+          new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })
+        )
       })
 
       const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
@@ -69,7 +73,7 @@ describe('FunctionsClient', () => {
       })
       expect(error).toBeNull()
       // The body is returned unread, so the request is still in flight.
-      expect(data).toBe(streamResponse)
+      expect(data).toBeInstanceOf(Response)
       expect(fetchSignal?.aborted).toBe(false)
 
       // e.g. a "stop generating" button cancelling an AI response stream
@@ -117,6 +121,21 @@ describe('FunctionsClient', () => {
         signal: controller.signal,
       })
       await (data as Response).body!.cancel()
+
+      expect(removeSpy.mock.calls.filter(([event]) => event === 'abort')).toHaveLength(1)
+    })
+
+    it('removes the listener from the caller signal when the stream has no body', async () => {
+      const mockFetch = jest
+        .fn()
+        .mockResolvedValue(
+          new Response(null, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })
+        )
+      const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+      const controller = new AbortController()
+      const removeSpy = jest.spyOn(controller.signal, 'removeEventListener')
+
+      await client.invoke('stream-fn', { timeout: 5000, signal: controller.signal })
 
       expect(removeSpy.mock.calls.filter(([event]) => event === 'abort')).toHaveLength(1)
     })

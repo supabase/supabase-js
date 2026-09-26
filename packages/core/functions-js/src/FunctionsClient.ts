@@ -321,21 +321,17 @@ export class FunctionsClient {
         data = await response.blob()
       } else if (responseType === 'text/event-stream') {
         data = response
-        // The caller reads this body after we return, so the caller's signal has
-        // to keep reaching the request until the stream is done.
-        bodyStillStreaming = true
         const callerSignal = options.signal
         const listener = onAbort
-        if (
-          callerSignal &&
-          listener &&
-          response.body &&
-          typeof ReadableStream !== 'undefined' &&
-          typeof Response !== 'undefined'
-        ) {
-          data = unlinkWhenBodyDone(response, response.body, () =>
-            callerSignal.removeEventListener('abort', listener)
-          )
+        if (callerSignal && listener && response.body) {
+          // The caller reads this body after we return, so the caller's signal has
+          // to keep reaching the request until the stream is done.
+          bodyStillStreaming = true
+          if (typeof ReadableStream !== 'undefined' && typeof Response !== 'undefined') {
+            data = unlinkWhenBodyDone(response, response.body, () =>
+              callerSignal.removeEventListener('abort', listener)
+            )
+          }
         }
       } else if (responseType === 'multipart/form-data') {
         data = await response.formData()
