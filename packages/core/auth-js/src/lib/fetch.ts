@@ -72,8 +72,8 @@ const _getErrorMessage = (err: unknown): string => {
 // 500, 501, 502, 503, 504: Standard server/gateway errors
 // 520-529, 530: Cloudflare-specific error codes (web server down, connection timed out, etc.)
 // These are infrastructure errors and should not cause session invalidation.
-const NETWORK_ERROR_CODES = [
-  500, 501, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530,
+const RETRYABLE_ERROR_CODES = [
+  408, 429, 500, 501, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530,
 ]
 
 export async function handleError(error: unknown) {
@@ -85,16 +85,11 @@ export async function handleError(error: unknown) {
   try {
     data = await error.json()
   } catch (e) {
-    if (NETWORK_ERROR_CODES.includes(error.status)) {
+    if (RETRYABLE_ERROR_CODES.includes(error.status)) {
       // statusText can be empty — HTTP/2 has no reason phrase
       throw new AuthRetryableFetchError(error.statusText || `HTTP ${error.status}`, error.status)
     }
     throw new AuthUnknownError(_getErrorMessage(e), e)
-  }
-
-  if (NETWORK_ERROR_CODES.includes(error.status)) {
-    // status in 500...599 range - server had an error, request might be retryed.
-    throw new AuthRetryableFetchError(_getErrorMessage(data), error.status)
   }
 
   let errorCode: string | undefined = undefined
@@ -110,6 +105,15 @@ export async function handleError(error: unknown) {
     errorCode = data.code
   } else if (typeof data === 'object' && data && typeof data.error_code === 'string') {
     errorCode = data.error_code
+  }
+
+  // Handle retryable status codes (5xx, 408, and generic 429 without business logic error code)
+  if (RETRYABLE_ERROR_CODES.includes(error.status)) {
+    // If it's a 429 with a specific GoTrue API business error code (e.g. mfa_recovery_codes_locked, over_request_rate_limit),
+    // let it fall through to AuthApiError so callers can handle the business logic error.
+    if (error.status !== 429 || !errorCode) {
+      throw new AuthRetryableFetchError(_getErrorMessage(data), error.status)
+    }
   }
 
   if (!errorCode) {
@@ -136,9 +140,6 @@ export async function handleError(error: unknown) {
       data.weak_password?.reasons || []
     )
   } else if (errorCode === 'session_not_found') {
-    // The `session_id` inside the JWT does not correspond to a row in the
-    // `sessions` table. This usually means the user has signed out, has been
-    // deleted, or their session has somehow been terminated.
     throw new AuthSessionMissingError()
   }
 
