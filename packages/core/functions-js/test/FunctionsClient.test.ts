@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { FunctionsClient } from '../src/index'
 
 describe('FunctionsClient', () => {
@@ -45,6 +46,40 @@ describe('FunctionsClient', () => {
 
       expect(addedFn).toBeDefined()
       expect(addedFn).toBe(removedFn)
+    })
+  })
+
+  describe('invoke – Blob and File content type handling', () => {
+    it('sends a File with its own content type', async () => {
+      let capturedContentType: string | null = null
+
+      const customFetch: typeof fetch = async (_input, init) => {
+        capturedContentType = new Headers(init?.headers).get('content-type')
+        return new Response('{}', { headers: { 'Content-Type': 'application/json' } })
+      }
+
+      const client = new FunctionsClient('http://localhost/functions/v1', { customFetch })
+      await client.invoke('upload', {
+        body: new File(['x'], 'a.png', { type: 'image/png' }),
+      })
+
+      expect(capturedContentType).toEqual('image/png')
+    })
+
+    it('falls back to application/octet-stream for a Blob with no type', async () => {
+      let capturedContentType: string | null = null
+
+      const customFetch: typeof fetch = async (_input, init) => {
+        capturedContentType = new Headers(init?.headers).get('content-type')
+        return new Response('{}', { headers: { 'Content-Type': 'application/json' } })
+      }
+
+      const client = new FunctionsClient('http://localhost/functions/v1', { customFetch })
+      await client.invoke('upload', {
+        body: new Blob(['x']),
+      })
+
+      expect(capturedContentType).toEqual('application/octet-stream')
     })
   })
 })

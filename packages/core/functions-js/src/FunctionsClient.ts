@@ -211,7 +211,7 @@ export class FunctionsClient {
 
     try {
       const { headers, method, body: functionArgs, signal, timeout } = options
-      let _headers: Record<string, string> = {}
+      const _headers: Record<string, string> = {}
       let { region } = options
       if (!region) {
         region = this.region
@@ -228,12 +228,14 @@ export class FunctionsClient {
       const hasContentTypeHeader =
         !!headers && Object.keys(headers).some((key) => key.toLowerCase() === 'content-type')
       if (functionArgs && !hasContentTypeHeader) {
-        if (
-          (typeof Blob !== 'undefined' && functionArgs instanceof Blob) ||
-          functionArgs instanceof ArrayBuffer
-        ) {
+        if (typeof Blob !== 'undefined' && functionArgs instanceof Blob) {
           // will work for File as File inherits Blob
-          // also works for ArrayBuffer as it is the same underlying structure as a Blob
+          // Use the blob's own MIME type if it has one (e.g. File with type 'image/png'),
+          // otherwise fall back to application/octet-stream (matching fetch behavior).
+          _headers['Content-Type'] = functionArgs.type || 'application/octet-stream'
+          body = functionArgs
+        } else if (functionArgs instanceof ArrayBuffer) {
+          // ArrayBuffer has no inherent MIME type, so default to octet-stream.
           _headers['Content-Type'] = 'application/octet-stream'
           body = functionArgs
         } else if (typeof functionArgs === 'string') {
@@ -305,7 +307,7 @@ export class FunctionsClient {
 
       // HTTP media types are case-insensitive (RFC 9110), so normalize before
       // matching — otherwise an "Application/JSON" response falls through to text.
-      let responseType = (response.headers.get('Content-Type') ?? 'text/plain')
+      const responseType = (response.headers.get('Content-Type') ?? 'text/plain')
         .split(';')[0]
         .trim()
         .toLowerCase()
