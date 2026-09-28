@@ -182,6 +182,10 @@ export class Deferred<T = any> {
   }
 }
 
+function isJSONObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 export function decodeJWT(token: string): {
   header: JwtHeader
   payload: JwtPayload
@@ -203,10 +207,23 @@ export function decodeJWT(token: string): {
       throw new AuthInvalidJwtError('JWT not in base64url format')
     }
   }
-  const data = {
+  let header: unknown
+  let payload: unknown
+  try {
     // using base64url lib
-    header: JSON.parse(stringFromBase64URL(parts[0])),
-    payload: JSON.parse(stringFromBase64URL(parts[1])),
+    header = JSON.parse(stringFromBase64URL(parts[0]))
+    payload = JSON.parse(stringFromBase64URL(parts[1]))
+  } catch {
+    throw new AuthInvalidJwtError('JWT header or payload is not valid JSON')
+  }
+
+  if (!isJSONObject(header) || !isJSONObject(payload)) {
+    throw new AuthInvalidJwtError('JWT header or payload is not a JSON object')
+  }
+
+  const data = {
+    header: header as JwtHeader,
+    payload: payload as JwtPayload,
     signature: base64UrlToUint8Array(parts[2]),
     raw: {
       header: parts[0],
