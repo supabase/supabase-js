@@ -584,3 +584,41 @@ describe('body stringify with custom headers', () => {
     )
   })
 })
+
+describe('Blob/File Content-Type detection', () => {
+  test('uses the Blob/File own MIME type instead of a generic default', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+
+    const file = new File(['x'], 'a.png', { type: 'image/png' })
+
+    await client.invoke('upload', { body: file })
+
+    const headers = (mockFetch.mock.calls[0][1] as { headers?: Record<string, string> }).headers
+    expect(headers?.['Content-Type']).toBe('image/png')
+  })
+
+  test('falls back to application/octet-stream for a Blob with no type', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+
+    const blob = new Blob(['x'])
+
+    await client.invoke('upload', { body: blob as unknown as globalThis.Blob })
+
+    const headers = (mockFetch.mock.calls[0][1] as { headers?: Record<string, string> }).headers
+    expect(headers?.['Content-Type']).toBe('application/octet-stream')
+  })
+
+  test('keeps application/octet-stream for a plain ArrayBuffer', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+
+    const arrayBuffer = str2ab('x')
+
+    await client.invoke('upload', { body: arrayBuffer })
+
+    const headers = (mockFetch.mock.calls[0][1] as { headers?: Record<string, string> }).headers
+    expect(headers?.['Content-Type']).toBe('application/octet-stream')
+  })
+})
