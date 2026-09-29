@@ -3273,9 +3273,11 @@ export default class GoTrueClient {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        if (isAuthSessionMissingError(error)) {
+        if (isAuthSessionMissingError(error) && !jwt) {
           // JWT contains a `session_id` which does not correspond to an active
           // session in the database, indicating the user is signed out.
+          // A caller-supplied JWT says nothing about the stored session, so
+          // it is left in place.
 
           await this._removeSession()
         }
