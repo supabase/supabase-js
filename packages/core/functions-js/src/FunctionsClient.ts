@@ -228,12 +228,14 @@ export class FunctionsClient {
       const hasContentTypeHeader =
         !!headers && Object.keys(headers).some((key) => key.toLowerCase() === 'content-type')
       if (functionArgs && !hasContentTypeHeader) {
-        if (
-          (typeof Blob !== 'undefined' && functionArgs instanceof Blob) ||
-          functionArgs instanceof ArrayBuffer
-        ) {
-          // will work for File as File inherits Blob
-          // also works for ArrayBuffer as it is the same underlying structure as a Blob
+        if (typeof Blob !== 'undefined' && functionArgs instanceof Blob) {
+          // Blob (and File, since File extends Blob) carries its own MIME type via `.type`,
+          // matching what a plain `fetch` call with the same body would send. Only fall back
+          // to a generic octet-stream when the Blob has no type of its own.
+          _headers['Content-Type'] = functionArgs.type || 'application/octet-stream'
+          body = functionArgs
+        } else if (functionArgs instanceof ArrayBuffer) {
+          // ArrayBuffer has no inherent MIME type, so keep the existing generic default.
           _headers['Content-Type'] = 'application/octet-stream'
           body = functionArgs
         } else if (typeof functionArgs === 'string') {
