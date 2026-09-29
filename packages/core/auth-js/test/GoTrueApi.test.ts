@@ -561,7 +561,7 @@ describe('GoTrueAdminApi', () => {
         })
       expect(deletedError).toBeNull()
       expect(deletedData).not.toBeNull()
-      const deletedId = (deletedData as any)?.data?.id
+      const deletedId = deletedData?.id
       console.log('deletedId:', deletedId)
       expect(deletedId).toEqual(factorId)
 
