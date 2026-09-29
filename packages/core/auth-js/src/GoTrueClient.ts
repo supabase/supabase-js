@@ -6763,18 +6763,25 @@ export default class GoTrueClient {
 
       const algorithm = getAlgorithm(header.alg)
 
-      // Convert JWK to CryptoKey
-      const publicKey = await crypto.subtle.importKey('jwk', signingKey, algorithm, true, [
-        'verify',
-      ])
+      let isValid: boolean
+      try {
+        // Convert JWK to CryptoKey
+        const publicKey = await crypto.subtle.importKey('jwk', signingKey, algorithm, true, [
+          'verify',
+        ])
 
-      // Verify the signature
-      const isValid = await crypto.subtle.verify(
-        algorithm,
-        publicKey,
-        signature,
-        stringToUint8Array(`${rawHeader}.${rawPayload}`)
-      )
+        // Verify the signature
+        isValid = await crypto.subtle.verify(
+          algorithm,
+          publicKey,
+          signature,
+          stringToUint8Array(`${rawHeader}.${rawPayload}`)
+        )
+      } catch {
+        // WebCrypto rejects with a DOMException when the JWK does not match the `alg` claim or
+        // the signature is malformed. Treat it as a failed verification, not an unexpected crash.
+        throw new AuthInvalidJwtError('Invalid JWT signature')
+      }
 
       if (!isValid) {
         throw new AuthInvalidJwtError('Invalid JWT signature')
