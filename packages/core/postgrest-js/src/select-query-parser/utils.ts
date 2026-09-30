@@ -266,6 +266,7 @@ type ResolveReverseRelationship<
               FoundRelation extends { hint: string } | { match: 'col' }
               ? {
                   referencedTable: TablesAndViews<Schema>[RelatedRelationName]
+                  relationName: RelatedRelationName
                   relation: FoundRelation
                   direction: 'reverse'
                   from: CurrentTableOrView
@@ -275,6 +276,7 @@ type ResolveReverseRelationship<
                 ? SelectQueryError<`Could not embed because more than one relationship was found for '${RelatedRelationName}' and '${CurrentTableOrView}' you need to hint the column with ${RelatedRelationName}!<columnName> ?`>
                 : {
                     referencedTable: TablesAndViews<Schema>[RelatedRelationName]
+                    relationName: RelatedRelationName
                     relation: FoundRelation
                     direction: 'reverse'
                     from: CurrentTableOrView
@@ -428,6 +430,7 @@ export type ResolveForwardRelationship<
     ? FoundByName extends GenericRelationship
       ? {
           referencedTable: TablesAndViews<Schema>[Field['name']]
+          relationName: Field['name']
           relation: FoundByName
           direction: 'forward'
           from: Field['name']
@@ -443,6 +446,7 @@ export type ResolveForwardRelationship<
           }
           ? {
               referencedTable: TablesAndViews<Schema>[FoundByMatch['from']]
+              relationName: FoundByMatch['from'] & string
               relation: FoundByMatch
               direction: 'forward'
               from: CurrentTableOrView
@@ -456,6 +460,7 @@ export type ResolveForwardRelationship<
             ? FoundByJoinTable extends GenericRelationship
               ? {
                   referencedTable: TablesAndViews<Schema>[FoundByJoinTable['referencedRelation']]
+                  relationName: FoundByJoinTable['referencedRelation']
                   relation: FoundByJoinTable & { match: 'refrel' }
                   direction: 'forward'
                   from: CurrentTableOrView
@@ -491,6 +496,7 @@ export type ResolveForwardRelationship<
                           scalarType: FoundEmbededFunctionJoinTableRelation['Returns']
                           direction: 'forward'
                           from: CurrentTableOrView
+                          relationName: ''
                           type: 'found-by-embeded-scalar-function'
                         }
                       : // Table-valued function: `to` names the target table/view.
@@ -515,6 +521,7 @@ export type ResolveForwardRelationship<
                           }
                           direction: 'forward'
                           from: CurrentTableOrView
+                          relationName: FoundEmbededFunctionJoinTableRelation['SetofOptions']['to']
                           type: 'found-by-embeded-function'
                         }
                     : SelectQueryError<`could not find the relation between ${CurrentTableOrView} and ${Field['name']}`>
@@ -681,26 +688,71 @@ type FindMatchingFunctionBySetofFrom<
   ? MatchingFunctionBySetofFrom<Fn, TableName>
   : false
 
+type IsUnion<T, U = T> = [T] extends [never]
+  ? false
+  : T extends U
+    ? [U] extends [T]
+      ? false
+      : true
+    : never
+
+type SameKeys<A, B> = [keyof A] extends [keyof B]
+  ? [keyof B] extends [keyof A]
+    ? true
+    : false
+  : false
+
+// The type of a function's only argument when it has exactly one and it is required,
+// whatever the argument is called. `Args: never` (a zero-argument function in older
+// generated types), `Args: Record<PropertyKey, never>`, an optional argument and several
+// arguments all resolve to `never`.
+type SoleRequiredArgument<Args> = [Args] extends [never]
+  ? never
+  : IsUnion<keyof Args> extends true
+    ? never
+    : {} extends Args
+      ? never
+      : Args[keyof Args]
+
+// Whether one signature of a function (one member of an overload union, as `Fn` is a
+// naked type parameter and distributes) is a computed field of a relation: PostgREST
+// treats a function whose only argument is the relation's row type as one. The argument
+// is matched on its keys rather than its exact type, so that a `Row` whose column types
+// were overridden (`MergeDeep`) still matches the generated `Row` the argument references.
+type IsComputedFieldFunction<Fn, Row> = Fn extends { Args: infer Args }
+  ? [SoleRequiredArgument<Args>] extends [never]
+    ? false
+    : SameKeys<SoleRequiredArgument<Args>, Row>
+  : false
+
 type ComputedField<
   Schema extends GenericSchema,
   RelationName extends keyof TablesAndViews<Schema>,
   FieldName extends keyof TablesAndViews<Schema>[RelationName]['Row'],
 > = FieldName extends keyof Schema['Functions']
-  ? [Schema['Functions'][FieldName]['Args']] extends [never]
-    ? never
-    : Schema['Functions'][FieldName] extends {
-          Args: { '': TablesAndViews<Schema>[RelationName]['Row'] }
-          Returns: any
-        }
-      ? FieldName
-      : never
+  ? true extends IsComputedFieldFunction<
+      Schema['Functions'][FieldName],
+      TablesAndViews<Schema>[RelationName]['Row']
+    >
+    ? FieldName
+    : never
   : never
 
-// Given a relation name (Table or View) extract all the "computed fields" based on the Row
-// object, and the schema functions definitions
-export type GetComputedFields<
+// Computed fields of a relation inferred from its `Row` keys and the schema functions, for
+// types generated before the relation declared them in `ComputedFields`.
+type InferredComputedFields<
   Schema extends GenericSchema,
   RelationName extends keyof TablesAndViews<Schema>,
 > = {
   [K in keyof TablesAndViews<Schema>[RelationName]['Row']]: ComputedField<Schema, RelationName, K>
 }[keyof TablesAndViews<Schema>[RelationName]['Row']]
+
+// Given a relation name (Table or View) extract all the "computed fields", which PostgREST
+// leaves out of a `*` selection: the names the relation declares in `ComputedFields`, or
+// otherwise the ones inferred from the schema functions definitions.
+export type GetComputedFields<
+  Schema extends GenericSchema,
+  RelationName extends keyof TablesAndViews<Schema>,
+> = TablesAndViews<Schema>[RelationName] extends { ComputedFields: infer Fields extends string }
+  ? Fields
+  : InferredComputedFields<Schema, RelationName>
