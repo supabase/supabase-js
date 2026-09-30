@@ -7,19 +7,19 @@ export type Database = {
         Row: {
           age_range: unknown
           data: Json | null
-          status: Database['personal']['Enums']['user_status'] | null
+          status: Database['public']['Enums']['user_status'] | null
           username: string
         }
         Insert: {
           age_range?: unknown
           data?: Json | null
-          status?: Database['personal']['Enums']['user_status'] | null
+          status?: Database['public']['Enums']['user_status'] | null
           username: string
         }
         Update: {
           age_range?: unknown
           data?: Json | null
-          status?: Database['personal']['Enums']['user_status'] | null
+          status?: Database['public']['Enums']['user_status'] | null
           username?: string
         }
         Relationships: []
@@ -31,7 +31,7 @@ export type Database = {
     Functions: {
       get_status: {
         Args: { name_param: string }
-        Returns: Database['personal']['Enums']['user_status']
+        Returns: Database['public']['Enums']['user_status']
       }
     }
     Enums: {
@@ -218,6 +218,13 @@ export type Database = {
           data: Json | null
           id: number
           slug: string | null
+          get_messages: {
+            channel_id: number
+            data: Json | null
+            id: number
+            message: string | null
+            username: string
+          } | null
         }
         Insert: {
           data?: Json | null
@@ -401,6 +408,13 @@ export type Database = {
           message: string | null
           username: string
           blurb_message: string | null
+          function_returning_single_row: {
+            age_range: unknown
+            catchphrase: unknown
+            data: Json | null
+            status: Database['public']['Enums']['user_status'] | null
+            username: string
+          } | null
         }
         Insert: {
           channel_id: number
@@ -574,6 +588,50 @@ export type Database = {
           data: Json | null
           status: Database['public']['Enums']['user_status'] | null
           username: string
+          function_using_setof_rows_one: {
+            id: number
+            username: string | null
+          } | null
+          function_using_table_returns: {
+            id: number
+            username: string | null
+          } | null
+          get_messages: {
+            channel_id: number
+            data: Json | null
+            id: number
+            message: string | null
+            username: string
+          } | null
+          get_user_messages: {
+            channel_id: number
+            data: Json | null
+            id: number
+            message: string | null
+            username: string
+          } | null
+          get_user_profile: {
+            id: number
+            username: string | null
+          } | null
+          get_user_profile_non_nullable: {
+            id: number
+            username: string | null
+          } | null
+          get_user_recent_messages: {
+            channel_id: number | null
+            data: Json | null
+            id: number | null
+            message: string | null
+            username: string | null
+          } | null
+          postgrest_resolvable_with_override_function: {
+            channel_id: number
+            data: Json | null
+            id: number
+            message: string | null
+            username: string
+          } | null
         }
         Insert: {
           age_range?: unknown
@@ -619,6 +677,27 @@ export type Database = {
           data: Json | null
           status: Database['public']['Enums']['user_status'] | null
           username: string | null
+          get_active_user_messages: {
+            channel_id: number
+            data: Json | null
+            id: number
+            message: string | null
+            username: string
+          } | null
+          get_user_first_message: {
+            channel_id: number | null
+            data: Json | null
+            id: number | null
+            message: string | null
+            username: string | null
+          } | null
+          get_user_recent_messages: {
+            channel_id: number | null
+            data: Json | null
+            id: number | null
+            message: string | null
+            username: string | null
+          } | null
         }
         Insert: {
           age_range?: unknown
@@ -726,7 +805,7 @@ export type Database = {
       echo_bigint_as_text: { Args: { bigint_param: number }; Returns: string }
       extract_jsonb_bigint_as_text: { Args: { payload: Json }; Returns: string }
       function_returning_row: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           age_range: unknown
           catchphrase: unknown
@@ -742,7 +821,7 @@ export type Database = {
         }
       }
       function_returning_set_of_rows: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           age_range: unknown
           catchphrase: unknown
@@ -799,18 +878,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      function_with_array_param: {
-        Args: { param: string[] }
-        Returns: undefined
-      }
-      function_with_optional_param: {
-        Args: { param?: string }
-        Returns: string
-      }
+      function_with_array_param: { Args: { param: string[] }; Returns: undefined }
+      function_with_optional_param: { Args: { param?: string }; Returns: string }
       get_active_user_messages: {
-        Args: {
-          active_user_row: Database['public']['Views']['active_users']['Row']
-        }
+        Args: { active_user_row: Database['public']['Views']['active_users']['Row'] }
         Returns: {
           channel_id: number
           data: Json | null
@@ -827,9 +898,7 @@ export type Database = {
       }
       get_messages:
         | {
-            Args: {
-              channel_row: Database['public']['Tables']['channels']['Row']
-            }
+            Args: { channel_row: Database['public']['Tables']['channels']['Row'] }
             Returns: {
               channel_id: number
               data: Json | null
@@ -897,9 +966,7 @@ export type Database = {
         Returns: Database['public']['Enums']['user_status']
       }
       get_user_first_message: {
-        Args: {
-          active_user_row: Database['public']['Views']['active_users']['Row']
-        }
+        Args: { active_user_row: Database['public']['Views']['active_users']['Row'] }
         Returns: {
           channel_id: number | null
           data: Json | null
@@ -958,9 +1025,7 @@ export type Database = {
       }
       get_user_recent_messages:
         | {
-            Args: {
-              active_user_row: Database['public']['Views']['active_users']['Row']
-            }
+            Args: { active_user_row: Database['public']['Views']['active_users']['Row'] }
             Returns: {
               channel_id: number | null
               data: Json | null
@@ -1002,16 +1067,13 @@ export type Database = {
         Args: { name_param: string }
         Returns: Database['public']['Enums']['user_status']
       }
-      polymorphic_function_with_different_return: {
-        Args: { '': string }
-        Returns: string
-      }
+      polymorphic_function_with_different_return: { Args: { '': string }; Returns: string }
       polymorphic_function_with_no_params_or_unnamed:
-        | { Args: never; Returns: number }
+        | { Args: Record<PropertyKey, never>; Returns: number }
         | { Args: { '': string }; Returns: string }
       polymorphic_function_with_unnamed_default:
         | {
-            Args: never
+            Args: Record<PropertyKey, never>
             Returns: {
               error: true
             } & 'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default(), public.polymorphic_function_with_unnamed_default( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
@@ -1019,26 +1081,17 @@ export type Database = {
         | { Args: { ''?: string }; Returns: string }
       polymorphic_function_with_unnamed_default_overload:
         | {
-            Args: never
+            Args: Record<PropertyKey, never>
             Returns: {
               error: true
             } & 'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default_overload(), public.polymorphic_function_with_unnamed_default_overload( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
           }
         | { Args: { ''?: string }; Returns: string }
-      polymorphic_function_with_unnamed_json: {
-        Args: { '': Json }
-        Returns: number
-      }
-      polymorphic_function_with_unnamed_jsonb: {
-        Args: { '': Json }
-        Returns: number
-      }
-      polymorphic_function_with_unnamed_text: {
-        Args: { '': string }
-        Returns: number
-      }
+      polymorphic_function_with_unnamed_json: { Args: { '': Json }; Returns: number }
+      polymorphic_function_with_unnamed_jsonb: { Args: { '': Json }; Returns: number }
+      polymorphic_function_with_unnamed_text: { Args: { '': string }; Returns: number }
       postgrest_resolvable_with_override_function:
-        | { Args: never; Returns: undefined }
+        | { Args: Record<PropertyKey, never>; Returns: undefined }
         | { Args: { a: string }; Returns: number }
         | { Args: { b: number }; Returns: string }
         | {
@@ -1087,7 +1140,7 @@ export type Database = {
             }
           }
       postgrest_unresolvable_function:
-        | { Args: never; Returns: undefined }
+        | { Args: Record<PropertyKey, never>; Returns: undefined }
         | {
             Args: { a: number }
             Returns: {
@@ -1116,7 +1169,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      void_func: { Args: never; Returns: undefined }
+      void_func: { Args: Record<PropertyKey, never>; Returns: undefined }
     }
     Enums: {
       user_status: 'ONLINE' | 'OFFLINE'
@@ -1141,9 +1194,7 @@ export type Tables<
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
@@ -1167,9 +1218,7 @@ export type TablesInsert<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
@@ -1192,9 +1241,7 @@ export type TablesUpdate<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
@@ -1217,9 +1264,7 @@ export type Enums<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
     ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
@@ -1234,9 +1279,7 @@ export type CompositeTypes<
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
