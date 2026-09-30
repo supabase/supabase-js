@@ -3222,7 +3222,7 @@ export default class GoTrueClient {
    */
   async getUser(jwt?: string): Promise<UserResponse> {
     if (jwt) {
-      return await this._getUser(jwt)
+      return await this._getUser(jwt, true)
     }
 
     await this.initializePromise
@@ -3244,7 +3244,7 @@ export default class GoTrueClient {
     return result
   }
 
-  private async _getUser(jwt?: string): Promise<UserResponse> {
+  private async _getUser(jwt?: string, isCallerSupplied = false): Promise<UserResponse> {
     try {
       if (jwt) {
         return await _request(this.fetch, 'GET', `${this.url}/user`, {
@@ -3273,11 +3273,12 @@ export default class GoTrueClient {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        if (isAuthSessionMissingError(error) && !jwt) {
+        if (isAuthSessionMissingError(error) && !isCallerSupplied) {
           // JWT contains a `session_id` which does not correspond to an active
           // session in the database, indicating the user is signed out.
-          // A caller-supplied JWT says nothing about the stored session, so
-          // it is left in place.
+          // A JWT the caller passed to the public `getUser(jwt)` says nothing
+          // about the stored session, so it is left in place. Internal callers
+          // pass the stored or newly set access token and still clean up.
 
           await this._removeSession()
         }

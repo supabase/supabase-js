@@ -68,4 +68,25 @@ describe('getUser() with session_not_found', () => {
     } = await client.getSession()
     expect(stored).toBeNull()
   })
+
+  it('removes the stored session when an internal flow passes an access token that is rejected', async () => {
+    const client = makeClient()
+    const b64 = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url')
+    const accessToken = [
+      b64({ alg: 'HS256', typ: 'JWT' }),
+      b64({ sub: 'stored-user-id', exp: Math.floor(Date.now() / 1000) + 3600 }),
+      'c2lnbmF0dXJl',
+    ].join('.')
+
+    const { error } = await client.setSession({
+      access_token: accessToken,
+      refresh_token: 'stored-refresh-token',
+    })
+    expect(error?.name).toBe('AuthSessionMissingError')
+
+    const {
+      data: { session: stored },
+    } = await client.getSession()
+    expect(stored).toBeNull()
+  })
 })
