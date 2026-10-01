@@ -70,7 +70,8 @@ export interface RetryableRequest {
  * `DEFAULT_MAX_RETRIES` times when the fetch rejects or the server answers
  * with a retryable status (503, 520). The wait honours the `Retry-After`
  * header when present and backs off exponentially otherwise. Retried
- * attempts carry an `X-Retry-Count` header. Aborted requests and
+ * attempts carry an `X-Retry-Count` header. Aborted requests (including
+ * `AbortSignal.timeout()`, which rejects with `TimeoutError`) and
  * non-idempotent methods are never retried: their rejection propagates
  * unchanged. A response body is drained before its request is retried.
  */
@@ -101,8 +102,13 @@ export async function fetchWithRetry(
       // is too narrow here; narrow at the use site with optional chaining.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (fetchError: any) {
-      // Never retry aborted requests
-      if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
+      // Never retry aborted requests. `AbortSignal.timeout()` rejects with
+      // `TimeoutError` rather than `AbortError`, so it needs its own check.
+      if (
+        fetchError?.name === 'AbortError' ||
+        fetchError?.code === 'ABORT_ERR' ||
+        fetchError?.name === 'TimeoutError'
+      ) {
         throw fetchError
       }
 

@@ -452,6 +452,21 @@ describe('Automatic Retries', () => {
       expect(result.error).not.toBeNull()
       expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
     })
+
+    // AbortSignal.timeout() rejects with TimeoutError, not AbortError.
+    it('should rethrow TimeoutError immediately without retrying', async () => {
+      const timeoutError = new Error('The operation was aborted due to timeout')
+      timeoutError.name = 'TimeoutError'
+
+      fetchMock.mockRejectedValue(timeoutError)
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).not.toBeNull()
+      expect(result.error?.message).toContain('TimeoutError')
+      expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
+    })
   })
 
   describe('shouldThrowOnError interaction', () => {
