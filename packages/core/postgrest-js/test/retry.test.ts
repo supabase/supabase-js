@@ -452,6 +452,48 @@ describe('Automatic Retries', () => {
       expect(result.error).not.toBeNull()
       expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
     })
+
+    // AbortSignal.timeout() rejects with TimeoutError, not AbortError.
+    it('should rethrow TimeoutError immediately without retrying when the request signal is aborted', async () => {
+      const timeoutError = new Error('The operation was aborted due to timeout')
+      timeoutError.name = 'TimeoutError'
+
+      fetchMock.mockRejectedValue(timeoutError)
+
+      const controller = new AbortController()
+      controller.abort()
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(
+        client.from('users').select().abortSignal(controller.signal)
+      )
+
+      expect(result.error).not.toBeNull()
+      expect(result.error?.message).toContain('TimeoutError')
+      expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
+    })
+
+    // A custom fetch implementation can throw its own TimeoutError for a
+    // timeout unrelated to our AbortSignal; that one is still a transient,
+    // retryable network error.
+    it('should retry a TimeoutError that is not tied to an aborted request signal', async () => {
+      const timeoutError = new Error('socket timeout')
+      timeoutError.name = 'TimeoutError'
+
+      fetchMock.mockRejectedValueOnce(timeoutError).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: () => Promise.resolve('[]'),
+        headers: new Headers(),
+      })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).toBeNull()
+      expect(fetchMock).toHaveBeenCalledTimes(2) // Retried once
+    })
   })
 
   describe('shouldThrowOnError interaction', () => {
