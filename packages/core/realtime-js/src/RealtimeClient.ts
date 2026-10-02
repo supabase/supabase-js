@@ -239,6 +239,7 @@ export default class RealtimeClient {
   private _workerHeartbeatTimer: HeartbeatTimer = undefined
   private _pendingWorkerHeartbeatRef: string | null = null
   private _pendingDisconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private _connectionHandlersInitialized = false
   private _disconnectOnEmptyChannelsAfterMs: number = 0
 
   /**
@@ -714,6 +715,11 @@ export default class RealtimeClient {
 
   /** @internal */
   private _setupConnectionHandlers(): void {
+    if (this._connectionHandlersInitialized) {
+      return
+    }
+    this._connectionHandlersInitialized = true
+
     this.socketAdapter.onOpen(() => {
       const authPromise =
         this._authPromise ||
