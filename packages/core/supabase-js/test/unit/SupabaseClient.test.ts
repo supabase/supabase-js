@@ -1,5 +1,5 @@
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { createClient, SupabaseClient } from '../../src/index'
+import { createClient, getDefaultStorageKey, SupabaseClient } from '../../src/index'
 import { _resetTopLevelSchemaWarning } from '../../src/lib/helpers'
 import { Database } from '../types'
 
@@ -146,10 +146,33 @@ describe('SupabaseClient', () => {
   })
 
   describe('Storage Key', () => {
-    test('should use default storage key based on project ref', () => {
+    test('should use default storage key based on a hash of the project origin', () => {
       const client = createClient('https://project-ref.supabase.co', KEY)
       // @ts-ignore
-      expect(client.storageKey).toBe('sb-project-ref-auth-token')
+      expect(client.storageKey).toBe(getDefaultStorageKey('https://project-ref.supabase.co'))
+      // @ts-ignore
+      expect(client.storageKey).toMatch(/^sb-[0-9a-f]{8}-auth-token$/)
+    })
+
+    test('should not collide for origins sharing a hostname label', () => {
+      const a = createClient('http://localhost:54321', KEY)
+      const b = createClient('http://localhost:8000', KEY)
+      // @ts-ignore
+      expect(a.storageKey).not.toBe(b.storageKey)
+    })
+
+    test('should migrate from the legacy project-ref key by default', () => {
+      const client = createClient('https://project-ref.supabase.co', KEY)
+      // @ts-ignore
+      expect(client.auth.legacyStorageKeys).toEqual(['sb-project-ref-auth-token'])
+    })
+
+    test('should not migrate legacy keys when a custom storage key is provided', () => {
+      const client = createClient('https://project-ref.supabase.co', KEY, {
+        auth: { storageKey: 'custom-storage-key' },
+      })
+      // @ts-ignore
+      expect(client.auth.legacyStorageKeys).toEqual([])
     })
 
     test('should use custom storage key when provided', () => {
