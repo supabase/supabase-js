@@ -137,6 +137,32 @@ describe('decodeJWT', () => {
     )
   })
 
+  it('should reject a header or payload that is not valid JSON', () => {
+    const b64 = (value: string) => Buffer.from(value).toString('base64url')
+
+    expect(() => decodeJWT(`${b64('not json')}.${b64('{}')}.c2ln`)).toThrow(
+      new AuthInvalidJwtError('JWT header or payload is not valid JSON')
+    )
+    expect(() => decodeJWT(`${b64('{"alg":"HS256"}')}.${b64('{bad')}.c2ln`)).toThrow(
+      new AuthInvalidJwtError('JWT header or payload is not valid JSON')
+    )
+  })
+
+  it('should reject a header or payload that is not a JSON object', () => {
+    const b64 = (value: string) => Buffer.from(value).toString('base64url')
+
+    for (const token of [
+      `${b64('null')}.${b64('{}')}.c2ln`,
+      `${b64('{"alg":"HS256"}')}.${b64('null')}.c2ln`,
+      `${b64('{"alg":"HS256"}')}.${b64('[]')}.c2ln`,
+      `${b64('{"alg":"HS256"}')}.${b64('42')}.c2ln`,
+    ]) {
+      expect(() => decodeJWT(token)).toThrow(
+        new AuthInvalidJwtError('JWT header or payload is not a JSON object')
+      )
+    }
+  })
+
   it('should decode JWT successfully', () => {
     expect(
       decodeJWT(
