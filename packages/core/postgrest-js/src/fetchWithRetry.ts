@@ -104,10 +104,13 @@ export async function fetchWithRetry(
     } catch (fetchError: any) {
       // Never retry aborted requests. `AbortSignal.timeout()` rejects with
       // `TimeoutError` rather than `AbortError`, so it needs its own check.
+      // Gated on `request.signal?.aborted` because `TimeoutError`, unlike
+      // `AbortError`, isn't exclusive to aborts: a custom fetch implementation
+      // may throw it for an unrelated, retryable timeout of its own.
       if (
         fetchError?.name === 'AbortError' ||
         fetchError?.code === 'ABORT_ERR' ||
-        fetchError?.name === 'TimeoutError'
+        (fetchError?.name === 'TimeoutError' && request.signal?.aborted)
       ) {
         throw fetchError
       }
