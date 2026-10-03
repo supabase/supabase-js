@@ -885,7 +885,7 @@ export default class GoTrueAdminApi {
     validateUUID(params.id)
 
     try {
-      const data = await _request(
+      return await _request(
         this.fetch,
         'DELETE',
         `${this.url}/admin/users/${params.userId}/factors/${params.id}`,
@@ -893,8 +893,6 @@ export default class GoTrueAdminApi {
           headers: this.headers,
         }
       )
-
-      return { data, error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
