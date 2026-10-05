@@ -8,7 +8,7 @@ const REST_URL = 'http://localhost:3000'
  */
 function clientCapturingUrl(): { postgrest: PostgrestClient; getUrl: () => string } {
   let captured = ''
-  const fetchMock: typeof fetch = (input: RequestInfo | URL) => {
+  const fetchMock: typeof fetch = (input) => {
     captured = typeof input === 'string' ? input : input.toString()
     return Promise.resolve(new Response('[]', { status: 200 }))
   }

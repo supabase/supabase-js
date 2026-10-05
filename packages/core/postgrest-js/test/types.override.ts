@@ -62,7 +62,32 @@ export type Database = MergeDeep<
           }
         }
       }
-      Functions: {}
+      Functions: {
+        // Hand-written fixtures: these functions do not exist in the test schema, and
+        // `isNotNullable` is an override-only contract that pg-meta never emits (it
+        // cannot prove non-nullability — PostgREST may still return null at runtime).
+        // They live here rather than in types.generated.ts so `pnpm codegen:postgrest`
+        // does not wipe them.
+        scalar_computed_count: {
+          Args: { '': GeneratedDatabase['public']['Tables']['users']['Row'] }
+          Returns: number
+          SetofOptions: {
+            from: 'users'
+            to: ''
+            isSetofReturn: false
+            isNotNullable: true
+          }
+        }
+        scalar_computed_ids: {
+          Args: { '': GeneratedDatabase['public']['Tables']['users']['Row'] }
+          Returns: string[]
+          SetofOptions: {
+            from: 'users'
+            to: ''
+            isSetofReturn: true
+          }
+        }
+      }
       Views: {}
       Enums: {}
       CompositeTypes: {}

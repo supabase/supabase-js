@@ -1,0 +1,9 @@
+{
+  // Boundary for Playwright's tsconfig lookup: without this file it walks up
+  // to the package tsconfig, whose directory-form project references its
+  // loader fails to resolve (fatal since playwright 1.62).
+  "compilerOptions": {
+    "allowJs": true,
+    "noEmit": true
+  }
+}

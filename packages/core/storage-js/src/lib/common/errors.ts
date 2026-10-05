@@ -58,17 +58,26 @@ export function isStorageError(error: unknown): error is StorageError {
 export class StorageApiError extends StorageError {
   override status: number
   override statusCode: string
+  /**
+   * Service-specific error code from the Storage API response body, such as
+   * `NoSuchKey`, `AccessDenied` or `ResourceAlreadyExists`. Use this to branch
+   * on the specific error rather than parsing the message.
+   * @see https://supabase.com/docs/guides/storage/debugging/error-codes
+   */
+  code: string | undefined
 
   constructor(
     message: string,
     status: number,
     statusCode: string,
-    namespace: ErrorNamespace = 'storage'
+    namespace: ErrorNamespace = 'storage',
+    code?: string
   ) {
     super(message, namespace, status, statusCode)
     this.name = namespace === 'vectors' ? 'StorageVectorsApiError' : 'StorageApiError'
     this.status = status
     this.statusCode = statusCode
+    this.code = code
   }
 
   toJSON(): {
@@ -76,9 +85,11 @@ export class StorageApiError extends StorageError {
     message: string
     status: number | undefined
     statusCode: string | undefined
+    code: string | undefined
   } {
     return {
       ...super.toJSON(),
+      code: this.code,
     }
   }
 }

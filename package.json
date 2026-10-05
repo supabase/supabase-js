@@ -10,7 +10,7 @@
     "codegen": "node scripts/sync-common-types.js",
     "codegen:check": "node scripts/sync-common-types.js && git diff --exit-code packages/core/supabase-js/src/lib/rest/types/common && echo '\n✅ Generated types are in sync!' || (echo '\n❌ Generated types are out of sync.\n   Run: pnpm codegen\n   Then commit the changes.\n' && exit 1)",
     "codegen:postgrest": "node scripts/generate-postgrest-types.js",
-    "codegen:check:postgrest": "node scripts/generate-postgrest-types.js && git diff --exit-code packages/core/postgrest-js/test/types.generated.ts && echo '\n✅ Postgrest generated types are in sync!' || (echo '\n❌ Postgrest generated types are out of sync.\n   Run: pnpm codegen:postgrest\n   Then commit the changes.\n' && exit 1)",
+    "codegen:check:postgrest": "node scripts/generate-postgrest-types.js || { echo '\n❌ Type generation itself failed — see the error above. This is NOT a drift failure; re-running codegen will not help.\n'; exit 1; }; git diff --exit-code packages/core/postgrest-js/test/types.generated.ts && echo '\n✅ Postgrest generated types are in sync!' || { echo '\n❌ Postgrest generated types are out of sync.\n   Run: pnpm codegen:postgrest\n   Then commit the changes.\n'; exit 1; }",
     "release-canary": "pnpm exec tsx scripts/release-canary.ts",
     "release-beta": "pnpm exec tsx scripts/release-beta.ts",
     "release-stable": "pnpm exec tsx scripts/release-stable.ts"
@@ -26,14 +26,14 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/cz-commitlint": "^19.8.1",
     "@eslint/js": "^10.0.1",
-    "@nx/eslint": "22.7.1",
-    "@nx/eslint-plugin": "22.7.1",
-    "@nx/jest": "22.7.1",
-    "@nx/js": "22.7.1",
-    "@nx/playwright": "22.7.1",
-    "@nx/vite": "22.7.1",
-    "@nx/vitest": "22.7.1",
-    "@nx/web": "22.7.1",
+    "@nx/eslint": "23.1.0",
+    "@nx/eslint-plugin": "23.1.0",
+    "@nx/jest": "23.1.0",
+    "@nx/js": "23.1.0",
+    "@nx/playwright": "23.1.0",
+    "@nx/vite": "23.1.0",
+    "@nx/vitest": "23.1.0",
+    "@nx/web": "23.1.0",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.8",
     "@swc/helpers": "0.5.21",
@@ -48,19 +48,14 @@
     "jiti": "2.4.2",
     "jsonc-eslint-parser": "^2.1.0",
     "jsr": "^0.13.5",
-    "nx": "22.7.1",
+    "nx": "23.1.0",
     "prettier": "^3.6.2",
-    "supabase": "2.105.0",
+    "supabase": "2.113.0",
     "ts-node": "^10.9.1",
     "tsx": "^4.21.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.21.0",
     "vite": "7.3.5"
   },
-  "dependencies": {},
-  "pnpm": {
-    "overrides": {
-      "unrun": ">=0.2.39 <0.3.0"
-    }
-  }
+  "dependencies": {}
 }

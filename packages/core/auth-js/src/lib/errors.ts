@@ -16,7 +16,7 @@ export class AuthError extends Error {
    * Error code associated with the error. Most errors coming from
    * HTTP responses will have a code, though some errors that occur
    * before a response is received will not have one present. In that
-   * case {@link #status} will also be undefined.
+   * case {@link AuthError.status} will also be undefined.
    */
   code: ErrorCode | (string & {}) | undefined
 

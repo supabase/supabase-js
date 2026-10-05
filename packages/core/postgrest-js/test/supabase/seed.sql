@@ -59,6 +59,11 @@ VALUES
   (5, 'Sibling of Grandchild', 2),
   (6, 'Child of Another Root', 3);
 
+INSERT INTO public.lab (id, name, type, parent, main)
+VALUES
+  (1, 'Main Board', 'board', NULL, NULL),
+  (2, 'First Task', 'task', 1, NULL);
+
 -- Insert sample products
 INSERT INTO public.products (id, name, description, price)
 VALUES

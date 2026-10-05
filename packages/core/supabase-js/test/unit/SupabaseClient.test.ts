@@ -1,5 +1,6 @@
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { createClient, SupabaseClient } from '../../src/index'
+import { _resetTopLevelSchemaWarning } from '../../src/lib/helpers'
 import { Database } from '../types'
 
 const URL = 'http://localhost:3000'
@@ -27,6 +28,29 @@ describe('SupabaseClient', () => {
   test('it should throw an error if no valid params are provided', async () => {
     expect(() => createClient('', KEY)).toThrow('supabaseUrl is required.')
     expect(() => createClient(URL, '')).toThrow('supabaseKey is required.')
+  })
+
+  test('should check the API key format without ever throwing', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      // Platform-issued temporary keys are accepted silently.
+      expect(() => createClient(URL, 'sb_temp_nonce123_payload456')).not.toThrow()
+      // Recognized new-format keys and legacy JWT keys are accepted silently.
+      expect(() => createClient(URL, 'sb_publishable_abc123')).not.toThrow()
+      expect(() => createClient(URL, 'sb_secret_abc123')).not.toThrow()
+      expect(() => createClient(URL, KEY)).not.toThrow()
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      // Unrecognized sb_ subtype → the client is still created; a one-time warning
+      // signals that an SDK upgrade may be needed.
+      expect(createClient(URL, 'sb_unknown_abc123')).toBeInstanceOf(SupabaseClient)
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/Unrecognized Supabase API key format/)
+      )
+    } finally {
+      warnSpy.mockRestore()
+    }
   })
 
   test('should validate supabaseUrl', () => {
@@ -84,6 +108,19 @@ describe('SupabaseClient', () => {
       const client = createClient('https://localhost:3000', KEY)
       // @ts-ignore
       expect(client.realtimeUrl.toString()).toEqual('wss://localhost:3000/realtime/v1')
+    })
+  })
+
+  describe('PostgREST Configuration', () => {
+    test('should forward the retry option to PostgrestClient', () => {
+      const client = createClient(URL, KEY, {
+        db: { retry: false },
+      })
+
+      // @ts-expect-error rest is protected
+      expect(client.rest.retry).toBe(false)
+      // @ts-expect-error retryEnabled is protected
+      expect(client.from('users').select().retryEnabled).toBe(false)
     })
   })
 
@@ -195,6 +232,29 @@ describe('SupabaseClient', () => {
       expect(schemaClient).toBeDefined()
       expect(schemaClient).toBeInstanceOf(PostgrestClient)
     })
+
+    test('warns, but does not throw, when schema is passed outside db', () => {
+      _resetTopLevelSchemaWarning()
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+      try {
+        expect(() => createClient(URL, KEY, { schema: 'personal' } as any)).not.toThrow()
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/must be nested under "db"/))
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
+
+    test('does not warn when schema is nested under db', () => {
+      _resetTopLevelSchemaWarning()
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+      try {
+        createClient<Database, 'personal'>(URL, KEY, { db: { schema: 'personal' } })
+        expect(warnSpy).not.toHaveBeenCalled()
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
   })
 
   describe('Table/View Queries', () => {
@@ -281,6 +341,22 @@ describe('SupabaseClient', () => {
         client.realtime.disconnect()
       })
 
+      test('keeps Realtime in callback mode (auto-refresh enabled) after the accessToken bootstrap', async () => {
+        const customToken = 'custom-jwt-token'
+        const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
+
+        const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
+
+        // Wait for the constructor's async setAuth bootstrap to complete.
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        // Still in callback mode -> the accessToken callback will keep being
+        // invoked on heartbeat to refresh the token.
+        expect((client.realtime as any)._isManualToken()).toBe(false)
+
+        client.realtime.disconnect()
+      })
+
       test('should automatically populate token in channels when using custom JWT', async () => {
         const customToken = 'custom-channel-token'
         const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
@@ -359,6 +435,15 @@ describe('SupabaseClient', () => {
         // @ts-ignore - accessing private method for testing
         client._handleTokenChanged('SIGNED_OUT', 'CLIENT')
         expect(setAuthSpy).toHaveBeenCalledWith()
+      })
+
+      test('should call setAuth() on INITIAL_SESSION event', async () => {
+        const client = createClient(URL, KEY)
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
+
+        // @ts-ignore - accessing private method for testing
+        client._handleTokenChanged('INITIAL_SESSION', 'CLIENT', 'initial-token')
+        expect(setAuthSpy).toHaveBeenCalledWith('initial-token')
       })
 
       test('should update token in realtime client when setAuth is called', async () => {
@@ -488,6 +573,123 @@ describe('SupabaseClient', () => {
         expect(options.headers.get('Authorization')).toBe(`Bearer ${KEY}`)
         expect(options.headers.get('apikey')).toBe(KEY)
       })
+
+      test('functions omit Authorization for a new-format key without a session, other services do not', async () => {
+        const NEW_KEY = 'sb_publishable_test123'
+        const mockFetch = jest.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          text: () => Promise.resolve('{}'),
+          headers: new Headers(),
+          json: () => Promise.resolve({}),
+        })
+
+        const client = createClient(URL, NEW_KEY, {
+          global: { fetch: mockFetch },
+        })
+
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: null },
+        })
+
+        // Functions: no session + new-format key → apikey only, no Authorization.
+        await client.functions.invoke('test-function')
+        const [, functionsOptions] = mockFetch.mock.calls[0]
+        expect(functionsOptions.headers.get('apikey')).toBe(NEW_KEY)
+        expect(functionsOptions.headers.get('Authorization')).toBeNull()
+
+        // Other services stay uniform: the key is still sent in Authorization.
+        await client.from('test').select('*')
+        const [, restOptions] = mockFetch.mock.calls[1]
+        expect(restOptions.headers.get('Authorization')).toBe(`Bearer ${NEW_KEY}`)
+        expect(restOptions.headers.get('apikey')).toBe(NEW_KEY)
+      })
     })
+  })
+
+  describe('getOpenApiSpec', () => {
+    test('fetches the REST root for the client schema with the caller credentials', async () => {
+      const spec = { swagger: '2.0', info: {}, paths: {}, definitions: {} }
+      const mockFetch = jest
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(spec), { status: 200, statusText: 'OK' }))
+
+      const client = createClient(URL, KEY, {
+        db: { schema: 'billing' },
+        global: { fetch: mockFetch },
+      })
+      client.auth.getSession = jest.fn().mockResolvedValue({
+        data: { session: { access_token: 'user-token' } },
+      })
+
+      const { data, error } = await client.getOpenApiSpec()
+
+      expect(error).toBeNull()
+      expect(data).toEqual(spec)
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      const [input, options] = mockFetch.mock.calls[0]
+      expect(String(input)).toBe(`${URL}/rest/v1/`)
+      expect(options.method).toBe('GET')
+      expect(options.headers.get('Accept')).toBe('application/openapi+json')
+      expect(options.headers.get('Accept-Profile')).toBe('billing')
+      expect(options.headers.get('apikey')).toBe(KEY)
+      expect(options.headers.get('Authorization')).toBe('Bearer user-token')
+    })
+  })
+})
+
+describe('data requests after a lost refresh race', () => {
+  const STORAGE_KEY = 'race-test-auth'
+
+  const session = (name: string, expiresIn: number) => ({
+    access_token: `access-${name}`,
+    refresh_token: `refresh-${name}`,
+    token_type: 'bearer',
+    expires_in: expiresIn,
+    expires_at: Math.floor(Date.now() / 1000) + expiresIn,
+    user: { id: 'user-1', aud: 'authenticated', role: 'authenticated' },
+  })
+
+  test('sends the session another tab committed, not the anon key, when its own refresh is discarded', async () => {
+    const items = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: (key: string, value: string) => void items.set(key, value),
+      removeItem: (key: string) => void items.delete(key),
+    }
+    const authorizations: (string | null)[] = []
+
+    const fetchImpl = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : 'url' in input ? input.url : input.href
+      if (url.includes('/auth/v1/token')) {
+        // Another tab wins the rotation while this refresh is in flight.
+        storage.setItem(STORAGE_KEY, JSON.stringify(session('other-tab', 3600)))
+        return new Response(JSON.stringify(session('this-tab', 3600)), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      authorizations.push(new Headers(init?.headers).get('Authorization'))
+      return new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+
+    const client = createClient(URL, KEY, {
+      auth: {
+        storage,
+        storageKey: STORAGE_KEY,
+        persistSession: true,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      global: { fetch: fetchImpl },
+    })
+    await client.auth.initialize()
+    storage.setItem(STORAGE_KEY, JSON.stringify(session('old', -30)))
+
+    await client.from('reservations').select('*')
+
+    expect(authorizations).toEqual(['Bearer access-other-tab'])
   })
 })
