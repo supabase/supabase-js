@@ -1,5 +1,6 @@
 import { PostgrestClient } from '@supabase/postgrest-js'
 import { createClient, SupabaseClient } from '../../src/index'
+import { _resetTopLevelSchemaWarning } from '../../src/lib/helpers'
 import { Database } from '../types'
 
 const URL = 'http://localhost:3000'
@@ -230,6 +231,29 @@ describe('SupabaseClient', () => {
       const schemaClient = client.schema('personal')
       expect(schemaClient).toBeDefined()
       expect(schemaClient).toBeInstanceOf(PostgrestClient)
+    })
+
+    test('warns, but does not throw, when schema is passed outside db', () => {
+      _resetTopLevelSchemaWarning()
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+      try {
+        expect(() => createClient(URL, KEY, { schema: 'personal' } as any)).not.toThrow()
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/must be nested under "db"/))
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
+
+    test('does not warn when schema is nested under db', () => {
+      _resetTopLevelSchemaWarning()
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
+      try {
+        createClient<Database, 'personal'>(URL, KEY, { db: { schema: 'personal' } })
+        expect(warnSpy).not.toHaveBeenCalled()
+      } finally {
+        warnSpy.mockRestore()
+      }
     })
   })
 
@@ -582,5 +606,90 @@ describe('SupabaseClient', () => {
         expect(restOptions.headers.get('apikey')).toBe(NEW_KEY)
       })
     })
+  })
+
+  describe('getOpenApiSpec', () => {
+    test('fetches the REST root for the client schema with the caller credentials', async () => {
+      const spec = { swagger: '2.0', info: {}, paths: {}, definitions: {} }
+      const mockFetch = jest
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(spec), { status: 200, statusText: 'OK' }))
+
+      const client = createClient(URL, KEY, {
+        db: { schema: 'billing' },
+        global: { fetch: mockFetch },
+      })
+      client.auth.getSession = jest.fn().mockResolvedValue({
+        data: { session: { access_token: 'user-token' } },
+      })
+
+      const { data, error } = await client.getOpenApiSpec()
+
+      expect(error).toBeNull()
+      expect(data).toEqual(spec)
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      const [input, options] = mockFetch.mock.calls[0]
+      expect(String(input)).toBe(`${URL}/rest/v1/`)
+      expect(options.method).toBe('GET')
+      expect(options.headers.get('Accept')).toBe('application/openapi+json')
+      expect(options.headers.get('Accept-Profile')).toBe('billing')
+      expect(options.headers.get('apikey')).toBe(KEY)
+      expect(options.headers.get('Authorization')).toBe('Bearer user-token')
+    })
+  })
+})
+
+describe('data requests after a lost refresh race', () => {
+  const STORAGE_KEY = 'race-test-auth'
+
+  const session = (name: string, expiresIn: number) => ({
+    access_token: `access-${name}`,
+    refresh_token: `refresh-${name}`,
+    token_type: 'bearer',
+    expires_in: expiresIn,
+    expires_at: Math.floor(Date.now() / 1000) + expiresIn,
+    user: { id: 'user-1', aud: 'authenticated', role: 'authenticated' },
+  })
+
+  test('sends the session another tab committed, not the anon key, when its own refresh is discarded', async () => {
+    const items = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: (key: string, value: string) => void items.set(key, value),
+      removeItem: (key: string) => void items.delete(key),
+    }
+    const authorizations: (string | null)[] = []
+
+    const fetchImpl = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : 'url' in input ? input.url : input.href
+      if (url.includes('/auth/v1/token')) {
+        // Another tab wins the rotation while this refresh is in flight.
+        storage.setItem(STORAGE_KEY, JSON.stringify(session('other-tab', 3600)))
+        return new Response(JSON.stringify(session('this-tab', 3600)), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      authorizations.push(new Headers(init?.headers).get('Authorization'))
+      return new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+
+    const client = createClient(URL, KEY, {
+      auth: {
+        storage,
+        storageKey: STORAGE_KEY,
+        persistSession: true,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      global: { fetch: fetchImpl },
+    })
+    await client.auth.initialize()
+    storage.setItem(STORAGE_KEY, JSON.stringify(session('old', -30)))
+
+    await client.from('reservations').select('*')
+
+    expect(authorizations).toEqual(['Bearer access-other-tab'])
   })
 })

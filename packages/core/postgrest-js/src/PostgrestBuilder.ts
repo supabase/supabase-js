@@ -5,65 +5,10 @@ import type {
   MergePartialResult,
   IsValidResultOverride,
 } from './types/types'
-import {
-  ClientServerOptions,
-  Fetch,
-  DEFAULT_MAX_RETRIES,
-  getRetryDelay,
-  RETRYABLE_STATUS_CODES,
-  RETRYABLE_METHODS,
-} from './types/common/common'
+import { ClientServerOptions, Fetch } from './types/common/common'
 import PostgrestError from './PostgrestError'
+import { fetchWithRetry } from './fetchWithRetry'
 import { ContainsNull } from './select-query-parser/types'
-
-/**
- * Sleep for a given number of milliseconds.
- * If an AbortSignal is provided, the sleep resolves early when the signal is aborted.
- */
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    if (signal?.aborted) {
-      resolve()
-      return
-    }
-    const id = setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort)
-      resolve()
-    }, ms)
-    function onAbort() {
-      clearTimeout(id)
-      resolve()
-    }
-    signal?.addEventListener('abort', onAbort)
-  })
-}
-
-/**
- * Check if a request should be retried based on method and status code.
- */
-function shouldRetry(
-  method: string,
-  status: number,
-  attemptCount: number,
-  retryEnabled: boolean
-): boolean {
-  // Don't retry if retries are disabled or we've exhausted attempts
-  if (!retryEnabled || attemptCount >= DEFAULT_MAX_RETRIES) {
-    return false
-  }
-
-  // Only retry idempotent methods (GET, HEAD, OPTIONS)
-  if (!RETRYABLE_METHODS.includes(method as (typeof RETRYABLE_METHODS)[number])) {
-    return false
-  }
-
-  // Only retry on specific status codes (520 - Cloudflare errors)
-  if (!RETRYABLE_STATUS_CODES.includes(status as (typeof RETRYABLE_STATUS_CODES)[number])) {
-    return false
-  }
-
-  return true
-}
 
 export default abstract class PostgrestBuilder<
   ClientOptions extends ClientServerOptions,
@@ -314,75 +259,32 @@ export default abstract class PostgrestBuilder<
       status: number
       statusText: string
     }> => {
-      let attemptCount = 0
+      // Serialize headers as a plain object rather than a Headers instance.
+      // React Native's XHR-based fetch silently drops headers (notably Content-Type)
+      // when given a Headers instance, causing PGRST202 on parameter-less RPC calls.
+      // See supabase/supabase-js#1562 and facebook/react-native#33933.
+      // All sibling packages (auth-js, storage-js, functions-js) already pass plain objects.
+      const headers: Record<string, string> = {}
+      this.headers.forEach((value, key) => {
+        headers[key] = value
+      })
 
-      while (true) {
-        // Serialize headers as a plain object rather than a Headers instance.
-        // React Native's XHR-based fetch silently drops headers (notably Content-Type)
-        // when given a Headers instance, causing PGRST202 on parameter-less RPC calls.
-        // See supabase/supabase-js#1562 and facebook/react-native#33933.
-        // All sibling packages (auth-js, storage-js, functions-js) already pass plain objects.
-        const headers: Record<string, string> = {}
-        this.headers.forEach((value, key) => {
-          headers[key] = value
-        })
-        if (attemptCount > 0) {
-          headers['X-Retry-Count'] = String(attemptCount)
-        }
+      // Only the fetch itself is retried — processResponse errors must never trigger retries
+      const res = await fetchWithRetry(
+        _fetch,
+        this.url.toString(),
+        {
+          method: this.method,
+          headers,
+          body: JSON.stringify(this.body, (_, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
+          signal: this.signal,
+        },
+        this.retryEnabled
+      )
 
-        // Only wrap the fetch call itself — processResponse errors must never trigger retries
-        let res: Response
-        try {
-          res = await _fetch(this.url.toString(), {
-            method: this.method,
-            headers,
-            body: JSON.stringify(this.body, (_, value) =>
-              typeof value === 'bigint' ? value.toString() : value
-            ),
-            signal: this.signal,
-          })
-          // JS allows throwing any value, and serverless or realm-crossing fetch
-          // implementations can reject with non-Error objects. `instanceof Error`
-          // is too narrow here; narrow at the use site with optional chaining.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (fetchError: any) {
-          // Never retry aborted requests
-          if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
-            throw fetchError
-          }
-
-          // Don't retry network errors for non-idempotent methods
-          if (!RETRYABLE_METHODS.includes(this.method as (typeof RETRYABLE_METHODS)[number])) {
-            throw fetchError
-          }
-
-          // Check if we should retry network errors
-          if (this.retryEnabled && attemptCount < DEFAULT_MAX_RETRIES) {
-            const delay = getRetryDelay(attemptCount)
-            attemptCount++
-            await sleep(delay, this.signal)
-            continue
-          }
-
-          // Exhausted retries or retries disabled, throw the last error
-          throw fetchError
-        }
-
-        // Check if we should retry this HTTP response
-        if (shouldRetry(this.method, res.status, attemptCount, this.retryEnabled)) {
-          const retryAfterHeader = res.headers?.get('Retry-After') ?? null
-          const delay =
-            retryAfterHeader !== null
-              ? Math.max(0, parseInt(retryAfterHeader, 10) || 0) * 1000
-              : getRetryDelay(attemptCount)
-          await res.text()
-          attemptCount++
-          await sleep(delay, this.signal)
-          continue
-        }
-
-        return await this.processResponse(res)
-      }
+      return await this.processResponse(res)
     }
 
     let res = executeWithRetry()

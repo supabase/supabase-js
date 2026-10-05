@@ -38,10 +38,11 @@ import {
 } from './lib/fetch'
 import {
   appendFlowIdToRedirectTo,
-  assertPasskeyExperimentalEnabled,
+  assertRecoveryCodesExperimentalEnabled,
   decodeJWT,
   deepClone,
   Deferred,
+  expiresAt,
   generateCallbackId,
   getAlgorithm,
   getCodeChallengeAndMethod,
@@ -84,6 +85,8 @@ import type {
   AuthMFAEnrollWebauthnResponse,
   AuthMFAGetAuthenticatorAssuranceLevelResponse,
   AuthMFAListFactorsResponse,
+  AuthMFARecoveryCodesGenerateResponse,
+  AuthMFARecoveryCodesStatusResponse,
   AuthMFAUnenrollResponse,
   AuthMFAVerifyResponse,
   AuthOtpResponse,
@@ -111,6 +114,8 @@ import type {
   MFAEnrollPhoneParams,
   MFAEnrollTOTPParams,
   MFAEnrollWebauthnParams,
+  MFARecoveryCodesGenerateParams,
+  MFARecoveryCodesVerifyParams,
   MFAUnenrollParams,
   MFAVerifyParams,
   MFAVerifyPhoneParams,
@@ -230,6 +235,10 @@ async function lockNoOp<R>(name: string, acquireTimeout: number, fn: () => Promi
  */
 const GLOBAL_JWKS: { [storageKey: string]: { cachedAt: number; jwks: { keys: JWK[] } } } = {}
 
+// Warn once per JS realm, not per client instance — server-side apps can
+// construct many clients per process and must not be spammed.
+let deprecatedLockWarned = false
+
 export default class GoTrueClient {
   private static nextInstanceID: Record<string, number> = {}
 
@@ -253,8 +262,6 @@ export default class GoTrueClient {
   /**
    * Namespace for passkey methods.
    * Includes lower-level two-step registration/authentication and passkey management.
-   *
-   * Requires `auth.experimental.passkey: true`; otherwise all methods throw.
    */
   passkey: AuthPasskeyApi
   /**
@@ -457,6 +464,13 @@ export default class GoTrueClient {
     // by default, no implicit `processLock`.
     if (settings.lock != null) {
       this.lock = settings.lock
+
+      if (!deprecatedLockWarned) {
+        deprecatedLockWarned = true
+        console.warn(
+          `${this._logPrefix()} The "lock" option is deprecated and will be removed in v3. The client now coordinates session refreshes without a lock, so most apps can drop the option. See https://github.com/supabase/supabase-js/blob/master/packages/core/auth-js/migrations/lockless-coordination.md`
+        )
+      }
     }
 
     if (!this.jwks) {
@@ -473,6 +487,13 @@ export default class GoTrueClient {
       challengeAndVerify: this._challengeAndVerify.bind(this),
       getAuthenticatorAssuranceLevel: this._getAuthenticatorAssuranceLevel.bind(this),
       webauthn: new WebAuthnApi(this),
+      recoveryCodes: {
+        getStatus: this._getRecoveryCodesStatus.bind(this),
+        generate: this._generateRecoveryCodes.bind(this),
+        verify: this._verifyRecoveryCode.bind(this),
+        regenerate: this._regenerateRecoveryCodes.bind(this),
+        unenroll: this._unenrollRecoveryCodes.bind(this),
+      },
     }
 
     this.oauth = {
@@ -3054,60 +3075,36 @@ export default class GoTrueClient {
       )
 
       if (!hasExpired) {
-        if (this.userStorage) {
-          const maybeUser: { user?: User | null } | null = (await getItemAsync(
-            this.userStorage,
-            this.storageKey + '-user'
-          )) as any
-
-          if (maybeUser?.user) {
-            currentSession.user = maybeUser.user
-          } else {
-            currentSession.user = userNotAvailableProxy()
-          }
-        }
-
-        // Wrap the user object with a warning proxy on the server
-        // This warns when properties of the user are accessed, not when session.user itself is accessed
-        if (
-          this.storage.isServer &&
-          currentSession.user &&
-          !(currentSession.user as any).__isUserNotAvailableProxy
-        ) {
-          const suppressWarningRef = { value: this.suppressGetSessionWarning }
-          currentSession.user = insecureUserWarningProxy(currentSession.user, suppressWarningRef)
-
-          // Update the client-level suppression flag when the proxy suppresses the warning
-          if (suppressWarningRef.value) {
-            this.suppressGetSessionWarning = true
-          }
-        }
-
-        return { data: { session: currentSession }, error: null }
+        return { data: { session: await this._hydrateSessionUser(currentSession) }, error: null }
       }
 
       const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
       if (error) {
-        // Proactive-preserve mirror: `_callRefreshToken` keeps the session
-        // in storage when refresh fails non-retryably but the access token
-        // is still inside its real expiry window. Hand the caller the
-        // still-valid session instead of translating the refresh error
-        // into `session: null`. If the access token has actually expired,
-        // the session is genuinely dead and the error stands. Explicit
-        // refresh entry points (`refreshSession`, `setSession`)
-        // intentionally bypass this fallback — they want to know the
-        // refresh failed.
-        const accessTokenStillValid = !!(
-          currentSession.expires_at && currentSession.expires_at * 1000 > Date.now()
-        )
-        if (accessTokenStillValid) {
-          // Race guard: a concurrent `signOut` may have cleared storage
-          // during the refresh attempt. Don't hand back a session that no
-          // longer exists on disk.
-          const stillStored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
-          if (stillStored && stillStored.refresh_token === currentSession.refresh_token) {
-            return this._returnResult({ data: { session: currentSession }, error: null })
-          }
+        // A failed refresh does not mean there is no session. Storage is the
+        // source of truth at this point, because either:
+        //  - `_callRefreshToken` kept the original session in storage since
+        //    the access token is still inside its real expiry window (a
+        //    proactive refresh that failed non-retryably), or
+        //  - another caller, in this tab or a different one, committed its
+        //    own rotated session while this refresh was in flight, so this
+        //    one was discarded by the commit guard or rejected by the server
+        //    as already used.
+        // Empty storage (concurrent `signOut`) or an expired stored session
+        // means the session is genuinely gone and the error stands. Callers
+        // that pass an explicit token (`setSession`,
+        // `refreshSession({ refresh_token })`) call `_callRefreshToken`
+        // directly and surface the failure instead.
+        const stored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+        if (
+          stored &&
+          this._isValidSession(stored) &&
+          stored.expires_at &&
+          stored.expires_at * 1000 > Date.now()
+        ) {
+          return this._returnResult({
+            data: { session: await this._hydrateSessionUser(stored) },
+            error: null,
+          })
         }
         return this._returnResult({ data: { session: null }, error })
       }
@@ -3116,6 +3113,35 @@ export default class GoTrueClient {
     } finally {
       this._debug('#__loadSession()', 'end')
     }
+  }
+
+  /**
+   * Completes a session read back from storage so it matches what callers of
+   * `getSession()` expect: fills in `session.user` from `userStorage` when the
+   * client keeps the user in split storage, and wraps the user in the
+   * insecure-access warning proxy on the server.
+   */
+  private async _hydrateSessionUser(session: Session): Promise<Session> {
+    if (this.userStorage) {
+      const maybeUser: { user?: User | null } | null = (await getItemAsync(
+        this.userStorage,
+        this.storageKey + '-user'
+      )) as any
+
+      session.user = maybeUser?.user ? maybeUser.user : userNotAvailableProxy()
+    }
+
+    // Warns when properties of the user are accessed, not when session.user itself is accessed.
+    if (this.storage.isServer && session.user && !(session.user as any).__isUserNotAvailableProxy) {
+      const suppressWarningRef = { value: this.suppressGetSessionWarning }
+      session.user = insecureUserWarningProxy(session.user, suppressWarningRef)
+
+      if (suppressWarningRef.value) {
+        this.suppressGetSessionWarning = true
+      }
+    }
+
+    return session
   }
 
   /**
@@ -4346,6 +4372,12 @@ export default class GoTrueClient {
       } catch (err) {
         await this.stateChangeEmitters.get(id)?.callback('INITIAL_SESSION', null)
         this._debug('INITIAL_SESSION', 'callback id', id, 'error', err)
+        if (isAuthRefreshDiscardedError(err)) {
+          // Same successful no-op _recoverAndRefresh treats as debug-only: the
+          // commit guard discarded a refresh because a concurrent signOut
+          // changed session state mid-flight.
+          return
+        }
         if (
           isAuthSessionMissingError(err) ||
           isAuthRetryableFetchError(err) ||
@@ -4992,6 +5024,14 @@ export default class GoTrueClient {
 
     try {
       this.refreshingDeferred = new Deferred<CallRefreshTokenResult>()
+
+      // Only callers that arrive while this refresh is in flight await the
+      // deferred; the original caller is served by the `throw` in the catch
+      // below. Pre-attach a no-op rejection handler so a failing refresh with
+      // no concurrent callers cannot surface as an unhandled rejection —
+      // concurrent callers attach their own handlers via `.promise` and still
+      // observe the rejection.
+      this.refreshingDeferred.promise.then(undefined, () => {})
 
       // Snapshot storage before the fetch. The commit guard discards the
       // rotated tokens only when a non-null pre-fetch snapshot changed under
@@ -6021,12 +6061,18 @@ export default class GoTrueClient {
       phone: [],
       totp: [],
       webauthn: [],
+      recovery_code: [],
     }
 
     // loop over the factors ONCE
     for (const factor of user?.factors ?? []) {
       data.all.push(factor)
-      if (factor.status === 'verified') {
+      // Types that are not recognized are pushed to `all` bucket.
+      if (
+        factor.status === 'verified' &&
+        factor.factor_type in data &&
+        Array.isArray(data[factor.factor_type])
+      ) {
         ;(data[factor.factor_type] as (typeof factor)[]).push(factor)
       }
     }
@@ -6116,6 +6162,200 @@ export default class GoTrueClient {
     const currentAuthenticationMethods = payload.amr || []
 
     return { data: { currentLevel, nextLevel, currentAuthenticationMethods }, error: null }
+  }
+
+  /**
+   * {@link AuthMFARecoveryCodesApi#getStatus}
+   */
+  private async _getRecoveryCodesStatus(): Promise<AuthMFARecoveryCodesStatusResponse> {
+    assertRecoveryCodesExperimentalEnabled(this.experimental)
+    try {
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        const { data, error } = await _request(
+          this.fetch,
+          'GET',
+          `${this.url}/factors/recovery-codes`,
+          {
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * {@link AuthMFARecoveryCodesApi#generate}
+   */
+  private async _generateRecoveryCodes(
+    params?: MFARecoveryCodesGenerateParams
+  ): Promise<AuthMFARecoveryCodesGenerateResponse> {
+    assertRecoveryCodesExperimentalEnabled(this.experimental)
+    try {
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        const { data, error } = await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/factors/recovery-codes`,
+          {
+            // The body is optional server-side; only send one when a name was given.
+            body: params?.friendlyName ? { friendly_name: params.friendlyName } : undefined,
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * {@link AuthMFARecoveryCodesApi#verify}
+   */
+  private async _verifyRecoveryCode(
+    params: MFARecoveryCodesVerifyParams
+  ): Promise<AuthMFAVerifyResponse> {
+    assertRecoveryCodesExperimentalEnabled(this.experimental)
+    const run = async (): Promise<AuthMFAVerifyResponse> => {
+      try {
+        return await this._useSession(async (result) => {
+          const { data: sessionData, error: sessionError } = result
+          if (sessionError) {
+            return this._returnResult({ data: null, error: sessionError })
+          }
+
+          const { data, error } = await _request(
+            this.fetch,
+            'POST',
+            `${this.url}/factors/recovery-codes/verify`,
+            {
+              body: { code: params.code },
+              headers: this.headers,
+              jwt: sessionData?.session?.access_token,
+            }
+          )
+          if (error) {
+            return this._returnResult({ data: null, error })
+          }
+
+          // A server-provided expires_at takes precedence over the computed one.
+          const session: Session = { expires_at: expiresAt(data.expires_in), ...data }
+          await this._saveSession(session)
+          await this._notifyAllSubscribers('MFA_CHALLENGE_VERIFIED', session)
+
+          return this._returnResult({ data, error: null })
+        })
+      } catch (error) {
+        if (isAuthError(error)) {
+          return this._returnResult({ data: null, error })
+        }
+        throw error
+      }
+    }
+
+    if (this.lock != null) {
+      return this._acquireLock(this.lockAcquireTimeout, run)
+    }
+    return run()
+  }
+
+  /**
+   * {@link AuthMFARecoveryCodesApi#regenerate}
+   */
+  private async _regenerateRecoveryCodes(): Promise<AuthMFARecoveryCodesGenerateResponse> {
+    assertRecoveryCodesExperimentalEnabled(this.experimental)
+    try {
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        const { data, error } = await _request(
+          this.fetch,
+          'POST',
+          `${this.url}/factors/recovery-codes/regenerate`,
+          {
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
+  }
+
+  /**
+   * {@link AuthMFARecoveryCodesApi#unenroll}
+   */
+  private async _unenrollRecoveryCodes(): Promise<AuthMFAUnenrollResponse> {
+    assertRecoveryCodesExperimentalEnabled(this.experimental)
+    try {
+      return await this._useSession(async (result) => {
+        const { data: sessionData, error: sessionError } = result
+        if (sessionError) {
+          return this._returnResult({ data: null, error: sessionError })
+        }
+
+        const { data, error } = await _request(
+          this.fetch,
+          'DELETE',
+          `${this.url}/factors/recovery-codes`,
+          {
+            headers: this.headers,
+            jwt: sessionData?.session?.access_token,
+          }
+        )
+        if (error) {
+          return this._returnResult({ data: null, error })
+        }
+
+        return this._returnResult({ data, error: null })
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return this._returnResult({ data: null, error })
+      }
+      throw error
+    }
   }
 
   /**
@@ -6565,14 +6805,36 @@ export default class GoTrueClient {
    * 2. Prompts user via navigator.credentials.get()
    * 3. Verifies credential with server and creates session
    *
-   * Requires `auth.experimental.passkey: true`.
+   * Pass `options.mediation: 'conditional'` to use WebAuthn Conditional UI
+   * (passkey autofill) instead of the modal picker; the value is forwarded to
+   * `navigator.credentials.get()` unchanged.
+   *
+   * The challenge fetched in step 1 expires after the server's
+   * GOTRUE_WEBAUTHN_CHALLENGE_EXPIRY_DURATION (5 minutes by default). With
+   * `mediation: 'conditional'` the autofill prompt can stay pending for longer
+   * than that: the browser ceremony then still succeeds, but verification fails
+   * with `error_code: "webauthn_challenge_expired"`. Recover by calling
+   * `signInWithPasskey()` again. It fetches a fresh challenge and, unless you
+   * passed your own `options.signal`, cancels the pending ceremony first, so
+   * the browser never sees two concurrent WebAuthn requests; the earlier call
+   * resolves with a `WebAuthnError` whose code is `ERROR_CEREMONY_ABORTED`. If
+   * you pass your own `signal`, abort it before retrying.
    *
    * @category Auth
+   *
+   * @example Sign in with Conditional UI (passkey autofill)
+   * ```js
+   * // <input autocomplete="username webauthn" /> somewhere on the page
+   * const { data, error } = await supabase.auth.signInWithPasskey({
+   *   options: {
+   *     mediation: 'conditional'
+   *   }
+   * });
+   * ```
    */
   async signInWithPasskey(
     credentials?: SignInWithPasskeyCredentials
   ): Promise<AuthPasskeyAuthenticationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       if (!browserSupportsWebAuthn()) {
         return this._returnResult({
@@ -6595,6 +6857,7 @@ export default class GoTrueClient {
       const { data: credential, error: credentialError } = await getCredential({
         publicKey: publicKeyOptions,
         signal,
+        mediation: credentials?.options?.mediation,
       })
       if (credentialError || !credential) {
         return this._returnResult({
@@ -6623,14 +6886,13 @@ export default class GoTrueClient {
    * 2. Prompts user via navigator.credentials.create()
    * 3. Verifies credential with server
    *
-   * Requires an active session. Requires `auth.experimental.passkey: true`.
+   * Requires an active session.
    *
    * @category Auth
    */
   async registerPasskey(
     credentials?: RegisterPasskeyCredentials
   ): Promise<AuthPasskeyRegistrationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       if (!browserSupportsWebAuthn()) {
         return this._returnResult({
@@ -6678,7 +6940,6 @@ export default class GoTrueClient {
    * Returns WebAuthn credential creation options to pass to navigator.credentials.create().
    */
   private async _startPasskeyRegistration(): Promise<AuthPasskeyRegistrationOptionsResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6721,7 +6982,6 @@ export default class GoTrueClient {
   private async _verifyPasskeyRegistration(
     params: VerifyPasskeyRegistrationParams
   ): Promise<AuthPasskeyRegistrationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6767,7 +7027,6 @@ export default class GoTrueClient {
   private async _startPasskeyAuthentication(
     params?: StartPasskeyAuthenticationParams
   ): Promise<AuthPasskeyAuthenticationOptionsResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       const { data, error } = await _request(
         this.fetch,
@@ -6799,7 +7058,6 @@ export default class GoTrueClient {
   private async _verifyPasskeyAuthentication(
     params: VerifyPasskeyAuthenticationParams
   ): Promise<AuthPasskeyAuthenticationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       const { data, error } = await _request(
         this.fetch,
@@ -6834,7 +7092,6 @@ export default class GoTrueClient {
    * List all passkeys for the current user.
    */
   private async _listPasskeys(): Promise<AuthPasskeyListResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6869,7 +7126,6 @@ export default class GoTrueClient {
    * Update a passkey.
    */
   private async _updatePasskey(params: PasskeyUpdateParams): Promise<AuthPasskeyUpdateResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6909,7 +7165,6 @@ export default class GoTrueClient {
    * Delete a passkey.
    */
   private async _deletePasskey(params: PasskeyDeleteParams): Promise<AuthPasskeyDeleteResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {

@@ -895,11 +895,15 @@ export class WebAuthnApi {
         await this.client.mfa
           .listFactors()
           .then((factors) =>
+            // Only an unverified factor is leftover from the enrollment that just
+            // failed, and removing it is what lets a retry with the same name
+            // succeed. A verified factor of that name is a passkey the user is
+            // already using, so it must never be selected here.
             factors.data?.all.find(
               (v) =>
                 v.factor_type === 'webauthn' &&
                 v.friendly_name === friendlyName &&
-                v.status !== 'unverified'
+                v.status === 'unverified'
             )
           )
           .then((factor) => (factor ? this.client.mfa.unenroll({ factorId: factor?.id }) : void 0))

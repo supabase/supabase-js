@@ -2,6 +2,62 @@ import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common'
 import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
+import PostgrestError from './PostgrestError'
+import { fetchWithRetry } from './fetchWithRetry'
+import {
+  PostgrestOpenApiSpec,
+  PostgrestResponseFailure,
+  PostgrestSingleResponse,
+} from './types/types'
+
+/**
+ * Build the error for a failed OpenAPI request. PostgREST answers with a JSON
+ * error object when it produced the failure itself; proxies and disabled
+ * OpenAPI output answer with plain text or an empty body, in which case the
+ * body (or, failing that, the status text) becomes the message.
+ */
+function toOpenApiError(body: string, statusText: string): PostgrestError {
+  try {
+    const parsed = JSON.parse(body)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return new PostgrestError({
+        message: String(parsed.message ?? body),
+        details: parsed.details ?? '',
+        hint: parsed.hint ?? '',
+        code: parsed.code ?? '',
+      })
+    }
+  } catch {
+    // Not JSON; fall through to the plain-text message.
+  }
+  return new PostgrestError({ message: body || statusText, details: '', hint: '', code: '' })
+}
+
+/**
+ * Build the response for a request that yielded no readable body: the fetch
+ * itself rejected (no status is known, so it is 0), or the body stream failed
+ * while being read (the response status is preserved).
+ */
+function toTransportFailure(
+  cause: unknown,
+  status: number,
+  statusText: string
+): PostgrestResponseFailure {
+  const err = cause as { name?: string; message?: string } | null | undefined
+  return {
+    success: false,
+    error: new PostgrestError({
+      message: `${err?.name ?? 'FetchError'}: ${err?.message}`,
+      details: '',
+      hint: '',
+      code: '',
+    }),
+    data: null,
+    count: null,
+    status,
+    statusText,
+  }
+}
 
 /**
  * PostgREST client.
@@ -201,6 +257,87 @@ export default class PostgrestClient<
       urlLengthLimit: this.urlLengthLimit,
       retry: this.retry,
     })
+  }
+
+  /**
+   * Fetch the OpenAPI description PostgREST publishes for this client's schema.
+   *
+   * The document lists only the tables, views and functions the caller's role
+   * holds privileges on; PostgREST applies that filtering server-side. The
+   * schema is the one this client was created with, so call `.schema()` first
+   * to describe a different one. Transient failures are retried according to
+   * the client's `retry` option, like any other idempotent request.
+   *
+   * @example
+   * ```ts
+   * const { data, error } = await supabase.getOpenApiSpec()
+   * ```
+   *
+   * @example Describe a schema other than the client default
+   * ```ts
+   * const { data, error } = await supabase.schema('billing').getOpenApiSpec()
+   * ```
+   *
+   * @category Database
+   */
+  async getOpenApiSpec(): Promise<PostgrestSingleResponse<PostgrestOpenApiSpec>> {
+    const headers = new Headers(this.headers)
+    headers.set('Accept', 'application/openapi+json')
+    if (this.schemaName) {
+      headers.set('Accept-Profile', this.schemaName)
+    }
+
+    // Headers reach the fetch implementation as a plain object, as in
+    // PostgrestBuilder: React Native's XHR-based fetch drops headers that are
+    // supplied as a Headers instance.
+    const requestHeaders: Record<string, string> = {}
+    headers.forEach((value, key) => {
+      requestHeaders[key] = value
+    })
+
+    const fetchImpl = this.fetch ?? globalThis.fetch
+    let res: Response
+    try {
+      res = await fetchWithRetry(
+        fetchImpl,
+        `${this.url}/`,
+        { method: 'GET', headers: requestHeaders },
+        this.retry ?? true
+      )
+    } catch (fetchError) {
+      return toTransportFailure(fetchError, 0, '')
+    }
+
+    let body: string
+    try {
+      body = await res.text()
+    } catch (readError) {
+      return toTransportFailure(readError, res.status, res.statusText)
+    }
+
+    if (res.ok) {
+      try {
+        return {
+          success: true,
+          error: null,
+          data: JSON.parse(body) as PostgrestOpenApiSpec,
+          count: null,
+          status: res.status,
+          statusText: res.statusText,
+        }
+      } catch {
+        // A 2xx status does not guarantee a JSON body; report it like a failure.
+      }
+    }
+
+    return {
+      success: false,
+      error: toOpenApiError(body, res.statusText),
+      data: null,
+      count: null,
+      status: res.status,
+      statusText: res.statusText,
+    }
   }
 
   /**

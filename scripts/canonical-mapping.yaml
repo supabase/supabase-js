@@ -85,6 +85,7 @@ mappings:
 
   # query renames
   database.query.from: database.query.from_table
+  database.query.get_open_api_spec: database.query.openapi_spec
   database.query.schema: database.query.schema_selection
 
   # ─── functions ───────────────────────────────────────────────────────────

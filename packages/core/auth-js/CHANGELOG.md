@@ -1,3 +1,75 @@
+## 2.117.2 (2026-09-25)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.117.1 (2026-09-23)
+
+### 🩹 Fixes
+
+- **auth:** return stored session when a refresh loses to another tab ([#2698](https://github.com/supabase/supabase-js/pull/2698))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.117.0 (2026-09-22)
+
+### 🚀 Features
+
+- **auth:** enable passkey API by default and deprecate experimental passkey opt-in ([#2695](https://github.com/supabase/supabase-js/pull/2695))
+- **auth:** forward options.mediation to navigator.credentials.get in signInWithPasskey ([#2675](https://github.com/supabase/supabase-js/pull/2675))
+
+### ❤️ Thank You
+
+- fadymak
+- James Argarin
+- Katerina Skroumpelou
+
+## 2.116.0 (2026-09-07)
+
+### 🚀 Features
+
+- **auth:** add MFA recovery codes API ([#2676](https://github.com/supabase/supabase-js/pull/2676))
+
+### 🩹 Fixes
+
+- **auth:** silence commit-guard-discarded refresh in initial session ([#2668](https://github.com/supabase/supabase-js/pull/2668))
+
+### ❤️ Thank You
+
+- fadymak
+- Katerina Skroumpelou @mandarini
+
+## 2.115.0 (2026-09-03)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.114.0 (2026-09-02)
+
+### 🩹 Fixes
+
+- **auth:** unenroll the unverified factor after a failed registration ([#2641](https://github.com/supabase/supabase-js/pull/2641))
+
+### ❤️ Thank You
+
+- Miodrag Obradovic @Kjubikstronk
+
+## 2.113.0 (2026-09-02)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.112.4 (2026-08-24)
+
+### 🩹 Fixes
+
+- **auth:** warn on deprecated lock option and prevent unhandled refresh rejection ([#2627](https://github.com/supabase/supabase-js/pull/2627))
+- **auth:** convert stolen-lock AbortError when acquireTimeout is 0 ([#2616](https://github.com/supabase/supabase-js/pull/2616))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- mmustafasenoglu @mmustafasenoglu
+
 ## 2.112.3 (2026-08-11)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.

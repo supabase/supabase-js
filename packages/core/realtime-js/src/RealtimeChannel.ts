@@ -1,4 +1,9 @@
-import { CHANNEL_EVENTS, CHANNEL_STATES } from './lib/constants'
+import {
+  CHANNEL_EVENTS,
+  CHANNEL_STATES,
+  DEFAULT_POSTGRES_CHANGES_WAIT_TIMEOUT,
+  POSTGRES_CHANGES_WAIT_ERROR_GRACE,
+} from './lib/constants'
 import type { ChannelState } from './lib/constants'
 import type RealtimeClient from './RealtimeClient'
 import RealtimePresence, { REALTIME_PRESENCE_LISTEN_EVENTS } from './RealtimePresence'
@@ -65,6 +70,34 @@ export type RealtimeChannelOptions = {
      * defines if the channel is private or not and if RLS policies will be used to check data
      */
     private?: boolean
+    /**
+     * By default, `subscribe()` reports `SUBSCRIBED` as soon as the channel itself has joined,
+     * which can happen before the server has actually established the `postgres_changes`
+     * subscription (e.g. before the replication slot is streaming). Set `wait: true` to instead
+     * hold the `SUBSCRIBED` callback until the server confirms the postgres_changes subscription
+     * is active.
+     *
+     * If the subscription cannot be established, the server rejects the join and `subscribe()`
+     * reports `CHANNEL_ERROR` with the server's reason (e.g.
+     * `PostgresChangesSubscribeTimeout: ...` when the wait ran out, or
+     * `RealtimeDisabledForConfiguration: ...` when the table is not enabled for Realtime).
+     *
+     * Has no effect on a channel with no `postgres_changes` bindings.
+     *
+     * Setting `wait: true` automatically extends the channel's join timeout so it outlasts the
+     * server's held reply, so you don't need to pass a larger `timeout` to `subscribe()` yourself.
+     * As a side effect of how Phoenix tracks the join timeout, other pushes on the channel that
+     * do not pass an explicit timeout inherit the extended value too.
+     */
+    postgres_changes_options?: {
+      wait?: boolean
+      /**
+       * Milliseconds the server should wait for postgres_changes subscription confirmation when
+       * `wait` is `true`. Defaults to 15000, and the server clamps it to its own configured
+       * maximum (20s by default), so asking for more waits less.
+       */
+      timeout?: number
+    }
   }
 }
 
@@ -395,7 +428,7 @@ export default class RealtimeChannel {
     }
     if (this.channelAdapter.isClosed()) {
       const {
-        config: { broadcast, presence, private: isPrivate },
+        config: { broadcast, presence, private: isPrivate, postgres_changes_options },
       } = this.params
 
       const postgres_changes = this.bindings.postgres_changes?.map((r) => r.filter) ?? []
@@ -410,6 +443,7 @@ export default class RealtimeChannel {
         presence: { ...presence, enabled: presence_enabled },
         postgres_changes,
         private: isPrivate,
+        ...(postgres_changes_options ? { postgres_changes_options } : {}),
       }
 
       if (this.socket.accessTokenValue) {
@@ -426,8 +460,17 @@ export default class RealtimeChannel {
 
       this._updateFilterMessage()
 
+      const joinTimeout =
+        postgres_changes_options?.wait && postgres_changes.length > 0
+          ? Math.max(
+              timeout,
+              (postgres_changes_options.timeout ?? DEFAULT_POSTGRES_CHANGES_WAIT_TIMEOUT) +
+                POSTGRES_CHANGES_WAIT_ERROR_GRACE
+            )
+          : timeout
+
       this.channelAdapter
-        .subscribe(timeout)
+        .subscribe(joinTimeout)
         .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
           // Only refresh auth if using callback-based tokens
           if (!this.socket._isManualToken()) {

@@ -3,7 +3,9 @@ import { FunctionsClient } from '@supabase/functions-js'
 import {
   PostgrestClient,
   type PostgrestFilterBuilder,
+  type PostgrestOpenApiSpec,
   type PostgrestQueryBuilder,
+  type PostgrestSingleResponse,
 } from '@supabase/postgrest-js'
 import {
   type RealtimeChannel,
@@ -23,6 +25,7 @@ import {
 import { checkApiKeyFormat, fetchWithAuth } from './lib/fetch'
 import {
   applySettingDefaults,
+  checkTopLevelSchemaOption,
   validateSupabaseUrl,
   type ResolvedSupabaseClientOptions,
 } from './lib/helpers'
@@ -318,6 +321,7 @@ export default class SupabaseClient<
     const baseUrl = validateSupabaseUrl(supabaseUrl)
     if (!supabaseKey) throw new Error('supabaseKey is required.')
     checkApiKeyFormat(supabaseKey)
+    checkTopLevelSchemaOption(options)
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
@@ -459,6 +463,25 @@ export default class SupabaseClient<
     Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
   > {
     return this.rest.schema<DynamicSchema>(schema)
+  }
+
+  // NOTE: signatures must be kept in sync with PostgrestClient.getOpenApiSpec
+  /**
+   * Fetch the OpenAPI description PostgREST publishes for this client's schema.
+   *
+   * The document lists only the tables, views and functions the caller's role
+   * holds privileges on. The request carries the same `apikey` and
+   * `Authorization` headers as every other query, so the description is scoped
+   * to the signed-in user. Call `.schema()` first to describe a schema other
+   * than the client default.
+   *
+   * @example
+   * ```ts
+   * const { data, error } = await supabase.getOpenApiSpec()
+   * ```
+   */
+  getOpenApiSpec(): Promise<PostgrestSingleResponse<PostgrestOpenApiSpec>> {
+    return this.rest.getOpenApiSpec()
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.rpc

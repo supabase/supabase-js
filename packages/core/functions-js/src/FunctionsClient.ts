@@ -234,7 +234,7 @@ export class FunctionsClient {
         ) {
           // will work for File as File inherits Blob
           // also works for ArrayBuffer as it is the same underlying structure as a Blob
-          _headers['Content-Type'] = 'application/octet-stream'
+          _headers['Content-Type'] = (functionArgs as Blob).type || 'application/octet-stream'
           body = functionArgs
         } else if (typeof functionArgs === 'string') {
           // plain string

@@ -1,3 +1,64 @@
+## 2.117.2 (2026-09-25)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.117.1 (2026-09-23)
+
+### 🩹 Fixes
+
+- **auth:** return stored session when a refresh loses to another tab ([#2698](https://github.com/supabase/supabase-js/pull/2698))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.117.0 (2026-09-22)
+
+### 🚀 Features
+
+- **auth:** enable passkey API by default and deprecate experimental passkey opt-in ([#2695](https://github.com/supabase/supabase-js/pull/2695))
+
+### ❤️ Thank You
+
+- fadymak
+
+## 2.116.0 (2026-09-07)
+
+### 🚀 Features
+
+- **auth:** add MFA recovery codes API ([#2676](https://github.com/supabase/supabase-js/pull/2676))
+
+### 🩹 Fixes
+
+- **supabase:** warn when schema is passed outside db options ([#2663](https://github.com/supabase/supabase-js/pull/2663))
+
+### ❤️ Thank You
+
+- fadymak
+- Katerina Skroumpelou @mandarini
+
+## 2.115.0 (2026-09-03)
+
+### 🚀 Features
+
+- **postgrest:** add getOpenApiSpec() ([#2651](https://github.com/supabase/supabase-js/pull/2651))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.114.0 (2026-09-02)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.113.0 (2026-09-02)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.112.4 (2026-08-24)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
 ## 2.112.3 (2026-08-11)
 
 ### 🩹 Fixes

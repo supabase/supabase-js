@@ -20,6 +20,7 @@ import {
   SearchV2Options,
   SearchV2Result,
   PurgeCacheOptions,
+  DeleteObjectEntry,
 } from '../lib/types'
 import BlobDownloadBuilder from './BlobDownloadBuilder'
 
@@ -509,6 +510,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
    * @param options The destination options.
+   * @param options.sourceVersionId The version id of the source object to move.
    * @returns Promise with response containing success message or error
    *
    * @example Move file
@@ -558,6 +560,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
           sourceKey: fromPath,
           destinationKey: toPath,
           destinationBucket: options?.destinationBucket,
+          sourceVersionId: options?.sourceVersionId,
         },
         { headers: this.headers }
       )
@@ -572,6 +575,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
    * @param options The destination options.
+   * @param options.sourceVersionId The version id of the source object to copy.
    * @returns Promise with response containing copied file path or error
    *
    * @example Copy file
@@ -621,6 +625,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
           sourceKey: fromPath,
           destinationKey: toPath,
           destinationBucket: options?.destinationBucket,
+          sourceVersionId: options?.sourceVersionId,
         },
         { headers: this.headers }
       )
@@ -638,6 +643,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
    * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @param options.versionId Create a signed URL for a specific object version rather than the current one.
    * @returns Promise with response containing signed URL or error
    *
    * @example Create Signed URL
@@ -694,6 +700,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       download?: string | boolean
       transform?: TransformOptions
       cacheNonce?: string
+      versionId?: string
     }
   ): Promise<
     | {
@@ -716,7 +723,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       let data = await post(
         this.fetch,
         `${this.url}/object/sign/${_path}`,
-        { expiresIn, ...(hasTransform ? { transform: options!.transform } : {}) },
+        {
+          expiresIn,
+          ...(hasTransform ? { transform: options!.transform } : {}),
+          ...(options?.versionId != null ? { versionId: options.versionId } : {}),
+        },
         { headers: this.headers }
       )
 
@@ -834,7 +845,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @category Storage
    * @subcategory File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
-   * @param options Optional settings: `transform` to transform the asset before serving it to the client, and `cacheNonce` to append a cache nonce parameter to the URL to invalidate the cache.
+   * @param options Optional settings: `transform` to transform the asset before serving it to the client, `cacheNonce` to append a cache nonce parameter to the URL to invalidate the cache, and `versionId` to download a specific object version.
    * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns BlobDownloadBuilder instance for downloading the file
    *
@@ -893,11 +904,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   - `objects` table permissions: `select`
    * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
-  download<Options extends { transform?: TransformOptions; cacheNonce?: string }>(
-    path: string,
-    options?: Options,
-    parameters?: FetchParameters
-  ): BlobDownloadBuilder {
+  download<
+    Options extends { transform?: TransformOptions; cacheNonce?: string; versionId?: string },
+  >(path: string, options?: Options, parameters?: FetchParameters): BlobDownloadBuilder {
     const wantsTransformation =
       typeof options?.transform === 'object' &&
       options.transform !== null &&
@@ -907,6 +916,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     const query = new URLSearchParams()
     if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
     if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+    if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
 
     const _path = this._getFinalPath(path)
@@ -932,6 +942,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @category Storage
    * @subcategory File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
+   * @param options Optional settings, including `versionId` to retrieve a specific object version.
    * @returns Promise with response containing file metadata or error
    *
    * @example Get file info
@@ -947,7 +958,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * }
    * ```
    */
-  async info(path: string): Promise<
+  async info(
+    path: string,
+    options?: { versionId?: string }
+  ): Promise<
     | {
         data: Camelize<FileObjectV2>
         error: null
@@ -958,11 +972,18 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     const _path = this._getFinalPath(path)
+    const query = new URLSearchParams()
+    if (options?.versionId != null) query.set('versionId', String(options.versionId))
+    const queryString = query.toString()
 
     return this.handleOperation(async () => {
-      const data = await get(this.fetch, `${this.url}/object/info/${_path}`, {
-        headers: this.headers,
-      })
+      const data = await get(
+        this.fetch,
+        `${this.url}/object/info/${_path}${queryString ? `?${queryString}` : ''}`,
+        {
+          headers: this.headers,
+        }
+      )
 
       return recursiveToCamel(data) as Camelize<FileObjectV2>
     })
@@ -1034,6 +1055,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param options.download Triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
    * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @param options.versionId Return the URL for a specific object version rather than the current one.
    * @returns Object with public URL
    *
    * @example Returns the URL for an asset in a public bucket
@@ -1089,6 +1111,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       download?: string | boolean
       transform?: TransformOptions
       cacheNonce?: string
+      versionId?: string
     }
   ): { data: { publicUrl: string } } {
     const _path = this._getFinalPath(path)
@@ -1097,6 +1120,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     if (options?.download) query.set('download', options.download === true ? '' : options.download)
     if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
     if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+    if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
 
     const wantsTransformation =
@@ -1122,7 +1146,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *
    * @category Storage
    * @subcategory File Buckets
-   * @param paths An array of files to delete, including the path and file name. For example [`'folder/image.png'`].
+   * @param paths An array of files to delete. Each entry is either a path (deletes whichever
+   * version is currently at that path, e.g. `'folder/image.png'`), or `{ path, versionId }` to
+   * delete an exact version current or archived (e.g. `{ path: 'folder/image.png', versionId: '...' }`).
    * @returns Promise with response containing array of deleted file objects or error
    *
    * @example Delete file
@@ -1141,13 +1167,21 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * }
    * ```
    *
+   * @example Delete a specific object version
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .remove([{ path: 'folder/avatar1.png', versionId: 'noncurrent-version-id' }])
+   * ```
+   *
    * @remarks
    * - RLS policy permissions required:
    *   - `buckets` table permissions: none
    *   - `objects` table permissions: `delete` and `select`
    * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
-  async remove(paths: string[]): Promise<
+  async remove(paths: DeleteObjectEntry[]): Promise<
     | {
         data: FileObject[]
         error: null

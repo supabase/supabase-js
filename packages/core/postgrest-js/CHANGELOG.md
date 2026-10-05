@@ -1,3 +1,53 @@
+## 2.117.2 (2026-09-25)
+
+### 🩹 Fixes
+
+- **postgrest:** avoid instantiation depth errors for large relationship unions ([#2701](https://github.com/supabase/supabase-js/pull/2701))
+
+### ❤️ Thank You
+
+- Han Qiao @sweatybridge
+
+## 2.117.1 (2026-09-23)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.117.0 (2026-09-22)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.116.0 (2026-09-07)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.115.0 (2026-09-03)
+
+### 🚀 Features
+
+- **postgrest:** add getOpenApiSpec() ([#2651](https://github.com/supabase/supabase-js/pull/2651))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.114.0 (2026-09-02)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.113.0 (2026-09-02)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.112.4 (2026-08-24)
+
+### 🩹 Fixes
+
+- **postgrest:** move override fixtures out of generated types, repair codegen ([#2605](https://github.com/supabase/supabase-js/pull/2605))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.112.3 (2026-08-11)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
