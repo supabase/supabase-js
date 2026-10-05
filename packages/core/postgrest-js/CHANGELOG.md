@@ -1,3 +1,13 @@
+## 2.117.2 (2026-09-25)
+
+### 🩹 Fixes
+
+- **postgrest:** avoid instantiation depth errors for large relationship unions ([#2701](https://github.com/supabase/supabase-js/pull/2701))
+
+### ❤️ Thank You
+
+- Han Qiao @sweatybridge
+
 ## 2.117.1 (2026-09-23)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
