@@ -52,6 +52,14 @@ const serializeScalar = (value: RealtimeFilterValue): string => {
   return needsQuoting(serialized) ? quote(serialized) : serialized
 }
 
+const serializeArrayElement = (value: RealtimeFilterValue): string => {
+  // Realtime converts `in.(...)` to a PostgreSQL array literal, which has additional quoting rules.
+  if (typeof value === 'string' && (value === '' || /^null$/i.test(value) || /[{}]/.test(value))) {
+    return quote(value)
+  }
+  return serializeScalar(value)
+}
+
 const serializeIsValue = (value: RealtimeIsFilterValue): string =>
   value === null ? 'null' : String(value)
 
@@ -63,7 +71,7 @@ const serialize = (operator: RealtimePostgresChangesFilterOperator, value: unkno
       throw new Error('Realtime `in` filter requires at least one value.')
     }
     const items = Array.from(new Set(values))
-      .map((v) => serializeScalar(v as RealtimeFilterValue))
+      .map((v) => serializeArrayElement(v))
       .join(',')
     return `in.(${items})`
   }
@@ -150,7 +158,9 @@ export class RealtimePostgresFilterBuilder {
    * Match rows where `column` is one of `values` (`column=in.(a,b,c)`).
    * Requires at least one value; duplicates are removed. An element containing a
    * reserved character is double-quoted (`in.("a,b",c)`), so commas inside an
-   * element are preserved. `null` is intentionally not accepted (`IN (null)`
+   * element are preserved. Empty strings, literal `NULL` (case-insensitive), and
+   * curly braces are also quoted to preserve them in the server's PostgreSQL array literal.
+   * `null` is intentionally not accepted (`IN (null)`
    * never matches in SQL) — use `is`/`not('col','is',null)` for null checks.
    */
   in(column: string, values: ReadonlyArray<string | number | boolean>): this {

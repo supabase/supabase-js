@@ -144,6 +144,30 @@ describe('RealtimePostgresFilterBuilder', () => {
       expect(postgresChangesFilter().in('id', [1]).build()).toBe('id=in.(1)')
     })
 
+    test.each([
+      ['', 'label=in.("")'],
+      ['NULL', 'label=in.("NULL")'],
+      ['null', 'label=in.("null")'],
+      ['NuLl', 'label=in.("NuLl")'],
+      ['{tag}', 'label=in.("{tag}")'],
+      ['a{b}', 'label=in.("a{b}")'],
+    ])('preserves the literal array element %j', (value, expected) => {
+      expect(postgresChangesFilter().in('label', [value]).build()).toBe(expected)
+    })
+
+    test('preserves special array elements alongside other values', () => {
+      const filter = postgresChangesFilter().in('label', [
+        '',
+        'NULL',
+        '{tag}',
+        'active',
+        '',
+        0,
+        false,
+      ])
+      expect(filter.build()).toBe('label=in.("","NULL","{tag}",active,0,false)')
+    })
+
     test('throws on an empty array', () => {
       expect(() => postgresChangesFilter().in('id', [])).toThrow(/at least one value/)
     })
@@ -171,6 +195,18 @@ describe('RealtimePostgresFilterBuilder', () => {
   })
 
   describe('not (negation)', () => {
+    test('keeps a null operand distinct from the literal string NULL', () => {
+      expect(postgresChangesFilter().not('label', 'in', null).build()).toBe('label=not.in.(null)')
+      expect(postgresChangesFilter().not('label', 'in', 'NULL').build()).toBe(
+        'label=not.in.("NULL")'
+      )
+    })
+
+    test('quotes literal array elements in a negated in filter', () => {
+      const filter = postgresChangesFilter().not('label', 'in', ['', 'NULL', '{tag}'])
+      expect(filter.build()).toBe('label=not.in.("","NULL","{tag}")')
+    })
+
     test.each([
       [postgresChangesFilter().not('status', 'eq', 'draft'), 'status=not.eq.draft'],
       [postgresChangesFilter().not('id', 'gt', 5), 'id=not.gt.5'],
