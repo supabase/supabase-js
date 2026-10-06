@@ -34,6 +34,7 @@ overrides:
   # (GHSA-r28c-9q8g-f849, fixed in 8.5.18); next pins the old 8.4.31
   # transitively in the realtime example.
   postcss: '>=8.5.18'
+  source-map-js: '>=1.2.2'
   # Avoid the sourceMappingURL file-read advisory (GHSA-4x5r-pxfx-6jf8) in
   # @babel/core <=7.29.0; reached via next>styled-jsx in the realtime example.
   # (No 7.29.1 was ever published; 7.29.7 is the first fixed 7.x release.)
@@ -52,6 +53,7 @@ minimumReleaseAge: 10080 # 7 days
 minimumReleaseAgeExclude:
   - '@supabase/*'
   - supabase # first-party Supabase CLI
+  - source-map-js@1.2.2
 blockExoticSubdeps: true
 
 # Whitelist of packages allowed to run install scripts (preinstall/install/postinstall).
