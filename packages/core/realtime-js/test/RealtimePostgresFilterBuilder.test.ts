@@ -197,9 +197,8 @@ describe('RealtimePostgresFilterBuilder', () => {
   describe('not (negation)', () => {
     test('keeps a null operand distinct from the literal string NULL', () => {
       expect(postgresChangesFilter().not('label', 'in', null).build()).toBe('label=not.in.(null)')
-      expect(postgresChangesFilter().not('label', 'in', 'NULL').build()).toBe(
-        'label=not.in.("NULL")'
-      )
+      const filter = postgresChangesFilter().not('label', 'in', 'NULL')
+      expect(filter.build()).toBe('label=not.in.("NULL")')
     })
 
     test('quotes literal array elements in a negated in filter', () => {
