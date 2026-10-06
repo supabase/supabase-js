@@ -96,22 +96,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       const metadata = options.metadata
 
-      if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
-        body = new FormData()
-        body.append('cacheControl', options.cacheControl as string)
-        if (metadata) {
-          body.append('metadata', this.encodeMetadata(metadata))
-        }
-        body.append('', fileBody)
-      } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
-        body = fileBody
-        // Only append if not already present
-        if (!body.has('cacheControl')) {
-          body.append('cacheControl', options.cacheControl as string)
-        }
-        if (metadata && !body.has('metadata')) {
-          body.append('metadata', this.encodeMetadata(metadata))
-        }
+      if (
+        (typeof Blob !== 'undefined' && fileBody instanceof Blob) ||
+        (typeof FormData !== 'undefined' && fileBody instanceof FormData)
+      ) {
+        body = this.prepareUploadFormData(fileBody, options)
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
@@ -295,21 +284,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       const metadata = options.metadata
 
-      if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
-        body = new FormData()
-        body.append('cacheControl', options.cacheControl as string)
-        if (metadata) {
-          body.append('metadata', this.encodeMetadata(metadata))
-        }
-        body.append('', fileBody)
-      } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
-        body = fileBody
-        if (!body.has('cacheControl')) {
-          body.append('cacheControl', options.cacheControl as string)
-        }
-        if (metadata && !body.has('metadata')) {
-          body.append('metadata', this.encodeMetadata(metadata))
-        }
+      if (
+        (typeof Blob !== 'undefined' && fileBody instanceof Blob) ||
+        (typeof FormData !== 'undefined' && fileBody instanceof FormData)
+      ) {
+        body = this.prepareUploadFormData(fileBody, options)
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
@@ -1520,6 +1499,35 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         parameters
       )
     })
+  }
+
+  private prepareUploadFormData(fileBody: Blob | FormData, options: FileOptions): FormData {
+    const body = new FormData()
+    const files: [string, Blob][] = []
+
+    // Storage reads metadata before consuming the file stream.
+    if (fileBody instanceof FormData) {
+      fileBody.forEach((value, name) => {
+        if (typeof value === 'string') {
+          body.append(name, value)
+        } else {
+          files.push([name, value])
+        }
+      })
+    } else {
+      files.push(['', fileBody])
+    }
+
+    if (!body.has('cacheControl')) {
+      body.append('cacheControl', options.cacheControl as string)
+    }
+    if (options.metadata && !body.has('metadata')) {
+      body.append('metadata', this.encodeMetadata(options.metadata))
+    }
+    for (const [name, file] of files) {
+      body.append(name, file)
+    }
+    return body
   }
 
   protected encodeMetadata(metadata: Record<string, any>) {
