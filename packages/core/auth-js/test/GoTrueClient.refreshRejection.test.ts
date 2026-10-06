@@ -29,6 +29,52 @@ describe('single-caller refresh failure', () => {
     consoleErrorSpy.mockRestore()
   })
 
+  it('handles a missing refresh token while emitting INITIAL_SESSION without an unhandled rejection', async () => {
+    const storageKey = 'test-initial-session-missing-refresh-token'
+    const storage = memoryLocalStorageAdapter({
+      [storageKey]: JSON.stringify({
+        ...makeSession('stored'),
+        refresh_token: '',
+        expires_at: Math.floor(Date.now() / 1000) - 60,
+      }),
+    })
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage,
+      storageKey,
+      skipAutoInitialize: true,
+    })
+    const events: Array<[string, unknown]> = []
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason)
+    }
+    process.on('unhandledRejection', onUnhandled)
+
+    const {
+      data: { subscription },
+    } = client.onAuthStateChange((event, session) => {
+      events.push([event, session])
+    })
+
+    try {
+      await new Promise((resolve) => setImmediate(resolve))
+      await new Promise((resolve) => setImmediate(resolve))
+
+      expect(events).toContainEqual(['INITIAL_SESSION', null])
+      expect(warnSpy).toHaveBeenCalled()
+      expect(unhandled).toEqual([])
+    } finally {
+      process.removeListener('unhandledRejection', onUnhandled)
+      warnSpy.mockRestore()
+      subscription.unsubscribe()
+      await client.dispose()
+    }
+  })
+
   it('rejects the caller without producing an unhandled rejection', async () => {
     const storageKey = 'test-refresh-rejection'
     const storage = memoryLocalStorageAdapter({
