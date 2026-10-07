@@ -715,17 +715,24 @@ features:
     status: implemented
     symbols:
       - default.copy
+    supporting_symbols:
+      - CopyOptions
+      - CopyOptions.copyMetadata
+      - CopyOptions.metadata
   storage.file_buckets.copy_specific_version:
     status: implemented
     symbols:
       - default.copy
     supporting_symbols:
       - DestinationOptions.sourceVersionId
+      - CopyOptions.sourceVersionId
   storage.file_buckets.copy_cross_bucket:
     status: implemented
     symbols:
       - default.copy
       - DestinationOptions
+    supporting_symbols:
+      - CopyOptions.destinationBucket
   storage.file_buckets.create_file_bucket:
     status: implemented
     symbols:
@@ -777,6 +784,8 @@ features:
     status: implemented
     symbols:
       - default.info
+    supporting_symbols:
+      - FileObjectV2.content_encoding
   storage.file_buckets.file_info_specific_version:
     status: implemented
     symbols:
