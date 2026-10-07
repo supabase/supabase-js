@@ -96,7 +96,9 @@ describe.each(['upload', 'update', 'signed'] as const)(
 
         const request = await upload(form, { contentEncoding: 'br' })
         await expectMultipart(request, { contentEncoding })
-        expect(Array.from(form.keys())).toEqual(['file', 'contentEncoding'])
+        const fieldNames: string[] = []
+        form.forEach((_, name) => fieldNames.push(name))
+        expect(fieldNames).toEqual(['file', 'contentEncoding'])
         expect(form.getAll('contentEncoding')).toEqual([contentEncoding])
       }
     )
