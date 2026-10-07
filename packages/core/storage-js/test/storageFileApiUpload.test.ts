@@ -1,5 +1,6 @@
 import { StorageClient } from '../src/index'
 import { FileOptions } from '../src/lib/types'
+import { gzipSync, gunzipSync } from 'node:zlib'
 
 type FileBody = Parameters<ReturnType<StorageClient['from']>['upload']>[1]
 
@@ -59,7 +60,46 @@ describe.each(['upload', 'update', 'signed'] as const)(
       const file = body.get('') as File
       expect(file.type).toBe('application/octet-stream')
       expect(Buffer.from(await file.arrayBuffer())).toEqual(bytes)
+      expect(body.has('contentEncoding')).toBe(false)
     })
+
+    test.each(['Blob', 'File', 'FormData'] as const)(
+      'sends %s content encoding before the file and preserves compressed bytes',
+      async (kind) => {
+        const compressedBytes = gzipSync(bytes)
+        const blob = new Blob([compressedBytes], { type: 'text/plain' })
+        let payload: FileBody = blob
+        if (kind === 'File') {
+          payload = new File([compressedBytes], 'sample.txt.gz', { type: 'text/plain' })
+        } else if (kind === 'FormData') {
+          payload = new FormData()
+          payload.append('file', blob, 'sample.txt.gz')
+        }
+
+        const request = await upload(payload, { contentEncoding: 'gzip' })
+        // Only the file is encoded, not the multipart envelope.
+        expect(request.headers.get('content-encoding')).toBeNull()
+        const body = await expectMultipart(request, { contentEncoding: 'gzip' })
+        const file = body.get(kind === 'FormData' ? 'file' : '') as File
+        const actualBytes = Buffer.from(await file.arrayBuffer())
+        expect(actualBytes).toEqual(compressedBytes)
+        expect(gunzipSync(actualBytes)).toEqual(bytes)
+      }
+    )
+
+    test.each(['gzip', ''])(
+      'preserves caller contentEncoding %j over options even when it follows the file',
+      async (contentEncoding) => {
+        const form = new FormData()
+        form.append('file', new Blob([contentEncoding ? gzipSync(bytes) : bytes]), 'original.bin')
+        form.append('contentEncoding', contentEncoding)
+
+        const request = await upload(form, { contentEncoding: 'br' })
+        await expectMultipart(request, { contentEncoding })
+        expect(Array.from(form.keys())).toEqual(['file', 'contentEncoding'])
+        expect(form.getAll('contentEncoding')).toEqual([contentEncoding])
+      }
+    )
 
     test('places caller fields and missing options before files without mutating FormData', async () => {
       const form = new FormData()
