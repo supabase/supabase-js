@@ -869,6 +869,8 @@ features:
     status: implemented
     symbols:
       - default.upload
+    supporting_symbols:
+      - FileOptions.contentEncoding
   storage.file_buckets.upload_with_metadata:
     status: implemented
     symbols:
