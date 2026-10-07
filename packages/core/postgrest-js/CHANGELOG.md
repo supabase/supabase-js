@@ -1,3 +1,13 @@
+## 2.117.3 (2026-10-07)
+
+### 🩹 Fixes
+
+- **postgrest:** treat TimeoutError as an abort in retry guard ([#2732](https://github.com/supabase/supabase-js/pull/2732))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
 ## 2.117.2 (2026-09-25)
 
 ### 🩹 Fixes
