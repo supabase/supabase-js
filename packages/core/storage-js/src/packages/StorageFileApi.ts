@@ -106,6 +106,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
 
+        if (options.contentEncoding) {
+          headers['content-encoding'] = options.contentEncoding
+        }
+
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
         }
@@ -293,6 +297,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+        if (options.contentEncoding) {
+          headers['content-encoding'] = options.contentEncoding
+        }
+
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
         }
@@ -1523,6 +1531,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     }
     if (options.metadata && !body.has('metadata')) {
       body.append('metadata', this.encodeMetadata(options.metadata))
+    }
+    if (options.contentEncoding && !body.has('contentEncoding')) {
+      body.append('contentEncoding', options.contentEncoding)
     }
     for (const [name, file] of files) {
       body.append(name, file)

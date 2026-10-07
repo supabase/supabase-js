@@ -6,6 +6,7 @@ import assert from 'assert'
 import { StorageApiError, StorageError } from '../src/lib/common/errors'
 import BlobDownloadBuilder from '../src/packages/BlobDownloadBuilder'
 import StreamDownloadBuilder from '../src/packages/StreamDownloadBuilder'
+import StorageFileApi from '../src/packages/StorageFileApi'
 
 // Supabase CLI local development defaults
 const URL = 'http://127.0.0.1:54321/storage/v1'
@@ -1493,6 +1494,33 @@ describe('StorageFileApi Edge Cases', () => {
       expect(mockPut).toHaveBeenCalled()
       const [, , , options] = mockPut.mock.calls[0]
       expect(options.duplex).toBe('half')
+    })
+
+    test('upload sets Content-Encoding when provided', async () => {
+      await storage.from('test-bucket').upload('test-path', new Uint8Array([1, 2, 3]), {
+        contentType: 'application/octet-stream',
+        contentEncoding: 'gzip',
+      })
+
+      expect(mockPost).toHaveBeenCalled()
+      const [, , body, { headers }] = mockPost.mock.calls[0]
+      expect(headers['content-type']).toBe('application/octet-stream')
+      expect(headers['content-encoding']).toBe('gzip')
+    })
+
+    test('uploadToSignedUrl sets Content-Encoding for a raw body', async () => {
+      const bytes = new Uint8Array([1, 2, 3])
+
+      await storage.from('test-bucket').uploadToSignedUrl('test-path', 'test-token', bytes, {
+        contentType: 'application/octet-stream',
+        contentEncoding: 'gzip',
+      })
+
+      expect(mockPut).toHaveBeenCalledTimes(1)
+      const [, , body, { headers }] = mockPut.mock.calls[0]
+      expect(body).toBe(bytes)
+      expect(headers['content-type']).toBe('application/octet-stream')
+      expect(headers['content-encoding']).toBe('gzip')
     })
   })
 })
