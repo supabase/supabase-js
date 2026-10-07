@@ -1,3 +1,18 @@
+## 2.117.3 (2026-10-07)
+
+### 🩹 Fixes
+
+- **deps:** bump next to patch RCE in realtime-js example ([#2733](https://github.com/supabase/supabase-js/pull/2733))
+- **functions:** send a Blob or File with its own content type ([#2714](https://github.com/supabase/supabase-js/pull/2714))
+- **postgrest:** treat TimeoutError as an abort in retry guard ([#2732](https://github.com/supabase/supabase-js/pull/2732))
+- **storage:** send multipart fields before files ([#2736](https://github.com/supabase/supabase-js/pull/2736))
+
+### ❤️ Thank You
+
+- Bruno Gale @fresh55
+- Ferhat Elmas
+- Katerina Skroumpelou @mandarini
+
 ## 2.117.2 (2026-09-25)
 
 ### 🩹 Fixes
