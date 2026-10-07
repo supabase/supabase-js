@@ -30,8 +30,17 @@ const sessionNotFound = () =>
     { status: 403, headers: { 'content-type': 'application/json' } }
   )
 
-const makeClient = () => {
-  const storage = memoryLocalStorageAdapter({ [storageKey]: JSON.stringify(session) })
+const hs256Token = (sub: string) => {
+  const b64 = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url')
+  return [
+    b64({ alg: 'HS256', typ: 'JWT' }),
+    b64({ sub, exp: Math.floor(Date.now() / 1000) + 3600 }),
+    'c2lnbmF0dXJl',
+  ].join('.')
+}
+
+const makeClient = (storedSession: object = session) => {
+  const storage = memoryLocalStorageAdapter({ [storageKey]: JSON.stringify(storedSession) })
   const client = new GoTrueClient({
     url: 'http://localhost:9999',
     autoRefreshToken: false,
@@ -71,12 +80,7 @@ describe('getUser() with session_not_found', () => {
 
   it('removes the stored session when an internal flow passes an access token that is rejected', async () => {
     const client = makeClient()
-    const b64 = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url')
-    const accessToken = [
-      b64({ alg: 'HS256', typ: 'JWT' }),
-      b64({ sub: 'stored-user-id', exp: Math.floor(Date.now() / 1000) + 3600 }),
-      'c2lnbmF0dXJl',
-    ].join('.')
+    const accessToken = hs256Token('stored-user-id')
 
     const { error } = await client.setSession({
       access_token: accessToken,
@@ -88,5 +92,28 @@ describe('getUser() with session_not_found', () => {
       data: { session: stored },
     } = await client.getSession()
     expect(stored).toBeNull()
+  })
+  it('removes the stored session when getClaims() verifies the stored access token and it is rejected', async () => {
+    const client = makeClient({ ...session, access_token: hs256Token('stored-user-id') })
+
+    const { error } = await client.getClaims()
+    expect(error?.name).toBe('AuthSessionMissingError')
+
+    const {
+      data: { session: stored },
+    } = await client.getSession()
+    expect(stored).toBeNull()
+  })
+
+  it('keeps the stored session when getClaims(jwt) verifies a JWT passed in by the caller and it is rejected', async () => {
+    const client = makeClient()
+
+    const { error } = await client.getClaims(hs256Token('some-other-user-id'))
+    expect(error?.name).toBe('AuthSessionMissingError')
+
+    const {
+      data: { session: stored },
+    } = await client.getSession()
+    expect(stored?.access_token).toBe(session.access_token)
   })
 })

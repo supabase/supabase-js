@@ -6749,7 +6749,7 @@ export default class GoTrueClient {
 
       // If symmetric algorithm or WebCrypto API is unavailable, fallback to getUser()
       if (!signingKey) {
-        const { error } = await this.getUser(token)
+        const { error } = await this._getUser(token, !!jwt)
         if (error) {
           throw error
         }
