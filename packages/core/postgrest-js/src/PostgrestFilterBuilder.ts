@@ -33,7 +33,9 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
   ? true
   : false
 
-const PostgrestReservedCharsRegexp = new RegExp('[,()]')
+// `"` and `\` are not reserved, but a bare value that starts with `"` is parsed
+// as a quoted one, so any value carrying either is quoted and escaped too.
+const PostgrestReservedCharsRegexp = /[,()"\\]/
 
 // A `{...}` filter value is a Postgres array literal, not a PostgREST list, so
 // it has its own set of characters that end an element. Whitespace is included

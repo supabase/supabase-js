@@ -22,7 +22,7 @@ const postgrest = new PostgrestClient<Database>(REST_URL, {
  */
 
 describe('E2E: in() filter with reserved chars and double quotes', () => {
-  const testUsernames = ['a"b,c', 'plain', 'x(y)', 'with"quote']
+  const testUsernames = ['a"b,c', 'plain', 'x(y)', 'with"quote', '"plain"']
 
   beforeAll(async () => {
     // Insert rows with tricky usernames (upsert with onConflict for PK)
@@ -49,6 +49,13 @@ describe('E2E: in() filter with reserved chars and double quotes', () => {
     const res = await postgrest.from('users').select('username').in('username', ['x(y)'])
     expect(res.error).toBeNull()
     expect(res.data).toEqual([{ username: 'x(y)' }])
+  })
+
+  test('in() matches a value wrapped in " without other reserved chars', async () => {
+    // Sent bare, in.("plain") is read as a quoted "plain" and matches the plain row.
+    const res = await postgrest.from('users').select('username').in('username', ['"plain"'])
+    expect(res.error).toBeNull()
+    expect(res.data).toEqual([{ username: '"plain"' }])
   })
 
   test('in() matches multiple values, some with reserved chars', async () => {
