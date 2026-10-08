@@ -345,6 +345,152 @@ describe('GoTrueClient', () => {
       expect(error).toBeNull()
     })
 
+    test('getSession() triggers refresh when JWT exp has expired but expires_at is in the future', async () => {
+      // @ts-expect-error 'Allow access to protected storage'
+      const storage = authWithSession.storage
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = authWithSession.storageKey
+
+      const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
+      const expiredPayload = Buffer.from(
+        JSON.stringify({
+          sub: '00000000-0000-0000-0000-000000000000',
+          exp: Math.floor(Date.now() / 1000) - 3600,
+          iat: Math.floor(Date.now() / 1000) - 7200,
+        })
+      ).toString('base64url')
+      const expiredJWT = `${header}.${expiredPayload}.fake_signature`
+
+      await storage.setItem(
+        storageKey,
+        JSON.stringify({
+          access_token: expiredJWT,
+          refresh_token: 'fake-refresh-token',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          token_type: 'bearer',
+          user: {
+            id: '00000000-0000-0000-0000-000000000000',
+            aud: 'authenticated',
+            role: 'authenticated',
+            email: 'test@example.com',
+            email_confirmed_at: new Date().toISOString(),
+            phone: '',
+            confirmed_at: new Date().toISOString(),
+            last_sign_in_at: new Date().toISOString(),
+            app_metadata: { provider: 'email', providers: ['email'] },
+            user_metadata: {},
+            identities: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_anonymous: false,
+          },
+        })
+      )
+      // Mock _refreshAccessToken to avoid network calls
+      // @ts-expect-error 'Allow mocking private method return type'
+      refreshAccessTokenSpy.mockResolvedValueOnce({
+        data: { user: null, session: null },
+        error: new AuthError('Mocked refresh failure'),
+      })
+      try {
+        const { data: result, error: resultError } = await authWithSession.getSession()
+
+        expect(refreshAccessTokenSpy).toHaveBeenCalledTimes(1)
+        expect(result.session).toBeNull()
+        expect(resultError).not.toBeNull()
+      } finally {
+        refreshAccessTokenSpy.mockRestore()
+      }
+
+    test('getSession() corrects expires_at when JWT exp diverges by more than 60s', async () => {
+      // @ts-expect-error 'Allow access to protected storage'
+      const storage = authWithSession.storage
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = authWithSession.storageKey
+
+      const futureExp = Math.floor(Date.now() / 1000) + 300
+      const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
+      const payload = Buffer.from(
+        JSON.stringify({
+          sub: '00000000-0000-0000-0000-000000000000',
+          exp: futureExp,
+          iat: Math.floor(Date.now() / 1000) - 60,
+        })
+      ).toString('base64url')
+      const jwt = `${header}.${payload}.fake_signature`
+
+      await storage.setItem(
+        storageKey,
+        JSON.stringify({
+          access_token: jwt,
+          refresh_token: 'fake-refresh-token',
+          expires_in: 600,
+          expires_at: Math.floor(Date.now() / 1000) + 600,
+          token_type: 'bearer',
+          user: {
+            id: '00000000-0000-0000-0000-000000000000',
+            aud: 'authenticated',
+            role: 'authenticated',
+            email: 'test@example.com',
+            email_confirmed_at: new Date().toISOString(),
+            phone: '',
+            confirmed_at: new Date().toISOString(),
+            last_sign_in_at: new Date().toISOString(),
+            app_metadata: { provider: 'email', providers: ['email'] },
+            user_metadata: {},
+            identities: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_anonymous: false,
+          },
+        })
+      )
+
+      const { data: result, error: resultError } = await authWithSession.getSession()
+      expect(resultError).toBeNull()
+      expect(result.session).not.toBeNull()
+      expect(result.session!.expires_at).toBe(futureExp)
+    })
+
+    test('getSession() clears session when JWT is malformed', async () => {
+      // @ts-expect-error 'Allow access to protected storage'
+      const storage = authWithSession.storage
+      // @ts-expect-error 'Allow access to protected storageKey'
+      const storageKey = authWithSession.storageKey
+
+      await storage.setItem(
+        storageKey,
+        JSON.stringify({
+          access_token: 'not-a-valid-jwt',
+          refresh_token: 'fake-refresh-token',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          token_type: 'bearer',
+          user: {
+            id: '00000000-0000-0000-0000-000000000000',
+            aud: 'authenticated',
+            role: 'authenticated',
+            email: 'test@example.com',
+            email_confirmed_at: new Date().toISOString(),
+            phone: '',
+            confirmed_at: new Date().toISOString(),
+            last_sign_in_at: new Date().toISOString(),
+            app_metadata: { provider: 'email', providers: ['email'] },
+            user_metadata: {},
+            identities: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_anonymous: false,
+          },
+        })
+      )
+
+      const { data: result, error: resultError } = await authWithSession.getSession()
+      expect(resultError).toBeNull()
+      expect(result.session).toBeNull()
+    })
+
     test('refresh should only happen once', async () => {
       const { email, password } = mockUserCredentials()
 
