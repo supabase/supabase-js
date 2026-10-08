@@ -4353,7 +4353,9 @@ export default class GoTrueClient {
       } else {
         await this._emitInitialSession(id)
       }
-    })()
+    })().catch((err) => {
+      console.error(err)
+    })
 
     return { data: { subscription } }
   }
