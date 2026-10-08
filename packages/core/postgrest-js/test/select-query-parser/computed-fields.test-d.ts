@@ -233,6 +233,22 @@ type DeclaredDatabase = {
         Relationships: []
         ComputedFields: never
       }
+      // Hand-written types may declare `ComputedFields` as optional, and with no function
+      // to infer it from, only the declaration marks `summary` as a computed field.
+      notes: {
+        Row: {
+          id: number
+          summary: string | null
+        }
+        Insert: {
+          id?: number
+        }
+        Update: {
+          id?: number
+        }
+        Relationships: []
+        ComputedFields?: 'summary'
+      }
     }
     Views: {
       channels_view: {
@@ -288,6 +304,16 @@ type DeclaredDatabase = {
   expectType<TypeEqual<settings, never>>(true)
   type channels_view = GetComputedFields<DeclaredDatabase['public'], 'channels_view'>
   expectType<TypeEqual<channels_view, 'label'>>(true)
+  type notes = GetComputedFields<DeclaredDatabase['public'], 'notes'>
+  expectType<TypeEqual<notes, 'summary'>>(true)
+}
+
+// Declared: an optional `ComputedFields` is used as is
+{
+  const postgrest = new PostgrestClient<DeclaredDatabase>(REST_URL)
+  const { data, error } = await postgrest.from('notes').select('*')
+  if (error) throw new Error(error.message)
+  expectType<TypeEqual<typeof data, { id: number }[]>>(true)
 }
 
 // Declared: `*` returns the columns only

@@ -753,6 +753,8 @@ type InferredComputedFields<
 export type GetComputedFields<
   Schema extends GenericSchema,
   RelationName extends keyof TablesAndViews<Schema>,
-> = TablesAndViews<Schema>[RelationName] extends { ComputedFields: infer Fields extends string }
-  ? Fields
+> = 'ComputedFields' extends keyof TablesAndViews<Schema>[RelationName]
+  ? TablesAndViews<Schema>[RelationName] extends { ComputedFields?: infer Fields extends string }
+    ? Fields
+    : never
   : InferredComputedFields<Schema, RelationName>
