@@ -3,14 +3,45 @@ export type Json = unknown
 export type Database = {
   personal: {
     Tables: {
+      user_notes: {
+        Row: {
+          author: string
+          id: number
+          note: string
+          personal_author: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          author: string
+          id?: number
+          note: string
+          personal_author?: string | null
+        }
+        Update: {
+          author?: string
+          id?: number
+          note?: string
+          personal_author?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_notes_personal_author_fkey'
+            columns: ['personal_author']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['username']
+          },
+        ]
+      }
       users: {
         Row: {
           age_range: unknown
           data: Json | null
           status: Database['public']['Enums']['user_status'] | null
           username: string
+          username_label: string | null
         }
-        ComputedFields: never
+        ComputedFields: 'username_label'
         Insert: {
           age_range?: unknown
           data?: Json | null
@@ -33,6 +64,15 @@ export type Database = {
       get_status: {
         Args: { name_param: string }
         Returns: Database['public']['Enums']['user_status']
+      }
+      username_label: {
+        Args: {
+          user_row: Omit<
+            Database['personal']['Tables']['users']['Row'],
+            Database['personal']['Tables']['users']['ComputedFields']
+          >
+        }
+        Returns: string
       }
     }
     Enums: {
@@ -83,7 +123,21 @@ export type Database = {
             foreignKeyName: 'best_friends_first_user_fkey'
             columns: ['first_user']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_first_user_fkey'
+            columns: ['first_user']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_first_user_fkey'
+            columns: ['first_user']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -111,7 +165,21 @@ export type Database = {
             foreignKeyName: 'best_friends_second_user_fkey'
             columns: ['second_user']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_second_user_fkey'
+            columns: ['second_user']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_second_user_fkey'
+            columns: ['second_user']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -139,7 +207,21 @@ export type Database = {
             foreignKeyName: 'best_friends_third_wheel_fkey'
             columns: ['third_wheel']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_third_wheel_fkey'
+            columns: ['third_wheel']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_third_wheel_fkey'
+            columns: ['third_wheel']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -373,6 +455,53 @@ export type Database = {
         }
         Relationships: []
       }
+      inference_cases: {
+        Row: {
+          id: number
+          note: string | null
+          optional_payload: Json | null
+          price: number
+          quantity: number
+          required_payload: NonNullable<Json>
+          scores: number[] | null
+          sequence_id: number
+          shipping_address: Database['public']['CompositeTypes']['address'] | null
+          status: Database['public']['Enums']['user_status']
+          tags: string[]
+          total: number | null
+          inference_case_label: string | null
+        }
+        ComputedFields: 'inference_case_label'
+        Insert: {
+          id?: never
+          note?: string | null
+          optional_payload?: Json | null
+          price: number
+          quantity?: number
+          required_payload: NonNullable<Json>
+          scores?: number[] | null
+          sequence_id?: number
+          shipping_address?: Database['public']['CompositeTypes']['address'] | null
+          status?: Database['public']['Enums']['user_status']
+          tags?: string[]
+          total?: never
+        }
+        Update: {
+          id?: never
+          note?: string | null
+          optional_payload?: Json | null
+          price?: number
+          quantity?: number
+          required_payload?: NonNullable<Json>
+          scores?: number[] | null
+          sequence_id?: number
+          shipping_address?: Database['public']['CompositeTypes']['address'] | null
+          status?: Database['public']['Enums']['user_status']
+          tags?: string[]
+          total?: never
+        }
+        Relationships: []
+      }
       lab: {
         Row: {
           id: number
@@ -470,7 +599,21 @@ export type Database = {
             foreignKeyName: 'messages_username_fkey'
             columns: ['username']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -535,6 +678,23 @@ export type Database = {
         }
         Relationships: []
       }
+      remote_users: {
+        Row: {
+          status: Database['public']['Enums']['user_status'] | null
+          username: string
+          describe_remote_user: string | null
+        }
+        ComputedFields: 'describe_remote_user'
+        Insert: {
+          status?: Database['public']['Enums']['user_status'] | null
+          username: string
+        }
+        Update: {
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string
+        }
+        Relationships: []
+      }
       shops: {
         Row: {
           address: string | null
@@ -587,7 +747,21 @@ export type Database = {
             foreignKeyName: 'user_profiles_username_fkey'
             columns: ['username']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'user_profiles_username_fkey'
+            columns: ['username']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'user_profiles_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -789,7 +963,21 @@ export type Database = {
             foreignKeyName: 'messages_username_fkey'
             columns: ['username']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -800,6 +988,22 @@ export type Database = {
             referencedColumns: ['username']
           },
         ]
+      }
+      trigger_writable_view: {
+        Row: {
+          status: Database['public']['Enums']['user_status'] | null
+          username: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string | null
+        }
+        Update: {
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string | null
+        }
+        Relationships: []
       }
       updatable_view: {
         Row: {
@@ -815,6 +1019,27 @@ export type Database = {
           non_updatable_column?: never
           username?: string | null
         }
+        Relationships: []
+      }
+      update_only_trigger_view: {
+        Row: {
+          status: Database['public']['Enums']['user_status'] | null
+          username: string | null
+        }
+        ComputedFields: never
+        Update: {
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      user_status_counts: {
+        Row: {
+          status: Database['public']['Enums']['user_status'] | null
+          total: number | null
+          describe_status_count: string | null
+        }
+        ComputedFields: 'describe_status_count'
         Relationships: []
       }
     }
@@ -836,6 +1061,34 @@ export type Database = {
         Returns: {
           error: true
         } & 'the function public.days_since_event with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
+      }
+      describe_remote_user: {
+        Args: {
+          remote_row: Omit<
+            Database['public']['Tables']['remote_users']['Row'],
+            Database['public']['Tables']['remote_users']['ComputedFields']
+          >
+        }
+        Returns: string
+      }
+      describe_status_count: {
+        Args: {
+          count_row: Omit<
+            Database['public']['Views']['user_status_counts']['Row'],
+            Database['public']['Views']['user_status_counts']['ComputedFields']
+          >
+        }
+        Returns: string
+      }
+      echo_address: {
+        Args: { address: Database['public']['CompositeTypes']['address'] }
+        Returns: Database['public']['CompositeTypes']['address']
+        SetofOptions: {
+          from: 'address'
+          to: 'address'
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       echo_bigint_as_text: { Args: { bigint_param: number }; Returns: string }
       extract_jsonb_bigint_as_text: { Args: { payload: Json }; Returns: string }
@@ -1010,6 +1263,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_personal_users: {
+        Args: Record<PropertyKey, never>
+        Returns: Database['personal']['Tables']['users']['Row'][]
+        SetofOptions: {
+          from: '*'
+          to: 'users'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_recent_messages_by_username: {
         Args: { search_username: string }
         Returns: {
@@ -1022,6 +1285,19 @@ export type Database = {
         SetofOptions: {
           from: '*'
           to: 'recent_messages'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_remote_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          status: Database['public']['Enums']['user_status'] | null
+          username: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'remote_users'
           isOneToOne: false
           isSetofReturn: true
         }
@@ -1151,6 +1427,19 @@ export type Database = {
               isSetofReturn: true
             }
           }
+      get_user_status_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          status: Database['public']['Enums']['user_status'] | null
+          total: number | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'user_status_counts'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_username_and_status: {
         Args: { name_param: string }
         Returns: {
@@ -1158,6 +1447,16 @@ export type Database = {
           username: string
         }[]
       }
+      inference_case_label: {
+        Args: {
+          inference_row: Omit<
+            Database['public']['Tables']['inference_cases']['Row'],
+            Database['public']['Tables']['inference_cases']['ComputedFields']
+          >
+        }
+        Returns: string
+      }
+      note: { Args: Record<PropertyKey, never>; Returns: string }
       offline_user: {
         Args: { name_param: string }
         Returns: Database['public']['Enums']['user_status']
@@ -1269,13 +1568,17 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      sum_scores: { Args: { offset_by?: number; scores: number[] }; Returns: number }
       void_func: { Args: Record<PropertyKey, never>; Returns: undefined }
     }
     Enums: {
       user_status: 'ONLINE' | 'OFFLINE'
     }
     CompositeTypes: {
-      [_ in never]: never
+      address: {
+        street: string | null
+        city: string | null
+      }
     }
   }
 }
