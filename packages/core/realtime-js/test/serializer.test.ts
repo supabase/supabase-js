@@ -193,6 +193,27 @@ describe('binary', () => {
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
   })
 
+  it('forwards a persist object so ttl survives', async () => {
+    const serializer = new Serializer()
+
+    // 24 for metadata length, {"persist":{"ttl":3600}}
+    const bin = '\x03\x02\x01\x03\x0a\x18\x01101topuser-event{"persist":{"ttl":3600}}{"a":"b"}'
+
+    const result = await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        type: 'broadcast',
+        event: 'user-event',
+        persist: { ttl: 3600 },
+        payload: { a: 'b' },
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
   it('leaves metadata empty when persist is not set', async () => {
     const serializer = new Serializer()
     const bin = '\x03\x02\x01\x03\x0a\x00\x01101topuser-event{"a":"b"}'

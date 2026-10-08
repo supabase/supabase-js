@@ -610,6 +610,41 @@ describe('httpSend', () => {
       const [url] = fetchStub.mock.calls[0]
       expect(new URL(url).searchParams.has('persist')).toBe(false)
     })
+
+    test('sends a ttl as persist[ttl]', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.httpSend('test', { data: 'test' }, { persist: { ttl: 3600 } })
+
+      const params = new URL(fetchStub.mock.calls[0][0]).searchParams
+      expect(params.get('persist[ttl]')).toBe('3600')
+      expect(params.has('persist')).toBe(false)
+    })
+
+    test('an empty object means the defaults, same as true', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.httpSend('test', { data: 'test' }, { persist: {} })
+
+      const params = new URL(fetchStub.mock.calls[0][0]).searchParams
+      expect(params.get('persist')).toBe('true')
+      expect(params.has('persist[ttl]')).toBe(false)
+    })
+
+    test('an object without a ttl means the defaults', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.httpSend('test', { data: 'test' }, { persist: { ttl: undefined } })
+
+      const params = new URL(fetchStub.mock.calls[0][0]).searchParams
+      expect(params.get('persist')).toBe('true')
+    })
   })
 
   testCases.forEach(({ name, hasToken, expectedAuth }) => {

@@ -227,6 +227,26 @@ export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES
 export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'error' | (string & {})
 
 /**
+ * Whether the server stores a broadcast in `realtime.messages` so it can be replayed.
+ *
+ * Pass `true` to store it for the maximum retention. Pass an object to set options. `{}` means the
+ * same as `true`.
+ *
+ * Leave it out, or pass `false`, and the message is not stored.
+ */
+export type RealtimeBroadcastPersist =
+  | boolean
+  | {
+      /**
+       * How long the message stays replayable, in seconds. The range is 1 to 259200, which is 72
+       * hours. Leave it out to get the maximum.
+       *
+       * The server rejects invalid and out of bounds values. It does not round them down.
+       */
+      ttl?: number
+    }
+
+/**
  * Payload of a `system` event emitted by the server.
  *
  * Most notably, when a channel is created with `config.broadcast.replication_ready: true`,
@@ -944,7 +964,7 @@ export default class RealtimeChannel {
   async httpSend(
     event: string,
     payload: any,
-    opts: { timeout?: number; persist?: boolean } = {}
+    opts: { timeout?: number; persist?: RealtimeBroadcastPersist } = {}
   ): Promise<{ success: true } | { success: false; status: number; error: string }> {
     if (payload === undefined || payload === null) {
       return Promise.reject(new Error('Payload is required for httpSend()'))
@@ -966,8 +986,15 @@ export default class RealtimeChannel {
     if (this.private) {
       url.searchParams.set('private', 'true')
     }
+    // The query string carries the same shape as the frame metadata. A ttl goes in as `persist[ttl]`.
     if (opts.persist) {
-      url.searchParams.set('persist', 'true')
+      const ttl = typeof opts.persist === 'object' ? opts.persist.ttl : undefined
+
+      if (ttl === undefined) {
+        url.searchParams.set('persist', 'true')
+      } else {
+        url.searchParams.set('persist[ttl]', String(ttl))
+      }
     }
 
     const options = {
@@ -1059,12 +1086,20 @@ export default class RealtimeChannel {
       event: string
       payload?: any
       /**
-       * Ask the server to persist this message to `realtime.messages`.
+       * Store this message in `realtime.messages` so it can be replayed.
        *
-       * Requires a private channel and an RLS policy on the `persistence` extension. Travels as
-       * frame metadata, not as part of your payload, so subscribers never see it.
+       * `true` keeps it for the maximum retention. `{ ttl: 3600 }` keeps it for an hour.
+       *
+       * Needs a private channel and an RLS policy on the `persistence` extension. It travels as
+       * frame metadata, so subscribers never see it in the payload.
+       *
+       * @example
+       * ```js
+       * channel.send({ type: 'broadcast', event: 'message', payload, persist: true })
+       * channel.send({ type: 'broadcast', event: 'message', payload, persist: { ttl: 3600 } })
+       * ```
        */
-      persist?: boolean
+      persist?: RealtimeBroadcastPersist
       [key: string]: any
     },
     opts: { [key: string]: any } = {}
