@@ -1117,6 +1117,22 @@ export default class RealtimeChannel {
       }
 
       const { event, payload: endpoint_payload } = args
+
+      if (args.persist) {
+        const persistError =
+          'Realtime send() fell back to REST and cannot store this message. ' +
+          'The batch endpoint does not support persistence. ' +
+          'Use httpSend() or send after the channel is connected and subscribed.'
+
+        if (this.socket.hasLogger()) {
+          this.socket.log('channel', persistError)
+        } else {
+          console.error(persistError)
+        }
+
+        return 'error'
+      }
+
       const headers: Record<string, string> = {
         apikey: this.socket.apiKey ? this.socket.apiKey : '',
         'Content-Type': 'application/json',

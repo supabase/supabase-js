@@ -611,6 +611,23 @@ describe('httpSend', () => {
       expect(new URL(url).searchParams.has('persist')).toBe(false)
     })
 
+    test('refuses to persist over the REST fallback', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      // Not subscribed, so send() takes the REST fallback, which posts to the batch endpoint.
+      const result = await channel.send({
+        type: 'broadcast',
+        event: 'test',
+        payload: { data: 'test' },
+        persist: true,
+      })
+
+      expect(result).toBe('error')
+      expect(fetchStub).not.toHaveBeenCalled()
+    })
+
     test('sends a ttl as persist[ttl]', async () => {
       const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
       const testSetup = createSocket(false, fetchStub)
