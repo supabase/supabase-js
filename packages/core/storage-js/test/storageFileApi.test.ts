@@ -1295,7 +1295,7 @@ describe('StorageFileApi Edge Cases', () => {
 
       expect(mockPut).toHaveBeenCalled()
       const [, , body] = mockPut.mock.calls[0]
-      expect(body).toBe(testFormData)
+      expect(body.get('file')).toBe('test content')
     })
 
     test('uploadToSignedUrl uses default cacheControl when not provided', async () => {
@@ -1341,7 +1341,7 @@ describe('StorageFileApi Edge Cases', () => {
 
       expect(mockPost).toHaveBeenCalled()
       const [, , body] = mockPost.mock.calls[0] as [null, null, FormData]
-      expect(body).toBe(testFormData)
+      expect(body.get('file')).toBe('test content')
       expect(body.get('metadata')).toBe(JSON.stringify(metadata))
     })
 
@@ -1358,7 +1358,7 @@ describe('StorageFileApi Edge Cases', () => {
 
       expect(mockPost).toHaveBeenCalled()
       const [, , body, { headers }] = mockPost.mock.calls[0]
-      expect(body).toBe(testFormData)
+      expect(body.get('file')).toBe('test content')
       expect(headers[testHeaderKey]).toBe(testHeaderValue)
     })
 
@@ -1425,7 +1425,7 @@ describe('StorageFileApi Edge Cases', () => {
 
       expect(mockPut).toHaveBeenCalled()
       const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
-      expect(body).toBe(testFormData)
+      expect(body.get('file')).toBe('test content')
       expect(body.get('metadata')).toBe(JSON.stringify(metadata))
     })
 
@@ -1457,7 +1457,7 @@ describe('StorageFileApi Edge Cases', () => {
 
       expect(mockPut).toHaveBeenCalled()
       const [, , body, { headers }] = mockPut.mock.calls[0]
-      expect(body).toBe(testFormData)
+      expect(body.get('file')).toBe('test content')
       expect(headers[testHeaderKey]).toBe(testHeaderValue)
     })
 
