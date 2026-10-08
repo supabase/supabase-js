@@ -628,6 +628,24 @@ describe('httpSend', () => {
         await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow('Request timeout')
       })
 
+      test('clears the timeout when fetch rejects', async () => {
+        vi.useFakeTimers()
+        try {
+          const fetchStub = vi.fn().mockRejectedValue(new Error('Network error'))
+          const testSetup = createSocket(hasToken, fetchStub)
+
+          if (hasToken) {
+            await testSetup.client.setAuth()
+          }
+          const channel = testSetup.client.channel('topic')
+
+          await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow('Network error')
+          expect(vi.getTimerCount()).toBe(0)
+        } finally {
+          vi.useRealTimers()
+        }
+      })
+
       test('handles non-202 status', async () => {
         const mockResponse = createMockResponse(500, 'Internal Server Error', {
           error: 'Server error',
