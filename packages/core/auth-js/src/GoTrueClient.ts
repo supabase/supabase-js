@@ -4348,7 +4348,7 @@ export default class GoTrueClient {
       if (this.lock != null) {
         // TODO(v3): remove legacy lock path
         await this._acquireLock(this.lockAcquireTimeout, async () => {
-          this._emitInitialSession(id)
+          await this._emitInitialSession(id)
         })
       } else {
         await this._emitInitialSession(id)
