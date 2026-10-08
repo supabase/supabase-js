@@ -442,6 +442,7 @@ export default class GoTrueClient {
       headers: settings.headers,
       fetch: settings.fetch,
       experimental: this.experimental,
+      throwOnError: settings.throwOnError,
     })
 
     this.url = settings.url
@@ -4092,7 +4093,17 @@ export default class GoTrueClient {
       }
       const accessToken = data.session?.access_token
       if (accessToken) {
-        const { error } = await this.admin.signOut(accessToken, scope)
+        let error: AuthError | null = null
+        try {
+          ;({ error } = await this.admin.signOut(accessToken, scope))
+        } catch (signOutError) {
+          // admin.signOut throws when throwOnError is enabled; catch it here so the
+          // ignorable statuses below are still ignored
+          if (!isAuthError(signOutError)) {
+            throw signOutError
+          }
+          error = signOutError
+        }
         if (error) {
           // ignore 404s since user might not exist anymore
           // ignore 401s since an invalid or expired JWT should sign out the current session
