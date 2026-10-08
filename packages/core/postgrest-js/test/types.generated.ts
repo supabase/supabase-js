@@ -10,6 +10,7 @@ export type Database = {
           status: Database['public']['Enums']['user_status'] | null
           username: string
         }
+        ComputedFields: never
         Insert: {
           age_range?: unknown
           data?: Json | null
@@ -50,6 +51,7 @@ export type Database = {
           second_user: string
           third_wheel: string | null
         }
+        ComputedFields: never
         Insert: {
           first_user: string
           id?: number
@@ -154,6 +156,7 @@ export type Database = {
           hotel_id: number | null
           id: number
         }
+        ComputedFields: never
         Insert: {
           hotel_id?: number | null
           id?: number
@@ -178,6 +181,7 @@ export type Database = {
           id: number
           name: string
         }
+        ComputedFields: never
         Insert: {
           description?: string | null
           id?: number
@@ -195,6 +199,7 @@ export type Database = {
           details: string | null
           id: number
         }
+        ComputedFields: never
         Insert: {
           details?: string | null
           id: number
@@ -226,6 +231,7 @@ export type Database = {
             username: string
           } | null
         }
+        ComputedFields: 'get_messages'
         Insert: {
           data?: Json | null
           id?: number
@@ -244,6 +250,7 @@ export type Database = {
           id: number
           parent_id: number | null
         }
+        ComputedFields: never
         Insert: {
           description?: string | null
           id?: number
@@ -270,6 +277,7 @@ export type Database = {
           'column whitespace': string | null
           id: number
         }
+        ComputedFields: never
         Insert: {
           array_column?: string[] | null
           'column whitespace'?: string | null
@@ -290,6 +298,7 @@ export type Database = {
           id: number
           days_since_event: number | null
         }
+        ComputedFields: 'days_since_event'
         Insert: {
           created_at?: string
           data?: Json | null
@@ -311,6 +320,7 @@ export type Database = {
           event_type: string | null
           id: number
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           data?: Json | null
@@ -332,6 +342,7 @@ export type Database = {
           event_type: string | null
           id: number
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           data?: Json | null
@@ -351,6 +362,7 @@ export type Database = {
           id: number
           name: string | null
         }
+        ComputedFields: never
         Insert: {
           id?: number
           name?: string | null
@@ -369,6 +381,7 @@ export type Database = {
           parent: number | null
           type: string | null
         }
+        ComputedFields: never
         Insert: {
           id?: number
           main?: number | null
@@ -416,6 +429,7 @@ export type Database = {
             username: string
           } | null
         }
+        ComputedFields: 'blurb_message' | 'function_returning_single_row'
         Insert: {
           channel_id: number
           data?: Json | null
@@ -473,6 +487,7 @@ export type Database = {
           category_id: number
           product_id: number
         }
+        ComputedFields: never
         Insert: {
           category_id: number
           product_id: number
@@ -505,6 +520,7 @@ export type Database = {
           name: string
           price: number
         }
+        ComputedFields: never
         Insert: {
           description?: string | null
           id?: number
@@ -525,6 +541,7 @@ export type Database = {
           id: number
           shop_geom: unknown
         }
+        ComputedFields: never
         Insert: {
           address?: string | null
           id: number
@@ -542,6 +559,7 @@ export type Database = {
           id: number
           username: string | null
         }
+        ComputedFields: never
         Insert: {
           id?: number
           username?: string | null
@@ -633,6 +651,15 @@ export type Database = {
             username: string
           } | null
         }
+        ComputedFields:
+          | 'function_using_setof_rows_one'
+          | 'function_using_table_returns'
+          | 'get_messages'
+          | 'get_user_messages'
+          | 'get_user_profile'
+          | 'get_user_profile_non_nullable'
+          | 'get_user_recent_messages'
+          | 'postgrest_resolvable_with_override_function'
         Insert: {
           age_range?: unknown
           catchphrase?: unknown
@@ -656,6 +683,7 @@ export type Database = {
           previous_value: number | null
           created_ago: number | null
         }
+        ComputedFields: 'created_ago'
         Insert: {
           created_at?: string | null
           id?: number
@@ -699,6 +727,10 @@ export type Database = {
             username: string | null
           } | null
         }
+        ComputedFields:
+          | 'get_active_user_messages'
+          | 'get_user_first_message'
+          | 'get_user_recent_messages'
         Insert: {
           age_range?: unknown
           catchphrase?: unknown
@@ -719,6 +751,7 @@ export type Database = {
         Row: {
           username: string | null
         }
+        ComputedFields: never
         Relationships: []
       }
       recent_messages: {
@@ -729,6 +762,7 @@ export type Database = {
           message: string | null
           username: string | null
         }
+        ComputedFields: never
         Relationships: [
           {
             foreignKeyName: 'messages_channel_id_fkey'
@@ -772,6 +806,7 @@ export type Database = {
           non_updatable_column: number | null
           username: string | null
         }
+        ComputedFields: never
         Insert: {
           non_updatable_column?: never
           username?: string | null
@@ -837,7 +872,12 @@ export type Database = {
         }
       }
       function_returning_single_row: {
-        Args: { messages: Database['public']['Tables']['messages']['Row'] }
+        Args: {
+          messages: Omit<
+            Database['public']['Tables']['messages']['Row'],
+            Database['public']['Tables']['messages']['ComputedFields']
+          >
+        }
         Returns: {
           age_range: unknown
           catchphrase: unknown
@@ -853,7 +893,12 @@ export type Database = {
         }
       }
       function_using_setof_rows_one: {
-        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Args: {
+          user_row: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: {
           id: number
           username: string | null
@@ -866,7 +911,12 @@ export type Database = {
         }
       }
       function_using_table_returns: {
-        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Args: {
+          user_row: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: {
           id: number
           username: string | null
@@ -881,7 +931,12 @@ export type Database = {
       function_with_array_param: { Args: { param: string[] }; Returns: undefined }
       function_with_optional_param: { Args: { param?: string }; Returns: string }
       get_active_user_messages: {
-        Args: { active_user_row: Database['public']['Views']['active_users']['Row'] }
+        Args: {
+          active_user_row: Omit<
+            Database['public']['Views']['active_users']['Row'],
+            Database['public']['Views']['active_users']['ComputedFields']
+          >
+        }
         Returns: {
           channel_id: number
           data: Json | null
@@ -898,7 +953,12 @@ export type Database = {
       }
       get_messages:
         | {
-            Args: { channel_row: Database['public']['Tables']['channels']['Row'] }
+            Args: {
+              channel_row: Omit<
+                Database['public']['Tables']['channels']['Row'],
+                Database['public']['Tables']['channels']['ComputedFields']
+              >
+            }
             Returns: {
               channel_id: number
               data: Json | null
@@ -914,7 +974,12 @@ export type Database = {
             }
           }
         | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
+            Args: {
+              user_row: Omit<
+                Database['public']['Tables']['users']['Row'],
+                Database['public']['Tables']['users']['ComputedFields']
+              >
+            }
             Returns: {
               channel_id: number
               data: Json | null
@@ -966,7 +1031,12 @@ export type Database = {
         Returns: Database['public']['Enums']['user_status']
       }
       get_user_first_message: {
-        Args: { active_user_row: Database['public']['Views']['active_users']['Row'] }
+        Args: {
+          active_user_row: Omit<
+            Database['public']['Views']['active_users']['Row'],
+            Database['public']['Views']['active_users']['ComputedFields']
+          >
+        }
         Returns: {
           channel_id: number | null
           data: Json | null
@@ -982,7 +1052,12 @@ export type Database = {
         }
       }
       get_user_messages: {
-        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Args: {
+          user_row: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: {
           channel_id: number
           data: Json | null
@@ -998,7 +1073,12 @@ export type Database = {
         }
       }
       get_user_profile: {
-        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Args: {
+          user_row: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: {
           id: number
           username: string | null
@@ -1011,7 +1091,12 @@ export type Database = {
         }
       }
       get_user_profile_non_nullable: {
-        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Args: {
+          user_row: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: {
           id: number
           username: string | null
@@ -1025,7 +1110,12 @@ export type Database = {
       }
       get_user_recent_messages:
         | {
-            Args: { active_user_row: Database['public']['Views']['active_users']['Row'] }
+            Args: {
+              active_user_row: Omit<
+                Database['public']['Views']['active_users']['Row'],
+                Database['public']['Views']['active_users']['ComputedFields']
+              >
+            }
             Returns: {
               channel_id: number | null
               data: Json | null
@@ -1041,7 +1131,12 @@ export type Database = {
             }
           }
         | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
+            Args: {
+              user_row: Omit<
+                Database['public']['Tables']['users']['Row'],
+                Database['public']['Tables']['users']['ComputedFields']
+              >
+            }
             Returns: {
               channel_id: number | null
               data: Json | null
@@ -1124,7 +1219,12 @@ export type Database = {
             }
           }
         | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
+            Args: {
+              user_row: Omit<
+                Database['public']['Tables']['users']['Row'],
+                Database['public']['Tables']['users']['ComputedFields']
+              >
+            }
             Returns: {
               channel_id: number
               data: Json | null
