@@ -189,6 +189,29 @@ describe('Fetch error handling', () => {
     expect(options.headers['prefer']).toContain('return=minimal')
   })
 
+  test('rpc with get: true and object args uses POST and returns the body', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+      json: async () => null,
+      text: async () => '',
+    })
+
+    const postgrest = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockFetch as any,
+    })
+
+    await postgrest.rpc('my_func' as any, { obj_arg: { nested: 'value' } }, { get: true })
+
+    const [url, options] = mockFetch.mock.calls[0]
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(options.body)).toEqual({ obj_arg: { nested: 'value' } })
+    expect(url).not.toContain('object')
+    expect(options.headers['prefer'] ?? '').not.toContain('return=minimal')
+  })
+
   test('PostgrestError serializes message with JSON.stringify', () => {
     const err = new PostgrestError({
       message: 'RLS denied',
