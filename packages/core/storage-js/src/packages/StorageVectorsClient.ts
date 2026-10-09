@@ -130,7 +130,8 @@ export class StorageVectorsClient extends VectorBucketApi {
    * ```
    */
   from(vectorBucketName: string): VectorBucketScope {
-    return new VectorBucketScope(this.url, this.headers, vectorBucketName, this.fetch)
+    const bucketScope = new VectorBucketScope(this.url, this.headers, vectorBucketName, this.fetch)
+    return this.shouldThrowOnError ? bucketScope.throwOnError() : bucketScope
   }
 
   /**
@@ -424,13 +425,14 @@ export class VectorBucketScope extends VectorIndexApi {
    * ```
    */
   index(indexName: string): VectorIndexScope {
-    return new VectorIndexScope(
+    const indexScope = new VectorIndexScope(
       this.url,
       this.headers,
       this.vectorBucketName,
       indexName,
       this.fetch
     )
+    return this.shouldThrowOnError ? indexScope.throwOnError() : indexScope
   }
 }
 

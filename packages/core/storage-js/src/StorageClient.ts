@@ -56,7 +56,8 @@ export class StorageClient extends StorageBucketApi {
    * ```
    */
   from(id: string): StorageFileApi {
-    return new StorageFileApi(this.url, this.headers, id, this.fetch)
+    const fileApi = new StorageFileApi(this.url, this.headers, id, this.fetch)
+    return this.shouldThrowOnError ? fileApi.throwOnError() : fileApi
   }
 
   /**
@@ -73,10 +74,11 @@ export class StorageClient extends StorageBucketApi {
    * @returns A StorageVectorsClient instance configured with the current storage settings.
    */
   get vectors(): StorageVectorsClient {
-    return new StorageVectorsClient(this.url + '/vector', {
+    const vectorsClient = new StorageVectorsClient(this.url + '/vector', {
       headers: this.headers,
       fetch: this.fetch,
     })
+    return this.shouldThrowOnError ? vectorsClient.throwOnError() : vectorsClient
   }
 
   /**
@@ -93,6 +95,11 @@ export class StorageClient extends StorageBucketApi {
    * @returns A StorageAnalyticsClient instance configured with the current storage settings.
    */
   get analytics(): StorageAnalyticsClient {
-    return new StorageAnalyticsClient(this.url + '/iceberg', this.headers, this.fetch)
+    const analyticsClient = new StorageAnalyticsClient(
+      this.url + '/iceberg',
+      this.headers,
+      this.fetch
+    )
+    return this.shouldThrowOnError ? analyticsClient.throwOnError() : analyticsClient
   }
 }
