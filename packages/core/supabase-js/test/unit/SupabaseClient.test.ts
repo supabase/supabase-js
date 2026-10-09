@@ -316,6 +316,19 @@ describe('SupabaseClient', () => {
         const token = await client._getAccessToken()
         expect(token).toBe(KEY)
       })
+
+      test('should not fallback to supabaseKey when session resolution fails', async () => {
+        const client = createClient(URL, KEY)
+        const authError = new Error('Token refresh failed')
+
+        client.auth.getSession = jest.fn().mockResolvedValue({
+          data: { session: null },
+          error: authError,
+        })
+
+        // @ts-ignore - accessing private method
+        await expect(client._getAccessToken()).rejects.toBe(authError)
+      })
     })
 
     describe('Realtime Authentication', () => {

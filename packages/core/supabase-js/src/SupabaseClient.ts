@@ -618,7 +618,11 @@ export default class SupabaseClient<
       return await this.accessToken()
     }
 
-    const { data } = await this.auth.getSession()
+    const { data, error } = await this.auth.getSession()
+
+    if (error) {
+      throw error
+    }
 
     return data.session?.access_token ?? null
   }
