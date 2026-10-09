@@ -1119,6 +1119,7 @@ describe('advanced rpc', () => {
         message: null,
         username: 'test',
         blurb_message: null,
+        function_returning_single_row: null,
       },
     })
     let result: Exclude<typeof res.data, null>
@@ -1292,7 +1293,7 @@ describe('advanced rpc', () => {
 test('should be able to filter before and after select rpc', async () => {
   const res = await postgrest
     .rpc('get_user_profile', {
-      // @ts-expect-error Type '{ username: string; }' is missing the following properties from type '{ age_range: unknown; catchphrase: unknown; data: unknown; status: "ONLINE" | "OFFLINE" | null; username: string; }': age_range, catchphrase, data, status
+      // @ts-expect-error Type '{ username: string; }' is missing the following properties from type
       user_row: { username: 'supabot' },
     })
     .select('id, username, users(username, catchphrase)')
