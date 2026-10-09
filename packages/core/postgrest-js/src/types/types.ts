@@ -1,7 +1,7 @@
 import PostgrestError from '../PostgrestError'
 import { ContainsNull } from '../select-query-parser/types'
 import { SelectQueryError } from '../select-query-parser/utils'
-import { ClientServerOptions } from './common/common'
+import { ClientServerOptions, Fetch } from './common/common'
 
 /**
  * Response format
@@ -60,6 +60,19 @@ export interface PostgrestOpenApiSpec {
   definitions?: Record<string, Record<string, unknown>>
   parameters?: Record<string, Record<string, unknown>>
   [key: string]: unknown
+}
+
+/**
+ * Per-request options for `.from()` queries. These override the
+ * corresponding client-level defaults for a single query.
+ */
+export type PostgrestQueryBuilderOptions = {
+  /** A custom fetch implementation for this request only. The client's `wrapFetch` and `timeout` apply to it as well. */
+  fetch?: Fetch
+  /** Override the client-level URL length limit for this request. */
+  urlLengthLimit?: number
+  /** Override the client-level retry setting for this request. */
+  retry?: boolean
 }
 
 export type DatabaseWithOptions<Database, Options extends ClientServerOptions> = {
