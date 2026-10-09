@@ -1,20 +1,20 @@
 # Global owners for the entire repository
-* @supabase/sdk @supabase/admin @supabase/security
+* @mandarini @supabase/admin @supabase/security
 
 # Root configuration files
-/.github/ @supabase/sdk @supabase/security
-/nx.json @supabase/sdk
-/package.json @supabase/sdk
-/tsconfig*.json @supabase/sdk
-/README.md @supabase/sdk
-/docs/* @supabase/sdk
-/LICENSE @supabase/sdk
-/CODEOWNERS @supabase/sdk @supabase/security
+/.github/ @mandarini @supabase/security
+/nx.json @mandarini
+/package.json @mandarini
+/tsconfig*.json @mandarini
+/README.md @mandarini
+/docs/* @mandarini
+/LICENSE @mandarini
+/CODEOWNERS @mandarini @supabase/security
 
 # Core packages - each library has specific owners
-/packages/core/auth-js/ @supabase/sdk @supabase/auth
-/packages/core/functions-js/ @supabase/sdk @supabase/edge-functions
-/packages/core/postgrest-js/ @supabase/sdk @supabase/postgrest
-/packages/core/realtime-js/ @supabase/sdk @supabase/realtime
-/packages/core/storage-js/ @supabase/sdk @supabase/storage
-/packages/core/supabase-js/ @supabase/sdk 
+/packages/core/auth-js/ @mandarini @supabase/auth
+/packages/core/functions-js/ @mandarini @supabase/edge-functions
+/packages/core/postgrest-js/ @mandarini @supabase/postgrest
+/packages/core/realtime-js/ @mandarini @supabase/realtime
+/packages/core/storage-js/ @mandarini @supabase/storage
+/packages/core/supabase-js/ @mandarini
