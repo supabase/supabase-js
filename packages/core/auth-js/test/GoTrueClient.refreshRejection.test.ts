@@ -29,6 +29,107 @@ describe('single-caller refresh failure', () => {
     consoleErrorSpy.mockRestore()
   })
 
+  it('handles a missing refresh token while emitting INITIAL_SESSION without an unhandled rejection', async () => {
+    const storageKey = 'test-initial-session-missing-refresh-token'
+    const storage = memoryLocalStorageAdapter({
+      [storageKey]: JSON.stringify({
+        ...makeSession('stored'),
+        refresh_token: '',
+        expires_at: Math.floor(Date.now() / 1000) - 60,
+      }),
+    })
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage,
+      storageKey,
+      skipAutoInitialize: true,
+    })
+    const events: Array<[string, unknown]> = []
+    let resolveInitialSession: () => void
+    const initialSessionReceived = new Promise<void>((resolve) => {
+      resolveInitialSession = resolve
+    })
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason)
+    }
+    process.on('unhandledRejection', onUnhandled)
+
+    const {
+      data: { subscription },
+    } = client.onAuthStateChange((event, session) => {
+      events.push([event, session])
+      if (event === 'INITIAL_SESSION' && session === null) {
+        resolveInitialSession()
+      }
+    })
+
+    try {
+      await initialSessionReceived
+      await new Promise((resolve) => setImmediate(resolve))
+
+      expect(events).toContainEqual(['INITIAL_SESSION', null])
+      expect(warnSpy).toHaveBeenCalled()
+      expect(unhandled).toEqual([])
+    } finally {
+      process.removeListener('unhandledRejection', onUnhandled)
+      warnSpy.mockRestore()
+      subscription.unsubscribe()
+      await client.dispose()
+    }
+  })
+
+  it('handles a throwing subscriber while emitting INITIAL_SESSION without an unhandled rejection', async () => {
+    const storageKey = 'test-initial-session-throwing-subscriber'
+    const storage = memoryLocalStorageAdapter({
+      [storageKey]: JSON.stringify({
+        ...makeSession('stored'),
+        refresh_token: '',
+        expires_at: Math.floor(Date.now() / 1000) - 60,
+      }),
+    })
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage,
+      storageKey,
+      skipAutoInitialize: true,
+    })
+    let resolveInitialSession: () => void
+    const initialSessionReceived = new Promise<void>((resolve) => {
+      resolveInitialSession = resolve
+    })
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason)
+    }
+    process.on('unhandledRejection', onUnhandled)
+
+    const {
+      data: { subscription },
+    } = client.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION' && session === null) {
+        resolveInitialSession()
+        throw new Error('subscriber boom')
+      }
+    })
+
+    try {
+      await initialSessionReceived
+      await new Promise((resolve) => setImmediate(resolve))
+    } finally {
+      process.removeListener('unhandledRejection', onUnhandled)
+      subscription.unsubscribe()
+      await client.dispose()
+    }
+
+    expect(unhandled).toEqual([])
+  })
+
   it('rejects the caller without producing an unhandled rejection', async () => {
     const storageKey = 'test-refresh-rejection'
     const storage = memoryLocalStorageAdapter({
