@@ -1,5 +1,5 @@
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { createClient, SupabaseClient } from '../../src/index'
+import { createClient, postgresChangesFilter, SupabaseClient } from '../../src/index'
 import { _resetTopLevelSchemaWarning } from '../../src/lib/helpers'
 import { Database } from '../types'
 
@@ -200,6 +200,21 @@ describe('SupabaseClient', () => {
   })
 
   describe('Realtime Channel Management', () => {
+    test('preserves special string values in a Realtime in filter', () => {
+      const client = createClient(URL, KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      })
+      const filter = {
+        event: 'UPDATE' as const,
+        schema: 'public',
+        table: 'orders',
+        filter: postgresChangesFilter().in('status', ['', 'NULL', '{draft}']),
+      }
+      const channel = client.channel('filtered-orders').on('postgres_changes', filter, jest.fn())
+      const serializedFilter = channel.bindings.postgres_changes[0].filter.filter
+      expect(serializedFilter).toBe('status=in.("","NULL","{draft}")')
+    })
+
     test('should create and manage channels', () => {
       const client = createClient(URL, KEY)
       const channel = client.channel('test-channel')
