@@ -4,6 +4,7 @@ import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common
 import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
 import PostgrestError from './PostgrestError'
 import { fetchWithRetry } from './fetchWithRetry'
+import { toArrayLiteral } from './arrayLiteral'
 import {
   PostgrestOpenApiSpec,
   PostgrestResponseFailure,
@@ -548,7 +549,10 @@ export default class PostgrestClient<
         // show up as `?param=undefined`
         .filter(([_, value]) => value !== undefined)
         // array values need special syntax
-        .map(([name, value]) => [name, Array.isArray(value) ? `{${value.join(',')}}` : `${value}`])
+        .map(([name, value]) => [
+          name,
+          Array.isArray(value) ? `{${toArrayLiteral(value)}}` : `${value}`,
+        ])
         .forEach(([name, value]) => {
           url.searchParams.append(name, value)
         })

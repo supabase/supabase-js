@@ -41,6 +41,39 @@ test('RPC call serializes bigint values in the request body', async () => {
   )
 })
 
+/**
+ * `.rpc(fn, args, { get: true })` (and `{ head: true }`) serializes an
+ * array-valued arg into a Postgres array literal (`{...}`) for the URL query
+ * string. An element carrying a comma must be quoted, otherwise Postgres
+ * parses it as two elements instead of one, silently answering a different
+ * question than the caller asked (e.g. a tag-filtered RPC call).
+ */
+test('RPC call with get:true quotes an array arg element holding a comma', async () => {
+  const mockFetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: new Headers(),
+    text: async () => '[]',
+  })
+
+  const client = new PostgrestClient<Database>('https://example.com', {
+    fetch: mockFetch as any,
+  })
+
+  await client.rpc('match_documents' as any, { filter_tags: ['a,b', 'c'], match_count: 5 } as any, {
+    get: true,
+  })
+
+  const [url, options] = mockFetch.mock.calls[0] as [string, RequestInit]
+  expect(options.method).toBe('GET')
+
+  const params = new URL(url).searchParams
+  // Quoted: {"a,b",c} is 2 elements. Unquoted {a,b,c} would be misparsed as 3.
+  expect(params.get('filter_tags')).toBe('{"a,b",c}')
+  expect(params.get('match_count')).toBe('5')
+})
+
 test('RPC call with no params', async () => {
   const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select()
   expect(res).toMatchInlineSnapshot(`
