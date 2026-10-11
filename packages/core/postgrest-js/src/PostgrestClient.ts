@@ -122,7 +122,7 @@ export default class PostgrestClient<
    * @category Database
    *
    * @remarks
-   * - A `timeout` option (in milliseconds) can be set to automatically abort requests that take too long.
+   * - A `timeout` option (in milliseconds) can abort a request that takes too long, including response body reads.
    * - A `urlLengthLimit` option (default: 8000) can be set to control when URL length warnings are included in error messages for aborted requests.
    *
    * @example Standalone import for bundle-sensitive environments
@@ -169,33 +169,40 @@ export default class PostgrestClient<
 
         // Merge abort signals if one already exists
         const existingSignal = init?.signal
-        if (existingSignal) {
-          // If the existing signal is already aborted, use it directly
-          if (existingSignal.aborted) {
-            clearTimeout(timeoutId)
-            return originalFetch(input, init)
-          }
+        if (existingSignal?.aborted) {
+          clearTimeout(timeoutId)
+          return originalFetch(input, init)
+        }
 
-          // Listen to existing signal and abort our controller too
-          const abortHandler = () => {
-            clearTimeout(timeoutId)
-            controller.abort()
-          }
-          existingSignal.addEventListener('abort', abortHandler, { once: true })
+        const abortHandler = () => {
+          clearTimeout(timeoutId)
+          controller.abort()
+        }
+        existingSignal?.addEventListener('abort', abortHandler, { once: true })
 
-          return originalFetch(input, {
-            ...init,
-            signal: controller.signal,
-          }).finally(() => {
-            clearTimeout(timeoutId)
-            existingSignal.removeEventListener('abort', abortHandler)
-          })
+        const cleanup = () => {
+          clearTimeout(timeoutId)
+          existingSignal?.removeEventListener('abort', abortHandler)
         }
 
         return originalFetch(input, {
           ...init,
           signal: controller.signal,
-        }).finally(() => clearTimeout(timeoutId))
+        })
+          .then((response) => {
+            if (response.body === null) {
+              cleanup()
+              return response
+            }
+
+            const text = response.text.bind(response)
+            response.text = () => text().finally(cleanup)
+            return response
+          })
+          .catch((error) => {
+            cleanup()
+            throw error
+          })
       }
     } else {
       this.fetch = originalFetch
