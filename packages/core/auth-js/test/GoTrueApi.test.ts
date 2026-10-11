@@ -11,7 +11,6 @@ import {
   mockVerificationOTP,
   mockOAuthClientParams,
   mockOAuthUpdateParams,
-  createTestOAuthClient,
 } from './lib/utils'
 
 import type { GenerateLinkProperties, User } from '../src/lib/types'
@@ -278,11 +277,11 @@ describe('GoTrueAdminApi', () => {
 
       const uid = createdUser.user?.id || ''
 
-      const { error: deletedError, data: deletedUser } = await serviceRoleApiClient.deleteUser(uid)
+      const { error: deletedError, data: deletedData } = await serviceRoleApiClient.deleteUser(uid)
 
       expect(deletedError).toBeNull()
       expect(deletedError).not.toBeUndefined()
-      expect(deletedUser.user).not.toBeUndefined()
+      expect(deletedData).toBeNull()
 
       const { error: listUserError, data } = await serviceRoleApiClient.listUsers()
       expect(listUserError).toBeNull()
@@ -296,11 +295,29 @@ describe('GoTrueAdminApi', () => {
       expect(emails).not.toContain(email)
     })
 
+    test('deleteUser() returns no user data after soft deletion', async () => {
+      const { email } = mockUserCredentials()
+      const { error: createError, data: createdUser } = await createNewUserWithEmail({ email })
+
+      expect(createError).toBeNull()
+      expect(createdUser.user).not.toBeNull()
+
+      const uid = createdUser.user!.id
+      const result = await serviceRoleApiClient.deleteUser(uid, true)
+
+      expect(result).toEqual({ data: null, error: null })
+
+      const { error, data } = await serviceRoleApiClient.getUserById(uid)
+      expect(error).toBeNull()
+      expect(data.user?.id).toBe(uid)
+      expect(data.user?.deleted_at).toEqual(expect.any(String))
+    })
+
     test('deleteUser() returns AuthError when user id is invalid', async () => {
       const { error, data } = await serviceRoleApiClient.deleteUser(NON_EXISTANT_USER_ID)
 
       expect(error).not.toBeNull()
-      expect(data.user).toBeNull()
+      expect(data).toBeNull()
     })
   })
 
@@ -607,7 +624,6 @@ describe('GoTrueAdminApi', () => {
         expect(createData?.client_name).toBe(createParams.client_name)
 
         const clientId = createData!.client_id
-        const originalSecret = createData!.client_secret
 
         // Get OAuth client by ID
         const { data: getData, error: getError } =

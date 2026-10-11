@@ -813,6 +813,7 @@ export default class GoTrueAdminApi {
    *
    * @remarks
    * - The `deleteUser()` method requires the user's ID, which maps to the `auth.users.id` column.
+   * - The response contains no user data. Read the user before deleting it if you need its details.
    *
    * @example Removes a user
    * ```js
@@ -824,27 +825,29 @@ export default class GoTrueAdminApi {
    * @exampleResponse Removes a user
    * ```json
    * {
-   *   "data": {
-   *     "user": {}
-   *   },
+   *   "data": null,
    *   "error": null
    * }
    * ```
    */
-  async deleteUser(id: string, shouldSoftDelete = false): Promise<UserResponse> {
+  async deleteUser(
+    id: string,
+    shouldSoftDelete = false
+  ): Promise<{ data: null; error: AuthError | null }> {
     validateUUID(id)
 
     try {
-      return await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${id}`, {
+      await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${id}`, {
         headers: this.headers,
         body: {
           should_soft_delete: shouldSoftDelete,
         },
-        xform: _userResponse,
+        noResolveJson: true,
       })
+      return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: { user: null }, error }
+        return { data: null, error }
       }
 
       throw error
