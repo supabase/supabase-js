@@ -890,3 +890,19 @@ test('regexIMatch', async () => {
     }
   `)
 })
+
+test('in()/notIn() escape reserved characters, double quotes, and backslashes', () => {
+  const inBuilder = postgrest
+    .from('users')
+    .select('username')
+    .in('username', ['a,b', 'a"b', 'a,b"c', 'back\\slash']) as any
+  expect(inBuilder.url.searchParams.get('username')).toBe(
+    'in.("a,b","a\\"b","a,b\\"c","back\\\\slash")'
+  )
+
+  const notInBuilder = postgrest
+    .from('users')
+    .select('username')
+    .notIn('username', ['a,b"c']) as any
+  expect(notInBuilder.url.searchParams.get('username')).toBe('not.in.("a,b\\"c")')
+})
