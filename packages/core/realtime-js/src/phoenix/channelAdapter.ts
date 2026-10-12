@@ -77,9 +77,19 @@ export default class ChannelAdapter {
     try {
       push = this.channel.push(event, payload, timeout)
     } catch (error) {
-      throw new Error(
-        `tried to push '${event}' to '${this.channel.topic}' before joining. Use channel.subscribe() before pushing events`
-      )
+      // phoenix throws only when the channel has never been joined, so that is
+      // the one case worth relabelling (`join()` -> `subscribe()`). Any other
+      // failure — most commonly a payload the encoder rejects — reaches here
+      // too, and must keep its own message and stack rather than be reported as
+      // a missing subscribe().
+      if (!this.channel.joinedOnce) {
+        throw new Error(
+          `tried to push '${event}' to '${this.channel.topic}' before joining. Use channel.subscribe() before pushing events`,
+          { cause: error }
+        )
+      }
+
+      throw error
     }
 
     if (this.channel.pushBuffer.length > MAX_PUSH_BUFFER_SIZE) {
