@@ -35,6 +35,20 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
 
 const PostgrestReservedCharsRegexp = new RegExp('[,()]')
 
+// PostgreSQL array literal syntax: an element must be double-quoted when it is
+// empty, spells `NULL`, or contains a delimiter, brace, quote, backslash or
+// whitespace. Inside the quotes, `\` and `"` are backslash-escaped.
+// https://www.postgresql.org/docs/current/arrays.html#ARRAYS-IO
+const PostgresArrayReservedCharsRegexp = /[,{}"\\\s]/
+
+const toArrayLiteralElement = (value: unknown): string => {
+  if (typeof value !== 'string') return `${value}`
+  if (value === '' || /^null$/i.test(value) || PostgresArrayReservedCharsRegexp.test(value)) {
+    return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  }
+  return value
+}
+
 // Match relationship filters with `table.column` syntax and resolve underlying
 // column value. If not matched, fallback to generic type.
 // TODO: Validate the relationship itself ala select-query-parser. Currently we
@@ -1016,7 +1030,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `cs.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(column, `cs.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `cs.{${value.map(toArrayLiteralElement).join(',')}}`)
     } else {
       // json
       this.url.searchParams.append(column, `cs.${JSON.stringify(value)}`)
@@ -1165,7 +1179,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `cd.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(column, `cd.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `cd.{${value.map(toArrayLiteralElement).join(',')}}`)
     } else {
       // json
       this.url.searchParams.append(column, `cd.${JSON.stringify(value)}`)
@@ -1592,7 +1606,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `ov.${value}`)
     } else {
       // array
-      this.url.searchParams.append(column, `ov.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `ov.{${value.map(toArrayLiteralElement).join(',')}}`)
     }
     return this
   }
