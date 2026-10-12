@@ -172,7 +172,12 @@ describe('Object API', () => {
       const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
       expect(uploadRes.error).toBeNull()
 
-      const versionId = 'test-version-id'
+      // The server resolves the version before signing, so the id must belong to a real version.
+      const infoRes = await storage.from(bucketName).info(uploadPath)
+      expect(infoRes.error).toBeNull()
+      assert(infoRes.data?.version)
+      const versionId = infoRes.data.version
+
       const originalFetch = global.fetch
       const mockFetch = jest.fn(originalFetch)
       global.fetch = mockFetch
@@ -438,7 +443,7 @@ describe('Object API', () => {
         expect.objectContaining({
           hasNext: false,
           folders: expect.arrayContaining([
-            expect.objectContaining({ key: 'testpath', name: 'testpath/' }),
+            expect.objectContaining({ id: null, name: 'testpath/' }),
           ]),
           objects: [],
         })
