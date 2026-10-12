@@ -217,21 +217,71 @@ export const toArray = (value: RecordValue, type: string): RecordValue => {
 
   // Confirm value is a Postgres array by checking curly brackets
   if (openBrace === '{' && closeBrace === '}') {
-    let arr
-    const valTrim = value.slice(1, lastIdx)
-
-    // TODO: find a better solution to separate Postgres array data
-    try {
-      arr = JSON.parse('[' + valTrim + ']')
-    } catch (_) {
-      // WARNING: splitting on comma does not cover all edge cases
-      arr = valTrim ? valTrim.split(',') : []
-    }
-
-    return arr.map((val: BaseValue) => convertCell(type, val))
+    const elements = parseArrayElements(value.slice(1, lastIdx))
+    // `type` has already had its array marker stripped by the caller, so each
+    // element converts to a scalar.
+    return elements.map((element) =>
+      element === null ? null : (convertCell(type, element) as BaseValue)
+    )
   }
 
   return value
+}
+
+/**
+ * Splits the inside of a Postgres array literal into its elements.
+ *
+ * An element is double-quoted whenever it is empty, spells `NULL`, or contains a
+ * delimiter, brace, quote, backslash or whitespace; inside the quotes `\\` and
+ * `\"` are escapes. Unquoted `NULL` is the null element, whereas the quoted
+ * `"NULL"` is the four-character string.
+ *
+ * https://www.postgresql.org/docs/current/arrays.html#ARRAYS-IO
+ *
+ * @param inner - The literal with its outermost braces already removed
+ */
+const parseArrayElements = (inner: string): (string | null)[] => {
+  if (inner === '') {
+    return []
+  }
+
+  const elements: (string | null)[] = []
+  let index = 0
+
+  while (index <= inner.length) {
+    if (inner[index] === '"') {
+      let element = ''
+      index++
+
+      while (index < inner.length && inner[index] !== '"') {
+        if (inner[index] === '\\') {
+          index++
+        }
+        element += inner[index]
+        index++
+      }
+
+      index++
+      elements.push(element)
+    } else {
+      const start = index
+
+      while (index < inner.length && inner[index] !== ',') {
+        index++
+      }
+
+      const element = inner.slice(start, index)
+      elements.push(element.toUpperCase() === 'NULL' ? null : element)
+    }
+
+    if (inner[index] !== ',') {
+      break
+    }
+
+    index++
+  }
+
+  return elements
 }
 
 /**
