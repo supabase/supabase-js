@@ -48,7 +48,7 @@ catalogs:
 
 overrides:
   unrun: '>=0.2.39 <0.3.0'
-  sharp: '>=0.35.4'
+  sharp: '>=0.35.5'
   postcss: '>=8.5.18'
   source-map-js: '>=1.2.2'
   '@babel/core': '>=7.29.1 <8'

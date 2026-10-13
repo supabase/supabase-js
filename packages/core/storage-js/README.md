@@ -1292,6 +1292,8 @@ pnpm nx test:clean-post storage-js
 
 The test infrastructure is managed via the Supabase CLI (`pnpm exec supabase start --workdir test`), which starts a local Supabase stack defined by the config in `test/`. This includes PostgreSQL, the Storage API, Kong Gateway, and supporting services.
 
+`test:infra` pins the Storage API image to the version in `test/supabase/storage-version`, since the encoding integration tests require Storage v1.80.0+. Update this file when upgrading the test server. CI includes this file in its Docker image cache key.
+
 #### Common Issues and Solutions
 
 | Issue                             | Solution                                                                                          |
