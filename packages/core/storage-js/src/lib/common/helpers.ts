@@ -157,3 +157,42 @@ export const validateVectorDimension = (
  */
 export const encodeStoragePath = (path: string): string =>
   path.split('/').map(encodeURIComponent).join('/')
+
+/**
+ * Encodes a path for `POST /object/sign`. That route signs the path after
+ * `decodeURI`, while the redemption route compares it fully decoded, so a
+ * percent-encoded `&`, `+`, `=` or `@` makes the signature mismatch. Only the
+ * characters that cannot travel raw (`?`, `#`) are escaped beyond `encodeURI`.
+ *
+ * @param path - A `bucketId/objectKey` path
+ * @returns The path encoded so signing and redemption read the same key
+ */
+export const encodeSignPath = (path: string): string =>
+  encodeURI(path).replace(/[?#]/g, encodeURIComponent)
+
+const decodeSegment = (segment: string): string => {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}
+
+/**
+ * Re-encodes the path of a signed URL returned by the storage server so each
+ * segment is percent-encoded exactly once.
+ *
+ * The server echoes the object path still encoded on some routes
+ * (`/object/sign`) and decoded on others (`/object/upload/sign`), and a key may
+ * itself contain `?`, so the query is split off at the last `?token=`.
+ *
+ * @param signedPath - A path such as `/object/sign/bucket/key?token=...`
+ * @returns The same path with every segment encoded once
+ */
+export const normalizeSignedPath = (signedPath: string): string => {
+  const queryStart = signedPath.lastIndexOf('?token=')
+  const path = queryStart === -1 ? signedPath : signedPath.slice(0, queryStart)
+  const query = queryStart === -1 ? '' : signedPath.slice(queryStart)
+
+  return encodeStoragePath(path.split('/').map(decodeSegment).join('/')) + query
+}

@@ -6,7 +6,12 @@ import {
 } from '../lib/common/errors'
 import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
 import { setHeader } from '../lib/common/headers'
-import { encodeStoragePath, recursiveToCamel } from '../lib/common/helpers'
+import {
+  encodeSignPath,
+  encodeStoragePath,
+  normalizeSignedPath,
+  recursiveToCamel,
+} from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   FileObject,
@@ -372,7 +377,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      let _path = encodeStoragePath(this._getFinalPath(path))
+      const _path = encodeStoragePath(this._getFinalPath(path))
 
       const headers = { ...this.headers }
 
@@ -387,7 +392,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         { headers }
       )
 
-      const url = new URL(this.url + data.url)
+      const url = new URL(this.url + normalizeSignedPath(data.url))
 
       const token = url.searchParams.get('token')
 
@@ -692,7 +697,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      let _path = encodeStoragePath(this._getFinalPath(path))
+      const _path = encodeSignPath(this._getFinalPath(path))
 
       const hasTransform =
         typeof options?.transform === 'object' &&
@@ -718,9 +723,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       // `data.signedURL` contains a `token` query parameter, so append extra params with `&`
       // only when we actually have something to add.
-      const signedUrl = encodeURI(
-        `${this.url}${data.signedURL}${queryString ? `&${queryString}` : ''}`
-      )
+      const signedUrl = `${this.url}${normalizeSignedPath(data.signedURL)}${queryString ? `&${queryString}` : ''}`
 
       return { signedUrl }
     })
@@ -811,7 +814,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         (datum: { error: string | null; path: string | null; signedURL: string | null }) => ({
           ...datum,
           signedUrl: datum.signedURL
-            ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
+            ? `${this.url}${normalizeSignedPath(datum.signedURL)}${queryString ? `&${queryString}` : ''}`
             : null,
         })
       )
