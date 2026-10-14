@@ -542,7 +542,7 @@ export default class GoTrueAdminApi {
       const links = response.headers.get('link')?.split(',') ?? []
       if (links.length > 0) {
         links.forEach((link: string) => {
-          const page = parseInt(link.split(';')[0].split('=')[1].substring(0, 1))
+          const page = parseInt(link.split(';')[0].match(/[?&]page=(\d+)/)?.[1] ?? '', 10)
           const rel = JSON.parse(link.split(';')[1].split('=')[1])
           pagination[`${rel}Page`] = page
         })
@@ -929,7 +929,7 @@ export default class GoTrueAdminApi {
       const links = response.headers.get('link')?.split(',') ?? []
       if (links.length > 0) {
         links.forEach((link: string) => {
-          const page = parseInt(link.split(';')[0].split('=')[1].substring(0, 1))
+          const page = parseInt(link.split(';')[0].match(/[?&]page=(\d+)/)?.[1] ?? '', 10)
           const rel = JSON.parse(link.split(';')[1].split('=')[1])
           pagination[`${rel}Page`] = page
         })
