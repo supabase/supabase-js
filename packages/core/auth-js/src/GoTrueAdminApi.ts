@@ -65,6 +65,22 @@ export default class GoTrueAdminApi {
   }
   protected fetch: Fetch
   protected experimental: ExperimentalFeatureFlags
+  protected throwOnError: boolean
+
+  /**
+   * Centralizes return handling with optional error throwing, mirroring
+   * `GoTrueClient._returnResult`. When `throwOnError` is enabled and the
+   * result contains a non-nullish error, the error is thrown instead of
+   * being returned, so `auth.admin.*` methods follow the same semantics
+   * as regular client methods. Generic-identity shape preserves the
+   * caller's contextual return type (unions included).
+   */
+  private _handleResult<T>(result: T): T {
+    if (this.throwOnError && result && (result as unknown as { error?: unknown }).error) {
+      throw (result as unknown as { error: unknown }).error
+    }
+    return result
+  }
 
   /**
    * Creates an admin API client that can be used to manage users and OAuth clients.
@@ -92,6 +108,7 @@ export default class GoTrueAdminApi {
     headers = {},
     fetch,
     experimental,
+    throwOnError = false,
   }: {
     url: string
     headers?: {
@@ -99,11 +116,13 @@ export default class GoTrueAdminApi {
     }
     fetch?: Fetch
     experimental?: ExperimentalFeatureFlags
+    throwOnError?: boolean
   }) {
     this.url = url
     this.headers = headers
     this.fetch = resolveFetch(fetch)
     this.experimental = experimental ?? {}
+    this.throwOnError = throwOnError
     this.mfa = {
       listFactors: this._listFactors.bind(this),
       deleteFactor: this._deleteFactor.bind(this),
@@ -156,7 +175,7 @@ export default class GoTrueAdminApi {
       return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
 
       throw error
@@ -238,15 +257,17 @@ export default class GoTrueAdminApi {
     } = {}
   ): Promise<UserResponse> {
     try {
-      return await _request(this.fetch, 'POST', `${this.url}/invite`, {
-        body: { email, data: options.data },
-        headers: this.headers,
-        redirectTo: options.redirectTo,
-        xform: _userResponse,
-      })
+      return this._handleResult(
+        await _request(this.fetch, 'POST', `${this.url}/invite`, {
+          body: { email, data: options.data },
+          headers: this.headers,
+          redirectTo: options.redirectTo,
+          xform: _userResponse,
+        })
+      )
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: { user: null }, error }
+        return this._handleResult({ data: { user: null }, error })
       }
 
       throw error
@@ -376,21 +397,23 @@ export default class GoTrueAdminApi {
         body.new_email = rest?.newEmail
         delete body['newEmail']
       }
-      return await _request(this.fetch, 'POST', `${this.url}/admin/generate_link`, {
-        body: body,
-        headers: this.headers,
-        xform: _generateLinkResponse,
-        redirectTo: options?.redirectTo,
-      })
+      return this._handleResult(
+        await _request(this.fetch, 'POST', `${this.url}/admin/generate_link`, {
+          body: body,
+          headers: this.headers,
+          xform: _generateLinkResponse,
+          redirectTo: options?.redirectTo,
+        })
+      )
     } catch (error) {
       if (isAuthError(error)) {
-        return {
+        return this._handleResult({
           data: {
             properties: null,
             user: null,
           },
           error,
-        }
+        })
       }
       throw error
     }
@@ -479,14 +502,16 @@ export default class GoTrueAdminApi {
    */
   async createUser(attributes: AdminUserAttributes): Promise<UserResponse> {
     try {
-      return await _request(this.fetch, 'POST', `${this.url}/admin/users`, {
-        body: attributes,
-        headers: this.headers,
-        xform: _userResponse,
-      })
+      return this._handleResult(
+        await _request(this.fetch, 'POST', `${this.url}/admin/users`, {
+          body: attributes,
+          headers: this.headers,
+          xform: _userResponse,
+        })
+      )
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: { user: null }, error }
+        return this._handleResult({ data: { user: null }, error })
       }
 
       throw error
@@ -552,7 +577,7 @@ export default class GoTrueAdminApi {
       return { data: { ...users, ...pagination }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: { users: [] }, error }
+        return this._handleResult({ data: { users: [] }, error })
       }
       throw error
     }
@@ -624,13 +649,15 @@ export default class GoTrueAdminApi {
     validateUUID(uid)
 
     try {
-      return await _request(this.fetch, 'GET', `${this.url}/admin/users/${uid}`, {
-        headers: this.headers,
-        xform: _userResponse,
-      })
+      return this._handleResult(
+        await _request(this.fetch, 'GET', `${this.url}/admin/users/${uid}`, {
+          headers: this.headers,
+          xform: _userResponse,
+        })
+      )
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: { user: null }, error }
+        return this._handleResult({ data: { user: null }, error })
       }
 
       throw error
@@ -785,14 +812,16 @@ export default class GoTrueAdminApi {
     validateUUID(uid)
 
     try {
-      return await _request(this.fetch, 'PUT', `${this.url}/admin/users/${uid}`, {
-        body: attributes,
-        headers: this.headers,
-        xform: _userResponse,
-      })
+      return this._handleResult(
+        await _request(this.fetch, 'PUT', `${this.url}/admin/users/${uid}`, {
+          body: attributes,
+          headers: this.headers,
+          xform: _userResponse,
+        })
+      )
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: { user: null }, error }
+        return this._handleResult({ data: { user: null }, error })
       }
 
       throw error
@@ -835,16 +864,18 @@ export default class GoTrueAdminApi {
     validateUUID(id)
 
     try {
-      return await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${id}`, {
-        headers: this.headers,
-        body: {
-          should_soft_delete: shouldSoftDelete,
-        },
-        xform: _userResponse,
-      })
+      return this._handleResult(
+        await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${id}`, {
+          headers: this.headers,
+          body: {
+            should_soft_delete: shouldSoftDelete,
+          },
+          xform: _userResponse,
+        })
+      )
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: { user: null }, error }
+        return this._handleResult({ data: { user: null }, error })
       }
 
       throw error
@@ -868,10 +899,10 @@ export default class GoTrueAdminApi {
           },
         }
       )
-      return { data, error }
+      return this._handleResult({ data, error })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
 
       throw error
@@ -897,7 +928,7 @@ export default class GoTrueAdminApi {
       return { data, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
 
       throw error
@@ -939,7 +970,7 @@ export default class GoTrueAdminApi {
       return { data: { ...clients, ...pagination }, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: { clients: [] }, error }
+        return this._handleResult({ data: { clients: [] }, error })
       }
       throw error
     }
@@ -962,7 +993,7 @@ export default class GoTrueAdminApi {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
 
       throw error
@@ -985,7 +1016,7 @@ export default class GoTrueAdminApi {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
 
       throw error
@@ -1012,7 +1043,7 @@ export default class GoTrueAdminApi {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
 
       throw error
@@ -1036,7 +1067,7 @@ export default class GoTrueAdminApi {
       return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
 
       throw error
@@ -1064,7 +1095,7 @@ export default class GoTrueAdminApi {
       )
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
 
       throw error
@@ -1093,7 +1124,7 @@ export default class GoTrueAdminApi {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: { providers: [] }, error }
+        return this._handleResult({ data: { providers: [] }, error })
       }
       throw error
     }
@@ -1123,7 +1154,7 @@ export default class GoTrueAdminApi {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
       throw error
     }
@@ -1144,7 +1175,7 @@ export default class GoTrueAdminApi {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
       throw error
     }
@@ -1174,7 +1205,7 @@ export default class GoTrueAdminApi {
       })
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
       throw error
     }
@@ -1196,7 +1227,7 @@ export default class GoTrueAdminApi {
       return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
       throw error
     }
@@ -1221,7 +1252,7 @@ export default class GoTrueAdminApi {
       )
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
       throw error
     }
@@ -1248,7 +1279,7 @@ export default class GoTrueAdminApi {
       return { data: null, error: null }
     } catch (error) {
       if (isAuthError(error)) {
-        return { data: null, error }
+        return this._handleResult({ data: null, error })
       }
       throw error
     }

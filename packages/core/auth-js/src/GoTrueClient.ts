@@ -12,6 +12,7 @@ import {
 } from './lib/constants'
 import {
   AuthError,
+  AuthApiError,
   AuthImplicitGrantRedirectError,
   AuthInvalidCredentialsError,
   AuthInvalidJwtError,
@@ -442,6 +443,7 @@ export default class GoTrueClient {
       headers: settings.headers,
       fetch: settings.fetch,
       experimental: this.experimental,
+      throwOnError: settings.throwOnError,
     })
 
     this.url = settings.url
@@ -4092,7 +4094,15 @@ export default class GoTrueClient {
       }
       const accessToken = data.session?.access_token
       if (accessToken) {
-        const { error } = await this.admin.signOut(accessToken, scope)
+        // With throwOnError enabled the admin API rejects instead of returning the
+        // error; normalize auth-API rejections back to a result so the status-code
+        // rules below still apply and local cleanup is never skipped. Validation
+        // errors (invalid scope etc.) are thrown before any request and must keep
+        // rejecting — they mean the call itself was invalid.
+        const { error } = await this.admin.signOut(accessToken, scope).catch((e) => {
+          if (isAuthError(e)) return { data: null, error: e as AuthApiError }
+          throw e
+        })
         if (error) {
           // ignore 404s since user might not exist anymore
           // ignore 401s since an invalid or expired JWT should sign out the current session
