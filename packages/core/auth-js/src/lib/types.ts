@@ -85,6 +85,20 @@ export type GoTrueClientOptions = {
   /* Optional key name used for storing tokens in local storage. */
   storageKey?: string
   /**
+   * Storage keys this client previously persisted its session under.
+   *
+   * On initialization, when nothing is stored under `storageKey`, the first
+   * legacy key holding a session is moved to `storageKey` — the session, the
+   * `-user` entry (in `storage` and `userStorage`) and any pending PKCE
+   * verifiers — and the legacy entries are removed. When `storageKey` already
+   * holds a session, the legacy entries are removed without being copied so a
+   * stale refresh token does not linger. No-op when `persistSession` is false.
+   *
+   * supabase-js sets this to the pre-hash `sb-<ref>-auth-token` default so
+   * existing users stay signed in after the default key changed.
+   */
+  legacyStorageKeys?: string[]
+  /**
    * Set to "true" if you want to automatically detect OAuth grants in the URL and sign in the user.
    * Set to "false" to disable automatic detection.
    * Set to a function to provide custom logic for determining if a URL contains a Supabase auth callback.
