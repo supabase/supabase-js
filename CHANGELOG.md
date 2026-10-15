@@ -1,3 +1,20 @@
+## 2.118.0 (2026-10-15)
+
+### 🚀 Features
+
+- **postgrest:** leave computed fields out of select('*') and resolve no-argument rpc overloads for postgrest-typegen output ([#2730](https://github.com/supabase/supabase-js/pull/2730))
+- **storage:** add content-encoding support for uploads ([#1949](https://github.com/supabase/supabase-js/pull/1949))
+
+### 🩹 Fixes
+
+- **ci:** patch next and sharp advisories and pin node-browser playwright ([#2753](https://github.com/supabase/supabase-js/pull/2753))
+
+### ❤️ Thank You
+
+- Atharv Gaur @Athaxv
+- Ferhat Elmas
+- Lukas Klingsbo
+
 ## 2.117.3 (2026-10-07)
 
 ### 🩹 Fixes

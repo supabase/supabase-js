@@ -1,3 +1,14 @@
+## 2.118.0 (2026-10-15)
+
+### 🚀 Features
+
+- **storage:** add content-encoding support for uploads ([#1949](https://github.com/supabase/supabase-js/pull/1949))
+
+### ❤️ Thank You
+
+- Atharv Gaur @Athaxv
+- Ferhat Elmas
+
 ## 2.117.3 (2026-10-07)
 
 ### 🩹 Fixes
