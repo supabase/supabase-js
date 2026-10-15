@@ -10,12 +10,7 @@
     "test:infra": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": [
-          "mkdir -p {projectRoot}/test/supabase/.temp",
-          "cp {projectRoot}/test/supabase/storage-version {projectRoot}/test/supabase/.temp/storage-version",
-          "npx supabase start --workdir {projectRoot}/test && npx supabase db reset --workdir {projectRoot}/test && sleep 20"
-        ],
-        "parallel": false
+        "command": "npx supabase start --workdir {projectRoot}/test && npx supabase db reset --workdir {projectRoot}/test && sleep 20"
       },
       "dependsOn": ["test:clean-pre"]
     },
