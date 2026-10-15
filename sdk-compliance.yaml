@@ -37,6 +37,7 @@ features:
     status: implemented
     symbols:
       - TracePropagationOptions
+  client.observability.diagnostic_logging: not_implemented
   client.request_configuration.custom_http_client:
     status: implemented
     symbols:
@@ -361,6 +362,7 @@ features:
     status: implemented
     symbols:
       - PostgrestClientOptions
+  database.configuration.access_token: not_implemented
   database.mutate.delete:
     status: implemented
     symbols:
@@ -381,6 +383,9 @@ features:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.upsert
+  database.mutate.bulk_rows_with_differing_fields: not_implemented
+  database.mutate.count: not_implemented
+  database.mutate.missing_defaults: not_implemented
   database.query.from_table:
     status: implemented
     symbols:
