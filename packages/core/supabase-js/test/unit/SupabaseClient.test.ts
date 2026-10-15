@@ -639,3 +639,57 @@ describe('SupabaseClient', () => {
     })
   })
 })
+
+describe('data requests after a lost refresh race', () => {
+  const STORAGE_KEY = 'race-test-auth'
+
+  const session = (name: string, expiresIn: number) => ({
+    access_token: `access-${name}`,
+    refresh_token: `refresh-${name}`,
+    token_type: 'bearer',
+    expires_in: expiresIn,
+    expires_at: Math.floor(Date.now() / 1000) + expiresIn,
+    user: { id: 'user-1', aud: 'authenticated', role: 'authenticated' },
+  })
+
+  test('sends the session another tab committed, not the anon key, when its own refresh is discarded', async () => {
+    const items = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: (key: string, value: string) => void items.set(key, value),
+      removeItem: (key: string) => void items.delete(key),
+    }
+    const authorizations: (string | null)[] = []
+
+    const fetchImpl = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : 'url' in input ? input.url : input.href
+      if (url.includes('/auth/v1/token')) {
+        // Another tab wins the rotation while this refresh is in flight.
+        storage.setItem(STORAGE_KEY, JSON.stringify(session('other-tab', 3600)))
+        return new Response(JSON.stringify(session('this-tab', 3600)), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      authorizations.push(new Headers(init?.headers).get('Authorization'))
+      return new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+
+    const client = createClient(URL, KEY, {
+      auth: {
+        storage,
+        storageKey: STORAGE_KEY,
+        persistSession: true,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      global: { fetch: fetchImpl },
+    })
+    await client.auth.initialize()
+    storage.setItem(STORAGE_KEY, JSON.stringify(session('old', -30)))
+
+    await client.from('reservations').select('*')
+
+    expect(authorizations).toEqual(['Bearer access-other-tab'])
+  })
+})

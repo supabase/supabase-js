@@ -3,23 +3,55 @@ export type Json = unknown
 export type Database = {
   personal: {
     Tables: {
+      user_notes: {
+        Row: {
+          author: string
+          id: number
+          note: string
+          personal_author: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          author: string
+          id?: number
+          note: string
+          personal_author?: string | null
+        }
+        Update: {
+          author?: string
+          id?: number
+          note?: string
+          personal_author?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_notes_personal_author_fkey'
+            columns: ['personal_author']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['username']
+          },
+        ]
+      }
       users: {
         Row: {
           age_range: unknown
           data: Json | null
-          status: Database['personal']['Enums']['user_status'] | null
+          status: Database['public']['Enums']['user_status'] | null
           username: string
+          username_label: string | null
         }
+        ComputedFields: 'username_label'
         Insert: {
           age_range?: unknown
           data?: Json | null
-          status?: Database['personal']['Enums']['user_status'] | null
+          status?: Database['public']['Enums']['user_status'] | null
           username: string
         }
         Update: {
           age_range?: unknown
           data?: Json | null
-          status?: Database['personal']['Enums']['user_status'] | null
+          status?: Database['public']['Enums']['user_status'] | null
           username?: string
         }
         Relationships: []
@@ -31,7 +63,16 @@ export type Database = {
     Functions: {
       get_status: {
         Args: { name_param: string }
-        Returns: Database['personal']['Enums']['user_status']
+        Returns: Database['public']['Enums']['user_status']
+      }
+      username_label: {
+        Args: {
+          user_row: Omit<
+            Database['personal']['Tables']['users']['Row'],
+            Database['personal']['Tables']['users']['ComputedFields']
+          >
+        }
+        Returns: string
       }
     }
     Enums: {
@@ -50,6 +91,7 @@ export type Database = {
           second_user: string
           third_wheel: string | null
         }
+        ComputedFields: never
         Insert: {
           first_user: string
           id?: number
@@ -81,7 +123,21 @@ export type Database = {
             foreignKeyName: 'best_friends_first_user_fkey'
             columns: ['first_user']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_first_user_fkey'
+            columns: ['first_user']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_first_user_fkey'
+            columns: ['first_user']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -109,7 +165,21 @@ export type Database = {
             foreignKeyName: 'best_friends_second_user_fkey'
             columns: ['second_user']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_second_user_fkey'
+            columns: ['second_user']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_second_user_fkey'
+            columns: ['second_user']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -137,7 +207,21 @@ export type Database = {
             foreignKeyName: 'best_friends_third_wheel_fkey'
             columns: ['third_wheel']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_third_wheel_fkey'
+            columns: ['third_wheel']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'best_friends_third_wheel_fkey'
+            columns: ['third_wheel']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -154,6 +238,7 @@ export type Database = {
           hotel_id: number | null
           id: number
         }
+        ComputedFields: never
         Insert: {
           hotel_id?: number | null
           id?: number
@@ -178,6 +263,7 @@ export type Database = {
           id: number
           name: string
         }
+        ComputedFields: never
         Insert: {
           description?: string | null
           id?: number
@@ -195,6 +281,7 @@ export type Database = {
           details: string | null
           id: number
         }
+        ComputedFields: never
         Insert: {
           details?: string | null
           id: number
@@ -218,7 +305,15 @@ export type Database = {
           data: Json | null
           id: number
           slug: string | null
+          get_messages: {
+            channel_id: number
+            data: Json | null
+            id: number
+            message: string | null
+            username: string
+          } | null
         }
+        ComputedFields: 'get_messages'
         Insert: {
           data?: Json | null
           id?: number
@@ -237,6 +332,7 @@ export type Database = {
           id: number
           parent_id: number | null
         }
+        ComputedFields: never
         Insert: {
           description?: string | null
           id?: number
@@ -263,6 +359,7 @@ export type Database = {
           'column whitespace': string | null
           id: number
         }
+        ComputedFields: never
         Insert: {
           array_column?: string[] | null
           'column whitespace'?: string | null
@@ -283,6 +380,7 @@ export type Database = {
           id: number
           days_since_event: number | null
         }
+        ComputedFields: 'days_since_event'
         Insert: {
           created_at?: string
           data?: Json | null
@@ -304,6 +402,7 @@ export type Database = {
           event_type: string | null
           id: number
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           data?: Json | null
@@ -325,6 +424,7 @@ export type Database = {
           event_type: string | null
           id: number
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           data?: Json | null
@@ -344,6 +444,7 @@ export type Database = {
           id: number
           name: string | null
         }
+        ComputedFields: never
         Insert: {
           id?: number
           name?: string | null
@@ -351,6 +452,53 @@ export type Database = {
         Update: {
           id?: number
           name?: string | null
+        }
+        Relationships: []
+      }
+      inference_cases: {
+        Row: {
+          id: number
+          note: string | null
+          optional_payload: Json | null
+          price: number
+          quantity: number
+          required_payload: NonNullable<Json>
+          scores: number[] | null
+          sequence_id: number
+          shipping_address: Database['public']['CompositeTypes']['address'] | null
+          status: Database['public']['Enums']['user_status']
+          tags: string[]
+          total: number | null
+          inference_case_label: string | null
+        }
+        ComputedFields: 'inference_case_label'
+        Insert: {
+          id?: never
+          note?: string | null
+          optional_payload?: Json | null
+          price: number
+          quantity?: number
+          required_payload: NonNullable<Json>
+          scores?: number[] | null
+          sequence_id?: number
+          shipping_address?: Database['public']['CompositeTypes']['address'] | null
+          status?: Database['public']['Enums']['user_status']
+          tags?: string[]
+          total?: never
+        }
+        Update: {
+          id?: never
+          note?: string | null
+          optional_payload?: Json | null
+          price?: number
+          quantity?: number
+          required_payload?: NonNullable<Json>
+          scores?: number[] | null
+          sequence_id?: number
+          shipping_address?: Database['public']['CompositeTypes']['address'] | null
+          status?: Database['public']['Enums']['user_status']
+          tags?: string[]
+          total?: never
         }
         Relationships: []
       }
@@ -362,6 +510,7 @@ export type Database = {
           parent: number | null
           type: string | null
         }
+        ComputedFields: never
         Insert: {
           id?: number
           main?: number | null
@@ -401,7 +550,15 @@ export type Database = {
           message: string | null
           username: string
           blurb_message: string | null
+          function_returning_single_row: {
+            age_range: unknown
+            catchphrase: unknown
+            data: Json | null
+            status: Database['public']['Enums']['user_status'] | null
+            username: string
+          } | null
         }
+        ComputedFields: 'blurb_message' | 'function_returning_single_row'
         Insert: {
           channel_id: number
           data?: Json | null
@@ -442,7 +599,21 @@ export type Database = {
             foreignKeyName: 'messages_username_fkey'
             columns: ['username']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -459,6 +630,7 @@ export type Database = {
           category_id: number
           product_id: number
         }
+        ComputedFields: never
         Insert: {
           category_id: number
           product_id: number
@@ -491,6 +663,7 @@ export type Database = {
           name: string
           price: number
         }
+        ComputedFields: never
         Insert: {
           description?: string | null
           id?: number
@@ -505,12 +678,30 @@ export type Database = {
         }
         Relationships: []
       }
+      remote_users: {
+        Row: {
+          status: Database['public']['Enums']['user_status'] | null
+          username: string
+          describe_remote_user: string | null
+        }
+        ComputedFields: 'describe_remote_user'
+        Insert: {
+          status?: Database['public']['Enums']['user_status'] | null
+          username: string
+        }
+        Update: {
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string
+        }
+        Relationships: []
+      }
       shops: {
         Row: {
           address: string | null
           id: number
           shop_geom: unknown
         }
+        ComputedFields: never
         Insert: {
           address?: string | null
           id: number
@@ -528,6 +719,7 @@ export type Database = {
           id: number
           username: string | null
         }
+        ComputedFields: never
         Insert: {
           id?: number
           username?: string | null
@@ -555,7 +747,21 @@ export type Database = {
             foreignKeyName: 'user_profiles_username_fkey'
             columns: ['username']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'user_profiles_username_fkey'
+            columns: ['username']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'user_profiles_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -574,7 +780,60 @@ export type Database = {
           data: Json | null
           status: Database['public']['Enums']['user_status'] | null
           username: string
+          function_using_setof_rows_one: {
+            id: number
+            username: string | null
+          } | null
+          function_using_table_returns: {
+            id: number
+            username: string | null
+          } | null
+          get_messages: {
+            channel_id: number
+            data: Json | null
+            id: number
+            message: string | null
+            username: string
+          } | null
+          get_user_messages: {
+            channel_id: number
+            data: Json | null
+            id: number
+            message: string | null
+            username: string
+          } | null
+          get_user_profile: {
+            id: number
+            username: string | null
+          } | null
+          get_user_profile_non_nullable: {
+            id: number
+            username: string | null
+          } | null
+          get_user_recent_messages: {
+            channel_id: number | null
+            data: Json | null
+            id: number | null
+            message: string | null
+            username: string | null
+          } | null
+          postgrest_resolvable_with_override_function: {
+            channel_id: number
+            data: Json | null
+            id: number
+            message: string | null
+            username: string
+          } | null
         }
+        ComputedFields:
+          | 'function_using_setof_rows_one'
+          | 'function_using_table_returns'
+          | 'get_messages'
+          | 'get_user_messages'
+          | 'get_user_profile'
+          | 'get_user_profile_non_nullable'
+          | 'get_user_recent_messages'
+          | 'postgrest_resolvable_with_override_function'
         Insert: {
           age_range?: unknown
           catchphrase?: unknown
@@ -598,6 +857,7 @@ export type Database = {
           previous_value: number | null
           created_ago: number | null
         }
+        ComputedFields: 'created_ago'
         Insert: {
           created_at?: string | null
           id?: number
@@ -619,7 +879,32 @@ export type Database = {
           data: Json | null
           status: Database['public']['Enums']['user_status'] | null
           username: string | null
+          get_active_user_messages: {
+            channel_id: number
+            data: Json | null
+            id: number
+            message: string | null
+            username: string
+          } | null
+          get_user_first_message: {
+            channel_id: number | null
+            data: Json | null
+            id: number | null
+            message: string | null
+            username: string | null
+          } | null
+          get_user_recent_messages: {
+            channel_id: number | null
+            data: Json | null
+            id: number | null
+            message: string | null
+            username: string | null
+          } | null
         }
+        ComputedFields:
+          | 'get_active_user_messages'
+          | 'get_user_first_message'
+          | 'get_user_recent_messages'
         Insert: {
           age_range?: unknown
           catchphrase?: unknown
@@ -640,6 +925,7 @@ export type Database = {
         Row: {
           username: string | null
         }
+        ComputedFields: never
         Relationships: []
       }
       recent_messages: {
@@ -650,6 +936,7 @@ export type Database = {
           message: string | null
           username: string | null
         }
+        ComputedFields: never
         Relationships: [
           {
             foreignKeyName: 'messages_channel_id_fkey'
@@ -676,7 +963,21 @@ export type Database = {
             foreignKeyName: 'messages_username_fkey'
             columns: ['username']
             isOneToOne: false
+            referencedRelation: 'trigger_writable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
             referencedRelation: 'updatable_view'
+            referencedColumns: ['username']
+          },
+          {
+            foreignKeyName: 'messages_username_fkey'
+            columns: ['username']
+            isOneToOne: false
+            referencedRelation: 'update_only_trigger_view'
             referencedColumns: ['username']
           },
           {
@@ -688,11 +989,28 @@ export type Database = {
           },
         ]
       }
+      trigger_writable_view: {
+        Row: {
+          status: Database['public']['Enums']['user_status'] | null
+          username: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string | null
+        }
+        Update: {
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string | null
+        }
+        Relationships: []
+      }
       updatable_view: {
         Row: {
           non_updatable_column: number | null
           username: string | null
         }
+        ComputedFields: never
         Insert: {
           non_updatable_column?: never
           username?: string | null
@@ -701,6 +1019,27 @@ export type Database = {
           non_updatable_column?: never
           username?: string | null
         }
+        Relationships: []
+      }
+      update_only_trigger_view: {
+        Row: {
+          status: Database['public']['Enums']['user_status'] | null
+          username: string | null
+        }
+        ComputedFields: never
+        Update: {
+          status?: Database['public']['Enums']['user_status'] | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      user_status_counts: {
+        Row: {
+          status: Database['public']['Enums']['user_status'] | null
+          total: number | null
+          describe_status_count: string | null
+        }
+        ComputedFields: 'describe_status_count'
         Relationships: []
       }
     }
@@ -723,10 +1062,38 @@ export type Database = {
           error: true
         } & 'the function public.days_since_event with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
       }
+      describe_remote_user: {
+        Args: {
+          remote_row: Omit<
+            Database['public']['Tables']['remote_users']['Row'],
+            Database['public']['Tables']['remote_users']['ComputedFields']
+          >
+        }
+        Returns: string
+      }
+      describe_status_count: {
+        Args: {
+          count_row: Omit<
+            Database['public']['Views']['user_status_counts']['Row'],
+            Database['public']['Views']['user_status_counts']['ComputedFields']
+          >
+        }
+        Returns: string
+      }
+      echo_address: {
+        Args: { address: Database['public']['CompositeTypes']['address'] }
+        Returns: Database['public']['CompositeTypes']['address']
+        SetofOptions: {
+          from: 'address'
+          to: 'address'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       echo_bigint_as_text: { Args: { bigint_param: number }; Returns: string }
       extract_jsonb_bigint_as_text: { Args: { payload: Json }; Returns: string }
       function_returning_row: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           age_range: unknown
           catchphrase: unknown
@@ -742,7 +1109,7 @@ export type Database = {
         }
       }
       function_returning_set_of_rows: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           age_range: unknown
           catchphrase: unknown
@@ -758,7 +1125,12 @@ export type Database = {
         }
       }
       function_returning_single_row: {
-        Args: { messages: Database['public']['Tables']['messages']['Row'] }
+        Args: {
+          messages: Omit<
+            Database['public']['Tables']['messages']['Row'],
+            Database['public']['Tables']['messages']['ComputedFields']
+          >
+        }
         Returns: {
           age_range: unknown
           catchphrase: unknown
@@ -774,7 +1146,12 @@ export type Database = {
         }
       }
       function_using_setof_rows_one: {
-        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Args: {
+          user_row: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: {
           id: number
           username: string | null
@@ -787,7 +1164,12 @@ export type Database = {
         }
       }
       function_using_table_returns: {
-        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Args: {
+          user_row: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: {
           id: number
           username: string | null
@@ -799,17 +1181,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      function_with_array_param: {
-        Args: { param: string[] }
-        Returns: undefined
-      }
-      function_with_optional_param: {
-        Args: { param?: string }
-        Returns: string
-      }
+      function_with_array_param: { Args: { param: string[] }; Returns: undefined }
+      function_with_optional_param: { Args: { param?: string }; Returns: string }
       get_active_user_messages: {
         Args: {
-          active_user_row: Database['public']['Views']['active_users']['Row']
+          active_user_row: Omit<
+            Database['public']['Views']['active_users']['Row'],
+            Database['public']['Views']['active_users']['ComputedFields']
+          >
         }
         Returns: {
           channel_id: number
@@ -828,7 +1207,10 @@ export type Database = {
       get_messages:
         | {
             Args: {
-              channel_row: Database['public']['Tables']['channels']['Row']
+              channel_row: Omit<
+                Database['public']['Tables']['channels']['Row'],
+                Database['public']['Tables']['channels']['ComputedFields']
+              >
             }
             Returns: {
               channel_id: number
@@ -845,7 +1227,12 @@ export type Database = {
             }
           }
         | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
+            Args: {
+              user_row: Omit<
+                Database['public']['Tables']['users']['Row'],
+                Database['public']['Tables']['users']['ComputedFields']
+              >
+            }
             Returns: {
               channel_id: number
               data: Json | null
@@ -876,6 +1263,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_personal_users: {
+        Args: Record<PropertyKey, never>
+        Returns: Database['personal']['Tables']['users']['Row'][]
+        SetofOptions: {
+          from: '*'
+          to: 'users'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_recent_messages_by_username: {
         Args: { search_username: string }
         Returns: {
@@ -892,13 +1289,29 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_remote_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          status: Database['public']['Enums']['user_status'] | null
+          username: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'remote_users'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_status: {
         Args: { name_param: string }
         Returns: Database['public']['Enums']['user_status']
       }
       get_user_first_message: {
         Args: {
-          active_user_row: Database['public']['Views']['active_users']['Row']
+          active_user_row: Omit<
+            Database['public']['Views']['active_users']['Row'],
+            Database['public']['Views']['active_users']['ComputedFields']
+          >
         }
         Returns: {
           channel_id: number | null
@@ -915,7 +1328,12 @@ export type Database = {
         }
       }
       get_user_messages: {
-        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Args: {
+          user_row: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: {
           channel_id: number
           data: Json | null
@@ -931,7 +1349,12 @@ export type Database = {
         }
       }
       get_user_profile: {
-        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Args: {
+          user_row: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: {
           id: number
           username: string | null
@@ -944,7 +1367,12 @@ export type Database = {
         }
       }
       get_user_profile_non_nullable: {
-        Args: { user_row: Database['public']['Tables']['users']['Row'] }
+        Args: {
+          user_row: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: {
           id: number
           username: string | null
@@ -959,7 +1387,10 @@ export type Database = {
       get_user_recent_messages:
         | {
             Args: {
-              active_user_row: Database['public']['Views']['active_users']['Row']
+              active_user_row: Omit<
+                Database['public']['Views']['active_users']['Row'],
+                Database['public']['Views']['active_users']['ComputedFields']
+              >
             }
             Returns: {
               channel_id: number | null
@@ -976,7 +1407,12 @@ export type Database = {
             }
           }
         | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
+            Args: {
+              user_row: Omit<
+                Database['public']['Tables']['users']['Row'],
+                Database['public']['Tables']['users']['ComputedFields']
+              >
+            }
             Returns: {
               channel_id: number | null
               data: Json | null
@@ -991,6 +1427,19 @@ export type Database = {
               isSetofReturn: true
             }
           }
+      get_user_status_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          status: Database['public']['Enums']['user_status'] | null
+          total: number | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'user_status_counts'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_username_and_status: {
         Args: { name_param: string }
         Returns: {
@@ -998,20 +1447,27 @@ export type Database = {
           username: string
         }[]
       }
+      inference_case_label: {
+        Args: {
+          inference_row: Omit<
+            Database['public']['Tables']['inference_cases']['Row'],
+            Database['public']['Tables']['inference_cases']['ComputedFields']
+          >
+        }
+        Returns: string
+      }
+      note: { Args: Record<PropertyKey, never>; Returns: string }
       offline_user: {
         Args: { name_param: string }
         Returns: Database['public']['Enums']['user_status']
       }
-      polymorphic_function_with_different_return: {
-        Args: { '': string }
-        Returns: string
-      }
+      polymorphic_function_with_different_return: { Args: { '': string }; Returns: string }
       polymorphic_function_with_no_params_or_unnamed:
-        | { Args: never; Returns: number }
+        | { Args: Record<PropertyKey, never>; Returns: number }
         | { Args: { '': string }; Returns: string }
       polymorphic_function_with_unnamed_default:
         | {
-            Args: never
+            Args: Record<PropertyKey, never>
             Returns: {
               error: true
             } & 'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default(), public.polymorphic_function_with_unnamed_default( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
@@ -1019,26 +1475,17 @@ export type Database = {
         | { Args: { ''?: string }; Returns: string }
       polymorphic_function_with_unnamed_default_overload:
         | {
-            Args: never
+            Args: Record<PropertyKey, never>
             Returns: {
               error: true
             } & 'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default_overload(), public.polymorphic_function_with_unnamed_default_overload( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'
           }
         | { Args: { ''?: string }; Returns: string }
-      polymorphic_function_with_unnamed_json: {
-        Args: { '': Json }
-        Returns: number
-      }
-      polymorphic_function_with_unnamed_jsonb: {
-        Args: { '': Json }
-        Returns: number
-      }
-      polymorphic_function_with_unnamed_text: {
-        Args: { '': string }
-        Returns: number
-      }
+      polymorphic_function_with_unnamed_json: { Args: { '': Json }; Returns: number }
+      polymorphic_function_with_unnamed_jsonb: { Args: { '': Json }; Returns: number }
+      polymorphic_function_with_unnamed_text: { Args: { '': string }; Returns: number }
       postgrest_resolvable_with_override_function:
-        | { Args: never; Returns: undefined }
+        | { Args: Record<PropertyKey, never>; Returns: undefined }
         | { Args: { a: string }; Returns: number }
         | { Args: { b: number }; Returns: string }
         | {
@@ -1071,7 +1518,12 @@ export type Database = {
             }
           }
         | {
-            Args: { user_row: Database['public']['Tables']['users']['Row'] }
+            Args: {
+              user_row: Omit<
+                Database['public']['Tables']['users']['Row'],
+                Database['public']['Tables']['users']['ComputedFields']
+              >
+            }
             Returns: {
               channel_id: number
               data: Json | null
@@ -1087,7 +1539,7 @@ export type Database = {
             }
           }
       postgrest_unresolvable_function:
-        | { Args: never; Returns: undefined }
+        | { Args: Record<PropertyKey, never>; Returns: undefined }
         | {
             Args: { a: number }
             Returns: {
@@ -1116,13 +1568,17 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      void_func: { Args: never; Returns: undefined }
+      sum_scores: { Args: { offset_by?: number; scores: number[] }; Returns: number }
+      void_func: { Args: Record<PropertyKey, never>; Returns: undefined }
     }
     Enums: {
       user_status: 'ONLINE' | 'OFFLINE'
     }
     CompositeTypes: {
-      [_ in never]: never
+      address: {
+        street: string | null
+        city: string | null
+      }
     }
   }
 }
@@ -1141,9 +1597,7 @@ export type Tables<
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
@@ -1167,9 +1621,7 @@ export type TablesInsert<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
@@ -1192,9 +1644,7 @@ export type TablesUpdate<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
@@ -1217,9 +1667,7 @@ export type Enums<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
     ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
@@ -1234,9 +1682,7 @@ export type CompositeTypes<
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]

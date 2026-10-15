@@ -1,3 +1,51 @@
+## 2.117.3 (2026-10-07)
+
+### 🩹 Fixes
+
+- **deps:** bump next to patch RCE in realtime-js example ([#2733](https://github.com/supabase/supabase-js/pull/2733))
+- **functions:** send a Blob or File with its own content type ([#2714](https://github.com/supabase/supabase-js/pull/2714))
+- **postgrest:** treat TimeoutError as an abort in retry guard ([#2732](https://github.com/supabase/supabase-js/pull/2732))
+- **storage:** send multipart fields before files ([#2736](https://github.com/supabase/supabase-js/pull/2736))
+
+### ❤️ Thank You
+
+- Bruno Gale @fresh55
+- Ferhat Elmas
+- Katerina Skroumpelou @mandarini
+
+## 2.117.2 (2026-09-25)
+
+### 🩹 Fixes
+
+- **postgrest:** avoid instantiation depth errors for large relationship unions ([#2701](https://github.com/supabase/supabase-js/pull/2701))
+
+### ❤️ Thank You
+
+- Han Qiao @sweatybridge
+
+## 2.117.1 (2026-09-23)
+
+### 🩹 Fixes
+
+- **auth:** return stored session when a refresh loses to another tab ([#2698](https://github.com/supabase/supabase-js/pull/2698))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.117.0 (2026-09-22)
+
+### 🚀 Features
+
+- **auth:** forward options.mediation to navigator.credentials.get in signInWithPasskey ([#2675](https://github.com/supabase/supabase-js/pull/2675))
+- **auth:** enable passkey API by default and deprecate experimental passkey opt-in ([#2695](https://github.com/supabase/supabase-js/pull/2695))
+
+### ❤️ Thank You
+
+- fadymak
+- James Argarin
+- Katerina Skroumpelou
+
 ## 2.116.0 (2026-09-07)
 
 ### 🚀 Features

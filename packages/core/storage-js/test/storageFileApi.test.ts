@@ -3,6 +3,7 @@ import * as fsp from 'fs/promises'
 import * as fs from 'fs'
 import * as path from 'path'
 import assert from 'assert'
+import { gzipSync, gunzipSync } from 'node:zlib'
 import { StorageApiError, StorageError } from '../src/lib/common/errors'
 import BlobDownloadBuilder from '../src/packages/BlobDownloadBuilder'
 import StreamDownloadBuilder from '../src/packages/StreamDownloadBuilder'
@@ -172,7 +173,12 @@ describe('Object API', () => {
       const uploadRes = await storage.from(bucketName).upload(uploadPath, file)
       expect(uploadRes.error).toBeNull()
 
-      const versionId = 'test-version-id'
+      // The server resolves the version before signing, so the id must belong to a real version.
+      const infoRes = await storage.from(bucketName).info(uploadPath)
+      expect(infoRes.error).toBeNull()
+      assert(infoRes.data?.version)
+      const versionId = infoRes.data.version
+
       const originalFetch = global.fetch
       const mockFetch = jest.fn(originalFetch)
       global.fetch = mockFetch
@@ -438,7 +444,7 @@ describe('Object API', () => {
         expect.objectContaining({
           hasNext: false,
           folders: expect.arrayContaining([
-            expect.objectContaining({ key: 'testpath', name: 'testpath/' }),
+            expect.objectContaining({ id: null, name: 'testpath/' }),
           ]),
           objects: [],
         })
@@ -551,6 +557,108 @@ describe('Object API', () => {
       expect(res.error).toBeNull()
       expect(res.data?.path).toEqual(`${newBucketName}/${newPath}`)
     })
+
+    describe.each(['Buffer', 'Blob'] as const)('%s content encoding', (kind) => {
+      test.each(['upload', 'update', 'signed'] as const)(
+        '%s persists encoding and downloads decoded bytes',
+        async (operation) => {
+          const files = storage.from(bucketName)
+          const bytes = Buffer.from('encoded upload payload')
+          const compressedBytes = gzipSync(bytes)
+          const body =
+            kind === 'Blob' ? new Blob([compressedBytes], { type: 'text/plain' }) : compressedBytes
+          const options = {
+            contentType: 'text/plain',
+            contentEncoding: 'gzip',
+            cacheControl: '7200',
+            metadata: { source: 'encoding-test' },
+          }
+
+          if (operation === 'update') {
+            const original = await files.upload(uploadPath, bytes)
+            expect(original.error).toBeNull()
+          }
+
+          if (operation === 'signed') {
+            const signed = await files.createSignedUploadUrl(uploadPath)
+            expect(signed.error).toBeNull()
+            assert(signed.data)
+            const uploaded = await files.uploadToSignedUrl(
+              uploadPath,
+              signed.data.token,
+              body,
+              options
+            )
+            expect(uploaded.error).toBeNull()
+          } else {
+            const uploaded = await files[operation](uploadPath, body, options)
+            expect(uploaded.error).toBeNull()
+          }
+
+          const info = await files.info(uploadPath)
+          expect(info.error).toBeNull()
+          expect(info.data).toEqual(
+            expect.objectContaining({
+              contentEncoding: 'gzip',
+              contentType: 'text/plain',
+              cacheControl: 'max-age=7200',
+              size: compressedBytes.length,
+              metadata: { source: 'encoding-test' },
+            })
+          )
+
+          const downloaded = await files.download(uploadPath)
+          expect(downloaded.error).toBeNull()
+          assert(downloaded.data)
+          // Native fetch decodes the Content-Encoding returned by Storage.
+          expect(Buffer.from(await downloaded.data.arrayBuffer())).toEqual(bytes)
+        }
+      )
+    })
+
+    test.each([
+      ['preserved', undefined, 'gzip', 'max-age=7200'],
+      [
+        'overridden',
+        { copyMetadata: false, metadata: { cacheControl: 'max-age=300' } },
+        'gzip',
+        'max-age=300',
+      ],
+      ['cleared', { copyMetadata: false, metadata: { contentEncoding: '' } }, null, 'max-age=7200'],
+    ] as const)(
+      'copy keeps the bytes with %s encoding metadata',
+      async (name, options, encoding, cacheControl) => {
+        const files = storage.from(bucketName)
+        const bytes = Buffer.from('encoded copy payload')
+        const compressedBytes = gzipSync(bytes)
+        const uploaded = await files.upload(uploadPath, compressedBytes, {
+          contentType: 'text/plain',
+          contentEncoding: 'gzip',
+          cacheControl: '7200',
+          metadata: { source: 'encoding-test' },
+        })
+        expect(uploaded.error).toBeNull()
+
+        const destination = `${uploadPath}-${name}`
+        const copied = await files.copy(uploadPath, destination, options)
+        expect(copied.error).toBeNull()
+
+        const info = await files.info(destination)
+        expect(info.error).toBeNull()
+        expect(info.data?.contentEncoding).toBe(encoding)
+        expect(info.data?.contentType).toBe('text/plain')
+        expect(info.data?.cacheControl).toBe(cacheControl)
+        expect(info.data?.size).toBe(compressedBytes.length)
+        expect(info.data?.metadata).toEqual(options ? null : { source: 'encoding-test' })
+
+        const downloaded = await files.download(destination)
+        expect(downloaded.error).toBeNull()
+        assert(downloaded.data)
+        const actualBytes = Buffer.from(await downloaded.data.arrayBuffer())
+        expect(actualBytes).toEqual(encoding ? bytes : compressedBytes)
+        if (!encoding) expect(gunzipSync(actualBytes)).toEqual(bytes)
+      }
+    )
 
     test('downloads an object', async () => {
       await storage.from(bucketName).upload(uploadPath, file)
@@ -1295,7 +1403,7 @@ describe('StorageFileApi Edge Cases', () => {
 
       expect(mockPut).toHaveBeenCalled()
       const [, , body] = mockPut.mock.calls[0]
-      expect(body).toBe(testFormData)
+      expect(body.get('file')).toBe('test content')
     })
 
     test('uploadToSignedUrl uses default cacheControl when not provided', async () => {
@@ -1341,7 +1449,7 @@ describe('StorageFileApi Edge Cases', () => {
 
       expect(mockPost).toHaveBeenCalled()
       const [, , body] = mockPost.mock.calls[0] as [null, null, FormData]
-      expect(body).toBe(testFormData)
+      expect(body.get('file')).toBe('test content')
       expect(body.get('metadata')).toBe(JSON.stringify(metadata))
     })
 
@@ -1358,7 +1466,7 @@ describe('StorageFileApi Edge Cases', () => {
 
       expect(mockPost).toHaveBeenCalled()
       const [, , body, { headers }] = mockPost.mock.calls[0]
-      expect(body).toBe(testFormData)
+      expect(body.get('file')).toBe('test content')
       expect(headers[testHeaderKey]).toBe(testHeaderValue)
     })
 
@@ -1425,7 +1533,7 @@ describe('StorageFileApi Edge Cases', () => {
 
       expect(mockPut).toHaveBeenCalled()
       const [, , body] = mockPut.mock.calls[0] as [null, null, FormData]
-      expect(body).toBe(testFormData)
+      expect(body.get('file')).toBe('test content')
       expect(body.get('metadata')).toBe(JSON.stringify(metadata))
     })
 
@@ -1457,7 +1565,7 @@ describe('StorageFileApi Edge Cases', () => {
 
       expect(mockPut).toHaveBeenCalled()
       const [, , body, { headers }] = mockPut.mock.calls[0]
-      expect(body).toBe(testFormData)
+      expect(body.get('file')).toBe('test content')
       expect(headers[testHeaderKey]).toBe(testHeaderValue)
     })
 

@@ -1,3 +1,34 @@
+## 2.117.3 (2026-10-07)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.117.2 (2026-09-25)
+
+This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.
+
+## 2.117.1 (2026-09-23)
+
+### 🩹 Fixes
+
+- **auth:** return stored session when a refresh loses to another tab ([#2698](https://github.com/supabase/supabase-js/pull/2698))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.117.0 (2026-09-22)
+
+### 🚀 Features
+
+- **auth:** enable passkey API by default and deprecate experimental passkey opt-in ([#2695](https://github.com/supabase/supabase-js/pull/2695))
+- **auth:** forward options.mediation to navigator.credentials.get in signInWithPasskey ([#2675](https://github.com/supabase/supabase-js/pull/2675))
+
+### ❤️ Thank You
+
+- fadymak
+- James Argarin
+- Katerina Skroumpelou
+
 ## 2.116.0 (2026-09-07)
 
 ### 🚀 Features

@@ -8,8 +8,8 @@
 ## What changed
 
 - **Default coordination is lockless.** A client constructed without a `lock` option no longer acquires `navigator.locks` or any in-process lock. In-tab concurrent refreshes are deduplicated via the pre-existing single-flight (`refreshingDeferred`); cross-tab refresh races are resolved by GoTrue's server-side parent-of-active mechanism on the v1 refresh-token path.
-- **Commit guard inside `_callRefreshToken`.** The client snapshots storage before the rotated-token fetch and re-reads after. If a non-null pre-fetch snapshot was cleared between the two reads (typical case: a concurrent `signOut` ran `_removeSession`), the rotated tokens are discarded instead of being written back over the cleared storage. The discarded result resolves with `{ data: null, error: new AuthRefreshDiscardedError() }`.
-- **New `AuthRefreshDiscardedError`** (with `isAuthRefreshDiscardedError` type guard). Surfaces through `refreshSession()` and `getSession()` results when the commit guard fires. Distinct from `AuthRetryableFetchError` (transient network) and `AuthApiError` (server rejection).
+- **Commit guard inside `_callRefreshToken`.** The client snapshots storage before the rotated-token fetch and re-reads after. If a non-null pre-fetch snapshot was cleared or replaced between the two reads (a concurrent `signOut` ran `_removeSession`, or another tab's refresh rotated first), the rotated tokens are discarded instead of being written back over storage. The discarded result resolves with `{ data: null, error: new AuthRefreshDiscardedError() }`.
+- **New `AuthRefreshDiscardedError`** (with `isAuthRefreshDiscardedError` type guard). Surfaces through `refreshSession()` and `setSession()` results when the commit guard fires. `getSession()` surfaces it only when storage was cleared mid-flight; when another caller's rotation replaced storage, `getSession()` returns the session now in storage instead. Distinct from `AuthRetryableFetchError` (transient network) and `AuthApiError` (server rejection).
 - **New `client.auth.dispose()`.** Tears down the auto-refresh interval, the `visibilitychange` listener, the `BroadcastChannel`, and registered `onAuthStateChange` subscribers. Idempotent. Designed for React Strict Mode and HMR cleanup hooks. In-flight `fetch` calls are not aborted — they run to completion.
 - **`lock` and `lockAcquireTimeout` options.** Accepted and honored when supplied (legacy opt-in path); both are `@deprecated` and will be removed in v3.
 
@@ -39,7 +39,7 @@ useEffect(() => {
 
 ### `AuthRefreshDiscardedError`
 
-Returned from `refreshSession()` / `getSession()` when the commit guard discards a successfully-rotated session.
+Returned from `refreshSession()` / `setSession()` when the commit guard discards a successfully-rotated session. `getSession()` returns it only when storage was cleared mid-flight (concurrent `signOut`); when another tab's refresh replaced storage, `getSession()` hands back that session instead.
 
 ```ts
 import { isAuthRefreshDiscardedError } from '@supabase/auth-js'
