@@ -33,7 +33,21 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
   ? true
   : false
 
-const PostgrestReservedCharsRegexp = new RegExp('[,()]')
+const PostgrestReservedCharsRegexp = /[,()"\\]/
+const PostgrestArrayReservedCharsRegexp = /[,{}"\\]/
+
+function quoteFilterValue(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
+function formatArrayFilter(values: readonly unknown[]): string {
+  const elements = values.map((value) =>
+    typeof value === 'string' && PostgrestArrayReservedCharsRegexp.test(value)
+      ? quoteFilterValue(value)
+      : `${value}`
+  )
+  return `{${elements.join(',')}}`
+}
 
 // Match relationship filters with `table.column` syntax and resolve underlying
 // column value. If not matched, fallback to generic type.
@@ -839,7 +853,8 @@ export default class PostgrestFilterBuilder<
       .map((s) => {
         // handle postgrest reserved characters
         // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+          return quoteFilterValue(s)
         else return `${s}`
       })
       .join(',')
@@ -867,7 +882,8 @@ export default class PostgrestFilterBuilder<
       .map((s) => {
         // handle postgrest reserved characters
         // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
+        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s))
+          return quoteFilterValue(s)
         else return `${s}`
       })
       .join(',')
@@ -1016,7 +1032,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `cs.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(column, `cs.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `cs.${formatArrayFilter(value)}`)
     } else {
       // json
       this.url.searchParams.append(column, `cs.${JSON.stringify(value)}`)
@@ -1165,7 +1181,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `cd.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(column, `cd.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `cd.${formatArrayFilter(value)}`)
     } else {
       // json
       this.url.searchParams.append(column, `cd.${JSON.stringify(value)}`)
@@ -1592,7 +1608,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `ov.${value}`)
     } else {
       // array
-      this.url.searchParams.append(column, `ov.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `ov.${formatArrayFilter(value)}`)
     }
     return this
   }
