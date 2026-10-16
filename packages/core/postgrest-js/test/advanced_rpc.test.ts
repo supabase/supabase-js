@@ -22,22 +22,20 @@ const UserProfileSchema = z.object({
 })
 
 const RecentMessagesSchema = z.object({
-  channel_id: z.number().nullable(),
+  channel_id: z.number(),
   data: z.unknown().nullable(),
-  id: z.number().nullable(),
+  id: z.number(),
   message: z.string().nullable(),
-  username: z.string().nullable(),
+  username: z.string(),
 })
 
 const SelectWithUsersSchema = z.object({
-  channel_id: z.number().nullable(),
+  channel_id: z.number(),
   message: z.string().nullable(),
-  users: z
-    .object({
-      catchphrase: z.unknown(),
-      username: z.string(),
-    })
-    .nullable(),
+  users: z.object({
+    catchphrase: z.unknown(),
+    username: z.string(),
+  }),
 })
 
 const SelectWithUsersProfileSchema = z.object({
