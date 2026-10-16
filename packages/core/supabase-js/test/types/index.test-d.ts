@@ -1,5 +1,6 @@
 import { expectError, expectType } from 'tsd'
 import {
+  PostgrestQueryBuilderOptions,
   PostgrestSingleResponse,
   SupabaseClient,
   createClient,
@@ -308,4 +309,17 @@ const supabase = createClient<Database>(URL, KEY)
   }
   type CleanedPlainDatabase = DatabaseWithoutInternals<PlainDatabase>
   expectType<CleanedPlainDatabase>({} as PlainDatabase)
+}
+
+// per-request options on `.from()`
+{
+  const options: PostgrestQueryBuilderOptions = {
+    fetch: (input, init) => fetch(input, init),
+    urlLengthLimit: 4000,
+    retry: false,
+  }
+  const withOptions = supabase.from('users', options).select()
+  expectType<typeof withOptions>(supabase.from('users').select())
+  expectError(supabase.from('users', { retry: 'never' }))
+  expectError(supabase.from('users', { unknownOption: true }))
 }
