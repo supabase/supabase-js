@@ -811,11 +811,11 @@ export type Database = {
             username: string | null
           } | null
           get_user_recent_messages: {
-            channel_id: number | null
+            channel_id: number
             data: Json | null
-            id: number | null
+            id: number
             message: string | null
-            username: string | null
+            username: string
           } | null
           postgrest_resolvable_with_override_function: {
             channel_id: number
@@ -878,7 +878,7 @@ export type Database = {
           catchphrase: unknown
           data: Json | null
           status: Database['public']['Enums']['user_status'] | null
-          username: string | null
+          username: string
           get_active_user_messages: {
             channel_id: number
             data: Json | null
@@ -887,18 +887,18 @@ export type Database = {
             username: string
           } | null
           get_user_first_message: {
-            channel_id: number | null
+            channel_id: number
             data: Json | null
-            id: number | null
+            id: number
             message: string | null
-            username: string | null
+            username: string
           } | null
           get_user_recent_messages: {
-            channel_id: number | null
+            channel_id: number
             data: Json | null
-            id: number | null
+            id: number
             message: string | null
-            username: string | null
+            username: string
           } | null
         }
         ComputedFields:
@@ -923,18 +923,18 @@ export type Database = {
       }
       non_updatable_view: {
         Row: {
-          username: string | null
+          username: string
         }
         ComputedFields: never
         Relationships: []
       }
       recent_messages: {
         Row: {
-          channel_id: number | null
+          channel_id: number
           data: Json | null
-          id: number | null
+          id: number
           message: string | null
-          username: string | null
+          username: string
         }
         ComputedFields: never
         Relationships: [
@@ -992,7 +992,7 @@ export type Database = {
       trigger_writable_view: {
         Row: {
           status: Database['public']['Enums']['user_status'] | null
-          username: string | null
+          username: string
         }
         ComputedFields: never
         Insert: {
@@ -1008,7 +1008,7 @@ export type Database = {
       updatable_view: {
         Row: {
           non_updatable_column: number | null
-          username: string | null
+          username: string
         }
         ComputedFields: never
         Insert: {
@@ -1024,7 +1024,7 @@ export type Database = {
       update_only_trigger_view: {
         Row: {
           status: Database['public']['Enums']['user_status'] | null
-          username: string | null
+          username: string
         }
         ComputedFields: never
         Update: {
@@ -1276,11 +1276,11 @@ export type Database = {
       get_recent_messages_by_username: {
         Args: { search_username: string }
         Returns: {
-          channel_id: number | null
+          channel_id: number
           data: Json | null
-          id: number | null
+          id: number
           message: string | null
-          username: string | null
+          username: string
         }[]
         SetofOptions: {
           from: '*'
@@ -1314,11 +1314,11 @@ export type Database = {
           >
         }
         Returns: {
-          channel_id: number | null
+          channel_id: number
           data: Json | null
-          id: number | null
+          id: number
           message: string | null
-          username: string | null
+          username: string
         }
         SetofOptions: {
           from: 'active_users'
@@ -1393,11 +1393,11 @@ export type Database = {
               >
             }
             Returns: {
-              channel_id: number | null
+              channel_id: number
               data: Json | null
-              id: number | null
+              id: number
               message: string | null
-              username: string | null
+              username: string
             }[]
             SetofOptions: {
               from: 'active_users'
@@ -1414,11 +1414,11 @@ export type Database = {
               >
             }
             Returns: {
-              channel_id: number | null
+              channel_id: number
               data: Json | null
-              id: number | null
+              id: number
               message: string | null
-              username: string | null
+              username: string
             }[]
             SetofOptions: {
               from: 'users'
