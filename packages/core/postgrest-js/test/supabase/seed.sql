@@ -91,7 +91,8 @@ INSERT INTO public.cornercase (id, array_column)
 VALUES
   (1, ARRAY['test', 'one']),
   (2, ARRAY['another']),
-  (3, ARRAY['test2']);
+  (3, ARRAY['test2']),
+  (4, ARRAY['Doe, John', 'admin']);
 
 -- Insert sample hotels
 INSERT INTO hotel (id, name)
