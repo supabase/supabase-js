@@ -6,7 +6,12 @@ import {
 } from '../lib/common/errors'
 import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
 import { setHeader } from '../lib/common/headers'
-import { encodeStoragePath, recursiveToCamel } from '../lib/common/helpers'
+import {
+  encodeSignPath,
+  encodeStoragePath,
+  normalizeSignedPath,
+  recursiveToCamel,
+} from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   FileObject,
@@ -133,7 +138,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
 
       const cleanPath = this._removeEmptyFolders(path)
-      const _path = this._getFinalPath(cleanPath)
+      const _path = encodeStoragePath(this._getFinalPath(cleanPath))
       const data = await (method == 'PUT' ? put : post)(
         this.fetch,
         `${this.url}/object/${_path}`,
@@ -274,7 +279,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     fileOptions?: FileOptions
   ) {
     const cleanPath = this._removeEmptyFolders(path)
-    const _path = this._getFinalPath(cleanPath)
+    const _path = encodeStoragePath(this._getFinalPath(cleanPath))
 
     const url = new URL(this.url + `/object/upload/sign/${_path}`)
     url.searchParams.set('token', token)
@@ -381,7 +386,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      let _path = this._getFinalPath(path)
+      const _path = encodeStoragePath(this._getFinalPath(path))
 
       const headers = { ...this.headers }
 
@@ -396,7 +401,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         { headers }
       )
 
-      const url = new URL(this.url + data.url)
+      const url = new URL(this.url + normalizeSignedPath(data.url))
 
       const token = url.searchParams.get('token')
 
@@ -719,7 +724,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      let _path = this._getFinalPath(path)
+      const _path = encodeSignPath(this._getFinalPath(path))
 
       const hasTransform =
         typeof options?.transform === 'object' &&
@@ -745,9 +750,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       // `data.signedURL` contains a `token` query parameter, so append extra params with `&`
       // only when we actually have something to add.
-      const signedUrl = encodeURI(
-        `${this.url}${data.signedURL}${queryString ? `&${queryString}` : ''}`
-      )
+      const signedUrl = `${this.url}${normalizeSignedPath(data.signedURL)}${queryString ? `&${queryString}` : ''}`
 
       return { signedUrl }
     })
@@ -838,7 +841,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         (datum: { error: string | null; path: string | null; signedURL: string | null }) => ({
           ...datum,
           signedUrl: datum.signedURL
-            ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
+            ? `${this.url}${normalizeSignedPath(datum.signedURL)}${queryString ? `&${queryString}` : ''}`
             : null,
         })
       )
@@ -925,7 +928,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
 
-    const _path = this._getFinalPath(path)
+    const _path = encodeStoragePath(this._getFinalPath(path))
     const downloadFn = () =>
       get(
         this.fetch,
@@ -977,7 +980,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    const _path = this._getFinalPath(path)
+    const _path = encodeStoragePath(this._getFinalPath(path))
     const query = new URLSearchParams()
     if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
@@ -1021,7 +1024,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    const _path = this._getFinalPath(path)
+    const _path = encodeStoragePath(this._getFinalPath(path))
 
     try {
       await head(this.fetch, `${this.url}/object/${_path}`, {
@@ -1120,7 +1123,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       versionId?: string
     }
   ): { data: { publicUrl: string } } {
-    const _path = this._getFinalPath(path)
+    const _path = encodeStoragePath(this._getFinalPath(path))
 
     const query = new URLSearchParams()
     if (options?.download) query.set('download', options.download === true ? '' : options.download)
@@ -1138,8 +1141,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return {
       data: {
         publicUrl:
-          encodeURI(`${this.url}/${renderPath}/public/${_path}`) +
-          (queryString ? `?${queryString}` : ''),
+          `${this.url}/${renderPath}/public/${_path}` + (queryString ? `?${queryString}` : ''),
       },
     }
   }
