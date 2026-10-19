@@ -37,7 +37,12 @@ features:
     status: implemented
     symbols:
       - TracePropagationOptions
-  client.observability.diagnostic_logging: not_implemented
+  client.observability.diagnostic_logging:
+    status: partially_implemented
+    note: Auth (`auth.debug`) and Realtime (`realtime.logger`) accept a caller-supplied logger; PostgREST, Storage and Functions have no logger option, and some warnings go to `console` without one.
+    symbols:
+      - GoTrueClientOptions
+      - RealtimeClientOptions
   client.request_configuration.custom_http_client:
     status: implemented
     symbols:
@@ -362,7 +367,11 @@ features:
     status: implemented
     symbols:
       - PostgrestClientOptions
-  database.configuration.access_token: not_implemented
+  database.configuration.access_token:
+    status: partially_implemented
+    note: A per-request token is set with `setHeader('Authorization', 'Bearer <token>')`, which overrides the client's session token. No raw-token or callback parameter, no user-scoped derived client, and no renewal on 401.
+    symbols:
+      - PostgrestBuilder.setHeader
   database.mutate.delete:
     status: implemented
     symbols:
@@ -383,9 +392,23 @@ features:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.upsert
-  database.mutate.bulk_rows_with_differing_fields: not_implemented
-  database.mutate.count: not_implemented
-  database.mutate.missing_defaults: not_implemented
+  database.mutate.bulk_rows_with_differing_fields:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+      - PostgrestQueryBuilder.upsert
+  database.mutate.count:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+      - PostgrestQueryBuilder.update
+      - PostgrestQueryBuilder.upsert
+      - PostgrestQueryBuilder.delete
+  database.mutate.missing_defaults:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+      - PostgrestQueryBuilder.upsert
   database.query.from_table:
     status: implemented
     symbols:
