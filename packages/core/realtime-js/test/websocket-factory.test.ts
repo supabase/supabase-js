@@ -71,6 +71,31 @@ describe('WebSocketFactory', () => {
       expect(env.wsConstructor).toBe(MockWebSocket)
     })
 
+    test('keeps globalThis.WebSocket when self is a shim without WebSocket', () => {
+      const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'self')
+      Object.defineProperty(globalThis, 'self', {
+        configurable: true,
+        writable: true,
+        value: {},
+      })
+
+      try {
+        const env = (
+          WebSocketFactory as unknown as {
+            detectEnvironment(): { type: string; wsConstructor: unknown }
+          }
+        ).detectEnvironment()
+        expect(env.type).toBe('native')
+        expect(env.wsConstructor).toBe(MockWebSocket)
+      } finally {
+        if (descriptor) {
+          Object.defineProperty(globalThis, 'self', descriptor)
+        } else {
+          Reflect.deleteProperty(globalThis, 'self')
+        }
+      }
+    })
+
     afterEach(() => {
       delete (globalThis as any).WebSocket
     })

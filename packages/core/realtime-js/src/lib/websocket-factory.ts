@@ -53,7 +53,10 @@ interface RuntimeGlobals {
   WebSocket?: { new (url: string, protocols?: string | string[]): WebSocketLike }
   WebSocketPair?: unknown
   EdgeRuntime?: unknown
+  self?: typeof globalThis & RuntimeGlobals
 }
+
+type WebSocketScope = typeof globalThis & RuntimeGlobals
 
 /**
  * Utilities for creating WebSocket instances across runtimes.
@@ -63,20 +66,37 @@ export class WebSocketFactory {
    * Static-only utility – prevent instantiation.
    */
   private constructor() {}
+
+  /**
+   * Read a WebSocket constructor off a scope object.
+   *
+   * A bare `WebSocket` identifier and `global.WebSocket` are not reliable in
+   * browser bundles: bundlers rewrite `WebSocket`, and `global` is a Node
+   * binding that often does not exist (or is a shim without WebSocket).
+   * Property access keeps the lookup on the real runtime global.
+   */
+  private static readWebSocketConstructor(scope?: WebSocketScope): typeof WebSocket | undefined {
+    if (!scope) {
+      return undefined
+    }
+    const ctor = scope['WebSocket']
+    return typeof ctor === 'function' ? (ctor as typeof WebSocket) : undefined
+  }
+
   private static detectEnvironment(): WebSocketEnvironment {
-    if (typeof WebSocket !== 'undefined') {
-      return { type: 'native', wsConstructor: WebSocket }
-    }
+    const gt = globalThis as WebSocketScope
+    // Workers and browsers expose `self` on the global object. A bare `self`
+    // identifier is not declared in every runtime this package typechecks in.
+    const selfScope = gt.self
+    const wsConstructor =
+      (typeof globalThis !== 'undefined' ? this.readWebSocketConstructor(gt) : undefined) ||
+      (typeof window !== 'undefined'
+        ? this.readWebSocketConstructor(window as typeof window & RuntimeGlobals)
+        : undefined) ||
+      this.readWebSocketConstructor(selfScope)
 
-    const gt = globalThis as typeof globalThis & RuntimeGlobals
-    if (typeof globalThis !== 'undefined' && typeof gt.WebSocket !== 'undefined') {
-      return { type: 'native', wsConstructor: gt.WebSocket as typeof WebSocket }
-    }
-
-    const gl =
-      typeof global !== 'undefined' ? (global as typeof global & RuntimeGlobals) : undefined
-    if (gl && typeof gl.WebSocket !== 'undefined') {
-      return { type: 'native', wsConstructor: gl.WebSocket as typeof WebSocket }
+    if (wsConstructor) {
+      return { type: 'native', wsConstructor }
     }
 
     if (
