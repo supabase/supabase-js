@@ -825,7 +825,14 @@ export default class GoTrueAdminApi {
    * ```json
    * {
    *   "data": {
-   *     "user": {}
+   *     "user": {
+   *       "id": "715ed5db-f090-4b8c-a067-640ecee36aa0",
+   *       "aud": "authenticated",
+   *       "role": "authenticated",
+   *       "email": "example@email.com",
+   *       "created_at": "2024-01-01T00:00:00Z",
+   *       "updated_at": "2024-01-01T00:00:00Z"
+   *     }
    *   },
    *   "error": null
    * }
@@ -835,13 +842,24 @@ export default class GoTrueAdminApi {
     validateUUID(id)
 
     try {
-      return await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${id}`, {
+      // The Auth server answers the DELETE with an empty object. However, this is
+      // a breaking change in the JS API, so until `v3` is released, we polyfill the
+      // result by fetching the user information before it gets deleted.
+      // See https://github.com/supabase/supabase-js/issues/2751
+      const { data, error } = await this.getUserById(id)
+      if (error) {
+        return { data: { user: null }, error }
+      }
+
+      await _request(this.fetch, 'DELETE', `${this.url}/admin/users/${id}`, {
         headers: this.headers,
         body: {
           should_soft_delete: shouldSoftDelete,
         },
-        xform: _userResponse,
+        noResolveJson: true,
       })
+
+      return { data, error: null }
     } catch (error) {
       if (isAuthError(error)) {
         return { data: { user: null }, error }

@@ -282,7 +282,8 @@ describe('GoTrueAdminApi', () => {
 
       expect(deletedError).toBeNull()
       expect(deletedError).not.toBeUndefined()
-      expect(deletedUser.user).not.toBeUndefined()
+      expect(deletedUser.user?.id).toEqual(uid)
+      expect(deletedUser.user?.email).toEqual(email)
 
       const { error: listUserError, data } = await serviceRoleApiClient.listUsers()
       expect(listUserError).toBeNull()
@@ -301,6 +302,12 @@ describe('GoTrueAdminApi', () => {
 
       expect(error).not.toBeNull()
       expect(data.user).toBeNull()
+    })
+
+    test('deleteUser() rejects a malformed user id before making a request', async () => {
+      await expect(serviceRoleApiClient.deleteUser('invalid-id')).rejects.toThrow(
+        '@supabase/auth-js: Expected parameter to be UUID but is not'
+      )
     })
   })
 
