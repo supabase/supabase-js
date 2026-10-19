@@ -239,6 +239,43 @@ describe('File API Error Handling', () => {
     })
   })
 
+  describe('exists', () => {
+    it('returns { data: false, error: null } when the file does not exist (404)', async () => {
+      global.fetch = jest.fn().mockResolvedValue(new Response(null, { status: 404 }))
+      const storage = new StorageClient(URL, { apikey: KEY })
+
+      const { data, error } = await storage.from(BUCKET_ID).exists('missing.jpg')
+      expect(data).toBe(false)
+      expect(error).toBeNull()
+    })
+
+    it('returns { data: false, error: null } when the server responds 400 (current Storage API behavior for missing objects)', async () => {
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ message: 'Bad Request' }), { status: 400 })
+        )
+      const storage = new StorageClient(URL, { apikey: KEY })
+
+      const { data, error } = await storage.from(BUCKET_ID).exists('whatever.jpg')
+      expect(data).toBe(false)
+      expect(error).toBeNull()
+    })
+
+    it('surfaces an error for genuine failures (e.g., 500 server error)', async () => {
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 })
+        )
+      const storage = new StorageClient(URL, { apikey: KEY })
+
+      await expect(storage.from(BUCKET_ID).exists('whatever.jpg')).rejects.toBeInstanceOf(
+        StorageError
+      )
+    })
+  })
+
   describe('createSignedUrl', () => {
     it('handles network errors', async () => {
       const mockError = new Error('Network failure')
