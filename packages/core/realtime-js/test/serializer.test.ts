@@ -366,6 +366,61 @@ describe('binary', () => {
     expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
   })
 
+  it('encodes user broadcast push with a Uint8Array payload as binary', async () => {
+    const serializer = new Serializer()
+    let bin = '\x03\x02\x01\x03\x0a\x00\x00101topuser-event\x01\x04'
+
+    const result = await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        event: 'user-event',
+        payload: new Uint8Array([1, 4]),
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('encodes only the viewed bytes of a typed array payload', async () => {
+    const serializer = new Serializer()
+    let bin = '\x03\x02\x01\x03\x0a\x00\x00101topuser-event\x01\x04'
+
+    // A view into the middle of a larger buffer, like a Node.js Buffer from the pool
+    const backing = new Uint8Array([9, 9, 1, 4, 9])
+    const view = backing.subarray(2, 4)
+
+    const result = await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        event: 'user-event',
+        payload: view,
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
+  it('encodes a DataView payload as binary', async () => {
+    const serializer = new Serializer()
+    let bin = '\x03\x02\x01\x03\x0a\x00\x00101topuser-event\x01\x04'
+
+    const result = await encodeAsync(serializer, {
+      join_ref: '10',
+      ref: '1',
+      topic: 'top',
+      event: 'broadcast',
+      payload: {
+        event: 'user-event',
+        payload: new DataView(binPayload()),
+      },
+    })
+    expect(decoder.decode(result as ArrayBuffer)).toBe(bin)
+  })
+
   it('throws error when joinRef exceeds 255 characters', async () => {
     const serializer = new Serializer()
     const longJoinRef = 'a'.repeat(256)
