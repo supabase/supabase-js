@@ -15,6 +15,7 @@ import {
   FetchParameters,
   TransformOptions,
   DestinationOptions,
+  CopyOptions,
   FileObjectV2,
   Camelize,
   SearchV2Options,
@@ -106,6 +107,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
 
+        if (options.contentEncoding) {
+          headers['content-encoding'] = options.contentEncoding
+        }
+
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
         }
@@ -147,7 +152,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @subcategory File Buckets
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
+   * @param fileOptions Optional file upload options including cacheControl, contentType, contentEncoding, upsert, and metadata.
    * @returns Promise with response containing file path, id, and fullPath or error
    *
    * @example Upload file
@@ -232,7 +237,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param token The token generated from `createSignedUploadUrl`
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions HTTP headers (cacheControl, contentType, etc.).
+   * @param fileOptions HTTP headers (cacheControl, contentType, contentEncoding, etc.).
    * **Note:** The `upsert` option has no effect here. To enable upsert behavior,
    * pass `{ upsert: true }` when calling `createSignedUploadUrl()` instead.
    * @returns Promise with response containing file path and fullPath or error
@@ -293,6 +298,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+        if (options.contentEncoding) {
+          headers['content-encoding'] = options.contentEncoding
+        }
+
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
         }
@@ -406,7 +415,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @subcategory File Buckets
    * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to update.
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions Optional file upload options including cacheControl, contentType, and metadata.
+   * @param fileOptions Optional file upload options including cacheControl, contentType, contentEncoding, and metadata.
    * **Note:** The `upsert` option has no effect here. `update()` always replaces the
    * file at the given path, so the `x-upsert` header is not sent. To control upsert
    * behavior, use `upload()` instead.
@@ -553,8 +562,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @subcategory File Buckets
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
-   * @param options The destination options.
+   * @param options The destination and metadata options.
    * @param options.sourceVersionId The version id of the source object to copy.
+   * @param options.copyMetadata Whether to copy the source metadata. Defaults to true. Set to false to apply metadata overrides; custom user metadata is not copied when false.
+   * @param options.metadata File metadata overrides, applied only when copyMetadata is false. Unspecified fields retain their source values.
    * @returns Promise with response containing copied file path or error
    *
    * @example Copy file
@@ -575,6 +586,18 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * }
    * ```
    *
+   * @example Copy file with content encoding
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('documents')
+   *   .copy('source.txt.gz', 'copy.txt.gz', {
+   *     copyMetadata: false,
+   *     metadata: { contentEncoding: 'gzip' },
+   *   })
+   * ```
+   * The source must already contain gzip-encoded bytes. Copying changes metadata only.
+   *
    * @remarks
    * - RLS policy permissions required:
    *   - `buckets` table permissions: none
@@ -584,7 +607,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   async copy(
     fromPath: string,
     toPath: string,
-    options?: DestinationOptions
+    options?: CopyOptions | DestinationOptions
   ): Promise<
     | {
         data: { path: string }
@@ -596,6 +619,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
+      const copyOptions = options as CopyOptions | undefined
       const data = await post(
         this.fetch,
         `${this.url}/object/copy`,
@@ -605,6 +629,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
           destinationKey: toPath,
           destinationBucket: options?.destinationBucket,
           sourceVersionId: options?.sourceVersionId,
+          copyMetadata:
+            typeof copyOptions?.copyMetadata === 'boolean' ? copyOptions.copyMetadata : undefined,
+          metadata: copyOptions?.copyMetadata === false ? copyOptions.metadata : undefined,
         },
         { headers: this.headers }
       )
@@ -1523,6 +1550,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     }
     if (options.metadata && !body.has('metadata')) {
       body.append('metadata', this.encodeMetadata(options.metadata))
+    }
+    if (options.contentEncoding && !body.has('contentEncoding')) {
+      body.append('contentEncoding', options.contentEncoding)
     }
     for (const [name, file] of files) {
       body.append(name, file)

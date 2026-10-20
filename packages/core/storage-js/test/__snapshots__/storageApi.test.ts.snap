@@ -10,6 +10,7 @@ exports[`bucket api Get bucket by id 1`] = `
   "owner": "4d56e902-f0a0-4662-8448-a4d9e643c142",
   "public": false,
   "updated_at": "2021-02-17T04:43:32.770Z",
+  "versioning_status": "DISABLED",
 }
 `;
 

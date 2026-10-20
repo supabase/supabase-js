@@ -1021,7 +1021,7 @@ test('join select via view name relationship', async () => {
     updatable_view: z
       .object({
         non_updatable_column: z.number().nullable(),
-        username: z.string().nullable(),
+        username: z.string(),
       })
       .nullable(),
   })
