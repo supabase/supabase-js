@@ -6,6 +6,7 @@ import PostgrestError from './PostgrestError'
 import { fetchWithRetry } from './fetchWithRetry'
 import {
   PostgrestOpenApiSpec,
+  PostgrestQueryBuilderOptions,
   PostgrestResponseFailure,
   PostgrestSingleResponse,
 } from './types/types'
@@ -60,6 +61,51 @@ function toTransportFailure(
 }
 
 /**
+ * Bounds every call of `fetch` to `timeout` milliseconds by aborting it through
+ * an `AbortController`. A signal already present on the request keeps working:
+ * its abort also aborts the timed request. A missing or non-positive timeout
+ * returns `fetch` unchanged.
+ */
+function withTimeout(fetch: Fetch, timeout?: number): Fetch {
+  if (timeout === undefined || timeout <= 0) return fetch
+
+  return (input, init) => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+    // Merge abort signals if one already exists
+    const existingSignal = init?.signal
+    if (existingSignal) {
+      // If the existing signal is already aborted, use it directly
+      if (existingSignal.aborted) {
+        clearTimeout(timeoutId)
+        return fetch(input, init)
+      }
+
+      // Listen to existing signal and abort our controller too
+      const abortHandler = () => {
+        clearTimeout(timeoutId)
+        controller.abort()
+      }
+      existingSignal.addEventListener('abort', abortHandler, { once: true })
+
+      return fetch(input, {
+        ...init,
+        signal: controller.signal,
+      }).finally(() => {
+        clearTimeout(timeoutId)
+        existingSignal.removeEventListener('abort', abortHandler)
+      })
+    }
+
+    return fetch(input, {
+      ...init,
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId))
+  }
+}
+
+/**
  * PostgREST client.
  *
  * @typeParam Database - Types for the schema from the [type
@@ -96,6 +142,11 @@ export default class PostgrestClient<
   // Retry configuration - enabled by default
   retry?: boolean
 
+  protected timeout?: number
+  protected wrapFetch?: (fetch: Fetch) => Fetch
+  /** The fetch given at construction, before `wrapFetch` and the timeout guard. */
+  protected baseFetch?: Fetch
+
   // TODO: Add back shouldThrowOnError once we figure out the typings
   /**
    * Creates a PostgREST client.
@@ -111,6 +162,10 @@ export default class PostgrestClient<
    *   When enabled, idempotent requests (GET, HEAD, OPTIONS) that fail with network
    *   errors or HTTP 503/520 responses will be automatically retried up to 3 times
    *   with exponential backoff (1s, 2s, 4s). Defaults to `true`.
+   * @param options.wrapFetch - Wraps every fetch this client uses, including a per-request
+   *   `fetch` passed to `from()`, and is carried over to clients returned by `schema()`.
+   *   Use it for headers or instrumentation that must reach every request regardless of
+   *   which fetch performs it.
    * @example Using supabase-js (recommended)
    * ```ts
    * import { createClient } from '@supabase/supabase-js'
@@ -145,6 +200,7 @@ export default class PostgrestClient<
       timeout,
       urlLengthLimit = 8000,
       retry,
+      wrapFetch,
     }: {
       headers?: HeadersInit
       schema?: SchemaName
@@ -152,72 +208,52 @@ export default class PostgrestClient<
       timeout?: number
       urlLengthLimit?: number
       retry?: boolean
+      wrapFetch?: (fetch: Fetch) => Fetch
     } = {}
   ) {
     this.url = url
     this.headers = new Headers(headers)
     this.schemaName = schema
     this.urlLengthLimit = urlLengthLimit
-
-    const originalFetch = fetch ?? globalThis.fetch
-
-    // Wrap fetch with timeout if specified
-    if (timeout !== undefined && timeout > 0) {
-      this.fetch = (input, init) => {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), timeout)
-
-        // Merge abort signals if one already exists
-        const existingSignal = init?.signal
-        if (existingSignal) {
-          // If the existing signal is already aborted, use it directly
-          if (existingSignal.aborted) {
-            clearTimeout(timeoutId)
-            return originalFetch(input, init)
-          }
-
-          // Listen to existing signal and abort our controller too
-          const abortHandler = () => {
-            clearTimeout(timeoutId)
-            controller.abort()
-          }
-          existingSignal.addEventListener('abort', abortHandler, { once: true })
-
-          return originalFetch(input, {
-            ...init,
-            signal: controller.signal,
-          }).finally(() => {
-            clearTimeout(timeoutId)
-            existingSignal.removeEventListener('abort', abortHandler)
-          })
-        }
-
-        return originalFetch(input, {
-          ...init,
-          signal: controller.signal,
-        }).finally(() => clearTimeout(timeoutId))
-      }
-    } else {
-      this.fetch = originalFetch
-    }
+    this.timeout = timeout
+    this.wrapFetch = wrapFetch
+    this.baseFetch = fetch ?? globalThis.fetch
+    this.fetch = this.baseFetch ? this.decorateFetch(this.baseFetch) : undefined
     this.retry = retry
+  }
+
+  /**
+   * Applies the client's decorations to a fetch implementation: `wrapFetch`
+   * first, then the timeout guard, so the timeout bounds the whole wrapped call.
+   * The client-level fetch and every per-request `fetch` passed to `from()` go
+   * through this.
+   */
+  protected decorateFetch(fetch: Fetch): Fetch {
+    const wrapped = this.wrapFetch ? this.wrapFetch(fetch) : fetch
+    return withTimeout(wrapped, this.timeout)
   }
   /**
    * Perform a query on a table or a view.
    *
    * @param relation - The table or view name to query
+   * @param options - Per-request options that override client-level defaults
    *
    * @category Database
    */
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName],
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
+  >(
+    relation: TableName,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
+    relation: ViewName,
+    options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   from(
-    relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views'])
+    relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views']),
+    options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
     if (!relation || typeof relation !== 'string' || relation.trim() === '') {
       throw new Error('Invalid relation name: relation must be a non-empty string.')
@@ -227,9 +263,9 @@ export default class PostgrestClient<
     return new PostgrestQueryBuilder(url, {
       headers: new Headers(this.headers),
       schema: this.schemaName,
-      fetch: this.fetch,
-      urlLengthLimit: this.urlLengthLimit,
-      retry: this.retry,
+      fetch: options?.fetch ? this.decorateFetch(options.fetch) : this.fetch,
+      urlLengthLimit: options?.urlLengthLimit ?? this.urlLengthLimit,
+      retry: options?.retry ?? this.retry,
     })
   }
 
@@ -253,7 +289,9 @@ export default class PostgrestClient<
     return new PostgrestClient(this.url, {
       headers: this.headers,
       schema,
-      fetch: this.fetch,
+      fetch: this.baseFetch,
+      timeout: this.timeout,
+      wrapFetch: this.wrapFetch,
       urlLengthLimit: this.urlLengthLimit,
       retry: this.retry,
     })

@@ -38,7 +38,6 @@ import {
 } from './lib/fetch'
 import {
   appendFlowIdToRedirectTo,
-  assertPasskeyExperimentalEnabled,
   assertRecoveryCodesExperimentalEnabled,
   decodeJWT,
   deepClone,
@@ -263,8 +262,6 @@ export default class GoTrueClient {
   /**
    * Namespace for passkey methods.
    * Includes lower-level two-step registration/authentication and passkey management.
-   *
-   * Requires `auth.experimental.passkey: true`; otherwise all methods throw.
    */
   passkey: AuthPasskeyApi
   /**
@@ -3078,60 +3075,36 @@ export default class GoTrueClient {
       )
 
       if (!hasExpired) {
-        if (this.userStorage) {
-          const maybeUser: { user?: User | null } | null = (await getItemAsync(
-            this.userStorage,
-            this.storageKey + '-user'
-          )) as any
-
-          if (maybeUser?.user) {
-            currentSession.user = maybeUser.user
-          } else {
-            currentSession.user = userNotAvailableProxy()
-          }
-        }
-
-        // Wrap the user object with a warning proxy on the server
-        // This warns when properties of the user are accessed, not when session.user itself is accessed
-        if (
-          this.storage.isServer &&
-          currentSession.user &&
-          !(currentSession.user as any).__isUserNotAvailableProxy
-        ) {
-          const suppressWarningRef = { value: this.suppressGetSessionWarning }
-          currentSession.user = insecureUserWarningProxy(currentSession.user, suppressWarningRef)
-
-          // Update the client-level suppression flag when the proxy suppresses the warning
-          if (suppressWarningRef.value) {
-            this.suppressGetSessionWarning = true
-          }
-        }
-
-        return { data: { session: currentSession }, error: null }
+        return { data: { session: await this._hydrateSessionUser(currentSession) }, error: null }
       }
 
       const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
       if (error) {
-        // Proactive-preserve mirror: `_callRefreshToken` keeps the session
-        // in storage when refresh fails non-retryably but the access token
-        // is still inside its real expiry window. Hand the caller the
-        // still-valid session instead of translating the refresh error
-        // into `session: null`. If the access token has actually expired,
-        // the session is genuinely dead and the error stands. Explicit
-        // refresh entry points (`refreshSession`, `setSession`)
-        // intentionally bypass this fallback — they want to know the
-        // refresh failed.
-        const accessTokenStillValid = !!(
-          currentSession.expires_at && currentSession.expires_at * 1000 > Date.now()
-        )
-        if (accessTokenStillValid) {
-          // Race guard: a concurrent `signOut` may have cleared storage
-          // during the refresh attempt. Don't hand back a session that no
-          // longer exists on disk.
-          const stillStored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
-          if (stillStored && stillStored.refresh_token === currentSession.refresh_token) {
-            return this._returnResult({ data: { session: currentSession }, error: null })
-          }
+        // A failed refresh does not mean there is no session. Storage is the
+        // source of truth at this point, because either:
+        //  - `_callRefreshToken` kept the original session in storage since
+        //    the access token is still inside its real expiry window (a
+        //    proactive refresh that failed non-retryably), or
+        //  - another caller, in this tab or a different one, committed its
+        //    own rotated session while this refresh was in flight, so this
+        //    one was discarded by the commit guard or rejected by the server
+        //    as already used.
+        // Empty storage (concurrent `signOut`) or an expired stored session
+        // means the session is genuinely gone and the error stands. Callers
+        // that pass an explicit token (`setSession`,
+        // `refreshSession({ refresh_token })`) call `_callRefreshToken`
+        // directly and surface the failure instead.
+        const stored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+        if (
+          stored &&
+          this._isValidSession(stored) &&
+          stored.expires_at &&
+          stored.expires_at * 1000 > Date.now()
+        ) {
+          return this._returnResult({
+            data: { session: await this._hydrateSessionUser(stored) },
+            error: null,
+          })
         }
         return this._returnResult({ data: { session: null }, error })
       }
@@ -3140,6 +3113,35 @@ export default class GoTrueClient {
     } finally {
       this._debug('#__loadSession()', 'end')
     }
+  }
+
+  /**
+   * Completes a session read back from storage so it matches what callers of
+   * `getSession()` expect: fills in `session.user` from `userStorage` when the
+   * client keeps the user in split storage, and wraps the user in the
+   * insecure-access warning proxy on the server.
+   */
+  private async _hydrateSessionUser(session: Session): Promise<Session> {
+    if (this.userStorage) {
+      const maybeUser: { user?: User | null } | null = (await getItemAsync(
+        this.userStorage,
+        this.storageKey + '-user'
+      )) as any
+
+      session.user = maybeUser?.user ? maybeUser.user : userNotAvailableProxy()
+    }
+
+    // Warns when properties of the user are accessed, not when session.user itself is accessed.
+    if (this.storage.isServer && session.user && !(session.user as any).__isUserNotAvailableProxy) {
+      const suppressWarningRef = { value: this.suppressGetSessionWarning }
+      session.user = insecureUserWarningProxy(session.user, suppressWarningRef)
+
+      if (suppressWarningRef.value) {
+        this.suppressGetSessionWarning = true
+      }
+    }
+
+    return session
   }
 
   /**
@@ -6803,14 +6805,36 @@ export default class GoTrueClient {
    * 2. Prompts user via navigator.credentials.get()
    * 3. Verifies credential with server and creates session
    *
-   * Requires `auth.experimental.passkey: true`.
+   * Pass `options.mediation: 'conditional'` to use WebAuthn Conditional UI
+   * (passkey autofill) instead of the modal picker; the value is forwarded to
+   * `navigator.credentials.get()` unchanged.
+   *
+   * The challenge fetched in step 1 expires after the server's
+   * GOTRUE_WEBAUTHN_CHALLENGE_EXPIRY_DURATION (5 minutes by default). With
+   * `mediation: 'conditional'` the autofill prompt can stay pending for longer
+   * than that: the browser ceremony then still succeeds, but verification fails
+   * with `error_code: "webauthn_challenge_expired"`. Recover by calling
+   * `signInWithPasskey()` again. It fetches a fresh challenge and, unless you
+   * passed your own `options.signal`, cancels the pending ceremony first, so
+   * the browser never sees two concurrent WebAuthn requests; the earlier call
+   * resolves with a `WebAuthnError` whose code is `ERROR_CEREMONY_ABORTED`. If
+   * you pass your own `signal`, abort it before retrying.
    *
    * @category Auth
+   *
+   * @example Sign in with Conditional UI (passkey autofill)
+   * ```js
+   * // <input autocomplete="username webauthn" /> somewhere on the page
+   * const { data, error } = await supabase.auth.signInWithPasskey({
+   *   options: {
+   *     mediation: 'conditional'
+   *   }
+   * });
+   * ```
    */
   async signInWithPasskey(
     credentials?: SignInWithPasskeyCredentials
   ): Promise<AuthPasskeyAuthenticationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       if (!browserSupportsWebAuthn()) {
         return this._returnResult({
@@ -6833,6 +6857,7 @@ export default class GoTrueClient {
       const { data: credential, error: credentialError } = await getCredential({
         publicKey: publicKeyOptions,
         signal,
+        mediation: credentials?.options?.mediation,
       })
       if (credentialError || !credential) {
         return this._returnResult({
@@ -6861,14 +6886,13 @@ export default class GoTrueClient {
    * 2. Prompts user via navigator.credentials.create()
    * 3. Verifies credential with server
    *
-   * Requires an active session. Requires `auth.experimental.passkey: true`.
+   * Requires an active session.
    *
    * @category Auth
    */
   async registerPasskey(
     credentials?: RegisterPasskeyCredentials
   ): Promise<AuthPasskeyRegistrationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       if (!browserSupportsWebAuthn()) {
         return this._returnResult({
@@ -6916,7 +6940,6 @@ export default class GoTrueClient {
    * Returns WebAuthn credential creation options to pass to navigator.credentials.create().
    */
   private async _startPasskeyRegistration(): Promise<AuthPasskeyRegistrationOptionsResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6959,7 +6982,6 @@ export default class GoTrueClient {
   private async _verifyPasskeyRegistration(
     params: VerifyPasskeyRegistrationParams
   ): Promise<AuthPasskeyRegistrationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -7005,7 +7027,6 @@ export default class GoTrueClient {
   private async _startPasskeyAuthentication(
     params?: StartPasskeyAuthenticationParams
   ): Promise<AuthPasskeyAuthenticationOptionsResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       const { data, error } = await _request(
         this.fetch,
@@ -7037,7 +7058,6 @@ export default class GoTrueClient {
   private async _verifyPasskeyAuthentication(
     params: VerifyPasskeyAuthenticationParams
   ): Promise<AuthPasskeyAuthenticationVerifyResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       const { data, error } = await _request(
         this.fetch,
@@ -7072,7 +7092,6 @@ export default class GoTrueClient {
    * List all passkeys for the current user.
    */
   private async _listPasskeys(): Promise<AuthPasskeyListResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -7107,7 +7126,6 @@ export default class GoTrueClient {
    * Update a passkey.
    */
   private async _updatePasskey(params: PasskeyUpdateParams): Promise<AuthPasskeyUpdateResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {
@@ -7147,7 +7165,6 @@ export default class GoTrueClient {
    * Delete a passkey.
    */
   private async _deletePasskey(params: PasskeyDeleteParams): Promise<AuthPasskeyDeleteResponse> {
-    assertPasskeyExperimentalEnabled(this.experimental)
     try {
       return await this._useSession(async (result) => {
         const {

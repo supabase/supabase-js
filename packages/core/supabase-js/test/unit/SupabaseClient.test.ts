@@ -124,6 +124,116 @@ describe('SupabaseClient', () => {
     })
   })
 
+  describe('PostgREST per-request options', () => {
+    test('should use custom fetch passed via options parameter', async () => {
+      const clientFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY, {
+        global: { fetch: clientFetch },
+      })
+
+      await client.from('users', { fetch: requestFetch }).select()
+
+      expect(requestFetch).toHaveBeenCalled()
+      expect(clientFetch).not.toHaveBeenCalled()
+    })
+
+    test('should inject auth headers when a custom per-request fetch is provided', async () => {
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY)
+
+      await client.from('users', { fetch: requestFetch }).select()
+
+      expect(requestFetch).toHaveBeenCalled()
+      const calledHeaders = requestFetch.mock.calls[0][1]?.headers
+      const headers = calledHeaders instanceof Headers ? calledHeaders : new Headers(calledHeaders)
+      expect(headers.get('apikey')).toBe(KEY)
+    })
+
+    test('should forward per-request retry option', () => {
+      const client = createClient(URL, KEY)
+
+      // Default retry is true
+      // @ts-expect-error retryEnabled is protected
+      const defaultRetry = client.from('users').select().retryEnabled
+      expect(defaultRetry).toBe(true)
+
+      // Per-request override to false
+      // @ts-expect-error retryEnabled is protected
+      const overriddenRetry = client.from('users', { retry: false }).select().retryEnabled
+      expect(overriddenRetry).toBe(false)
+    })
+
+    test('should not mutate the caller options object', async () => {
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY)
+      const options = { fetch: requestFetch }
+      const originalFetch = options.fetch
+
+      await client.from('users', options).select()
+
+      // The options object should not have been mutated
+      expect(options.fetch).toBe(originalFetch)
+    })
+
+    test('should inject auth headers for a per-request fetch on a schema client', async () => {
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY)
+
+      await client.schema('personal').from('users', { fetch: requestFetch }).select()
+
+      expect(requestFetch).toHaveBeenCalled()
+      const calledHeaders = requestFetch.mock.calls[0][1]?.headers
+      const headers = calledHeaders instanceof Headers ? calledHeaders : new Headers(calledHeaders)
+      expect(headers.get('apikey')).toBe(KEY)
+      expect(headers.get('Authorization')).toBe(`Bearer ${KEY}`)
+    })
+
+    test('should apply db.timeout to a per-request fetch', async () => {
+      const requestFetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+
+      const client = createClient(URL, KEY, { db: { timeout: 5000 } })
+
+      await client.from('users', { fetch: requestFetch }).select()
+
+      expect(requestFetch.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal)
+    })
+  })
+
   describe('Custom Headers', () => {
     test('should have custom header set', () => {
       const customHeader = { 'X-Test-Header': 'value' }
@@ -637,5 +747,59 @@ describe('SupabaseClient', () => {
       expect(options.headers.get('apikey')).toBe(KEY)
       expect(options.headers.get('Authorization')).toBe('Bearer user-token')
     })
+  })
+})
+
+describe('data requests after a lost refresh race', () => {
+  const STORAGE_KEY = 'race-test-auth'
+
+  const session = (name: string, expiresIn: number) => ({
+    access_token: `access-${name}`,
+    refresh_token: `refresh-${name}`,
+    token_type: 'bearer',
+    expires_in: expiresIn,
+    expires_at: Math.floor(Date.now() / 1000) + expiresIn,
+    user: { id: 'user-1', aud: 'authenticated', role: 'authenticated' },
+  })
+
+  test('sends the session another tab committed, not the anon key, when its own refresh is discarded', async () => {
+    const items = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => items.get(key) ?? null,
+      setItem: (key: string, value: string) => void items.set(key, value),
+      removeItem: (key: string) => void items.delete(key),
+    }
+    const authorizations: (string | null)[] = []
+
+    const fetchImpl = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : 'url' in input ? input.url : input.href
+      if (url.includes('/auth/v1/token')) {
+        // Another tab wins the rotation while this refresh is in flight.
+        storage.setItem(STORAGE_KEY, JSON.stringify(session('other-tab', 3600)))
+        return new Response(JSON.stringify(session('this-tab', 3600)), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      authorizations.push(new Headers(init?.headers).get('Authorization'))
+      return new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+
+    const client = createClient(URL, KEY, {
+      auth: {
+        storage,
+        storageKey: STORAGE_KEY,
+        persistSession: true,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      global: { fetch: fetchImpl },
+    })
+    await client.auth.initialize()
+    storage.setItem(STORAGE_KEY, JSON.stringify(session('old', -30)))
+
+    await client.from('reservations').select('*')
+
+    expect(authorizations).toEqual(['Bearer access-other-tab'])
   })
 })

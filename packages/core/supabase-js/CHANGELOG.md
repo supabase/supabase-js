@@ -1,3 +1,48 @@
+## 2.118.0 (2026-10-15)
+
+### 🚀 Features
+
+- **postgrest:** leave computed fields out of select('*') and resolve no-argument rpc overloads for postgrest-typegen output ([#2730](https://github.com/supabase/supabase-js/pull/2730))
+
+### ❤️ Thank You
+
+- Lukas Klingsbo
+
+## 2.117.3 (2026-10-07)
+
+### 🩹 Fixes
+
+- **storage:** send multipart fields before files ([#2736](https://github.com/supabase/supabase-js/pull/2736))
+
+### ❤️ Thank You
+
+- Ferhat Elmas
+- Katerina Skroumpelou @mandarini
+
+## 2.117.2 (2026-09-25)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.117.1 (2026-09-23)
+
+### 🩹 Fixes
+
+- **auth:** return stored session when a refresh loses to another tab ([#2698](https://github.com/supabase/supabase-js/pull/2698))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.117.0 (2026-09-22)
+
+### 🚀 Features
+
+- **auth:** enable passkey API by default and deprecate experimental passkey opt-in ([#2695](https://github.com/supabase/supabase-js/pull/2695))
+
+### ❤️ Thank You
+
+- fadymak
+
 ## 2.116.0 (2026-09-07)
 
 ### 🚀 Features

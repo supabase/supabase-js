@@ -835,7 +835,7 @@ describe('embeded functions select', () => {
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
-        username: z.string().nullable(),
+        username: z.string(),
         active_user_messages: z.array(
           z.object({
             channel_id: z.number(),
@@ -923,11 +923,11 @@ describe('embeded functions select', () => {
         username: z.string(),
         recent_messages: z.array(
           z.object({
-            channel_id: z.number().nullable(),
+            channel_id: z.number(),
             data: z.unknown().nullable(),
-            id: z.number().nullable(),
+            id: z.number(),
             message: z.string().nullable(),
-            username: z.string().nullable(),
+            username: z.string(),
           })
         ),
       })
@@ -1001,14 +1001,14 @@ describe('embeded functions select', () => {
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
-        username: z.string().nullable(),
+        username: z.string(),
         recent_messages: z.array(
           z.object({
-            channel_id: z.number().nullable(),
+            channel_id: z.number(),
             data: z.unknown().nullable(),
-            id: z.number().nullable(),
+            id: z.number(),
             message: z.string().nullable(),
-            username: z.string().nullable(),
+            username: z.string(),
           })
         ),
       })

@@ -37,6 +37,7 @@ export type ErrorCode =
   | 'mfa_factor_not_found'
   | 'mfa_ip_address_mismatch'
   | 'mfa_challenge_expired'
+  | 'webauthn_challenge_expired'
   | 'mfa_verification_failed'
   | 'mfa_verification_rejected'
   | 'insufficient_aal'

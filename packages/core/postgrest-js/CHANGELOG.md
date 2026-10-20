@@ -1,3 +1,41 @@
+## 2.118.0 (2026-10-15)
+
+### 🚀 Features
+
+- **postgrest:** leave computed fields out of select('*') and resolve no-argument rpc overloads for postgrest-typegen output ([#2730](https://github.com/supabase/supabase-js/pull/2730))
+
+### ❤️ Thank You
+
+- Lukas Klingsbo
+
+## 2.117.3 (2026-10-07)
+
+### 🩹 Fixes
+
+- **postgrest:** treat TimeoutError as an abort in retry guard ([#2732](https://github.com/supabase/supabase-js/pull/2732))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.117.2 (2026-09-25)
+
+### 🩹 Fixes
+
+- **postgrest:** avoid instantiation depth errors for large relationship unions ([#2701](https://github.com/supabase/supabase-js/pull/2701))
+
+### ❤️ Thank You
+
+- Han Qiao @sweatybridge
+
+## 2.117.1 (2026-09-23)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
+## 2.117.0 (2026-09-22)
+
+This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
+
 ## 2.116.0 (2026-09-07)
 
 This was a version bump only for @supabase/postgrest-js to align it with other projects, there were no code changes.
