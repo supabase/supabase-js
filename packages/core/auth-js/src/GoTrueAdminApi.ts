@@ -801,6 +801,8 @@ export default class GoTrueAdminApi {
 
   /**
    * Delete a user. Requires a `service_role` key.
+   * Returns the user that was deleted. In cases of concurrent updates, the user object returned
+   * might not accurately reflect the user information at the time of deletion.
    *
    * @param id The user id you want to remove.
    * @param shouldSoftDelete If true, then the user will be soft-deleted from the auth schema. Soft deletion allows user identification from the hashed user ID but is not reversible.
