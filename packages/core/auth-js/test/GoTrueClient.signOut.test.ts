@@ -150,6 +150,18 @@ describe('GoTrueClient signOut with keepLocalSessionOnError', () => {
     expect(events).toContain('SIGNED_OUT')
   })
 
+  test('keeps the session when the server responds with another 4xx', async () => {
+    const storageKey = 'test-signout-keep-session-429'
+    const mockFetch = jest.fn().mockResolvedValue(jsonResponse(429))
+    const { storage, client, events } = setup(storageKey, mockFetch)
+
+    const { error } = await client.signOut({ scope: 'global', keepLocalSessionOnError: true })
+
+    expect(error).not.toBeNull()
+    expect(await storage.getItem(storageKey)).not.toBeNull()
+    expect(events).not.toContain('SIGNED_OUT')
+  })
+
   test.each([401, 403, 404])(
     'still clears the session when the server responds %s',
     async (status) => {
