@@ -4050,6 +4050,7 @@ export default class GoTrueClient {
    *   sign in from multiple devices and do not expect signing out of one to
    *   terminate the others.
    * - Since Supabase Auth uses JWTs for authentication, the access token JWT will be valid until it's expired. When the user signs out, Supabase revokes the refresh token and deletes the JWT from the client-side. This does not revoke the JWT and it will still be valid until it expires.
+   * - If the request to the auth server fails (a network error or a 5xx response), the `global` and `local` scopes still clear the current session and return the error, so the other sessions may remain active. Pass `keepLocalSessionOnError: true` to keep the current session instead, so the sign-out can be retried.
    *
    * @example Sign out of every device (global – default)
    * ```js
@@ -4064,6 +4065,17 @@ export default class GoTrueClient {
    * @example Sign out of all other sessions, keep the current one
    * ```js
    * const { error } = await supabase.auth.signOut({ scope: 'others' })
+   * ```
+   *
+   * @example Sign out of every device, keeping this session if the server cannot be reached
+   * ```js
+   * const { error } = await supabase.auth.signOut({
+   *   scope: 'global',
+   *   keepLocalSessionOnError: true,
+   * })
+   * if (error) {
+   *   // Nothing was revoked and this device is still signed in, so the user can retry.
+   * }
    * ```
    */
   async signOut(options: SignOut = { scope: 'global' }): Promise<{ error: AuthError | null }> {
@@ -4080,7 +4092,7 @@ export default class GoTrueClient {
   }
 
   protected async _signOut(
-    { scope }: SignOut = { scope: 'global' }
+    { scope, keepLocalSessionOnError }: SignOut = { scope: 'global' }
   ): Promise<{ error: AuthError | null }> {
     return await this._useSession(async (result) => {
       const removeCurrentSession = async () => {
@@ -4103,7 +4115,7 @@ export default class GoTrueClient {
               isAuthSessionMissingError(error)
             )
           ) {
-            if (scope !== 'others') {
+            if (scope !== 'others' && !keepLocalSessionOnError) {
               await removeCurrentSession()
             }
             return this._returnResult({ error })

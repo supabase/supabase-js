@@ -2256,6 +2256,19 @@ export type SignOut = {
    * the current session!
    */
   scope?: 'global' | 'local' | 'others'
+  /**
+   * When `true`, a remote sign-out that fails (a network error or a 5xx
+   * response) keeps the current session in storage, does not emit
+   * `SIGNED_OUT`, and returns the error, so the call can be retried. Useful
+   * for "sign out of all devices", where clearing only this device would hide
+   * that the other sessions are still active.
+   *
+   * Defaults to `false`: the current session is cleared even when the auth
+   * server could not be reached. 401, 403 and 404 responses are always
+   * treated as a completed sign-out. Has no effect with `scope: 'others'`,
+   * which never clears the current session.
+   */
+  keepLocalSessionOnError?: boolean
 }
 
 type MFAEnrollParamsBase<T extends FactorType> = {

@@ -76,3 +76,92 @@ describe('GoTrueClient signOut offline cleanup', () => {
     expect(await storage.getItem(storageKey)).not.toBeNull()
   })
 })
+
+describe('GoTrueClient signOut with keepLocalSessionOnError', () => {
+  let consoleErrorSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore()
+  })
+
+  const jsonResponse = (status: number) =>
+    new Response(JSON.stringify({ code: status, msg: 'logout failed' }), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+  const setup = (storageKey: string, mockFetch: jest.Mock) => {
+    const storage = memoryLocalStorageAdapter({
+      [storageKey]: JSON.stringify(createStoredSession()),
+    })
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      persistSession: true,
+      storage,
+      storageKey,
+      fetch: mockFetch,
+    })
+    const events: string[] = []
+    client.onAuthStateChange((event) => {
+      events.push(event)
+    })
+    return { storage, client, events }
+  }
+
+  test('clears the session on a 5xx global signOut by default', async () => {
+    const storageKey = 'test-signout-5xx-default'
+    const mockFetch = jest.fn().mockResolvedValue(jsonResponse(500))
+    const { storage, client, events } = setup(storageKey, mockFetch)
+
+    const { error } = await client.signOut({ scope: 'global' })
+
+    expect(error?.name).toBe('AuthRetryableFetchError')
+    expect(await storage.getItem(storageKey)).toBeNull()
+    expect(events).toContain('SIGNED_OUT')
+  })
+
+  test.each([
+    ['a 5xx response', () => jest.fn().mockResolvedValue(jsonResponse(500))],
+    ['a network error', () => jest.fn().mockRejectedValue(new Error('offline'))],
+  ])('keeps the session and allows a retry after %s', async (_, makeFetch) => {
+    const storageKey = 'test-signout-keep-session'
+    const mockFetch = makeFetch()
+    const { storage, client, events } = setup(storageKey, mockFetch)
+
+    const { error } = await client.signOut({ scope: 'global', keepLocalSessionOnError: true })
+
+    expect(error?.name).toBe('AuthRetryableFetchError')
+    expect(await storage.getItem(storageKey)).not.toBeNull()
+    expect(events).not.toContain('SIGNED_OUT')
+
+    const callsBeforeRetry = mockFetch.mock.calls.length
+    mockFetch.mockResolvedValue(new Response(null, { status: 204 }))
+
+    const retry = await client.signOut({ scope: 'global', keepLocalSessionOnError: true })
+
+    expect(retry.error).toBeNull()
+    expect(mockFetch.mock.calls.length).toBe(callsBeforeRetry + 1)
+    expect(await storage.getItem(storageKey)).toBeNull()
+    expect(events).toContain('SIGNED_OUT')
+  })
+
+  test.each([401, 403, 404])(
+    'still clears the session when the server responds %s',
+    async (status) => {
+      const storageKey = `test-signout-keep-session-${status}`
+      const mockFetch = jest.fn().mockResolvedValue(jsonResponse(status))
+      const { storage, client, events } = setup(storageKey, mockFetch)
+
+      const { error } = await client.signOut({ scope: 'global', keepLocalSessionOnError: true })
+
+      expect(error).toBeNull()
+      expect(await storage.getItem(storageKey)).toBeNull()
+      expect(events).toContain('SIGNED_OUT')
+    }
+  )
+})
