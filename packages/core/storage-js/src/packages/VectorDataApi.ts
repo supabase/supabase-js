@@ -29,12 +29,12 @@ export default class VectorDataApi extends BaseApiClient<StorageError> {
 
   /** Inserts or updates vectors in batch (1-500 per request) */
   async putVectors(options: PutVectorsOptions): Promise<ApiResponse<undefined>> {
-    // Validate batch size
-    if (options.vectors.length < 1 || options.vectors.length > 500) {
-      throw new Error('Vector batch size must be between 1 and 500 items')
-    }
-
     return this.handleOperation(async () => {
+      // Validate batch size
+      if (options.vectors.length < 1 || options.vectors.length > 500) {
+        throw new StorageError('Vector batch size must be between 1 and 500 items', 'vectors')
+      }
+
       const data = await vectorsApi.post(this.fetch, `${this.url}/PutVectors`, options, {
         headers: this.headers,
       })
@@ -53,19 +53,22 @@ export default class VectorDataApi extends BaseApiClient<StorageError> {
 
   /** Lists vectors in an index with pagination */
   async listVectors(options: ListVectorsOptions): Promise<ApiResponse<ListVectorsResponse>> {
-    // Validate segment configuration
-    if (options.segmentCount !== undefined) {
-      if (options.segmentCount < 1 || options.segmentCount > 16) {
-        throw new Error('segmentCount must be between 1 and 16')
-      }
-      if (options.segmentIndex !== undefined) {
-        if (options.segmentIndex < 0 || options.segmentIndex >= options.segmentCount) {
-          throw new Error(`segmentIndex must be between 0 and ${options.segmentCount - 1}`)
+    return this.handleOperation(async () => {
+      // Validate segment configuration
+      if (options.segmentCount !== undefined) {
+        if (options.segmentCount < 1 || options.segmentCount > 16) {
+          throw new StorageError('segmentCount must be between 1 and 16', 'vectors')
+        }
+        if (options.segmentIndex !== undefined) {
+          if (options.segmentIndex < 0 || options.segmentIndex >= options.segmentCount) {
+            throw new StorageError(
+              `segmentIndex must be between 0 and ${options.segmentCount - 1}`,
+              'vectors'
+            )
+          }
         }
       }
-    }
 
-    return this.handleOperation(async () => {
       return await vectorsApi.post(this.fetch, `${this.url}/ListVectors`, options, {
         headers: this.headers,
       })
@@ -83,12 +86,12 @@ export default class VectorDataApi extends BaseApiClient<StorageError> {
 
   /** Deletes vectors by their keys in batch (1-500 per request) */
   async deleteVectors(options: DeleteVectorsOptions): Promise<ApiResponse<undefined>> {
-    // Validate batch size
-    if (options.keys.length < 1 || options.keys.length > 500) {
-      throw new Error('Keys batch size must be between 1 and 500 items')
-    }
-
     return this.handleOperation(async () => {
+      // Validate batch size
+      if (options.keys.length < 1 || options.keys.length > 500) {
+        throw new StorageError('Keys batch size must be between 1 and 500 items', 'vectors')
+      }
+
       const data = await vectorsApi.post(this.fetch, `${this.url}/DeleteVectors`, options, {
         headers: this.headers,
       })
