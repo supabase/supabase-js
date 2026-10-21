@@ -661,10 +661,10 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
   private listBucketOptionsToQueryString(options?: ListBucketOptions): string {
     const params: Record<string, string> = {}
     if (options) {
-      if ('limit' in options) {
+      if (options.limit !== undefined) {
         params.limit = String(options.limit)
       }
-      if ('offset' in options) {
+      if (options.offset !== undefined) {
         params.offset = String(options.offset)
       }
       if (options.search) {
