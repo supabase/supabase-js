@@ -38,7 +38,7 @@ import PostgREST.SchemaCache.Identifiers (QualifiedIdentifier (..))
 import PostgREST.SchemaCache.Routine (Routine (..), RoutineParam (..))
 import PostgREST.SchemaCache.Table (Table (..))
 
-import Planner.PgType (normalizeType)
+import Planner.PgType (normalizeType, parseTypeName, sameTypeRef)
 
 data Supplementary = Supplementary
   { suppRelations :: HM.HashMap QualifiedIdentifier [(Text, Int)]
@@ -55,6 +55,9 @@ data Supplementary = Supplementary
   -- schema outside this list may hold a function or a type the catalog does not mention.
   , suppTypes :: HM.HashMap QualifiedIdentifier (Maybe Text)
   -- ^ The user types of those schemas (arrays excluded) with the base type of each domain.
+  , suppArrays :: HM.HashMap QualifiedIdentifier Text
+  -- ^ The array types of those schemas, by their own @pg_type@ name (@_name@, or what Postgres made of it when
+  -- that name was taken): the 'normalizeType'd element type. A name is never read as an array by its spelling.
   , suppCasts :: Maybe [(Text, Text, Text)]
   -- ^ Every @pg_cast@ row with a side outside @pg_catalog@: source, target (both 'normalizeType'd) and
   -- @castmethod@ (@f@ function, @i@ I/O, @b@ binary). 'Nothing' when the document has no @casts@ section: which
@@ -101,7 +104,8 @@ instance FromJSON Supplementary where
         , suppForeignKeys = HM.fromList [((QualifiedIdentifier s t, c), v) | FkItem s t c v <- fks]
         , suppFunctions = fns <> pathFns
         , suppSchemas = schemas
-        , suppTypes = HM.fromList [(QualifiedIdentifier s n, normalizeType <$> base) | TypeItem s n base <- types]
+        , suppTypes = HM.fromList [(QualifiedIdentifier s n, normalizeType <$> base) | TypeItem s n base Nothing <- types]
+        , suppArrays = HM.fromList [(QualifiedIdentifier s n, normalizeType el) | TypeItem s n _ (Just el) <- types]
         , suppCasts = fmap (\items -> [(normalizeType src, normalizeType tgt, m) | CastItem src tgt m <- items]) casts
         }
 
@@ -121,10 +125,10 @@ instance FromJSON Composite where
     attrs <- o .: "attributes" >>= traverse (withObject "attribute" (\a -> (,,) <$> a .: "name" <*> a .: "type" <*> (a .: "attnum" :: Parser Int)))
     pure (Composite (QualifiedIdentifier s n) [(an, at) | (an, at, _) <- sortOn (\(_, _, i) -> i) attrs])
 
-data TypeItem = TypeItem Text Text (Maybe Text)
+data TypeItem = TypeItem Text Text (Maybe Text) (Maybe Text)
 
 instance FromJSON TypeItem where
-  parseJSON = withObject "type" $ \o -> TypeItem <$> o .: "schema" <*> o .: "name" <*> o .:? "base"
+  parseJSON = withObject "type" $ \o -> TypeItem <$> o .: "schema" <*> o .: "name" <*> o .:? "base" <*> o .:? "element"
 
 data CastItem = CastItem Text Text Text
 
@@ -203,9 +207,9 @@ covers supp schema = schema == "pg_catalog" || schema `elem` suppSchemas supp
 findComputedField :: Supplementary -> [Text] -> QualifiedIdentifier -> Text -> Lookup SuppFunction
 findComputedField supp searchPath (QualifiedIdentifier schema rel) name = go searchPath
   where
-    relationType = schema <> "." <> rel
+    relationType = QualifiedIdentifier schema rel
     go [] = Absent
-    go (s : rest) = case [f | f <- suppFunctions supp, sfSchema f == s, sfName f == name, sfArgTypes f == [relationType]] of
+    go (s : rest) = case [f | f <- suppFunctions supp, sfSchema f == s, sfName f == name, [a] <- [sfArgTypes f], parseTypeName a == Just relationType] of
       f : _ -> Found f
       [] | covers supp s -> go rest
          | otherwise -> Uncovered
@@ -214,20 +218,23 @@ findComputedField supp searchPath (QualifiedIdentifier schema rel) name = go sea
 -- argument types are the routine's. A name the catalog lists once matches whatever the spelling of its types.
 findRoutine :: Supplementary -> Routine -> Maybe SuppFunction
 findRoutine supp Function{pdSchema, pdName, pdParams} =
-  case [f | f <- named, map normalizeType (sfArgTypes f) == args] of
+  case [f | f <- named, sameTypes (sfArgTypes f) args] of
     (f : _) -> Just f
     [] -> case named of
       [f] -> Just f
       _ -> Nothing
   where
     named = [f | f <- suppFunctions supp, sfSchema f == pdSchema, sfName f == pdName]
-    args = normalizeType . ppType <$> pdParams
+    args = ppType <$> pdParams
 
 -- | The catalog entry of the function of this schema and name whose input argument types are exactly these. Used
 -- for what the schema cache lacks: upstream drops a function with an unnamed argument from its routines but keeps
 -- it as a computed relationship.
 findFunction :: Supplementary -> QualifiedIdentifier -> [Text] -> Maybe SuppFunction
 findFunction supp (QualifiedIdentifier schema name) args =
-  case [f | f <- suppFunctions supp, sfSchema f == schema, sfName f == name, map normalizeType (sfArgTypes f) == map normalizeType args] of
+  case [f | f <- suppFunctions supp, sfSchema f == schema, sfName f == name, sameTypes (sfArgTypes f) args] of
     f : _ -> Just f
     [] -> Nothing
+
+sameTypes :: [Text] -> [Text] -> Bool
+sameTypes as bs = length as == length bs && and (zipWith sameTypeRef as bs)

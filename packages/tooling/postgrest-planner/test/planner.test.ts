@@ -1454,6 +1454,27 @@ describe('postgrest-planner', () => {
       expect(ok(get(handle, 'out_inout?n=2')).degraded).toEqual(['rpc-columns:public.out_inout'])
     })
 
+    it('names the unnamed OUT arguments of a function column1, column2 by position among the outputs', () => {
+      // unnamed_out(a integer, OUT integer, OUT text) answers {"column1":2,"column2":"x"}; proargnames holds ''
+      // for them and PostgreSQL counts outputs only (funcapi.c)
+      const p = ok(get(catalog, 'unnamed_out?a=2'))
+      expect(p).toMatchObject({ form: 'single-composite', degraded: [] })
+      expect(summary(shapeOf(p).fields)).toEqual([
+        ['column1', 'int4', true, 'function-rows'],
+        ['column2', 'text', true, 'function-rows'],
+      ])
+      expect(p.rpc?.source).toEqual({
+        kind: 'returnsTable',
+        columns: [
+          { name: 'column1', pgType: 'int4' },
+          { name: 'column2', pgType: 'text' },
+        ],
+      })
+      expect(
+        shapeOf(ok(get(catalog, 'unnamed_out?a=2&select=column2'))).fields.map((f) => f.name)
+      ).toEqual(['column2'])
+    })
+
     it('expands the row of a function whose single OUT column has a table or composite type', () => {
       // out_composite(OUT u arity_children) answers {"id":1,"parent_id":2}: a row descriptor is only built from
       // the OUT columns for a function that returns record (or a scalar), a named row type keeps its own columns
@@ -2042,6 +2063,71 @@ describe('postgrest-planner', () => {
       )
       expect(fields[0]).toMatchObject({ pgType: null })
       expect(degraded).toEqual(['computed-field:public.cast_cases.label'])
+    })
+
+    it('resolves _name to the array type of the first schema of the path that has it', () => {
+      // arr_a.d is a text domain, arr_b._d an integer domain named like the array type of arr_a.d: on the path
+      // arr_a,arr_b PostgreSQL reads `_d` as arr_a._d, the array of arr_a.d
+      expect(typed('arr_a,arr_b', '/cast_cases?select=x:id::_d')).toEqual({
+        types: [['arr_a.d[]', null, true]],
+        degraded: [],
+      })
+      expect(typed('arr_b,arr_a', '/cast_cases?select=x:id::_d')).toEqual({
+        types: [['arr_b._d', 'int4', true]],
+        degraded: [],
+      })
+      // the array of a builtin and of a user type of a schema without a competing name
+      expect(
+        typed('arr_a,arr_b', '/cast_cases?select=x:id::_int4,y:id::_user_status').types
+      ).toEqual([
+        ['int4[]', null, true],
+        ['public.user_status[]', null, true],
+      ])
+    })
+
+    it('does not pick a later schema for an array name when a schema of the path is not covered', () => {
+      // supplementary.json does not cover arr_a: arr_a._d may exist
+      expect(typed('arr_a,arr_b', '/cast_cases?select=x:id::_d', supplementaryText())).toEqual({
+        types: [[null, null, true]],
+        degraded: ['cast-type:_d'],
+      })
+    })
+
+    it('resolves a computed field to a function that belongs to an extension', () => {
+      // ext_owned.ext_label (text) is a member of the lo extension, personal.ext_label (integer) is not: the
+      // catalog does not leave the first out, PostgreSQL calls the first of the path
+      const field = (extraSearchPath: string) => {
+        const { fields, degraded } = shapeOf(extraSearchPath, '/ext_label_cases?select=ext_label')
+        return [fields[0].pgType, fields[0].provenance, degraded]
+      }
+      expect(field('ext_owned,personal')).toEqual([
+        'text',
+        expect.objectContaining({ function: { schema: 'ext_owned', name: 'ext_label' } }),
+        [],
+      ])
+      expect(field('personal,ext_owned')).toEqual([
+        'int4',
+        expect.objectContaining({ function: { schema: 'personal', name: 'ext_label' } }),
+        [],
+      ])
+    })
+
+    it('knows the base of a domain whose name needs quotes', () => {
+      // public."Amount" is a domain over integer; format_type spells it with quotes
+      const p = ok(
+        planner.plan(catalog, {
+          method: 'GET',
+          url: '/quoted_amounts?select=amt,amount,s:amount.sum(),a:amount.avg(),t:amt.sum(),u:amt.avg()',
+        })
+      )
+      expect(p.shape?.fields.map((f) => [f.pgType, f.baseType ?? null])).toEqual([
+        ['public."Amount"', 'int4'],
+        ['public."Amount"', 'int4'],
+        ['int8', null],
+        ['numeric', null],
+        ['int8', null],
+        ['numeric', null],
+      ])
     })
 
     it('knows the base of a domain that only a computed field returns', () => {

@@ -6,7 +6,7 @@ import type {
   ShapeField,
 } from '@supabase/postgrest-planner'
 import { memberName, quote, quoteDouble } from './literal'
-import { classifyType, tsTypeOf } from './pg-types'
+import { classifyType, rememberDomain, tsTypeOf } from './pg-types'
 import type { SelectsContext } from './selects-context'
 
 /** A planned key: the result shape the planner gave for it. */
@@ -266,7 +266,7 @@ class ShapePrinter {
 
   private learnDomain(field: ShapeField): void {
     if (field.pgType && field.baseType && field.baseType !== field.pgType) {
-      this.context.domains.set(field.pgType, field.baseType)
+      rememberDomain(this.context.domains, field.pgType, field.baseType)
     }
   }
 

@@ -150,6 +150,20 @@ function split(name: string, ctx: TypeContext): [string, string] {
   return dot < 0 ? [ctx.defaultSchema ?? 'public', name] : [name.slice(0, dot), name.slice(dot + 1)]
 }
 
+/**
+ * Records a domain the planner reported for a field: its `pgType` (as `format_type` spells it, quoted where the name
+ * needs it: `public."Amount"`) and the base type under it. `TypeContext.domains` is keyed by `schema.name` as the
+ * catalog holds it, the key `normalizeType` gives, so the quotes are taken off here and a quoted domain resolves.
+ */
+export function rememberDomain(
+  domains: Map<string, string>,
+  pgType: string,
+  baseType: string
+): void {
+  const { name, dims } = normalizeType(pgType)
+  if (dims === 0) domains.set(name, baseType)
+}
+
 /** Follows a domain to the type it is defined over (and the array dimensions it adds). Guards against a cycle. */
 function resolveDomain(name: string, ctx: TypeContext): NormalizedType {
   let current = name

@@ -350,6 +350,23 @@
         "volatility": "v"
       },
       {
+        "argNames": null,
+        "argTypes": [
+          "public.ext_label_cases"
+        ],
+        "language": "sql",
+        "name": "ext_label",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "personal",
+        "source": " SELECT 1; ",
+        "volatility": "i"
+      },
+      {
         "argNames": [
           "name_param"
         ],
@@ -422,6 +439,23 @@
         "schema": "public",
         "source": "\n  SELECT item.qty;\n",
         "volatility": "s"
+      },
+      {
+        "argNames": null,
+        "argTypes": [
+          "public.quoted_amounts"
+        ],
+        "language": "sql",
+        "name": "amount",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "public.\"Amount\""
+        },
+        "schema": "public",
+        "source": " SELECT 1::public.\"Amount\"; ",
+        "volatility": "i"
       },
       {
         "argNames": null,
@@ -1756,6 +1790,34 @@
         "volatility": "i"
       },
       {
+        "argNames": [
+          "a"
+        ],
+        "argTypes": [
+          "integer"
+        ],
+        "language": "sql",
+        "name": "unnamed_out",
+        "outColumns": [
+          {
+            "name": "column1",
+            "type": "integer"
+          },
+          {
+            "name": "column2",
+            "type": "text"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": false,
+          "type": "record"
+        },
+        "schema": "public",
+        "source": " SELECT a, 'x'::text; ",
+        "volatility": "i"
+      },
+      {
         "argNames": null,
         "argTypes": [],
         "language": "sql",
@@ -2748,6 +2810,28 @@
             "attnum": 1,
             "generated": null,
             "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          }
+        ],
+        "kind": "r",
+        "name": "ext_label_cases",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
             "identity": "by default",
             "name": "id",
             "notNull": true,
@@ -3104,6 +3188,37 @@
         ],
         "kind": "r",
         "name": "products",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "amt",
+            "notNull": true,
+            "type": "public.\"Amount\""
+          }
+        ],
+        "kind": "r",
+        "name": "quoted_amounts",
         "schema": "public",
         "updatable": {
           "delete": true,
@@ -3553,6 +3668,261 @@
         "volatility": "i"
       },
       {
+        "argTypes": [
+          "boolean"
+        ],
+        "name": "pg_stat_statements",
+        "outColumns": [
+          {
+            "name": "userid",
+            "type": "oid"
+          },
+          {
+            "name": "dbid",
+            "type": "oid"
+          },
+          {
+            "name": "toplevel",
+            "type": "boolean"
+          },
+          {
+            "name": "queryid",
+            "type": "bigint"
+          },
+          {
+            "name": "query",
+            "type": "text"
+          },
+          {
+            "name": "plans",
+            "type": "bigint"
+          },
+          {
+            "name": "total_plan_time",
+            "type": "double precision"
+          },
+          {
+            "name": "min_plan_time",
+            "type": "double precision"
+          },
+          {
+            "name": "max_plan_time",
+            "type": "double precision"
+          },
+          {
+            "name": "mean_plan_time",
+            "type": "double precision"
+          },
+          {
+            "name": "stddev_plan_time",
+            "type": "double precision"
+          },
+          {
+            "name": "calls",
+            "type": "bigint"
+          },
+          {
+            "name": "total_exec_time",
+            "type": "double precision"
+          },
+          {
+            "name": "min_exec_time",
+            "type": "double precision"
+          },
+          {
+            "name": "max_exec_time",
+            "type": "double precision"
+          },
+          {
+            "name": "mean_exec_time",
+            "type": "double precision"
+          },
+          {
+            "name": "stddev_exec_time",
+            "type": "double precision"
+          },
+          {
+            "name": "rows",
+            "type": "bigint"
+          },
+          {
+            "name": "shared_blks_hit",
+            "type": "bigint"
+          },
+          {
+            "name": "shared_blks_read",
+            "type": "bigint"
+          },
+          {
+            "name": "shared_blks_dirtied",
+            "type": "bigint"
+          },
+          {
+            "name": "shared_blks_written",
+            "type": "bigint"
+          },
+          {
+            "name": "local_blks_hit",
+            "type": "bigint"
+          },
+          {
+            "name": "local_blks_read",
+            "type": "bigint"
+          },
+          {
+            "name": "local_blks_dirtied",
+            "type": "bigint"
+          },
+          {
+            "name": "local_blks_written",
+            "type": "bigint"
+          },
+          {
+            "name": "temp_blks_read",
+            "type": "bigint"
+          },
+          {
+            "name": "temp_blks_written",
+            "type": "bigint"
+          },
+          {
+            "name": "shared_blk_read_time",
+            "type": "double precision"
+          },
+          {
+            "name": "shared_blk_write_time",
+            "type": "double precision"
+          },
+          {
+            "name": "local_blk_read_time",
+            "type": "double precision"
+          },
+          {
+            "name": "local_blk_write_time",
+            "type": "double precision"
+          },
+          {
+            "name": "temp_blk_read_time",
+            "type": "double precision"
+          },
+          {
+            "name": "temp_blk_write_time",
+            "type": "double precision"
+          },
+          {
+            "name": "wal_records",
+            "type": "bigint"
+          },
+          {
+            "name": "wal_fpi",
+            "type": "bigint"
+          },
+          {
+            "name": "wal_bytes",
+            "type": "numeric"
+          },
+          {
+            "name": "jit_functions",
+            "type": "bigint"
+          },
+          {
+            "name": "jit_generation_time",
+            "type": "double precision"
+          },
+          {
+            "name": "jit_inlining_count",
+            "type": "bigint"
+          },
+          {
+            "name": "jit_inlining_time",
+            "type": "double precision"
+          },
+          {
+            "name": "jit_optimization_count",
+            "type": "bigint"
+          },
+          {
+            "name": "jit_optimization_time",
+            "type": "double precision"
+          },
+          {
+            "name": "jit_emission_count",
+            "type": "bigint"
+          },
+          {
+            "name": "jit_emission_time",
+            "type": "double precision"
+          },
+          {
+            "name": "jit_deform_count",
+            "type": "bigint"
+          },
+          {
+            "name": "jit_deform_time",
+            "type": "double precision"
+          },
+          {
+            "name": "stats_since",
+            "type": "timestamp with time zone"
+          },
+          {
+            "name": "minmax_stats_since",
+            "type": "timestamp with time zone"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "record"
+        },
+        "schema": "extensions",
+        "volatility": "v"
+      },
+      {
+        "argTypes": [],
+        "name": "pg_stat_statements_info",
+        "outColumns": [
+          {
+            "name": "dealloc",
+            "type": "bigint"
+          },
+          {
+            "name": "stats_reset",
+            "type": "timestamp with time zone"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": false,
+          "type": "record"
+        },
+        "schema": "extensions",
+        "volatility": "v"
+      },
+      {
+        "argTypes": [
+          "text"
+        ],
+        "name": "pgp_armor_headers",
+        "outColumns": [
+          {
+            "name": "key",
+            "type": "text"
+          },
+          {
+            "name": "value",
+            "type": "text"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "record"
+        },
+        "schema": "extensions",
+        "volatility": "i"
+      },
+      {
         "argTypes": [],
         "name": "pgrst_ddl_watch",
         "outColumns": null,
@@ -3578,6 +3948,27 @@
       },
       {
         "argTypes": [],
+        "name": "postgres_fdw_get_connections",
+        "outColumns": [
+          {
+            "name": "server_name",
+            "type": "text"
+          },
+          {
+            "name": "valid",
+            "type": "boolean"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "record"
+        },
+        "schema": "extensions",
+        "volatility": "v"
+      },
+      {
+        "argTypes": [],
         "name": "set_graphql_placeholder",
         "outColumns": null,
         "returns": {
@@ -3587,353 +3978,965 @@
         },
         "schema": "extensions",
         "volatility": "v"
+      },
+      {
+        "argTypes": [
+          "double precision",
+          "extensions.geometry"
+        ],
+        "name": "st_hexagongrid",
+        "outColumns": [
+          {
+            "name": "geom",
+            "type": "extensions.geometry"
+          },
+          {
+            "name": "i",
+            "type": "integer"
+          },
+          {
+            "name": "j",
+            "type": "integer"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "record"
+        },
+        "schema": "extensions",
+        "volatility": "i"
+      },
+      {
+        "argTypes": [
+          "extensions.geometry"
+        ],
+        "name": "st_maximuminscribedcircle",
+        "outColumns": [
+          {
+            "name": "center",
+            "type": "extensions.geometry"
+          },
+          {
+            "name": "nearest",
+            "type": "extensions.geometry"
+          },
+          {
+            "name": "radius",
+            "type": "double precision"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": false,
+          "type": "record"
+        },
+        "schema": "extensions",
+        "volatility": "i"
+      },
+      {
+        "argTypes": [
+          "extensions.geometry"
+        ],
+        "name": "st_minimumboundingradius",
+        "outColumns": [
+          {
+            "name": "center",
+            "type": "extensions.geometry"
+          },
+          {
+            "name": "radius",
+            "type": "double precision"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": false,
+          "type": "record"
+        },
+        "schema": "extensions",
+        "volatility": "i"
+      },
+      {
+        "argTypes": [
+          "double precision",
+          "extensions.geometry"
+        ],
+        "name": "st_squaregrid",
+        "outColumns": [
+          {
+            "name": "geom",
+            "type": "extensions.geometry"
+          },
+          {
+            "name": "i",
+            "type": "integer"
+          },
+          {
+            "name": "j",
+            "type": "integer"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "record"
+        },
+        "schema": "extensions",
+        "volatility": "i"
       }
     ],
     "types": [
       {
         "base": null,
+        "element": "extensions.box2d",
+        "kind": "b",
+        "name": "_box2d",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.box2df",
+        "kind": "b",
+        "name": "_box2df",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.box3d",
+        "kind": "b",
+        "name": "_box3d",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.geography",
+        "kind": "b",
+        "name": "_geography",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.geography_columns",
+        "kind": "b",
+        "name": "_geography_columns",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.geometry",
+        "kind": "b",
+        "name": "_geometry",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.geometry_columns",
+        "kind": "b",
+        "name": "_geometry_columns",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.geometry_dump",
+        "kind": "b",
+        "name": "_geometry_dump",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.gidx",
+        "kind": "b",
+        "name": "_gidx",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.pg_stat_statements",
+        "kind": "b",
+        "name": "_pg_stat_statements",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.pg_stat_statements_info",
+        "kind": "b",
+        "name": "_pg_stat_statements_info",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.spatial_ref_sys",
+        "kind": "b",
+        "name": "_spatial_ref_sys",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.spheroid",
+        "kind": "b",
+        "name": "_spheroid",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": "extensions.valid_detail",
+        "kind": "b",
+        "name": "_valid_detail",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": null,
         "kind": "b",
         "name": "box2d",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "b",
         "name": "box2df",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "b",
         "name": "box3d",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "b",
         "name": "geography",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "geography_columns",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "b",
         "name": "geometry",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "geometry_columns",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "geometry_dump",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "b",
         "name": "gidx",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "pg_stat_statements",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "pg_stat_statements_info",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "spatial_ref_sys",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "b",
         "name": "spheroid",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "valid_detail",
         "schema": "extensions"
       },
       {
         "base": null,
+        "element": "personal.user_notes",
+        "kind": "b",
+        "name": "_user_notes",
+        "schema": "personal"
+      },
+      {
+        "base": null,
+        "element": "personal.user_status",
+        "kind": "b",
+        "name": "_user_status",
+        "schema": "personal"
+      },
+      {
+        "base": null,
+        "element": "personal.users",
+        "kind": "b",
+        "name": "_users",
+        "schema": "personal"
+      },
+      {
+        "base": null,
+        "element": null,
         "kind": "c",
         "name": "user_notes",
         "schema": "personal"
       },
       {
         "base": null,
+        "element": null,
         "kind": "e",
         "name": "user_status",
         "schema": "personal"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "users",
         "schema": "personal"
       },
       {
+        "base": "integer",
+        "element": null,
+        "kind": "d",
+        "name": "Amount",
+        "schema": "public"
+      },
+      {
         "base": null,
+        "element": "public.\"Amount\"",
+        "kind": "b",
+        "name": "_Amount",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.active_users",
+        "kind": "b",
+        "name": "_active_users",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.address",
+        "kind": "b",
+        "name": "_address",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.aggregate_types",
+        "kind": "b",
+        "name": "_aggregate_types",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.arity_children",
+        "kind": "b",
+        "name": "_arity_children",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.arity_parents",
+        "kind": "b",
+        "name": "_arity_parents",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.best_friends",
+        "kind": "b",
+        "name": "_best_friends",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.booking",
+        "kind": "b",
+        "name": "_booking",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.cast_cases",
+        "kind": "b",
+        "name": "_cast_cases",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.cast_mood",
+        "kind": "b",
+        "name": "_cast_mood",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.cast_mood_dom",
+        "kind": "b",
+        "name": "_cast_mood_dom",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.categories",
+        "kind": "b",
+        "name": "_categories",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.channel_details",
+        "kind": "b",
+        "name": "_channel_details",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.channels",
+        "kind": "b",
+        "name": "_channels",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.collections",
+        "kind": "b",
+        "name": "_collections",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.computed_children",
+        "kind": "b",
+        "name": "_computed_children",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.computed_parents",
+        "kind": "b",
+        "name": "_computed_parents",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.cornercase",
+        "kind": "b",
+        "name": "_cornercase",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.domain_items",
+        "kind": "b",
+        "name": "_domain_items",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.events",
+        "kind": "b",
+        "name": "_events",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.events_2024",
+        "kind": "b",
+        "name": "_events_2024",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.events_2025",
+        "kind": "b",
+        "name": "_events_2025",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.ext_label_cases",
+        "kind": "b",
+        "name": "_ext_label_cases",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.hotel",
+        "kind": "b",
+        "name": "_hotel",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.inference_cases",
+        "kind": "b",
+        "name": "_inference_cases",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.item_amount",
+        "kind": "b",
+        "name": "_item_amount",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.lab",
+        "kind": "b",
+        "name": "_lab",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.messages",
+        "kind": "b",
+        "name": "_messages",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.non_updatable_view",
+        "kind": "b",
+        "name": "_non_updatable_view",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.product_categories",
+        "kind": "b",
+        "name": "_product_categories",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.products",
+        "kind": "b",
+        "name": "_products",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.quoted_amounts",
+        "kind": "b",
+        "name": "_quoted_amounts",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.recent_messages",
+        "kind": "b",
+        "name": "_recent_messages",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.remote_users",
+        "kind": "b",
+        "name": "_remote_users",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.return_only_amount",
+        "kind": "b",
+        "name": "_return_only_amount",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.shops",
+        "kind": "b",
+        "name": "_shops",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.trigger_writable_view",
+        "kind": "b",
+        "name": "_trigger_writable_view",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.updatable_view",
+        "kind": "b",
+        "name": "_updatable_view",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.update_only_trigger_view",
+        "kind": "b",
+        "name": "_update_only_trigger_view",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.user_profiles",
+        "kind": "b",
+        "name": "_user_profiles",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.user_status",
+        "kind": "b",
+        "name": "_user_status",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.user_status_counts",
+        "kind": "b",
+        "name": "_user_status_counts",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.users",
+        "kind": "b",
+        "name": "_users",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.users_audit",
+        "kind": "b",
+        "name": "_users_audit",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
         "kind": "c",
         "name": "active_users",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "address",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "aggregate_types",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "arity_children",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "arity_parents",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "best_friends",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "booking",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "cast_cases",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "e",
         "name": "cast_mood",
         "schema": "public"
       },
       {
         "base": "public.cast_mood",
+        "element": null,
         "kind": "d",
         "name": "cast_mood_dom",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "categories",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "channel_details",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "channels",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "collections",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "computed_children",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "computed_parents",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "cornercase",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "domain_items",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "events",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "events_2024",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "events_2025",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "ext_label_cases",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
         "kind": "c",
         "name": "hotel",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "inference_cases",
         "schema": "public"
       },
       {
         "base": "integer",
+        "element": null,
         "kind": "d",
         "name": "item_amount",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "lab",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "messages",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "non_updatable_view",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "product_categories",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "products",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "quoted_amounts",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
         "kind": "c",
         "name": "recent_messages",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "remote_users",
         "schema": "public"
       },
       {
         "base": "integer",
+        "element": null,
         "kind": "d",
         "name": "return_only_amount",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "shops",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "trigger_writable_view",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "updatable_view",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "update_only_trigger_view",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "user_profiles",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "e",
         "name": "user_status",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "user_status_counts",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "users",
         "schema": "public"
       },
       {
         "base": null,
+        "element": null,
         "kind": "c",
         "name": "users_audit",
         "schema": "public"
@@ -7862,6 +8865,45 @@
       ],
       [
         {
+          "qiName": "unnamed_out",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "unnamed_out",
+            "pdParams": [
+              {
+                "ppName": "a",
+                "ppReq": true,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "record",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Immutable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "describe_remote_user",
           "qiSchema": "public"
         },
@@ -9566,6 +10608,36 @@
           "tableName": "users",
           "tablePKCols": [
             "username"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "ext_label_cases",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "ext_label_cases",
+          "tablePKCols": [
+            "id"
           ],
           "tableSchema": "public",
           "tableUpdatable": true
@@ -11505,6 +12577,46 @@
           "tableInsertable": true,
           "tableIsView": false,
           "tableName": "computed_parents",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "quoted_amounts",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "amt": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "amt",
+              "colNominalType": "public.\"Amount\"",
+              "colNullable": false,
+              "colType": "integer"
+            },
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "quoted_amounts",
           "tablePKCols": [
             "id"
           ],

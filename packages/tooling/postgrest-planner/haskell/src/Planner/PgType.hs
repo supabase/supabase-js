@@ -8,12 +8,15 @@
 module Planner.PgType
   ( normalizeType
   , qualifiedTypeName
+  , parseTypeName
+  , typeSpelling
+  , sameTypeRef
   , isBuiltinType
   , isSqlTypeAlias
   , aggregateType
   ) where
 
-import Data.Char (isSpace)
+import Data.Char (isAsciiLower, isDigit, isSpace)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -100,7 +103,7 @@ isSqlTypeAlias t = t `elem` aliases || "interval " `T.isPrefixOf` t
       ]
 
 -- | A @pg_type@-sourced name (routine return types in the schema dump): a leading underscore is an
--- array type, @pg_catalog@ is dropped, everything else is @schema.name@.
+-- array type, @pg_catalog@ is dropped, everything else is @schema.name@ spelled like @format_type@ does.
 qualifiedTypeName :: QualifiedIdentifier -> Text
 qualifiedTypeName (QualifiedIdentifier schema name) = case T.stripPrefix "_" name of
   Just element | not (T.null element) -> qualify element <> "[]"
@@ -108,7 +111,51 @@ qualifiedTypeName (QualifiedIdentifier schema name) = case T.stripPrefix "_" nam
   where
     qualify n
       | T.null schema || schema == "pg_catalog" = n
-      | otherwise = schema <> "." <> n
+      | otherwise = typeSpelling (QualifiedIdentifier schema n)
+
+-- | The one identity of a user type: its @(schema, name)@ as @pg_type@ and @pg_namespace@ hold them, raw. A
+-- catalog entry is keyed by it directly and a @format_type@ spelling is read back into it, so @public."Amount"@
+-- and the pair (@public@, @Amount@) are the same type. 'Nothing' for a spelling that is not a plain
+-- @schema.name@ (a @pg_catalog@ type, which 'normalizeType' leaves unqualified, an array, anything unparsable).
+parseTypeName :: Text -> Maybe QualifiedIdentifier
+parseTypeName raw
+  | "[]" `T.isSuffixOf` raw = Nothing
+  | otherwise = case parts (T.unpack raw) of
+      Just [s, n] | not (T.null s), not (T.null n) -> Just (QualifiedIdentifier s n)
+      _ -> Nothing
+  where
+    parts :: String -> Maybe [Text]
+    parts = go [] []
+    -- Collects identifiers separated by dots outside quotes; inside quotes @""@ is a quote.
+    go acc cur [] = Just (reverse (T.pack (reverse cur) : acc))
+    go acc cur ('"' : rest) = quoted acc cur rest
+    go acc cur ('.' : rest) = go (T.pack (reverse cur) : acc) [] rest
+    go acc cur (c : rest) = go acc (c : cur) rest
+    quoted _ _ [] = Nothing
+    quoted acc cur ('"' : '"' : rest) = quoted acc ('"' : cur) rest
+    quoted acc cur ('"' : rest) = go acc cur rest
+    quoted acc cur (c : rest) = quoted acc (c : cur) rest
+
+-- | A type of a schema spelled like @format_type@: each identifier is quoted when it is not a plain lower case
+-- name (@public."Amount"@). Keywords, which @format_type@ quotes too, are not recognised.
+typeSpelling :: QualifiedIdentifier -> Text
+typeSpelling (QualifiedIdentifier s n) = quoteIdentifier s <> "." <> quoteIdentifier n
+
+quoteIdentifier :: Text -> Text
+quoteIdentifier i
+  | plain = i
+  | otherwise = "\"" <> T.replace "\"" "\"\"" i <> "\""
+  where
+    plain = case T.uncons i of
+      Just (c, rest) -> (c == '_' || isAsciiLower c) && T.all (\x -> x == '_' || x == '$' || isAsciiLower x || isDigit x) rest
+      Nothing -> False
+
+-- | Whether two type spellings name the same type: the same user type however it is quoted, otherwise the same
+-- 'normalizeType'd spelling.
+sameTypeRef :: Text -> Text -> Bool
+sameTypeRef a b = case (parseTypeName a, parseTypeName b) of
+  (Just x, Just y) -> x == y
+  _ -> normalizeType a == normalizeType b
 
 -- | Result type of an aggregate over an input type (already 'normalizeType'd); 'Nothing' when Postgres has no such
 -- aggregate for it (the request fails there with @42883@). @count@ is always @int8@, @sum@/@avg@ widen per the

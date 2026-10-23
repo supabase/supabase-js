@@ -62,7 +62,7 @@ import PostgREST.SchemaCache.Relationship (Cardinality (..), Junction (..), Rela
 import PostgREST.SchemaCache.Routine (FuncVolatility (..), MediaHandler (..), PgType (..), RetType (..), Routine (..), RoutineParam (..), RoutineMap, funcReturnsSingleComposite)
 import PostgREST.SchemaCache.Table (Column (..), Table (..))
 
-import Planner.PgType (aggregateType, isBuiltinType, isSqlTypeAlias, normalizeType, qualifiedTypeName)
+import Planner.PgType (aggregateType, isBuiltinType, isSqlTypeAlias, normalizeType, parseTypeName, qualifiedTypeName, sameTypeRef, typeSpelling)
 import Planner.Supplementary (Lookup (..), SuppFunction (..), SuppReturn (..), Supplementary (..), covers, findComputedField, findFunction, findRoutine, foreignKeyValidated, orderColumns)
 
 -- | @form@, @shape@, @rpc@, @filters@ and @degraded@ for a plan. Plans that return no rows of a relation
@@ -156,7 +156,7 @@ data Ctx = Ctx
   , cxSupp :: Maybe Supplementary
   , cxRows :: Maybe Rows
   -- ^ Set for the root of an RPC plan: where its columns come from. Embeds resolve against their tables.
-  , cxTypes :: HM.HashMap Text (Maybe Text)
+  , cxTypes :: HM.HashMap QualifiedIdentifier (Maybe Text)
   -- ^ The user types the schema dump and the catalog know, with the base type of each domain (see 'knownTypes').
   , cxSearchPath :: [Text]
   -- ^ The search path of the request: its schema, then @db-extra-search-path@ (upstream @PreQuery.hs@).
@@ -398,11 +398,11 @@ computedReturnsSingleComposite :: Ctx -> Relationship -> Bool
 computedReturnsSingleComposite Ctx{cxRoutines, cxSupp} = \case
   ComputedRelationship{relFunction, relTable} ->
     let takesTable r = case pdParams r of
-          [p] -> ppType p == qualified relTable
+          [p] -> sameTypeRef (ppType p) (typeSpelling relTable)
           _ -> False
         inCatalog = do
           supp <- cxSupp
-          SuppFunction{sfReturns = SuppReturn{srKind, srSetof}} <- findFunction supp relFunction [qualified relTable]
+          SuppFunction{sfReturns = SuppReturn{srKind, srSetof}} <- findFunction supp relFunction [typeSpelling relTable]
           Just (srKind == "composite" && not srSetof)
     in  case filter takesTable (HM.lookupDefault [] relFunction cxRoutines) of
           r : _ -> funcReturnsSingleComposite r
@@ -618,7 +618,7 @@ baseExpr ctx@Ctx{cxTables, cxSupp, cxRows, cxSearchPath, cxTypes} rel CoercibleF
             | otherwise ->
                 ( Expr
                     (Just (normalizeType srType))
-                    (join (HM.lookup (normalizeType srType) cxTypes)) -- the base type of a domain the catalog knows
+                    (join (typeInfo cxTypes (normalizeType srType))) -- the base type of a domain the catalog knows
                     True
                     ( object
                         [ "kind" .= str "computed"
@@ -722,7 +722,7 @@ castKeepsNonNull Ctx{cxTypes, cxSupp} from to
     sources t
       | Just element <- T.stripSuffix "[]" t = map (<> "[]") <$> sources element
       | isBuiltinType t = Just [t]
-      | otherwise = case HM.lookup t cxTypes of
+      | otherwise = case typeInfo cxTypes t of
           Just (Just base) -> Just [t, base]
           Just Nothing -> Just [t]
           Nothing -> Nothing
@@ -757,9 +757,7 @@ resolveCastType Ctx{cxTypes, cxSupp, cxSearchPath} raw = go (T.toLower (T.unword
     covered s = s == "pg_catalog" || maybe False (`covers` s) cxSupp
     go name
       | isSqlTypeAlias name = CastFound (normalizeType name) Nothing
-      | otherwise = case walk path of
-          CastUnknown | Just element <- T.stripPrefix "_" name, not (T.null element) -> arrayOf (go element)
-          found -> found
+      | otherwise = walk path
       where
         builtin = normalizeType name
         builtinElement = T.stripPrefix "_" name >>= \e -> if isBuiltinType (normalizeType e) then Just (normalizeType e) else Nothing
@@ -769,37 +767,43 @@ resolveCastType Ctx{cxTypes, cxSupp, cxSearchPath} raw = go (T.toLower (T.unword
               _ | isBuiltinType builtin -> CastFound builtin Nothing
               Just element -> CastFound (element <> "[]") Nothing
               Nothing -> walk rest
-          | Just base <- HM.lookup (s <> "." <> name) cxTypes = CastFound (s <> "." <> name) base
+          -- An array type is a type of its own, named by @pg_type@ (@_name@ unless that was taken): it is found
+          -- at the schema that has it, like any other name, and a domain named @_d@ in a later schema does not win.
+          | Just element <- cxSupp >>= HM.lookup (QualifiedIdentifier s name) . suppArrays = CastFound (element <> "[]") Nothing
+          | Just base <- HM.lookup (QualifiedIdentifier s name) cxTypes = CastFound (typeSpelling (QualifiedIdentifier s name)) base
           | covered s = walk rest
           | otherwise = CastUncovered
-    arrayOf = \case
-      CastFound t _ -> CastFound (t <> "[]") Nothing
-      other -> other
 
 -- | The user types known by @schema.name@ (element type of arrays), with the base type of the ones that are
 -- domains. The supplementary catalog enumerates every type of the schemas it covers; the schema dump adds what
 -- it mentions (columns, tables and routines), which is all there is without a catalog, and the catalog adds
 -- the composite types and the types of its functions. A domain over a domain has the base of the last one.
-knownTypes :: SchemaCache -> Maybe Supplementary -> HM.HashMap Text (Maybe Text)
+knownTypes :: SchemaCache -> Maybe Supplementary -> HM.HashMap QualifiedIdentifier (Maybe Text)
 knownTypes sc supp = HM.map (fmap chase) known
   where
-    known = HM.fromListWith (\new old -> old <|> new) (filter (userType . fst) entries)
+    known = HM.fromListWith (\new old -> old <|> new) entries
     chase base = go (8 :: Int) base
       where
         go 0 b = b
-        go n b = case HM.lookup b known of
+        go n b = case typeInfo known b of
           Just (Just next) -> go (n - 1) next
           _ -> b
-    userType t = not (T.null t) && not (isBuiltinType t) && not (T.any (== '"') t)
+    -- A type is known by the (schema, name) its spelling stands for, however the spelling quotes it. A
+    -- spelling without a schema is a @pg_catalog@ type or not one this can place.
+    ofSpelling t = [(qi, Nothing) | Just qi <- [parseTypeName (element t)]]
     entries =
       concat
-        [ [(qualified qi, base) | Just s <- [supp], (qi, base) <- HM.toList (suppTypes s)]
-        , [peel (normalizeType (colNominalType col)) (normalizeType (colType col)) | t <- HM.elems (dbTables sc), col <- HMI.elems (tableColumns t)]
-        , [(qualified qi, Nothing) | qi <- HM.keys (dbTables sc)]
-        , [(element t, Nothing) | rs <- HM.elems (dbRoutines sc), r <- rs, t <- routineTypes r]
-        , [(qualified qi, Nothing) | Just s <- [supp], qi <- HM.keys (suppComposites s) <> HM.keys (suppRelations s)]
-        , [(element (normalizeType t), Nothing) | Just s <- [supp], attrs <- HM.elems (suppComposites s), (_, t) <- attrs]
-        , [(element (normalizeType t), Nothing) | Just s <- [supp], f <- suppFunctions s, t <- sfArgTypes f <> [srType (sfReturns f)] <> maybe [] (map snd) (sfOutColumns f)]
+        [ [(qi, base) | Just s <- [supp], (qi, base) <- HM.toList (suppTypes s)]
+        , [ (qi, base)
+          | t <- HM.elems (dbTables sc), col <- HMI.elems (tableColumns t)
+          , let (nominal, base) = peel (normalizeType (colNominalType col)) (normalizeType (colType col))
+          , Just qi <- [parseTypeName nominal]
+          ]
+        , [(qi, Nothing) | qi <- HM.keys (dbTables sc)]
+        , concat [ofSpelling t | rs <- HM.elems (dbRoutines sc), r <- rs, t <- routineTypes r]
+        , [(qi, Nothing) | Just s <- [supp], qi <- HM.keys (suppComposites s) <> HM.keys (suppRelations s)]
+        , concat [ofSpelling (normalizeType t) | Just s <- [supp], attrs <- HM.elems (suppComposites s), (_, t) <- attrs]
+        , concat [ofSpelling (normalizeType t) | Just s <- [supp], f <- suppFunctions s, t <- sfArgTypes f <> [srType (sfReturns f)] <> maybe [] (map snd) (sfOutColumns f)]
         ]
     element t = maybe t element (T.stripSuffix "[]" t)
     -- Arrays of a domain have the array of its base as base type.
@@ -813,7 +817,12 @@ knownTypes sc supp = HM.map (fmap chase) known
           SetOf t -> [pgTypeName t]
     pgTypeName = \case
       Scalar qi -> qualifiedTypeName qi
-      Composite qi _ -> qualified qi
+      Composite qi _ -> typeSpelling qi
+
+-- | What 'knownTypes' holds for a type spelling: 'Nothing' for a type it does not know, else the base type of
+-- the domain (none for any other type).
+typeInfo :: HM.HashMap QualifiedIdentifier (Maybe Text) -> Text -> Maybe (Maybe Text)
+typeInfo types spelling = parseTypeName spelling >>= (`HM.lookup` types)
 
 -- | @count@ is @int8@ and never null; every other aggregate is null over an empty group. An input type the
 -- aggregate does not exist for (@min@ of a @uuid@) is unresolved: Postgres refuses the request.
@@ -878,7 +887,7 @@ rpcRows Ctx{cxTables, cxSupp, cxTypes} proc = case pdReturnType proc of
       guard (isRecord qi || srKind (sfReturns f) == "scalar")
       Just cols
     -- Neither an @OUT@ column nor an attribute carries a constraint, and a function can return anything.
-    attribute prov t = let ty = normalizeType t in Expr (Just ty) (join (HM.lookup ty cxTypes)) True prov True
+    attribute prov t = let ty = normalizeType t in Expr (Just ty) (join (typeInfo cxTypes ty)) True prov True
 
 -- | @provolatile@ of the function. The dump carries it (it is what upstream picks the transaction mode from).
 routineVolatility :: Routine -> Text

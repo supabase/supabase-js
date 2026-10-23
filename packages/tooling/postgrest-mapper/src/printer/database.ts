@@ -5,6 +5,7 @@ import { memberName as key, quote } from './literal'
 import {
   classifyType,
   normalizeType,
+  rememberDomain,
   rowTypeOf,
   tsTypeOf,
   type TypeContext,
@@ -271,7 +272,8 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
   const domains = new Map<string, string>()
   for (const fields of input.plans.values()) {
     for (const f of fields) {
-      if (f.pgType && f.baseType && f.baseType !== f.pgType) domains.set(f.pgType, f.baseType)
+      if (f.pgType && f.baseType && f.baseType !== f.pgType)
+        rememberDomain(domains, f.pgType, f.baseType)
     }
   }
   const ctx: TypeContext = {
@@ -395,7 +397,11 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
   // ---- functions
   const returnsOf = (fn: SupplementaryFunction, indent: string): string => {
     const { kind, setof, type } = fn.returns
-    if (fn.outColumns && fn.outColumns.length > 0) {
+    // OUT columns describe the rows of a function that returns `record` or one scalar (`f(INOUT n int)`). One OUT
+    // column of a named row type returns that row, expanded (`f(OUT u users)` answers the columns of `users`, not
+    // a `u` key), which is the composite branch below, as it is for the planner.
+    const outRows = kind === 'scalar' || type === 'record'
+    if (outRows && fn.outColumns && fn.outColumns.length > 0) {
       const row = object(
         fn.outColumns.map((c) => ({ name: c.name, type: `${tsTypeOf(c.type, ctx)} | null` })),
         indent

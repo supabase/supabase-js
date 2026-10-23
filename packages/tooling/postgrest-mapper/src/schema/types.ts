@@ -98,9 +98,10 @@ export interface SupplementaryJsonSchemaCheck {
  *
  * Planner-only sections (the printers do not read them): `schemas`, the schemas the catalog covers (the exposed ones
  * plus `db-extra-search-path`, `pg_catalog` excluded); `searchPathFunctions`, the functions of the covered schemas
- * that are not exposed (a computed field is looked up along the request's search path); `types`, every user type
- * (domain, enum, composite, range...) of the covered schemas, used or not, so a cast name resolves against
- * the whole path; `casts`, every `pg_cast` row with a side outside `pg_catalog`, which tells the planner whether
+ * that are not exposed (a computed field is looked up along the request's search path), plus the members of an
+ * extension of any covered schema that take one row type or have OUT columns (`functions` leaves extension members
+ * out); `types`, every user type (domain, enum, composite, range...) and array type of the covered schemas, used
+ * or not, so a cast name resolves against the whole path; `casts`, every `pg_cast` row with a side outside `pg_catalog`, which tells the planner whether
  * a cast from a user type runs a function.
  *
  * Scope: `relations`, `composites`, `foreignKeys`, `functions` and `enums` cover exactly the exposed schemas

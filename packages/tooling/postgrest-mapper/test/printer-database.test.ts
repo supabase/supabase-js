@@ -134,6 +134,8 @@ export type Enum = Expect<Equal<P['Enums']['user_status'], 'ONLINE' | 'OFFLINE'>
 export type EnumPersonal = Expect<Equal<SupabaseDatabase['personal']['Enums']['user_status'], 'ONLINE' | 'OFFLINE'>>
 // every attribute of a composite can be NULL
 export type Address = Expect<Equal<P['CompositeTypes']['address'], { street: string | null; city: string | null }>>
+// a domain whose name needs quotes (public."Amount" over integer) is typed by its base, like any other domain
+export type QuotedDomain = Expect<Equal<P['Tables']['quoted_amounts']['Row'], { id: number; amt: number }>>
 // a column of a composite type refers to it
 export type Col = Expect<Equal<
   P['Tables']['inference_cases']['Row']['shipping_address'],
@@ -152,6 +154,10 @@ export type EchoAddress = Expect<Equal<F['echo_address'], {
   Args: { address: SupabaseDatabase['public']['CompositeTypes']['address'] }
   Returns: SupabaseDatabase['public']['CompositeTypes']['address']
 }>>
+// a single OUT column of a named row type answers that row, expanded: PostgREST has no \`u\` key for it
+export type OutComposite = Expect<Equal<F['out_composite']['Returns'], { id: number | null; parent_id: number | null }>>
+// unnamed OUT columns are named by position among the outputs, as Postgres names them
+export type UnnamedOut = Expect<Equal<F['unnamed_out']['Returns'], { column1: number | null; column2: string | null }>>
 // a function without arguments takes none
 export type NoArgs = Expect<Equal<F['void_func'], { Args: Record<string, never>; Returns: undefined }>>
 // a table's row used as a function's value is a composite value, not a stored row: PostgreSQL enforces the table's

@@ -1,7 +1,7 @@
 import type { PlanFilter, PlanForm, ResultShape, RpcInfo } from '@supabase/postgrest-planner'
 import type { RpcMethod } from '../types'
 import { quote, quoteDouble } from './literal'
-import { tsTypeOf } from './pg-types'
+import { rememberDomain, tsTypeOf } from './pg-types'
 import type { SelectsContext } from './selects-context'
 import {
   EntryError,
@@ -215,7 +215,7 @@ function operandTypeOf(context: SelectsContext, plan: CallPlan, operand: string)
     return { error: `unresolved filter \`${operand}\`: ${prov.reason}` }
   }
   if (filter.pgType && filter.baseType && filter.baseType !== filter.pgType) {
-    context.domains.set(filter.pgType, filter.baseType)
+    rememberDomain(context.domains, filter.pgType, filter.baseType)
   }
   if (prov.kind === 'plain') {
     const k = columnKeyOf(context, prov.source)

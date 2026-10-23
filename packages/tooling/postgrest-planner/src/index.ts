@@ -56,12 +56,14 @@ export interface Supplementary {
   functions?: SupplementaryFunction[]
   /**
    * Functions of the schemas of `db-extra-search-path` that are not exposed: a computed field is found
-   * through the whole search path of the request, so they take part in resolving it.
+   * through the whole search path of the request, so they take part in resolving it. Members of an extension
+   * (which `functions` leaves out) are listed here for every covered schema, exposed or not, when a lookup can
+   * reach them: they take one row type as their only argument, or have OUT columns.
    */
   searchPathFunctions?: SupplementaryFunction[]
   /**
-   * User-defined types (domains, enums, composites, ranges...) of every covered schema, whether or not
-   * anything else mentions them. A cast name resolves against this list.
+   * User-defined types (domains, enums, composites, ranges...) and array types of every covered schema,
+   * whether or not anything else mentions them. A cast name resolves against this list.
    */
   types?: SupplementaryType[]
   /**
@@ -97,6 +99,12 @@ export interface SupplementaryType {
   kind?: string
   /** Base type of a domain, spelled like `argTypes`; `null` otherwise. */
   base?: string | null
+  /**
+   * Element type of an array type, spelled like `argTypes`; `null` otherwise. An array type is listed under its own
+   * `pg_type` name (`_name`, or what Postgres made of it when that name was taken), so a cast name resolves to
+   * it at the schema that has it.
+   */
+  element?: string | null
   [k: string]: unknown
 }
 

@@ -88,8 +88,9 @@ select jsonb_build_object(
         'type', format_type(p.prorettype, null)),
       'outColumns', case when p.proallargtypes is not null and p.proargmodes is not null
                          and exists (select 1 from unnest(p.proargmodes) m where m in ('t', 'b', 'o')) then
-                      (select jsonb_agg(jsonb_build_object('name', coalesce(p.proargnames[i], 'column' || i), 'type', format_type(p.proallargtypes[i], null)) order by i)
-                       from generate_subscripts(p.proargmodes, 1) i where p.proargmodes[i] in ('t', 'b', 'o'))
+                      (select jsonb_agg(jsonb_build_object('name', coalesce(nullif(p.proargnames[o.i], ''), 'column' || o.n), 'type', format_type(p.proallargtypes[o.i], null)) order by o.i)
+                       from (select i, row_number() over (order by i) as n
+                             from generate_subscripts(p.proargmodes, 1) i where p.proargmodes[i] in ('t', 'b', 'o')) o)
                     end,
       'language', l.lanname,
       'source', case when l.lanname = 'sql' and p.prosrc <> '' then p.prosrc end,
@@ -105,7 +106,7 @@ select jsonb_build_object(
     join pg_language l on l.oid = p.prolang
     where p.prokind = 'f'
       and p.pronamespace in (select oid from exposed)
-      and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+      and not exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e')
   ), '[]'),
   'searchPathFunctions', coalesce((
     select jsonb_agg(jsonb_build_object(
@@ -119,27 +120,36 @@ select jsonb_build_object(
         'type', format_type(p.prorettype, null)),
       'outColumns', case when p.proallargtypes is not null and p.proargmodes is not null
                          and exists (select 1 from unnest(p.proargmodes) m where m in ('t', 'b', 'o')) then
-                      (select jsonb_agg(jsonb_build_object('name', coalesce(p.proargnames[i], 'column' || i), 'type', format_type(p.proallargtypes[i], null)) order by i)
-                       from generate_subscripts(p.proargmodes, 1) i where p.proargmodes[i] in ('t', 'b', 'o'))
+                      (select jsonb_agg(jsonb_build_object('name', coalesce(nullif(p.proargnames[o.i], ''), 'column' || o.n), 'type', format_type(p.proallargtypes[o.i], null)) order by o.i)
+                       from (select i, row_number() over (order by i) as n
+                             from generate_subscripts(p.proargmodes, 1) i where p.proargmodes[i] in ('t', 'b', 'o')) o)
                     end
     ) order by n.nspname, p.proname, p.oid)
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
     join pg_type rt on rt.oid = p.prorettype
     where p.prokind = 'f'
-      and n.nspname = any ((select names from covered)::text[]) and n.nspname <> all ($1::text[])
-      and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')
+      and n.nspname = any ((select names from covered)::text[])
+      and case when exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e')
+               -- a member of an extension (postgis alone has hundreds): listed, in any covered schema, only where a
+               -- lookup can reach it: the one argument of a computed field or relationship is the row type of a
+               -- relation, and a function with OUT columns describes the rows of an RPC
+               then (p.pronargs = 1 and exists (select 1 from unnest(p.proargtypes::oid[]) a(t) join pg_class c on c.reltype = a.t))
+                    or exists (select 1 from unnest(p.proargmodes) m where m in ('t', 'b', 'o'))
+               else n.nspname <> all ($1::text[])
+          end
   ), '[]'),
   'types', coalesce((
     select jsonb_agg(jsonb_build_object(
       'schema', n.nspname, 'name', t.typname, 'kind', t.typtype,
-      'base', case when t.typtype = 'd' then format_type(t.typbasetype, t.typtypmod) end
+      'base', case when t.typtype = 'd' then format_type(t.typbasetype, t.typtypmod) end,
+      'element', case when el.oid is not null then format_type(el.oid, null) end
     ) order by n.nspname, t.typname)
     from pg_type t join pg_namespace n on n.oid = t.typnamespace
+    left join pg_type el on el.typarray = t.oid
     where n.nspname = any ((select names from covered)::text[])
       and n.nspname <> 'pg_catalog'
       and t.typtype in ('b', 'c', 'd', 'e', 'm', 'r')
-      and not exists (select 1 from pg_type e where e.typarray = t.oid)
   ), '[]'),
   'casts', coalesce((
     select jsonb_agg(jsonb_build_object(

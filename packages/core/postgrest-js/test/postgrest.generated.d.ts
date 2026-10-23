@@ -619,6 +619,19 @@ declare global {
           FactColumns: 'created_at' | 'event_type' | 'id'
           Relationships: []
         }
+        ext_label_cases: {
+          Row: {
+            id: SupabaseColumnType<'public.ext_label_cases.id', number>
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.ext_label_cases.id', number>
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.ext_label_cases.id', number>
+          }
+          FactColumns: 'id'
+          Relationships: []
+        }
         hotel: {
           Row: {
             id: SupabaseColumnType<'public.hotel.id', number>
@@ -843,6 +856,22 @@ declare global {
             price?: SupabaseColumnType<'public.products.price', number>
           }
           FactColumns: 'description' | 'id' | 'name' | 'price'
+          Relationships: []
+        }
+        quoted_amounts: {
+          Row: {
+            id: SupabaseColumnType<'public.quoted_amounts.id', number>
+            amt: SupabaseColumnType<'public.quoted_amounts.amt', number>
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.quoted_amounts.id', number>
+            amt: SupabaseColumnType<'public.quoted_amounts.amt', number>
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.quoted_amounts.id', number>
+            amt?: SupabaseColumnType<'public.quoted_amounts.amt', number>
+          }
+          FactColumns: 'amt' | 'id'
           Relationships: []
         }
         shops: {
@@ -1320,9 +1349,7 @@ declare global {
         }
         out_composite: {
           Args: Record<string, never>
-          Returns: {
-            u: { id: number | null; parent_id: number | null } | null
-          }
+          Returns: { id: number | null; parent_id: number | null }
         }
         out_inout: {
           Args: {
@@ -1476,6 +1503,15 @@ declare global {
             offset_by?: number
           }
           Returns: number | null
+        }
+        unnamed_out: {
+          Args: {
+            a: number
+          }
+          Returns: {
+            column1: number | null
+            column2: string | null
+          }
         }
         void_func: {
           Args: Record<string, never>

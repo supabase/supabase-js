@@ -126,6 +126,9 @@ describe('schema acquisition from the supabase-local stack', () => {
           'cast_a',
           'cast_b',
           'cast_c',
+          'arr_a',
+          'arr_b',
+          'ext_owned',
         ])
       )
       const expected = JSON.parse(readFileSync(PLANNER_FIXTURE_SEARCH_PATH, 'utf8'))
@@ -137,6 +140,15 @@ describe('schema acquisition from the supabase-local stack', () => {
           (f) => f.schema === 'extensions' && f.name === 'label'
         )
       ).toBe(true)
+      // a member of an extension is kept for resolution (the lookup must not skip it) but not printed as an exposed function
+      expect(
+        supplementary.searchPathFunctions?.some(
+          (f) => f.schema === 'ext_owned' && f.name === 'ext_label'
+        )
+      ).toBe(true)
+      expect(
+        supplementary.functions.some((f) => f.name === 'ext_label' && f.schema === 'ext_owned')
+      ).toBe(false)
       expect(supplementary.relations.some((r) => r.schema === 'cast_a')).toBe(false)
     } finally {
       await connection.close()

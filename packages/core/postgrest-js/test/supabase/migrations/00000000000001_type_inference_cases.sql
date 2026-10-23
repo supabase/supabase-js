@@ -256,8 +256,48 @@ LANGUAGE sql STABLE AS $$
   SELECT ROW(1, 2)::public.arity_children;
 $$;
 
+-- Planner review round 3, catalog identity.
+-- A user array type owned by an earlier schema of the search path: `arr_b._d` is a domain named like the array
+-- type of `arr_a.d`, and PostgreSQL resolves `_d` to `arr_a._d` on the path arr_a,arr_b.
+CREATE SCHEMA arr_a;
+CREATE SCHEMA arr_b;
+GRANT USAGE ON SCHEMA arr_a, arr_b TO anon, authenticated, service_role;
+CREATE DOMAIN arr_a.d AS text;
+CREATE DOMAIN arr_b._d AS integer;
+
+-- A domain with a quoted identifier, as a column type and as the return type of a computed field
+CREATE DOMAIN public."Amount" AS integer;
+
+CREATE TABLE public.quoted_amounts (
+  id bigint PRIMARY KEY,
+  amt public."Amount" NOT NULL
+);
+
+CREATE FUNCTION public.amount(public.quoted_amounts)
+RETURNS public."Amount" LANGUAGE sql IMMUTABLE AS $$ SELECT 1::public."Amount"; $$;
+
+-- A function with unnamed OUT arguments: PostgreSQL names them column1, column2 by position among the outputs
+CREATE FUNCTION public.unnamed_out(a integer, OUT integer, OUT text)
+LANGUAGE sql IMMUTABLE AS $$ SELECT a, 'x'::text; $$;
+
+-- Functions that belong to an extension. `lo` is trusted and not privileged for supautils, so the migration role
+-- owns it and may add members to it.
+CREATE SCHEMA ext_owned;
+GRANT USAGE ON SCHEMA ext_owned TO anon, authenticated, service_role;
+CREATE EXTENSION lo WITH SCHEMA ext_owned;
+
+CREATE TABLE public.ext_label_cases (id bigint PRIMARY KEY);
+
+CREATE FUNCTION ext_owned.ext_label(public.ext_label_cases)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'label'::text; $$;
+ALTER EXTENSION lo ADD FUNCTION ext_owned.ext_label(public.ext_label_cases);
+
+CREATE FUNCTION personal.ext_label(public.ext_label_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION extensions.label(public.cast_cases) TO anon, authenticated, service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA personal TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION ext_owned.ext_label(public.ext_label_cases) TO anon, authenticated, service_role;
