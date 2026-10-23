@@ -42,9 +42,9 @@ select jsonb_pretty(jsonb_build_object(
         'setof', p.proretset,
         'type', format_type(p.prorettype, null)),
       'outColumns', case when p.proallargtypes is not null and p.proargmodes is not null
-                         and exists (select 1 from unnest(p.proargmodes) m where m in ('t', 'o')) then
+                         and exists (select 1 from unnest(p.proargmodes) m where m in ('t', 'b', 'o')) then
                       (select jsonb_agg(jsonb_build_object('name', coalesce(p.proargnames[i], 'column' || i), 'type', format_type(p.proallargtypes[i], null)) order by i)
-                       from generate_subscripts(p.proargmodes, 1) i where p.proargmodes[i] in ('t', 'o'))
+                       from generate_subscripts(p.proargmodes, 1) i where p.proargmodes[i] in ('t', 'b', 'o'))
                     end
     ) order by n.nspname, p.proname, p.oid)
     from pg_proc p
