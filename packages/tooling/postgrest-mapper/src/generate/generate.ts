@@ -373,7 +373,10 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
                 form: result.form ?? null,
                 shape: k.kind === 'call' ? (result.shape ?? null) : null,
                 rpc: k.kind === 'call' ? (result.rpc ?? null) : null,
-                returns: k.kind === 'call' ? callReturnsOf(result.routine) : null,
+                returns:
+                  k.kind === 'call' && result.action === 'rpc'
+                    ? callReturnsOf(result.routine)
+                    : null,
                 filters: k.kind === 'operand' ? (result.filters ?? []) : [],
                 degraded: result.degraded ?? [],
               },

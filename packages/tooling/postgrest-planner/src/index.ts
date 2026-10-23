@@ -164,7 +164,8 @@ export type FieldProvenance =
   | { kind: 'jsonPath'; of: FieldProvenance; path: JsonPathStep[] }
   | { kind: 'representation'; of: FieldProvenance; function: string }
   | { kind: 'cast'; of: FieldProvenance; to: string }
-  | { kind: 'aggregate'; function: string; of: FieldProvenance }
+  /** `of` is `null` for `count()` (and `count(*)`), which reads no value. */
+  | { kind: 'aggregate'; function: string; of: FieldProvenance | null }
   /** An `OUT` or `RETURNS TABLE` column of the RPC the rows come from. */
   | { kind: 'outColumn'; function: QualifiedName; column: string }
   /** An attribute of the named composite type an RPC returns. */
@@ -377,15 +378,9 @@ export interface EmbedFilter {
 
 export type PlanFilter = ColumnFilter | EmbedFilter
 
-export interface PlanSuccess {
+/** What every successful plan carries. */
+interface PlanBase {
   ok: true
-  action: 'read' | 'insert' | 'update' | 'delete' | 'upsert' | 'rpc' | string
-  media: string
-  txMode: string
-  explain: boolean
-  target: QualifiedName
-  select: SelectItem[]
-  embeds: EmbedPlan[]
   warnings: unknown[]
   /** `null` for plans that return no rows of a relation. */
   form: PlanForm | null
@@ -408,13 +403,72 @@ export interface PlanSuccess {
    * RPC against another table than the one the function returns: see the README).
    */
   degraded: string[]
-  mutation?: unknown
-  call?: unknown
-  routine?: unknown
-  payloadKeys?: string[]
-  debug?: string
-  [k: string]: unknown
 }
+
+/** A plan that reads, writes or calls through the database: `select` and `embeds` describe the read part. */
+interface PlanDb extends PlanBase {
+  media: string
+  txMode: 'read' | 'write'
+  explain: boolean
+  target: QualifiedName
+  select: SelectItem[]
+  embeds: EmbedPlan[]
+  debug: string
+}
+
+/** `GET` or `HEAD` of a relation. */
+export interface PlanRead extends PlanDb {
+  action: 'read' | 'head'
+}
+
+/** `POST`, `PATCH`, `PUT` or `DELETE` of a relation. */
+export interface PlanMutation extends PlanDb {
+  action: 'insert' | 'update' | 'delete' | 'upsert'
+  mutation: unknown
+}
+
+/** `/rpc/*` call. */
+export interface PlanRpc extends PlanDb {
+  action: 'rpc'
+  call: unknown
+  routine: unknown
+  payloadKeys: string[]
+}
+
+/** `GET /`: the OpenAPI document. Nothing is read, so there is no `select`, `embeds`, `txMode` or `target`. */
+export interface PlanInspect extends PlanBase {
+  action: 'inspect'
+  schema: string
+  media: string
+}
+
+/** `OPTIONS /`. */
+export interface PlanSchemaInfo extends PlanBase {
+  action: 'schemaInfo'
+}
+
+/** `OPTIONS` of a table or view. */
+export interface PlanRelationInfo extends PlanBase {
+  action: 'relationInfo'
+  target: QualifiedName
+}
+
+/** `OPTIONS` of a function. */
+export interface PlanRoutineInfo extends PlanBase {
+  action: 'routineInfo'
+  routine: unknown
+}
+
+/** The plans that go through the database: the ones with a `select` and `embeds`. */
+export type PlanCrud = PlanRead | PlanMutation | PlanRpc
+
+/** A successful plan. Narrow on `action`: only {@link PlanCrud} has `select`, `embeds`, `txMode` and `target`. */
+export type PlanSuccess =
+  | PlanCrud
+  | PlanInspect
+  | PlanSchemaInfo
+  | PlanRelationInfo
+  | PlanRoutineInfo
 
 export type LoadResult = LoadSuccess | PlannerError
 export type PlanResult = PlanSuccess | PlannerError
@@ -479,11 +533,10 @@ export async function loadPlanner(options: LoadPlannerOptions = {}): Promise<Pla
   const dec = new TextDecoder()
   const mem = () => new Uint8Array(x.memory.buffer) // re-view after every call: memory may grow
 
-  const put = (str: string): [number, number] => {
-    const bytes = enc.encode(str)
+  const put = (bytes: Uint8Array): number => {
     const ptr = x.planner_alloc(bytes.length)
     mem().set(bytes, ptr)
-    return [ptr, bytes.length]
+    return ptr
   }
   // Results are [u32 LE length][bytes]
   const take = (ptr: number): unknown => {
@@ -492,29 +545,42 @@ export async function loadPlanner(options: LoadPlannerOptions = {}): Promise<Pla
     x.planner_free(ptr)
     return JSON.parse(text)
   }
+  // Every input is serialized before the first allocation (serializing can throw), and every buffer that was
+  // allocated is freed whatever happens after.
+  const withBuffers = <T>(inputs: Uint8Array[], run: (ptrs: number[]) => T): T => {
+    const ptrs: number[] = []
+    try {
+      for (const bytes of inputs) ptrs.push(put(bytes))
+      return run(ptrs)
+    } finally {
+      for (const ptr of ptrs) x.planner_free(ptr)
+    }
+  }
 
   return {
     info: () => take(x.planner_info()) as PlannerInfo,
     load({ config, schema, supplementary }) {
-      const [cp, cn] = put(JSON.stringify(config))
-      const [sp, sn] = put(schema)
-      // No supplementary catalog is an empty buffer pair.
-      const [xp, xn] =
+      const cfg = enc.encode(JSON.stringify(config))
+      const sch = enc.encode(schema)
+      const supp =
         supplementary === undefined
-          ? [0, 0]
-          : put(typeof supplementary === 'string' ? supplementary : JSON.stringify(supplementary))
-      const res = take(x.planner_load(cp, cn, sp, sn, xp, xn)) as LoadResult
-      x.planner_free(cp)
-      x.planner_free(sp)
-      if (xp !== 0) x.planner_free(xp)
-      return res
+          ? undefined
+          : enc.encode(
+              typeof supplementary === 'string' ? supplementary : JSON.stringify(supplementary)
+            )
+      // No supplementary catalog is an empty buffer pair.
+      return withBuffers(supp === undefined ? [cfg, sch] : [cfg, sch, supp], ([cp, sp, xp]) => {
+        const res = x.planner_load(cp, cfg.length, sp, sch.length, xp ?? 0, supp?.length ?? 0)
+        return take(res) as LoadResult
+      })
     },
     freeCache: (handle) => x.planner_free_cache(handle),
     plan(handle, request) {
-      const [p, n] = put(JSON.stringify(request))
-      const res = take(x.planner_plan(handle, p, n)) as PlanResult
-      x.planner_free(p)
-      return res
+      const bytes = enc.encode(JSON.stringify(request))
+      return withBuffers(
+        [bytes],
+        ([p]) => take(x.planner_plan(handle, p, bytes.length)) as PlanResult
+      )
     },
   }
 }

@@ -7,9 +7,12 @@ import {
   type EmbedPlan,
   type LoadInput,
   type LoadSuccess,
+  type PlanCrud,
+  type PlanMutation,
   type Planner,
   type PlanRequest,
   type PlanResult,
+  type PlanRpc,
   type PlanSuccess,
   type ShapeEmbed,
   type ShapeField,
@@ -48,8 +51,12 @@ afterAll(() => {
   planner?.freeCache(catalog)
 })
 
-const ok = (res: PlanResult): PlanSuccess => {
+/** A successful CRUD plan; the mutation and RPC parts are optional so one helper serves every test. */
+type Crud = PlanCrud &
+  Partial<Pick<PlanMutation, 'mutation'> & Pick<PlanRpc, 'call' | 'routine' | 'payloadKeys'>>
+const ok = (res: PlanResult): Crud => {
   if (!res.ok) throw new Error(`plan failed: ${JSON.stringify(res)}`)
+  if (!('select' in res)) throw new Error(`not a crud plan: ${res.action}`)
   return res
 }
 const cols = (items: { outputName: string; type: string }[]) =>
