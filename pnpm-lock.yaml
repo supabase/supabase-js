@@ -607,6 +607,9 @@ importers:
       '@supabase/pg-parser':
         specifier: ^0.1.7
         version: 0.1.7
+      '@supabase/postgrest-planner':
+        specifier: workspace:*
+        version: link:../postgrest-planner
       oxc-parser:
         specifier: ^0.154.0
         version: 0.154.0

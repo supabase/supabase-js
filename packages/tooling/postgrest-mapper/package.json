@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "@supabase/pg-parser": "^0.1.7",
+    "@supabase/postgrest-planner": "workspace:*",
     "oxc-parser": "^0.154.0",
     "pg": "^8.23.1"
   }
