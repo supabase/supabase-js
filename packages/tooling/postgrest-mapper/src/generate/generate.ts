@@ -22,6 +22,7 @@ import {
   printSelects,
   routineSignatures,
 } from '../printer'
+import { relationKey } from '../keys'
 import type { CallOutcome, OperandInput, PrintDiagnostic, RpcCall, SelectsEntry } from '../printer'
 import { scanFiles } from '../scanner'
 import { SchemaAcquisitionError, acquireSchema, exposedSchemas } from '../schema'
@@ -56,7 +57,7 @@ import {
  * Bump when what the cache stores, or what the printer prints from it, changes. It is part of the identity and of
  * the cache validity, so the TypeScript server and the disk cache both see a new generator as a new input.
  */
-export const GENERATOR_REVISION = 4
+export const GENERATOR_REVISION = 5
 
 export interface GeneratorLogger {
   debug(message: string): void
@@ -650,7 +651,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       const outcome = outcomeOf(k.id)
       if (!outcome) continue
       if (k.kind !== 'f') {
-        const columns = planned.context.plans.get(`${k.schema}.${k.relation}`)
+        const columns = planned.context.plans.get(relationKey(k.schema, k.relation))
         if (columns?.some((f) => f.name === k.operand)) continue // a column of the row: the consumer reads the row
         if ('error' in outcome) {
           if (k.select !== '*' && 'error' in (outcomeOf(k.selectEntry) ?? {})) continue // the select reports it
@@ -684,7 +685,9 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
     })
 
     // what the planner answered per key, not the keys asked: a plan that timed out (no entry) and the same plan once
-    // it recovers are different outputs (design v5 §5.1: the identity is the sorted (key, entry digest) list)
+    // it recovers are different outputs (design v5 §5.1: the identity is the sorted (key, entry digest) list). The
+    // emitted text and diagnostics are hashed too: the database context and the emission decisions (a recovered
+    // relation-wide plan, a speculative key becoming an error entry) change the output without changing any key's entry
     const digests = ids.map((id): [string, string | null] => {
       const stored = planned.entries.get(id)
       return [id, stored ? hashOptions(stored) : null]
@@ -696,6 +699,8 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       planner: stampValue,
       options,
       importFrom,
+      text,
+      diagnostics,
     })
     return {
       identity,

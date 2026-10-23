@@ -15,11 +15,11 @@ export interface PrintDatabaseInput {
   /** Schemas to print even when nothing in them was found (`db-schemas`) */
   schemas?: readonly string[]
   /**
-   * The output columns of `GET /<relation>?select=*` per `schema.relation`, in plan order. A relation without an
+   * The output columns of `GET /<relation>?select=*` per `relationKey(schema, relation)`, in plan order. A relation without an
    * entry (not in the PostgREST schema cache: a partition, a failed plan) is not printed.
    */
   plans: ReadonlyMap<string, readonly ShapeField[]>
-  /** Tracer verdicts per `schema.view`, then per column name. A view without an entry has every column nullable */
+  /** Tracer verdicts per `relationKey(schema, view)`, then per column name. A view without an entry has every column nullable */
   traces: ReadonlyMap<string, ReadonlyMap<string, TracedColumn>>
   /** `schema.table.column` to the TypeScript type of its `pg_jsonschema` CHECK constraints */
   jsonSchemas: ReadonlyMap<string, string>

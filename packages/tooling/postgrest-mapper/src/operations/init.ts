@@ -1,4 +1,4 @@
-import { dirname, relative, resolve, sep } from 'node:path'
+import { dirname, posix as posixPath, relative, resolve, sep } from 'node:path'
 import { createPlannerHost } from '../host'
 import { findSupabaseConfigDir, stripJsonc } from '../generate'
 import { INDEX_EXTENSION, display, isIndexEntry, messageOf } from './config'
@@ -46,19 +46,51 @@ export interface InitResult {
 
 const posix = (path: string): string => path.split(sep).join('/')
 
+// TypeScript's own wildcard semantics for `include` (`getSubPatternFromSpec`, `usage: 'files'` in its `utilities.ts`):
+// `*` matches within a segment (not a leading dot, not a `.min.js` ending), `?` one character, `**` any directories
+// (not dot-directories or package folders), a last segment without `.`, `*` or `?` is a directory (`/**/*`), and a
+// wildcard segment never matches `node_modules`, `bower_components` or `jspm_packages`. The pattern is anchored at the
+// tsconfig directory, so an entry covers a file exactly when TypeScript's file matcher would take it.
+const RESERVED = /[^\w\s/]/g
+const NOT_A_PACKAGE_FOLDER = '(?!(node_modules|bower_components|jspm_packages)(/|$))'
+const SINGLE_ASTERISK = '([^./]|(\\.(?!min\\.js$))?)*'
+const DOUBLE_ASTERISK = `(/${NOT_A_PACKAGE_FOLDER}[^/.][^/]*)*?`
+const wildcard = (match: string): string =>
+  match === '*' ? SINGLE_ASTERISK : match === '?' ? '[^/]' : `\\${match}`
+
+function includePattern(entry: string): RegExp | undefined {
+  // absolute under a fake root, so `..` and `.` segments collapse the way TypeScript's normalisation does
+  const components = ['', ...posixPath.resolve('/root', entry).split('/').filter(Boolean)]
+  const lastComponent = components[components.length - 1]!
+  if (lastComponent === '**') return undefined // TypeScript matches nothing for a trailing `**`
+  if (!/[.*?]/.test(lastComponent)) components.push('**', '*')
+  let pattern = ''
+  let written = false
+  for (let component of components) {
+    if (component === '**') {
+      pattern += DOUBLE_ASTERISK
+    } else {
+      if (written) pattern += '/'
+      let part = ''
+      if (component.startsWith('*')) {
+        part += `([^./]${SINGLE_ASTERISK})?`
+        component = component.slice(1)
+      } else if (component.startsWith('?')) {
+        part += '[^./]'
+        component = component.slice(1)
+      }
+      part += component.replace(RESERVED, wildcard)
+      if (part !== component) pattern += NOT_A_PACKAGE_FOLDER
+      pattern += part
+    }
+    written = true
+  }
+  return new RegExp(`^(${pattern})$`)
+}
+
 /** Does a tsconfig `include` / `files` entry already cover `file` (relative to the tsconfig, `/`-separated)? */
 export function entryCovers(entry: string, file: string): boolean {
-  const normal = entry.replace(/^\.\//, '').replace(/\/$/, '')
-  if (normal === file) return true
-  if (!/[*?]/.test(normal)) return file.startsWith(`${normal}/`) // a directory
-  const segments = normal.split('/')
-  let recursive = false
-  while (segments.length > 0 && /[*?]/.test(segments[segments.length - 1]!)) {
-    if (segments.pop() === '**') recursive = true
-  }
-  const base = segments.join('/')
-  if (recursive) return base === '' || file.startsWith(`${base}/`)
-  return base === '' ? !file.includes('/') : dirname(file) === base
+  return includePattern(entry)?.test(posixPath.resolve('/root', file)) ?? false
 }
 
 /**

@@ -1,4 +1,5 @@
 import type { ShapeField } from '@supabase/postgrest-planner'
+import { relationKey } from '../keys'
 import type { Supplementary } from '../schema'
 import type { TracedColumn } from '../tracer'
 import { rememberDomain, rowTypeOf, type TypeContext } from './pg-types'
@@ -6,9 +7,9 @@ import { rememberDomain, rowTypeOf, type TypeContext } from './pg-types'
 /** What the selects printer reads about the database: the same inputs `printDatabase` is fed. */
 export interface SelectsContextInput {
   supplementary: Supplementary
-  /** The output columns of `select=*` per `schema.relation` (a relation without one is not in the schema cache) */
+  /** The output columns of `select=*` per `relationKey(schema, relation)` (a relation without one is not in the schema cache) */
   plans: ReadonlyMap<string, readonly ShapeField[]>
-  /** Tracer verdicts per `schema.view`, then per column name */
+  /** Tracer verdicts per `relationKey(schema, view)`, then per column name */
   traces: ReadonlyMap<string, ReadonlyMap<string, TracedColumn>>
   /** `schema.table.column` to the TypeScript type of its `pg_jsonschema` CHECK constraints */
   jsonSchemas: ReadonlyMap<string, string>
@@ -39,7 +40,7 @@ export function createSelectsContext(input: SelectsContextInput): SelectsContext
   const relations = new Map<string, ReturnType<typeof rowTypeOf>>()
   for (const r of supplementary.relations) {
     const name = `${r.schema}.${r.name}`
-    if (!input.plans.has(name)) continue
+    if (!input.plans.has(relationKey(r.schema, r.name))) continue
     relations.set(name, rowTypeOf(r.columns))
   }
   const domains = new Map<string, string>()

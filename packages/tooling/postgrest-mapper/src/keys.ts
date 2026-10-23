@@ -30,3 +30,14 @@ export function requestKeys(request: SelectRequest | OperandRequest): string[] {
       : selectKey(target, schema, select)
   )
 }
+
+/**
+ * The key of a relation in the maps the generation shares between the planner step, the cache and the printers
+ * (`plans`, `traces`): `schema.name`, with a dot or a backslash inside either part escaped, so `public."a.b"` and
+ * `"public.a".b` are two keys. An ordinary name reads `public.users`. This is an internal identity, not an emitted
+ * string: `SupabaseColumnType` keys and type names keep their own spelling.
+ */
+export function relationKey(schema: string, name: string): string {
+  const escape = (part: string): string => part.replace(/[\\.]/g, '\\$&')
+  return `${escape(schema)}.${escape(name)}`
+}

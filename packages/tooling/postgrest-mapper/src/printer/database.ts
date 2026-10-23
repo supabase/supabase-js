@@ -1,6 +1,7 @@
 import type { ShapeField } from '@supabase/postgrest-planner'
 import type { Supplementary, SupplementaryFunction, SupplementaryRelation } from '../schema'
 import type { TracedColumn } from '../tracer'
+import { relationKey } from '../keys'
 import { memberName as key, quote } from './literal'
 import {
   classifyType,
@@ -108,7 +109,7 @@ function readDump(text: string): DumpFacts {
           referencedColumns.push(pair[1])
         }
       }
-      const owner = qualified(str(table['qiSchema']) ?? '', str(table['qiName']) ?? '')
+      const owner = relationKey(str(table['qiSchema']) ?? '', str(table['qiName']) ?? '')
       const name = str(card['relCons'])
       const referenced = str(foreign['qiName'])
       if (name === undefined || referenced === undefined) continue
@@ -151,7 +152,7 @@ function readDump(text: string): DumpFacts {
           type: str(p['ppType']) ?? '',
         })
       }
-      const k = qualified(schema, name)
+      const k = relationKey(schema, name)
       const list = facts.routines.get(k) ?? []
       list.push(params)
       facts.routines.set(k, list)
@@ -168,7 +169,7 @@ function canonicalType(type: string): string {
 
 /** The dump's parameters of a catalog function, when exactly one overload matches by arity, names and types. */
 function matchParams(fn: SupplementaryFunction, dump: DumpFacts): DumpParam[] | undefined {
-  const candidates = dump.routines.get(qualified(fn.schema, fn.name)) ?? []
+  const candidates = dump.routines.get(relationKey(fn.schema, fn.name)) ?? []
   const names = fn.argNames ?? fn.argTypes.map(() => '')
   const named = candidates.filter(
     (p) => p.length === fn.argTypes.length && p.every((param, i) => param.name === names[i])
@@ -202,7 +203,7 @@ export interface RoutineSignature {
 }
 
 /**
- * Every printed overload of every function, by `schema.function`: the same names and optionality `printDatabase`
+ * Every printed overload of every function, by `relationKey(schema, function)`: the same names and optionality `printDatabase`
  * puts in `Args`, so the key sets the generator plans are the ones the consumer's `KeyMethods` enumerates.
  */
 export function routineSignatures(
@@ -223,7 +224,7 @@ export function routineSignatures(
       seen.add(name)
       ;(params && !params[i]!.required ? signature.optional : signature.required).push(name)
     })
-    const k = qualified(fn.schema, fn.name)
+    const k = relationKey(fn.schema, fn.name)
     const list = out.get(k) ?? []
     list.push(signature)
     out.set(k, list)
@@ -258,7 +259,7 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
   // The relations that are printed: exposed, and in the schema cache (they have a plan)
   const printed = new Map<string, PrintedRelation>()
   for (const relation of supplementary.relations) {
-    const k = qualified(relation.schema, relation.name)
+    const k = relationKey(relation.schema, relation.name)
     const fields = input.plans.get(k)
     if (!fields) continue
     printed.set(k, {
@@ -279,7 +280,12 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
   const ctx: TypeContext = {
     enums: new Set(supplementary.enums.map((e) => qualified(e.schema, e.name))),
     composites: new Set(supplementary.composites.map((c) => qualified(c.schema, c.name))),
-    relations: new Map([...printed].map(([k, p]) => [k, rowTypeOf(p.relation.columns)])),
+    relations: new Map(
+      [...printed.values()].map((p) => [
+        qualified(p.relation.schema, p.relation.name),
+        rowTypeOf(p.relation.columns),
+      ])
+    ),
     domains,
   }
   const argCtx: TypeContext = { ...ctx, jsonType: 'JsonIn' }
@@ -363,7 +369,7 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
   }
 
   const relationships = (p: PrintedRelation, indent: string): string => {
-    const list = dump.relationships.get(qualified(p.relation.schema, p.relation.name)) ?? []
+    const list = dump.relationships.get(relationKey(p.relation.schema, p.relation.name)) ?? []
     if (list.length === 0) return '[]'
     const inner = indent + '  '
     const tuple = (items: string[]) => `[${items.map(quote).join(', ')}]`

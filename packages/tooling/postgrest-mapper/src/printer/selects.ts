@@ -5,6 +5,7 @@ import type {
   ShapeEmbed,
   ShapeField,
 } from '@supabase/postgrest-planner'
+import { relationKey } from '../keys'
 import { memberName, quote, quoteDouble } from './literal'
 import { classifyType, rememberDomain, tsTypeOf } from './pg-types'
 import type { SelectsContext } from './selects-context'
@@ -135,7 +136,7 @@ export function columnKeyOf(
   source: { schema: string; relation: string; column: string }
 ): { key: string; nullable?: boolean } {
   const own = `${source.schema}.${source.relation}.${source.column}`
-  const traced = context.traces.get(`${source.schema}.${source.relation}`)?.get(source.column)
+  const traced = context.traces.get(relationKey(source.schema, source.relation))?.get(source.column)
   if (!traced) return { key: own }
   const origin = traced.source
   return {
@@ -300,7 +301,7 @@ class ShapePrinter {
   private jsonPath(prov: Extract<FieldProvenance, { kind: 'jsonPath' }>): string | undefined {
     if (prov.of.kind !== 'plain' || prov.path.length === 0) return undefined
     const source = prov.of.source
-    const star = this.context.plans.get(`${source.schema}.${source.relation}`)
+    const star = this.context.plans.get(relationKey(source.schema, source.relation))
     const column = star?.find((f) => f.name === source.column)
     const k = this.columnKey(source)
     const columnType = `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, column?.pgType ?? 'jsonb', prov.of.functionRows === true)}>`

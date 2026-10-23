@@ -2,6 +2,7 @@ import type { PlanResult, ShapeField } from '@supabase/postgrest-planner'
 import { isHostFailure } from '../host'
 import type { PlannerHost } from '../host'
 import { jsonSchemaToTs } from '../jsonschema'
+import { relationKey } from '../keys'
 import { printDatabase, printModule } from '../printer'
 import type { PrintDiagnostic, PrintModuleInput } from '../printer'
 import { buildJsonSchemaInput, buildTraceCatalog, exposedSchemas } from '../schema'
@@ -24,9 +25,9 @@ export interface BuildDatabaseOptions {
  * data, so it can be cached on disk (see `cache.ts`) while the printed text is always recomputed.
  */
 export interface DatabasePlanContext {
-  /** The output columns of `select=*` per `schema.relation` */
+  /** The output columns of `select=*` per `relationKey(schema, relation)` */
   plans: Map<string, readonly ShapeField[]>
-  /** Tracer verdicts per `schema.view`, then per column */
+  /** Tracer verdicts per `relationKey(schema, view)`, then per column */
   traces: Map<string, Map<string, TracedColumn>>
   /** `schema.table.column` to the TypeScript type of its `pg_jsonschema` CHECK constraints */
   jsonSchemas: Map<string, string>
@@ -163,7 +164,7 @@ export async function planDatabase(
 
   // ---- Row: the output of `select=*`
   const relations = [...supplementary.relations].sort((a, b) =>
-    a.schema + '.' + a.name < b.schema + '.' + b.name ? -1 : 1
+    relationKey(a.schema, a.name) < relationKey(b.schema, b.name) ? -1 : 1
   )
   const results: PlanResult[] = await host.planMany(
     relations.map((r) => ({
@@ -175,6 +176,7 @@ export async function planDatabase(
   const plans = new Map<string, readonly ShapeField[]>()
   const failures: string[] = []
   relations.forEach((r, i) => {
+    const key = relationKey(r.schema, r.name)
     const name = `${r.schema}.${r.name}`
     const result = results[i]!
     if (!result.ok) {
@@ -193,7 +195,7 @@ export async function planDatabase(
       note('warning', `the plan of select=* of ${name} has no result shape: left out`)
       return
     }
-    plans.set(name, result.shape.fields)
+    plans.set(key, result.shape.fields)
   })
 
   // ---- view nullability (design v5 §6.2)
@@ -202,7 +204,8 @@ export async function planDatabase(
   for (const r of relations) {
     // a materialized view is not traced: its stored rows can predate constraints of its base tables (its columns stay
     // nullable and keep their own key, so no base-table JSON Schema applies)
-    if (r.kind !== 'v' || !r.viewDefinition || !plans.has(`${r.schema}.${r.name}`)) continue
+    const key = relationKey(r.schema, r.name)
+    if (r.kind !== 'v' || !r.viewDefinition || !plans.has(key)) continue
     const columns = [...r.columns].sort((a, b) => a.attnum - b.attnum)
     const traced = await tracer.trace({
       sql: r.viewDefinition,
@@ -215,7 +218,7 @@ export async function planDatabase(
         `${r.schema}.${r.name}: view not fully traced, columns stay nullable: ${traced.error}`
       )
     traces.set(
-      `${r.schema}.${r.name}`,
+      key,
       new Map(columns.map((c, i) => [c.name, traced.columns[i] ?? { nullable: true }]))
     )
   }

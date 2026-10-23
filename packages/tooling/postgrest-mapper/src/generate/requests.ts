@@ -1,5 +1,5 @@
 import type { PlanRequest } from '@supabase/postgrest-planner'
-import { operandKey, selectKey } from '../keys'
+import { operandKey, relationKey, selectKey } from '../keys'
 import type { RoutineSignature } from '../printer'
 import type { FunctionTarget, RpcMethod, ScanResult, SourceLocation } from '../types'
 
@@ -121,7 +121,7 @@ const byId = (a: { id: string }, b: { id: string }): number =>
 // RPC calls
 // ---------------------------------------------------------------------------------------------------------------
 
-/** The overloads of every function, by `schema.function` (`routineSignatures`). */
+/** The overloads of every function, by `relationKey(schema, function)` (`routineSignatures`). */
 export type Signatures = ReadonlyMap<string, readonly RoutineSignature[]>
 
 /** At most this many optional keys are enumerated: the consumer treats more as dynamic (`KeyMethods`). */
@@ -225,7 +225,7 @@ export function planRpcOf(scan: ScanResult, signatures: Signatures): RpcPlanKey[
     locations: readonly SourceLocation[],
     guessed: boolean
   ): void => {
-    const overloads = signatures.get(`${schema}.${target.function}`)
+    const overloads = signatures.get(relationKey(schema, target.function))
     if (!overloads) return
     for (const variant of variantsOf(target.keys, overloads)) {
       const id = callIdOf(
@@ -342,7 +342,7 @@ export function planOperandsOf(scan: ScanResult, signatures: Signatures): Operan
         }
         continue
       }
-      const overloads = signatures.get(`${schema}.${target.function}`)
+      const overloads = signatures.get(relationKey(schema, target.function))
       if (!overloads) continue
       for (const variant of variantsOf(target.keys, overloads)) {
         const id = `rpcop|${entry}|${JSON.stringify(variant.keys)}|${target.method}`

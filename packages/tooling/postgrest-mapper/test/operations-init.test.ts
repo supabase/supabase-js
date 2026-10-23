@@ -1,5 +1,6 @@
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import ts from 'typescript'
 import { dirname, join } from 'node:path'
 import {
   generate,
@@ -12,6 +13,7 @@ import {
   type ExecFn,
   type OperationDeps,
 } from '../src'
+import { entryCovers } from '../src/operations'
 import { STACK_WORKDIR, acquireFromStack, plannerWasmPath } from './support/acquired'
 
 let acquired: AcquiredSchema
@@ -124,6 +126,102 @@ describe('init sets a fresh project up so that generate succeeds', () => {
     expect(read('tsconfig.json')).toBe(tsconfig)
     expect(read('src/supabase.pgrst-index')).toBe('// edited by the user\n')
   }, 60_000)
+
+  describe('adds a file to include unless a pattern of include matches it as TypeScript does', () => {
+    const included = async (include: string[]): Promise<string[]> => {
+      put('tsconfig.json', JSON.stringify({ include }))
+      await init(deps())
+      return JSON.parse(read('tsconfig.json')).include
+    }
+
+    it.each([
+      ['src/**/*.ts', ['src/**/*.ts', 'src/supabase.pgrst-index']], // the index extension is not .ts
+      ['src/**/*.tsx', ['src/**/*.tsx', 'src/supabase.pgrst-index', 'src/supabase.types.d.ts']],
+      ['src/*.d.ts', ['src/*.d.ts', 'src/supabase.pgrst-index']],
+      [
+        'src/sub/**/*.ts',
+        ['src/sub/**/*.ts', 'src/supabase.pgrst-index', 'src/supabase.types.d.ts'],
+      ],
+      ['lib/**/*', ['lib/**/*', 'src/supabase.pgrst-index', 'src/supabase.types.d.ts']],
+      // TypeScript takes nothing from a trailing `**`
+      ['src/**', ['src/**', 'src/supabase.pgrst-index', 'src/supabase.types.d.ts']],
+    ])('%s', async (pattern, expected) => {
+      expect(await included([pattern])).toEqual(expected)
+    })
+
+    it.each([
+      ['src/**/*'],
+      ['src/*'],
+      ['./src/'],
+      ['**/*'],
+      ['src/supabase.*'],
+      ['src/**/supabase.*'],
+    ])('%s covers both files', async (pattern) => {
+      expect(await included([pattern])).toEqual([pattern])
+    })
+
+    it('reads a pattern that covers one file and not the other, per file', async () => {
+      expect(await included(['src/**/*.d.ts', 'src/*.pgrst-index'])).toEqual([
+        'src/**/*.d.ts',
+        'src/*.pgrst-index',
+      ])
+    })
+  })
+
+  it('agrees with the files TypeScript itself takes for an include entry', () => {
+    const files = [
+      'src/a.ts',
+      'src/a.tsx',
+      'src/supabase.pgrst-index',
+      'src/supabase.types.d.ts',
+      'src/sub/b.ts',
+      'src/sub/supabase.pgrst-index',
+      'src/.hidden/c.ts',
+      'src/app.min.js',
+      'node_modules/x/n.ts',
+      'lib/l.ts',
+      'lib/supabase.pgrst-index',
+    ]
+    for (const file of files) put(file, '\n')
+    const entries = [
+      'src',
+      './src/',
+      'src/sub',
+      'src/**',
+      'src/**/*',
+      'src/*',
+      'src/**/*.ts',
+      'src/**/*.tsx',
+      'src/*.d.ts',
+      'src/**/*.d.ts',
+      'src/supabase.*',
+      'src/**/supabase.*',
+      'src/?.ts',
+      'src/sub/**/*.ts',
+      'lib/**/*',
+      '**/*',
+      '**/*.ts',
+      '**/*.pgrst-index',
+      'src/supabase.types.d.ts',
+      'src/supabase.pgrst-index',
+      '../project/src/*.ts',
+    ]
+    const extensions = ['.ts', '.tsx', '.d.ts', '.pgrst-index']
+    const disagreements: string[] = []
+    for (const entry of entries) {
+      const taken = new Set(
+        ts.sys
+          .readDirectory(dir, extensions, undefined, [entry])
+          .map((f) => f.slice(dir.length + 1))
+      )
+      for (const file of files) {
+        if (entryCovers(entry, file) !== taken.has(file)) {
+          disagreements.push(`${entry} ${file}: TypeScript ${taken.has(file) ? 'takes' : 'skips'}`)
+        }
+      }
+    }
+    expect(disagreements).toEqual([])
+  })
 
   it('does not start the planner when the tsconfig already has the entry', async () => {
     put(
