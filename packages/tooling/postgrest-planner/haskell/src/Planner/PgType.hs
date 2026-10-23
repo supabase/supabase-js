@@ -8,6 +8,7 @@
 module Planner.PgType
   ( normalizeType
   , qualifiedTypeName
+  , isBuiltinType
   , aggregateType
   ) where
 
@@ -114,3 +115,27 @@ aggregateType fn input = case fn of
     "float4" -> "float8"
     "float8" -> "float8"
     _ -> input -- interval
+
+-- | Whether a 'normalizeType'd name is a type of @pg_catalog@ (or an array of one). 'normalizeType' drops
+-- @pg_catalog@ and qualifies every other type with its schema, but a client-typed cast can leave a user type
+-- unqualified (@::user_status@, which the search path resolves), so the name is checked against the types
+-- @pg_catalog@ ships rather than against the absence of a schema. A cast between two such types is a builtin
+-- cast, which keeps NULL as NULL and non-NULL as non-NULL; the cast function of any other type can return
+-- NULL.
+isBuiltinType :: Text -> Bool
+isBuiltinType t = stripArrays t `elem` builtinTypes
+  where
+    stripArrays n = maybe n stripArrays (T.stripSuffix "[]" n)
+
+builtinTypes :: [Text]
+builtinTypes =
+  [ "bool", "bytea", "char", "name", "int8", "int2", "int4", "text", "oid", "tid", "xid", "cid"
+  , "json", "xml", "jsonb", "jsonpath", "float4", "float8", "money", "macaddr", "macaddr8", "inet", "cidr"
+  , "bpchar", "varchar", "date", "time", "timestamp", "timestamptz", "interval", "timetz", "bit", "varbit"
+  , "numeric", "uuid", "pg_lsn", "tsvector", "tsquery", "gtsvector", "txid_snapshot", "pg_snapshot"
+  , "point", "lseg", "path", "box", "polygon", "line", "circle"
+  , "int2vector", "oidvector", "record", "void", "regproc", "regprocedure", "regoper", "regoperator"
+  , "regclass", "regtype", "regrole", "regnamespace", "regconfig", "regdictionary", "regcollation"
+  , "int4range", "numrange", "tsrange", "tstzrange", "daterange", "int8range"
+  , "int4multirange", "nummultirange", "tsmultirange", "tstzmultirange", "datemultirange", "int8multirange"
+  ]

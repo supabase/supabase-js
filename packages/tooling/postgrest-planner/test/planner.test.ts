@@ -363,6 +363,22 @@ describe('postgrest-planner', () => {
       })
     })
 
+    it('keeps non-null through a cast only between builtin types', () => {
+      // a cast function of a domain, enum, composite or extension type can return NULL
+      const p = plan(
+        catalog,
+        '/inference_cases?select=a:status::text,b:id::user_status,c:id::text,d:tags::text,e:count()::text,f:shipping_address::text'
+      )
+      expect(summary(fieldsOf(p))).toEqual([
+        ['a', 'text', true, 'cast'],
+        ['b', 'user_status', true, 'cast'],
+        ['c', 'text', false, 'cast'],
+        ['d', 'text', false, 'cast'],
+        ['e', 'text', false, 'cast'],
+        ['f', 'text', true, 'cast'],
+      ])
+    })
+
     it('reports array, composite and enum columns by their normalised type', () => {
       const p = plan(catalog, '/inference_cases?select=tags,scores,shipping_address,status')
       expect(summary(fieldsOf(p)).map(([, type]) => type)).toEqual([
@@ -711,7 +727,7 @@ describe('postgrest-planner', () => {
       expect(verdict(toMany)).toEqual(['get_messages', 'many', false, 'array', false])
     })
 
-    it('makes a computed relationship to a single composite non-null with every field nullable, not a setof one', () => {
+    it('makes a computed relationship to a single composite non-null, not a setof one, and every field nullable', () => {
       const single = only(plan(catalog, '/users?select=username,function_using_table_returns(*)'))
       expect(verdict(single)).toEqual([
         'function_using_table_returns',
@@ -750,9 +766,53 @@ describe('postgrest-planner', () => {
         'computed',
         false,
       ])
+      // its rows are the rows of a function as well: the NOT NULL of the table does not hold
       expect(names(setof.shape.fields)).toEqual([
-        ['id', 'int8', false],
+        ['id', 'int8', true],
         ['username', 'text', true],
+      ])
+    })
+
+    it('reads the rows of a computed relationship as function rows, and so its first-level to-one embeds', () => {
+      // a function can return rows its table refuses: NOT NULL columns and proven keys do not hold
+      const toMany = only(
+        plan(
+          catalog,
+          '/channels?select=id,get_messages(id,message,users(username,messages(id)),channels!inner(slug))'
+        )
+      )
+      expect(verdict(toMany)).toEqual(['get_messages', 'many', false, 'array', false])
+      expect(toMany.shape.fields.map((f) => [f.name, f.nullable, f.reason])).toEqual([
+        ['id', true, 'function-rows'],
+        ['message', true, 'function-rows'],
+      ])
+      const [users, channels] = toMany.shape.embeds
+      // the join keeps what proves the row, for a printer that can trace the function
+      expect(users).toMatchObject({
+        key: 'users',
+        nullable: true,
+        reason: 'function-rows',
+        fkProven: true,
+      })
+      // the usual rules from the second level down, and a missing !inner row drops the row
+      expect(users.shape.fields.map((f) => [f.name, f.nullable, f.reason])).toEqual([
+        ['username', false, undefined],
+      ])
+      expect(users.shape.embeds[0]).toMatchObject({ nullable: false, reason: 'array' })
+      expect(channels).toMatchObject({ nullable: false, reason: 'inner-join' })
+
+      // a to-one setof function (ROWS 1) too
+      const setof = only(plan(catalog, '/users?select=username,function_using_setof_rows_one(*)'))
+      expect(verdict(setof)).toEqual([
+        'function_using_setof_rows_one',
+        'one',
+        true,
+        'computed',
+        false,
+      ])
+      expect(setof.shape.fields.map((f) => [f.name, f.nullable, f.reason])).toEqual([
+        ['id', true, 'function-rows'],
+        ['username', true, 'function-rows'],
       ])
     })
 

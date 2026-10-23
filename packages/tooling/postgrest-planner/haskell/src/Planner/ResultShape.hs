@@ -22,7 +22,8 @@
 -- a relation, a composite type or the @RETURNS TABLE@ columns). Its rows are function rows: every field is
 -- nullable (a function can return rows the table constraints would refuse) and so is every first-level
 -- to-one embed, with the reason @function-rows@; the embed keeps @fkProven@ for a printer that can trace the
--- function. Scalar returns have no rows: @shape@ and @source@ are @null@.
+-- function. Scalar returns have no rows: @shape@ and @source@ are @null@. The rows of a computed relationship
+-- are function rows too: its fields and its first-level to-one embeds are nullable with the same reason.
 --
 -- @filters@ lists the target of every filter of the plan ('filtersOf'): the column it tests, or the embed
 -- that @embed=is.null@ tests.
@@ -58,7 +59,7 @@ import PostgREST.SchemaCache.Relationship (Cardinality (..), Junction (..), Rela
 import PostgREST.SchemaCache.Routine (FuncVolatility (..), PgType (..), RetType (..), Routine (..), RoutineParam (..), RoutineMap, funcReturnsSingleComposite)
 import PostgREST.SchemaCache.Table (Column (..), Table (..))
 
-import Planner.PgType (aggregateType, normalizeType)
+import Planner.PgType (aggregateType, isBuiltinType, normalizeType)
 import Planner.Supplementary (SuppFunction (..), SuppReturn (..), Supplementary (..), findComputedField, findRoutine, foreignKeyValidated, orderColumns)
 
 -- | @form@, @shape@, @rpc@, @filters@ and @degraded@ for a plan. Plans that return no rows of a relation
@@ -273,11 +274,14 @@ embedEntry env@Env{evCtx = ctx, evWrite} par hoist sel node@(Node rp kids) = Emb
     toOne = maybe True relIsToOne relationship
     key = fromMaybe (RP.relName rp) (RP.relAlias rp)
     isEmpty = case sel of JsonEmbed{rsEmptyEmbed} -> rsEmptyEmbed; _ -> False
+    -- A computed relationship calls the function directly, which checks only the types of the row it returns,
+    -- not the constraints of the table: its columns, and the first-level to-one embeds of its rows, are read
+    -- as the rows of a function (nullable, reason @function-rows@), as at the root of an RPC plan.
+    computed = maybe False isComputed relationship
+    embedCtx = if computed then ctx{cxRows = Just TableRows} else ctx
     -- A computed relationship to a function that returns ONE composite (not @setof@): Postgres always yields a
-    -- row, a composite of NULLs when nothing matches, so the embed is never null and its columns are the
-    -- rows of a function (nullable).
+    -- row, a composite of NULLs when nothing matches, so the embed is never null.
     singleComposite = maybe False (computedReturnsSingleComposite ctx) relationship
-    embedCtx = if singleComposite then ctx{cxRows = Just TableRows} else ctx
     idPath = pIdPath par <> [key]
     outPath = if isSpread then pOutPath par else pOutPath par <> [key]
     joinInner = RP.relJoinType rp == Just JTInner
@@ -316,7 +320,7 @@ embedEntry env@Env{evCtx = ctx, evWrite} par hoist sel node@(Node rp kids) = Emb
           , pOutPath = outPath
           , pInherited = if isToOneSpread && nullable then Just reason else Nothing
           , pSelect = sub
-          , pFunctionRows = singleComposite
+          , pFunctionRows = computed
           }
         (if isToOneSpread then hoist else Nothing)
         node
@@ -350,6 +354,11 @@ embedEntry env@Env{evCtx = ctx, evWrite} par hoist sel node@(Node rp kids) = Emb
               , "embeds" .= (emJSON <$> children)
               ]
         ]
+
+isComputed :: Relationship -> Bool
+isComputed = \case
+  ComputedRelationship{} -> True
+  _ -> False
 
 -- | Whether a computed relationship is a function that returns a single composite value (not @setof@). The
 -- relationship names the function and the table of its argument; the dump lists the overloads of a name.
@@ -617,9 +626,12 @@ applyRepresentation fn e =
 applyCast :: Maybe Text -> Expr -> Expr
 applyCast Nothing e = e
 applyCast (Just c) e =
-  Expr (Just ty) Nothing (eNullable e) (object ["kind" .= str "cast", "of" .= eProv e, "to" .= ty]) (eRows e)
+  Expr (Just ty) Nothing nullable (object ["kind" .= str "cast", "of" .= eProv e, "to" .= ty]) (eRows e)
   where
     ty = normalizeType c
+    -- A builtin cast keeps non-NULL, but the cast function of any other type (domain, enum, composite,
+    -- extension type) can return NULL for a non-NULL value.
+    nullable = eNullable e || not (maybe False isBuiltinType (eType e) && isBuiltinType ty)
 
 -- | @count@ is @int8@ and never null; every other aggregate is null over an empty group.
 applyAggregate :: AggregateFunction -> Expr -> Expr
@@ -696,7 +708,12 @@ filtersOf rootCtx ctx rootRel rootWhere tree = (concat vs, concat ns)
 
     walk c rel path (Node rp kids) =
       map (treeEntries c rel path kids []) (RP.where_ rp)
-        <> concat [walk ctx (RP.from k) (path <> [nodeKey k]) n | n@(Node k _) <- kids]
+        <> concat [walk (kidCtx k) (RP.from k) (path <> [nodeKey k]) n | n@(Node k _) <- kids]
+
+    -- The columns of a computed relationship are read from the rows of a function.
+    kidCtx k
+      | maybe False isComputed (RP.relToParent k) = ctx{cxRows = Just TableRows}
+      | otherwise = ctx
 
     nodeKey rp = fromMaybe (RP.relName rp) (RP.relAlias rp)
 
