@@ -26,7 +26,9 @@ import PostgREST.Error (Error (..), errorPayload, status)
 import PostgREST.Plan (actionPlan)
 import PostgREST.SchemaCache (SchemaCache)
 
+import Planner.ResultShape (planShape)
 import Planner.Summary (summarize)
+import Planner.Supplementary (Supplementary)
 
 -- | Request spec: @{"method":"GET","url":"/users?select=a","headers":{"Prefer":"..."},"body":"..."}@.
 data Spec = Spec
@@ -86,8 +88,8 @@ errorValue conf err =
     ]
 
 -- | Plan one request. 'Left' is an upstream error (or a malformed spec) rendered as JSON.
-planRequest :: AppConfig -> SchemaCache -> Value -> Value
-planRequest conf sCache specJson = case parseSpec specJson of
+planRequest :: AppConfig -> SchemaCache -> Maybe Supplementary -> Value -> Value
+planRequest conf sCache supp specJson = case parseSpec specJson of
   Left e -> object ["ok" .= False, "status" .= (0 :: Int), "error" .= object ["code" .= ("PLANNER_BAD_REQUEST" :: Text), "message" .= e]]
   Right spec ->
     let req = toWai spec
@@ -96,4 +98,6 @@ planRequest conf sCache specJson = case parseSpec specJson of
           Left e -> errorValue conf (ApiRequestErr e)
           Right apiReq -> case actionPlan (iAction apiReq) conf apiReq sCache of
             Left e -> errorValue conf e
-            Right plan -> summarize apiReq plan
+            Right plan -> case summarize apiReq plan of
+              Object o -> Object (o <> KM.fromList (planShape sCache supp apiReq plan))
+              other -> other

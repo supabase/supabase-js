@@ -11,7 +11,10 @@ executable postgrest-planner
   main-is:            Main.hs
   other-modules:      Planner.BuildInfo
                       Planner.Config
+                      Planner.PgType
+                      Planner.ResultShape
                       Planner.SchemaCacheJSON
+                      Planner.Supplementary
                       Planner.Request
                       Planner.Summary
                       Planner.FFI

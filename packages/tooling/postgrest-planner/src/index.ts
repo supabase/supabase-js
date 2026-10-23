@@ -29,6 +29,68 @@ export interface LoadSuccess {
   schemas: string[]
   summary: string
   ignoredConfigKeys: string[]
+  /**
+   * What plans of this handle will have to guess: `no-supplementary-catalog`, or one
+   * `column-order:<schema>.<relation>` per relation whose `attnum` order the catalog lacks.
+   */
+  degraded: string[]
+  /** `true` when `*` expands in `attnum` order for every relation of the schema cache. */
+  columnOrderKnown: boolean
+}
+
+/**
+ * Facts the `--dump-schema` document does not carry (`format: 1`). The planner reads the keys below and
+ * ignores any other key, at any level, so producers may add their own (view definitions, function bodies,
+ * CHECK constraints...) to the same document. A missing section is an empty one.
+ *
+ * Regenerate the test fixture with the command in the README.
+ */
+export interface Supplementary {
+  format: 1
+  /** Tables, views, materialized views, partitioned and foreign tables. */
+  relations?: SupplementaryRelation[]
+  /** Composite types, attributes in `attnum` order. */
+  composites?: SupplementaryComposite[]
+  foreignKeys?: SupplementaryForeignKey[]
+  functions?: SupplementaryFunction[]
+  [k: string]: unknown
+}
+
+export interface SupplementaryRelation {
+  schema: string
+  name: string
+  columns: { name: string; attnum: number; [k: string]: unknown }[]
+  [k: string]: unknown
+}
+
+export interface SupplementaryComposite {
+  schema: string
+  name: string
+  attributes: { name: string; type: string; attnum: number; [k: string]: unknown }[]
+  [k: string]: unknown
+}
+
+export interface SupplementaryForeignKey {
+  /** Owning table. */
+  schema: string
+  table: string
+  constraint: string
+  /** `pg_constraint.convalidated`. */
+  validated: boolean
+  [k: string]: unknown
+}
+
+export interface SupplementaryFunction {
+  schema: string
+  name: string
+  /** Input argument types as `format_type` spells them (schema-qualified outside `pg_catalog`). */
+  argTypes?: string[]
+  /** `pg_proc.provolatile`: `i`, `s` or `v`. */
+  volatility?: string
+  returns: { kind: 'scalar' | 'composite'; setof?: boolean; type: string }
+  /** OUT / `RETURNS TABLE` columns. */
+  outColumns?: { name: string; type: string }[]
+  [k: string]: unknown
 }
 
 export interface LoadInput {
@@ -36,6 +98,13 @@ export interface LoadInput {
   config: Record<string, unknown>
   /** Output of `postgrest --dump-schema`. */
   schema: string
+  /**
+   * Supplementary catalog, as a JSON document (a string) or an object. Optional: without it plans are
+   * still produced but `degraded` says what they had to guess (column order of `*`, computed fields).
+   * A document that is not valid JSON or has another `format` makes `load` fail with
+   * `PLANNER_BAD_SUPPLEMENTARY`.
+   */
+  supplementary?: Supplementary | string
 }
 
 export interface PlanRequest {
@@ -76,6 +145,48 @@ export interface EmbedPlan {
   toOne: boolean
 }
 
+/**
+ * What the response body of a plan looks like. `rowset` is a list of rows (or one object under
+ * `Accept: application/vnd.pgrst.object+json`); the RPC forms are produced for `/rpc/*` plans, whose
+ * `shape` is not resolved yet (`degraded` carries `rpc-shape`). `none` is a mutation without
+ * `Prefer: return=representation`. `null` is any plan that returns no rows of a relation (OpenAPI,
+ * relation/routine info).
+ */
+export type PlanForm = 'rowset' | 'single-composite' | 'single-scalar' | 'setof-scalar' | 'none'
+
+export type JsonPathStep = { op: '->' | '->>'; key: string } | { op: '->' | '->>'; index: number }
+
+/** Where the value of an output column comes from. Nested kinds carry the provenance they wrap in `of`. */
+export type FieldProvenance =
+  | { kind: 'plain'; source: { schema: string; relation: string; column: string } }
+  | { kind: 'computed'; function: { schema: string; name: string }; relation: QualifiedName }
+  | { kind: 'jsonPath'; of: FieldProvenance; path: JsonPathStep[] }
+  | { kind: 'representation'; of: FieldProvenance; function: string }
+  | { kind: 'cast'; of: FieldProvenance; to: string }
+  | { kind: 'aggregate'; function: string; of: FieldProvenance }
+  | { kind: 'unresolved'; reason: string }
+
+export interface ShapeField {
+  /** Output name: alias, else the aggregate's name, else the last JSON key, else the column name. */
+  name: string
+  /**
+   * Normalised type: internal names (`int4`, `timestamptz`), no type modifiers, `schema.name` outside
+   * `pg_catalog`, `[]` suffix for arrays. `null` when `provenance.kind` is `unresolved`.
+   */
+  pgType: string | null
+  nullable: boolean
+  /** The base type of a domain, only when it differs from `pgType`. */
+  baseType?: string
+  provenance: FieldProvenance
+}
+
+/** The root relation of a read or of a mutation that returns the representation. */
+export interface ResultShape {
+  relation: QualifiedName
+  /** Output columns in the order PostgREST emits them (`*` expanded in `attnum` order). */
+  fields: ShapeField[]
+}
+
 export interface PlanSuccess {
   ok: true
   action: 'read' | 'insert' | 'update' | 'delete' | 'upsert' | 'rpc' | string
@@ -86,6 +197,15 @@ export interface PlanSuccess {
   select: SelectItem[]
   embeds: EmbedPlan[]
   warnings: unknown[]
+  /** `null` for plans that return no rows of a relation. */
+  form: PlanForm | null
+  /** `null` when `form` is `null`, `none` or an RPC form. Embeds are not shaped yet (P1b). */
+  shape: ResultShape | null
+  /**
+   * What this plan had to guess: `column-order:<schema>.<relation>`, `computed-field:<relation>.<name>`
+   * (no catalog to resolve it), `embeds-unshaped`, `rpc-shape`.
+   */
+  degraded: string[]
   mutation?: unknown
   call?: unknown
   routine?: unknown
@@ -126,7 +246,14 @@ interface Exports {
   planner_alloc(n: number): number
   planner_free(ptr: number): void
   planner_info(): number
-  planner_load(cfgP: number, cfgN: number, schP: number, schN: number): number
+  planner_load(
+    cfgP: number,
+    cfgN: number,
+    schP: number,
+    schN: number,
+    suppP: number,
+    suppN: number
+  ): number
   planner_plan(handle: number, reqP: number, reqN: number): number
   planner_free_cache(handle: number): void
 }
@@ -166,12 +293,18 @@ export async function loadPlanner(options: LoadPlannerOptions = {}): Promise<Pla
 
   return {
     info: () => take(x.planner_info()) as PlannerInfo,
-    load({ config, schema }) {
+    load({ config, schema, supplementary }) {
       const [cp, cn] = put(JSON.stringify(config))
       const [sp, sn] = put(schema)
-      const res = take(x.planner_load(cp, cn, sp, sn)) as LoadResult
+      // No supplementary catalog is an empty buffer pair.
+      const [xp, xn] =
+        supplementary === undefined
+          ? [0, 0]
+          : put(typeof supplementary === 'string' ? supplementary : JSON.stringify(supplementary))
+      const res = take(x.planner_load(cp, cn, sp, sn, xp, xn)) as LoadResult
       x.planner_free(cp)
       x.planner_free(sp)
+      if (xp !== 0) x.planner_free(xp)
       return res
     },
     freeCache: (handle) => x.planner_free_cache(handle),

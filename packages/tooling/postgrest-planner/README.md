@@ -1,6 +1,6 @@
 # @supabase/postgrest-planner
 
-Upstream PostgREST (v16.4) request planner compiled to a WASI reactor (`dist/postgrest-planner.wasm`), plus a typed Node host. Given a PostgREST schema cache and a request (`method`, `url`, `headers`, `body`), it returns a plan description (action, selected columns and types, embeds, mutation or rpc details) or the exact upstream error (`PGRST…`). Private for now.
+Upstream PostgREST (v16.4) request planner compiled to a WASI reactor (`dist/postgrest-planner.wasm`), plus a typed Node host. Given a PostgREST schema cache, an optional supplementary catalog and a request (`method`, `url`, `headers`, `body`), it returns a plan description (action, selected columns and types, embeds, mutation or rpc details, the shape of the result) or the exact upstream error (`PGRST…`). Private for now.
 
 ## Usage
 
@@ -8,7 +8,11 @@ Upstream PostgREST (v16.4) request planner compiled to a WASI reactor (`dist/pos
 import { loadPlanner, parseConfigDump } from '@supabase/postgrest-planner'
 
 const planner = await loadPlanner() // or { wasmPath }
-const loaded = planner.load({ config: parseConfigDump(configDump), schema: schemaJson })
+const loaded = planner.load({
+  config: parseConfigDump(configDump),
+  schema: schemaJson,
+  supplementary, // optional, see below
+})
 if (loaded.ok) {
   const plan = planner.plan(loaded.handle, { method: 'GET', url: '/users?select=username' })
   planner.freeCache(loaded.handle)
@@ -29,13 +33,70 @@ Prerequisites: the [supa-wasm](https://github.com/supabase/supa-wasm) toolchain 
 
 Tests need the wasm: run `nx build:wasm postgrest-planner` first.
 
-## ABI
+## ABI (version 2)
 
 All payloads are UTF-8 JSON in linear memory; results are a pointer to `[u32 LE length][bytes]`.
 
 - `planner_alloc(n) -> ptr`, `planner_free(ptr)`: host-owned input buffers and results
 - `planner_info() -> res`: `{abi, postgrest:{version,tag,commit}, ghc}`
-- `planner_load(cfgP, cfgN, schP, schN) -> res`: config is a JSON object of PostgREST keys, schema is `--dump-schema` output; returns `{handle, schemas, summary, ignoredConfigKeys}`
+- `planner_load(cfgP, cfgN, schP, schN, suppP, suppN) -> res`: config is a JSON object of PostgREST keys, schema is `--dump-schema` output, the last pair is the supplementary catalog (`0, 0` for none; the buffer is copied, the host keeps ownership). Returns `{handle, schemas, summary, ignoredConfigKeys, degraded, columnOrderKnown}`
 - `planner_dump(handle) -> res`: schema cache re-encoded with upstream `ToJSON`
 - `planner_free_cache(handle)`
 - `planner_plan(handle, reqP, reqN) -> res`: plan description or upstream error
+
+ABI 2 differs from 1 by the second buffer pair of `planner_load`, the `degraded` and `columnOrderKnown` fields of its result, and the `form`, `shape` and `degraded` fields of a plan. The abi 1 summary fields of a plan (`select`, `embeds`, `mutation`, `routine`, ...) are unchanged.
+
+## Supplementary catalog
+
+The schema dump loses facts the planner needs to describe a result: the dump decoder cannot keep the order of the columns of a table (JSON objects), and the dump has neither the computed fields' return types nor foreign key validity, routine volatility or OUT columns. One JSON document supplies them (`Supplementary` in `src/index.ts`, `format: 1`):
+
+| key           | content                                                                                               |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| `relations`   | `{schema, name, columns: [{name, attnum}]}` for every table, view, matview, partitioned/foreign table |
+| `composites`  | `{schema, name, attributes: [{name, type, attnum}]}`                                                  |
+| `foreignKeys` | `{schema, table, constraint, validated}` (`pg_constraint.convalidated`)                               |
+| `functions`   | `{schema, name, argTypes, volatility, returns: {kind, setof, type}, outColumns}`                      |
+
+The decoder is lenient on purpose: unknown keys are ignored at every level and a missing section is an empty one, so the producer may store more in the same document (view definitions, function bodies, CHECK constraints). A document that is not JSON, or with another `format`, fails the load with `PLANNER_BAD_SUPPLEMENTARY`.
+
+`test/fixtures/supplementary.sql` is the generator; the fixture is the output for the test database (`db-schemas` must match the list in the SQL). To regenerate it with the shared test database running:
+
+```sh
+DOCKER_CONTEXT=orbstack docker exec -i supabase_db_test psql -q -U postgres -At -f - \
+  < test/fixtures/supplementary.sql > test/fixtures/supplementary.json
+```
+
+With a catalog the columns of every listed table are put in `attnum` order when the handle is loaded, so a `*` that upstream expands itself (next to an aggregate) comes out in the order a PostgREST loaded from the database would use.
+
+### Degraded mode
+
+Without a catalog everything still plans, but what the planner had to guess is listed in `degraded`, never silently assumed:
+
+| note                               | where      | meaning                                                                         |
+| ---------------------------------- | ---------- | ------------------------------------------------------------------------------- |
+| `no-supplementary-catalog`         | load       | no catalog was given                                                            |
+| `column-order:<schema>.<relation>` | load, plan | the relation has no `attnum` order: `*` is in the dump's order, not the table's |
+| `computed-field:<relation>.<name>` | plan       | no catalog to tell whether `<name>` is a computed field: field is unresolved    |
+| `embeds-unshaped`                  | plan       | the plan has embeds, which `shape` does not describe yet                        |
+| `rpc-shape`                        | plan       | RPC row shapes are not resolved yet                                             |
+
+`columnOrderKnown` in the load result is `true` when no relation lacks its order.
+
+## Result shape
+
+A plan carries, next to the abi 1 summary:
+
+- `form`: what the body looks like. `rowset` for reads and for mutations that return the representation, `none` for mutations without `Prefer: return=representation`, `single-scalar`, `setof-scalar` and `single-composite` for RPC (their `shape` is `null` until the RPC slice), `null` for plans that return no rows of a relation.
+- `shape`: `{relation: {schema, name}, fields}` for the root relation of reads (GET, HEAD) and of mutations with `return=representation`; `null` otherwise. Embeds and spreads are not part of it yet.
+- `degraded`: the notes above that apply to this plan.
+
+Every entry of `fields` is `{name, pgType, nullable, provenance, baseType?}`, in the order PostgREST emits the columns:
+
+- `name`: the alias, else the aggregate's lowercased name (`count`, `sum`, ...), else the last JSON key (`data->a->>b` is `b`), else the column name.
+- `pgType`: normalised spelling: internal names (`int4`, `timestamptz`), no type modifiers, `schema.name` outside `pg_catalog`, `[]` for arrays; `null` when unresolved. `baseType` is the base type of a domain, only when it differs.
+- `nullable`: a column is nullable unless declared `NOT NULL`; a JSON path always is; `count` is never; other aggregates always are; a cast keeps the nullability of what it casts; a computed field always is.
+- `provenance`, nested through `of`: `plain` (`source: {schema, relation, column}`), `computed`, `jsonPath` (`path` of `->`/`->>` steps with `key` or `index`), `cast` (`to`), `aggregate` (`function`), `representation` (data representation, untested: the fixture has none) or `unresolved` (`reason`; neither a column nor a computed field of the relation).
+
+Select items are evaluated the way upstream prints them: expression (column, JSON path), field cast, aggregate, aggregate cast.
+
+Not covered yet: embeds, spreads and their nullability, RPC rows, filter targets.
