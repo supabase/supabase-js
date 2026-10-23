@@ -117,7 +117,7 @@ The package is a TypeScript 7.1 content mapper (microsoft/typescript-go#4712) fo
 - **Options** are shape-checked by `validateOptions` (`postgrest`, `schema`, optional `defaultSchema`, `scan`, `unplanned`); problems are returned as `optionDiagnostics` and `tsc` reports them at the value in `tsconfig.json`. With invalid options the generator is not called and the index file transforms to an empty module.
 - **The generator** (`ProjectGenerator`) does all the work of `openProject`: `({ configFileName, projectHandle, options, compilerOptions }) => { identity, watchedFiles, text, diagnostics, optionDiagnostics }`. `transform` returns the stored `text` for the project's index file, with no span mappings: `tsc` reports the virtual module's diagnostics at the top of the index file. A generator is shared by all projects and owns every cache that should outlive `closeProject`; the server only keeps the last result per project handle and drops it on `closeProject`.
 - **Index file**: the first file transformed in a project is its index file; any other file with the extension gets diagnostic 2001 and an empty module.
-- `bin/content-mapper.cjs` runs the placeholder `stubGenerator`, which declares one `SupabaseSelects` entry (`'r|public|stub|*'`).
+- `bin/content-mapper.cjs` runs the real generator (`createProjectGenerator`, see "Project generator" below). `stubGenerator` stays exported as a protocol fixture: it declares one `SupabaseSelects` entry (`'r|public|stub|*'`). `POSTGREST_PLANNER_WASM` makes the process use another build of the planner wasm; it exists for this package's own tests, which pin the planner they were written against.
 
 ## Schema acquisition
 
@@ -149,6 +149,50 @@ For the first two the supplementary catalog and `server_version_num` are read ov
 Everything else covers exactly the exposed schemas (`db-schemas` of the config dump).
 
 Pure builders turn it into the other components' inputs: `buildTraceCatalog` and `buildFunctionTraceInputs` for the tracer, and `buildJsonSchemaInput` for `jsonSchemaToTs`. The last is asynchronous (it parses constraint definitions with libpg_query) and reports only validated constraints that are plain conjunctions of `json(b)_matches_schema('<constant>', col)` terms, each optionally guarded by `col IS NULL OR`; several constraints on a column become an `allOf`, and everything else lands in `ignored` with its reason.
+
+## Project generator
+
+The whole pipeline behind the content mapper, as a library (a CLI `generate` command will call the same functions):
+
+```ts
+const { text, identity, watchedFiles, diagnostics, optionDiagnostics, keys, cache } =
+  await generateDeclarations({
+    projectDir: '.', // or { configFileName: './tsconfig.json' }
+    options: { postgrest: '14.4', schema: { source: 'supabase-local' }, defaultSchema: 'public' },
+    deps: { logger }, // GeneratorDeps, all optional
+  })
+```
+
+`createGenerator(deps)` returns `{ generate({ configFileName, options }), close() }` and keeps the planner host and the acquired schemas for as long as it lives; `createProjectGenerator(deps)` is the same behind the content mapper's `ProjectGenerator` contract. `deps`: `fs`, `schema` (acquisition deps), `env`, `cwd`, `wasmPath`, `createHost`, `createTracer`, `plannerStamp`, `cacheDirectory` (a function, or `false` for no disk cache), `importFrom`, `logger`. Invalid options give `optionDiagnostics` and `export {}`; a missing snapshot or database URL is an option diagnostic at `schema.path` / `schema.dbUrlEnv`; other acquisition failures are diagnostic 2002, a planner that cannot start 2003, a scan failure 2004, anything unexpected 2005 (all with `start: 0, length: 0`, so `tsc` shows them at the top of the index file).
+
+Steps of one `generate`:
+
+1. **Files**: `resolveProjectFiles` reads the tsconfig (`files`, `include`, `exclude`, `extends`; JSONC) and keeps the TypeScript/JavaScript sources, or the files matching `options.scan`.
+2. **Scan** the files for builder chains (`scanFiles`) and **derive keys** (`planKeysOf`). A key is `${kind}|${schema}|${relation}|${select}` where `kind` is `r` for reads and `w` for mutations followed by `.select()`, and `select` is the string as written, not normalised, exactly what the consumer's lookup builds. The planner request carries `normalizeSelect(select)` (whitespace removed outside double quotes), which is what postgrest-js sends. A bare `*` select has no entry (the consumer derives it from `SupabaseDatabase`). A chain that may live in several schemas gets a key per candidate schema; a relation missing from one of them is not an error. Pairs the scanner could not connect to a chain are planned speculatively and printed only when they plan. RPC chains and operands have no keys yet.
+3. **Schema**: acquired per `options.schema` (a snapshot is re-read on every run and watched; live sources are memoised per process). The schema id is the hash of the acquired schema.
+4. **Plan** the keys the cache lacks with `planMany` (`GET` with `Accept-Profile` for `r`; `POST` with body `{}`, `Content-Profile` and `Prefer: return=representation` for `w`). A planner failure becomes an `{ error }` entry (`CODE: message`, then `Hint: ...`), except a failure of a speculative pair, or a missing relation when the chain could be in several schemas, which are dropped. `HOST_*` failures are never cached.
+5. **Print** `printSelects` + `printDatabase`, spliced by `printModule`.
+
+`identity` is the hash of the schema id, the sorted keys, `GENERATOR_REVISION`, the planner build, the options and `importFrom`: it changes when anything the text depends on changes, and only then. `watchedFiles` are the scanned files plus the snapshot.
+
+**Entries** (`printSelects`): a planned key is `{ row, sources, embeds }`: `row` has every source-backed leaf as `SupabaseColumnType<'schema.relation.column', T>` (nullability outside the wrapper, base-column key through views; aggregates, casts and JSON paths are plain types), to-many embeds are arrays, a nullable embed is `| null`, spreads are merged into the parent per `outputs`; `sources` maps each output name to its column fact; `embeds` maps the dotted embed path to `{ path, outputs, join, cardinality }`.
+
+```ts
+'r|public|users|username, messages(id, channels(id))': {
+  row: { username: SupabaseColumnType<'public.users.username', string>; messages: { id: SupabaseColumnType<'public.messages.id', number>; channels: { id: SupabaseColumnType<'public.channels.id', number> } }[] }
+  sources: { username: 'username' }
+  embeds: {
+    messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
+    'messages.channels': { path: ['messages', 'channels']; outputs: [['messages', 'channels']]; join: 'left'; cardinality: 'one' }
+  }
+}
+```
+
+A rejected key is `{ error: "PGRST200: Could not find a relationship ..." }`, which the consumer shows as the builder's error.
+
+**Cache**: `<projectDir>/node_modules/.cache/postgrest-mapper/postgrest-mapper-<first 32 hex of the schema id>.json`, one file per schema: `{ format, generator, planner, schema, context: { plans, traces, jsonSchemas, diagnostics }, entries: { [key]: { shape, degraded } | { error, code } } }`. A run whose keys are all cached (`cache: 'hit'`) starts no planner and loads no schema; with some keys cached the run is `'partial'` and plans the rest. A stale, unreadable or differently-versioned file is a miss.
+
+**Extension points for the RPC and operands slice**: RPC chains get `RawEntry` entries (`{ key, body }`, printed verbatim) in the list `printSelects` receives, built where `generate` assembles entries from planner results; `SupabaseOperands` text goes to the `operands` field `printModule` already takes, and its keys to the same cache `entries` map. Until then those chains get the consumer's `unplanned` behaviour (`options.unplanned`: `'loose'` or `'error'`).
 
 ## Planner host and database declarations
 

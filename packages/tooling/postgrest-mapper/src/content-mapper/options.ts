@@ -7,6 +7,14 @@ export const DiagnosticCode = {
   InvalidOption: 1003,
   UnknownOption: 1004,
   DuplicateIndexFile: 2001,
+  /** The schema could not be acquired (no database, no stack, a broken snapshot) */
+  SchemaUnavailable: 2002,
+  /** The planner could not load the schema or could not run (missing wasm, a trap, a timeout) */
+  PlannerUnavailable: 2003,
+  /** Project files could not be listed or read */
+  ScanFailed: 2004,
+  /** The generator failed on something it did not expect; the module is empty */
+  InternalError: 2005,
 } as const
 
 /** Where the upstream schema dump comes from (design v3 §4.2). */

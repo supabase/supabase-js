@@ -383,13 +383,15 @@ describe('content mapper executable', () => {
   it('speaks the protocol over real stdio and exits when asked', async () => {
     const { client, exited, stderr } = spawnBin()
     expect((await client.request('initialize', INITIALIZE)).result.positionEncoding).toBe('utf-16')
-    expect((await open(client)).result.configIdentity).toBe(hashOptions(STUB_OPTIONS))
+    // the executable runs the real generator: options it rejects need no schema and give an empty module
+    const opened = await open(client, 'h1', { postgrest: 'latest', schema: STUB_OPTIONS.schema })
+    expect(opened.result.optionDiagnostics.map((d: any) => d.path)).toEqual([['postgrest']])
     const transformed = await client.request('transform', {
       fileName: INDEX,
       content: '',
       projectHandle: 'h1',
     })
-    expect(transformed.result.text).toContain("'r|public|stub|*'")
+    expect(transformed.result.text).toBe('export {}\n')
     expect((await client.request('nope')).error?.code).toBe(-32601)
     expect((await client.request('closeProject', { projectHandle: 'h1' })).result).toBeNull()
     client.notify('exit')

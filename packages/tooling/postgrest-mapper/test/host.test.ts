@@ -113,7 +113,8 @@ describe('planner host over the real planner', () => {
   }, 60_000)
 
   test('a load that hangs times out as a value, and the next load succeeds on a fresh worker', async () => {
-    const { host, control } = track(stagedHost({ loadTimeoutMs: 200 }))
+    // the load budget also covers booting the worker and compiling the wasm, so the recovering load needs a real budget
+    const { host, control } = track(stagedHost({ loadTimeoutMs: 5_000 }))
     control.hang.add('load')
     expect(await host.load(acquired)).toMatchObject({
       ok: false,

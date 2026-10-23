@@ -233,3 +233,30 @@ export type {
 } from './printer'
 export { buildDatabaseDeclarations } from './generate'
 export type { BuildDatabaseOptions, DatabaseDeclarations } from './generate'
+
+export {
+  GENERATOR_REVISION,
+  createGenerator,
+  createProjectGenerator,
+  generateDeclarations,
+  normalizeSelect,
+  planKeysOf,
+  planRequestOf,
+  resolveProjectFiles,
+  stripJsonc,
+} from './generate'
+export type {
+  CacheOutcome,
+  GenerateDeclarationsInput,
+  GenerateDeclarationsResult,
+  GenerateOutput,
+  Generator,
+  GeneratorDeps,
+  GeneratorFs,
+  GeneratorLogger,
+  PlanKey,
+  ProjectFiles,
+  ProjectFs,
+} from './generate'
+export { createSelectsContext, plannerErrorMessage, printSelects } from './printer'
+export type { SelectsContext, SelectsEntry } from './printer'
