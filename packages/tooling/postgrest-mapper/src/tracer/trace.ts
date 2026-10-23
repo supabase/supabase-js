@@ -21,6 +21,8 @@ interface Col {
   nullable: boolean
   reason?: string
   source?: ColumnSource
+  /** The value's type is in `pg_catalog`. Absent when it is not or when it is unknown. */
+  builtin?: boolean
 }
 
 /** A named range table entry. `cols: null` means its columns are unknown (function, unknown relation, ...). */
@@ -56,10 +58,11 @@ interface Ctx {
   viewStack: string[]
 }
 
-type Verdict = Pick<Col, 'nullable' | 'reason' | 'source'>
+type Verdict = Pick<Col, 'nullable' | 'reason' | 'source' | 'builtin'>
 
 const EMPTY: Scope = { rels: [], visible: [], open: false }
 const NON_NULL: Verdict = { nullable: false }
+const NON_NULL_BUILTIN: Verdict = { nullable: false, builtin: true }
 const nullable = (reason: string, source?: ColumnSource): Verdict =>
   source ? { nullable: true, reason, source } : { nullable: true, reason }
 
@@ -71,6 +74,20 @@ const BUILTIN_TYPES = new Set([
   'inet', 'cidr', 'macaddr', 'macaddr8', 'regclass', 'regtype', 'regproc', 'regnamespace', 'regrole', 'tsvector',
   'tsquery', 'int4range', 'int8range', 'numrange', 'daterange', 'tsrange', 'tstzrange',
 ]) // prettier-ignore
+
+/**
+ * Whether a `format_type` spelling names a `pg_catalog` type. The catalog schema-qualifies every other type, so a dot
+ * outside a quoted identifier means a type of another schema. An unknown type is not trusted.
+ */
+function inPgCatalog(type: string | undefined): boolean {
+  return type !== undefined && !type.replace(/"[^"]*"/g, '').includes('.')
+}
+
+/** `col` with its `builtin` flag replaced. */
+function withBuiltin(col: Col, builtin: boolean): Col {
+  const { builtin: _previous, ...rest } = col
+  return builtin ? { ...rest, builtin } : rest
+}
 
 function isBuiltinType(typeName: Node): boolean {
   const names: string[] = (typeName?.names ?? []).map((n: Node) => n.String?.sval)
@@ -216,6 +233,8 @@ class Run {
     }
     return left.map((l, i): Col => {
       const r = right[i]
+      // The arms are coerced to one type, which is only known to be built in when both arms are
+      const builtin = l.builtin && r.builtin ? { builtin: true } : {}
       switch (op) {
         case 'SETOP_UNION': {
           const source = sameSource(l.source, r.source)
@@ -226,6 +245,7 @@ class Run {
             nullable: isNullable,
             ...(isNullable ? { reason } : {}),
             ...(source ? { source } : {}),
+            ...builtin,
           }
         }
         case 'SETOP_INTERSECT': {
@@ -236,10 +256,11 @@ class Run {
             nullable: isNullable,
             ...(isNullable ? { reason: l.reason ?? 'nullable in every INTERSECT arm' } : {}),
             ...(source ? { source } : {}),
+            ...builtin,
           }
         }
         default:
-          return l
+          return withBuiltin(l, !!builtin.builtin)
       }
     })
   }
@@ -254,7 +275,12 @@ class Run {
       const verdicts: Verdict[] = []
       for (const row of rows) verdicts.push(await this.expr(row[i], EMPTY, ctx, false))
       const bad = verdicts.find((v) => v.nullable)
-      cols.push({ name: `column${i + 1}`, nullable: !!bad, ...(bad ? { reason: bad.reason } : {}) })
+      cols.push({
+        name: `column${i + 1}`,
+        nullable: !!bad,
+        ...(bad ? { reason: bad.reason } : {}),
+        ...(verdicts.every((v) => v.builtin) ? { builtin: true } : {}),
+      })
     }
     return cols
   }
@@ -384,6 +410,7 @@ class Run {
           nullable: !c.notNull,
           ...(c.notNull ? {} : { reason: 'nullable column' }),
           source: { schema: rel.schema, relation: rel.name, column: c.name },
+          ...(inPgCatalog(c.type) ? { builtin: true } : {}),
         }))
       case 'view': {
         if (ctx.viewStack.includes(key)) return this.opaque(rel, `view ${key} is part of a cycle`)
@@ -396,6 +423,7 @@ class Run {
               ? { reason: traced[i].reason ?? 'nullable in the traced view' }
               : {}),
             ...(traced[i].source ? { source: traced[i].source } : {}),
+            ...(inPgCatalog(c.type) ? { builtin: true } : {}),
           }))
         }
         if (rel.definition === undefined) return this.opaque(rel, `view ${key} has no definition`)
@@ -412,7 +440,12 @@ class Run {
   }
 
   private opaque(rel: CatalogRelation, reason: string): Col[] {
-    return rel.columns.map((c) => ({ name: c.name, nullable: true, reason }))
+    return rel.columns.map((c) => ({
+      name: c.name,
+      nullable: true,
+      reason,
+      ...(inPgCatalog(c.type) ? { builtin: true } : {}),
+    }))
   }
 
   private async traceView(rel: CatalogRelation, key: string, ctx: Ctx): Promise<Col[]> {
@@ -428,7 +461,10 @@ class Run {
           `the definition returns ${cols.length} columns, the catalog lists ${rel.columns.length}`
         )
       }
-      return rel.columns.map((c, i) => ({ ...cols[i], name: c.name }))
+      // the catalog's declared type of the view column, not the traced expression's
+      return rel.columns.map((c, i) =>
+        withBuiltin({ ...cols[i], name: c.name }, inPgCatalog(c.type))
+      )
     } catch (e) {
       if (e instanceof Unsupported)
         return this.opaque(rel, `view ${key} could not be traced: ${e.message}`)
@@ -541,25 +577,36 @@ class Run {
           : verdict
       }
       case 'A_Const':
-        return n.isnull ? nullable('NULL constant') : NON_NULL
+        return n.isnull ? { ...nullable('NULL constant'), builtin: true } : NON_NULL_BUILTIN
       case 'TypeCast': {
+        const target = isBuiltinType(n.typeName)
         // A literal is parsed by the target type's input function, which never yields NULL.
-        if (n.arg?.A_Const && !n.arg.A_Const.isnull) return NON_NULL
+        if (n.arg?.A_Const && !n.arg.A_Const.isnull) return target ? NON_NULL_BUILTIN : NON_NULL
         const inner = await this.expr(n.arg, scope, ctx, groupingSets)
         // The cast replaces the value, so the inner provenance is dropped.
-        if (inner.nullable) return nullable(inner.reason ?? 'cast of a nullable expression')
-        return isBuiltinType(n.typeName)
-          ? NON_NULL
-          : nullable('cast to a type that is not built in')
+        if (inner.nullable) {
+          const verdict = nullable(inner.reason ?? 'cast of a nullable expression')
+          return target ? { ...verdict, builtin: true } : verdict
+        }
+        // A cast between built-in types returns NULL only for NULL; one that involves another type may call a
+        // user function that returns NULL for a non-null value.
+        if (!target) return nullable('cast to a type that is not built in')
+        return inner.builtin
+          ? NON_NULL_BUILTIN
+          : { ...nullable('cast of a value whose type is not known to be built in'), builtin: true }
       }
       case 'CoalesceExpr': {
         let reason = 'COALESCE without a non-null argument'
+        let proven = false
+        let builtin = true
         for (const arg of n.args ?? []) {
           const v = await this.expr(arg, scope, ctx, groupingSets)
-          if (!v.nullable) return NON_NULL
-          reason = v.reason ?? reason
+          if (!v.nullable) proven = true
+          else if (!proven) reason = v.reason ?? reason
+          builtin &&= !!v.builtin
         }
-        return nullable(reason)
+        const type = builtin ? { builtin: true } : {}
+        return proven ? { ...NON_NULL, ...type } : { ...nullable(reason), ...type }
       }
       case 'FuncCall': {
         const names = strings(n.funcname)
@@ -569,7 +616,7 @@ class Run {
           name === 'count' &&
           (names.length === 1 || (names.length === 2 && names[0] === 'pg_catalog'))
         ) {
-          return NON_NULL
+          return NON_NULL_BUILTIN
         }
         if (n.over) return nullable(`window function ${name}()`)
         const aggregate =
@@ -596,7 +643,14 @@ class Run {
       const found = this.findColumn(candidate, fields)
       if (found === 'open') return nullable('column of a relation with unknown columns')
       if (found === 'ambiguous') return nullable('ambiguous column reference')
-      if (found) return { nullable: found.nullable, reason: found.reason, source: found.source }
+      if (found) {
+        return {
+          nullable: found.nullable,
+          reason: found.reason,
+          source: found.source,
+          builtin: found.builtin,
+        }
+      }
       // A single name that is a range table entry is a whole-row reference.
       if (fields.length === 1 && candidate.rels.some((r) => r.alias === fields[0])) {
         return nullable('whole-row reference')

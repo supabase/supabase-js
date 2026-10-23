@@ -4,7 +4,13 @@ export function sortKeys<T>(value: T): T {
   if (typeof value === 'object' && value !== null) {
     const out: Record<string, unknown> = {}
     for (const key of Object.keys(value).sort()) {
-      out[key] = sortKeys((value as Record<string, unknown>)[key])
+      // defineProperty, not assignment: assigning `__proto__` would set the prototype and drop a real key of that name
+      Object.defineProperty(out, key, {
+        value: sortKeys((value as Record<string, unknown>)[key]),
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      })
     }
     return out as T
   }

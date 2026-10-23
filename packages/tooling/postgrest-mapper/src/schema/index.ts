@@ -1,6 +1,6 @@
 export { acquireSchema } from './acquire'
 export { connectPg, withReadOnlyTransaction } from './db'
-export { SchemaAcquisitionError } from './errors'
+export { ExecTimeoutError, SchemaAcquisitionError } from './errors'
 export type { SchemaErrorCode } from './errors'
 export { nodeExec } from './exec'
 export {
@@ -39,9 +39,10 @@ export type {
   JsonSchemaColumn,
   JsonSchemaInput,
 } from './build'
-export { DEFAULT_POSTGREST_IMAGE, SUPPLEMENTARY_FORMAT } from './types'
+export { DEFAULT_ACQUIRE_TIMEOUT_MS, DEFAULT_POSTGREST_IMAGE, SUPPLEMENTARY_FORMAT } from './types'
 export type {
   AcquiredSchema,
+  ConnectOptions,
   DbClient,
   DbConnection,
   ExecFn,

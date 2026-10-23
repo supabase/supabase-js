@@ -73,7 +73,9 @@ export type {
 } from './tracer'
 
 export {
+  DEFAULT_ACQUIRE_TIMEOUT_MS,
   DEFAULT_POSTGREST_IMAGE,
+  ExecTimeoutError,
   MAX_DIFFERENCES,
   SNAPSHOT_FORMAT,
   SUPPLEMENTARY_FORMAT,
@@ -109,6 +111,7 @@ export type {
   AcquiredSchema,
   BuildJsonSchemaOptions,
   BuildTraceCatalogOptions,
+  ConnectOptions,
   DbClient,
   DbConnection,
   ExecFn,

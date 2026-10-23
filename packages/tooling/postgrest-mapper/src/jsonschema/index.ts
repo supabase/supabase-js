@@ -6,7 +6,7 @@
  * cannot be expressed widens to `unknown` at that position, and nothing is ever guessed narrower than the schema.
  *
  * Supported: `type` (string or array), `enum`, `const`, `properties`, `required`, `additionalProperties`,
- * `patternProperties` (widening only), `items`, `prefixItems`, `additionalItems`, `minItems` (tuples only),
+ * `patternProperties` (widening only), `items`, `additionalItems`, `minItems` (tuples only),
  * `anyOf`, `oneOf`, `allOf`, `nullable`, `$ref` into the same document, and the boolean schemas `true` / `false`.
  * Details of every widening rule are in the README.
  */
@@ -205,17 +205,11 @@ function reference(ref: unknown, ctx: Ctx, depth: number): Ty {
   }
 }
 
+// pg_jsonschema ignores `prefixItems` under every dialect (checked against 0.3.3), so it never
+// constrains an element; only the array form of `items` (with `additionalItems`) makes a tuple.
 function arrayType(schema: Record<string, unknown>, ctx: Ctx, depth: number): Ty {
-  const prefix = Array.isArray(schema.prefixItems)
-    ? schema.prefixItems
-    : Array.isArray(schema.items)
-      ? schema.items
-      : undefined
-  const rest = Array.isArray(schema.prefixItems)
-    ? schema.items
-    : prefix
-      ? schema.additionalItems
-      : schema.items
+  const prefix = Array.isArray(schema.items) ? schema.items : undefined
+  const rest = prefix ? schema.additionalItems : schema.items
   const restType = rest === undefined || rest === true ? ctx.json : convert(rest, ctx, depth + 1)
 
   if (!prefix) {

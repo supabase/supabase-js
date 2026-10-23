@@ -15,8 +15,10 @@ import type { PostgrestDumps } from './postgrest'
 import { createScrubber, urlPassword } from './scrub'
 import { defaultFs, readSnapshot, schemaFromSnapshot } from './snapshot'
 import { querySupplementary, readPgVersionNum } from './supplementary'
-import { DEFAULT_POSTGREST_IMAGE } from './types'
-import type { AcquiredSchema, SchemaDeps, SchemaLogger, SchemaSource } from './types'
+import { createDeadline } from './deadline'
+import type { Deadline } from './deadline'
+import { DEFAULT_ACQUIRE_TIMEOUT_MS, DEFAULT_POSTGREST_IMAGE } from './types'
+import type { AcquiredSchema, DbConnection, SchemaDeps, SchemaLogger, SchemaSource } from './types'
 
 const silent: SchemaLogger = { debug() {}, info() {}, warn() {} }
 
@@ -31,6 +33,10 @@ const silent: SchemaLogger = { debug() {}, info() {}, warn() {} }
  * For the first two, the supplementary catalog and `server_version_num` are read over `pg` in a `BEGIN READ ONLY`
  * transaction that is rolled back. The result's `dump` and `config` are what `loadPlanner(...).load(...)` takes.
  *
+ * The whole acquisition shares one deadline (`SchemaDeps.timeoutMs`, `DEFAULT_ACQUIRE_TIMEOUT_MS`): each child process
+ * gets what is left of it and is killed when it runs out, statements run under `statement_timeout`, and the call
+ * rejects with code `'timeout'`.
+ *
  * Every error and log message is scrubbed of the database password, connection strings and `PG*`/`PGRST_*`
  * secrets. Throws `SchemaAcquisitionError`.
  */
@@ -41,6 +47,25 @@ export async function acquireSchema(
   if (source.source === 'snapshot') {
     return schemaFromSnapshot(await readSnapshot(source.path, deps))
   }
+  const deadline = createDeadline(
+    deps.timeoutMs ?? DEFAULT_ACQUIRE_TIMEOUT_MS,
+    'schema acquisition'
+  )
+  try {
+    const live = acquireLive(source, deps, deadline)
+    // when the deadline wins the race, `live` is abandoned: its late rejection must not go unhandled
+    live.catch(() => undefined)
+    return await Promise.race([live, deadline.expired])
+  } finally {
+    deadline.stop()
+  }
+}
+
+async function acquireLive(
+  source: Exclude<SchemaSource, { source: 'snapshot' }>,
+  deps: SchemaDeps,
+  deadline: Deadline
+): Promise<AcquiredSchema> {
   const dbUrl = source.dbUrl
   const scrub = createScrubber([dbUrl, dbUrl ? urlPassword(dbUrl) : undefined])
   const base = deps.logger ?? silent
@@ -49,7 +74,7 @@ export async function acquireSchema(
     info: (m) => base.info(scrub(m)),
     warn: (m) => base.warn(scrub(m)),
   }
-  const run = createRunner(deps.exec ?? nodeExec, scrub, logger)
+  const run = createRunner(deps.exec ?? nodeExec, scrub, logger, deadline)
   const fs = deps.fs ?? defaultFs
 
   let dumps: PostgrestDumps
@@ -89,11 +114,15 @@ export async function acquireSchema(
     dbUrl ? urlPassword(dbUrl) : undefined,
   ])
   const connect = deps.connect ?? connectPg
-  let connection
+  let connection: DbConnection | undefined
+  deadline.onExpire(() => void connection?.close().catch(() => undefined))
   try {
-    connection = await connect(dumps.dbUrl)
+    connection = await connect(dumps.dbUrl, { timeoutMs: deadline.remaining() })
   } catch (error) {
-    throw new SchemaAcquisitionError('database', urlScrub(messageOf(error)))
+    throw new SchemaAcquisitionError(
+      error instanceof SchemaAcquisitionError ? error.code : 'database',
+      urlScrub(messageOf(error))
+    )
   }
   try {
     logger.debug(`reading the supplementary catalog of ${schemas.join(', ')}`)

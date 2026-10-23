@@ -233,8 +233,8 @@ function diff(a: unknown, b: unknown, path: string, out: SnapshotDifference[]): 
     }
   } else if (isRecord(a) && isRecord(b)) {
     for (const key of [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()) {
-      if (!(key in a)) out.push({ path: `${path}/${key}`, kind: 'added' })
-      else if (!(key in b)) out.push({ path: `${path}/${key}`, kind: 'removed' })
+      if (!Object.hasOwn(a, key)) out.push({ path: `${path}/${key}`, kind: 'added' })
+      else if (!Object.hasOwn(b, key)) out.push({ path: `${path}/${key}`, kind: 'removed' })
       else diff(a[key], b[key], `${path}/${key}`, out)
     }
   } else if (JSON.stringify(a) !== JSON.stringify(b)) {

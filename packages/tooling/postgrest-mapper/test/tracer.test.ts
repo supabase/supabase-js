@@ -9,7 +9,8 @@ import {
 } from '../src'
 
 // Schema of packages/core/postgrest-js/test/supabase/migrations/00000000000000_schema.sql
-const col = (name: string, notNull = false) => ({ name, notNull })
+// the catalog's column types matter to casts: a cast is proven only between pg_catalog types
+const col = (name: string, notNull = false) => ({ name, notNull, type: 'text' })
 const table = (name: string, columns: ReturnType<typeof col>[]): CatalogRelation => ({
   schema: 'public',
   name,
@@ -590,5 +591,70 @@ describe('failure modes', () => {
     const t16 = await createTracer({ pgVersion: 16 })
     const r = await t16.trace({ sql: 'select username from users', columns: ['username'], catalog })
     expect(render(['username'], r)).toEqual(['username:nn@public.users.username'])
+  })
+})
+
+describe('casts of non-null values (F13)', () => {
+  const typed = (name: string, type: string) => ({ name, notNull: true, type })
+  const cat: TraceCatalog = {
+    relations: [
+      {
+        schema: 'public',
+        name: 't',
+        kind: 'table',
+        columns: [
+          typed('plain', 'text'),
+          typed('size', 'integer'),
+          typed('custom', 'public.money_like'),
+          typed('arr', 'public.money_like[]'),
+          typed('quoted', 'public."odd.type"'),
+          { name: 'untyped', notNull: true },
+        ],
+      },
+      {
+        schema: 'public',
+        name: 'v',
+        kind: 'view',
+        columns: [typed('c', 'public.money_like'), typed('p', 'integer')],
+        definition: 'select custom as c, size as p from public.t',
+      },
+    ],
+  }
+  const names = ['a', 'b', 'c', 'd', 'e', 'f']
+
+  it('keeps non-null only when both the source and the target type are in pg_catalog', async () => {
+    const r = await sql(
+      `select plain::varchar(10) as a, size::bigint as b, custom::integer as c,
+              plain::public.money_like as d, arr::integer[] as e, quoted::integer as f
+         from public.t`,
+      names,
+      {},
+      cat
+    )
+    expect(render(names, r)).toEqual(['a:nn', 'b:nn', 'c:null', 'd:null', 'e:null', 'f:null'])
+  })
+
+  it('does not trust a source whose type is unknown or hidden behind a literal cast', async () => {
+    const r = await sql(
+      `select untyped::integer as a, ('1'::public.money_like)::integer as b, ('1'::bigint)::integer as c,
+              coalesce(custom, null)::integer as d, coalesce(size, 1)::bigint as e, count(*)::text as f
+         from public.t group by custom, size, untyped`,
+      names,
+      {},
+      cat
+    )
+    expect(render(names, r)).toEqual(['a:null', 'b:null', 'c:nn', 'd:null', 'e:nn', 'f:nn'])
+  })
+
+  it('keeps the source type through views, subqueries and set operations', async () => {
+    const r = await sql(
+      `select c::integer as a, p::bigint as b, s::integer as c, u::integer as d
+         from (select custom as s from public.t) q, public.v,
+              (select size as u from public.t union all select 1) w`,
+      ['a', 'b', 'c', 'd'],
+      {},
+      cat
+    )
+    expect(render(['a', 'b', 'c', 'd'], r)).toEqual(['a:null', 'b:nn', 'c:null', 'd:nn'])
   })
 })

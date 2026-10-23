@@ -3,6 +3,7 @@ export type SchemaErrorCode =
   | 'dump'
   | 'config'
   | 'database'
+  | 'timeout'
   | 'supabase'
   | 'snapshot-missing'
   | 'snapshot-invalid'
@@ -17,6 +18,18 @@ export class SchemaAcquisitionError extends Error {
     this.name = 'SchemaAcquisitionError'
     this.code = code
   }
+}
+
+/** What `ExecFn` rejects with when it killed the child process because `ExecOptions.timeoutMs` ran out. */
+export class ExecTimeoutError extends Error {
+  constructor(readonly timeoutMs: number) {
+    super(`timed out after ${timeoutMs} ms`)
+    this.name = 'ExecTimeoutError'
+  }
+}
+
+export function timeoutError(what: string, timeoutMs: number): SchemaAcquisitionError {
+  return new SchemaAcquisitionError('timeout', `${what} did not finish within ${timeoutMs} ms`)
 }
 
 export function messageOf(error: unknown): string {

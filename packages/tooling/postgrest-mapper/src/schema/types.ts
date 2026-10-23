@@ -165,6 +165,8 @@ export interface ExecOptions {
   /** Added to the environment of the child process (credentials travel here, never in `args`). */
   env?: Record<string, string>
   cwd?: string
+  /** Kill the child process and reject with `ExecTimeoutError` when it has not exited after this many ms. */
+  timeoutMs?: number
 }
 
 /** Runs a program to completion. Resolves for any exit code; rejects only when it cannot be started. */
@@ -174,6 +176,14 @@ export type ExecFn = (command: string, args: string[], options?: ExecOptions) =>
 export interface DbClient {
   query(sql: string, params?: unknown[]): Promise<Record<string, unknown>[]>
 }
+
+export interface ConnectOptions {
+  /** Upper bound for the connection attempt and for every statement (`statement_timeout`), in ms. */
+  timeoutMs?: number
+}
+
+/** `SchemaDeps.timeoutMs` default: one deadline for the whole acquisition, pulling a PostgREST image included. */
+export const DEFAULT_ACQUIRE_TIMEOUT_MS = 300_000
 
 export interface DbConnection extends DbClient {
   close(): Promise<void>
@@ -195,9 +205,15 @@ export interface SchemaDeps {
   /** Defaults to `nodeExec`. */
   exec?: ExecFn
   /** Opens a connection to a database URL. Defaults to `connectPg`. */
-  connect?: (url: string) => Promise<DbConnection>
+  connect?: (url: string, options?: ConnectOptions) => Promise<DbConnection>
   /** Defaults to `node:fs/promises`. */
   fs?: SchemaFs
+  /**
+   * Deadline of the whole acquisition from a live source, in ms (`DEFAULT_ACQUIRE_TIMEOUT_MS`; `Infinity` for none).
+   * When it runs out the running child process is killed, the connection is closed and the call rejects with
+   * `SchemaAcquisitionError` code `'timeout'`. A snapshot read is not bounded.
+   */
+  timeoutMs?: number
   /** Messages are scrubbed of credentials before they reach it. Defaults to silence. */
   logger?: SchemaLogger
 }

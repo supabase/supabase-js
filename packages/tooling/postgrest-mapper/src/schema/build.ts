@@ -7,7 +7,9 @@ import type { Supplementary, SupplementaryRelation } from './types'
 // ---------------------------------------------------------------------------------------------------------------
 
 function toCatalogRelation(r: SupplementaryRelation): CatalogRelation {
-  const kind = r.kind === 'r' || r.kind === 'p' ? 'table' : r.kind === 'f' ? 'other' : 'view'
+  // A materialized view's stored rows can predate a NOT NULL or CHECK its base tables gained since the last refresh,
+  // so its definition proves nothing about them: like a foreign table, it is opaque (all columns nullable).
+  const kind = r.kind === 'r' || r.kind === 'p' ? 'table' : r.kind === 'v' ? 'view' : 'other'
   const relation: CatalogRelation = {
     schema: r.schema,
     name: r.name,
@@ -148,8 +150,9 @@ function matchCall(node: Node, wanted: string | undefined): Parsed | string {
   const text = constantString(schemaArg)
   if (text === undefined) return 'the schema argument is not a constant'
   const column = columnName(columnArg)
-  if (column === undefined || (wanted !== undefined && column !== wanted)) {
-    return 'the instance argument is not a plain column'
+  if (column === undefined) return 'the instance argument is not a plain column'
+  if (wanted !== undefined && column !== wanted) {
+    return 'the IS NULL guard is not on the validated column'
   }
   try {
     return { column, schema: JSON.parse(text) }
@@ -174,10 +177,11 @@ function matchTerm(node: Node): Parsed | string {
     if (args.length === 2 && nullTests.length === 1 && calls.length === 1) {
       const test = nullTests[0].NullTest
       if (test.nulltesttype !== 'IS_NULL') return 'an OR with a test other than IS NULL'
+      // A guard that is not the validated column itself (an expression, another column) can hold while the value
+      // is anything, so it must not be read as "NULL or valid".
       const guarded = columnName(test.arg)
-      const matched = matchCall(calls[0], guarded)
-      if (typeof matched === 'string') return matched
-      return matched
+      if (guarded === undefined) return 'the IS NULL guard is not a plain column'
+      return matchCall(calls[0], guarded)
     }
     return 'an OR of something other than `col IS NULL` and the schema check'
   }

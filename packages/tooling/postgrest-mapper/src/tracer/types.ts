@@ -33,6 +33,11 @@ export interface CatalogColumn {
   name: string
   /** `pg_attribute.attnotnull`. Ignored for views, whose columns are traced. */
   notNull: boolean
+  /**
+   * `format_type` with every type outside `pg_catalog` schema qualified (`public.money`, `public.money[]`). A cast of
+   * a non-null value stays non-null only between `pg_catalog` types (a cast function of another type may return
+   * NULL), so a column without a type never proves a cast.
+   */
   type?: string
 }
 

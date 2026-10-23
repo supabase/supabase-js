@@ -219,7 +219,7 @@ describe('catalog builders', () => {
       'public.pt:table',
       'public.ft:other',
       'public.v:view',
-      'public.mv:view',
+      'public.mv:other',
       'private.x:table',
     ])
     expect(catalog.relations.find((r) => r.name === 'v')?.definition).toMatch(/SELECT/)

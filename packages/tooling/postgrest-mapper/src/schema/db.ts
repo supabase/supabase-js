@@ -1,21 +1,35 @@
 import { Client } from 'pg'
 import { SchemaAcquisitionError, messageOf } from './errors'
 import { createScrubber, urlPassword } from './scrub'
-import type { DbClient, DbConnection } from './types'
+import type { ConnectOptions, DbClient, DbConnection } from './types'
 
 /**
  * Opens a single `pg` connection. Errors are scrubbed of the URL's credentials.
  *
- * `connectionTimeoutMillis` bounds the wait for a dead host.
+ * `connectionTimeoutMillis` bounds the wait for a dead host. `options.timeoutMs` also becomes the server's
+ * `statement_timeout` and the client's `query_timeout`, so a statement that does not finish is cancelled.
  */
-export async function connectPg(url: string): Promise<DbConnection> {
+export async function connectPg(url: string, options?: ConnectOptions): Promise<DbConnection> {
   const scrub = createScrubber([urlPassword(url), url])
+  const timeoutMs =
+    options?.timeoutMs !== undefined && isFinite(options.timeoutMs)
+      ? Math.max(1, Math.ceil(options.timeoutMs))
+      : undefined
   const fail = (error: unknown): never => {
-    throw new SchemaAcquisitionError('database', scrub(messageOf(error)))
+    const timedOut =
+      (error as { code?: unknown } | null)?.code === '57014' || // query_canceled: statement_timeout
+      messageOf(error) === 'Query read timeout' // pg's query_timeout
+    throw new SchemaAcquisitionError(timedOut ? 'timeout' : 'database', scrub(messageOf(error)))
   }
   let client: Client
   try {
-    client = new Client({ connectionString: url, connectionTimeoutMillis: 10_000 })
+    client = new Client({
+      connectionString: url,
+      connectionTimeoutMillis: Math.min(10_000, timeoutMs ?? 10_000),
+      ...(timeoutMs === undefined
+        ? {}
+        : { statement_timeout: timeoutMs, query_timeout: timeoutMs }),
+    })
     await client.connect()
   } catch (error) {
     return fail(error)

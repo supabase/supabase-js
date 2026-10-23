@@ -192,12 +192,9 @@ export async function planDatabase(
   const catalog = buildTraceCatalog(supplementary)
   const traces = new Map<string, Map<string, TracedColumn>>()
   for (const r of relations) {
-    if (
-      (r.kind !== 'v' && r.kind !== 'm') ||
-      !r.viewDefinition ||
-      !plans.has(`${r.schema}.${r.name}`)
-    )
-      continue
+    // a materialized view is not traced: its stored rows can predate constraints of its base tables (its columns stay
+    // nullable and keep their own key, so no base-table JSON Schema applies)
+    if (r.kind !== 'v' || !r.viewDefinition || !plans.has(`${r.schema}.${r.name}`)) continue
     const columns = [...r.columns].sort((a, b) => a.attnum - b.attnum)
     const traced = await tracer.trace({
       sql: r.viewDefinition,

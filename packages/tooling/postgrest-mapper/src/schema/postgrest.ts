@@ -1,4 +1,5 @@
-import { SchemaAcquisitionError, messageOf } from './errors'
+import { ExecTimeoutError, SchemaAcquisitionError, messageOf, timeoutError } from './errors'
+import type { Deadline } from './deadline'
 import type { ExecFn, ExecOptions, SchemaFs, SchemaLogger } from './types'
 
 /** What a source gives before the database is asked anything. */
@@ -18,14 +19,24 @@ export interface Runner {
 export function createRunner(
   exec: ExecFn,
   scrub: (text: string) => string,
-  logger: SchemaLogger
+  logger: SchemaLogger,
+  deadline?: Deadline
 ): Runner {
   return async (what, command, args, options) => {
+    const remaining = deadline?.remaining()
+    if (deadline && remaining !== undefined && remaining <= 0) throw timeoutError(what, deadline.ms)
     logger.debug(scrub(`${what}: ${[command, ...args].join(' ')}`))
     let result
     try {
-      result = await exec(command, args, options)
+      result = await exec(
+        command,
+        args,
+        remaining !== undefined && isFinite(remaining)
+          ? { ...options, timeoutMs: remaining }
+          : options
+      )
     } catch (error) {
+      if (error instanceof ExecTimeoutError && deadline) throw timeoutError(what, deadline.ms)
       throw new SchemaAcquisitionError(
         'exec',
         scrub(`${what}: could not run \`${command}\`: ${messageOf(error)}`)

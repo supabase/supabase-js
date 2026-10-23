@@ -207,24 +207,24 @@ describe('jsonSchemaToTs: arrays', () => {
     expect(ts({ type: 'array', minItems: 1, uniqueItems: true, maxItems: 4 })).toBe('Json[]')
   })
 
-  it('emits tuples for prefixItems and for array-form items', () => {
+  it('emits tuples for array-form items', () => {
     expect(
-      ts({ type: 'array', prefixItems: [{ type: 'string' }, { type: 'number' }], items: false })
+      ts({ type: 'array', items: [{ type: 'string' }, { type: 'number' }], additionalItems: false })
     ).toBe('[string?, number?]')
     expect(
       ts({
         type: 'array',
-        prefixItems: [{ type: 'string' }, { type: 'number' }],
+        items: [{ type: 'string' }, { type: 'number' }],
         minItems: 2,
-        items: false,
+        additionalItems: false,
       })
     ).toBe('[string, number]')
     expect(
       ts({
         type: 'array',
-        prefixItems: [{ type: 'string' }, { type: 'number' }],
+        items: [{ type: 'string' }, { type: 'number' }],
         minItems: 1,
-        items: { type: 'boolean' },
+        additionalItems: { type: 'boolean' },
       })
     ).toBe('[string, number?, ...boolean[]]')
     expect(
@@ -234,12 +234,43 @@ describe('jsonSchemaToTs: arrays', () => {
       '[string, ...Json[]]'
     )
     expect(
-      ts({ type: 'array', prefixItems: [{ type: ['string', 'null'] }], minItems: 5, items: false })
+      ts({
+        type: 'array',
+        items: [{ type: ['string', 'null'] }],
+        minItems: 5,
+        additionalItems: false,
+      })
     ).toBe('[string | null]')
   })
 
   it('widens an element that is not JSON', () => {
     expect(ts({ type: 'array', items: { type: 'madeup' } })).toBe('unknown[]')
+  })
+})
+
+describe('jsonSchemaToTs: prefixItems', () => {
+  const prefix = [{ type: 'string' }]
+  const dialects = [
+    undefined,
+    'http://json-schema.org/draft-07/schema#',
+    'https://json-schema.org/draft/2019-09/schema',
+    'https://json-schema.org/draft/2020-12/schema',
+    'https://example.com/custom-meta-schema',
+  ]
+
+  // pg_jsonschema ignores prefixItems under every dialect, so it never constrains an element
+  it.each(dialects)('does not make a tuple (dialect %s)', ($schema) => {
+    const base = { ...($schema ? { $schema } : {}), type: 'array' }
+    expect(ts({ ...base, prefixItems: prefix, items: true })).toBe('Json[]')
+    expect(ts({ ...base, prefixItems: prefix, minItems: 1 })).toBe('Json[]')
+    expect(ts({ ...base, prefixItems: prefix, items: { type: 'number' } })).toBe('number[]')
+    expect(ts({ ...base, prefixItems: prefix, items: false })).toBe('[]')
+  })
+
+  it('is ignored behind a $ref too', () => {
+    expect(
+      ts({ $defs: { t: { type: 'array', prefixItems: prefix, items: true } }, $ref: '#/$defs/t' })
+    ).toBe('Json[]')
   })
 })
 
