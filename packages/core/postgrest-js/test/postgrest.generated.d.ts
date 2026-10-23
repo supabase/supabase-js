@@ -2203,7 +2203,7 @@ declare global {
     }
     'r|public|channels|id, id, id': {
       row: { id: SupabaseColumnType<'public.channels.id', number> }
-      sources: { id: 'id'; id: 'id'; id: 'id' }
+      sources: { id: 'id' }
       embeds: {}
     }
     'r|public|channels|id, messages!channel_id!inner(id, username)': {
@@ -2235,7 +2235,7 @@ declare global {
     }
     'r|public|collections|*, parent_id(*)': {
       row: { id: SupabaseColumnType<'public.collections.id', number>; description: SupabaseColumnType<'public.collections.description', string> | null; parent_id: { id: SupabaseColumnType<'public.collections.id', number>; description: SupabaseColumnType<'public.collections.description', string> | null; parent_id: SupabaseColumnType<'public.collections.parent_id', number> | null } | null }
-      sources: { id: 'id'; description: 'description'; parent_id: 'parent_id' }
+      sources: { id: 'id'; description: 'description' }
       embeds: {
         parent_id: { path: ['parent_id']; outputs: [['parent_id']]; join: 'left'; cardinality: 'one' }
       }

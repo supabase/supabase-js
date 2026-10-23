@@ -77,17 +77,57 @@ export function normalizeType(type: string): NormalizedType {
     rest = rest.slice(1)
     dims++
   }
-  // modifiers: varchar(255), numeric(10,2), timestamp(3) with time zone
-  rest = rest.replace(/\(\s*\d+(?:\s*,\s*\d+)?\s*\)/g, '').replace(/ {2,}/g, ' ')
-  const dot = rest.lastIndexOf('.')
-  if (dot > 0 && !rest.startsWith('"')) {
-    const schema = rest.slice(0, dot).replace(/^"|"$/g, '')
-    const name = rest.slice(dot + 1).replace(/^"|"$/g, '')
-    return { name: `${schema}.${name}`, dims }
+  const { parts, quoted } = parseIdentifiers(rest)
+  if (parts.length > 1) return { name: parts.join('.'), dims }
+  const bare = parts[0] ?? ''
+  return { name: quoted && bare !== 'char' ? bare : (SPELLINGS[bare] ?? bare), dims }
+}
+
+const MODIFIER = /\(\s*\d+(?:\s*,\s*\d+)?\s*\)/y
+
+/**
+ * The dot separated identifiers of a type spelling, as the planner reads a type name: dots, modifiers (`(255)`,
+ * `(10,2)`) and padding count outside double quotes only, and `""` inside quotes is one quote. `quoted` is whether the
+ * last identifier was quoted: a quoted name is a user type even when it reads like a builtin spelling.
+ */
+function parseIdentifiers(text: string): { parts: string[]; quoted: boolean } {
+  const parts: string[] = []
+  let current = ''
+  let quoted = false
+  let spaced = false
+  const finish = (): void => {
+    parts.push(spaced ? current.slice(0, -1) : current)
+    current = ''
+    spaced = false
   }
-  const bare = rest.replace(/^"|"$/g, '')
-  const quoted = rest.startsWith('"') && bare !== 'char'
-  return { name: quoted ? bare : (SPELLINGS[bare] ?? bare), dims }
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]!
+    if (c === '"') {
+      quoted = true
+      spaced = false
+      for (i++; i < text.length; i++) {
+        if (text[i] !== '"') current += text[i]
+        else if (text[i + 1] === '"') current += text[i++]
+        else break
+      }
+    } else if (c === '.') {
+      finish()
+      quoted = false
+    } else if (c === '(') {
+      MODIFIER.lastIndex = i
+      const m = MODIFIER.exec(text)
+      if (m) i += m[0].length - 1
+      else current += c
+    } else if (c === ' ') {
+      if (!spaced) current += c
+      spaced = true
+    } else {
+      current += c
+      spaced = false
+    }
+  }
+  finish()
+  return { parts, quoted }
 }
 
 /** Unqualified part of a normalised name. */

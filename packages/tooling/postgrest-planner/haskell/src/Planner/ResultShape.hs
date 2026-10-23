@@ -571,7 +571,12 @@ columnExpr Ctx{cxRows} rel col = case cxRows of
   where
     ty = normalizeType (colNominalType col)
     base = let b = normalizeType (colType col) in if b == ty then Nothing else Just b
-    prov = object ["kind" .= str "plain", "source" .= object ["schema" .= qiSchema rel, "relation" .= qiName rel, "column" .= colName col]]
+    -- The provenance says the column is read from function rows, so a JSON path, a cast or an aggregate over it
+    -- still tells where the value comes from: its table's constraints do not hold for it.
+    prov = object (["kind" .= str "plain", "source" .= object ["schema" .= qiSchema rel, "relation" .= qiName rel, "column" .= colName col]] <> ["functionRows" .= True | fromRows])
+    fromRows = case cxRows of
+      Just TableRows -> True
+      _ -> False
     e = Expr (Just ty) base (colNullable col) prov False
 
 -- | A bare @count@ that names no column and no computed field of a table. Upstream parses it as an ordinary

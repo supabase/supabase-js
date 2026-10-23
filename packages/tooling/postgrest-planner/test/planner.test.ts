@@ -1359,7 +1359,11 @@ describe('postgrest-planner', () => {
       expect(shapeOf(set).fields.map((f) => [f.name, f.pgType])).toEqual(
         shapeOf(direct).fields.map((f) => [f.name, f.pgType])
       )
-      expect(shapeOf(set).fields[0].provenance).toEqual(shapeOf(direct).fields[0].provenance)
+      // a function's rows are marked: the table's constraints do not hold for what a function returns
+      expect(shapeOf(set).fields[0].provenance).toEqual({
+        ...shapeOf(direct).fields[0].provenance,
+        functionRows: true,
+      })
 
       const view = ok(get(catalog, 'get_recent_messages_by_username?search_username=x&select=id'))
       expect(view.rpc?.source).toEqual({
@@ -1388,6 +1392,33 @@ describe('postgrest-planner', () => {
         ['a', 'jsonb', true, undefined],
         ['status', 'public.user_status', true, 'function-rows'],
       ])
+    })
+
+    it('keeps the function rows on the provenance under a JSON path, a cast and an aggregate', () => {
+      const p = ok(
+        get(
+          catalog,
+          'function_returning_set_of_rows?select=a:data->>theme,b:data->theme,c:username::text,d:username.max(),username'
+        )
+      )
+      const column = {
+        kind: 'plain',
+        functionRows: true,
+        source: { schema: 'public', relation: 'users' },
+      }
+      const prov = (name: string) => shapeOf(p).fields.find((f) => f.name === name)?.provenance
+      expect(prov('a')).toMatchObject({ kind: 'jsonPath', of: column })
+      expect(prov('b')).toMatchObject({ kind: 'jsonPath', of: column })
+      expect(prov('c')).toMatchObject({ kind: 'cast', of: column })
+      expect(prov('d')).toMatchObject({ kind: 'aggregate', of: column })
+      expect(prov('username')).toMatchObject(column)
+      // the rows of a table are not function rows
+      const table = ok(
+        planner.plan(catalog, { method: 'GET', url: '/users?select=username,data->>theme' })
+      )
+      expect(JSON.stringify(shapeOf(table).fields.map((f) => f.provenance))).not.toContain(
+        'functionRows'
+      )
     })
 
     it('reads an empty select of a function as *', () => {

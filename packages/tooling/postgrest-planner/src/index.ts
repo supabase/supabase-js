@@ -211,7 +211,16 @@ export type JsonPathStep = { op: '->' | '->>'; key: string } | { op: '->' | '->>
 
 /** Where the value of an output column comes from. Nested kinds carry the provenance they wrap in `of`. */
 export type FieldProvenance =
-  | { kind: 'plain'; source: { schema: string; relation: string; column: string } }
+  /**
+   * `functionRows: true` when the column is read from the rows of a function (the root of an RPC plan, a computed
+   * relationship): the function may return rows the table's constraints refuse, and the flag stays on the provenance
+   * under a JSON path, a cast or an aggregate, which wrap it in `of`.
+   */
+  | {
+      kind: 'plain'
+      source: { schema: string; relation: string; column: string }
+      functionRows?: true
+    }
   | { kind: 'computed'; function: { schema: string; name: string }; relation: QualifiedName }
   | { kind: 'jsonPath'; of: FieldProvenance; path: JsonPathStep[] }
   | { kind: 'representation'; of: FieldProvenance; function: string }

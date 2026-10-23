@@ -1,3 +1,4 @@
+import { normalizeType } from '../printer/pg-types'
 import type {
   CatalogRelation,
   ColumnSource,
@@ -21,8 +22,12 @@ interface Col {
   nullable: boolean
   reason?: string
   source?: ColumnSource
-  /** The value's type is in `pg_catalog`. Absent when it is not or when it is unknown. */
-  builtin?: boolean
+  /**
+   * The value's type when it is a `pg_catalog` type: the planner's internal spelling (`int4`, `timestamptz`, `text[]`).
+   * Absent when the type is not built in or is not known, and `unknown` for the type of a string literal or a NULL
+   * that no other operand has decided yet.
+   */
+  type?: string
 }
 
 /** A named range table entry. `cols: null` means its columns are unknown (function, unknown relation, ...). */
@@ -58,42 +63,104 @@ interface Ctx {
   viewStack: string[]
 }
 
-type Verdict = Pick<Col, 'nullable' | 'reason' | 'source' | 'builtin'>
+type Verdict = Pick<Col, 'nullable' | 'reason' | 'source' | 'type'>
 
 const EMPTY: Scope = { rels: [], visible: [], open: false }
 const NON_NULL: Verdict = { nullable: false }
-const NON_NULL_BUILTIN: Verdict = { nullable: false, builtin: true }
 const nullable = (reason: string, source?: ColumnSource): Verdict =>
   source ? { nullable: true, reason, source } : { nullable: true, reason }
 
-/** pg_catalog types whose cast functions return NULL only for NULL input. */
+/** The types `pg_catalog` ships, as the planner spells them (`isBuiltinType` of its `Planner/PgType.hs`). */
 const BUILTIN_TYPES = new Set([
-  'bool', 'boolean', 'bytea', 'char', 'bpchar', 'character', 'name', 'int8', 'bigint', 'int2', 'smallint', 'int4',
-  'int', 'integer', 'text', 'oid', 'json', 'jsonb', 'xml', 'float4', 'real', 'float8', 'numeric', 'decimal',
-  'varchar', 'date', 'time', 'timetz', 'timestamp', 'timestamptz', 'interval', 'bit', 'varbit', 'uuid', 'money',
-  'inet', 'cidr', 'macaddr', 'macaddr8', 'regclass', 'regtype', 'regproc', 'regnamespace', 'regrole', 'tsvector',
-  'tsquery', 'int4range', 'int8range', 'numrange', 'daterange', 'tsrange', 'tstzrange',
+  'bool', 'bytea', 'char', 'name', 'int8', 'int2', 'int4', 'text', 'oid', 'tid', 'xid', 'cid', 'json', 'xml', 'jsonb',
+  'jsonpath', 'float4', 'float8', 'money', 'macaddr', 'macaddr8', 'inet', 'cidr', 'bpchar', 'varchar', 'date', 'time',
+  'timestamp', 'timestamptz', 'interval', 'timetz', 'bit', 'varbit', 'numeric', 'uuid', 'pg_lsn', 'tsvector', 'tsquery',
+  'gtsvector', 'txid_snapshot', 'pg_snapshot', 'point', 'lseg', 'path', 'box', 'polygon', 'line', 'circle',
+  'int2vector', 'oidvector', 'record', 'void', 'regproc', 'regprocedure', 'regoper', 'regoperator', 'regclass',
+  'regtype', 'regrole', 'regnamespace', 'regconfig', 'regdictionary', 'regcollation', 'int4range', 'numrange',
+  'tsrange', 'tstzrange', 'daterange', 'int8range', 'int4multirange', 'nummultirange', 'tsmultirange',
+  'tstzmultirange', 'datemultirange', 'int8multirange',
 ]) // prettier-ignore
 
+/** What a string literal or a NULL is until another operand decides: the type `unknown`. */
+const UNKNOWN = 'unknown'
+
 /**
- * Whether a `format_type` spelling names a `pg_catalog` type. The catalog schema-qualifies every other type, so a dot
- * outside a quoted identifier means a type of another schema. An unknown type is not trusted.
+ * The planner's spelling of a `pg_catalog` type given as `format_type` prints it, `undefined` for any other type (a
+ * user type, even one printed without its schema because it is on the search path) and for an absent one.
  */
-function inPgCatalog(type: string | undefined): boolean {
-  return type !== undefined && !type.replace(/"[^"]*"/g, '').includes('.')
+function builtinType(type: string | undefined): string | undefined {
+  if (type === undefined) return undefined
+  const { name, dims } = normalizeType(type)
+  return BUILTIN_TYPES.has(name) ? name + '[]'.repeat(dims) : undefined
 }
 
-/** `col` with its `builtin` flag replaced. */
-function withBuiltin(col: Col, builtin: boolean): Col {
-  const { builtin: _previous, ...rest } = col
-  return builtin ? { ...rest, builtin } : rest
+const NUMBERS = ['int2', 'int4', 'int8', 'numeric', 'float4', 'float8']
+const TEXTUAL = ['text', 'varchar', 'bpchar']
+const NAMED = ['name', ...TEXTUAL]
+
+/**
+ * Whether casting a non-NULL value between two built-in types gives a non-NULL value. This mirrors the planner's
+ * `castKeepsNonNull` for built-in pairs (`Planner/ResultShape.hs`), where each pair was checked against the
+ * PostgreSQL sources: between built-in types the cast functions of `pg_cast` never return NULL except
+ * `timestamp_time`, `timestamptz_time` and `timestamptz_timetz` (NULL for infinity), so the allowlist is
+ *
+ * - a type to itself;
+ * - among `int2`, `int4`, `int8`, `numeric`, `float4` and `float8` (out-of-range values raise an error);
+ * - any type to `text`, `varchar` or `bpchar` (an output function never returns NULL for a non-NULL value);
+ * - among `text`, `varchar`, `bpchar` and `name`.
+ *
+ * The tracer has no `pg_cast` rows, so a cast with a user type on either side is never proven here (the planner
+ * proves a few of them with the catalog). The lists are copied because the planner is Haskell compiled to wasm and
+ * exposes no data to the tracer; `test/tracer-casts.test.ts` runs both over the same columns so they cannot drift.
+ */
+function castKeepsNonNull(from: string, to: string): boolean {
+  return (
+    from === to ||
+    (NUMBERS.includes(from) && NUMBERS.includes(to)) ||
+    TEXTUAL.includes(to) ||
+    (NAMED.includes(from) && NAMED.includes(to))
+  )
 }
 
-function isBuiltinType(typeName: Node): boolean {
+/** The type of an expression with two possible types (set operation arms, COALESCE arguments, VALUES rows). */
+function joinTypes(a: string | undefined, b: string | undefined): string | undefined {
+  if (a === undefined || b === undefined) return undefined
+  if (a === b || b === UNKNOWN) return a
+  return a === UNKNOWN ? b : undefined
+}
+
+/** `col` with its type replaced. */
+function withType(col: Col, type: string | undefined): Col {
+  const { type: _previous, ...rest } = col
+  return type === undefined ? rest : { ...rest, type }
+}
+
+/** A type nothing has decided becomes `text` where a query returns it (PostgreSQL 10 and later). */
+const settle = (type: string): string => (type === UNKNOWN ? 'text' : type)
+
+/** The `type` field of a column whose catalog type is `type`: present when it is a `pg_catalog` type. */
+function typeOf(type: string | undefined): { type?: string } {
+  const builtin = builtinType(type)
+  return builtin === undefined ? {} : { type: builtin }
+}
+
+/** The type of a cast target when it is a `pg_catalog` type: `pg_catalog.int4`, `int4` or `int4[]`. */
+function castTarget(typeName: Node): string | undefined {
   const names: string[] = (typeName?.names ?? []).map((n: Node) => n.String?.sval)
-  if (names.length === 0 || names.some((n) => typeof n !== 'string')) return false
-  if (names.length === 1) return BUILTIN_TYPES.has(names[0])
-  return names.length === 2 && names[0] === 'pg_catalog'
+  if (names.length === 0 || names.some((n) => typeof n !== 'string')) return undefined
+  if (names.length === 2 ? names[0] !== 'pg_catalog' : names.length !== 1) return undefined
+  const name = names[names.length - 1]
+  return BUILTIN_TYPES.has(name) ? name + '[]'.repeat(typeName.arrayBounds?.length ?? 0) : undefined
+}
+
+/** The type of a literal that is not a string: PostgreSQL types it `int4`, `numeric`, `bool` or `bit`. */
+function literalType(constant: Node): string | undefined {
+  if (constant.ival !== undefined) return 'int4'
+  if (constant.fval !== undefined) return 'numeric'
+  if (constant.boolval !== undefined) return 'bool'
+  if (constant.bsval !== undefined) return 'bit'
+  return constant.sval !== undefined ? UNKNOWN : undefined
 }
 
 function strings(nodes: Node[] | undefined): string[] {
@@ -233,8 +300,9 @@ class Run {
     }
     return left.map((l, i): Col => {
       const r = right[i]
-      // The arms are coerced to one type, which is only known to be built in when both arms are
-      const builtin = l.builtin && r.builtin ? { builtin: true } : {}
+      // The arms are coerced to one type, which is only known when both arms agree on it
+      const type = joinTypes(l.type, r.type)
+      const typed = type === undefined ? {} : { type }
       switch (op) {
         case 'SETOP_UNION': {
           const source = sameSource(l.source, r.source)
@@ -245,7 +313,7 @@ class Run {
             nullable: isNullable,
             ...(isNullable ? { reason } : {}),
             ...(source ? { source } : {}),
-            ...builtin,
+            ...typed,
           }
         }
         case 'SETOP_INTERSECT': {
@@ -256,11 +324,11 @@ class Run {
             nullable: isNullable,
             ...(isNullable ? { reason: l.reason ?? 'nullable in every INTERSECT arm' } : {}),
             ...(source ? { source } : {}),
-            ...builtin,
+            ...typed,
           }
         }
         default:
-          return withBuiltin(l, !!builtin.builtin)
+          return withType(l, type)
       }
     })
   }
@@ -275,11 +343,13 @@ class Run {
       const verdicts: Verdict[] = []
       for (const row of rows) verdicts.push(await this.expr(row[i], EMPTY, ctx, false))
       const bad = verdicts.find((v) => v.nullable)
+      const type = verdicts.map((v) => v.type).reduce(joinTypes)
+      const typed = type === undefined ? {} : { type: settle(type) }
       cols.push({
         name: `column${i + 1}`,
         nullable: !!bad,
         ...(bad ? { reason: bad.reason } : {}),
-        ...(verdicts.every((v) => v.builtin) ? { builtin: true } : {}),
+        ...typed,
       })
     }
     return cols
@@ -306,7 +376,11 @@ class Run {
         continue
       }
       const verdict = await this.expr(rt.val, scope, ctx, groupingSets)
-      out.push({ name: rt.name || figureColname(rt.val), ...verdict })
+      out.push({
+        name: rt.name || figureColname(rt.val),
+        ...verdict,
+        ...(verdict.type === undefined ? {} : { type: settle(verdict.type) }),
+      })
     }
     return out
   }
@@ -410,7 +484,7 @@ class Run {
           nullable: !c.notNull,
           ...(c.notNull ? {} : { reason: 'nullable column' }),
           source: { schema: rel.schema, relation: rel.name, column: c.name },
-          ...(inPgCatalog(c.type) ? { builtin: true } : {}),
+          ...typeOf(c.type),
         }))
       case 'view': {
         if (ctx.viewStack.includes(key)) return this.opaque(rel, `view ${key} is part of a cycle`)
@@ -423,7 +497,7 @@ class Run {
               ? { reason: traced[i].reason ?? 'nullable in the traced view' }
               : {}),
             ...(traced[i].source ? { source: traced[i].source } : {}),
-            ...(inPgCatalog(c.type) ? { builtin: true } : {}),
+            ...typeOf(c.type),
           }))
         }
         if (rel.definition === undefined) return this.opaque(rel, `view ${key} has no definition`)
@@ -444,7 +518,7 @@ class Run {
       name: c.name,
       nullable: true,
       reason,
-      ...(inPgCatalog(c.type) ? { builtin: true } : {}),
+      ...typeOf(c.type),
     }))
   }
 
@@ -462,9 +536,7 @@ class Run {
         )
       }
       // the catalog's declared type of the view column, not the traced expression's
-      return rel.columns.map((c, i) =>
-        withBuiltin({ ...cols[i], name: c.name }, inPgCatalog(c.type))
-      )
+      return rel.columns.map((c, i) => withType({ ...cols[i], name: c.name }, builtinType(c.type)))
     } catch (e) {
       if (e instanceof Unsupported)
         return this.opaque(rel, `view ${key} could not be traced: ${e.message}`)
@@ -576,37 +648,48 @@ class Run {
           ? { ...verdict, nullable: true, reason: GROUPING_REASON }
           : verdict
       }
-      case 'A_Const':
-        return n.isnull ? { ...nullable('NULL constant'), builtin: true } : NON_NULL_BUILTIN
+      case 'A_Const': {
+        if (n.isnull) return { ...nullable('NULL constant'), type: UNKNOWN }
+        const type = literalType(n)
+        return type === undefined ? NON_NULL : { nullable: false, type }
+      }
       case 'TypeCast': {
-        const target = isBuiltinType(n.typeName)
-        // A literal is parsed by the target type's input function, which never yields NULL.
-        if (n.arg?.A_Const && !n.arg.A_Const.isnull) return target ? NON_NULL_BUILTIN : NON_NULL
+        const target = castTarget(n.typeName)
+        const typed = target === undefined ? {} : { type: target }
+        // A string literal is read by the target type's input function, which never yields NULL for a string.
+        if (n.arg?.A_Const?.sval !== undefined && !n.arg.A_Const.isnull) {
+          return { nullable: false, ...typed }
+        }
         const inner = await this.expr(n.arg, scope, ctx, groupingSets)
         // The cast replaces the value, so the inner provenance is dropped.
         if (inner.nullable) {
-          const verdict = nullable(inner.reason ?? 'cast of a nullable expression')
-          return target ? { ...verdict, builtin: true } : verdict
+          return { ...nullable(inner.reason ?? 'cast of a nullable expression'), ...typed }
         }
-        // A cast between built-in types returns NULL only for NULL; one that involves another type may call a
-        // user function that returns NULL for a non-null value.
-        if (!target) return nullable('cast to a type that is not built in')
-        return inner.builtin
-          ? NON_NULL_BUILTIN
-          : { ...nullable('cast of a value whose type is not known to be built in'), builtin: true }
+        // Only the planner's pairs between built-in types are proven: any other cast may call a function of
+        // `pg_cast` that returns NULL for a non-NULL value (`timestamptz::time` does for infinity).
+        if (target === undefined) return nullable('cast to a type that is not built in')
+        if (inner.type === undefined) {
+          return { ...nullable('cast of a value whose type is not known to be built in'), ...typed }
+        }
+        return castKeepsNonNull(settle(inner.type), target)
+          ? { nullable: false, ...typed }
+          : {
+              ...nullable(`cast from ${settle(inner.type)} to ${target} can return NULL`),
+              ...typed,
+            }
       }
       case 'CoalesceExpr': {
         let reason = 'COALESCE without a non-null argument'
         let proven = false
-        let builtin = true
+        let type: string | undefined = UNKNOWN
         for (const arg of n.args ?? []) {
           const v = await this.expr(arg, scope, ctx, groupingSets)
           if (!v.nullable) proven = true
           else if (!proven) reason = v.reason ?? reason
-          builtin &&= !!v.builtin
+          type = joinTypes(type, v.type)
         }
-        const type = builtin ? { builtin: true } : {}
-        return proven ? { ...NON_NULL, ...type } : { ...nullable(reason), ...type }
+        const typed = type === undefined ? {} : { type }
+        return proven ? { nullable: false, ...typed } : { ...nullable(reason), ...typed }
       }
       case 'FuncCall': {
         const names = strings(n.funcname)
@@ -616,7 +699,7 @@ class Run {
           name === 'count' &&
           (names.length === 1 || (names.length === 2 && names[0] === 'pg_catalog'))
         ) {
-          return NON_NULL_BUILTIN
+          return { nullable: false, type: 'int8' }
         }
         if (n.over) return nullable(`window function ${name}()`)
         const aggregate =
@@ -648,7 +731,7 @@ class Run {
           nullable: found.nullable,
           reason: found.reason,
           source: found.source,
-          builtin: found.builtin,
+          type: found.type,
         }
       }
       // A single name that is a range table entry is a whole-row reference.

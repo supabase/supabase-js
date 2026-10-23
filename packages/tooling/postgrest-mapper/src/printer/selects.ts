@@ -91,6 +91,8 @@ function applyOps(ty: string, ops: readonly SpreadOp[]): string {
 interface Member {
   name: string
   type: string
+  /** The stored column the member's value is, for a root field that is one */
+  column?: string
 }
 
 const inlineObject = (members: Member[]): string =>
@@ -121,7 +123,7 @@ export interface EmbedInfo {
 
 export interface PrintedShape {
   row: string
-  sources: Member[]
+  sources: { name: string; type: string }[]
   embeds: EmbedInfo[]
 }
 
@@ -160,7 +162,6 @@ export function derivedType(
 
 class ShapePrinter {
   readonly embeds: EmbedInfo[] = []
-  readonly sources: Member[] = []
 
   constructor(
     private readonly context: SelectsContext,
@@ -168,16 +169,22 @@ class ShapePrinter {
   ) {}
 
   print(shape: ResultShape): PrintedShape {
-    const members = this.members(shape, [], true)
-    return { row: inlineObject(uniqueMembers(members)), sources: this.sources, embeds: this.embeds }
+    // collisions first: provenance belongs to the member that wins the name, not to one it replaced
+    const members = uniqueMembers(this.members(shape, [], true))
+    const sources = members.flatMap((m) =>
+      m.column === undefined ? [] : [{ name: m.name, type: quote(m.column) }]
+    )
+    return { row: inlineObject(members), sources, embeds: this.embeds }
   }
 
   /** The members a shape adds to the object it is part of; `ops` are the spreads between it and that object. */
   private members(shape: ResultShape, ops: readonly SpreadOp[], root: boolean): Member[] {
     const members: Member[] = []
     for (const field of shape.fields) {
-      members.push({ name: field.name, type: applyOps(this.leaf(field), ops) })
-      if (root) this.source(field)
+      const member: Member = { name: field.name, type: applyOps(this.leaf(field), ops) }
+      const column = root ? this.sourceColumn(field) : undefined
+      if (column !== undefined) member.column = column
+      members.push(member)
     }
     for (const embed of shape.embeds) {
       if (embed.empty) continue
@@ -208,8 +215,8 @@ class ShapePrinter {
     return embed.nullable ? orNull(object) : object
   }
 
-  /** `sources`: root fields that are a stored column's value, so a filter fact on the column applies to them */
-  private source(field: ShapeField): void {
+  /** The stored column a root field is the value of, so a filter fact on the column applies to it */
+  private sourceColumn(field: ShapeField): string | undefined {
     const prov = field.provenance
     const column =
       prov.kind === 'plain'
@@ -219,11 +226,11 @@ class ShapePrinter {
           : prov.kind === 'compositeAttribute'
             ? prov.attribute
             : undefined
-    if (column === undefined || field.pgType === null) return
+    if (column === undefined || field.pgType === null) return undefined
     const c = classifyType(field.pgType, this.context.types)
-    if (c.kind === 'composite' || c.kind === 'relation') return
-    if (c.kind === 'builtin' && (c.name === 'json' || c.name === 'jsonb')) return
-    this.sources.push({ name: field.name, type: quote(column) })
+    if (c.kind === 'composite' || c.kind === 'relation') return undefined
+    if (c.kind === 'builtin' && (c.name === 'json' || c.name === 'jsonb')) return undefined
+    return column
   }
 
   // -------------------------------------------------------------------------------------------------------------
@@ -238,26 +245,34 @@ class ShapePrinter {
       throw new EntryError(`\`${field.name}\`: ${prov.reason}`)
     }
     this.learnDomain(field)
-    // a function can return rows its table's constraints would refuse: no JSON Schema type, always nullable
-    const functionRows = field.reason === 'function-rows'
     if (prov.kind === 'plain') {
+      // a function can return rows its table's constraints would refuse: no JSON Schema type, always nullable
+      const functionRows = prov.functionRows === true
       const k = this.columnKey(prov.source)
       const derived = this.derived(k.key, field.pgType, functionRows)
       const nullable = functionRows || (k.nullable ?? field.nullable)
       return `SupabaseColumnType<${quote(k.key)}, ${derived}>${nullable ? ' | null' : ''}`
     }
     if (prov.kind === 'jsonPath') {
-      const path = this.jsonPath(prov, functionRows)
+      const path = this.jsonPath(prov)
       if (path !== undefined) return path
     }
     if (
       prov.kind === 'aggregate' &&
       (prov.function === 'min' || prov.function === 'max') &&
-      prov.of?.kind === 'plain'
+      prov.of
     ) {
-      // the value of the column itself (design v5 §5.3): the override applies, the planner's nullability stays outside
-      const k = this.columnKey(prov.of.source)
-      return `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, field.pgType)}>${field.nullable ? ' | null' : ''}`
+      // the aggregated value itself (design v5 §5.3): what is known about the column and its path applies to it, the
+      // planner's nullability stays outside
+      if (prov.of.kind === 'plain') {
+        const k = this.columnKey(prov.of.source)
+        const derived = this.derived(k.key, field.pgType, prov.of.functionRows === true)
+        return `SupabaseColumnType<${quote(k.key)}, ${derived}>${field.nullable ? ' | null' : ''}`
+      }
+      if (prov.of.kind === 'jsonPath') {
+        const path = this.jsonPath(prov.of)
+        if (path !== undefined) return path
+      }
     }
     // cast, count, sum, avg, computed, representation: the value is computed, nothing of the column's type is left
     const ty = field.pgType === null ? 'unknown' : tsTypeOf(field.pgType, this.context.types)
@@ -282,16 +297,13 @@ class ShapePrinter {
   }
 
   /** `data->a->>b`: the indexed value, typed against the column's own (possibly JSON Schema derived) type */
-  private jsonPath(
-    prov: Extract<FieldProvenance, { kind: 'jsonPath' }>,
-    functionRows = false
-  ): string | undefined {
+  private jsonPath(prov: Extract<FieldProvenance, { kind: 'jsonPath' }>): string | undefined {
     if (prov.of.kind !== 'plain' || prov.path.length === 0) return undefined
     const source = prov.of.source
     const star = this.context.plans.get(`${source.schema}.${source.relation}`)
     const column = star?.find((f) => f.name === source.column)
     const k = this.columnKey(source)
-    const columnType = `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, column?.pgType ?? 'jsonb', functionRows)}>`
+    const columnType = `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, column?.pgType ?? 'jsonb', prov.of.functionRows === true)}>`
     const steps = prov.path.map((s) => ('key' in s ? s.key : String(s.index)))
     const last = prov.path[prov.path.length - 1]!
     const helper = last.op === '->>' ? 'PgrstJsonText' : 'PgrstJson'
