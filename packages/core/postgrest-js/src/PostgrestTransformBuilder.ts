@@ -36,12 +36,15 @@ export type ExplainOptions = {
   format?: 'json' | 'text'
 }
 
-// the formats `explain()` may ask for: an absent, optional or `undefined` format is the default, text
-type ExplainFormats<O> = 'format' extends keyof O
-  ? [O['format']] extends [undefined]
-    ? 'text'
-    : Exclude<O['format'], undefined> | (undefined extends O['format'] ? 'text' : never)
-  : 'text'
+// the formats `explain()` may ask for, per member of a union of option bags: an absent bag, an absent, optional or
+// `undefined` format is the default, text
+type ExplainFormats<O> = O extends unknown
+  ? 'format' extends keyof O
+    ? [O['format']] extends [undefined]
+      ? 'text'
+      : Exclude<O['format'], undefined> | (undefined extends O['format'] ? 'text' : never)
+    : 'text'
+  : never
 // the body per possible format: the text plan, or the JSON plan, an array that `maybeSingle()` unwraps at runtime
 type ExplainBody<O, M extends MState> =
   ExplainFormats<O> extends infer Fm
@@ -103,15 +106,18 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
-  select<const Q extends string = '*', const O extends SelectOptions = {}>(
+  select<const Q extends string = '*', const O extends SelectOptions | undefined = {}>(
     columns?: Validate<B, Q>,
-    options?: O
+    // a rest tuple: an optional parameter would drop `undefined` from the inferred `O`, and a bag that may be absent is
+    // one more possible request
+    ...rest: [] | [options: O]
   ): PostgrestFilterBuilder<
     BS<B['k'], B['s'], B['r'], B['row'], B['st'], Q, B['km']>,
     Descs<B, Q>,
     F,
     SetM<M, { op: SelOp<B, M, O>; ret: true; count: OrCount<M['count'], SelCount<O>> }>
-  > {
+  >
+  select(columns?: string, options?: SelectOptions): any {
     const cleanedColumns = normalizeSelect(columns ?? '*')
     this.url.searchParams.set('select', cleanedColumns)
     this.headers.append('Prefer', 'return=representation')
@@ -631,6 +637,8 @@ export default class PostgrestTransformBuilder<
    */
   single(): PostgrestFilterBuilder<B, E, F, SetM<M, { card: 'one'; fmt: 'json' }>> {
     this.headers.set('Accept', 'application/vnd.pgrst.object+json')
+    // the last of single() and maybeSingle() wins: the server answers with the object, nothing is left to unwrap
+    this.isMaybeSingle = false
     return this as any
   }
 
@@ -676,6 +684,10 @@ export default class PostgrestTransformBuilder<
   maybeSingle(): PostgrestFilterBuilder<B, E, F, SetM<M, { card: 'maybe' }>> {
     // No Accept header override — we fetch as a list and enforce cardinality client-side.
     // Fixes https://github.com/supabase/postgrest-js/issues/361 for all request methods.
+    // The last of single() and maybeSingle() wins: single()'s object header would make the server refuse zero rows.
+    if (this.headers.get('Accept') === 'application/vnd.pgrst.object+json') {
+      this.headers.delete('Accept')
+    }
     this.isMaybeSingle = true
     return this as any
   }
@@ -836,8 +848,8 @@ export default class PostgrestTransformBuilder<
    * Execution Time: 0.119 ms
    * ```
    */
-  explain<const O extends ExplainOptions = {}>(
-    options?: O
+  explain<const O extends ExplainOptions | undefined = {}>(
+    ...rest: [] | [options: O]
   ): PostgrestBuilder<
     B,
     Desc<ExplainBody<O, M>, {}, {}, 'one'>,

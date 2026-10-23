@@ -9,10 +9,11 @@ export type RpcOptions = {
 }
 export type RefOpts = { referencedTable?: string }
 
-// the option's value: a literal, `undefined` when absent, `boolean` when the type doesn't say (a weak-type
-// `O extends { head?: false }` check would reject `{ count: 'exact' }`, which has no `head` at all)
-export type HeadOf<O> = 'head' extends keyof O ? O['head'] : undefined
-export type GetOf<O> = 'get' extends keyof O ? O['get'] : undefined
+// the option's value, read per member of a union of option bags (`keyof` of a union only holds the shared keys, and
+// `undefined`, an absent bag, has none): a literal, `undefined` when absent, `boolean` when the type doesn't say (a
+// weak-type `O extends { head?: false }` check would reject `{ count: 'exact' }`, which has no `head` at all)
+export type HeadOf<O> = O extends unknown ? ('head' extends keyof O ? O['head'] : undefined) : never
+export type GetOf<O> = O extends unknown ? ('get' extends keyof O ? O['get'] : undefined) : never
 // `{ head: boolean }` may send either
 export type ReadMethod<O> = [HeadOf<O>] extends [true]
   ? 'HEAD'

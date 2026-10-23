@@ -477,6 +477,41 @@ test('explain with options', async () => {
   )
 })
 
+test('single() after maybeSingle() leaves the plan an array', async () => {
+  const res = await postgrest
+    .from('users')
+    .select()
+    .limit(1)
+    .maybeSingle()
+    .single()
+    .explain({ format: 'json' })
+  expect(res.error).toBeNull()
+  expect(Array.isArray(res.data)).toBe(true)
+  expect(res.data?.[0]).toHaveProperty('Plan')
+})
+
+test('maybeSingle() after single() unwraps the plan and returns null for no rows', async () => {
+  const plan = await postgrest
+    .from('users')
+    .select()
+    .limit(1)
+    .single()
+    .maybeSingle()
+    .explain({ format: 'json' })
+  expect(plan.error).toBeNull()
+  expect(Array.isArray(plan.data)).toBe(false)
+  expect(plan.data).toHaveProperty('Plan')
+
+  const none = await postgrest
+    .from('users')
+    .select()
+    .eq('username', 'does-not-exist')
+    .single()
+    .maybeSingle()
+  expect(none.error).toBeNull()
+  expect(none.data).toBeNull()
+})
+
 test('rollback insert/upsert', async () => {
   //No row at the start
   const res1 = await postgrest.from('users').select().eq('username', 'soedirgo')

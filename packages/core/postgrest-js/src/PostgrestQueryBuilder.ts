@@ -897,15 +897,18 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
      * }
      * ```
        */
-  select<const Q extends string = '*', const O extends SelectOptions = {}>(
+  select<const Q extends string = '*', const O extends SelectOptions | undefined = {}>(
     columns?: Validate<RB<S, R, Rel, Q0>, Q>,
-    options?: O
+    // a rest tuple: an optional parameter would drop `undefined` from the inferred `O`, and a bag that may be absent is
+    // one more possible request
+    ...rest: [] | [options: O]
   ): PostgrestFilterBuilder<
     RB<S, R, Rel, Q>,
     Descs<RB<S, R, Rel, Q0>, Q>,
     {},
     MS<ReadMethod<O>, true, 'many', 'default', 'json', false, SelCount<O>>
-  > {
+  >
+  select(columns?: string, options?: SelectOptions): any {
     const { head = false, count } = options ?? {}
 
     const method = head ? 'HEAD' : 'GET'
@@ -1050,14 +1053,15 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
    * ```
    */
   insert<
-    const O extends InsertOptions = {},
+    const O extends InsertOptions | undefined = {},
     Row extends Rel extends { Insert: unknown } ? Rel['Insert'] : never = never,
   >(
     values:
       | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>
       | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>[],
-    options?: O
-  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, false>> {
+    ...rest: [] | [options: O]
+  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, false>>
+  insert(values: unknown, options?: InsertOptions): any {
     const { count, defaultToNull = true } = (options ?? {}) as InsertOptions
     const method = 'POST'
     const { url, headers } = this.cloneRequestState()
@@ -1308,14 +1312,15 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
    */
 
   upsert<
-    const O extends UpsertOptions = {},
+    const O extends UpsertOptions | undefined = {},
     Row extends Rel extends { Insert: unknown } ? Rel['Insert'] : never = never,
   >(
     values:
       | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>
       | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>[],
-    options?: O
-  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, false>> {
+    ...rest: [] | [options: O]
+  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, false>>
+  upsert(values: unknown, options?: UpsertOptions): any {
     const {
       onConflict,
       ignoreDuplicates = false,
@@ -1504,12 +1509,13 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
    * ```
    */
   update<
-    const O extends MutOptions = {},
+    const O extends MutOptions | undefined = {},
     Row extends Rel extends { Update: unknown } ? Rel['Update'] : never = never,
   >(
     values: RejectExcessProperties<Rel extends { Update: unknown } ? Rel['Update'] : never, Row>,
-    options?: O
-  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, true>> {
+    ...rest: [] | [options: O]
+  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, true>>
+  update(values: unknown, options?: MutOptions): any {
     const { count } = (options ?? {}) as MutOptions
     const method = 'PATCH'
     const { url, headers } = this.cloneRequestState()
@@ -1657,9 +1663,10 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
    * }
    * ```
    */
-  delete<const O extends MutOptions = {}>(
-    options?: O
-  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, true>> {
+  delete<const O extends MutOptions | undefined = {}>(
+    ...rest: [] | [options: O]
+  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, true>>
+  delete(options?: MutOptions): any {
     const { count } = (options ?? {}) as MutOptions
     const method = 'DELETE'
     const { url, headers } = this.cloneRequestState()

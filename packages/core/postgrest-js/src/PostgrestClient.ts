@@ -72,6 +72,25 @@ function toTransportFailure(
   }
 }
 
+// the `args` parameter of an rpc: the argument object, or what is wrong with it
+type RpcArgs<
+  Database,
+  SchemaName extends string & keyof Database,
+  F extends string & keyof FnDefs<Database, SchemaName>,
+  A,
+  O,
+> = [AllKeys<A>] extends [never]
+  ? A
+  : [ReadRefusal<A, O>] extends [never]
+    ? [CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>] extends [never]
+      ? Unchecked<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>> extends true
+        ? A
+        : [ArgsMismatch<A, FnDefs<Database, SchemaName>[F]>] extends [never]
+          ? A
+          : ArgsMismatch<A, FnDefs<Database, SchemaName>[F]> // wrong value types: the error points at the offending property
+      : CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>
+    : ReadRefusal<A, O>
+
 /**
  * PostgREST client.
  *
@@ -505,7 +524,7 @@ export default class PostgrestClient<
   rpc<
     const F extends string & keyof FnDefs<Database, SchemaName>,
     const A extends object = {},
-    const O extends RpcOptions = {},
+    const O extends RpcOptions | undefined = {},
   >(
     // with no arguments there is no `args` to flag: the rejection lands on the name
     fn: [AllKeys<A>] extends [never]
@@ -513,23 +532,14 @@ export default class PostgrestClient<
         ? F
         : CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>
       : F,
-    // a rest tuple: an optional parameter next to a conditional type would infer A one union member at a time
+    // a rest tuple: an optional parameter next to a conditional type would infer A one union member at a time, and an
+    // optional `options` would drop `undefined` from the inferred O, while a bag that may be absent is one more
+    // possible request
     ...rest:
-      | [args?: undefined, options?: O]
-      | [
-          args: [AllKeys<A>] extends [never]
-            ? A
-            : [ReadRefusal<A, O>] extends [never]
-              ? [CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>] extends [never]
-                ? Unchecked<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>> extends true
-                  ? A
-                  : [ArgsMismatch<A, FnDefs<Database, SchemaName>[F]>] extends [never]
-                    ? A
-                    : ArgsMismatch<A, FnDefs<Database, SchemaName>[F]> // wrong value types: the error points at the offending property
-                : CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>
-              : ReadRefusal<A, O>,
-          options?: O,
-        ]
+      | [args?: undefined]
+      | [args: undefined, options: O]
+      | [args: RpcArgs<Database, SchemaName, F, A, O>]
+      | [args: RpcArgs<Database, SchemaName, F, A, O>, options: O]
   ): PostgrestFilterBuilder<
     RpcB<
       SchemaOf<Database, SchemaName>,
