@@ -2,24 +2,6 @@ import { GoTrueClientOptions } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
 import type { StorageClientOptions } from '@supabase/storage-js'
-import type {
-  GenericSchema,
-  GenericRelationship,
-  GenericTable,
-  GenericUpdatableView,
-  GenericNonUpdatableView,
-  GenericView,
-  GenericFunction,
-} from './rest/types/common/common'
-export type {
-  GenericSchema,
-  GenericRelationship,
-  GenericTable,
-  GenericUpdatableView,
-  GenericNonUpdatableView,
-  GenericView,
-  GenericFunction,
-}
 
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
@@ -344,14 +326,3 @@ export type SupabaseClientOptions<SchemaName> = {
 export type QueryResult<T> = T extends PromiseLike<infer U> ? U : never
 export type QueryData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
 export type QueryError = PostgrestError
-
-/**
- * Strips internal Supabase metadata from Database types.
- * Useful for libraries defining generic constraints on Database types.
- *
- * @example Stripping internal Supabase metadata
- * ```typescript
- * type CleanDB = DatabaseWithoutInternals<Database>
- * ```
- */
-export type DatabaseWithoutInternals<DB> = Omit<DB, '__InternalSupabase'>

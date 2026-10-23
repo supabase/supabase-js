@@ -1,10 +1,6 @@
 import { expectError, expectType } from 'tsd'
-import {
-  PostgrestSingleResponse,
-  SupabaseClient,
-  createClient,
-  DatabaseWithoutInternals,
-} from '../../src/index'
+import { SupabaseClient, createClient } from '../../src/index'
+import type { DefaultDatabase, GenericDatabase } from '../../src/index'
 import { Database, Json } from '../types'
 
 const URL = 'http://localhost:3000'
@@ -26,29 +22,6 @@ const supabase = createClient<Database>(URL, KEY)
   expectError(supabase.from('users').select().eq('username', nullableVar))
 }
 
-// can override result type
-{
-  const { data, error } = await supabase
-    .from('users')
-    .select('*, messages(*)')
-    .returns<{ messages: { foo: 'bar' }[] }[]>()
-  if (error) {
-    throw new Error(error.message)
-  }
-  expectType<{ foo: 'bar' }[]>(data[0].messages)
-}
-{
-  const { data, error } = await supabase
-    .from('users')
-    .insert({ username: 'foo' })
-    .select('*, messages(*)')
-    .returns<{ messages: { foo: 'bar' }[] }[]>()
-  if (error) {
-    throw new Error(error.message)
-  }
-  expectType<{ foo: 'bar' }[]>(data[0].messages)
-}
-
 // cannot update non-updatable views
 {
   expectError(supabase.from('updatable_view').update({ non_updatable_column: 0 }))
@@ -59,253 +32,68 @@ const supabase = createClient<Database>(URL, KEY)
   expectError(supabase.from('updatable_view').update({ non_updatable_column: 0 }))
 }
 
-// json accessor in select query
-{
-  const { data, error } = await supabase
-    .from('users')
-    .select('data->foo->bar, data->foo->>baz')
-    .single()
-  if (error) {
-    throw new Error(error.message)
-  }
-  // getting this w/o the cast, not sure why:
-  // Parameter type Json is declared too wide for argument type Json
-  expectType<Json>(data.bar as Json)
-  expectType<string>(data.baz)
-}
-
-// rpc return type
+// rpc: the result is `unknown` until the postgrest mapper plans the call
 {
   const { data, error } = await supabase.rpc('get_status', { name_param: 'supabot' })
   if (error) {
     throw new Error(error.message)
   }
-  expectType<'ONLINE' | 'OFFLINE'>(data)
-}
-
-// many-to-one relationship
-{
-  const { data: message, error } = await supabase.from('messages').select('user:users(*)').single()
-  if (error) {
-    throw new Error(error.message)
-  }
-  expectType<Database['public']['Tables']['users']['Row']>(message.user)
-}
-
-// one-to-many relationship
-{
-  const { data: user, error } = await supabase.from('users').select('messages(*)').single()
-  if (error) {
-    throw new Error(error.message)
-  }
-  expectType<Database['public']['Tables']['messages']['Row'][]>(user.messages)
-}
-
-// referencing missing column
-{
-  type SelectQueryError<Message extends string> = { error: true } & Message
-
-  const res = await supabase.from('users').select('username, dat')
-  expectType<
-    PostgrestSingleResponse<SelectQueryError<"column 'dat' does not exist on 'users'.">[]>
-  >(res)
-}
-
-// one-to-one relationship
-{
-  const { data: channels, error } = await supabase
-    .from('channels')
-    .select('channel_details(*)')
-    .single()
-  if (error) {
-    throw new Error(error.message)
-  }
-  expectType<Database['public']['Tables']['channel_details']['Row'] | null>(
-    channels.channel_details
-  )
-}
-
-// throwOnError in chaining
-{
-  const { data: channels, error } = await supabase
-    .from('channels')
-    .select('channel_details(*)')
-    .throwOnError()
-  expectType<typeof error>(null)
-  expectType<
-    {
-      channel_details: {
-        details: string | null
-        id: number
-      } | null
-    }[]
-  >(channels)
-}
-
-// Test Postgrest13
-// should be able to declare specific PostgrestVersion
-{
-  // @ts-expect-error should raise error if provinding invalid version
-  createClient<Database, { PostgrestVersion: 42 }>('HTTP://localhost:3000', KEY)
-}
-
-//  should be able to infer PostgrestVersion from Database __InternalSupabase
-{
-  type DatabaseWithInternals = {
-    __InternalSupabase: {
-      PostgrestVersion: '13'
-    }
-    public: {
-      Tables: {
-        shops: {
-          Row: {
-            address: string | null
-            id: number
-            shop_geom: unknown | null
-          }
-          Insert: {
-            address?: string | null
-            id: number
-            shop_geom?: unknown | null
-          }
-          Update: {
-            address?: string | null
-            id?: number
-            shop_geom?: unknown | null
-          }
-          Relationships: []
-        }
-      }
-      Views: {
-        [_ in never]: never
-      }
-      Functions: {
-        [_ in never]: never
-      }
-      Enums: {
-        [_ in never]: never
-      }
-      CompositeTypes: {
-        [_ in never]: never
-      }
-    }
-  }
-  // Note: The template argument properties (PostgrestVersion) will not be autocompleted
-  // due to a Typescript bug tracked here: https://github.com/microsoft/TypeScript/issues/56299
-  const pg13Client = createClient<DatabaseWithInternals>('HTTP://localhost:3000', KEY)
-  // @ts-expect-error should raise error if providing __InternalSupabase as schema name
-  createClient<DatabaseWithInternals, '__InternalSupabase'>('HTTP://localhost:3000', KEY)
-  // @ts-expect-error should raise error if providing __InternalSupabase as schema name
-  new SupabaseClient<DatabaseWithInternals, '__InternalSupabase'>('HTTP://localhost:3000', KEY)
-  const pg12Client = createClient<Database>('HTTP://localhost:3000', KEY)
-  const res13 = await pg13Client.from('shops').update({ id: 21 }).maxAffected(1)
-  const res12 = await pg12Client.from('shops').update({ id: 21 }).maxAffected(1)
-  const pg13ClientNew = new SupabaseClient<DatabaseWithInternals>('HTTP://localhost:3000', KEY)
-  const res13New = await pg13ClientNew.from('shops').update({ id: 21 }).maxAffected(1)
-  expectType<typeof res13.data>(null)
-  expectType<typeof res13New.data>(null)
-  expectType<typeof res12.Error>('maxAffected method only available on postgrest 13+')
-  // Explicitly set PostgrestVersion should override the inferred __InternalSupabase schema version
-  const internal13Set12 = new SupabaseClient<DatabaseWithInternals, { PostgrestVersion: '12' }>(
-    URL,
-    KEY
-  )
-  const resinternal13Set12 = await internal13Set12.from('shops').update({ id: 21 }).maxAffected(1)
-  // The explicitly set PostgrestVersion should override the inferred __InternalSupabase schema version
-  expectType<typeof resinternal13Set12.Error>('maxAffected method only available on postgrest 13+')
+  expectType<unknown>(data)
 }
 
 // createClient with custom schema
 {
-  const pg12CustomSchemaClient = createClient<Database, 'personal'>(URL, KEY, {
+  const customSchemaClient = createClient<Database, 'personal'>(URL, KEY, {
     db: { schema: 'personal' },
   })
-  const pg12CustomSchemaNewClient = new SupabaseClient<Database, 'personal'>(URL, KEY, {
+  const customSchemaNewClient = new SupabaseClient<Database, 'personal'>(URL, KEY, {
     db: { schema: 'personal' },
   })
-  const res12new = await pg12CustomSchemaNewClient
-    .from('users')
-    .update({ username: 'test' })
-    .maxAffected(1)
-  const res12 = await pg12CustomSchemaClient
-    .from('users')
-    .update({ username: 'test' })
-    .maxAffected(1)
-  expectType<typeof res12.Error>('maxAffected method only available on postgrest 13+')
-  expectType<typeof res12new.Error>('maxAffected method only available on postgrest 13+')
+  customSchemaClient.from('users')
+  customSchemaNewClient.from('users')
   // @ts-expect-error should raise error if providing table name not in the schema
-  pg12CustomSchemaClient.from('channels_details')
+  customSchemaClient.from('channels_details')
   // @ts-expect-error should raise error if providing table name not in the schema
-  pg12CustomSchemaNewClient.from('channels_details')
+  customSchemaNewClient.from('channels_details')
+  // @ts-expect-error should raise error if providing a schema name not in the database
+  createClient<Database, 'unknown_schema'>(URL, KEY)
 }
 
-// createClient with custom schema and PostgrestVersion explicitly set
+// the removed second generic (a PostgrestVersion options object) is gone: the second generic is the schema name
 {
-  const pg13CustomSchemaClient = createClient<Database, { PostgrestVersion: '13' }, 'personal'>(
-    URL,
-    KEY,
-    {
-      db: { schema: 'personal' },
-    }
+  // @ts-expect-error
+  createClient<Database, { PostgrestVersion: '13' }>(URL, KEY)
+}
+
+// without a Database generic the client reads the default database: the global `SupabaseDatabase` when the postgrest
+// mapper declares it, the untyped `GenericDatabase` otherwise (nothing declares it in this package's tests)
+{
+  const untyped = createClient(URL, KEY)
+  expectType<SupabaseClient<DefaultDatabase>>(untyped)
+  expectType<SupabaseClient<GenericDatabase>>(untyped)
+  untyped.from('any_table')
+  untyped.schema('any_schema').from('any_table')
+  untyped.rpc('any_function', { any: 'argument' })
+}
+
+// from, schema and rpc delegate with postgrest-js types
+{
+  expectType<ReturnType<typeof supabase.schema<'personal'>>['from']>(
+    supabase.schema('personal').from
   )
-  const pg12CustomSchemaNewClient = new SupabaseClient<
-    Database,
-    { PostgrestVersion: '12' },
-    'personal'
-  >(URL, KEY, {
-    db: { schema: 'personal' },
-  })
-  const res12new = await pg12CustomSchemaNewClient
-    .from('users')
-    .update({ username: 'test' })
-    .maxAffected(1)
-  const res13 = await pg13CustomSchemaClient
-    .from('users')
-    .update({ username: 'test' })
-    .maxAffected(1)
-  expectType<typeof res13.data>(null)
-  expectType<typeof res12new.Error>('maxAffected method only available on postgrest 13+')
-  // @ts-expect-error should raise error if providing table name not in the schema
-  pg12CustomSchemaClient.from('channels_details')
-  // @ts-expect-error should raise error if providing table name not in the schema
-  pg13CustomSchemaClient.from('channels_details')
+  supabase.schema('personal').from('users')
+  // @ts-expect-error a table of another schema
+  supabase.schema('personal').from('messages')
+  // @ts-expect-error a schema that isn't in the database
+  supabase.schema('unknown_schema')
+  expectError(supabase.rpc('function_that_does_not_exist'))
 }
 
-// DatabaseWithoutInternals utility type
+// `.cast<T>()` replaces `.returns<T>()` and `.overrideTypes<T>()`
 {
-  type TestDatabaseWithInternals = {
-    __InternalSupabase: {
-      PostgrestVersion: '14'
-    }
-    public: {
-      Tables: {
-        users: {
-          Row: { id: number }
-          Insert: { id: number }
-          Update: { id?: number }
-          Relationships: []
-        }
-      }
-      Views: { [_ in never]: never }
-      Functions: { [_ in never]: never }
-      Enums: { [_ in never]: never }
-      CompositeTypes: { [_ in never]: never }
-    }
+  const { data, error } = await supabase.from('users').select().cast<{ foo: 'bar' }>()
+  if (error) {
+    throw new Error(error.message)
   }
-
-  type CleanedDatabase = DatabaseWithoutInternals<TestDatabaseWithInternals>
-
-  // Should have 'public' schema
-  expectType<CleanedDatabase['public']>({} as TestDatabaseWithInternals['public'])
-
-  // Should not have '__InternalSupabase' key
-  type HasInternalKey = '__InternalSupabase' extends keyof CleanedDatabase ? true : false
-  expectType<HasInternalKey>(false)
-
-  // Should work with databases that don't have __InternalSupabase
-  type PlainDatabase = {
-    public: { Tables: {}; Views: {}; Functions: {}; Enums: {}; CompositeTypes: {} }
-  }
-  type CleanedPlainDatabase = DatabaseWithoutInternals<PlainDatabase>
-  expectType<CleanedPlainDatabase>({} as PlainDatabase)
+  expectType<{ foo: 'bar' }[]>(data)
 }

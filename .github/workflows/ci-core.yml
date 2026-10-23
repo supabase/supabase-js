@@ -105,8 +105,6 @@ jobs:
       - name: Audit production dependencies
         run: pnpm audit --audit-level=high --prod --registry https://registry.npmjs.org
       - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
-      - name: Check common types are in sync
-        run: pnpm run codegen:check
       - name: Build affected packages
         run: pnpm nx affected --target=build
       - name: Generate docs json for affected packages
