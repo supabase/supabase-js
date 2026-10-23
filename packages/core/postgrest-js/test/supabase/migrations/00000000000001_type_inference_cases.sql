@@ -301,3 +301,22 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_
 GRANT EXECUTE ON FUNCTION extensions.label(public.cast_cases) TO anon, authenticated, service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA personal TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION ext_owned.ext_label(public.ext_label_cases) TO anon, authenticated, service_role;
+
+-- Planner review round 4.
+-- A mutation with an empty select: RETURNING holds the primary key, or 1 when the table has none.
+CREATE TABLE public.empty_select_pk (id bigint PRIMARY KEY, name text);
+CREATE TABLE public.empty_select_nopk (a integer, b text);
+CREATE TABLE public.empty_select_cpk (z integer, a text, note text, PRIMARY KEY (z, a));
+
+-- A single OUT argument whose type is a domain over a composite: PostgreSQL expands it like a composite.
+CREATE TABLE public.out_domain_users (id integer, name text);
+CREATE DOMAIN public.out_domain_row AS public.out_domain_users;
+CREATE FUNCTION public.out_domain(OUT u public.out_domain_row)
+LANGUAGE sql STABLE AS $$ SELECT ROW(1, 'Ada')::public.out_domain_users; $$;
+
+-- A single unnamed scalar OUT argument is a scalar function
+CREATE FUNCTION public.single_unnamed_out(OUT integer)
+LANGUAGE sql IMMUTABLE AS $$ SELECT 7; $$;
+
+GRANT ALL ON public.empty_select_pk, public.empty_select_nopk, public.empty_select_cpk, public.out_domain_users TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.out_domain(), public.single_unnamed_out() TO anon, authenticated, service_role;

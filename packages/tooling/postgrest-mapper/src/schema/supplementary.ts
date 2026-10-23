@@ -21,6 +21,13 @@ exposed as (
 covered as (
   select array(select distinct x from unnest($1::text[] || $2::text[]) x where x <> 'pg_catalog' order by x) as names
 ),
+-- the types a function returns as a row: a composite, record, or a domain over one (transitively): PostgreSQL
+-- expands such a domain like its composite (funcapi.c), so it is not a scalar whatever its own typtype says
+composite_types(oid) as (
+  select t.oid from pg_type t where t.typtype = 'c' or t.oid = 'pg_catalog.record'::regtype
+  union
+  select t.oid from pg_type t join composite_types c on t.typtype = 'd' and t.typbasetype = c.oid
+),
 -- every relation an exposed view selects from, transitively, through its rewrite rule
 deps(oid) as (
   select c.oid from pg_class c where c.relkind in ('v', 'm') and c.relnamespace in (select oid from exposed)
@@ -83,13 +90,13 @@ select jsonb_build_object(
                    from unnest(coalesce(p.proargtypes::oid[], '{}')) with ordinality as u(t, o)),
       'volatility', p.provolatile,
       'returns', jsonb_build_object(
-        'kind', case when rt.typtype = 'c' or rt.oid = 'pg_catalog.record'::regtype then 'composite' else 'scalar' end,
+        'kind', case when rt.oid in (select oid from composite_types) then 'composite' else 'scalar' end,
         'setof', p.proretset,
         'type', format_type(p.prorettype, null)),
       'outColumns', case when p.proallargtypes is not null and p.proargmodes is not null
                          and exists (select 1 from unnest(p.proargmodes) m where m in ('t', 'b', 'o')) then
-                      (select jsonb_agg(jsonb_build_object('name', coalesce(nullif(p.proargnames[o.i], ''), 'column' || o.n), 'type', format_type(p.proallargtypes[o.i], null)) order by o.i)
-                       from (select i, row_number() over (order by i) as n
+                      (select jsonb_agg(jsonb_build_object('name', coalesce(nullif(p.proargnames[o.i], ''), case when o.total = 1 then 'pgrst_call' else 'column' || o.n end), 'type', format_type(p.proallargtypes[o.i], null)) order by o.i)
+                       from (select i, row_number() over (order by i) as n, count(*) over () as total
                              from generate_subscripts(p.proargmodes, 1) i where p.proargmodes[i] in ('t', 'b', 'o')) o)
                     end,
       'language', l.lanname,
@@ -115,13 +122,13 @@ select jsonb_build_object(
                    from unnest(coalesce(p.proargtypes::oid[], '{}')) with ordinality as u(t, o)),
       'volatility', p.provolatile,
       'returns', jsonb_build_object(
-        'kind', case when rt.typtype = 'c' or rt.oid = 'pg_catalog.record'::regtype then 'composite' else 'scalar' end,
+        'kind', case when rt.oid in (select oid from composite_types) then 'composite' else 'scalar' end,
         'setof', p.proretset,
         'type', format_type(p.prorettype, null)),
       'outColumns', case when p.proallargtypes is not null and p.proargmodes is not null
                          and exists (select 1 from unnest(p.proargmodes) m where m in ('t', 'b', 'o')) then
-                      (select jsonb_agg(jsonb_build_object('name', coalesce(nullif(p.proargnames[o.i], ''), 'column' || o.n), 'type', format_type(p.proallargtypes[o.i], null)) order by o.i)
-                       from (select i, row_number() over (order by i) as n
+                      (select jsonb_agg(jsonb_build_object('name', coalesce(nullif(p.proargnames[o.i], ''), case when o.total = 1 then 'pgrst_call' else 'column' || o.n end), 'type', format_type(p.proallargtypes[o.i], null)) order by o.i)
+                       from (select i, row_number() over (order by i) as n, count(*) over () as total
                              from generate_subscripts(p.proargmodes, 1) i where p.proargmodes[i] in ('t', 'b', 'o')) o)
                     end
     ) order by n.nspname, p.proname, p.oid)

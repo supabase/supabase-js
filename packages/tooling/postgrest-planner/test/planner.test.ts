@@ -722,6 +722,52 @@ describe('postgrest-planner', () => {
       )
       expect(summary(fieldsOf(del))).toEqual([['username', 'text', false, 'plain']])
     })
+
+    it('describes the empty select of a mutation as what RETURNING gives: the primary key, or 1', () => {
+      // PostgREST adds the primary key to the RETURNING of a mutation (Plan.hs inferColsEmbedNeeds), in the order
+      // of a Set of names, then reads the empty select as * of that: `DELETE /empty_select_pk?id=eq.2&select=`
+      // answers [{"id":2}], the composite key (z, a) answers [{"a":"x","z":1}], a table without a key
+      // `RETURNING 1` and answers [{"?column?":1}]
+      const run = (method: 'POST' | 'PATCH' | 'DELETE', url: string) =>
+        ok(
+          planner.plan(catalog, {
+            method,
+            url,
+            headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+            ...(method === 'DELETE' ? {} : { body: JSON.stringify({}) }),
+          })
+        )
+      for (const [method, url] of [
+        ['POST', '/empty_select_pk?select='],
+        ['PATCH', '/empty_select_pk?id=eq.1&select='],
+        ['DELETE', '/empty_select_pk?id=eq.1&select='],
+      ] as const) {
+        const p = run(method, url)
+        expect(p).toMatchObject({ form: 'rowset', degraded: [] })
+        expect(summary(fieldsOf(p))).toEqual([['id', 'int8', false, 'plain']])
+      }
+      expect(summary(fieldsOf(run('DELETE', '/empty_select_cpk?z=eq.1&select=')))).toEqual([
+        ['a', 'text', false, 'plain'],
+        ['z', 'int4', false, 'plain'],
+      ])
+      for (const [method, url] of [
+        ['POST', '/empty_select_nopk?select='],
+        ['PATCH', '/empty_select_nopk?a=eq.1&select='],
+        ['DELETE', '/empty_select_nopk?a=eq.1&select='],
+      ] as const) {
+        expect(summary(fieldsOf(run(method, url)))).toEqual([
+          ['?column?', 'int4', false, 'unresolved'],
+        ])
+      }
+      // a select that names a column keeps what it names; an embed next to nothing is not an empty select
+      expect(summary(fieldsOf(run('DELETE', '/empty_select_pk?id=eq.1&select=name')))).toEqual([
+        ['name', 'text', true, 'plain'],
+      ])
+      // without the representation there are no rows to describe
+      expect(
+        ok(planner.plan(catalog, { method: 'DELETE', url: '/empty_select_pk?id=eq.1&select=' }))
+      ).toMatchObject({ form: 'none', shape: null })
+    })
   })
 
   describe('result shape of embeds', () => {
@@ -1519,6 +1565,43 @@ describe('postgrest-planner', () => {
       expect(
         shapeOf(ok(get(catalog, 'out_composite?select=parent_id'))).fields.map((f) => f.name)
       ).toEqual(['parent_id'])
+    })
+
+    it('expands the row of a single OUT column whose type is a domain over a table or composite', () => {
+      // out_domain(OUT u out_domain_row), the domain over the table out_domain_users, answers
+      // {"id":1,"name":"Ada"}: Postgres builds the row descriptor from the base type of the domain (funcapi.c)
+      const p = ok(get(catalog, 'out_domain'))
+      expect(p).toMatchObject({ form: 'single-composite', degraded: [] })
+      expect(p.rpc?.source).toEqual({
+        kind: 'relation',
+        schema: 'public',
+        name: 'out_domain_users',
+        view: false,
+      })
+      expect(shapeOf(p).relation).toEqual({ schema: 'public', name: 'out_domain_users' })
+      expect(shapeOf(p).fields.map((f) => [f.name, f.pgType])).toEqual([
+        ['id', 'int4'],
+        ['name', 'text'],
+      ])
+      expect(shapeOf(ok(get(catalog, 'out_domain?select=name'))).fields.map((f) => f.name)).toEqual(
+        ['name']
+      )
+    })
+
+    it('names a single unnamed scalar OUT column pgrst_call, as the function alias of the call', () => {
+      // single_unnamed_out(OUT integer) answers {"pgrst_call":7}, with and without a select: columnN is the name
+      // of an output of a record descriptor (two outputs or more), a scalar function takes the alias of the call
+      // (parse_relation.c chooseScalarFunctionAlias; upstream aliases it pgrst_call)
+      const p = ok(get(catalog, 'single_unnamed_out'))
+      expect(p).toMatchObject({ form: 'single-composite', degraded: [] })
+      expect(summary(shapeOf(p).fields)).toEqual([['pgrst_call', 'int4', true, 'function-rows']])
+      expect(p.rpc?.source).toEqual({
+        kind: 'returnsTable',
+        columns: [{ name: 'pgrst_call', pgType: 'int4' }],
+      })
+      expect(
+        shapeOf(ok(get(catalog, 'single_unnamed_out?select=pgrst_call'))).fields.map((f) => f.name)
+      ).toEqual(['pgrst_call'])
     })
 
     it('says so when the columns of a function are not known', () => {

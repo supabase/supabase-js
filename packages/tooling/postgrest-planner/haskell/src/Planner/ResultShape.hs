@@ -37,7 +37,7 @@ import Data.Aeson.Types (Pair)
 import Data.Either (isRight)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.HashMap.Strict.InsOrd as HMI
-import Data.List (find, nub)
+import Data.List (find, nub, sort)
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
 import Control.Applicative ((<|>))
 import Control.Monad (guard, join)
@@ -106,10 +106,10 @@ planShape searchPath sc supp apiReq = \case
     -- @isWrite@: the read plan of a mutation (upstream reads its embeds from the physical tables, under the
     -- statement's snapshot, so a to-one embed can be missing even when its key holds). @rootWhere@: the
     -- filters of the mutation itself, which upstream keeps in the mutate plan.
-    rowset handler isWrite rel tree@(Node rp _) rootWhere =
+    rowset handler isWrite rel tree rootWhere =
       let env = Env ctx isWrite
           -- the rows of a mutation have what @RETURNING@ gives, not the columns of the table
-          (fields, notes) = if isWrite then nodeFields ctx selectTree rp rel else rootFields ctx selectTree tree rel
+          (fields, notes) = if isWrite then mutationFields ctx selectTree tree rel else rootFields ctx selectTree tree rel
           embeds = childEmbeds env (Parent [] [] Nothing selectTree False) Nothing tree
           shape = object ["relation" .= qiJSON rel, "fields" .= (fieldJSON <$> fields), "embeds" .= (emJSON <$> embeds)]
       in  result handler (Just "rowset") (Just shape) (notes <> concatMap emNotes embeds) Nothing (filtersOf ctx ctx rel rootWhere tree)
@@ -248,6 +248,22 @@ rootFields :: Ctx -> [Tree SelectItem] -> ReadPlanTree -> QualifiedIdentifier ->
 rootFields ctx selectTree (Node rp forest) rel
   | null (RP.select rp) && null forest = expandStar ctx rel
   | otherwise = nodeFields ctx selectTree rp rel
+
+-- | The fields of the rows of a mutation. An empty select with no embed is read as @*@ of what the statement
+-- returns, not of the table: upstream (@Plan.hs@ @inferColsEmbedNeeds@) puts the primary key in @RETURNING@, as a
+-- set of names (so sorted by name, not in the order of the key), and @returningF@ returns @1@ when the table has
+-- no key (the column is named @?column?@).
+mutationFields :: Ctx -> [Tree SelectItem] -> ReadPlanTree -> QualifiedIdentifier -> ([Field], [Text])
+mutationFields ctx selectTree (Node rp forest) rel
+  | null (RP.select rp) && null forest = (returnedKey ctx rel, [])
+  | otherwise = nodeFields ctx selectTree rp rel
+
+returnedKey :: Ctx -> QualifiedIdentifier -> [Field]
+returnedKey ctx@Ctx{cxTables} rel = case HM.lookup rel cxTables of
+  Nothing -> [mkField "*" (unresolvedExpr ("unknown relation " <> qualified rel))]
+  Just table -> case sort (nub (tablePKCols table)) of
+    [] -> [mkField "?column?" (Expr (Just "int4") Nothing False (unresolved "RETURNING 1: the table has no primary key") False)]
+    keys -> [columnField ctx rel col | k <- keys, Just col <- [HMI.lookup k (tableColumns table)]]
 
 -- | The fields of a node that is not a to-one spread, and the notes they raise.
 nodeFields :: Ctx -> [Tree SelectItem] -> RP.ReadPlan -> QualifiedIdentifier -> ([Field], [Text])

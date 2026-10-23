@@ -602,6 +602,27 @@
         {
             "base": null,
             "kind": "b",
+            "name": "_empty_select_cpk",
+            "schema": "public",
+            "element": "public.empty_select_cpk"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "_empty_select_nopk",
+            "schema": "public",
+            "element": "public.empty_select_nopk"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "_empty_select_pk",
+            "schema": "public",
+            "element": "public.empty_select_pk"
+        },
+        {
+            "base": null,
+            "kind": "b",
             "name": "_events",
             "schema": "public",
             "element": "public.events"
@@ -668,6 +689,20 @@
             "name": "_non_updatable_view",
             "schema": "public",
             "element": "public.non_updatable_view"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "_out_domain_row",
+            "schema": "public",
+            "element": "public.out_domain_row"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "_out_domain_users",
+            "schema": "public",
+            "element": "public.out_domain_users"
         },
         {
             "base": null,
@@ -903,6 +938,27 @@
         {
             "base": null,
             "kind": "c",
+            "name": "empty_select_cpk",
+            "schema": "public",
+            "element": null
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "empty_select_nopk",
+            "schema": "public",
+            "element": null
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "empty_select_pk",
+            "schema": "public",
+            "element": null
+        },
+        {
+            "base": null,
+            "kind": "c",
             "name": "events",
             "schema": "public",
             "element": null
@@ -967,6 +1023,20 @@
             "base": null,
             "kind": "c",
             "name": "non_updatable_view",
+            "schema": "public",
+            "element": null
+        },
+        {
+            "base": "public.out_domain_users",
+            "kind": "d",
+            "name": "out_domain_row",
+            "schema": "public",
+            "element": null
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "out_domain_users",
             "schema": "public",
             "element": null
         },
@@ -1774,6 +1844,24 @@
             "volatility": "s"
         },
         {
+            "name": "out_domain",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.out_domain_row",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": [
+                {
+                    "name": "u",
+                    "type": "public.out_domain_row"
+                }
+            ],
+            "volatility": "s"
+        },
+        {
             "name": "out_inout",
             "schema": "public",
             "returns": {
@@ -2219,6 +2307,24 @@
             "volatility": "v"
         },
         {
+            "name": "single_unnamed_out",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": [
+                {
+                    "name": "pgrst_call",
+                    "type": "integer"
+                }
+            ],
+            "volatility": "i"
+        },
+        {
             "name": "sum_scores",
             "schema": "public",
             "returns": {
@@ -2647,6 +2753,52 @@
             ]
         },
         {
+            "name": "empty_select_cpk",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "z",
+                    "attnum": 1
+                },
+                {
+                    "name": "a",
+                    "attnum": 2
+                },
+                {
+                    "name": "note",
+                    "attnum": 3
+                }
+            ]
+        },
+        {
+            "name": "empty_select_nopk",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "a",
+                    "attnum": 1
+                },
+                {
+                    "name": "b",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "empty_select_pk",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "name",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
             "name": "events",
             "schema": "public",
             "columns": [
@@ -2849,6 +3001,20 @@
                 {
                     "name": "username",
                     "attnum": 1
+                }
+            ]
+        },
+        {
+            "name": "out_domain_users",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "name",
+                    "attnum": 2
                 }
             ]
         },
