@@ -32,6 +32,20 @@ export {
   REFERENCED_TABLE_METHODS,
 } from './methods'
 export { operandKey, requestKeys, selectKey } from './keys'
+export { jsonSchemaToTs } from './jsonschema'
+export type { JsonSchemaToTsOptions } from './jsonschema'
+export { createTracer } from './tracer'
+export type {
+  CatalogColumn,
+  CatalogRelation,
+  ColumnSource,
+  TraceCatalog,
+  TraceInput,
+  TraceResult,
+  TracedColumn,
+  Tracer,
+  TracerOptions,
+} from './tracer'
 
 function byKey<T>(items: Iterable<T>, key: (item: T) => string): T[] {
   return [...items].sort((a, b) => {

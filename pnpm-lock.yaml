@@ -604,6 +604,9 @@ importers:
 
   packages/tooling/postgrest-mapper:
     dependencies:
+      '@supabase/pg-parser':
+        specifier: ^0.1.7
+        version: 0.1.7
       oxc-parser:
         specifier: ^0.154.0
         version: 0.154.0
@@ -3344,6 +3347,9 @@ packages:
     resolution: {integrity: sha512-y96p4JdUuKygzUDCRo1T8yEiLbyWIiL/4Qdnmgu/X84WJOZmji/TlW5ThqDllsQuGWbkgovy+6LLqWKHk330XQ==}
     cpu: [x64]
     os: [win32]
+
+  '@supabase/pg-parser@0.1.7':
+    resolution: {integrity: sha512-NSf8e0dwQjLr0QFMwUI04reFzi+XA8eYo4neEfHM/InbS68N91z5bvOvg+ikXNqHFj+6nsBfckLdt7DZsnptzg==}
 
   '@supabase/phoenix@0.4.5':
     resolution: {integrity: sha512-aAn9H9ovVyeApKy11OWOrrOGq8DV68yWeH4ud2lN9fzn4aO8Zb5GLL9m1pUg9nLqIcT+ZDfAcsZe0E/nqdv2lw==}
@@ -11197,6 +11203,8 @@ snapshots:
 
   '@supabase/cli-windows-x64@2.120.0':
     optional: true
+
+  '@supabase/pg-parser@0.1.7': {}
 
   '@supabase/phoenix@0.4.5': {}
 
