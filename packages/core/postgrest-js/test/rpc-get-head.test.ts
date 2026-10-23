@@ -14,9 +14,9 @@ const setup = () => {
     text: async () => '"ok"',
   })
   const client = new PostgrestClient(BASE, { fetch: fetchMock as any })
-  // the generic (untyped) database is in effect: any function name and any arguments type-check
+  // `fn` is not in the schema: the function name and the arguments are cast, the request building is what is tested
   const call = (args: object | undefined, options: { get?: boolean; head?: boolean } = {}) =>
-    client.rpc('fn', args as any, options as any) as any
+    client.rpc('fn' as any, args as any, options as any) as any
   return { fetchMock, call }
 }
 

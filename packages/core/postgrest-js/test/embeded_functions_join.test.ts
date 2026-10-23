@@ -1,10 +1,11 @@
-import type { RequiredDeep } from 'type-fest'
 import { z } from 'zod'
 import { PostgrestClient } from '../src/index'
 import { expectType, type TypeEqual } from './types'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient(REST_URL)
+
+type MessagesRow = SupabaseDatabase['public']['Tables']['messages']['Row']
 
 describe('embeded functions select', () => {
   test('embeded_setof_function - function returning a setof embeded table', async () => {
@@ -78,7 +79,7 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    let expected: { id: number; all_channels_messages: MessagesRow[] }[]
     // Assert over the keys of the expected and result objects to ensure consistency between versions of types
     // should always fallback to a SelectQueryError if the relation cannot be found
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
@@ -227,7 +228,7 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    let expected: { username: string; all_user_messages: MessagesRow[] }[]
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
@@ -593,9 +594,11 @@ describe('embeded functions select', () => {
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
-        user_called_profile: z.object({
-          username: z.string().nullable(),
-        }),
+        user_called_profile: z
+          .object({
+            username: z.string().nullable(),
+          })
+          .nullable(),
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
@@ -765,7 +768,7 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    let expected: { username: string; user_messages: MessagesRow[] }[]
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
@@ -834,7 +837,7 @@ describe('embeded functions select', () => {
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
-        username: z.string().nullable(),
+        username: z.string(),
         active_user_messages: z.array(
           z.object({
             channel_id: z.number(),
@@ -846,7 +849,7 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    let expected: { username: string; active_user_messages: MessagesRow[] }[]
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
@@ -922,16 +925,16 @@ describe('embeded functions select', () => {
         username: z.string(),
         recent_messages: z.array(
           z.object({
-            channel_id: z.number().nullable(),
+            channel_id: z.number(),
             data: z.unknown().nullable(),
-            id: z.number().nullable(),
+            id: z.number(),
             message: z.string().nullable(),
-            username: z.string().nullable(),
+            username: z.string(),
           })
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    let expected: { username: string; recent_messages: MessagesRow[] }[]
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
@@ -1000,19 +1003,19 @@ describe('embeded functions select', () => {
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
-        username: z.string().nullable(),
+        username: z.string(),
         recent_messages: z.array(
           z.object({
-            channel_id: z.number().nullable(),
+            channel_id: z.number(),
             data: z.unknown().nullable(),
-            id: z.number().nullable(),
+            id: z.number(),
             message: z.string().nullable(),
-            username: z.string().nullable(),
+            username: z.string(),
           })
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    let expected: { username: string; recent_messages: MessagesRow[] }[]
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
@@ -1094,6 +1097,7 @@ describe('embeded functions select', () => {
   })
 
   test('embeded_function_returning_row - Cannot embed an function that is not a setofOptions one', async () => {
+    // @ts-expect-error PGRST200
     const res = await postgrest.from('channels').select('id, user:function_returning_row(*)')
     expect(res).toMatchInlineSnapshot(`
       {
@@ -1111,7 +1115,7 @@ describe('embeded functions select', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
-    let expected: never[]
+    let expected: never
     expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 
@@ -1162,10 +1166,12 @@ describe('embeded functions select', () => {
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
-        user: z.object({
-          status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
-          username: z.string().nullable(),
-        }),
+        user: z
+          .object({
+            status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
+            username: z.string(),
+          })
+          .nullable(),
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
@@ -1177,6 +1183,7 @@ describe('embeded functions select', () => {
   test('embeded_function_returning_set_of_rows - function returning set of rows', async () => {
     const res = await postgrest
       .from('messages')
+      // @ts-expect-error PGRST200
       .select('id, users:function_returning_set_of_rows(*)')
     expect(res).toMatchInlineSnapshot(`
       {
@@ -1194,7 +1201,7 @@ describe('embeded functions select', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
-    let expected: never[]
+    let expected: never
     expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 
@@ -1347,8 +1354,8 @@ describe('embeded functions select', () => {
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
+    // @ts-expect-error PGRST202
     const use_rpc_call = await postgrest.rpc('created_ago', {
-      // @ts-expect-error Object literal may only specify known properties
       id: 1,
     })
     expect(use_rpc_call).toMatchInlineSnapshot(`
@@ -1367,14 +1374,7 @@ describe('embeded functions select', () => {
       }
     `)
     let result_rpc: Exclude<typeof use_rpc_call.data, null>
-    expectType<
-      TypeEqual<
-        typeof result_rpc,
-        {
-          error: true
-        } & 'the function public.created_ago with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
-      >
-    >(true)
+    expectType<TypeEqual<typeof result_rpc, never>>(true)
   })
   // Test the days_since_event embeded function over partitioned table
   test('select the days_since_event embeded function over partitioned table', async () => {
@@ -1403,8 +1403,8 @@ describe('embeded functions select', () => {
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
+    // @ts-expect-error PGRST202
     const use_rpc_call = await postgrest.rpc('days_since_event', {
-      // @ts-expect-error Object literal may only specify known properties
       id: 1,
     })
     expect(use_rpc_call).toMatchInlineSnapshot(`
@@ -1423,13 +1423,6 @@ describe('embeded functions select', () => {
       }
     `)
     let result_rpc: Exclude<typeof use_rpc_call.data, null>
-    expectType<
-      TypeEqual<
-        typeof result_rpc,
-        {
-          error: true
-        } & 'the function public.days_since_event with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
-      >
-    >(true)
+    expectType<TypeEqual<typeof result_rpc, never>>(true)
   })
 })

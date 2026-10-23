@@ -2,7 +2,6 @@ import { PostgrestClient } from '../src/index'
 import { expectType, TypeEqual } from './types'
 import { InvalidMethodError } from '../src/PostgrestFilterBuilder'
 import { z } from 'zod'
-import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient(REST_URL)
@@ -96,7 +95,7 @@ describe('maxAffected', () => {
 
     let result: Exclude<typeof data, null>
     const ExpectedSchema = z.array(MessageRowSchema)
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    let expected: SupabaseDatabase['public']['Tables']['messages']['Row'][]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(data)
 

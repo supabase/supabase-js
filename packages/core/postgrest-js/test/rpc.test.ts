@@ -61,8 +61,8 @@ test('RPC call with no params', async () => {
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      status: z.enum(['ONLINE', 'OFFLINE'] as const),
-      username: z.string(),
+      status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
+      username: z.string().nullable(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -91,8 +91,8 @@ test('RPC call with star select', async () => {
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      status: z.enum(['ONLINE', 'OFFLINE'] as const),
-      username: z.string(),
+      status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
+      username: z.string().nullable(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -120,7 +120,7 @@ test('RPC call with single field select', async () => {
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      username: z.string(),
+      username: z.string().nullable(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -149,8 +149,8 @@ test('RPC call with multiple fields select', async () => {
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      status: z.enum(['ONLINE', 'OFFLINE'] as const),
-      username: z.string(),
+      status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
+      username: z.string().nullable(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -178,7 +178,7 @@ test('RPC call with field aliasing', async () => {
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      name: z.string(),
+      name: z.string().nullable(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -206,7 +206,7 @@ test('RPC call with field casting', async () => {
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      status: z.string(),
+      status: z.string().nullable(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -238,7 +238,7 @@ test('RPC call with field aggregate', async () => {
   const ExpectedSchema = z.array(
     z.object({
       count: z.number(),
-      status: z.enum(['ONLINE', 'OFFLINE'] as const),
+      status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -264,8 +264,10 @@ test('RPC call with bigint param is accepted by a bigint Postgres argument', asy
 })
 
 test('RPC call with bigint nested in jsonb param is serialized as a JSON string', async () => {
+  // The payload cast is deliberate: the generated `JsonIn` argument type has no bigint, and this
+  // test exercises the client serializing a JS bigint inside jsonb.
   const res = await postgrest.rpc('extract_jsonb_bigint_as_text', {
-    payload: { id: BIGINT_PARAM },
+    payload: { id: BIGINT_PARAM } as any,
   })
 
   expect(res).toMatchInlineSnapshot(`

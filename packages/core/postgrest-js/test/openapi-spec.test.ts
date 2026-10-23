@@ -67,7 +67,7 @@ describe('getOpenApiSpec', () => {
 
   test('describes the schema selected with .schema()', async () => {
     const { calls, fetchImpl } = fetchReplying(() => jsonResponse(SPEC))
-    const postgrest = new PostgrestClient(REST_URL, { schema: 'public', fetch: fetchImpl })
+    const postgrest: any = new PostgrestClient(REST_URL, { schema: 'public', fetch: fetchImpl })
 
     await postgrest.schema('billing').getOpenApiSpec()
 

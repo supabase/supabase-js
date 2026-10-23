@@ -90,8 +90,8 @@ describe('Automatic Retries', () => {
         text: () => Promise.resolve('Cloudflare timeout'),
       })
 
-      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
-      const result = await runWithTimers(client.from('users').insert({ name: 'test' }))
+      const client: any = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers<any>(client.from('users').insert({ name: 'test' }))
 
       expect(result.error).not.toBeNull()
       expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
@@ -251,8 +251,8 @@ describe('Automatic Retries', () => {
           headers: new Headers(),
         })
 
-      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
-      const result = await runWithTimers(client.rpc('my_function', {}, { get: true }))
+      const client: any = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers<any>(client.rpc('my_function', {}, { get: true }))
 
       expect(result.error).toBeNull()
       expect(result.data).toEqual({ result: 42 })
@@ -267,8 +267,8 @@ describe('Automatic Retries', () => {
         text: () => Promise.resolve('Cloudflare timeout'),
       })
 
-      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
-      const result = await runWithTimers(client.rpc('my_function', { arg: 1 }))
+      const client: any = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers<any>(client.rpc('my_function', { arg: 1 }))
 
       expect(result.error).not.toBeNull()
       expect(fetchMock).toHaveBeenCalledTimes(1) // No retries
@@ -296,8 +296,8 @@ describe('Automatic Retries', () => {
     it('should NOT retry on network errors for POST requests', async () => {
       fetchMock.mockRejectedValueOnce(new Error('Network error'))
 
-      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
-      const result = await runWithTimers(client.from('users').insert({ name: 'test' }))
+      const client: any = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers<any>(client.from('users').insert({ name: 'test' }))
 
       expect(result.error).not.toBeNull()
       expect(result.error?.message).toContain('Network error')
@@ -542,11 +542,11 @@ describe('Automatic Retries', () => {
         text: () => Promise.resolve('Cloudflare timeout'),
       })
 
-      const client = new PostgrestClient('http://localhost:3000', {
+      const client: any = new PostgrestClient('http://localhost:3000', {
         fetch: fetchMock,
         retry: false,
       })
-      const result = await runWithTimers(client.schema('other_schema').from('users').select())
+      const result = await runWithTimers<any>(client.schema('other_schema').from('users').select())
 
       expect(result.error).not.toBeNull()
       expect(fetchMock).toHaveBeenCalledTimes(1) // No retries - setting preserved

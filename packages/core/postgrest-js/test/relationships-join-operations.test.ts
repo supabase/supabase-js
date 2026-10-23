@@ -2,11 +2,18 @@ import { PostgrestClient } from '../src/index'
 import { CustomUserDataTypeSchema } from './column-types'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
+import type { Json } from './postgrest.generated'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient(REST_URL)
 const userColumn: 'catchphrase' | 'username' = 'username'
+
+type Tables = SupabaseDatabase['public']['Tables']
+type UserRow = Tables['users']['Row']
+type ChannelRow = Tables['channels']['Row']
+type MessageRow = Tables['messages']['Row']
+type BestFriendRow = Tables['best_friends']['Row']
 
 // Zod schemas for common types
 const UsersRowSchema = z.object({
@@ -76,9 +83,14 @@ test('!inner relationship', async () => {
       channel_details: ChannelDetailsRowSchema,
     }),
   })
-  // TODO: older versions of zod require this trick for non optional unknown data type
-  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+  let expected: {
+    channels: {
+      id: number
+      data: Json
+      slug: string | null
+      channel_details: { id: number; details: string | null }
+    }
+  }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
@@ -176,9 +188,7 @@ test('!left oneToOne', async () => {
     channels: ChannelsRowSchema,
   })
 
-  // TODO: older versions of zod require this trick for non optional unknown data type
-  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+  let expected: { channels: ChannelRow }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
@@ -231,9 +241,7 @@ test('!left oneToMany', async () => {
   const ExpectedSchema = z.object({
     messages: z.array(MessagesRowSchema),
   })
-  // TODO: older versions of zod require this trick for non optional unknown data type
-  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+  let expected: { messages: MessageRow[] }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
@@ -640,23 +648,18 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
   })
 
   let result: Exclude<typeof res.data, null>
-  // TODO: older versions of zod require this trick for non optional unknown data type
-  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-  // TODO: fix this type, property merging override give invalid intersection types
-  // See: result.ts#ProcessNodes comment for more details
-  let crippledExpected: {
+  let expected: {
     first_friend_of: {
-      id: (typeof expected)['first_friend_of'][number]['id']
-      second_user: (typeof expected)['first_friend_of'][number]['second_user']
-      third_wheel: (typeof expected)['first_friend_of'][number]['third_wheel']
-      // This intersection shouldn't exist
-      first_user: string & (typeof expected)['first_friend_of'][number]['first_user']
+      id: number
+      // the `first_user:users!first_user(*)` embed replaces the `first_user` column of the same name
+      first_user: UserRow
+      second_user: string
+      third_wheel: string | null
     }[]
-    second_friend_of: (typeof expected)['second_friend_of']
-    third_wheel_of: (typeof expected)['third_wheel_of']
+    second_friend_of: BestFriendRow[]
+    third_wheel_of: BestFriendRow[]
   }
-  expectType<TypeEqual<typeof result, typeof crippledExpected>>(true)
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -1020,8 +1023,8 @@ test('join select via view name relationship', async () => {
   const ExpectedSchema = z.object({
     updatable_view: z
       .object({
-        non_updatable_column: z.number().nullable(),
-        username: z.string().nullable(),
+        non_updatable_column: z.number(),
+        username: z.string(),
       })
       .nullable(),
   })

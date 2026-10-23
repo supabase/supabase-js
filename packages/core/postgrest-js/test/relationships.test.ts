@@ -275,9 +275,7 @@ test('one-to-many relationship', async () => {
       })
     ),
   })
-  // TODO: older versions of zod require this trick for non optional unknown data type
-  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+  let expected: { messages: SupabaseDatabase['public']['Tables']['messages']['Row'][] }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
@@ -313,9 +311,7 @@ test('one-to-many relationship with selective columns', async () => {
   const ExpectedSchema = z.object({
     messages: z.array(z.object({ data: z.unknown().nullable() })),
   })
-  // TODO: older versions of zod require this trick for non optional unknown data type
-  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+  let expected: { messages: { data: Json }[] }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
@@ -436,11 +432,12 @@ test('select JSON accessor', async () => {
     bar: z.unknown(),
     baz: z.string(),
   })
-  // Cannot have a zod schema that match the Json type
-  // TODO: refactor the Json type to be unknown
+  // `users.data` is typed as CustomUserDataType by the column override (column-types.ts), whose `foo`
+  // is a string: a path through it (`->bar`, `->>baz`) can only be `null` for the planner, even if the
+  // seeded jsonuser row stores an object there.
   let expected: {
-    bar: Json
-    baz: string
+    bar: null
+    baz: null
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
@@ -530,14 +527,7 @@ test('self reference relation via column', async () => {
       .nullable(),
   })
   let expected: z.infer<typeof ExpectedSchema>
-  // TODO: fix this type, property merging override give invalid intersection types
-  // See: result.ts#ProcessNodes comment for more details
-  let crippledExpected: {
-    description: (typeof expected)['description']
-    id: (typeof expected)['id']
-    parent_id: (number & (typeof expected)['parent_id']) | null
-  }
-  expectType<TypeEqual<typeof result, typeof crippledExpected>>(true)
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -587,6 +577,7 @@ test('self reference relation via aliased column with multiple foreign keys', as
   expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 
+  // @ts-expect-error PGRST201
   const ambiguousRes = await postgrest.from('lab').select('children:lab(*)')
   expect(ambiguousRes.error?.code).toBe('PGRST201')
 })
@@ -645,11 +636,12 @@ test('self reference relation via hint matching column name', async () => {
 // Documents a known PostgREST limitation: a self-referencing embed cannot be
 // disambiguated by its foreign key constraint name, so this
 // query fails at runtime with PGRST200. Use the column name hint instead (see the
-// test above). The inferred type is still (correctly) an array. See
+// test above). The planner reports the same error, so the call is rejected at type level. See
 // https://github.com/supabase/supabase-js/issues/2517
 test('self reference relation via hint matching fk constraint name fails at runtime', async () => {
   const res = await postgrest
     .from('collections')
+    // @ts-expect-error PGRST200
     .select('*, collections!collections_parent_id_fkey(*)')
     .eq('id', 1)
     .limit(1)
@@ -669,21 +661,7 @@ test('self reference relation via hint matching fk constraint name fails at runt
       "success": false,
     }
   `)
-  let result: Exclude<typeof res.data, null>
-  const ExpectedSchema = z.object({
-    id: z.number(),
-    description: z.string().nullable(),
-    parent_id: z.number().nullable(),
-    collections: z.array(
-      z.object({
-        description: z.string().nullable(),
-        id: z.number(),
-        parent_id: z.number().nullable(),
-      })
-    ),
-  })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  expectType<TypeEqual<typeof res.data, null>>(true)
 })
 
 test('many-to-many with join table', async () => {

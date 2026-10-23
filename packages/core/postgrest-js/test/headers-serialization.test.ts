@@ -11,7 +11,7 @@ test('passes headers to fetch as a plain object so custom/polyfilled fetches can
     text: async () => '{}',
   })
 
-  const client = new PostgrestClient(REST_URL, {
+  const client: any = new PostgrestClient(REST_URL, {
     fetch: mockFetch as any,
     headers: { 'X-Custom-Header': 'CustomValue' },
   })

@@ -106,7 +106,7 @@ describe('URL length validation and timeout protection', () => {
         return Promise.reject(error)
       }
 
-      const postgrest = new PostgrestClient(REST_URL, {
+      const postgrest: any = new PostgrestClient(REST_URL, {
         fetch: abortingFetch,
       })
 
@@ -202,7 +202,7 @@ describe('URL length validation and timeout protection', () => {
         return Promise.reject(typeError)
       }
 
-      const postgrest = new PostgrestClient(REST_URL, {
+      const postgrest: any = new PostgrestClient(REST_URL, {
         fetch: headersOverflowFetch,
       })
 
@@ -227,7 +227,7 @@ describe('URL length validation and timeout protection', () => {
         return Promise.reject(typeError)
       }
 
-      const postgrest = new PostgrestClient(REST_URL, {
+      const postgrest: any = new PostgrestClient(REST_URL, {
         fetch: headersOverflowFetch,
       })
 

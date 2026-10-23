@@ -6,6 +6,7 @@ const postgrest = new PostgrestClient(REST_URL)
 test('join over a 1-1 relation with both nullables and non-nullables fields with no hinting', async () => {
   const res = await postgrest
     .from('best_friends')
+    // @ts-expect-error PGRST201
     .select('first_user:users(*), second_user:users(*), third_wheel:users(*)')
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -45,6 +46,7 @@ test('join over a 1-M relation with both nullables and non-nullables fields with
   const res = await postgrest
     .from('users')
     .select(
+      // @ts-expect-error PGRST201
       'first_friend_of:best_friends(*), second_friend_of:best_friends(*), third_wheel_of:best_friends(*)'
     )
     .limit(1)
@@ -86,6 +88,7 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
   const res = await postgrest
     .from('users')
     .select(
+      // @ts-expect-error PGRST201
       'first_friend_of:best_friends!first_user(*, first_user:users(*)), second_friend_of:best_friends!second_user(*), third_wheel_of:best_friends!third_wheel(*)'
     )
     .limit(1)
@@ -150,6 +153,7 @@ test('nested query with selective fields and inner join should error on non exis
   const res = await postgrest
     .from('users')
     .select(
+      // @ts-expect-error PGRST200
       'msgs:messages(id, ...message_details(created_at, channel!inner(id, slug, owner:users(*))))'
     )
     .limit(1)
@@ -221,6 +225,7 @@ test('typecasting and aggregate', async () => {
 })
 
 test('select with aggregate sum function without column should error', async () => {
+  // @ts-expect-error unresolved select item
   const res = await postgrest.from('users').select('username, messages(sum)').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
     {

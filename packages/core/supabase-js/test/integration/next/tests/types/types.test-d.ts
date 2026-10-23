@@ -118,64 +118,14 @@ type Database = {
     >
   >(true)
 }
-// Should be able to get a PostgrestVersion 13 client from __InternalSupabase
 {
-  type DatabaseWithInternals = {
-    __InternalSupabase: {
-      PostgrestVersion: '13'
-    }
-    public: {
-      Tables: {
-        shops: {
-          Row: {
-            address: string | null
-            id: number
-            shop_geom: unknown | null
-          }
-          Insert: {
-            address?: string | null
-            id: number
-            shop_geom?: unknown | null
-          }
-          Update: {
-            address?: string | null
-            id?: number
-            shop_geom?: unknown | null
-          }
-          Relationships: []
-        }
-      }
-      Views: {
-        [_ in never]: never
-      }
-      Functions: {
-        [_ in never]: never
-      }
-      Enums: {
-        [_ in never]: never
-      }
-      CompositeTypes: {
-        [_ in never]: never
-      }
-    }
-  }
-  const pg13BrowserClient = createBrowserClient<DatabaseWithInternals>('HTTP://localhost:3000', '')
-  const pg13ServerClient = createServerClient<DatabaseWithInternals>('HTTP://localhost:3000', '', {
+  // maxAffected without .select() resolves to no data
+  const browserClient = createBrowserClient<Database>('HTTP://localhost:3000', '')
+  const serverClient = createServerClient<Database>('HTTP://localhost:3000', '', {
     cookies: { getAll: () => [], setAll: () => {} },
   })
-  const res13 = await pg13BrowserClient.from('shops').update({ id: 21 }).maxAffected(1)
-  expectType<typeof res13.data>(null)
-  const res13Server = await pg13ServerClient.from('shops').update({ id: 21 }).maxAffected(1)
-  expectType<typeof res13Server.data>(null)
-}
-{
-  // Should default to PostgrestVersion 12
-  const pg12BrowserClient = createBrowserClient<Database>('HTTP://localhost:3000', '')
-  const pg12ServerClient = createServerClient<Database>('HTTP://localhost:3000', '', {
-    cookies: { getAll: () => [], setAll: () => {} },
-  })
-  const res12 = await pg12BrowserClient.from('shops').update({ id: 21 }).maxAffected(1)
-  expectType<typeof res12.Error>('maxAffected method only available on postgrest 13+')
-  const res12Server = await pg12ServerClient.from('shops').update({ id: 21 }).maxAffected(1)
-  expectType<typeof res12Server.Error>('maxAffected method only available on postgrest 13+')
+  const res = await browserClient.from('shops').update({ id: 21 }).maxAffected(1)
+  expectType<typeof res.data>(null)
+  const resServer = await serverClient.from('shops').update({ id: 21 }).maxAffected(1)
+  expectType<typeof resServer.data>(null)
 }

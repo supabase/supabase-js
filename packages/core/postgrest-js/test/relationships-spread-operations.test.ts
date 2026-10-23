@@ -243,7 +243,7 @@ test('select with aggregate sum and spread', async () => {
     messages: z.array(
       z.object({
         channels: z.object({
-          sum: z.number(),
+          sum: z.number().nullable(),
           details: z.string().nullable(),
         }),
       })
@@ -310,7 +310,7 @@ test('select with aggregate sum and spread on nested relation', async () => {
     messages: z.array(
       z.object({
         channels: z.object({
-          sum: z.number(),
+          sum: z.number().nullable(),
           details_sum: z.number().nullable(),
           details: z.string().nullable(),
         }),

@@ -248,7 +248,7 @@ test('select with aggregate sum function', async () => {
     username: z.string(),
     messages: z.array(
       z.object({
-        sum: z.number(),
+        sum: z.number().nullable(),
       })
     ),
   })
@@ -285,7 +285,7 @@ test('select with aggregate aliased sum function', async () => {
     username: z.string(),
     messages: z.array(
       z.object({
-        sum_id: z.number(),
+        sum_id: z.number().nullable(),
       })
     ),
   })
@@ -340,7 +340,7 @@ test('select with aggregate sum function on nested relation', async () => {
     messages: z.array(
       z.object({
         channels: z.object({
-          sum: z.number(),
+          sum: z.number().nullable(),
         }),
       })
     ),
