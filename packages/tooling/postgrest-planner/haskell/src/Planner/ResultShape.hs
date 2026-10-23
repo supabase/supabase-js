@@ -38,6 +38,8 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.HashMap.Strict.InsOrd as HMI
 import Data.List (find, nub)
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
+import Control.Applicative ((<|>))
+import Control.Monad (join)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tree (Tree (..))
@@ -59,17 +61,17 @@ import PostgREST.SchemaCache.Relationship (Cardinality (..), Junction (..), Rela
 import PostgREST.SchemaCache.Routine (FuncVolatility (..), PgType (..), RetType (..), Routine (..), RoutineParam (..), RoutineMap, funcReturnsSingleComposite)
 import PostgREST.SchemaCache.Table (Column (..), Table (..))
 
-import Planner.PgType (aggregateType, isBuiltinType, normalizeType)
+import Planner.PgType (aggregateType, isBuiltinType, normalizeType, qualifiedTypeName)
 import Planner.Supplementary (SuppFunction (..), SuppReturn (..), Supplementary (..), findComputedField, findRoutine, foreignKeyValidated, orderColumns)
 
 -- | @form@, @shape@, @rpc@, @filters@ and @degraded@ for a plan. Plans that return no rows of a relation
 -- (inspection, relation/routine info, mutations without a representation, scalar RPCs) have @shape: null@.
-planShape :: SchemaCache -> Maybe Supplementary -> ApiRequest -> ActionPlan -> [Pair]
-planShape sc supp apiReq = \case
+planShape :: [Text] -> SchemaCache -> Maybe Supplementary -> ApiRequest -> ActionPlan -> [Pair]
+planShape searchPath sc supp apiReq = \case
   Db (DbCrud _ crud) -> crudShape crud
   _ -> result Nothing Nothing [] Nothing ([], [])
   where
-    ctx = Ctx (dbTables sc) (dbRoutines sc) supp Nothing
+    ctx = Ctx (dbTables sc) (dbRoutines sc) supp Nothing (knownTypes sc supp) searchPath
     selectTree = qsSelect (iQueryParams apiReq)
 
     crudShape = \case
@@ -139,6 +141,10 @@ data Ctx = Ctx
   , cxSupp :: Maybe Supplementary
   , cxRows :: Maybe Rows
   -- ^ Set for the root of an RPC plan: where its columns come from. Embeds resolve against their tables.
+  , cxTypes :: HM.HashMap Text (Maybe Text)
+  -- ^ The user types the catalog mentions (see 'knownTypes').
+  , cxSearchPath :: [Text]
+  -- ^ The search path of the request: its schema, then @db-extra-search-path@ (upstream @PreQuery.hs@).
   }
 
 -- | The rows of a function.
@@ -478,17 +484,22 @@ resolveOne ctx rel CoercibleSelectField{csField = cf, csAggFunction = agg, csAgg
     isStar = cfName cf == "*" && null (cfJsonPath cf)
     name = fromMaybe (maybe (cfName cf) aggName agg) alias
 
-    (start, notes)
+    (start, startNotes)
       | isStar = (Expr Nothing Nothing False Null False, []) -- count(*): nothing is read
       | isNothing agg, legacyCount ctx rel cf = (applyAggregate Count (Expr Nothing Nothing False Null False), [])
       | otherwise = baseExpr ctx rel cf
 
+    notes = startNotes <> ["cast-type:" <> c | Just c <- [cast, aggCast'], isNothing (resolveCastType ctx c)]
+
+    -- Upstream's @pgFmtApplyAggregate Nothing _@ drops the second cast: it only applies after an aggregate.
+    aggCast' = if isJust agg then aggCast else Nothing
+
     final =
-      applyCast aggCast
+      applyCast ctx aggCast'
         . maybe id applyAggregate agg
-        . applyCast cast
+        . applyCast ctx cast
         . maybe id applyRepresentation (cfTransform cf)
-        . applyJsonPath (cfJsonPath cf)
+        . applyJsonPath (cfToJson cf) (cfJsonPath cf)
         $ start
 
 aggName :: AggregateFunction -> Text
@@ -588,11 +599,13 @@ unresolvedExpr reason = Expr Nothing Nothing True (unresolved reason) False
 unresolved :: Text -> Value
 unresolved reason = object ["kind" .= str "unresolved", "reason" .= reason]
 
--- | @->@ keeps json/jsonb (anything else goes through @to_jsonb@), @->>@ is text. A JSON path is
+-- | @->@ keeps json/jsonb, @->>@ is text. Upstream reads a column of any other type, and every field it
+-- cannot find in a table (the attributes of a standalone composite, @OUT@ columns, computed fields), as
+-- @to_jsonb(col)->...@ (@cfToJson@, @resolveTypeOrUnknown@ in @Plan.hs@), which is @jsonb@. A JSON path is
 -- nullable whatever it reads: the key or index may be absent.
-applyJsonPath :: [JsonOperation] -> Expr -> Expr
-applyJsonPath [] e = e
-applyJsonPath path e =
+applyJsonPath :: Bool -> [JsonOperation] -> Expr -> Expr
+applyJsonPath _ [] e = e
+applyJsonPath toJson path e =
   Expr
     (Just resultType)
     Nothing
@@ -602,7 +615,7 @@ applyJsonPath path e =
   where
     resultType = case reverse path of
       J2Arrow{} : _ -> "text"
-      _ | eType e == Just "json" -> "json"
+      _ | not toJson, eType e == Just "json" -> "json"
       _ -> "jsonb"
 
 -- | A JSON path as the plan writes it: each step with its operator and key or index.
@@ -623,21 +636,70 @@ applyRepresentation :: Text -> Expr -> Expr
 applyRepresentation fn e =
   Expr (Just "json") Nothing True (object ["kind" .= str "representation", "of" .= eProv e, "function" .= fn]) False
 
-applyCast :: Maybe Text -> Expr -> Expr
-applyCast Nothing e = e
-applyCast (Just c) e =
-  Expr (Just ty) Nothing nullable (object ["kind" .= str "cast", "of" .= eProv e, "to" .= ty]) (eRows e)
+applyCast :: Ctx -> Maybe Text -> Expr -> Expr
+applyCast _ Nothing e = e
+applyCast ctx (Just c) e = case resolveCastType ctx c of
+  Nothing -> unresolvedExpr ("no type named " <> c <> " is known to the catalog")
+  Just (ty, base) ->
+    Expr (Just ty) base nullable (object ["kind" .= str "cast", "of" .= eProv e, "to" .= ty]) (eRows e)
+    where
+      -- A builtin cast keeps non-NULL, but the cast function of any other type (domain, enum, composite,
+      -- extension type) can return NULL for a non-NULL value.
+      nullable = eNullable e || not (maybe False isBuiltinType (eType e) && isBuiltinType ty)
+
+-- | The type a cast names, with the base type when it is a domain the catalog knows. Upstream pastes the name
+-- into the SQL as it was written (@CAST(x AS name)@): the parser only lets letters, digits, @_@, @$@ and spaces
+-- through, so there is no quoting, no schema and no @[]@, and Postgres folds the name to lower case. It names a
+-- type of @pg_catalog@ (searched first: the SQL aliases like @int@ and @double precision@, or the @_int4@
+-- spelling of an array) or, failing that, a type of the search path of the request. A name the catalog does not
+-- mention is unknown: the type may exist, so nothing is invented.
+resolveCastType :: Ctx -> Text -> Maybe (Text, Maybe Text)
+resolveCastType Ctx{cxTypes, cxSearchPath} raw = go (T.toLower (T.unwords (T.words raw)))
   where
-    ty = normalizeType c
-    -- A builtin cast keeps non-NULL, but the cast function of any other type (domain, enum, composite,
-    -- extension type) can return NULL for a non-NULL value.
-    nullable = eNullable e || not (maybe False isBuiltinType (eType e) && isBuiltinType ty)
+    go name
+      | isBuiltinType builtin = Just (builtin, Nothing)
+      | (q : _) <- [q | s <- cxSearchPath, let q = s <> "." <> name, HM.member q cxTypes] = Just (q, join (HM.lookup q cxTypes))
+      | Just element <- T.stripPrefix "_" name, not (T.null element) = (\(t, _) -> (t <> "[]", Nothing)) <$> go element
+      | otherwise = Nothing
+      where
+        builtin = normalizeType name
+
+-- | The user types the catalog mentions, by @schema.name@ (element type of arrays), with the base type of
+-- the ones it shows to be domains (a column whose type differs from its nominal type). Types are known from the
+-- columns, tables and routines of the dump and from the composite types and functions of the supplementary
+-- catalog; a type nothing mentions is not known.
+knownTypes :: SchemaCache -> Maybe Supplementary -> HM.HashMap Text (Maybe Text)
+knownTypes sc supp = HM.fromListWith (\new old -> old <|> new) (filter (userType . fst) entries)
+  where
+    userType t = not (T.null t) && not (isBuiltinType t) && not (T.any (== '"') t)
+    entries =
+      concat
+        [ [peel (normalizeType (colNominalType col)) (normalizeType (colType col)) | t <- HM.elems (dbTables sc), col <- HMI.elems (tableColumns t)]
+        , [(qualified qi, Nothing) | qi <- HM.keys (dbTables sc)]
+        , [(element t, Nothing) | rs <- HM.elems (dbRoutines sc), r <- rs, t <- routineTypes r]
+        , [(qualified qi, Nothing) | Just s <- [supp], qi <- HM.keys (suppComposites s) <> HM.keys (suppRelations s)]
+        , [(element (normalizeType t), Nothing) | Just s <- [supp], attrs <- HM.elems (suppComposites s), (_, t) <- attrs]
+        , [(element (normalizeType t), Nothing) | Just s <- [supp], f <- suppFunctions s, t <- sfArgTypes f <> [srType (sfReturns f)] <> maybe [] (map snd) (sfOutColumns f)]
+        ]
+    element t = maybe t element (T.stripSuffix "[]" t)
+    -- Arrays of a domain have the array of its base as base type.
+    peel nominal base = case T.stripSuffix "[]" nominal of
+      Just n -> peel n (fromMaybe base (T.stripSuffix "[]" base))
+      Nothing -> (nominal, if base == nominal then Nothing else Just base)
+    routineTypes r =
+      (normalizeType . ppType <$> pdParams r)
+        <> case pdReturnType r of
+          Single t -> [pgTypeName t]
+          SetOf t -> [pgTypeName t]
+    pgTypeName = \case
+      Scalar qi -> qualifiedTypeName qi
+      Composite qi _ -> qualified qi
 
 -- | @count@ is @int8@ and never null; every other aggregate is null over an empty group.
 applyAggregate :: AggregateFunction -> Expr -> Expr
 applyAggregate fn e =
   Expr
-    (case fn of Count -> Just "int8"; _ -> aggregateType fn <$> eType e)
+    (case fn of Count -> Just "int8"; _ -> aggregateType fn <$> (eBase e <|> eType e)) -- a domain aggregates as its base type
     Nothing
     (case fn of Count -> False; _ -> True)
     (object ["kind" .= str "aggregate", "function" .= aggName fn, "of" .= eProv e])
@@ -656,7 +718,7 @@ data RpcRows = RpcRows
 -- | The rows of a function, from its return type (the dump) and, for a composite type or @RETURNS TABLE@, the
 -- supplementary catalog.
 rpcRows :: Ctx -> Routine -> RpcRows
-rpcRows Ctx{cxTables, cxSupp} proc = case pdReturnType proc of
+rpcRows Ctx{cxTables, cxSupp, cxTypes} proc = case pdReturnType proc of
   Single (Scalar _) -> scalar
   SetOf (Scalar _) -> scalar
   Single (Composite qi _) -> composite qi
@@ -684,7 +746,7 @@ rpcRows Ctx{cxTables, cxSupp} proc = case pdReturnType proc of
             []
       | otherwise = unknown qi
     -- Neither an @OUT@ column nor an attribute carries a constraint, and a function can return anything.
-    attribute prov t = Expr (Just (normalizeType t)) Nothing True prov True
+    attribute prov t = let ty = normalizeType t in Expr (Just ty) (join (HM.lookup ty cxTypes)) True prov True
 
 -- | @provolatile@ of the function. The dump carries it (it is what upstream picks the transaction mode from).
 routineVolatility :: Routine -> Text

@@ -99,5 +99,5 @@ planRequest conf sCache supp specJson = case parseSpec specJson of
           Right apiReq -> case actionPlan (iAction apiReq) conf apiReq sCache of
             Left e -> errorValue conf e
             Right plan -> case summarize apiReq plan of
-              Object o -> Object (o <> KM.fromList (planShape sCache supp apiReq plan))
+              Object o -> Object (o <> KM.fromList (planShape (iSchema apiReq : configDbExtraSearchPath conf) sCache supp apiReq plan))
               other -> other

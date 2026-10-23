@@ -397,7 +397,7 @@ interface PlanBase {
   filters: PlanFilter[]
   /**
    * What this plan had to guess: `column-order:<schema>.<relation>`, `computed-field:<relation>.<name>`
-   * (no catalog to resolve it), `fk-validation:<schema>.<table>.<constraint>` (the catalog does not say whether the
+   * (no catalog to resolve it), `cast-type:<name>` (a cast names a type the catalog does not mention), `fk-validation:<schema>.<table>.<constraint>` (the catalog does not say whether the
    * key is validated), `rpc-columns:<function>` (an RPC returns a composite type or `RETURNS TABLE` the
    * catalog does not describe), `rpc-embed-relation:<schema>.<relation>` (upstream resolves the embeds of an
    * RPC against another table than the one the function returns: see the README).

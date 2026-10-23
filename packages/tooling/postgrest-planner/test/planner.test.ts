@@ -378,7 +378,7 @@ describe('postgrest-planner', () => {
       )
       expect(summary(fieldsOf(p))).toEqual([
         ['a', 'text', true, 'cast'],
-        ['b', 'user_status', true, 'cast'],
+        ['b', 'public.user_status', true, 'cast'],
         ['c', 'text', false, 'cast'],
         ['d', 'text', false, 'cast'],
         ['e', 'text', false, 'cast'],
@@ -455,6 +455,134 @@ describe('postgrest-planner', () => {
       expect(fieldsOf(plan(catalog, '/events?select=count->>a'))[0].provenance).toMatchObject({
         kind: 'jsonPath',
         of: { kind: 'unresolved' },
+      })
+    })
+
+    describe('expression typing', () => {
+      /** The fixture plus domain and json columns on inference_cases and a json attribute on public.address. */
+      let typed: number
+      const column = (name: string, nominal: string, type: string) => ({
+        colDefault: null,
+        colDescription: null,
+        colEnum: [],
+        colMaxLen: null,
+        colName: name,
+        colNominalType: nominal,
+        colNullable: true,
+        colType: type,
+      })
+      beforeAll(() => {
+        const dump = JSON.parse(readFileSync(join(fixtures, 'dump-schema.json'), 'utf8'))
+        for (const [qi, table] of dump.dbTables) {
+          if (qi.qiSchema !== 'public' || qi.qiName !== 'inference_cases') continue
+          table.tableColumns.dom_int = column('dom_int', 'public.dom_int', 'integer')
+          table.tableColumns.dom_num = column('dom_num', 'public.dom_num', 'numeric')
+          table.tableColumns.dom_float = column('dom_float', 'public.dom_float', 'real')
+          table.tableColumns.dom_json = column('dom_json', 'public.dom_json', 'json')
+          table.tableColumns.json_col = column('json_col', 'json', 'json')
+        }
+        const supp = JSON.parse(supplementaryText())
+        for (const c of supp.composites) {
+          if (c.schema === 'public' && c.name === 'address') {
+            c.attributes.push({ name: 'data', type: 'json', attnum: 3 })
+          }
+        }
+        typed = loaded(
+          planner.load({ ...baseInput(), schema: JSON.stringify(dump), supplementary: supp })
+        ).handle
+      })
+      afterAll(() => planner.freeCache(typed))
+
+      it('dispatches an aggregate over a domain on its base type', () => {
+        const p = plan(
+          typed,
+          '/inference_cases?select=dom_int.sum(),a:dom_int.avg(),dom_int.min(),dom_int.max(),dom_num.sum(),dom_float.sum(),dom_float.avg()'
+        )
+        expect(summary(fieldsOf(p))).toEqual([
+          ['sum', 'int8', true, 'aggregate'],
+          ['a', 'numeric', true, 'aggregate'],
+          ['min', 'int4', true, 'aggregate'],
+          ['max', 'int4', true, 'aggregate'],
+          ['sum', 'numeric', true, 'aggregate'],
+          ['sum', 'float4', true, 'aggregate'],
+          ['avg', 'float8', true, 'aggregate'],
+        ])
+      })
+
+      it('ignores a second cast when there is no aggregate', () => {
+        // upstream parses it into aggCast, but pgFmtApplyAggregate Nothing drops it: the value stays text
+        const [field] = fieldsOf(plan(catalog, '/inference_cases?select=id::text::int4'))
+        expect(field).toMatchObject({ name: 'id', pgType: 'text', nullable: false })
+        expect(field.provenance).toMatchObject({ kind: 'cast', to: 'text' })
+        // with an aggregate the second cast applies
+        expect(
+          summary(fieldsOf(plan(catalog, '/inference_cases?select=id::text.count()::text')))
+        ).toEqual([['count', 'text', false, 'cast']])
+        expect(
+          summary(fieldsOf(plan(catalog, '/inference_cases?select=price.sum()::int4')))
+        ).toEqual([['sum', 'int4', true, 'cast']])
+      })
+
+      it('types a JSON path by the to_jsonb the plan applies, not by the column', () => {
+        // json and jsonb columns are read as they are; every other type (a domain over json too) goes through to_jsonb
+        const p = plan(
+          typed,
+          '/inference_cases?select=json_col->a,jb:optional_payload->a,dom_json->a,j:json_col->>a'
+        )
+        expect(summary(fieldsOf(p))).toEqual([
+          ['a', 'json', true, 'jsonPath'],
+          ['jb', 'jsonb', true, 'jsonPath'],
+          ['a', 'jsonb', true, 'jsonPath'],
+          ['j', 'text', true, 'jsonPath'],
+        ])
+        // the attributes of a standalone composite are not in dbTables: upstream applies to_jsonb to them
+        const rpc = ok(
+          planner.plan(typed, {
+            method: 'POST',
+            url: '/rpc/echo_address?select=data->x',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ address: { street: 's', city: 'c' } }),
+          })
+        )
+        expect(summary(fieldsOf(rpc))).toEqual([['x', 'jsonb', true, 'jsonPath']])
+      })
+
+      it('leaves a cast to a type that does not exist unresolved, with a note, and keeps planning', () => {
+        const p = plan(
+          catalog,
+          '/inference_cases?select=a:id::fakecolumntype,b:id::fakecolumntype.count()'
+        )
+        expect(summary(fieldsOf(p))).toEqual([
+          ['a', null, true, 'unresolved'],
+          ['b', 'int8', false, 'aggregate'],
+        ])
+        expect(p.degraded).toEqual(['cast-type:fakecolumntype'])
+        expect(fieldsOf(p)[0].provenance).toMatchObject({
+          kind: 'unresolved',
+          reason: expect.stringContaining('fakecolumntype'),
+        })
+        expect(fieldsOf(p)[1].provenance).toMatchObject({ of: { kind: 'unresolved' } })
+      })
+
+      it('resolves a cast name like Postgres: aliases, pg_catalog, then the search path', () => {
+        const p = plan(
+          catalog,
+          '/inference_cases?select=a:id::int,b:id::double%20precision,c:id::character%20varying,d:id::user_status,e:id::address,f:id::_int4'
+        )
+        expect(p.degraded).toEqual([])
+        expect(fieldsOf(p).map((f) => f.pgType)).toEqual([
+          'int4',
+          'float8',
+          'varchar',
+          'public.user_status',
+          'public.address',
+          'int4[]',
+        ])
+        // the request schema comes first, then db-extra-search-path (public,extensions)
+        const personal = plan(catalog, '/users?select=s:username::user_status', {
+          headers: { 'Accept-Profile': 'personal' },
+        })
+        expect(fieldsOf(personal)[0].pgType).toBe('public.user_status')
       })
     })
 
