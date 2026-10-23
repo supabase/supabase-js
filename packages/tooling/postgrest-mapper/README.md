@@ -1,6 +1,6 @@
 # @supabase/postgrest-mapper
 
-Private for now. The scanner of the postgrest builder planner (design v5 §4.2, §4.3): a syntax-only pass over TS/TSX that finds supabase/postgrest builder chains and records what must be planned. A library with a typed API: all I/O is injected or explicit, nothing reads `process.cwd` or prints.
+Private for now. The scanner and TypeScript content mapper of the postgrest builder planner (design v5 §4.2, §4.3): a syntax-only pass over TS/TSX that finds supabase/postgrest builder chains and records what must be planned. A library with a typed API: all I/O is injected or explicit, nothing reads `process.cwd` or prints.
 
 ## Usage
 
@@ -94,6 +94,30 @@ Rules (design v5 §6.2, conservative: anything not proven non-null is nullable):
 - Every other expression is nullable: other aggregates, window functions, scalar subqueries, `CASE`, operators, function calls, whole-row references, functions in `FROM`.
 - Beyond the flowchart: a cast of a non-null expression to a built-in type is non-null (`pg_get_viewdef` wraps many columns in one); a cast to any other type is nullable. A cast drops provenance.
 - Subqueries in `FROM`, `LATERAL`, and `WITH` (including recursive: the self reference is nullable) are traced with the same rules.
+
+## Content mapper (TypeScript 7.1)
+
+The package is a TypeScript 7.1 content mapper (microsoft/typescript-go#4712) for one `.pgrst-index` file per project (design v4 §4.1). The `typescript.contentMapper` field of `package.json` tells `tsc` to run `node bin/content-mapper.cjs` (`dynamicConfig: true`, so `openProject` returns the identity and the watch set).
+
+```jsonc
+// tsconfig.json; run `tsc --runExternalCode`
+{
+  "contentMappers": [
+    {
+      "package": "@supabase/postgrest-mapper",
+      "extensions": [".pgrst-index"],
+      "options": { "postgrest": "14.4", "schema": { "source": "supabase-local" } },
+    },
+  ],
+}
+```
+
+`createContentMapperServer({ input, output, logger, generator })` is the whole server: JSON-RPC 2.0 with `Content-Length` framing over any pair of streams (`bin/content-mapper.cjs` passes stdio). It answers `initialize`, `openProject`, `transform` and `closeProject` (and `shutdown` / `exit`), turns every bad request into a JSON-RPC error, and logs only through the injected logger (`createStreamLogger(process.stderr, process.env)`: verbose when `TS_CONTENT_MAPPER_DEBUG` is set, like `tsc`'s own tracing).
+
+- **Options** are shape-checked by `validateOptions` (`postgrest`, `schema`, optional `defaultSchema`, `scan`, `unplanned`); problems are returned as `optionDiagnostics` and `tsc` reports them at the value in `tsconfig.json`. With invalid options the generator is not called and the index file transforms to an empty module.
+- **The generator** (`ProjectGenerator`) does all the work of `openProject`: `({ configFileName, projectHandle, options, compilerOptions }) => { identity, watchedFiles, text, diagnostics, optionDiagnostics }`. `transform` returns the stored `text` for the project's index file, with no span mappings: `tsc` reports the virtual module's diagnostics at the top of the index file. A generator is shared by all projects and owns every cache that should outlive `closeProject`; the server only keeps the last result per project handle and drops it on `closeProject`.
+- **Index file**: the first file transformed in a project is its index file; any other file with the extension gets diagnostic 2001 and an empty module.
+- `bin/content-mapper.cjs` runs the placeholder `stubGenerator`, which declares one `SupabaseSelects` entry (`'r|public|stub|*'`).
 
 ## Node
 

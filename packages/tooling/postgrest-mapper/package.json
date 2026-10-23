@@ -2,16 +2,27 @@
   "name": "@supabase/postgrest-mapper",
   "version": "0.0.0-automated",
   "private": true,
-  "description": "Scanner and content mapper for planner-typed PostgREST builder chains.",
+  "description": "Scanner and TypeScript 7.1 content mapper for planner-typed PostgREST builder chains.",
   "main": "dist/main/index.js",
   "types": "dist/main/index.d.ts",
   "exports": {
     ".": {
       "require": "./dist/main/index.js",
       "types": "./dist/main/index.d.ts"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "sideEffects": false,
+  "typescript": {
+    "contentMapper": {
+      "exec": [
+        "node",
+        "bin/content-mapper.cjs"
+      ],
+      "compilerOptions": [],
+      "dynamicConfig": true
+    }
+  },
   "scripts": {
     "build": "node node_modules/typescript/bin/tsc -p tsconfig.json",
     "test": "jest"
@@ -23,6 +34,7 @@
   },
   "author": "Supabase",
   "files": [
+    "bin",
     "dist/main"
   ],
   "license": "MIT",

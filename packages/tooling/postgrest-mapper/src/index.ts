@@ -34,6 +34,39 @@ export {
 export { operandKey, requestKeys, selectKey } from './keys'
 export { jsonSchemaToTs } from './jsonschema'
 export type { JsonSchemaToTsOptions } from './jsonschema'
+export {
+  createContentMapperServer,
+  createStreamLogger,
+  DEBUG_ENV,
+  DIAGNOSTIC_SOURCE,
+  DiagnosticCode,
+  encodeFrame,
+  FrameReader,
+  hashOptions,
+  stubGenerator,
+  validateOptions,
+} from './content-mapper'
+export type {
+  CompilerOptions,
+  ContentMapperLogger,
+  ContentMapperServer,
+  ContentMapperServerOptions,
+  GenerateProjectParams,
+  GenerateProjectResult,
+  InitializeParams,
+  InitializeResult,
+  MapperDiagnostic,
+  OpenProjectParams,
+  OpenProjectResult,
+  OptionDiagnostic,
+  OptionsValidation,
+  PositionEncoding,
+  PostgrestMapperOptions,
+  ProjectGenerator,
+  SchemaSourceOptions,
+  TransformParams,
+  TransformResult,
+} from './content-mapper'
 export { createTracer } from './tracer'
 export type {
   CatalogColumn,
