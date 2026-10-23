@@ -1825,14 +1825,14 @@ declare global {
       ]
     }
     'r|public|active_users|username, active_user_messages:get_active_user_messages(*)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; active_user_messages: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }[] }
+      row: { username: SupabaseColumnType<'public.users.username', string>; active_user_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }[] }
       sources: { username: 'username' }
       embeds: {
         active_user_messages: { path: ['active_user_messages']; outputs: [['active_user_messages']]; join: 'left'; cardinality: 'many' }
       }
     }
     'r|public|active_users|username, recent_messages:get_user_recent_messages(*)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; recent_messages: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }[] }
+      row: { username: SupabaseColumnType<'public.users.username', string>; recent_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }[] }
       sources: { username: 'username' }
       embeds: {
         recent_messages: { path: ['recent_messages']; outputs: [['recent_messages']]; join: 'left'; cardinality: 'many' }
@@ -1922,21 +1922,21 @@ declare global {
       }
     }
     'r|public|channels|id, all_channels_messages:get_messages(*)': {
-      row: { id: SupabaseColumnType<'public.channels.id', number>; all_channels_messages: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }[] }
+      row: { id: SupabaseColumnType<'public.channels.id', number>; all_channels_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }[] }
       sources: { id: 'id' }
       embeds: {
         all_channels_messages: { path: ['all_channels_messages']; outputs: [['all_channels_messages']]; join: 'left'; cardinality: 'many' }
       }
     }
     'r|public|channels|id, all_channels_messages:get_messages(id,message)': {
-      row: { id: SupabaseColumnType<'public.channels.id', number>; all_channels_messages: { id: SupabaseColumnType<'public.messages.id', number>; message: SupabaseColumnType<'public.messages.message', string> | null }[] }
+      row: { id: SupabaseColumnType<'public.channels.id', number>; all_channels_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; message: SupabaseColumnType<'public.messages.message', string> | null }[] }
       sources: { id: 'id' }
       embeds: {
         all_channels_messages: { path: ['all_channels_messages']; outputs: [['all_channels_messages']]; join: 'left'; cardinality: 'many' }
       }
     }
     'r|public|channels|id, all_channels_messages:get_messages(id,message,channels(id,slug))': {
-      row: { id: SupabaseColumnType<'public.channels.id', number>; all_channels_messages: { id: SupabaseColumnType<'public.messages.id', number>; message: SupabaseColumnType<'public.messages.message', string> | null; channels: { id: SupabaseColumnType<'public.channels.id', number>; slug: SupabaseColumnType<'public.channels.slug', string> | null } }[] }
+      row: { id: SupabaseColumnType<'public.channels.id', number>; all_channels_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; message: SupabaseColumnType<'public.messages.message', string> | null; channels: { id: SupabaseColumnType<'public.channels.id', number>; slug: SupabaseColumnType<'public.channels.slug', string> | null } | null }[] }
       sources: { id: 'id' }
       embeds: {
         all_channels_messages: { path: ['all_channels_messages']; outputs: [['all_channels_messages']]; join: 'left'; cardinality: 'many' }
@@ -2285,21 +2285,21 @@ declare global {
       embeds: {}
     }
     'r|public|users|username, all_user_messages:get_messages(*)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; all_user_messages: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }[] }
+      row: { username: SupabaseColumnType<'public.users.username', string>; all_user_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }[] }
       sources: { username: 'username' }
       embeds: {
         all_user_messages: { path: ['all_user_messages']; outputs: [['all_user_messages']]; join: 'left'; cardinality: 'many' }
       }
     }
     'r|public|users|username, all_user_messages:get_messages(id,message)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; all_user_messages: { id: SupabaseColumnType<'public.messages.id', number>; message: SupabaseColumnType<'public.messages.message', string> | null }[] }
+      row: { username: SupabaseColumnType<'public.users.username', string>; all_user_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; message: SupabaseColumnType<'public.messages.message', string> | null }[] }
       sources: { username: 'username' }
       embeds: {
         all_user_messages: { path: ['all_user_messages']; outputs: [['all_user_messages']]; join: 'left'; cardinality: 'many' }
       }
     }
     'r|public|users|username, all_user_messages:get_messages(id,message, blurb_message)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; all_user_messages: { id: SupabaseColumnType<'public.messages.id', number>; message: SupabaseColumnType<'public.messages.message', string> | null; blurb_message: string | null }[] }
+      row: { username: SupabaseColumnType<'public.users.username', string>; all_user_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; message: SupabaseColumnType<'public.messages.message', string> | null; blurb_message: string | null }[] }
       sources: { username: 'username' }
       embeds: {
         all_user_messages: { path: ['all_user_messages']; outputs: [['all_user_messages']]; join: 'left'; cardinality: 'many' }
@@ -2427,7 +2427,7 @@ declare global {
       }
     }
     'r|public|users|username, profile:function_using_setof_rows_one(*)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; profile: { id: SupabaseColumnType<'public.user_profiles.id', number>; username: SupabaseColumnType<'public.user_profiles.username', string> | null } | null }
+      row: { username: SupabaseColumnType<'public.users.username', string>; profile: { id: SupabaseColumnType<'public.user_profiles.id', number> | null; username: SupabaseColumnType<'public.user_profiles.username', string> | null } | null }
       sources: { username: 'username' }
       embeds: {
         profile: { path: ['profile']; outputs: [['profile']]; join: 'left'; cardinality: 'one' }
@@ -2441,7 +2441,7 @@ declare global {
       }
     }
     'r|public|users|username, recent_messages:get_user_recent_messages(*)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; recent_messages: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }[] }
+      row: { username: SupabaseColumnType<'public.users.username', string>; recent_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }[] }
       sources: { username: 'username' }
       embeds: {
         recent_messages: { path: ['recent_messages']; outputs: [['recent_messages']]; join: 'left'; cardinality: 'many' }
@@ -2455,7 +2455,7 @@ declare global {
       }
     }
     'r|public|users|username, setof_rows_one:function_using_setof_rows_one(*)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; setof_rows_one: { id: SupabaseColumnType<'public.user_profiles.id', number>; username: SupabaseColumnType<'public.user_profiles.username', string> | null } | null }
+      row: { username: SupabaseColumnType<'public.users.username', string>; setof_rows_one: { id: SupabaseColumnType<'public.user_profiles.id', number> | null; username: SupabaseColumnType<'public.user_profiles.username', string> | null } | null }
       sources: { username: 'username' }
       embeds: {
         setof_rows_one: { path: ['setof_rows_one']; outputs: [['setof_rows_one']]; join: 'left'; cardinality: 'one' }
@@ -2474,21 +2474,21 @@ declare global {
       }
     }
     'r|public|users|username, user_called_profile_not_null:get_user_profile_non_nullable!inner(*)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; user_called_profile_not_null: { id: SupabaseColumnType<'public.user_profiles.id', number>; username: SupabaseColumnType<'public.user_profiles.username', string> | null } }
+      row: { username: SupabaseColumnType<'public.users.username', string>; user_called_profile_not_null: { id: SupabaseColumnType<'public.user_profiles.id', number> | null; username: SupabaseColumnType<'public.user_profiles.username', string> | null } }
       sources: { username: 'username' }
       embeds: {
         user_called_profile_not_null: { path: ['user_called_profile_not_null']; outputs: [['user_called_profile_not_null']]; join: 'inner'; cardinality: 'one' }
       }
     }
     'r|public|users|username, user_messages:get_user_messages(*)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; user_messages: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }[] }
+      row: { username: SupabaseColumnType<'public.users.username', string>; user_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }[] }
       sources: { username: 'username' }
       embeds: {
         user_messages: { path: ['user_messages']; outputs: [['user_messages']]; join: 'left'; cardinality: 'many' }
       }
     }
     'r|public|users|username, user_messages:get_user_messages(id,message,blurb_message)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; user_messages: { id: SupabaseColumnType<'public.messages.id', number>; message: SupabaseColumnType<'public.messages.message', string> | null; blurb_message: string | null }[] }
+      row: { username: SupabaseColumnType<'public.users.username', string>; user_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; message: SupabaseColumnType<'public.messages.message', string> | null; blurb_message: string | null }[] }
       sources: { username: 'username' }
       embeds: {
         user_messages: { path: ['user_messages']; outputs: [['user_messages']]; join: 'left'; cardinality: 'many' }

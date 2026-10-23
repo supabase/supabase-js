@@ -6,6 +6,7 @@ const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient(REST_URL)
 
 type MessagesRow = SupabaseDatabase['public']['Tables']['messages']['Row']
+type NullableFields<T> = { [K in keyof T]: T[K] | null }
 
 describe('embeded functions select', () => {
   test('embeded_setof_function - function returning a setof embeded table', async () => {
@@ -79,7 +80,8 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: { id: number; all_channels_messages: MessagesRow[] }[]
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    let expected: { id: number; all_channels_messages: NullableFields<MessagesRow>[] }[]
     // Assert over the keys of the expected and result objects to ensure consistency between versions of types
     // should always fallback to a SelectQueryError if the relation cannot be found
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
@@ -134,12 +136,13 @@ describe('embeded functions select', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
         all_channels_messages: z.array(
           z.object({
-            id: z.number(),
+            id: z.number().nullable(),
             message: z.string().nullable(),
           })
         ),
@@ -228,7 +231,8 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: { username: string; all_user_messages: MessagesRow[] }[]
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    let expected: { username: string; all_user_messages: NullableFields<MessagesRow>[] }[]
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
@@ -287,12 +291,13 @@ describe('embeded functions select', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         all_user_messages: z.array(
           z.object({
-            id: z.number(),
+            id: z.number().nullable(),
             message: z.string().nullable(),
           })
         ),
@@ -361,12 +366,13 @@ describe('embeded functions select', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         all_user_messages: z.array(
           z.object({
-            id: z.number(),
+            id: z.number().nullable(),
             message: z.string().nullable(),
             blurb_message: z.string().nullable(),
           })
@@ -418,12 +424,13 @@ describe('embeded functions select', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         setof_rows_one: z
           .object({
-            id: z.number(),
+            id: z.number().nullable(),
             username: z.string().nullable(),
           })
           .nullable(),
@@ -526,14 +533,12 @@ describe('embeded functions select', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
-    // The override marks this as not nullable, but the data can be null at runtime.
-    // So the correct runtime schema is nullable, but the type is not.
-    // We check that the type is as expected (not nullable), but parsing will fail.
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         user_called_profile_not_null: z.object({
-          id: z.number(),
+          id: z.number().nullable(),
           username: z.string().nullable(),
         }),
       })
@@ -669,17 +674,20 @@ describe('embeded functions select', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
         all_channels_messages: z.array(
           z.object({
-            id: z.number(),
+            id: z.number().nullable(),
             message: z.string().nullable(),
-            channels: z.object({
-              id: z.number(),
-              slug: z.string().nullable(),
-            }),
+            channels: z
+              .object({
+                id: z.number(),
+                slug: z.string().nullable(),
+              })
+              .nullable(),
           })
         ),
       })
@@ -767,7 +775,8 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: { username: string; user_messages: MessagesRow[] }[]
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    let expected: { username: string; user_messages: NullableFields<MessagesRow>[] }[]
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
@@ -848,7 +857,8 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: { username: string; active_user_messages: MessagesRow[] }[]
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    let expected: { username: string; active_user_messages: NullableFields<MessagesRow>[] }[]
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
@@ -933,7 +943,8 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: { username: string; recent_messages: MessagesRow[] }[]
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    let expected: { username: string; recent_messages: NullableFields<MessagesRow>[] }[]
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
@@ -1014,7 +1025,8 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: { username: string; recent_messages: MessagesRow[] }[]
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    let expected: { username: string; recent_messages: NullableFields<MessagesRow>[] }[]
     expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     ExpectedSchema.parse(res.data)
@@ -1077,12 +1089,13 @@ describe('embeded functions select', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         user_messages: z.array(
           z.object({
-            id: z.number(),
+            id: z.number().nullable(),
             message: z.string().nullable(),
             blurb_message: z.string().nullable(),
           })
@@ -1308,12 +1321,13 @@ describe('embeded functions select', () => {
       }
     `)
     let result: Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         profile: z
           .object({
-            id: z.number(),
+            id: z.number().nullable(),
             username: z.string().nullable(),
           })
           .nullable(),
