@@ -908,6 +908,20 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
+   * @inheritDoc
+   */
+  override throwOnError(): PostgrestFilterBuilder<B, E, F, SetM<M, { thr: true }>> {
+    return super.throwOnError() as any
+  }
+
+  /**
+   * @inheritDoc
+   */
+  override stripNulls(): PostgrestFilterBuilder<B, E, F, SetM<M, { strip: true }>> {
+    return super.stripNulls() as any
+  }
+
+  /**
    * Replace the type of the returned `data` with `T`.
    *
    * The new type is taken as is: it is not checked against the selected columns, and filter facts do not

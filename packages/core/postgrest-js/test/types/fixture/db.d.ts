@@ -100,6 +100,8 @@ declare global {
         }
         ping: { Args: { n: number }; Returns: undefined }
         get_status: { Args: { name_param: string }; Returns: Status | null }
+        // a scalar whose type is an array (test/scalar-array-rpc.test.ts, migration 00000000000090)
+        int_array_upto: { Args: { n: number }; Returns: number[] | null }
         get_user_messages: { Args: { user_name: string }; Returns: MessageRow[] }
         // a composite return (single) and RETURNS TABLE (setof)
         get_address: { Args: { id: number }; Returns: Address }
@@ -364,6 +366,18 @@ declare global {
         },
         // fixture-only: a distinguishable GET call, to prove `{ get: true }` selects it
         { keys: 'name_param'; method: 'GET'; form: 'single-scalar'; row: Status; source: never },
+      ]
+    }
+    // a scalar whose type is an array: the wire value is the array itself, maybeSingle() unwraps it
+    'f|public|int_array_upto|*': {
+      calls: [
+        {
+          keys: 'n'
+          method: 'POST'
+          form: 'single-scalar'
+          row: number[] | null
+          source: never
+        },
       ]
     }
     'f|public|get_user_messages|*': {

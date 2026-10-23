@@ -1,7 +1,6 @@
 import type { Fetch } from './types/common/common'
 import type { BState, MState, SetM } from './types/planner/lookup'
 import type { Res } from './types/planner/response'
-import type PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import PostgrestError from './PostgrestError'
 import { fetchWithRetry } from './fetchWithRetry'
 
@@ -96,7 +95,7 @@ export default abstract class PostgrestBuilder<
    * @category Database
    * @subcategory Using modifiers
    */
-  throwOnError(): PostgrestFilterBuilder<B, E, F, SetM<M, { thr: true }>> {
+  throwOnError(): PostgrestBuilder<B, E, F, SetM<M, { thr: true }>> {
     this.shouldThrowOnError = true
     return this as any
   }
@@ -151,7 +150,7 @@ export default abstract class PostgrestBuilder<
    * }
    * ```
    */
-  stripNulls(): PostgrestFilterBuilder<B, E, F, SetM<M, { strip: true }>> {
+  stripNulls(): PostgrestBuilder<B, E, F, SetM<M, { strip: true }>> {
     if (this.headers.get('Accept') === 'text/csv') {
       throw new Error('stripNulls() cannot be used with csv()')
     }

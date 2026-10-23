@@ -22,8 +22,11 @@ export type Flat<T> = { [K in keyof T]: T[K] }
 export type Rows<E, F, M extends MState> = M['strip'] extends true
   ? Strip<ApplyFacts<E, F>>
   : ApplyFacts<E, F>
+// the value a scalar call answers with is the wire value: `maybeSingle()` fetches a list and takes the one element of
+// an array, whatever the array holds (rows are objects, never unwrapped further)
+export type Unwrap<R> = R extends readonly (infer U)[] ? U : R
 export type Card<M extends MState, R, Bs> = M['card'] extends 'maybe'
-  ? R | null
+  ? ([Bs] extends ['one'] ? Unwrap<R> : R) | null
   : M['card'] extends 'one'
     ? R
     : Bs extends 'many'
