@@ -1,4 +1,4 @@
-import { resolve } from 'node:path'
+import { createServer, type AddressInfo, type Server, type Socket } from 'node:net'
 import {
   ExecTimeoutError,
   SchemaAcquisitionError,
@@ -123,21 +123,89 @@ describe('acquisition deadline', () => {
   })
 })
 
-describe('connectPg statement timeout', () => {
-  const WORKDIR = resolve(__dirname, '../../../core/postgrest-js/test')
+/**
+ * A stand-in for a Postgres server, so that nothing here races the real handshake against a budget: `silent` accepts
+ * and never speaks, otherwise the server completes the startup (trust authentication) and answers every query with
+ * `onQuery`. It records the startup parameters it was given.
+ */
+function fakePostgres(onQuery?: () => Buffer | undefined) {
+  const startups: Array<Record<string, string>> = []
+  const sockets = new Set<Socket>()
+  const message = (type: string, body: Buffer) => {
+    const head = Buffer.alloc(5)
+    head.write(type, 0, 'latin1')
+    head.writeInt32BE(body.length + 4, 1)
+    return Buffer.concat([head, body])
+  }
+  const ready = message('Z', Buffer.from('I'))
+  const server: Server = createServer((socket) => {
+    sockets.add(socket)
+    socket.on('close', () => sockets.delete(socket))
+    socket.on('error', () => undefined)
+    if (!onQuery) return // accepts, never speaks
+    let started = false
+    socket.on('data', (chunk) => {
+      if (!started) {
+        started = true
+        const params = chunk.subarray(8).toString('utf8').split('\0')
+        const entries: Record<string, string> = {}
+        for (let i = 0; i + 1 < params.length; i += 2) entries[params[i]!] = params[i + 1]!
+        startups.push(entries)
+        socket.write(Buffer.concat([message('R', Buffer.alloc(4)), ready]))
+      } else if (chunk[0] === 'Q'.charCodeAt(0)) {
+        socket.write(Buffer.concat([onQuery()!, ready]))
+      }
+    })
+  })
+  return {
+    startups,
+    async listen(): Promise<string> {
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+      return `postgres://u:secret@127.0.0.1:${(server.address() as AddressInfo).port}/d`
+    },
+    async close() {
+      for (const socket of sockets) socket.destroy()
+      await new Promise((resolve) => server.close(resolve))
+    },
+    error(code: string, text: string): Buffer {
+      return message('E', Buffer.from(`SERROR\0C${code}\0M${text}\0\0`))
+    },
+  }
+}
 
-  it('cancels a statement that runs past the budget', async () => {
-    const status = await nodeExec('npx', ['supabase', 'status', '-o', 'json', '--workdir', WORKDIR])
-    const url: string = JSON.parse(status.stdout.slice(status.stdout.indexOf('{'))).DB_URL
-    const db = await connectPg(url, { timeoutMs: 300 })
+describe('connectPg deadlines', () => {
+  let fake: ReturnType<typeof fakePostgres> | undefined
+  afterEach(async () => {
+    await fake?.close()
+    fake = undefined
+  })
+
+  it('reports a timeout, not a database error, when the host never completes the connection', async () => {
+    fake = fakePostgres()
+    const url = await fake.listen()
+    const error = await rejection(connectPg(url, { timeoutMs: 300 }))
+    expect(error).toBeInstanceOf(SchemaAcquisitionError)
+    expect((error as SchemaAcquisitionError).code).toBe('timeout')
+    expect((error as Error).message).not.toContain('secret')
+  })
+
+  it('maps the server cancelling a statement to a timeout, and sends the budget as statement_timeout', async () => {
+    // the server answers the query with the error `statement_timeout` raises; the budget is large because no wall
+    // clock decides this outcome
+    const stub: ReturnType<typeof fakePostgres> = fakePostgres(() =>
+      stub.error('57014', 'canceling statement due to statement timeout')
+    )
+    fake = stub
+    const url = await stub.listen()
+    const db = await connectPg(url, { timeoutMs: 60_000 })
     try {
-      const started = Date.now()
       const error = await rejection(db.query('select pg_sleep(10)'))
       expect(error).toBeInstanceOf(SchemaAcquisitionError)
       expect((error as SchemaAcquisitionError).code).toBe('timeout')
-      expect(Date.now() - started).toBeLessThan(3000)
     } finally {
       await db.close()
     }
-  }, 60_000)
+    expect(stub.startups).toHaveLength(1)
+    expect(stub.startups[0]!['statement_timeout']).toBe('60000')
+  })
 })

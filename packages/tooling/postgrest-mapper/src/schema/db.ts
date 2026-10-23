@@ -6,8 +6,10 @@ import type { ConnectOptions, DbClient, DbConnection } from './types'
 /**
  * Opens a single `pg` connection. Errors are scrubbed of the URL's credentials.
  *
- * `connectionTimeoutMillis` bounds the wait for a dead host. `options.timeoutMs` also becomes the server's
- * `statement_timeout` and the client's `query_timeout`, so a statement that does not finish is cancelled.
+ * `connectionTimeoutMillis` bounds the whole connection attempt (TCP, TLS, authentication), so a host that accepts
+ * and then goes quiet cannot hold the caller; running out of it is a `'timeout'`, like any other budget.
+ * `options.timeoutMs` also becomes the server's `statement_timeout` and the client's `query_timeout`, so a statement
+ * that does not finish is cancelled.
  */
 export async function connectPg(url: string, options?: ConnectOptions): Promise<DbConnection> {
   const scrub = createScrubber([urlPassword(url), url])
@@ -18,7 +20,8 @@ export async function connectPg(url: string, options?: ConnectOptions): Promise<
   const fail = (error: unknown): never => {
     const timedOut =
       (error as { code?: unknown } | null)?.code === '57014' || // query_canceled: statement_timeout
-      messageOf(error) === 'Query read timeout' // pg's query_timeout
+      messageOf(error) === 'Query read timeout' || // pg's query_timeout
+      messageOf(error) === 'timeout expired' // pg's connectionTimeoutMillis
     throw new SchemaAcquisitionError(timedOut ? 'timeout' : 'database', scrub(messageOf(error)))
   }
   let client: Client

@@ -216,10 +216,15 @@ describe('schema acquisition from the supabase-local stack', () => {
       expect((await readSnapshot(path)).postgrest).toEqual({ release: schema.postgrestVersion })
     })
 
+    // a whole acquisition (supabase status, three docker execs, the catalog) is far past a test's default budget
+    let again: AcquiredSchema
+    beforeAll(async () => {
+      again = await acquireSchema(LOCAL)
+    }, 120_000)
+
     test('a second acquisition of the unchanged stack is identical, and --check says so', async () => {
       const path = join(dir, 'again.json')
       await writeSnapshot(path, schema)
-      const again = await acquireSchema(LOCAL)
       expect(await checkSnapshot(path, again)).toEqual({ ok: true })
     })
 
@@ -280,13 +285,17 @@ describe('schema acquisition from the supabase-local stack', () => {
   describe('credentials are scrubbed', () => {
     const PASSWORD = 'wrong-pw-s3cr3t-9f2'
 
-    test('a failed connection (bad password) never echoes the password or the URL', async () => {
+    // the acquisition runs the docker dumps before it connects, so it is kept out of the test body's default budget
+    let error: unknown
+    beforeAll(async () => {
       const url = new URL(dbUrl)
       url.password = PASSWORD
-      const error = await acquireSchema(
-        { ...LOCAL, dbUrl: url.toString() },
-        { exec: nodeExec }
-      ).catch((e: unknown) => e)
+      error = await acquireSchema({ ...LOCAL, dbUrl: url.toString() }, { exec: nodeExec }).catch(
+        (e: unknown) => e
+      )
+    }, 120_000)
+
+    test('a failed connection (bad password) never echoes the password or the URL', () => {
       expect(error).toBeInstanceOf(SchemaAcquisitionError)
       expect((error as SchemaAcquisitionError).code).toBe('database')
       expect(String((error as Error).message)).not.toContain(PASSWORD)

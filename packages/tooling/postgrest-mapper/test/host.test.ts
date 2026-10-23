@@ -26,6 +26,33 @@ interface Control {
   workers: WorkerLike[]
 }
 
+/**
+ * Stages a budget running out without waiting for the clock: only the host's timers are faked (`setTimeout`), so a
+ * healthy worker boot, load or plan is never raced against a budget, however loaded the machine is.
+ */
+const fakeBudgets = () =>
+  jest.useFakeTimers({
+    doNotFake: [
+      'Date',
+      'hrtime',
+      'nextTick',
+      'performance',
+      'queueMicrotask',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'requestIdleCallback',
+      'cancelIdleCallback',
+      'setImmediate',
+      'clearImmediate',
+    ],
+  })
+
+/** Resolves once the `count`-th `op` request reached the wrapped worker, which is after the host armed its budget. */
+async function reached(control: Control, op: WorkerRequest['op'], count: number): Promise<void> {
+  while (control.seen.filter((m) => m.op === op).length < count)
+    await new Promise((resolve) => setImmediate(resolve))
+}
+
 /** A host over real workers that the test can make hang or kill. */
 function stagedHost(options: { loadTimeoutMs?: number; planTimeoutMs?: number } = {}): {
   host: PlannerHost
@@ -64,6 +91,7 @@ describe('planner host over the real planner', () => {
     acquired = await acquireFromStack()
   }, 120_000)
   afterEach(async () => {
+    jest.useRealTimers()
     await Promise.all(open.splice(0).map((host) => host.close()))
   })
 
@@ -92,16 +120,17 @@ describe('planner host over the real planner', () => {
   }, 60_000)
 
   test('a plan that hangs times out, the worker is replaced and the cache reloads into the new one', async () => {
+    fakeBudgets()
     const { host, control } = track(stagedHost({ planTimeoutMs: 200 }))
     expect((await host.load(acquired)).ok).toBe(true)
     expect(await host.plan(USERS)).toMatchObject({ ok: true })
     expect(control.workers).toHaveLength(1)
 
     control.hang.add('plan')
-    const started = Date.now()
-    const timedOut = await host.plan(USERS)
-    expect(timedOut).toMatchObject({ ok: false, error: { code: HOST_ERROR.timeout } })
-    expect(Date.now() - started).toBeLessThan(5_000)
+    const hung = host.plan(USERS)
+    await reached(control, 'plan', 2)
+    jest.advanceTimersByTime(200)
+    expect(await hung).toMatchObject({ ok: false, error: { code: HOST_ERROR.timeout } })
 
     control.hang.clear()
     const loadsBefore = control.seen.filter((m) => m.op === 'load').length
@@ -113,10 +142,13 @@ describe('planner host over the real planner', () => {
   }, 60_000)
 
   test('a load that hangs times out as a value, and the next load succeeds on a fresh worker', async () => {
-    // the load budget also covers booting the worker and compiling the wasm, so the recovering load needs a real budget
+    fakeBudgets()
     const { host, control } = track(stagedHost({ loadTimeoutMs: 5_000 }))
     control.hang.add('load')
-    expect(await host.load(acquired)).toMatchObject({
+    const hung = host.load(acquired)
+    await reached(control, 'load', 1)
+    jest.advanceTimersByTime(5_000)
+    expect(await hung).toMatchObject({
       ok: false,
       error: { code: HOST_ERROR.timeout },
     })
@@ -139,7 +171,7 @@ describe('planner host over the real planner', () => {
     control.hang.add('plan')
     const pending = host.plan(USERS)
     // the request is in flight when the worker dies
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await reached(control, 'plan', 1)
     await control.workers[0]!.terminate()
     expect(await pending).toMatchObject({ ok: false, error: { code: HOST_ERROR.workerFailed } })
 
@@ -151,8 +183,8 @@ describe('planner host over the real planner', () => {
   test('an idle worker that dies is replaced without any failure being observed', async () => {
     const { host, control } = track(stagedHost())
     expect((await host.load(acquired)).ok).toBe(true)
+    // `terminate` settles on the worker's `exit`, which the host has already heard of
     await control.workers[0]!.terminate()
-    await new Promise((resolve) => setTimeout(resolve, 100))
     expect(await host.plan(USERS)).toMatchObject({ ok: true })
     expect(control.workers).toHaveLength(2)
   }, 60_000)
