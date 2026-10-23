@@ -6,6 +6,8 @@
  * as `format_type` does (`integer`, `character varying(255)`, `timestamp(3) with time zone`, `"MyType"[]`).
  */
 
+import { memberName, quote } from './literal'
+
 /** Builtin name (internal spelling) to the TypeScript type `gen types` prints for it. Everything else is `unknown`. */
 export const BUILTIN_TS: Readonly<Record<string, string>> = {
   bool: 'boolean',
@@ -57,14 +59,17 @@ export interface NormalizedType {
   dims: number
 }
 
+/** Only spaces are padding: a quoted name can end in a line break. */
+const trimSpaces = (text: string): string => text.replace(/^ +| +$/g, '')
+
 /** Strips modifiers and array suffixes and maps `format_type` spellings to internal names. */
 export function normalizeType(type: string): NormalizedType {
-  let rest = type.trim()
+  let rest = trimSpaces(type)
   let dims = 0
   for (;;) {
-    const m = /^(.*?)(?:\[\d*\])$/.exec(rest)
+    const m = /^(.*?)(?:\[\d*\])$/s.exec(rest)
     if (!m) break
-    rest = m[1]!.trim()
+    rest = trimSpaces(m[1]!)
     dims++
   }
   if (/^_/.test(rest) && !rest.includes('.')) {
@@ -73,7 +78,7 @@ export function normalizeType(type: string): NormalizedType {
     dims++
   }
   // modifiers: varchar(255), numeric(10,2), timestamp(3) with time zone
-  rest = rest.replace(/\(\s*\d+(?:\s*,\s*\d+)?\s*\)/g, '').replace(/\s+/g, ' ')
+  rest = rest.replace(/\(\s*\d+(?:\s*,\s*\d+)?\s*\)/g, '').replace(/ {2,}/g, ' ')
   const dot = rest.lastIndexOf('.')
   if (dot > 0 && !rest.startsWith('"')) {
     const schema = rest.slice(0, dot).replace(/^"|"$/g, '')
@@ -97,8 +102,12 @@ export interface TypeContext {
   enums: ReadonlySet<string>
   /** Composite types of the exposed schemas */
   composites: ReadonlySet<string>
-  /** Tables and views of the exposed schemas: a column or function of this type holds a row */
-  relations: ReadonlyMap<string, 'Tables' | 'Views'>
+  /**
+   * Tables and views of the exposed schemas, by the attributes of their row type (in `attnum` order): a column or
+   * function of this type holds a composite value, which PostgreSQL does not check against the constraints of the
+   * relation (`ROW(NULL)::person` is a value even when `person.id` is the primary key)
+   */
+  relations: ReadonlyMap<string, readonly CompositeAttribute[]>
   /** Domain to the type it is defined over (`public.positive_int` to `int4`) */
   domains: ReadonlyMap<string, string>
   /** Schema an unqualified non-builtin name belongs to. Default `public` */
@@ -109,11 +118,22 @@ export interface TypeContext {
   jsonType?: string
 }
 
-const isQualified = (name: string): boolean => name.includes('.')
-
-function quoteKey(schema: string): string {
-  return `'${schema.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+/** One attribute of a composite value: its name and `format_type`. */
+export interface CompositeAttribute {
+  name: string
+  type: string
 }
+
+/** The row type of a relation: its columns in `attnum` order. */
+export function rowTypeOf(
+  columns: readonly (CompositeAttribute & { attnum: number })[]
+): CompositeAttribute[] {
+  return [...columns]
+    .sort((a, b) => a.attnum - b.attnum)
+    .map((c) => ({ name: c.name, type: c.type }))
+}
+
+const isQualified = (name: string): boolean => name.includes('.')
 
 /** `SupabaseDatabase['public']['Enums']['user_status']` */
 export function databaseRef(
@@ -122,7 +142,7 @@ export function databaseRef(
   section: string,
   name: string
 ): string {
-  return `${ctx.databaseType ?? 'SupabaseDatabase'}[${quoteKey(schema)}][${quoteKey(section)}][${quoteKey(name)}]`
+  return `${ctx.databaseType ?? 'SupabaseDatabase'}[${quote(schema)}][${quote(section)}][${quote(name)}]`
 }
 
 function split(name: string, ctx: TypeContext): [string, string] {
@@ -201,14 +221,21 @@ export function tsTypeOf(type: string, ctx: TypeContext): string {
       break
     }
     case 'relation': {
-      const [schema, name] = split(c.name, ctx)
-      ts = `${databaseRef(ctx, schema, ctx.relations.get(c.name)!, name)}['Row']`
+      // a composite value, not a row of the table: every attribute can be null
+      ts = compositeValue(ctx.relations.get(c.name)!, ctx)
       break
     }
     default:
       ts = 'unknown'
   }
   return withDims(ts, c.dims)
+}
+
+/** `{ a: T | null; ... }`: a composite value, every attribute nullable. */
+function compositeValue(attributes: readonly CompositeAttribute[], ctx: TypeContext): string {
+  if (attributes.length === 0) return '{ [_ in never]: never }'
+  const members = attributes.map((a) => `${memberName(a.name)}: ${tsTypeOf(a.type, ctx)} | null`)
+  return `{ ${members.join('; ')} }`
 }
 
 /** `T[]` per dimension; a union element gets parentheses. */

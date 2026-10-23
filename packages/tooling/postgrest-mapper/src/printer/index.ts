@@ -5,7 +5,8 @@ export type { CallOutcome, CallPlan, CallReturns, OperandInput, RpcCall } from '
 export { pgrstFeatures, printModule } from './module'
 export { createSelectsContext } from './selects-context'
 export type { SelectsContext, SelectsContextInput } from './selects-context'
-export { plannerErrorMessage, printSelects, quote } from './selects'
+export { quote } from './literal'
+export { plannerErrorMessage, printSelects } from './selects'
 export type {
   ErrorEntry,
   PlannedEntry,

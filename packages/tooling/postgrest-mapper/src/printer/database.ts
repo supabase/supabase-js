@@ -1,19 +1,16 @@
 import type { ShapeField } from '@supabase/postgrest-planner'
 import type { Supplementary, SupplementaryFunction, SupplementaryRelation } from '../schema'
 import type { TracedColumn } from '../tracer'
-import { classifyType, normalizeType, tsTypeOf, type TypeContext, baseName } from './pg-types'
+import { memberName as key, quote } from './literal'
+import {
+  classifyType,
+  normalizeType,
+  rowTypeOf,
+  tsTypeOf,
+  type TypeContext,
+  baseName,
+} from './pg-types'
 import type { PrintDatabaseInput, PrintDatabaseResult, PrintDiagnostic } from './types'
-
-const IDENT = /^[A-Za-z_$][\w$]*$/
-
-function quote(value: string): string {
-  return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`
-}
-
-/** An object type key: bare when it is an identifier. */
-function key(name: string): string {
-  return IDENT.test(name) ? name : quote(name)
-}
 
 const EMPTY_OBJECT = '{ [_ in never]: never }'
 
@@ -280,7 +277,7 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
   const ctx: TypeContext = {
     enums: new Set(supplementary.enums.map((e) => qualified(e.schema, e.name))),
     composites: new Set(supplementary.composites.map((c) => qualified(c.schema, c.name))),
-    relations: new Map([...printed].map(([k, p]) => [k, p.placement])),
+    relations: new Map([...printed].map(([k, p]) => [k, rowTypeOf(p.relation.columns)])),
     domains,
   }
   const argCtx: TypeContext = { ...ctx, jsonType: 'JsonIn' }
@@ -415,7 +412,8 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
     }
     const ts = tsTypeOf(type, ctx)
     if (ts === 'undefined') return setof ? 'undefined[]' : 'undefined'
-    if (setof) return /[|&]/.test(ts) ? `(${ts})[]` : `${ts}[]`
+    // a function can return NULL as the element of a set; no analysis of its body proves otherwise
+    if (setof) return `(${ts} | null)[]`
     return `${ts} | null`
   }
 

@@ -5,8 +5,15 @@ const ctx: TypeContext = {
   enums: new Set(['public.user_status', 'personal.user_status']),
   composites: new Set(['public.address']),
   relations: new Map([
-    ['public.users', 'Tables'],
-    ['public.active_users', 'Views'],
+    [
+      'public.users',
+      [
+        { name: 'id', type: 'int4' },
+        { name: 'status', type: 'public.user_status' },
+      ],
+    ],
+    ['public.active_users', [{ name: 'odd name', type: 'text' }]],
+    ['public.nothing', []],
   ]),
   domains: new Map([
     ['public.positive_int', 'int4'],
@@ -67,9 +74,14 @@ const TABLE: [string, string][] = [
   ['personal.user_status', `${DB}['personal']['Enums']['user_status']`],
   ['public.user_status[]', `${DB}['public']['Enums']['user_status'][]`],
   ['public.address', `${DB}['public']['CompositeTypes']['address']`],
-  ['public.users', `${DB}['public']['Tables']['users']['Row']`],
-  ['public.users[]', `${DB}['public']['Tables']['users']['Row'][]`],
-  ['public.active_users', `${DB}['public']['Views']['active_users']['Row']`],
+  // a relation used as a type is a composite value: its attributes are all nullable, whatever the table enforces
+  ['public.users', `{ id: number | null; status: ${DB}['public']['Enums']['user_status'] | null }`],
+  [
+    'public.users[]',
+    `({ id: number | null; status: ${DB}['public']['Enums']['user_status'] | null })[]`,
+  ],
+  ['public.active_users', `{ 'odd name': string | null }`],
+  ['public.nothing', '{ [_ in never]: never }'],
   // domains resolve to what they are defined over
   ['public.positive_int', 'number'],
   ['public.tags', 'string[]'],

@@ -5,6 +5,7 @@ import type {
   ShapeEmbed,
   ShapeField,
 } from '@supabase/postgrest-planner'
+import { memberName, quote, quoteDouble } from './literal'
 import { classifyType, tsTypeOf } from './pg-types'
 import type { SelectsContext } from './selects-context'
 
@@ -40,17 +41,6 @@ export interface PrintSelectsResult {
   /** The entries as printed: a planned entry the printer could not type is an `ErrorEntry` here */
   entries: (ErrorEntry | RawEntry | (PlannedEntry & { printed: true }))[]
 }
-
-const IDENT = /^[A-Za-z_$][\w$]*$/
-
-/** A single-quoted TypeScript string literal. */
-export function quote(value: string): string {
-  const body = JSON.stringify(value).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'")
-  return `'${body}'`
-}
-
-/** An object type key: bare when it is an identifier. */
-export const memberName = (name: string): string => (IDENT.test(name) ? name : quote(name))
 
 /** `PGRST200: Could not find ...`, plus the planner's hint: what the consumer shows for a rejected select. */
 export function plannerErrorMessage(failure: PlannerError): string {
@@ -260,7 +250,16 @@ class ShapePrinter {
       const path = this.jsonPath(prov, functionRows)
       if (path !== undefined) return path
     }
-    // cast, aggregate, computed, representation: the value is computed, nothing of the column's type is left
+    if (
+      prov.kind === 'aggregate' &&
+      (prov.function === 'min' || prov.function === 'max') &&
+      prov.of?.kind === 'plain'
+    ) {
+      // the value of the column itself (design v5 §5.3): the override applies, the planner's nullability stays outside
+      const k = this.columnKey(prov.of.source)
+      return `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, field.pgType)}>${field.nullable ? ' | null' : ''}`
+    }
+    // cast, count, sum, avg, computed, representation: the value is computed, nothing of the column's type is left
     const ty = field.pgType === null ? 'unknown' : tsTypeOf(field.pgType, this.context.types)
     return field.nullable ? orNull(ty) : ty
   }
@@ -372,7 +371,7 @@ export function printSelects(
     if (seen.has(entry.key)) continue
     seen.add(entry.key)
     if (isError(entry)) {
-      blocks.push(printEntry(entry.key, `      error: ${JSON.stringify(entry.error)}`))
+      blocks.push(printEntry(entry.key, `      error: ${quoteDouble(entry.error)}`))
       printed.push(entry)
     } else if (isRaw(entry)) {
       blocks.push(printEntry(entry.key, entry.body))
@@ -381,7 +380,7 @@ export function printSelects(
       const text = printPlanned(context, entry)
       if (text instanceof EntryError) {
         const error = `unresolved select item ${text.message}`
-        blocks.push(printEntry(entry.key, `      error: ${JSON.stringify(error)}`))
+        blocks.push(printEntry(entry.key, `      error: ${quoteDouble(error)}`))
         printed.push({ key: entry.key, error })
       } else {
         blocks.push(text)

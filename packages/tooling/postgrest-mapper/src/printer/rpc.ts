@@ -1,5 +1,6 @@
 import type { PlanFilter, PlanForm, ResultShape, RpcInfo } from '@supabase/postgrest-planner'
 import type { RpcMethod } from '../types'
+import { quote, quoteDouble } from './literal'
 import { tsTypeOf } from './pg-types'
 import type { SelectsContext } from './selects-context'
 import {
@@ -10,7 +11,6 @@ import {
   printEmbeds,
   printResultShape,
   printSources,
-  quote,
   tuple,
 } from './selects'
 import type { RawEntry } from './selects'
@@ -89,12 +89,11 @@ const byCall = (a: { keys: readonly string[]; method: string }, b: typeof a): nu
   return x < y ? -1 : x > y ? 1 : a.method < b.method ? -1 : a.method > b.method ? 1 : 0
 }
 
-/** The row of a scalar return: `T | null` for one value, `T` for the elements of a set. */
+/** The row of a scalar return: `T | null`, for one value and for each element of a set (nothing proves it is not null). */
 function scalarRow(context: SelectsContext, returns: CallReturns): string {
   // `void` is sent as `null`
   if (returns.type === 'void') return 'null'
-  const ts = tsTypeOf(returns.type, context.types)
-  return returns.multiplicity === 'single' ? orNull(ts) : ts
+  return orNull(tsTypeOf(returns.type, context.types))
 }
 
 const CALL_INDENT = '          '
@@ -149,18 +148,16 @@ function printBlock(call: { keys: readonly string[]; method: RpcMethod }, tail: 
 
 function printCall(context: SelectsContext, select: string, call: RpcCall): string {
   if ('error' in call.outcome) {
-    return printBlock(call, [`error: ${JSON.stringify(call.outcome.error)}`])
+    return printBlock(call, [`error: ${quoteDouble(call.outcome.error)}`])
   }
   try {
     return printBlock(call, callMembers(context, select, call.outcome.plan, call.star))
   } catch (error) {
     if (error instanceof EntryError) {
-      return printBlock(call, [
-        `error: ${JSON.stringify(`unresolved select item ${error.message}`)}`,
-      ])
+      return printBlock(call, [`error: ${quoteDouble(`unresolved select item ${error.message}`)}`])
     }
     if (error instanceof CallError) {
-      return printBlock(call, [`error: ${JSON.stringify(error.message)}`])
+      return printBlock(call, [`error: ${quoteDouble(error.message)}`])
     }
     throw error
   }
@@ -249,7 +246,7 @@ function operandOutcome(
 
 const operandMembers = (t: OperandType): string[] =>
   'error' in t
-    ? [`error: ${JSON.stringify(t.error)}`]
+    ? [`error: ${quoteDouble(t.error)}`]
     : [`type: ${t.type}`, ...(t.embed ? [`embed: ${tuple(t.embed)}`] : [])]
 
 /**

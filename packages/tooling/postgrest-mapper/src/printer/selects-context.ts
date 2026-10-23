@@ -1,7 +1,7 @@
 import type { ShapeField } from '@supabase/postgrest-planner'
 import type { Supplementary } from '../schema'
 import type { TracedColumn } from '../tracer'
-import { type TypeContext } from './pg-types'
+import { rowTypeOf, type TypeContext } from './pg-types'
 
 /** What the selects printer reads about the database: the same inputs `printDatabase` is fed. */
 export interface SelectsContextInput {
@@ -36,11 +36,11 @@ export interface SelectsContext {
  */
 export function createSelectsContext(input: SelectsContextInput): SelectsContext {
   const { supplementary } = input
-  const relations = new Map<string, 'Tables' | 'Views'>()
+  const relations = new Map<string, ReturnType<typeof rowTypeOf>>()
   for (const r of supplementary.relations) {
     const name = `${r.schema}.${r.name}`
     if (!input.plans.has(name)) continue
-    relations.set(name, r.kind === 'r' || r.kind === 'p' ? 'Tables' : 'Views')
+    relations.set(name, rowTypeOf(r.columns))
   }
   const domains = new Map<string, string>()
   for (const fields of input.plans.values()) {

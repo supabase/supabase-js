@@ -142,6 +142,7 @@ export type Col = Expect<Equal<
 `,
     'rpc.ts': `
 import type { Equal, Expect } from './helpers'
+import type { JsonIn } from './db'
 type F = SupabaseDatabase['public']['Functions']
 export type GetStatus = Expect<Equal<F['get_status'], {
   Args: { name_param: string }
@@ -153,10 +154,14 @@ export type EchoAddress = Expect<Equal<F['echo_address'], {
 }>>
 // a function without arguments takes none
 export type NoArgs = Expect<Equal<F['void_func'], { Args: Record<string, never>; Returns: undefined }>>
-// a set-returning function over a table returns its rows
-export type SetOf = Expect<Equal<F['get_user_messages']['Returns'], SupabaseDatabase['public']['Tables']['messages']['Row'][]>>
-// a function of a table row takes the row
-export type RowArg = Expect<Equal<F['get_user_messages']['Args'], { user_row: SupabaseDatabase['public']['Tables']['users']['Row'] }>>
+// a table's row used as a function's value is a composite value, not a stored row: PostgreSQL enforces the table's
+// constraints on its rows only, so every attribute can be null
+type Value<R> = { [K in keyof R]: R[K] | null }
+// a set-returning function over a table returns composite values
+export type SetOf = Expect<Equal<F['get_user_messages']['Returns'], Value<SupabaseDatabase['public']['Tables']['messages']['Row']>[]>>
+// a function of a table row takes the composite value
+type UserRow = SupabaseDatabase['public']['Tables']['users']['Row']
+export type RowArg = Expect<Equal<F['get_user_messages']['Args'], { user_row: { [K in keyof UserRow]: (K extends 'data' ? JsonIn : UserRow[K]) | null } }>>
 // an argument with a default is optional
 export type Optional = Expect<Equal<F['function_with_optional_param']['Args'], { param?: string }>>
 `,
