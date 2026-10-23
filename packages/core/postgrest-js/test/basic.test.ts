@@ -917,7 +917,9 @@ describe('basic insert, update, delete', () => {
   })
 
   afterAll(async () => {
-    // Restore message id 3 — the upsert test changes it to 'foo' and the delete test removes it
+    // Remove any 'foo' rows a failed test left behind, then restore message id 3: the upsert test
+    // changes it to 'foo' and the delete test removes it
+    await postgrest.from('messages').delete().eq('message', 'foo')
     await postgrest.from('messages').upsert({
       id: 3,
       message: 'Some message on channel without details',
@@ -1132,21 +1134,17 @@ test('select with head:true, count:exact', async () => {
 
 test('select with head:true, count:planned', async () => {
   const res = await postgrest.from('users').select('*', { head: true, count: 'planned' })
-  expect(res).toMatchInlineSnapshot(
-    {
-      count: expect.any(Number),
-    },
-    `
-    {
-      "count": Any<Number>,
-      "data": null,
-      "error": null,
-      "status": 206,
-      "statusText": "Partial Content",
-      "success": true,
-    }
-  `
-  )
+  // the planned count is the planner's row estimate, which follows the table statistics autovacuum refreshes at any
+  // time: PostgREST answers 206 only while that estimate exceeds the 5 rows the query reads
+  const partial = res.count! > 5
+  expect(res).toEqual({
+    count: expect.any(Number),
+    data: null,
+    error: null,
+    status: partial ? 206 : 200,
+    statusText: partial ? 'Partial Content' : 'OK',
+    success: true,
+  })
 })
 
 test('select with head:true, count:estimated', async () => {
@@ -1821,7 +1819,9 @@ describe("insert, update, delete with count: 'exact'", () => {
   })
 
   afterAll(async () => {
-    // Restore message id 3 — the upsert test changes it to 'foo' and the delete test removes it
+    // Remove any 'foo' rows a failed test left behind, then restore message id 3: the upsert test
+    // changes it to 'foo' and the delete test removes it
+    await postgrest.from('messages').delete().eq('message', 'foo')
     await postgrest.from('messages').upsert({
       id: 3,
       message: 'Some message on channel without details',

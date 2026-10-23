@@ -1169,20 +1169,6 @@ describe('advanced rpc', () => {
         "count": null,
         "data": [
           {
-            "age_range": "[1,2)",
-            "catchphrase": "'cat' 'fat'",
-            "data": null,
-            "status": "ONLINE",
-            "username": "supabot",
-          },
-          {
-            "age_range": "[25,35)",
-            "catchphrase": "'bat' 'cat'",
-            "data": null,
-            "status": "OFFLINE",
-            "username": "kiwicopple",
-          },
-          {
             "age_range": "[25,35)",
             "catchphrase": "'bat' 'rat'",
             "data": null,
@@ -1209,6 +1195,20 @@ describe('advanced rpc', () => {
             },
             "status": "ONLINE",
             "username": "jsonuser",
+          },
+          {
+            "age_range": "[25,35)",
+            "catchphrase": "'bat' 'cat'",
+            "data": null,
+            "status": "OFFLINE",
+            "username": "kiwicopple",
+          },
+          {
+            "age_range": "[1,2)",
+            "catchphrase": "'cat' 'fat'",
+            "data": null,
+            "status": "ONLINE",
+            "username": "supabot",
           },
         ],
         "error": null,

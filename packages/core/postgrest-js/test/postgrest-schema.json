@@ -738,7 +738,7 @@
           "type": "public.users"
         },
         "schema": "public",
-        "source": "\n  select * from public.users;\n",
+        "source": "\n  select * from public.users order by username;\n",
         "volatility": "s"
       },
       {
@@ -852,7 +852,7 @@
           "type": "public.messages"
         },
         "schema": "public",
-        "source": "\n    SELECT * FROM public.messages WHERE username = active_user_row.username;\n",
+        "source": "\n    SELECT * FROM public.messages WHERE username = active_user_row.username ORDER BY id;\n",
         "volatility": "s"
       },
       {
@@ -871,7 +871,7 @@
           "type": "public.messages"
         },
         "schema": "public",
-        "source": "\n  SELECT * FROM public.messages WHERE channel_id = channel_row.id;\n",
+        "source": "\n  SELECT * FROM public.messages WHERE channel_id = channel_row.id ORDER BY id;\n",
         "volatility": "s"
       },
       {
@@ -890,7 +890,7 @@
           "type": "public.messages"
         },
         "schema": "public",
-        "source": "\n  SELECT * FROM public.messages WHERE username = user_row.username;\n",
+        "source": "\n  SELECT * FROM public.messages WHERE username = user_row.username ORDER BY id;\n",
         "volatility": "s"
       },
       {
@@ -909,7 +909,7 @@
           "type": "public.messages"
         },
         "schema": "public",
-        "source": "\n    SELECT * FROM public.messages WHERE username = search_username;\n",
+        "source": "\n    SELECT * FROM public.messages WHERE username = search_username ORDER BY id;\n",
         "volatility": "s"
       },
       {
@@ -943,7 +943,7 @@
           "type": "public.recent_messages"
         },
         "schema": "public",
-        "source": "\n    SELECT * FROM public.recent_messages WHERE username = search_username;\n",
+        "source": "\n    SELECT * FROM public.recent_messages WHERE username = search_username ORDER BY id DESC;\n",
         "volatility": "s"
       },
       {
@@ -1015,7 +1015,7 @@
           "type": "public.messages"
         },
         "schema": "public",
-        "source": "\n    SELECT * FROM public.messages WHERE username = user_row.username;\n",
+        "source": "\n    SELECT * FROM public.messages WHERE username = user_row.username ORDER BY id;\n",
         "volatility": "s"
       },
       {
@@ -1072,7 +1072,7 @@
           "type": "public.recent_messages"
         },
         "schema": "public",
-        "source": "\n    SELECT * FROM public.recent_messages WHERE username = user_row.username;\n",
+        "source": "\n    SELECT * FROM public.recent_messages WHERE username = user_row.username ORDER BY id DESC;\n",
         "volatility": "s"
       },
       {
@@ -1091,7 +1091,7 @@
           "type": "public.recent_messages"
         },
         "schema": "public",
-        "source": "\n    SELECT * FROM public.recent_messages WHERE username = active_user_row.username;\n",
+        "source": "\n    SELECT * FROM public.recent_messages WHERE username = active_user_row.username ORDER BY id DESC;\n",
         "volatility": "s"
       },
       {
@@ -1655,7 +1655,7 @@
           "type": "public.messages"
         },
         "schema": "public",
-        "source": "\n    SELECT * FROM messages WHERE channel_id = cid AND message = search;\n",
+        "source": "\n    SELECT * FROM messages WHERE channel_id = cid AND message = search ORDER BY id;\n",
         "volatility": "s"
       },
       {
@@ -1674,7 +1674,7 @@
           "type": "public.messages"
         },
         "schema": "public",
-        "source": "\n    SELECT * FROM messages WHERE messages.username = user_row.username;\n",
+        "source": "\n    SELECT * FROM messages WHERE messages.username = user_row.username ORDER BY id;\n",
         "volatility": "s"
       },
       {

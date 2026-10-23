@@ -217,14 +217,14 @@ CREATE OR REPLACE FUNCTION public.get_messages(channel_row channels)
 RETURNS SETOF messages
 LANGUAGE SQL STABLE
 AS $$
-  SELECT * FROM public.messages WHERE channel_id = channel_row.id;
+  SELECT * FROM public.messages WHERE channel_id = channel_row.id ORDER BY id;
 $$;
 
 CREATE OR REPLACE FUNCTION public.get_messages(user_row users)
 RETURNS SETOF messages
 LANGUAGE SQL STABLE
 AS $$
-  SELECT * FROM public.messages WHERE username = user_row.username;
+  SELECT * FROM public.messages WHERE username = user_row.username ORDER BY id;
 $$;
 
 -- Create a view based on users table
@@ -240,7 +240,7 @@ CREATE OR REPLACE FUNCTION public.get_messages_by_username(search_username text)
 RETURNS SETOF messages
 LANGUAGE SQL STABLE
 AS $$
-    SELECT * FROM public.messages WHERE username = search_username;
+    SELECT * FROM public.messages WHERE username = search_username ORDER BY id;
 $$;
 
 -- Function returning messages using table row as input
@@ -248,7 +248,7 @@ CREATE OR REPLACE FUNCTION public.get_user_messages(user_row users)
 RETURNS SETOF messages
 LANGUAGE SQL STABLE
 AS $$
-    SELECT * FROM public.messages WHERE username = user_row.username;
+    SELECT * FROM public.messages WHERE username = user_row.username ORDER BY id;
 $$;
 
 -- Function returning messages using view row as input
@@ -256,7 +256,7 @@ CREATE OR REPLACE FUNCTION public.get_active_user_messages(active_user_row activ
 RETURNS SETOF messages
 LANGUAGE SQL STABLE
 AS $$
-    SELECT * FROM public.messages WHERE username = active_user_row.username;
+    SELECT * FROM public.messages WHERE username = active_user_row.username ORDER BY id;
 $$;
 
 -- Function returning view using scalar as input
@@ -264,7 +264,7 @@ CREATE OR REPLACE FUNCTION public.get_recent_messages_by_username(search_usernam
 RETURNS SETOF recent_messages
 LANGUAGE SQL STABLE
 AS $$
-    SELECT * FROM public.recent_messages WHERE username = search_username;
+    SELECT * FROM public.recent_messages WHERE username = search_username ORDER BY id DESC;
 $$;
 
 -- Function returning view using table row as input
@@ -272,13 +272,13 @@ CREATE OR REPLACE FUNCTION public.get_user_recent_messages(user_row users)
 RETURNS SETOF recent_messages
 LANGUAGE SQL STABLE
 AS $$
-    SELECT * FROM public.recent_messages WHERE username = user_row.username;
+    SELECT * FROM public.recent_messages WHERE username = user_row.username ORDER BY id DESC;
 $$;
 CREATE OR REPLACE FUNCTION public.get_user_recent_messages(active_user_row active_users)
 RETURNS SETOF recent_messages
 LANGUAGE SQL STABLE
 AS $$
-    SELECT * FROM public.recent_messages WHERE username = active_user_row.username;
+    SELECT * FROM public.recent_messages WHERE username = active_user_row.username ORDER BY id DESC;
 $$;
 CREATE OR REPLACE FUNCTION public.get_user_first_message(active_user_row active_users)
 RETURNS SETOF recent_messages ROWS 1
@@ -305,11 +305,11 @@ create function postgrest_resolvable_with_override_function(profile_id bigint) r
     SELECT * FROM user_profiles WHERE id = profile_id;
 $$;
 create function postgrest_resolvable_with_override_function(cid bigint, search text default '') returns setof messages language sql stable as $$
-    SELECT * FROM messages WHERE channel_id = cid AND message = search;
+    SELECT * FROM messages WHERE channel_id = cid AND message = search ORDER BY id;
 $$;
 -- Function override taking a table as argument and returning a setof
 create function postgrest_resolvable_with_override_function(user_row users) returns setof messages language sql stable as $$
-    SELECT * FROM messages WHERE messages.username = user_row.username;
+    SELECT * FROM messages WHERE messages.username = user_row.username ORDER BY id;
 $$;
 
 create or replace function public.polymorphic_function_with_different_return(bool) returns int language sql as 'SELECT 1';
@@ -365,7 +365,7 @@ returns setof public.users
 language sql
 stable
 as $$
-  select * from public.users;
+  select * from public.users order by username;
 $$;
 
 
