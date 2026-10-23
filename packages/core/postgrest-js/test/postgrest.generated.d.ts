@@ -205,6 +205,35 @@ declare global {
           FactColumns: 'ar' | 'bp' | 'cd' | 'flag' | 'id' | 'ip' | 'nm' | 'nu' | 'qc' | 'rc' | 'st' | 'ts' | 'u' | 'v'
           Relationships: []
         }
+        arity_children: {
+          Row: {
+            id: SupabaseColumnType<'public.arity_children.id', number>
+            parent_id: SupabaseColumnType<'public.arity_children.parent_id', number> | null
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.arity_children.id', number>
+            parent_id?: SupabaseColumnType<'public.arity_children.parent_id', number> | null
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.arity_children.id', number>
+            parent_id?: SupabaseColumnType<'public.arity_children.parent_id', number> | null
+          }
+          FactColumns: 'id' | 'parent_id'
+          Relationships: []
+        }
+        arity_parents: {
+          Row: {
+            id: SupabaseColumnType<'public.arity_parents.id', number>
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.arity_parents.id', number>
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.arity_parents.id', number>
+          }
+          FactColumns: 'id'
+          Relationships: []
+        }
         best_friends: {
           Row: {
             id: SupabaseColumnType<'public.best_friends.id', number>
@@ -1097,6 +1126,13 @@ declare global {
           }
           Returns: number | null
         }
+        arity_child: {
+          Args: {
+            p: { id: number | null }
+            n: number
+          }
+          Returns: { id: number | null; parent_id: number | null }
+        }
         computed_child: {
           Args: {
             n: number
@@ -1281,6 +1317,12 @@ declare global {
             name_param: string
           }
           Returns: SupabaseDatabase['public']['Enums']['user_status'] | null
+        }
+        out_composite: {
+          Args: Record<string, never>
+          Returns: {
+            u: { id: number | null; parent_id: number | null } | null
+          }
         }
         out_inout: {
           Args: {

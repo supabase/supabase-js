@@ -40,7 +40,7 @@ import qualified Data.HashMap.Strict.InsOrd as HMI
 import Data.List (find, nub)
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
 import Control.Applicative ((<|>))
-import Control.Monad (join)
+import Control.Monad (guard, join)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tree (Tree (..))
@@ -108,7 +108,8 @@ planShape searchPath sc supp apiReq = \case
     -- filters of the mutation itself, which upstream keeps in the mutate plan.
     rowset handler isWrite rel tree@(Node rp _) rootWhere =
       let env = Env ctx isWrite
-          (fields, notes) = nodeFields ctx selectTree rp rel
+          -- the rows of a mutation have what @RETURNING@ gives, not the columns of the table
+          (fields, notes) = if isWrite then nodeFields ctx selectTree rp rel else rootFields ctx selectTree tree rel
           embeds = childEmbeds env (Parent [] [] Nothing selectTree False) Nothing tree
           shape = object ["relation" .= qiJSON rel, "fields" .= (fieldJSON <$> fields), "embeds" .= (emJSON <$> embeds)]
       in  result handler (Just "rowset") (Just shape) (notes <> concatMap emNotes embeds) Nothing (filtersOf ctx ctx rel rootWhere tree)
@@ -116,7 +117,7 @@ planShape searchPath sc supp apiReq = \case
     -- The rows of a function come from its return type, not from the relation upstream reads the plan
     -- against (@Plan.hs@ @callReadPlan@ names it @<function schema>.<return type name>@, which is another
     -- table for a composite of a different schema and no table at all for @RETURNS TABLE@).
-    rpc handler form tree@(Node rp _) proc =
+    rpc handler form tree proc =
       let RpcRows{rrRel, rrRows, rrSource, rrNotes} = rpcRows ctx proc
           info =
             object
@@ -131,7 +132,7 @@ planShape searchPath sc supp apiReq = \case
             Nothing -> result handler (Just form) Nothing notes0 (Just info) filters
             Just rel ->
               let env = Env ctx False
-                  (fields, notes) = nodeFields rootCtx selectTree rp rel
+                  (fields, notes) = rootFields rootCtx selectTree tree rel
                   embeds = childEmbeds env (Parent [] [] Nothing selectTree True) Nothing tree
                   upstreamRel = QualifiedIdentifier (pdSchema proc) (qiName rel)
                   mismatch = ["rpc-embed-relation:" <> qualified rel | not (null embeds), upstreamRel /= rel, not (isRecord rel)]
@@ -239,6 +240,14 @@ data Emb = Emb
   , emOutputs :: [[Text]]
   , emNotes :: [Text]
   }
+
+-- | The fields of the root of a read or of a function call. Upstream (@readPlanToQuery@) selects @*@ when the
+-- select and the forest of embeds are both empty (@/t?select=@), which is not an unexpanded @*@ of the request:
+-- the order of the columns degrades the same way, but there is no @*@ to look for in the select tree.
+rootFields :: Ctx -> [Tree SelectItem] -> ReadPlanTree -> QualifiedIdentifier -> ([Field], [Text])
+rootFields ctx selectTree (Node rp forest) rel
+  | null (RP.select rp) && null forest = expandStar ctx rel
+  | otherwise = nodeFields ctx selectTree rp rel
 
 -- | The fields of a node that is not a to-one spread, and the notes they raise.
 nodeFields :: Ctx -> [Tree SelectItem] -> RP.ReadPlan -> QualifiedIdentifier -> ([Field], [Text])
@@ -382,15 +391,15 @@ isComputed = \case
 
 -- | Whether a computed relationship is a function that returns a single composite value (not @setof@). The
 -- relationship names the function and the table of its argument; the dump lists the overloads of a name, and the
--- one that takes the table decides. Upstream leaves a function with an unnamed argument out of its routines but
+-- one that takes the table as its only argument decides (upstream's computed relationships have @pronargs = 1@). Upstream leaves a function with an unnamed argument out of its routines but
 -- keeps it as a computed relationship: the supplementary catalog tells what it returns, and without it (or
 -- without an entry) the embed is not known to be a single composite.
 computedReturnsSingleComposite :: Ctx -> Relationship -> Bool
 computedReturnsSingleComposite Ctx{cxRoutines, cxSupp} = \case
   ComputedRelationship{relFunction, relTable} ->
     let takesTable r = case pdParams r of
-          p : _ -> ppType p == qualified relTable
-          [] -> False
+          [p] -> ppType p == qualified relTable
+          _ -> False
         inCatalog = do
           supp <- cxSupp
           SuppFunction{sfReturns = SuppReturn{srKind, srSetof}} <- findFunction supp relFunction [qualified relTable]
@@ -844,8 +853,10 @@ rpcRows Ctx{cxTables, cxSupp, cxTypes} proc = case pdReturnType proc of
     -- A function with @OUT@, @INOUT@ or @TABLE@ columns is a composite for upstream whatever it returns: @record@
     -- for several columns, the type of the column for one (@f(INOUT n int)@ is @Single (Composite pg_catalog.int4)@
     -- and answers @{"n": 3}@). The rows have the columns the catalog lists, under the relation @pg_catalog.record@.
+    -- That is the case of a @record@ or scalar return only: a function that returns a named row type has the
+    -- columns of the row type (@f(OUT u users)@ answers the row of @users@, expanded), as it has for upstream.
     composite qi
-      | Just cols <- cxSupp >>= (`findRoutine` proc) >>= sfOutColumns =
+      | Just cols <- outColumns qi =
           RpcRows
             (Just (QualifiedIdentifier "pg_catalog" "record"))
             (AttrRows [(n, attribute (object ["kind" .= str "outColumn", "function" .= qiJSON fn, "column" .= n]) t) | (n, t) <- cols])
@@ -861,6 +872,11 @@ rpcRows Ctx{cxTables, cxSupp, cxTypes} proc = case pdReturnType proc of
             (object ["kind" .= str "composite", "schema" .= qiSchema qi, "name" .= qiName qi])
             []
       | otherwise = unknown qi
+    outColumns qi = do
+      f <- cxSupp >>= (`findRoutine` proc)
+      cols <- sfOutColumns f
+      guard (isRecord qi || srKind (sfReturns f) == "scalar")
+      Just cols
     -- Neither an @OUT@ column nor an attribute carries a constraint, and a function can return anything.
     attribute prov t = let ty = normalizeType t in Expr (Just ty) (join (HM.lookup ty cxTypes)) True prov True
 

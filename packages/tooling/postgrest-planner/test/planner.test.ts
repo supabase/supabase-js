@@ -259,6 +259,19 @@ describe('postgrest-planner', () => {
     const summary = (fields: ShapeField[]) =>
       fields.map((f) => [f.name, f.pgType, f.nullable, f.provenance.kind])
 
+    it('reads an empty select as *', () => {
+      const star = plan(catalog, '/users?select=*')
+      const empty = plan(catalog, '/users?select=')
+      expect(summary(fieldsOf(empty))).toEqual(summary(fieldsOf(star)))
+      expect(summary(fieldsOf(empty))).toHaveLength(5)
+      // an embed next to nothing is not an empty select
+      expect(fieldsOf(plan(catalog, '/users?select=messages(id)'))).toEqual([])
+      // without the order of the columns it degrades as * does
+      expect(plan(handle, '/users?select=').degraded).toEqual(
+        plan(handle, '/users?select=*').degraded
+      )
+    })
+
     it('expands * in attnum order, with the source of every column', () => {
       const p = plan(catalog, '/users?select=*')
       expect(p).toMatchObject({ form: 'rowset', degraded: [] })
@@ -983,6 +996,18 @@ describe('postgrest-planner', () => {
       ).toEqual(['computed_only_child', 'one', true, 'computed', false])
     })
 
+    it('takes the function of a computed relationship from the overload with exactly the table as its argument', () => {
+      // arity_child(arity_parents) RETURNS SETOF ... ROWS 1 has an unnamed argument, which upstream keeps out of its
+      // routines but keeps as a relationship; arity_child(p arity_parents, n integer) takes two arguments, so it is
+      // no relationship (pronargs = 1) and does not tell what the relationship returns
+      const setof = only(plan(catalog, '/arity_parents?select=id,arity_child(id)'))
+      expect(setof.relationship).toMatchObject({
+        kind: 'computed',
+        function: { schema: 'public', name: 'arity_child' },
+      })
+      expect(verdict(setof)).toEqual(['arity_child', 'one', true, 'computed', false])
+    })
+
     it('reads the rows of a computed relationship as function rows, and so its first-level to-one embeds', () => {
       // a function can return rows its table refuses: NOT NULL columns and proven keys do not hold
       const toMany = only(
@@ -1365,6 +1390,15 @@ describe('postgrest-planner', () => {
       ])
     })
 
+    it('reads an empty select of a function as *', () => {
+      const rows = ok(get(catalog, 'get_messages_by_username?search_username=x&select='))
+      const star = ok(get(catalog, 'get_messages_by_username?search_username=x&select=*'))
+      expect(shapeOf(rows).fields.length).toBeGreaterThan(0)
+      expect(summary(shapeOf(rows).fields)).toEqual(summary(shapeOf(star).fields))
+      const table = ok(get(catalog, 'get_username_and_status?name_param=x&select='))
+      expect(shapeOf(table).fields.map((f) => f.name)).toEqual(['username', 'status'])
+    })
+
     it('types the columns of RETURNS TABLE from the catalog', () => {
       const p = ok(get(catalog, 'get_username_and_status?name_param=x'))
       expect(p.form).toBe('rowset')
@@ -1418,6 +1452,21 @@ describe('postgrest-planner', () => {
 
       // without the catalog the columns are unknown
       expect(ok(get(handle, 'out_inout?n=2')).degraded).toEqual(['rpc-columns:public.out_inout'])
+    })
+
+    it('expands the row of a function whose single OUT column has a table or composite type', () => {
+      // out_composite(OUT u arity_children) answers {"id":1,"parent_id":2}: a row descriptor is only built from
+      // the OUT columns for a function that returns record (or a scalar), a named row type keeps its own columns
+      const p = ok(get(catalog, 'out_composite'))
+      expect(p).toMatchObject({ form: 'single-composite', degraded: [] })
+      expect(shapeOf(p).relation).toEqual({ schema: 'public', name: 'arity_children' })
+      expect(shapeOf(p).fields.map((f) => [f.name, f.pgType, f.nullable])).toEqual([
+        ['id', 'int8', true],
+        ['parent_id', 'int8', true],
+      ])
+      expect(
+        shapeOf(ok(get(catalog, 'out_composite?select=parent_id'))).fields.map((f) => f.name)
+      ).toEqual(['parent_id'])
     })
 
     it('says so when the columns of a function are not known', () => {

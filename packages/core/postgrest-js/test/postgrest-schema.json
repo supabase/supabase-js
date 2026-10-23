@@ -426,6 +426,44 @@
       {
         "argNames": null,
         "argTypes": [
+          "public.arity_parents"
+        ],
+        "language": "sql",
+        "name": "arity_child",
+        "outColumns": null,
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "public.arity_children"
+        },
+        "schema": "public",
+        "source": "\n  SELECT * FROM public.arity_children WHERE false;\n",
+        "volatility": "s"
+      },
+      {
+        "argNames": [
+          "p",
+          "n"
+        ],
+        "argTypes": [
+          "public.arity_parents",
+          "integer"
+        ],
+        "language": "sql",
+        "name": "arity_child",
+        "outColumns": null,
+        "returns": {
+          "kind": "composite",
+          "setof": false,
+          "type": "public.arity_children"
+        },
+        "schema": "public",
+        "source": "\n  SELECT * FROM public.arity_children WHERE id = n;\n",
+        "volatility": "s"
+      },
+      {
+        "argNames": null,
+        "argTypes": [
           "public.messages"
         ],
         "language": "sql",
@@ -1117,6 +1155,26 @@
         "schema": "public",
         "source": "\n  UPDATE users SET status = 'OFFLINE' WHERE username=name_param\n  RETURNING status;\n",
         "volatility": "v"
+      },
+      {
+        "argNames": [],
+        "argTypes": [],
+        "language": "sql",
+        "name": "out_composite",
+        "outColumns": [
+          {
+            "name": "u",
+            "type": "public.arity_children"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": false,
+          "type": "public.arity_children"
+        },
+        "schema": "public",
+        "source": "\n  SELECT ROW(1, 2)::public.arity_children;\n",
+        "volatility": "s"
       },
       {
         "argNames": [
@@ -2027,6 +2085,59 @@
         ],
         "kind": "r",
         "name": "aggregate_types",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "parent_id",
+            "notNull": false,
+            "type": "bigint"
+          }
+        ],
+        "kind": "r",
+        "name": "arity_children",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          }
+        ],
+        "kind": "r",
+        "name": "arity_parents",
         "schema": "public",
         "updatable": {
           "delete": true,
@@ -3597,6 +3708,18 @@
         "base": null,
         "kind": "c",
         "name": "aggregate_types",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "arity_children",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "arity_parents",
         "schema": "public"
       },
       {
@@ -6912,6 +7035,38 @@
       [
         [
           {
+            "qiName": "arity_parents",
+            "qiSchema": "public"
+          },
+          "public"
+        ],
+        [
+          {
+            "relForeignTable": {
+              "qiName": "arity_children",
+              "qiSchema": "public"
+            },
+            "relFunction": {
+              "qiName": "arity_child",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "arity_parents",
+              "qiSchema": "public"
+            },
+            "relTableAlias": {
+              "qiName": "",
+              "qiSchema": ""
+            },
+            "relToOne": true,
+            "tag": "ComputedRelationship"
+          }
+        ]
+      ],
+      [
+        [
+          {
             "qiName": "non_updatable_view",
             "qiSchema": "public"
           },
@@ -7743,6 +7898,37 @@
       ],
       [
         {
+          "qiName": "out_composite",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "out_composite",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "arity_children",
+                    "qiSchema": "public"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "computed_child",
           "qiSchema": "public"
         },
@@ -8050,6 +8236,52 @@
             },
             "pdSchema": "public",
             "pdVolatility": "Volatile"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "arity_child",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "arity_child",
+            "pdParams": [
+              {
+                "ppName": "p",
+                "ppReq": true,
+                "ppType": "public.arity_parents",
+                "ppTypeMaxLength": "public.arity_parents",
+                "ppVar": false
+              },
+              {
+                "ppName": "n",
+                "ppReq": true,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "arity_children",
+                    "qiSchema": "public"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
           }
         ]
       ],
@@ -10029,6 +10261,46 @@
       ],
       [
         {
+          "qiName": "arity_children",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "parent_id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "parent_id",
+              "colNominalType": "bigint",
+              "colNullable": true,
+              "colType": "bigint"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "arity_children",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
           "qiName": "lab",
           "qiSchema": "public"
         },
@@ -10852,6 +11124,36 @@
           "tablePKCols": [],
           "tableSchema": "public",
           "tableUpdatable": false
+        }
+      ],
+      [
+        {
+          "qiName": "arity_parents",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "arity_parents",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
         }
       ],
       [

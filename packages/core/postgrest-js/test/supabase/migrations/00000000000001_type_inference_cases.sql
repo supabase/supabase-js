@@ -234,6 +234,28 @@ RETURNS public.return_only_amount LANGUAGE sql STABLE AS $$
   SELECT item.qty::public.return_only_amount;
 $$;
 
+-- Planner review round 3: a computed relationship takes exactly one argument (an overload with more is no
+-- relationship and does not decide the arity of the one that is), a function with a single OUT column of a
+-- composite type returns that row expanded, and an empty select is a *.
+CREATE TABLE public.arity_parents (id bigint PRIMARY KEY);
+
+CREATE TABLE public.arity_children (id bigint PRIMARY KEY, parent_id bigint);
+
+CREATE FUNCTION public.arity_child(public.arity_parents)
+RETURNS SETOF public.arity_children ROWS 1 LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.arity_children WHERE false;
+$$;
+
+CREATE FUNCTION public.arity_child(p public.arity_parents, n integer)
+RETURNS public.arity_children LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.arity_children WHERE id = n;
+$$;
+
+CREATE FUNCTION public.out_composite(OUT u public.arity_children)
+LANGUAGE sql STABLE AS $$
+  SELECT ROW(1, 2)::public.arity_children;
+$$;
+
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
