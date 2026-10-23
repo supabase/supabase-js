@@ -14,7 +14,14 @@ import type {
   SetM,
   Validate,
 } from './types/planner/lookup'
-import type { RefOpts, SelCount, SelOp, SelectOptions } from './types/planner/options'
+import type {
+  KeepHead,
+  OrCount,
+  RefOpts,
+  SelCount,
+  SelOp,
+  SelectOptions,
+} from './types/planner/options'
 
 /** Options of `order()`. */
 export type OrderOptions = RefOpts & { ascending?: boolean; nullsFirst?: boolean }
@@ -28,6 +35,22 @@ export type ExplainOptions = {
   wal?: boolean
   format?: 'json' | 'text'
 }
+
+// the formats `explain()` may ask for: an absent, optional or `undefined` format is the default, text
+type ExplainFormats<O> = 'format' extends keyof O
+  ? [O['format']] extends [undefined]
+    ? 'text'
+    : Exclude<O['format'], undefined> | (undefined extends O['format'] ? 'text' : never)
+  : 'text'
+// the body per possible format: the text plan, or the JSON plan, an array that `maybeSingle()` unwraps at runtime
+type ExplainBody<O, M extends MState> =
+  ExplainFormats<O> extends infer Fm
+    ? Fm extends 'json'
+      ? M['card'] extends 'maybe'
+        ? Record<string, unknown>
+        : Record<string, unknown>[]
+      : string
+    : never
 
 export default class PostgrestTransformBuilder<
   B extends BState,
@@ -87,7 +110,7 @@ export default class PostgrestTransformBuilder<
     BS<B['k'], B['s'], B['r'], B['row'], B['st'], Q, B['km']>,
     Descs<B, Q>,
     F,
-    SetM<M, { op: SelOp<B, M, O>; ret: true; count: SelCount<O> }>
+    SetM<M, { op: SelOp<B, M, O>; ret: true; count: OrCount<M['count'], SelCount<O>> }>
   > {
     const cleanedColumns = normalizeSelect(columns ?? '*')
     this.url.searchParams.set('select', cleanedColumns)
@@ -606,7 +629,7 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
-  single(): PostgrestFilterBuilder<B, E, F, SetM<M, { card: 'one' }>> {
+  single(): PostgrestFilterBuilder<B, E, F, SetM<M, { card: 'one'; fmt: 'json' }>> {
     this.headers.set('Accept', 'application/vnd.pgrst.object+json')
     return this as any
   }
@@ -711,7 +734,7 @@ export default class PostgrestTransformBuilder<
     B,
     Desc<Record<string, unknown>, {}, {}, 'one'>,
     F,
-    SetM<M, { op: 'GET'; ret: true; card: 'default'; fmt: 'json'; strip: false }>
+    SetM<M, { op: KeepHead<M['op']>; ret: true; card: 'default'; fmt: 'json'; strip: false }>
   > {
     this.headers.set('Accept', 'application/geo+json')
     return this as any
@@ -817,9 +840,9 @@ export default class PostgrestTransformBuilder<
     options?: O
   ): PostgrestBuilder<
     B,
-    Desc<O extends { format: 'json' } ? Record<string, unknown>[] : string, {}, {}, 'one'>,
+    Desc<ExplainBody<O, M>, {}, {}, 'one'>,
     F,
-    SetM<M, { op: 'GET'; ret: true; card: 'default'; fmt: 'json'; strip: false }>
+    SetM<M, { op: KeepHead<M['op']>; ret: true; card: 'default'; fmt: 'json'; strip: false }>
   >
   explain({
     analyze = false,

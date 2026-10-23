@@ -3,7 +3,7 @@ import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import type { Fetch } from './types/common/common'
 import type { DefaultDatabase } from './types/planner/globals'
 import type { MS } from './types/planner/lookup'
-import type { RpcOp, RpcOptions } from './types/planner/options'
+import type { RpcOp, RpcOptions, SelCount } from './types/planner/options'
 import type {
   AllKeys,
   BaseOfCalls,
@@ -548,7 +548,7 @@ export default class PostgrestClient<
       'default',
       'json',
       false,
-      false,
+      SelCount<O>,
       false,
       true
     >

@@ -1350,8 +1350,8 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
 
-    res = await postgrest.from('messages').select()
-    expect(res).toMatchInlineSnapshot(`
+    const all = await postgrest.from('messages').select()
+    expect(all).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -1423,8 +1423,8 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
 
-    res = await postgrest.from('messages').select()
-    expect(res).toMatchInlineSnapshot(`
+    const all = await postgrest.from('messages').select()
+    expect(all).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -1509,8 +1509,8 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
 
-    res = await postgrest.from('messages').select()
-    expect(res).toMatchInlineSnapshot(`
+    const all = await postgrest.from('messages').select()
+    expect(all).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -1676,8 +1676,8 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
 
-    res = await postgrest.from('messages').select()
-    expect(res).toMatchInlineSnapshot(`
+    const all = await postgrest.from('messages').select()
+    expect(all).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -1785,8 +1785,8 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
 
-    res = await postgrest.from('messages').select()
-    expect(res).toMatchInlineSnapshot(`
+    const all = await postgrest.from('messages').select()
+    expect(all).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [

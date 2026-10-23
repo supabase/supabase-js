@@ -50,7 +50,11 @@ export type DataOf<E, F, M extends MState> = M['op'] extends infer Op
         : null
       : Out<E, F, M>
   : never
-export type CountOf<M extends MState> = M['count'] extends true ? number : null
+export type CountOf<M extends MState> = [M['count']] extends [false]
+  ? null
+  : [M['count']] extends [true]
+    ? number
+    : number | null
 
 export type Res<E, F, M extends MState> = M['thr'] extends true
   ? PostgrestResponseSuccess<DataOf<E, F, M>, CountOf<M>>
