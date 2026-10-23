@@ -35,6 +35,9 @@ function harness(
       if (events.size === 1) setImmediate(() => idle.resolve())
       return { close: () => events.delete(directory) }
     },
+    readdir: async () => {
+      throw new Error('ENOTDIR')
+    },
     mtime: async (path) => {
       log.stats.push(path)
       return mtimes.get(path)
@@ -44,7 +47,7 @@ function harness(
     ignore: OUT,
     run: async () => {
       await onRun(++log.runs, edit, () => controller.abort())
-      return [FILE]
+      return { files: [FILE], directories: [] }
     },
   })
   return { controller, mtimes, events, log, finished, idle: idle.promise }

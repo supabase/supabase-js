@@ -108,6 +108,11 @@ export interface GenerateOutput extends GenerateProjectResult {
   keys: string[]
   cache: CacheOutcome
   /**
+   * The directories the scan of the sources listed (absolute paths): a file created in one of them, or a directory
+   * created below one, can change what is scanned. Empty when the run stopped before scanning
+   */
+  scannedDirectories: string[]
+  /**
    * Problems that do not stop the module: a configured or server release of another patch than the planner's
    * (another line is a `PlannerIncompatible` diagnostic and an empty module)
    */
@@ -456,6 +461,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
   const generate: Generator['generate'] = async ({ configFileName, options }) => {
     const projectDir = configFileName ? dirname(configFileName) : cwd
     const diagnostics: MapperDiagnostic[] = []
+    let scannedDirectories: string[] = []
     const report = (code: number, messageText: string): void => {
       diagnostics.push({ code, messageText, start: 0, length: 0 })
     }
@@ -471,6 +477,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       optionDiagnostics,
       keys: [],
       cache: 'disabled',
+      scannedDirectories,
       warnings: [],
     })
 
@@ -501,6 +508,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       projectDir,
       ...(options.scan ? { scan: options.scan } : {}),
     })
+    scannedDirectories = resolved.directories
     for (const warning of resolved.warnings) logger.warn(warning)
     const sources = await Promise.all(
       resolved.files.map(async (fileName) => {
@@ -716,6 +724,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       optionDiagnostics: [],
       keys: ids,
       cache: planned.cache,
+      scannedDirectories,
       warnings: [
         ...planned.warnings,
         ...planned.contextDiagnostics.filter((d) => d.severity !== 'info').map((d) => d.message),
@@ -805,6 +814,7 @@ export async function generateFrom(
       optionDiagnostics: validation.diagnostics,
       keys: [],
       cache: 'disabled',
+      scannedDirectories: [],
       warnings: [],
     }
   }

@@ -1,7 +1,7 @@
 import { watch as fsWatch } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import { dirname, join, relative, resolve, sep } from 'node:path'
-import { createGenerator } from '../generate'
+import { createGenerator, type ProjectFs } from '../generate'
 import { messageOf } from './config'
 import { writeWith, type WriteInput, type WriteResult } from './generate'
 import {
@@ -44,28 +44,37 @@ const SOURCE = /\.(?:[cm]?[jt]s|[jt]sx)$/
 export interface WatchLoopOptions {
   watch: WatchFn
   mtime: MtimeFn
+  /** Lists a directory; rejects for anything that is not one */
+  readdir: ProjectFs['readdir']
   clock?: Clock
   debounceMs: number
   signal?: AbortSignal
-  /** Runs one generation and returns the files it depends on (absolute paths) */
-  run(): Promise<readonly string[]>
+  /**
+   * Runs one generation and returns what it depends on (absolute paths): the files, and the directories it scanned
+   * for sources, where a created file or directory changes the result
+   */
+  run(): Promise<{ files: readonly string[]; directories: readonly string[] }>
   /** A file the loop itself writes: its events never retrigger */
   ignore: string
 }
 
 /**
  * Runs `run` once, then again (debounced, never concurrently) whenever a file it depended on changes or a source
- * file appears in a directory that holds one. Directories are watched, not recursively: a new directory is picked
- * up at the next run. A directory that does not exist yet (the cache directory of a project that never ran, the
- * folder of a snapshot) is waited for through its nearest existing ancestor: the ancestor's first event on the way
- * to it runs again, and that run watches the directory itself once it exists. A file edited while a run was in
- * flight, before its directory was watched, is detected by its modification time when the directory starts being
- * watched, and runs again. Resolves when `signal` aborts, after the run in flight has finished.
+ * file appears in a directory that holds one. Directories are watched one by one, not recursively: the directories
+ * the run scanned are watched, and a directory created or replaced in one of them is watched with everything below
+ * it as soon as the event arrives, and runs again, which scans its files. A directory that does not exist yet (the
+ * cache directory of a project that never ran, the folder of a snapshot) is waited for through its nearest existing
+ * ancestor: the ancestor's first event on the way to it runs again, and that run watches the directory itself once
+ * it exists. A file edited while a run was in flight, before its directory was watched, is detected by its
+ * modification time when the directory starts being watched, and runs again. Resolves when `signal` aborts, after
+ * the run in flight has finished.
  */
 export async function watchLoop(options: WatchLoopOptions): Promise<void> {
-  const { watch, mtime, debounceMs, signal, ignore } = options
+  const { watch, mtime, readdir, debounceMs, signal, ignore } = options
   const clock = options.clock ?? nodeClock
   let watched = new Set<string>()
+  /** The directories whose new entries may be directories to watch */
+  let scanned = new Set<string>()
   /** `ancestor`: the directory does not exist, `handle` watches the nearest one that does */
   let handles = new Map<string, { handle: WatchHandle; ancestor: boolean }>()
   let timer: unknown
@@ -79,7 +88,39 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
     // a file the run depends on counts wherever it lives (a tsconfig inherited from node_modules, the
     // refresh stamp); a new source file does not when it sits in node_modules
     if (path === undefined || watched.has(path)) return schedule()
-    if (SOURCE.test(path) && !path.split(sep).includes('node_modules')) schedule()
+    if (path.split(sep).includes('node_modules')) return
+    if (SOURCE.test(path)) schedule()
+    if (scanned.has(directory)) void adopt(path)
+  }
+
+  /** Watches `directory` and every directory below it, replacing the handle of one that was replaced */
+  const adoptTree = async (directory: string): Promise<void> => {
+    let entries: Awaited<ReturnType<typeof readdir>>
+    try {
+      entries = await readdir(directory)
+    } catch {
+      return // a file, or gone again
+    }
+    if (stopped) return
+    handles.get(directory)?.handle.close()
+    handles.delete(directory)
+    try {
+      handles.set(directory, { handle: watch(directory, listener(directory)), ancestor: false })
+    } catch {
+      return
+    }
+    scanned.add(directory)
+    await Promise.all(
+      entries
+        .filter((e) => e.isDirectory && e.name !== 'node_modules')
+        .map((e) => adoptTree(join(directory, e.name)))
+    )
+  }
+
+  /** An entry appeared in a scanned directory: when it is a directory, watch it and run again to scan it */
+  const adopt = async (path: string): Promise<void> => {
+    await adoptTree(path)
+    if (!stopped && handles.has(path)) schedule()
   }
 
   /** The directory watched, else its nearest existing ancestor (for the entry on the way to it); else nothing */
@@ -115,10 +156,15 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
   }
 
   /** Watches the directories of `files`; `startedAt` is when the run that returned them began */
-  const sync = async (files: readonly string[], startedAt: number): Promise<void> => {
+  const sync = async (
+    files: readonly string[],
+    scannedDirectories: readonly string[],
+    startedAt: number
+  ): Promise<void> => {
     if (stopped) return // a run that outlives the abort must not leave handles behind
     watched = new Set(files)
-    const directories = new Set(files.map((f) => dirname(f)))
+    scanned = new Set(scannedDirectories)
+    const directories = new Set([...files.map((f) => dirname(f)), ...scannedDirectories])
     for (const [directory, { handle }] of handles) {
       if (!directories.has(directory)) {
         handle.close()
@@ -151,7 +197,8 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
     do {
       dirty = false
       const startedAt = clock.now()
-      await sync(await options.run(), startedAt)
+      const ran = await options.run()
+      await sync(ran.files, ran.directories, startedAt)
     } while (dirty && !stopped)
   }
   const trigger = (): void => {
@@ -210,7 +257,8 @@ export interface WatchOptions {
 
 /**
  * `write`, again whenever a file the generation depends on changes (the tsconfig and its `extends` chain, the schema
- * snapshot, the refresh stamp of a live schema) or a source file appears next to one that is scanned. The planner and
+ * snapshot, the refresh stamp of a live schema), a source file appears next to one that is scanned, or a directory
+ * is created (or replaced) below a scanned one, so that the files in it are scanned. The planner and
  * a live schema are kept between runs. A broken tsconfig is reported as an `error` event and waited out; nothing but
  * `signal` ends the watch.
  */
@@ -226,6 +274,7 @@ export async function watch(
     await watchLoop({
       watch: deps.watch ?? nodeWatch,
       mtime: deps.mtime ?? nodeMtime,
+      readdir: resolved.fs.readdir,
       clock: deps.clock ?? nodeClock,
       debounceMs: options.debounceMs ?? 100,
       ...(options.signal ? { signal: options.signal } : {}),
@@ -234,11 +283,11 @@ export async function watch(
         try {
           const result = await writeWith(resolved, input, generator)
           options.onEvent({ kind: 'run', result })
-          return result.watchedFiles
+          return { files: result.watchedFiles, directories: result.scannedDirectories }
         } catch (error) {
           // a broken tsconfig must not end the watch: report it and wait for the fix
           options.onEvent({ kind: 'error', configFileName, message: messageOf(error) })
-          return [configFileName]
+          return { files: [configFileName], directories: [] }
         }
       },
     })

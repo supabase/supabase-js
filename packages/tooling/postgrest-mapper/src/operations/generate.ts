@@ -39,6 +39,7 @@ export async function generateWith(
     diagnostics,
     warnings: output.warnings,
     watchedFiles: [...output.watchedFiles, config.configFileName],
+    scannedDirectories: output.scannedDirectories,
     cache: output.cache,
     identity: output.identity,
   }

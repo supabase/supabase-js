@@ -12,8 +12,9 @@ function memoryFs(files: Record<string, string>): ProjectFs {
     async readdir(path) {
       const entries = new Map<string, boolean>()
       for (const file of Object.keys(files)) {
-        if (!file.startsWith(path + '/')) continue
-        const rest = file.slice(path.length + 1)
+        const prefix = path.endsWith('/') ? path : path + '/'
+        if (!file.startsWith(prefix)) continue
+        const rest = file.slice(prefix.length)
         const [head, ...tail] = rest.split('/')
         entries.set(head!, tail.length > 0)
       }
@@ -103,6 +104,21 @@ describe('resolveProjectFiles', () => {
       'src/legacy.js',
     ])
     expect(files).toEqual([at('src/a.ts'), at('src/legacy.js'), at('src/skip/c.ts')])
+  })
+
+  it('walks from the root of an absolute include, and applies an absolute exclude', async () => {
+    const { files, warnings } = await resolveWith(
+      `{ "include": ["/work/app/src/**/*.ts", "/work/app/tools"], "exclude": ["/work/app/src/skip"] }`
+    )
+    expect(files).toEqual([at('src/a.ts'), at('tools/d.ts')])
+    expect(warnings).toEqual([])
+  })
+
+  it('walks from the filesystem root for an absolute pattern that starts with a wildcard', async () => {
+    const { files } = await resolveWith(`{ "include": ["/**/nested/*.tsx"] }`, undefined, {
+      '/elsewhere/nested/z.tsx': '',
+    })
+    expect(files).toEqual(['/elsewhere/nested/z.tsx', at('src/nested/b.tsx')])
   })
 
   it('reads a single-star glob as one directory level', async () => {

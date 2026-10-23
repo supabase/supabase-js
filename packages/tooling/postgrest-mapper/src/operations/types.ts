@@ -97,6 +97,8 @@ export interface GenerateResult {
   warnings: string[]
   /** Absolute paths the text depends on, the tsconfig included */
   watchedFiles: string[]
+  /** Absolute paths of the directories the scan listed: what a new file or directory under them can change */
+  scannedDirectories: string[]
   cache: CacheOutcome
   /** Fingerprint of everything that can change `text` */
   identity: string

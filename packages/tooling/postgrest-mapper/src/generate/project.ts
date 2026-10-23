@@ -25,6 +25,11 @@ export interface ProjectFiles {
    * unreadable one included, so that creating it is noticed). What the files depend on besides themselves
    */
   configFiles: string[]
+  /**
+   * Absolute paths, sorted: every directory the scan listed, or tried to list (a root that does not exist yet
+   * included). A file created in one of them, or a directory created below one, can change `files`
+   */
+  directories: string[]
   /** Problems met while resolving (an unreadable tsconfig, an `extends` that cannot be resolved) */
   warnings: string[]
 }
@@ -189,13 +194,15 @@ function matcher(pattern: string, base: string): (absolute: string) => boolean {
 
 /** The directory a pattern starts in: its leading segments up to the first wildcard (or file name). */
 function staticRoot(pattern: string, base: string): string {
-  const segments = pattern.replace(/\\/g, '/').split('/')
+  const normalised = pattern.replace(/\\/g, '/')
   const fixed: string[] = []
-  for (const segment of segments) {
+  for (const segment of normalised.split('/')) {
     if (/[*?]/.test(segment) || /\.[a-z]+$/i.test(segment)) break
     fixed.push(segment)
   }
-  return resolve(base, ...fixed)
+  // an absolute pattern keeps its root: its leading empty segment must not be dropped by the join
+  const joined = fixed.join('/')
+  return resolve(base, joined === '' && isAbsolute(normalised) ? '/' : joined)
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -207,8 +214,10 @@ async function walk(
   dir: string,
   isExcluded: (absolute: string) => boolean,
   visit: (file: string) => void,
-  warnings: string[]
+  warnings: string[],
+  directories: Set<string>
 ): Promise<void> {
+  directories.add(dir)
   let entries: { name: string; isDirectory: boolean }[]
   try {
     entries = await fs.readdir(dir)
@@ -221,7 +230,7 @@ async function walk(
   for (const entry of entries) {
     const path = join(dir, entry.name)
     if (isExcluded(path)) continue
-    if (entry.isDirectory) await walk(fs, path, isExcluded, visit, warnings)
+    if (entry.isDirectory) await walk(fs, path, isExcluded, visit, warnings, directories)
     else visit(path)
   }
 }
@@ -278,6 +287,7 @@ export async function resolveProjectFiles(
     allowed.some((ext) => file.endsWith(ext)) && !/\.d\.[cm]?ts$/.test(file)
 
   const found = new Set<string>(explicit)
+  const directories = new Set<string>()
   if (includes.length > 0) {
     // walk from the directories the patterns can reach: the bases, pruned by the excludes
     const bases = new Set(patterns.map((p) => staticRoot(p.pattern, p.base)))
@@ -289,11 +299,17 @@ export async function resolveProjectFiles(
         (file) => {
           if (isSource(file) && includes.some((m) => m(file))) found.add(file)
         },
-        warnings
+        warnings,
+        directories
       )
     }
   }
-  return { files: [...found].sort(), configFiles: [...configs].sort(), warnings }
+  return {
+    files: [...found].sort(),
+    configFiles: [...configs].sort(),
+    directories: [...directories].sort(),
+    warnings,
+  }
 }
 
 /** A path relative to the project, `/`-separated, for messages. */
