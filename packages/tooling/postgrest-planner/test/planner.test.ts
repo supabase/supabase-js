@@ -11,6 +11,7 @@ import {
   type PlanRequest,
   type PlanResult,
   type PlanSuccess,
+  type ShapeEmbed,
   type ShapeField,
 } from '../src'
 
@@ -470,9 +471,6 @@ describe('postgrest-planner', () => {
     })
 
     it('says what it does not shape yet', () => {
-      expect(plan(catalog, '/users?select=username,messages(id)').degraded).toEqual([
-        'embeds-unshaped',
-      ])
       const rpc = ok(
         planner.plan(catalog, {
           method: 'POST',
@@ -482,6 +480,418 @@ describe('postgrest-planner', () => {
         })
       )
       expect(rpc).toMatchObject({ form: 'single-scalar', shape: null, degraded: ['rpc-shape'] })
+    })
+  })
+
+  describe('result shape of embeds', () => {
+    const plan = (h: number, url: string, extra: Partial<PlanRequest> = {}) =>
+      ok(planner.plan(h, { method: 'GET', url, ...extra }))
+    const embedsOf = (p: PlanSuccess): ShapeEmbed[] => {
+      if (!p.shape) throw new Error(`no shape: ${JSON.stringify(p)}`)
+      return p.shape.embeds
+    }
+    const only = (p: PlanSuccess): ShapeEmbed => {
+      const embeds = embedsOf(p)
+      expect(embeds).toHaveLength(1)
+      return embeds[0]
+    }
+    /** [path, cardinality, nullable, reason, fkProven] */
+    const verdict = (e: ShapeEmbed) => [
+      e.path.join('.'),
+      e.cardinality,
+      e.nullable,
+      e.reason,
+      e.fkProven,
+    ]
+    const names = (fields: ShapeField[]) => fields.map((f) => [f.name, f.pgType, f.nullable])
+    const mutate = (url: string, prefer = 'return=representation') =>
+      ok(
+        planner.plan(catalog, {
+          method: 'POST',
+          url,
+          headers: { 'Content-Type': 'application/json', Prefer: prefer },
+          body: JSON.stringify({ message: 'hi', username: 'supabot', channel_id: 1 }),
+        })
+      )
+
+    it('shapes a to-many embed as an array: fields first, star in attnum order, nested embeds', () => {
+      const p = plan(catalog, '/channels?select=id,messages(*,users(username))')
+      expect(p.degraded).toEqual([])
+      expect(p.shape?.fields.map((f) => f.name)).toEqual(['id'])
+      const messages = only(p)
+      expect(messages).toMatchObject({
+        name: 'messages',
+        alias: null,
+        key: 'messages',
+        spread: false,
+        empty: false,
+        path: ['messages'],
+        outputs: [['messages']],
+        join: 'left',
+        cardinality: 'many',
+        nullable: false,
+        reason: 'array',
+        fkProven: false,
+        relationship: {
+          kind: 'o2m',
+          fkSide: 'target',
+          constraint: 'messages_channel_id_fkey',
+          columns: [{ from: 'id', to: 'channel_id' }],
+        },
+        target: { schema: 'public', name: 'messages', kind: 'table' },
+      })
+      expect(messages.shape.relation).toEqual({ schema: 'public', name: 'messages' })
+      expect(names(messages.shape.fields)).toEqual([
+        ['id', 'int8', false],
+        ['data', 'jsonb', true],
+        ['message', 'text', true],
+        ['username', 'text', false],
+        ['channel_id', 'int8', false],
+      ])
+      expect(messages.shape.fields[2].provenance).toEqual({
+        kind: 'plain',
+        source: { schema: 'public', relation: 'messages', column: 'message' },
+      })
+      expect(messages.shape.embeds.map((e) => e.path)).toEqual([['messages', 'users']])
+      expect(messages.shape.embeds[0].outputs).toEqual([['messages', 'users']])
+    })
+
+    it('describes a many-to-many embed by its junction', () => {
+      const e = only(plan(catalog, '/products?select=id,categories(name)'))
+      expect(e).toMatchObject({
+        cardinality: 'many',
+        nullable: false,
+        reason: 'array',
+        relationship: {
+          kind: 'm2m',
+          fkSide: null,
+          junction: {
+            schema: 'public',
+            name: 'product_categories',
+            constraints: [
+              'product_categories_product_id_fkey',
+              'product_categories_category_id_fkey',
+            ],
+          },
+        },
+      })
+    })
+
+    it('makes a many-to-one non-null when the key is NOT NULL and validated', () => {
+      const p = plan(catalog, '/messages?select=id,users(username),channels(slug)')
+      expect(embedsOf(p).map(verdict)).toEqual([
+        ['users', 'one', false, 'fk-proven', true],
+        ['channels', 'one', false, 'fk-proven', true],
+      ])
+      expect(embedsOf(p)[0].relationship).toEqual({
+        kind: 'm2o',
+        fkSide: 'origin',
+        constraint: 'messages_username_fkey',
+        columns: [{ from: 'username', to: 'username' }],
+        junction: null,
+        function: null,
+      })
+      // the columns of the embed are nullable on their own account
+      expect(names(embedsOf(p)[1].shape.fields)).toEqual([['slug', 'text', true]])
+    })
+
+    it('keeps a to-one nullable when a key column is nullable', () => {
+      expect(verdict(only(plan(catalog, '/user_profiles?select=id,users(username)')))).toEqual([
+        'users',
+        'one',
+        true,
+        'nullable-fk-column',
+        false,
+      ])
+      expect(verdict(only(plan(catalog, '/booking?select=id,hotel(name)')))).toEqual([
+        'hotel',
+        'one',
+        true,
+        'nullable-fk-column',
+        false,
+      ])
+    })
+
+    it('does not prove a key that is NOT VALID, or one the catalog does not describe', () => {
+      const supp = JSON.parse(supplementaryText())
+      const fk = supp.foreignKeys.find(
+        (k: { constraint: string }) => k.constraint === 'messages_username_fkey'
+      )
+      fk.validated = false
+      const notValid = loaded(planner.load({ ...baseInput(), supplementary: supp })).handle
+      try {
+        const p = plan(notValid, '/messages?select=id,users(username),channels(id)')
+        expect(embedsOf(p).map(verdict)).toEqual([
+          ['users', 'one', true, 'fk-not-validated', false],
+          ['channels', 'one', false, 'fk-proven', true],
+        ])
+        expect(p.degraded).toEqual([])
+      } finally {
+        planner.freeCache(notValid)
+      }
+
+      const p = plan(handle, '/messages?select=id,users(username)')
+      expect(verdict(only(p))).toEqual(['users', 'one', true, 'fk-unknown', false])
+      expect(p.degraded).toContain('fk-validation:public.messages.messages_username_fkey')
+    })
+
+    it('makes the inverse side of a one-to-one nullable and the owning side non-null', () => {
+      const inverse = only(plan(catalog, '/channels?select=id,channel_details(details)'))
+      expect(verdict(inverse)).toEqual(['channel_details', 'one', true, 'inverse-o2o', false])
+      expect(inverse.relationship).toMatchObject({ kind: 'o2o', fkSide: 'target' })
+
+      const owning = only(plan(catalog, '/channel_details?select=id,channels(slug)'))
+      expect(verdict(owning)).toEqual(['channels', 'one', false, 'fk-proven', true])
+      expect(owning.relationship).toMatchObject({ kind: 'o2o', fkSide: 'origin' })
+    })
+
+    it('makes a view target nullable', () => {
+      const toOne = only(plan(catalog, '/messages?select=id,active_users(username)'))
+      expect(toOne.target).toEqual({ schema: 'public', name: 'active_users', kind: 'view' })
+      expect(verdict(toOne)).toEqual(['active_users', 'one', true, 'view-target', false])
+
+      const toMany = only(plan(catalog, '/users?select=username,recent_messages(id)'))
+      expect(toMany.target.kind).toBe('view')
+      expect(verdict(toMany)).toEqual(['recent_messages', 'many', false, 'array', false])
+    })
+
+    it('does not prove a row from a view origin, and resolves a computed relationship by its table', () => {
+      expect(verdict(only(plan(catalog, '/recent_messages?select=id,users(username)')))).toEqual([
+        'users',
+        'one',
+        true,
+        'view-origin',
+        false,
+      ])
+
+      const toOne = only(plan(catalog, '/users?select=username,get_user_profile(*)'))
+      expect(toOne.target).toEqual({ schema: 'public', name: 'user_profiles', kind: 'function' })
+      expect(toOne.relationship).toMatchObject({
+        kind: 'computed',
+        function: { schema: 'public', name: 'get_user_profile' },
+      })
+      expect(verdict(toOne)).toEqual(['get_user_profile', 'one', true, 'computed', false])
+      // the fields are those of the table the function returns
+      expect(toOne.shape.relation).toEqual({ schema: 'public', name: 'user_profiles' })
+      expect(names(toOne.shape.fields)).toEqual([
+        ['id', 'int8', false],
+        ['username', 'text', true],
+      ])
+
+      const toMany = only(plan(catalog, '/channels?select=id,get_messages(id)'))
+      expect(verdict(toMany)).toEqual(['get_messages', 'many', false, 'array', false])
+    })
+
+    it('makes !inner non-null, and a filter, offset or limit of 0 on a left join nullable', () => {
+      const inner = only(plan(catalog, '/booking?select=id,hotel!inner(name)'))
+      expect(inner.join).toBe('inner')
+      expect(verdict(inner)).toEqual(['hotel', 'one', false, 'inner-join', false])
+
+      const url = (q: string) => `/messages?select=id,users${q}(username)`
+      expect(verdict(only(plan(catalog, url('') + '&users.username=eq.supabot')))).toEqual([
+        'users',
+        'one',
+        true,
+        'filtered',
+        true,
+      ])
+      expect(verdict(only(plan(catalog, url('') + '&users.limit=0')))[3]).toBe('filtered')
+      expect(verdict(only(plan(catalog, url('') + '&users.offset=1')))[3]).toBe('filtered')
+      expect(verdict(only(plan(catalog, url('!inner') + '&users.username=eq.supabot')))).toEqual([
+        'users',
+        'one',
+        false,
+        'inner-join',
+        true,
+      ])
+    })
+
+    it('makes a parent drop-capable when a nested !inner can remove its row', () => {
+      const p = plan(catalog, '/messages?select=id,channels(id,channel_details!inner(details))')
+      const channels = only(p)
+      expect(verdict(channels)).toEqual(['channels', 'one', true, 'nested-inner', true])
+      expect(verdict(channels.shape.embeds[0])).toEqual([
+        'channels.channel_details',
+        'one',
+        false,
+        'inner-join',
+        false,
+      ])
+      expect(channels.shape.embeds[0].outputs).toEqual([['channels', 'channel_details']])
+
+      // an !inner parent drops the root row instead of being null
+      const inner = only(
+        plan(catalog, '/messages?select=id,channels!inner(id,channel_details!inner(details))')
+      )
+      expect(verdict(inner)).toEqual(['channels', 'one', false, 'inner-join', true])
+    })
+
+    it('gives an empty embed no key and no output', () => {
+      const p = plan(catalog, '/messages?select=id,users()&users.username=eq.supabot')
+      const e = only(p)
+      expect(e).toMatchObject({
+        name: 'users',
+        key: null,
+        empty: true,
+        outputs: [],
+        path: ['users'],
+      })
+      expect(e.shape.fields).toEqual([])
+      expect(p.shape?.fields.map((f) => f.name)).toEqual(['id'])
+    })
+
+    it('merges a to-one spread into the parent: non-null when the join cannot miss', () => {
+      const e = only(plan(catalog, '/messages?select=id,...users(username,status)'))
+      expect(e).toMatchObject({
+        spread: true,
+        key: null,
+        path: ['users'],
+        outputs: [['username'], ['status']],
+        cardinality: 'one',
+        nullable: false,
+        reason: 'fk-proven',
+      })
+      expect(names(e.shape.fields)).toEqual([
+        ['username', 'text', false],
+        ['status', 'public.user_status', true],
+      ])
+    })
+
+    it('ors the nullability of a to-one spread into every merged field and nested embed', () => {
+      const e = only(plan(catalog, '/booking?select=id,...hotel(id,name,b:booking(id))'))
+      expect(e).toMatchObject({
+        spread: true,
+        nullable: true,
+        reason: 'nullable-fk-column',
+        outputs: [['id'], ['name'], ['b']],
+      })
+      expect(names(e.shape.fields)).toEqual([
+        ['id', 'int8', true],
+        ['name', 'text', true],
+      ])
+      expect(e.shape.embeds.map(verdict)).toEqual([
+        ['hotel.b', 'many', true, 'spread-parent', false],
+      ])
+
+      const inverse = only(
+        plan(catalog, '/channels?select=id,...channel_details(*,channels(slug))')
+      )
+      expect(names(inverse.shape.fields)).toEqual([
+        ['id', 'int8', true],
+        ['details', 'text', true],
+      ])
+      expect(verdict(inverse.shape.embeds[0])).toEqual([
+        'channel_details.channels',
+        'one',
+        true,
+        'spread-parent',
+        true,
+      ])
+    })
+
+    it('spreads a to-many embed as per-field arrays', () => {
+      const e = only(plan(catalog, '/users?select=username,...messages(id,message)'))
+      expect(e).toMatchObject({
+        spread: true,
+        key: null,
+        cardinality: 'many',
+        nullable: false,
+        reason: 'array',
+        outputs: [['id'], ['message']],
+      })
+      // the fields are the elements of the arrays
+      expect(names(e.shape.fields)).toEqual([
+        ['id', 'int8', false],
+        ['message', 'text', true],
+      ])
+
+      expect(
+        planner.plan(catalog, { method: 'GET', url: '/users?select=username,...messages(count())' })
+      ).toMatchObject({ ok: false, error: { code: 'PGRST127' } })
+    })
+
+    it('puts hoisted spread aggregates back on the fields of the spread that wrote them', () => {
+      const e = only(
+        plan(
+          catalog,
+          '/messages?select=id,...channels(slug,...channel_details(d:details.max(),c:id.count()))'
+        )
+      )
+      expect(e.outputs).toEqual([['slug'], ['d'], ['c']])
+      expect(names(e.shape.fields)).toEqual([['slug', 'text', true]])
+      const nested = e.shape.embeds[0]
+      expect(nested.outputs).toEqual([['d'], ['c']])
+      expect(names(nested.shape.fields)).toEqual([
+        ['d', 'text', true],
+        ['c', 'int8', false],
+      ])
+      expect(nested.shape.fields[0].provenance).toEqual({
+        kind: 'aggregate',
+        function: 'max',
+        of: {
+          kind: 'plain',
+          source: { schema: 'public', relation: 'channel_details', column: 'details' },
+        },
+      })
+
+      // a * is one entry of the spread, not one per column
+      const star = only(
+        plan(catalog, '/messages?select=*,...channels(*,...channel_details(d:details.max()))')
+      )
+      expect(names(star.shape.fields)).toEqual([
+        ['id', 'int8', false],
+        ['data', 'jsonb', true],
+        ['slug', 'text', true],
+      ])
+      expect(names(star.shape.embeds[0].shape.fields)).toEqual([['d', 'text', true]])
+    })
+
+    it('makes every left-joined to-one of a mutation nullable, but not !inner', () => {
+      const get = plan(catalog, '/messages?select=id,users(username),channels!inner(slug)')
+      expect(embedsOf(get).map(verdict)).toEqual([
+        ['users', 'one', false, 'fk-proven', true],
+        ['channels', 'one', false, 'inner-join', true],
+      ])
+      const post = mutate('/messages?select=id,users(username,m:messages(id)),channels!inner(slug)')
+      expect(post.form).toBe('rowset')
+      expect(embedsOf(post).map(verdict)).toEqual([
+        ['users', 'one', true, 'write', true],
+        ['channels', 'one', false, 'inner-join', true],
+      ])
+      expect(embedsOf(post)[0].shape.embeds.map(verdict)).toEqual([
+        ['users.m', 'many', false, 'array', false],
+      ])
+      expect(mutate('/messages?select=id,users(username)', 'return=minimal').shape).toBeNull()
+    })
+
+    it('fails the plan when a filter targets an embed that is not selected', () => {
+      expect(
+        planner.plan(catalog, { method: 'GET', url: '/messages?select=id&users.username=eq.x' })
+      ).toMatchObject({ ok: false, error: { code: 'PGRST108' } })
+    })
+
+    it('identifies aliased embeds by their keys', () => {
+      const p = plan(
+        catalog,
+        '/messages?select=id,u:users(username),v:users(username,m:messages(id))'
+      )
+      expect(embedsOf(p).map((e) => [e.name, e.alias, e.key, e.path, e.outputs])).toEqual([
+        ['users', 'u', 'u', ['u'], [['u']]],
+        ['users', 'v', 'v', ['v'], [['v']]],
+      ])
+      const nested = embedsOf(p)[1].shape.embeds[0]
+      expect(nested).toMatchObject({ name: 'messages', alias: 'm', path: ['v', 'm'] })
+      expect(nested.outputs).toEqual([['v', 'm']])
+
+      // the keys of a spread are those of the row it is merged into
+      const spread = only(
+        plan(catalog, '/messages?select=id,c:channels(slug,...channel_details(details))')
+      )
+      expect(spread.shape.embeds[0]).toMatchObject({
+        spread: true,
+        path: ['c', 'channel_details'],
+        outputs: [['c', 'details']],
+      })
     })
   })
 

@@ -72,13 +72,13 @@ With a catalog the columns of every listed table are put in `attnum` order when 
 
 Without a catalog everything still plans, but what the planner had to guess is listed in `degraded`, never silently assumed:
 
-| note                               | where      | meaning                                                                         |
-| ---------------------------------- | ---------- | ------------------------------------------------------------------------------- |
-| `no-supplementary-catalog`         | load       | no catalog was given                                                            |
-| `column-order:<schema>.<relation>` | load, plan | the relation has no `attnum` order: `*` is in the dump's order, not the table's |
-| `computed-field:<relation>.<name>` | plan       | no catalog to tell whether `<name>` is a computed field: field is unresolved    |
-| `embeds-unshaped`                  | plan       | the plan has embeds, which `shape` does not describe yet                        |
-| `rpc-shape`                        | plan       | RPC row shapes are not resolved yet                                             |
+| note                                          | where      | meaning                                                                          |
+| --------------------------------------------- | ---------- | -------------------------------------------------------------------------------- |
+| `no-supplementary-catalog`                    | load       | no catalog was given                                                             |
+| `column-order:<schema>.<relation>`            | load, plan | the relation has no `attnum` order: `*` is in the dump's order, not the table's  |
+| `computed-field:<relation>.<name>`            | plan       | no catalog to tell whether `<name>` is a computed field: field is unresolved     |
+| `fk-validation:<schema>.<table>.<constraint>` | plan       | no catalog entry says whether the key is validated: a to-one on it is not proven |
+| `rpc-shape`                                   | plan       | RPC row shapes are not resolved yet                                              |
 
 `columnOrderKnown` in the load result is `true` when no relation lacks its order.
 
@@ -87,7 +87,7 @@ Without a catalog everything still plans, but what the planner had to guess is l
 A plan carries, next to the abi 1 summary:
 
 - `form`: what the body looks like. `rowset` for reads and for mutations that return the representation, `none` for mutations without `Prefer: return=representation`, `single-scalar`, `setof-scalar` and `single-composite` for RPC (their `shape` is `null` until the RPC slice), `null` for plans that return no rows of a relation.
-- `shape`: `{relation: {schema, name}, fields}` for the root relation of reads (GET, HEAD) and of mutations with `return=representation`; `null` otherwise. Embeds and spreads are not part of it yet.
+- `shape`: `{relation: {schema, name}, fields, embeds}` for the root relation of reads (GET, HEAD) and of mutations with `return=representation`; `null` otherwise. `embeds` is described below.
 - `degraded`: the notes above that apply to this plan.
 
 Every entry of `fields` is `{name, pgType, nullable, provenance, baseType?}`, in the order PostgREST emits the columns:
@@ -99,4 +99,38 @@ Every entry of `fields` is `{name, pgType, nullable, provenance, baseType?}`, in
 
 Select items are evaluated the way upstream prints them: expression (column, JSON path), field cast, aggregate, aggregate cast.
 
-Not covered yet: embeds, spreads and their nullability, RPC rows, filter targets.
+Not covered yet: RPC rows, filter targets.
+
+### Embeds
+
+`shape.embeds` has one entry per embedded relation, in the order PostgREST emits them (after `fields`), recursively: every entry carries its own `shape` (`{relation, fields, embeds}`), with `*` expanded in `attnum` order against the relation the embed really reads (also for computed relationships). Reads and mutations that return the representation have the same contract.
+
+| key               | content                                                                                                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`, `alias`   | the embedded relation and alias as written                                                                                                                               |
+| `key`             | the JSON key in the parent row (alias, else name); `null` for a spread and for an empty embed (`rel()`)                                                                  |
+| `spread`, `empty` | `...rel(...)`, `rel()`: an empty embed is only there to filter or order, it has no key and no `outputs`; its `shape` is still given                                      |
+| `path`            | identity: the keys of the embeds from the root down to this one (spreads included)                                                                                       |
+| `outputs`         | the keys this embed adds to the result, each a path from the root row: `[key]` for an embed, the merged field keys (and those of the embeds a spread nests) for a spread |
+| `join`            | `inner` for `!inner`, else `left`                                                                                                                                        |
+| `cardinality`     | `one` (object) or `many` (array)                                                                                                                                         |
+| `relationship`    | `{kind: m2o\|o2o\|o2m\|m2m\|computed, fkSide: origin\|target\|null, constraint, columns: [{from, to}], junction, function}`; `from` is on the parent, `to` on the embed  |
+| `target`          | `{schema, name, kind: table\|view\|function}`: the relation the embed reads; `function` when it is reached through a computed relationship (`relationship.function`)     |
+| `nullable`        | whether the embedded value can be null, with the `reason` below                                                                                                          |
+| `fkProven`        | a to-one the foreign key proves: many-to-one (or the owning side of a one-to-one) between two tables, key columns all NOT NULL, constraint validated                     |
+
+`nullable` of a to-one, first match wins:
+
+| `reason`                                                                                                                                | `nullable` | when                                                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `array`                                                                                                                                 | `false`    | to-many (never null, `[]` when empty)                                                                                                                        |
+| `inner-join`                                                                                                                            | `false`    | `!inner`: a missing match drops the parent row                                                                                                               |
+| `write`                                                                                                                                 | `true`     | the plan is a mutation: every left-joined to-one is nullable (`fkProven` is still computed)                                                                  |
+| `computed`, `inverse-o2o`, `view-origin`, `view-target`, `nullable-fk-column`, `fk-not-validated`, `fk-unknown`, `unknown-relationship` | `true`     | the key does not prove the row (`fkProven: false`); `fk-unknown`: no catalog entry says whether the key is validated, and the plan notes `fk-validation:...` |
+| `filtered`                                                                                                                              | `true`     | a filter, an offset or a limit of 0 on the embed can drop its row                                                                                            |
+| `nested-inner`                                                                                                                          | `true`     | a direct child joined with `!inner` drops this row when it has no match                                                                                      |
+| `fk-proven`                                                                                                                             | `false`    | the key proves the row exists and nothing above can drop it                                                                                                  |
+
+Spreads. A to-one spread merges its fields into the parent row: `shape.fields` are those merged keys, `nullable` is the nullability of the join, and every merged field (and every embed nested in it, reason `spread-parent`) is nullable when the spread is. A to-many spread gives one array per field: `shape.fields` describe the elements, the array itself is never null (`nullable` is `false`, `array`) unless it is merged by a nullable to-one spread. Upstream rejects aggregates in a to-many spread (`PGRST127`). The aggregates of a to-one spread inside another spread are applied by upstream at the nearest ancestor that is not a spread; the planner puts each back on the field that wrote it, so `...a(x, ...b(m:y.max()))` types `m` as the aggregate (`count` is never null, the other aggregates always are). Nested embeds below a to-many spread are inside the array as well: the key holds one value per element.
+
+A failure upstream reports (an unknown embed, `PGRST108` for a filter on an embed that is not selected, `PGRST200`, ...) makes the whole plan `ok: false` with upstream's error.

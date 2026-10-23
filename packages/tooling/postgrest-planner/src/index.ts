@@ -180,11 +180,103 @@ export interface ShapeField {
   provenance: FieldProvenance
 }
 
-/** The root relation of a read or of a mutation that returns the representation. */
+/** The relation a node of the result reads and its output: columns first, then embeds. */
 export interface ResultShape {
   relation: QualifiedName
   /** Output columns in the order PostgREST emits them (`*` expanded in `attnum` order). */
   fields: ShapeField[]
+  /** The embeds of this relation, in the order PostgREST emits them (after `fields`). */
+  embeds: ShapeEmbed[]
+}
+
+/** The relationship an embed follows, as the schema cache has it. */
+export interface ShapeEmbedRelationship {
+  /** `m2o`: the origin holds the key; `o2o`: one to one; `o2m`: the target holds the key; `m2m`: through a junction. */
+  kind: 'm2o' | 'o2o' | 'o2m' | 'm2m' | 'computed'
+  /** Which side holds the foreign key (`o2o`: `target` is the inverse side). `null` for `m2m` and `computed`. */
+  fkSide: 'origin' | 'target' | null
+  /** The foreign key constraint. `null` for `m2m` and `computed`. */
+  constraint: string | null
+  /** Key columns, `from` on the origin (parent) relation and `to` on the target. Empty for `m2m` and `computed`. */
+  columns: { from: string; to: string }[]
+  junction: { schema: string; name: string; constraints: string[] } | null
+  /** The computed relationship's function. */
+  function: QualifiedName | null
+}
+
+/**
+ * Why an embed's `nullable` is what it is. `nullable: false`: `array` (to-many), `inner-join` (`!inner`),
+ * `fk-proven`. `nullable: true`: `write` (a to-one of a mutation plan), `filtered` (a filter, an offset or a
+ * limit of 0 can drop its row), `nested-inner` (a `!inner` child drops it), `spread-parent` (it is merged
+ * by a nullable to-one spread) and what `fkProven: false` stands for: `computed`, `inverse-o2o`,
+ * `view-origin`, `view-target`, `nullable-fk-column`, `fk-not-validated`, `fk-unknown` (the catalog does not
+ * say whether the key is validated), `unknown-relationship`.
+ */
+export type ShapeEmbedReason =
+  | 'array'
+  | 'inner-join'
+  | 'fk-proven'
+  | 'write'
+  | 'filtered'
+  | 'nested-inner'
+  | 'spread-parent'
+  | 'computed'
+  | 'inverse-o2o'
+  | 'view-origin'
+  | 'view-target'
+  | 'nullable-fk-column'
+  | 'fk-not-validated'
+  | 'fk-unknown'
+  | 'unknown-relationship'
+
+/** One embedded relation (`name(...)`, `alias:name(...)`, `...name(...)`) of a {@link ResultShape}. */
+export interface ShapeEmbed {
+  /** The embedded relation as written. */
+  name: string
+  alias: string | null
+  /**
+   * The JSON key of the embedded value in the parent row: the alias, else `name`. `null` for a spread (its
+   * fields are merged into the parent) and for an empty embed (`rel()`), which has no key.
+   */
+  key: string | null
+  spread: boolean
+  /** `rel()`: used to filter or order, absent from the output. Its `shape` is still given. */
+  empty: boolean
+  /** Identity of the embed: the keys of the embeds from the root down to it (spreads included). */
+  path: string[]
+  /**
+   * The JSON keys this embed adds to the result, each a path from the root row: `[key]` for a plain embed,
+   * the merged field keys (and those of what the spread embeds) for a spread, none for an empty embed.
+   */
+  outputs: string[][]
+  /** `inner`: `!inner`, the parent row goes away without a match. */
+  join: 'inner' | 'left'
+  /**
+   * `one`: an object (a to-one spread merges its fields into the parent); `many`: an array, never null (a
+   * to-many spread gives each of its `fields` as an array).
+   */
+  cardinality: 'one' | 'many'
+  /** `null` when upstream gave none. */
+  relationship: ShapeEmbedRelationship | null
+  /**
+   * The relation the embed reads. `kind` is `function` when it is reached through a computed relationship
+   * (`relationship.function` is the function; `name` is still the table or view it returns).
+   */
+  target: QualifiedName & { kind: 'table' | 'view' | 'function' }
+  /**
+   * Whether the value can be null. For a to-many it is the array, which is never null; for a spread, the
+   * merged fields are nullable when this is.
+   */
+  nullable: boolean
+  reason: ShapeEmbedReason
+  /**
+   * The foreign key proves a to-one row exists: a many-to-one (or the owning side of a one-to-one) between two
+   * tables, with NOT NULL key columns and a validated constraint. Independent of `join`, filters and the
+   * plan being a mutation.
+   */
+  fkProven: boolean
+  /** The embed's own columns (`*` expanded in `attnum` order) and nested embeds. */
+  shape: ResultShape
 }
 
 export interface PlanSuccess {
@@ -199,11 +291,12 @@ export interface PlanSuccess {
   warnings: unknown[]
   /** `null` for plans that return no rows of a relation. */
   form: PlanForm | null
-  /** `null` when `form` is `null`, `none` or an RPC form. Embeds are not shaped yet (P1b). */
+  /** `null` when `form` is `null`, `none` or an RPC form. */
   shape: ResultShape | null
   /**
    * What this plan had to guess: `column-order:<schema>.<relation>`, `computed-field:<relation>.<name>`
-   * (no catalog to resolve it), `embeds-unshaped`, `rpc-shape`.
+   * (no catalog to resolve it), `fk-validation:<schema>.<table>.<constraint>` (the catalog does not say whether the
+   * key is validated), `rpc-shape`.
    */
   degraded: string[]
   mutation?: unknown
