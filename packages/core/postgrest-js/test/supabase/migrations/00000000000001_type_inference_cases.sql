@@ -123,3 +123,71 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA personal TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+
+-- Planner review round 2: computed relationships whose function has an unnamed argument (upstream leaves it out
+-- of its routines but keeps the relationship), single-column OUT results, domains behind computed fields and
+-- the aggregates of types that coerce or have no min/max.
+CREATE TABLE public.computed_parents (id bigint PRIMARY KEY);
+
+CREATE TABLE public.computed_children (id bigint PRIMARY KEY, parent_id bigint);
+
+CREATE FUNCTION public.computed_child(public.computed_parents)
+RETURNS SETOF public.computed_children ROWS 1 LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.computed_children WHERE false;
+$$;
+
+CREATE FUNCTION public.computed_child(n integer)
+RETURNS public.computed_children LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.computed_children WHERE id = n;
+$$;
+
+CREATE FUNCTION public.computed_only_child(public.computed_parents)
+RETURNS public.computed_children LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.computed_children WHERE false;
+$$;
+
+CREATE FUNCTION public.out_inout(INOUT n integer)
+LANGUAGE sql IMMUTABLE AS $$
+  SELECT n + 1;
+$$;
+
+CREATE FUNCTION public.out_single(a integer, OUT doubled bigint)
+LANGUAGE sql IMMUTABLE AS $$
+  SELECT a * 2::bigint;
+$$;
+
+CREATE FUNCTION public.out_table_one_column(a integer)
+RETURNS TABLE (doubled bigint) LANGUAGE sql IMMUTABLE AS $$
+  SELECT a * 2::bigint;
+$$;
+
+CREATE DOMAIN public.item_amount AS integer;
+
+CREATE TABLE public.domain_items (id bigint PRIMARY KEY, qty public.item_amount NOT NULL);
+
+CREATE FUNCTION public.amount(item public.domain_items)
+RETURNS public.item_amount LANGUAGE sql STABLE AS $$
+  SELECT item.qty;
+$$;
+
+CREATE TABLE public.aggregate_types (
+  id bigint PRIMARY KEY,
+  v varchar,
+  bp char(3),
+  nm name,
+  qc "char",
+  cd cidr,
+  ip inet,
+  rc regclass,
+  ts timestamptz,
+  nu numeric(10, 2),
+  ar integer[],
+  st public.user_status,
+  u uuid,
+  flag boolean,
+  doc jsonb
+);
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;

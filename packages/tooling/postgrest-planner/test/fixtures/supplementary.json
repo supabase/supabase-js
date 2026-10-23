@@ -47,6 +47,20 @@
             "volatility": "s"
         },
         {
+            "name": "amount",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.item_amount",
+                "setof": false
+            },
+            "argTypes": [
+                "public.domain_items"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
             "name": "blurb_message",
             "schema": "public",
             "returns": {
@@ -56,6 +70,48 @@
             },
             "argTypes": [
                 "public.messages"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "computed_child",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.computed_children",
+                "setof": true
+            },
+            "argTypes": [
+                "public.computed_parents"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "computed_child",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.computed_children",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "computed_only_child",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.computed_children",
+                "setof": false
+            },
+            "argTypes": [
+                "public.computed_parents"
             ],
             "outColumns": null,
             "volatility": "s"
@@ -524,6 +580,63 @@
             ],
             "outColumns": null,
             "volatility": "v"
+        },
+        {
+            "name": "out_inout",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": [
+                {
+                    "name": "n",
+                    "type": "integer"
+                }
+            ],
+            "volatility": "i"
+        },
+        {
+            "name": "out_single",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "bigint",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": [
+                {
+                    "name": "doubled",
+                    "type": "bigint"
+                }
+            ],
+            "volatility": "i"
+        },
+        {
+            "name": "out_table_one_column",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "bigint",
+                "setof": true
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": [
+                {
+                    "name": "doubled",
+                    "type": "bigint"
+                }
+            ],
+            "volatility": "i"
         },
         {
             "name": "polymorphic_function_with_different_return",
@@ -1013,6 +1126,72 @@
             ]
         },
         {
+            "name": "aggregate_types",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "v",
+                    "attnum": 2
+                },
+                {
+                    "name": "bp",
+                    "attnum": 3
+                },
+                {
+                    "name": "nm",
+                    "attnum": 4
+                },
+                {
+                    "name": "qc",
+                    "attnum": 5
+                },
+                {
+                    "name": "cd",
+                    "attnum": 6
+                },
+                {
+                    "name": "ip",
+                    "attnum": 7
+                },
+                {
+                    "name": "rc",
+                    "attnum": 8
+                },
+                {
+                    "name": "ts",
+                    "attnum": 9
+                },
+                {
+                    "name": "nu",
+                    "attnum": 10
+                },
+                {
+                    "name": "ar",
+                    "attnum": 11
+                },
+                {
+                    "name": "st",
+                    "attnum": 12
+                },
+                {
+                    "name": "u",
+                    "attnum": 13
+                },
+                {
+                    "name": "flag",
+                    "attnum": 14
+                },
+                {
+                    "name": "doc",
+                    "attnum": 15
+                }
+            ]
+        },
+        {
             "name": "best_friends",
             "schema": "public",
             "columns": [
@@ -1117,6 +1296,30 @@
             ]
         },
         {
+            "name": "computed_children",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "parent_id",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "computed_parents",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                }
+            ]
+        },
+        {
             "name": "cornercase",
             "schema": "public",
             "columns": [
@@ -1131,6 +1334,20 @@
                 {
                     "name": "array_column",
                     "attnum": 3
+                }
+            ]
+        },
+        {
+            "name": "domain_items",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "qty",
+                    "attnum": 2
                 }
             ]
         },

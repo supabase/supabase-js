@@ -509,6 +509,54 @@ describe('postgrest-planner', () => {
         ])
       })
 
+      it('types min and max as Postgres resolves them: coerced to the variant that exists, else unresolved', () => {
+        const p = plan(
+          catalog,
+          '/aggregate_types?select=v.min(),a:v.max(),bp.min(),nm.min(),qc.max(),cd.min(),ip.max(),rc.min(),ts.max(),nu.min(),ar.max(),st.min()'
+        )
+        // varchar, name and "char" read as text, cidr as inet, the reg* types as oid; the others keep their type
+        expect(summary(fieldsOf(p))).toEqual([
+          ['min', 'text', true, 'aggregate'],
+          ['a', 'text', true, 'aggregate'],
+          ['min', 'bpchar', true, 'aggregate'],
+          ['min', 'text', true, 'aggregate'],
+          ['max', 'text', true, 'aggregate'],
+          ['min', 'inet', true, 'aggregate'],
+          ['max', 'inet', true, 'aggregate'],
+          ['min', 'oid', true, 'aggregate'],
+          ['max', 'timestamptz', true, 'aggregate'],
+          ['min', 'numeric', true, 'aggregate'],
+          ['max', 'int4[]', true, 'aggregate'],
+          ['min', 'public.user_status', true, 'aggregate'],
+        ])
+        // no min or max exists for these (42883 in Postgres): unresolved, not the input type
+        const none = plan(catalog, '/aggregate_types?select=u.min(),flag.max(),doc.min()')
+        expect(summary(fieldsOf(none))).toEqual([
+          ['min', null, true, 'unresolved'],
+          ['max', null, true, 'unresolved'],
+          ['min', null, true, 'unresolved'],
+        ])
+        expect(fieldsOf(none)[0].provenance).toMatchObject({
+          kind: 'unresolved',
+          reason: expect.stringContaining('uuid'),
+        })
+      })
+
+      it('types an aggregate over a computed field of a domain on the base type of the domain', () => {
+        // domain_items.qty is a column of the domain, which is how the catalog learns its base type
+        const p = plan(catalog, '/domain_items?select=amount.sum(),a:amount.avg(),amount.min()')
+        expect(summary(fieldsOf(p))).toEqual([
+          ['sum', 'int8', true, 'aggregate'],
+          ['a', 'numeric', true, 'aggregate'],
+          ['min', 'int4', true, 'aggregate'],
+        ])
+        // without the aggregate the field is the domain
+        expect(fieldsOf(plan(catalog, '/domain_items?select=amount'))[0]).toMatchObject({
+          pgType: 'public.item_amount',
+          baseType: 'int4',
+        })
+      })
+
       it('ignores a second cast when there is no aggregate', () => {
         // upstream parses it into aggCast, but pgFmtApplyAggregate Nothing drops it: the value stays text
         const [field] = fieldsOf(plan(catalog, '/inference_cases?select=id::text::int4'))
@@ -906,6 +954,31 @@ describe('postgrest-planner', () => {
         ['id', 'int8', true],
         ['username', 'text', true],
       ])
+    })
+
+    it('matches the argument of a computed relationship to the function, not to a function of the same name', () => {
+      // computed_child(computed_parents) RETURNS SETOF ... ROWS 1 has an unnamed argument, which upstream keeps out
+      // of its routines (it is no RPC) but keeps as a relationship; computed_child(n integer) is the only routine
+      // of the name and returns a single composite
+      const setof = only(plan(catalog, '/computed_parents?select=id,computed_child(id)'))
+      expect(setof.relationship).toMatchObject({
+        kind: 'computed',
+        function: { schema: 'public', name: 'computed_child' },
+      })
+      expect(verdict(setof)).toEqual(['computed_child', 'one', true, 'computed', false])
+      // no routine takes the table: the catalog says what the unnamed-argument function returns
+      const single = only(plan(catalog, '/computed_parents?select=id,computed_only_child(id)'))
+      expect(verdict(single)).toEqual([
+        'computed_only_child',
+        'one',
+        false,
+        'single-composite',
+        false,
+      ])
+      // without a catalog nothing proves it
+      expect(
+        verdict(only(plan(handle, '/computed_parents?select=id,computed_only_child(id)')))
+      ).toEqual(['computed_only_child', 'one', true, 'computed', false])
     })
 
     it('reads the rows of a computed relationship as function rows, and so its first-level to-one embeds', () => {
@@ -1315,6 +1388,34 @@ describe('postgrest-planner', () => {
       // only the selected columns, under their alias
       const picked = ok(get(catalog, 'get_username_and_status?name_param=x&select=u:username'))
       expect(shapeOf(picked).fields.map((f) => f.name)).toEqual(['u'])
+    })
+
+    it('reads the single OUT, INOUT and RETURNS TABLE column of a function from the catalog', () => {
+      // upstream encodes all three as a composite of the column's type: f(INOUT n int) answers {"n": 3}
+      const inout = ok(get(catalog, 'out_inout?n=2'))
+      expect(inout).toMatchObject({ form: 'single-composite', degraded: [] })
+      expect(inout.rpc?.source).toEqual({
+        kind: 'returnsTable',
+        columns: [{ name: 'n', pgType: 'int4' }],
+      })
+      expect(shapeOf(inout).relation).toEqual({ schema: 'pg_catalog', name: 'record' })
+      expect(summary(shapeOf(inout).fields)).toEqual([['n', 'int4', true, 'function-rows']])
+
+      const out = ok(get(catalog, 'out_single?a=2'))
+      expect(out).toMatchObject({ form: 'single-composite', degraded: [] })
+      expect(summary(shapeOf(out).fields)).toEqual([['doubled', 'int8', true, 'function-rows']])
+
+      const table = ok(get(catalog, 'out_table_one_column?a=2&select=d:doubled'))
+      expect(table).toMatchObject({ form: 'rowset', degraded: [] })
+      expect(summary(shapeOf(table).fields)).toEqual([['d', 'int8', true, 'function-rows']])
+      expect(shapeOf(table).fields[0].provenance).toEqual({
+        kind: 'outColumn',
+        function: { schema: 'public', name: 'out_table_one_column' },
+        column: 'doubled',
+      })
+
+      // without the catalog the columns are unknown
+      expect(ok(get(handle, 'out_inout?n=2')).degraded).toEqual(['rpc-columns:public.out_inout'])
     })
 
     it('says so when the columns of a function are not known', () => {

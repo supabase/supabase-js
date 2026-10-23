@@ -95,19 +95,20 @@ qualifiedTypeName (QualifiedIdentifier schema name) = case T.stripPrefix "_" nam
       | T.null schema || schema == "pg_catalog" = n
       | otherwise = schema <> "." <> n
 
--- | Result type of an aggregate over an input type (already 'normalizeType'd).
--- @count@ is always @int8@, @min@/@max@ keep the input, @sum@/@avg@ widen per the Postgres catalog.
-aggregateType :: AggregateFunction -> Text -> Text
+-- | Result type of an aggregate over an input type (already 'normalizeType'd); 'Nothing' when Postgres has no such
+-- aggregate for it (the request fails there with @42883@). @count@ is always @int8@, @sum@/@avg@ widen per the
+-- Postgres catalog, @min@/@max@ follow 'minMaxType'.
+aggregateType :: AggregateFunction -> Text -> Maybe Text
 aggregateType fn input = case fn of
-  Count -> "int8"
-  Min -> input
-  Max -> input
-  Sum -> case input of
+  Count -> Just "int8"
+  Min -> minMaxType input
+  Max -> minMaxType input
+  Sum -> Just $ case input of
     "int2" -> "int8"
     "int4" -> "int8"
     "int8" -> "numeric"
     _ -> input -- float4, float8, numeric, money, interval keep their type
-  Avg -> case input of
+  Avg -> Just $ case input of
     "int2" -> "numeric"
     "int4" -> "numeric"
     "int8" -> "numeric"
@@ -115,6 +116,31 @@ aggregateType fn input = case fn of
     "float4" -> "float8"
     "float8" -> "float8"
     _ -> input -- interval
+
+-- | @min@ and @max@ of an input type, as Postgres resolves the call. @pg_proc.dat@ has one variant per type of
+-- 'minMaxKept' (plus @anyarray@ and @anyenum@: an array or an enum keeps its type), and an input without its own
+-- variant is coerced to one that has: @varchar@, @name@ and @"char"@ read as @text@, @cidr@ as @inet@ and the
+-- @reg*@ types as @oid@ (checked against PostgreSQL 17). A type @pg_catalog@ ships without a variant or a
+-- coercion (@uuid@, @bool@, @json@, @bytea@, ranges, ...) has no @min@/@max@: 'Nothing'. A type of any other
+-- schema is not known to be one of those and keeps its type (an enum is the usual one).
+minMaxType :: Text -> Maybe Text
+minMaxType input
+  | "[]" `T.isSuffixOf` input = Just input
+  | Just t <- lookup input minMaxCoerced = Just t
+  | input `elem` minMaxKept = Just input
+  | isBuiltinType input = Nothing
+  | otherwise = Just input
+
+minMaxKept :: [Text]
+minMaxKept =
+  [ "int8", "int2", "int4", "oid", "float4", "float8", "date", "time", "timetz", "money", "timestamp", "timestamptz"
+  , "interval", "text", "numeric", "bpchar", "tid", "inet", "pg_lsn", "xid8", "int2vector", "oidvector"
+  ]
+
+minMaxCoerced :: [(Text, Text)]
+minMaxCoerced =
+  [("varchar", "text"), ("name", "text"), ("char", "text"), ("cidr", "inet")]
+    <> [(t, "oid") | t <- ["regproc", "regprocedure", "regoper", "regoperator", "regclass", "regtype", "regrole", "regnamespace", "regconfig", "regdictionary", "regcollation"]]
 
 -- | Whether a 'normalizeType'd name is a type of @pg_catalog@ (or an array of one). 'normalizeType' drops
 -- @pg_catalog@ and qualifies every other type with its schema, but a client-typed cast can leave a user type

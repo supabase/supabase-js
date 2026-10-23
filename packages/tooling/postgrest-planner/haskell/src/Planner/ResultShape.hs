@@ -63,7 +63,7 @@ import PostgREST.SchemaCache.Routine (FuncVolatility (..), MediaHandler (..), Pg
 import PostgREST.SchemaCache.Table (Column (..), Table (..))
 
 import Planner.PgType (aggregateType, isBuiltinType, normalizeType, qualifiedTypeName)
-import Planner.Supplementary (SuppFunction (..), SuppReturn (..), Supplementary (..), findComputedField, findRoutine, foreignKeyValidated, orderColumns)
+import Planner.Supplementary (SuppFunction (..), SuppReturn (..), Supplementary (..), findComputedField, findFunction, findRoutine, foreignKeyValidated, orderColumns)
 
 -- | @form@, @shape@, @rpc@, @filters@ and @degraded@ for a plan. Plans that return no rows of a relation
 -- (inspection, relation/routine info, mutations without a representation, scalar RPCs) have @shape: null@.
@@ -381,19 +381,23 @@ isComputed = \case
   _ -> False
 
 -- | Whether a computed relationship is a function that returns a single composite value (not @setof@). The
--- relationship names the function and the table of its argument; the dump lists the overloads of a name.
+-- relationship names the function and the table of its argument; the dump lists the overloads of a name, and the
+-- one that takes the table decides. Upstream leaves a function with an unnamed argument out of its routines but
+-- keeps it as a computed relationship: the supplementary catalog tells what it returns, and without it (or
+-- without an entry) the embed is not known to be a single composite.
 computedReturnsSingleComposite :: Ctx -> Relationship -> Bool
-computedReturnsSingleComposite Ctx{cxRoutines} = \case
+computedReturnsSingleComposite Ctx{cxRoutines, cxSupp} = \case
   ComputedRelationship{relFunction, relTable} ->
-    let overloads = HM.lookupDefault [] relFunction cxRoutines
-        takesTable r = case pdParams r of
+    let takesTable r = case pdParams r of
           p : _ -> ppType p == qualified relTable
           [] -> False
-    in  case filter takesTable overloads of
+        inCatalog = do
+          supp <- cxSupp
+          SuppFunction{sfReturns = SuppReturn{srKind, srSetof}} <- findFunction supp relFunction [qualified relTable]
+          Just (srKind == "composite" && not srSetof)
+    in  case filter takesTable (HM.lookupDefault [] relFunction cxRoutines) of
           r : _ -> funcReturnsSingleComposite r
-          [] -> case overloads of
-            [r] -> funcReturnsSingleComposite r
-            _ -> False
+          [] -> fromMaybe False inCatalog
   _ -> False
 
 -- | Whether a parsed select relation is the one a plan node came from.
@@ -580,7 +584,7 @@ legacyCount Ctx{cxTables, cxSupp, cxRows, cxSearchPath} rel CoercibleField{cfNam
 -- | A named field of the relation: a column, or a computed field (a function over the row type). The root
 -- of an RPC plan reads its columns from the rows of the function.
 baseExpr :: Ctx -> QualifiedIdentifier -> CoercibleField -> (Expr, [Text])
-baseExpr ctx@Ctx{cxTables, cxSupp, cxRows, cxSearchPath} rel CoercibleField{cfName = name} = case cxRows of
+baseExpr ctx@Ctx{cxTables, cxSupp, cxRows, cxSearchPath, cxTypes} rel CoercibleField{cfName = name} = case cxRows of
   Just (AttrRows attrs) -> case lookup name attrs of
     Just e -> (e, [])
     Nothing -> bad ("no attribute " <> name <> " in the rows of the function") []
@@ -598,7 +602,7 @@ baseExpr ctx@Ctx{cxTables, cxSupp, cxRows, cxSearchPath} rel CoercibleField{cfNa
             | otherwise ->
                 ( Expr
                     (Just (normalizeType srType))
-                    Nothing
+                    (join (HM.lookup (normalizeType srType) cxTypes)) -- the base type of a domain the catalog knows
                     True
                     ( object
                         [ "kind" .= str "computed"
@@ -715,15 +719,18 @@ knownTypes sc supp = HM.fromListWith (\new old -> old <|> new) (filter (userType
       Scalar qi -> qualifiedTypeName qi
       Composite qi _ -> qualified qi
 
--- | @count@ is @int8@ and never null; every other aggregate is null over an empty group.
+-- | @count@ is @int8@ and never null; every other aggregate is null over an empty group. An input type the
+-- aggregate does not exist for (@min@ of a @uuid@) is unresolved: Postgres refuses the request.
 applyAggregate :: AggregateFunction -> Expr -> Expr
-applyAggregate fn e =
-  Expr
-    (case fn of Count -> Just "int8"; _ -> aggregateType fn <$> (eBase e <|> eType e)) -- a domain aggregates as its base type
-    Nothing
-    (case fn of Count -> False; _ -> True)
-    (object ["kind" .= str "aggregate", "function" .= aggName fn, "of" .= eProv e])
-    False
+applyAggregate fn e = case fn of
+  Count -> Expr (Just "int8") Nothing False prov False
+  _ -> case eBase e <|> eType e of -- a domain aggregates as its base type
+    Nothing -> Expr Nothing Nothing True prov False
+    Just input -> case aggregateType fn input of
+      Just ty -> Expr (Just ty) Nothing True prov False
+      Nothing -> Expr Nothing Nothing True (unresolved ("no " <> aggName fn <> " aggregate for type " <> input)) False
+  where
+    prov = object ["kind" .= str "aggregate", "function" .= aggName fn, "of" .= eProv e]
 
 -- | Where the rows of a function come from.
 data RpcRows = RpcRows
@@ -747,15 +754,17 @@ rpcRows Ctx{cxTables, cxSupp, cxTypes} proc = case pdReturnType proc of
     fn = QualifiedIdentifier (pdSchema proc) (pdName proc)
     scalar = RpcRows Nothing (NoRows "the function returns a scalar") Null []
     unknown qi = RpcRows (Just qi) (NoRows ("the columns of " <> qualified qi <> " are unknown")) Null ["rpc-columns:" <> qualified fn]
+    -- A function with @OUT@, @INOUT@ or @TABLE@ columns is a composite for upstream whatever it returns: @record@
+    -- for several columns, the type of the column for one (@f(INOUT n int)@ is @Single (Composite pg_catalog.int4)@
+    -- and answers @{"n": 3}@). The rows have the columns the catalog lists, under the relation @pg_catalog.record@.
     composite qi
-      | isRecord qi = case cxSupp >>= (`findRoutine` proc) >>= sfOutColumns of
-          Just cols ->
-            RpcRows
-              (Just qi)
-              (AttrRows [(n, attribute (object ["kind" .= str "outColumn", "function" .= qiJSON fn, "column" .= n]) t) | (n, t) <- cols])
-              (object ["kind" .= str "returnsTable", "columns" .= [object ["name" .= n, "pgType" .= normalizeType t] | (n, t) <- cols]])
-              []
-          Nothing -> unknown qi
+      | Just cols <- cxSupp >>= (`findRoutine` proc) >>= sfOutColumns =
+          RpcRows
+            (Just (QualifiedIdentifier "pg_catalog" "record"))
+            (AttrRows [(n, attribute (object ["kind" .= str "outColumn", "function" .= qiJSON fn, "column" .= n]) t) | (n, t) <- cols])
+            (object ["kind" .= str "returnsTable", "columns" .= [object ["name" .= n, "pgType" .= normalizeType t] | (n, t) <- cols]])
+            []
+      | isRecord qi = unknown qi
       | Just table <- HM.lookup qi cxTables =
           RpcRows (Just qi) TableRows (object ["kind" .= str "relation", "schema" .= qiSchema qi, "name" .= qiName qi, "view" .= tableIsView table]) []
       | Just attrs <- cxSupp >>= HM.lookup qi . suppComposites =

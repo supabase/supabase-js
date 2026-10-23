@@ -18,6 +18,7 @@ module Planner.Supplementary
   , foreignKeyValidated
   , findComputedField
   , findRoutine
+  , findFunction
   ) where
 
 import Control.Monad (unless)
@@ -176,3 +177,12 @@ findRoutine supp Function{pdSchema, pdName, pdParams} =
   where
     named = [f | f <- suppFunctions supp, sfSchema f == pdSchema, sfName f == pdName]
     args = normalizeType . ppType <$> pdParams
+
+-- | The catalog entry of the function of this schema and name whose input argument types are exactly these. Used
+-- for what the schema cache lacks: upstream drops a function with an unnamed argument from its routines but keeps
+-- it as a computed relationship.
+findFunction :: Supplementary -> QualifiedIdentifier -> [Text] -> Maybe SuppFunction
+findFunction supp (QualifiedIdentifier schema name) args =
+  case [f | f <- suppFunctions supp, sfSchema f == schema, sfName f == name, map normalizeType (sfArgTypes f) == map normalizeType args] of
+    f : _ -> Just f
+    [] -> Nothing
