@@ -222,7 +222,9 @@ export interface ShapeEmbedRelationship {
 
 /**
  * Why an embed's `nullable` is what it is. `nullable: false`: `array` (to-many), `inner-join` (`!inner`),
- * `fk-proven`. `nullable: true`: `write` (a to-one of a mutation plan), `filtered` (a filter, an offset or a
+ * `fk-proven`, `single-composite` (a computed relationship to a function returning one composite, not `setof`:
+ * Postgres always yields a row, a composite of NULLs when nothing matches, so the embed is an object whose
+ * fields are all `nullable` with reason `function-rows`). `nullable: true`: `write` (a to-one of a mutation plan), `filtered` (a filter, an offset or a
  * limit of 0 can drop its row), `nested-inner` (a `!inner` child drops it), `spread-parent` (it is merged
  * by a nullable to-one spread) and what `fkProven: false` stands for: `computed`, `inverse-o2o`,
  * `view-origin`, `view-target`, `nullable-fk-column`, `fk-not-validated`, `fk-unknown` (the catalog does not
@@ -235,6 +237,7 @@ export type ShapeEmbedReason =
   | 'array'
   | 'inner-join'
   | 'fk-proven'
+  | 'single-composite'
   | 'write'
   | 'function-rows'
   | 'filtered'

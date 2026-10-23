@@ -55,7 +55,7 @@ import PostgREST.RangeQuery (allRange, hasLimitZero, rangeOffset)
 import PostgREST.SchemaCache (SchemaCache (..))
 import PostgREST.SchemaCache.Identifiers (QualifiedIdentifier (..))
 import PostgREST.SchemaCache.Relationship (Cardinality (..), Junction (..), Relationship (..), relIsToOne)
-import PostgREST.SchemaCache.Routine (FuncVolatility (..), PgType (..), RetType (..), Routine (..), funcReturnsSingleComposite)
+import PostgREST.SchemaCache.Routine (FuncVolatility (..), PgType (..), RetType (..), Routine (..), RoutineParam (..), RoutineMap, funcReturnsSingleComposite)
 import PostgREST.SchemaCache.Table (Column (..), Table (..))
 
 import Planner.PgType (aggregateType, normalizeType)
@@ -68,7 +68,7 @@ planShape sc supp apiReq = \case
   Db (DbCrud _ crud) -> crudShape crud
   _ -> result Nothing Nothing [] Nothing ([], [])
   where
-    ctx = Ctx (dbTables sc) supp Nothing
+    ctx = Ctx (dbTables sc) (dbRoutines sc) supp Nothing
     selectTree = qsSelect (iQueryParams apiReq)
 
     crudShape = \case
@@ -134,6 +134,7 @@ isRecord = (== QualifiedIdentifier "pg_catalog" "record")
 
 data Ctx = Ctx
   { cxTables :: HM.HashMap QualifiedIdentifier Table
+  , cxRoutines :: RoutineMap
   , cxSupp :: Maybe Supplementary
   , cxRows :: Maybe Rows
   -- ^ Set for the root of an RPC plan: where its columns come from. Embeds resolve against their tables.
@@ -272,6 +273,11 @@ embedEntry env@Env{evCtx = ctx, evWrite} par hoist sel node@(Node rp kids) = Emb
     toOne = maybe True relIsToOne relationship
     key = fromMaybe (RP.relName rp) (RP.relAlias rp)
     isEmpty = case sel of JsonEmbed{rsEmptyEmbed} -> rsEmptyEmbed; _ -> False
+    -- A computed relationship to a function that returns ONE composite (not @setof@): Postgres always yields a
+    -- row, a composite of NULLs when nothing matches, so the embed is never null and its columns are the
+    -- rows of a function (nullable).
+    singleComposite = maybe False (computedReturnsSingleComposite ctx) relationship
+    embedCtx = if singleComposite then ctx{cxRows = Just TableRows} else ctx
     idPath = pIdPath par <> [key]
     outPath = if isSpread then pOutPath par else pOutPath par <> [key]
     joinInner = RP.relJoinType rp == Just JTInner
@@ -285,6 +291,7 @@ embedEntry env@Env{evCtx = ctx, evWrite} par hoist sel node@(Node rp kids) = Emb
     (ownNullable, ownReason)
       | not toOne = (False, "array")
       | joinInner = (False, "inner-join")
+      | singleComposite, not filtered, not nestedInner = (False, "single-composite")
       | evWrite = (True, "write")
       | pFunctionRows par = (True, "function-rows")
       | Left r <- proof = (True, r)
@@ -299,8 +306,8 @@ embedEntry env@Env{evCtx = ctx, evWrite} par hoist sel node@(Node rp kids) = Emb
       (s : _) -> s
       [] -> []
     (fields, fieldNotes)
-      | isToOneSpread = spreadFields ctx sub rel hoist nullable rp
-      | otherwise = nodeFields ctx sub rp rel
+      | isToOneSpread = spreadFields embedCtx sub rel hoist nullable rp
+      | otherwise = nodeFields embedCtx sub rp rel
     children =
       childEmbeds
         env
@@ -309,7 +316,7 @@ embedEntry env@Env{evCtx = ctx, evWrite} par hoist sel node@(Node rp kids) = Emb
           , pOutPath = outPath
           , pInherited = if isToOneSpread && nullable then Just reason else Nothing
           , pSelect = sub
-          , pFunctionRows = False
+          , pFunctionRows = singleComposite
           }
         (if isToOneSpread then hoist else Nothing)
         node
@@ -343,6 +350,22 @@ embedEntry env@Env{evCtx = ctx, evWrite} par hoist sel node@(Node rp kids) = Emb
               , "embeds" .= (emJSON <$> children)
               ]
         ]
+
+-- | Whether a computed relationship is a function that returns a single composite value (not @setof@). The
+-- relationship names the function and the table of its argument; the dump lists the overloads of a name.
+computedReturnsSingleComposite :: Ctx -> Relationship -> Bool
+computedReturnsSingleComposite Ctx{cxRoutines} = \case
+  ComputedRelationship{relFunction, relTable} ->
+    let overloads = HM.lookupDefault [] relFunction cxRoutines
+        takesTable r = case pdParams r of
+          p : _ -> ppType p == qualified relTable
+          [] -> False
+    in  case filter takesTable overloads of
+          r : _ -> funcReturnsSingleComposite r
+          [] -> case overloads of
+            [r] -> funcReturnsSingleComposite r
+            _ -> False
+  _ -> False
 
 -- | Whether a parsed select relation is the one a plan node came from.
 matchesSelect :: SelectItem -> RP.ReadPlan -> Bool
@@ -448,6 +471,7 @@ resolveOne ctx rel CoercibleSelectField{csField = cf, csAggFunction = agg, csAgg
 
     (start, notes)
       | isStar = (Expr Nothing Nothing False Null False, []) -- count(*): nothing is read
+      | isNothing agg, legacyCount ctx rel cf = (applyAggregate Count (Expr Nothing Nothing False Null False), [])
       | otherwise = baseExpr ctx rel cf
 
     final =
@@ -496,6 +520,22 @@ columnExpr Ctx{cxRows} rel col = case cxRows of
     base = let b = normalizeType (colType col) in if b == ty then Nothing else Just b
     prov = object ["kind" .= str "plain", "source" .= object ["schema" .= qiSchema rel, "relation" .= qiName rel, "column" .= colName col]]
     e = Expr (Just ty) base (colNullable col) prov False
+
+-- | A bare @count@ that names no column and no computed field of a table. Upstream parses it as an ordinary
+-- field; Postgres reads @<table>.count@ as the function @count(<table>)@ (attribute notation on a row), which
+-- is the @count@ aggregate over the rows, so it is @count()@: @int8@, never null. No other aggregate has this
+-- spelling (@sum@ and the like are not functions of a row), and a column or computed field of that name wins.
+-- It needs the supplementary catalog to rule a computed field out.
+legacyCount :: Ctx -> QualifiedIdentifier -> CoercibleField -> Bool
+legacyCount Ctx{cxTables, cxSupp, cxRows} rel CoercibleField{cfName, cfJsonPath} =
+  cfName == "count" && null cfJsonPath && rowsAreTable && case (HM.lookup rel cxTables, cxSupp) of
+    (Just table, Just supp) -> isNothing (HMI.lookup cfName (tableColumns table)) && isNothing (findComputedField supp rel cfName)
+    _ -> False
+  where
+    rowsAreTable = case cxRows of
+      Nothing -> True
+      Just TableRows -> True
+      _ -> False
 
 -- | A named field of the relation: a column, or a computed field (a function over the row type). The root
 -- of an RPC plan reads its columns from the rows of the function.

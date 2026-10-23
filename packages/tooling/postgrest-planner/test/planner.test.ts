@@ -396,6 +396,45 @@ describe('postgrest-planner', () => {
       })
     })
 
+    it('reads a bare count as count(): the Postgres row-attribute spelling of the aggregate', () => {
+      const embedded = plan(catalog, '/users?select=username,messages(count)').shape?.embeds[0]
+      expect(embedded?.shape.fields).toEqual([
+        {
+          name: 'count',
+          pgType: 'int8',
+          nullable: false,
+          provenance: { kind: 'aggregate', function: 'count', of: null },
+        },
+      ])
+      const nested = plan(catalog, '/users?select=username,messages(channels(count))').shape
+        ?.embeds[0].shape.embeds[0]
+      expect(nested?.cardinality).toBe('one')
+      expect(nested?.shape.fields[0]).toMatchObject({
+        name: 'count',
+        pgType: 'int8',
+        nullable: false,
+      })
+      expect(summary(fieldsOf(plan(catalog, '/messages?select=count,n:count::text')))).toEqual([
+        ['count', 'int8', false, 'aggregate'],
+        ['n', 'text', false, 'cast'],
+      ])
+      // only that name has the spelling: any other aggregate, or an unknown name, stays unresolved
+      for (const url of [
+        '/users?select=username,messages(sum)',
+        '/users?select=username,messages(foo)',
+        '/messages?select=sum',
+      ]) {
+        const p = plan(catalog, url)
+        const field = p.shape?.embeds[0]?.shape.fields[0] ?? p.shape?.fields[0]
+        expect(field?.provenance).toMatchObject({ kind: 'unresolved' })
+      }
+      // a path is not the legacy spelling: it reads a column that is not there
+      expect(fieldsOf(plan(catalog, '/events?select=count->>a'))[0].provenance).toMatchObject({
+        kind: 'jsonPath',
+        of: { kind: 'unresolved' },
+      })
+    })
+
     it('marks a field that is neither a column nor a computed field as unresolved', () => {
       const [field] = fieldsOf(plan(catalog, '/users?select=nope'))
       expect(field).toMatchObject({ name: 'nope', pgType: null, nullable: true })
@@ -658,16 +697,63 @@ describe('postgrest-planner', () => {
         kind: 'computed',
         function: { schema: 'public', name: 'get_user_profile' },
       })
-      expect(verdict(toOne)).toEqual(['get_user_profile', 'one', true, 'computed', false])
-      // the fields are those of the table the function returns
+      // the function returns ONE composite: a row always comes back, of NULLs when nothing matches
+      expect(verdict(toOne)).toEqual(['get_user_profile', 'one', false, 'single-composite', false])
+      // the fields are those of the table the function returns, read as function rows
       expect(toOne.shape.relation).toEqual({ schema: 'public', name: 'user_profiles' })
       expect(names(toOne.shape.fields)).toEqual([
-        ['id', 'int8', false],
+        ['id', 'int8', true],
         ['username', 'text', true],
       ])
+      expect(toOne.shape.fields.every((f) => f.reason === 'function-rows')).toBe(true)
 
       const toMany = only(plan(catalog, '/channels?select=id,get_messages(id)'))
       expect(verdict(toMany)).toEqual(['get_messages', 'many', false, 'array', false])
+    })
+
+    it('makes a computed relationship to a single composite non-null with every field nullable, not a setof one', () => {
+      const single = only(plan(catalog, '/users?select=username,function_using_table_returns(*)'))
+      expect(verdict(single)).toEqual([
+        'function_using_table_returns',
+        'one',
+        false,
+        'single-composite',
+        false,
+      ])
+      expect(names(single.shape.fields)).toEqual([
+        ['id', 'int8', true],
+        ['username', 'text', true],
+      ])
+      // a filter on the embed can still drop its row (it is nullable as any computed to-one), !inner is non-null
+      expect(
+        verdict(
+          only(
+            plan(
+              catalog,
+              '/users?select=username,function_using_table_returns(*)&function_using_table_returns.id=eq.1'
+            )
+          )
+        )
+      ).toEqual(['function_using_table_returns', 'one', true, 'computed', false])
+      expect(
+        verdict(
+          only(plan(catalog, '/users?select=username,function_using_table_returns!inner(*)'))
+        )[3]
+      ).toBe('inner-join')
+
+      // a setof function (ROWS 1) has no row when nothing matches: still nullable, columns as declared
+      const setof = only(plan(catalog, '/users?select=username,function_using_setof_rows_one(*)'))
+      expect(verdict(setof)).toEqual([
+        'function_using_setof_rows_one',
+        'one',
+        true,
+        'computed',
+        false,
+      ])
+      expect(names(setof.shape.fields)).toEqual([
+        ['id', 'int8', false],
+        ['username', 'text', true],
+      ])
     })
 
     it('makes !inner non-null, and a filter, offset or limit of 0 on a left join nullable', () => {
