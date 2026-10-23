@@ -129,6 +129,31 @@ describe('tsc 7.1 with the content mapper', () => {
     expect(result.output).toContain("'number' is not assignable to type 'string'")
   }, 180_000)
 
+  it('types an rpc chain and a filter operand from the planned entries', async () => {
+    const files = (usage: string[]) => ({
+      ...INDEX,
+      'src/app.ts': [
+        ...CLIENT,
+        "export const q = supabase.rpc('function_returning_set_of_rows').select('username, messages(id, message)').eq('messages.message', 'x')",
+        "export const s = supabase.rpc('get_status', { name_param: 'x' })",
+        'export async function run() {',
+        '  const { data, error } = await q',
+        '  if (error) return',
+        '  const name: string | null = data[0]!.username',
+        '  const id: number = data[0]!.messages[0]!.id',
+        '  const status = (await s).data',
+        ...usage,
+        '  return [name, id, status]',
+        '}',
+      ].join('\n'),
+    })
+    expect(await check({ files: files([]) })).toEqual({ status: 0, output: '' })
+
+    const wrong = await check({ files: files(['  const bad: number = (await s).data']) })
+    expect(wrong.status).toBe(2)
+    expect(wrong.output).toContain('src/app.ts(11,9): error TS2322')
+  }, 180_000)
+
   it('rejects a select the planner rejected', async () => {
     const result = await check({
       files: {

@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import type { ResultShape, ShapeField } from '@supabase/postgrest-planner'
 import type { SchemaFs } from '../schema'
 import type { TracedColumn } from '../tracer'
+import type { CallPlan } from '../printer'
 import type { DatabasePlanContext } from './database'
 
 /** Bump when the layout of the cache file changes. */
@@ -10,9 +11,13 @@ export const CACHE_FORMAT = 1
 /** Where the cache lives, relative to the project directory (design v4 §5). */
 export const CACHE_DIRECTORY = ['node_modules', '.cache', 'postgrest-mapper']
 
-/** What the planner said about one key: its shape, or why it rejected the request. */
+/**
+ * What the planner said about one key: the shape of a select, what the printer reads of an rpc call or an operand
+ * request (`call`), or why it rejected the request.
+ */
 export type StoredPlan =
   | { shape: ResultShape; degraded: string[] }
+  | { call: CallPlan }
   | { error: string; code: string | null }
 
 /** `DatabasePlanContext` as JSON. */

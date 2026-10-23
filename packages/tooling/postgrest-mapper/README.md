@@ -168,9 +168,9 @@ const { text, identity, watchedFiles, diagnostics, optionDiagnostics, keys, cach
 Steps of one `generate`:
 
 1. **Files**: `resolveProjectFiles` reads the tsconfig (`files`, `include`, `exclude`, `extends`; JSONC) and keeps the TypeScript/JavaScript sources, or the files matching `options.scan`.
-2. **Scan** the files for builder chains (`scanFiles`) and **derive keys** (`planKeysOf`). A key is `${kind}|${schema}|${relation}|${select}` where `kind` is `r` for reads and `w` for mutations followed by `.select()`, and `select` is the string as written, not normalised, exactly what the consumer's lookup builds. The planner request carries `normalizeSelect(select)` (whitespace removed outside double quotes), which is what postgrest-js sends. A bare `*` select has no entry (the consumer derives it from `SupabaseDatabase`). A chain that may live in several schemas gets a key per candidate schema; a relation missing from one of them is not an error. Pairs the scanner could not connect to a chain are planned speculatively and printed only when they plan. RPC chains and operands have no keys yet.
+2. **Scan** the files for builder chains (`scanFiles`) and **derive keys** (`planKeysOf`). A key is `${kind}|${schema}|${relation}|${select}` where `kind` is `r` for reads and `w` for mutations followed by `.select()`, and `select` is the string as written, not normalised, exactly what the consumer's lookup builds. The planner request carries `normalizeSelect(select)` (whitespace removed outside double quotes), which is what postgrest-js sends. A bare `*` select has no entry (the consumer derives it from `SupabaseDatabase`). A chain that may live in several schemas gets a key per candidate schema; a relation missing from one of them is not an error. Pairs the scanner could not connect to a chain are planned speculatively and printed only when they plan. An RPC chain's key is `f|${schema}|${function}|${select}` (a bare `*` too: it dispatches the call) and carries neither the key set nor the method: those are the `calls` of the entry. An operand's key is the select's key plus `|${operand}`. Both are planned too, with one id each in `keys` and in the cache: `call|${schema}|${function}|${select}|${JSON keys}|${method}` per call, `op|${operand key}` per relation operand and `rpcop|${operand key}|${JSON keys}|${method}` per call of an RPC operand.
 3. **Schema**: acquired per `options.schema` (a snapshot is re-read on every run and watched; live sources are memoised per process). The schema id is the hash of the acquired schema.
-4. **Plan** the keys the cache lacks with `planMany` (`GET` with `Accept-Profile` for `r`; `POST` with body `{}`, `Content-Profile` and `Prefer: return=representation` for `w`). A planner failure becomes an `{ error }` entry (`CODE: message`, then `Hint: ...`), except a failure of a speculative pair, or a missing relation when the chain could be in several schemas, which are dropped. `HOST_*` failures are never cached.
+4. **Plan** the keys the cache lacks with `planMany` (`GET` with `Accept-Profile` for `r`; `POST` with body `{}`, `Content-Profile` and `Prefer: return=representation` for `w`; an RPC call is `POST /rpc/fn` with the key set as a JSON body or, for `GET` and `HEAD`, as query parameters; an operand is the select plus `operand=is.null`). A planner failure becomes an `{ error }` entry (`CODE: message`, then `Hint: ...`), except a failure of a speculative pair, or a missing relation when the chain could be in several schemas, which are dropped. `HOST_*` failures are never cached.
 5. **Print** `printSelects` + `printDatabase`, spliced by `printModule`.
 
 `identity` is the hash of the schema id, the sorted keys, `GENERATOR_REVISION`, the planner build, the options and `importFrom`: it changes when anything the text depends on changes, and only then. `watchedFiles` are the scanned files plus the snapshot.
@@ -190,9 +190,33 @@ Steps of one `generate`:
 
 A rejected key is `{ error: "PGRST200: Could not find a relationship ..." }`, which the consumer shows as the builder's error.
 
-**Cache**: `<projectDir>/node_modules/.cache/postgrest-mapper/postgrest-mapper-<first 32 hex of the schema id>.json`, one file per schema: `{ format, generator, planner, schema, context: { plans, traces, jsonSchemas, diagnostics }, entries: { [key]: { shape, degraded } | { error, code } } }`. A run whose keys are all cached (`cache: 'hit'`) starts no planner and loads no schema; with some keys cached the run is `'partial'` and plans the rest. A stale, unreadable or differently-versioned file is a miss.
+**Cache**: `<projectDir>/node_modules/.cache/postgrest-mapper/postgrest-mapper-<first 32 hex of the schema id>.json`, one file per schema: `{ format, generator, planner, schema, context: { plans, traces, jsonSchemas, diagnostics }, entries: { [id]: { shape, degraded } | { call: { form, shape, rpc, returns, filters, degraded } } | { error, code } } }`. A run whose keys are all cached (`cache: 'hit'`) starts no planner and loads no schema; with some keys cached the run is `'partial'` and plans the rest. A stale, unreadable or differently-versioned file is a miss.
 
-**Extension points for the RPC and operands slice**: RPC chains get `RawEntry` entries (`{ key, body }`, printed verbatim) in the list `printSelects` receives, built where `generate` assembles entries from planner results; `SupabaseOperands` text goes to the `operands` field `printModule` already takes, and its keys to the same cache `entries` map. Until then those chains get the consumer's `unplanned` behaviour (`options.unplanned`: `'loose'` or `'error'`).
+**RPC entries** (`printRpcEntry`): `{ calls: [...] }`, one call per (key set, method) the project sends, sorted. The key sets are the consumer's: the literal keys of the `args` object, plus (because the consumer also looks up the key sets of optional keys, or keys whose type includes `undefined`, left out) every strict subset that drops only keys some overload takes as optional; an `args` that is not an object literal is planned per overload (required keys plus every subset of up to 6 optional ones). Overloads are the planner's to resolve: an ambiguous key set (`PGRST203`) or one no function takes (`PGRST202`) is a call `{ keys, method, error }`; a failure of a subset the project does not send is dropped. A function no candidate schema defines gets no entry (the consumer reports it). A call is `{ keys, method, form, row, source }` plus, for a projected select, `sources` and `embeds`: `form` is `'rows'` (a table, a composite or a scalar returned as a set), `'single-row'` or `'single-scalar'`; `row` comes from the plan's `shape`, and for a scalar from the function's return type (`routine.returnType`, which the planner reports untyped): `T | null` for one value, `T` per element of a set, `null` for `void`. The root fields of a function's rows are nullable (`reason: 'function-rows'`) and typed by the column's own type, not its JSON Schema. `source` is the select-`*` plan of the same call (`never` for a scalar).
+
+```ts
+'f|public|function_returning_set_of_rows|username, messages(id)': {
+  calls: [
+    {
+      keys: never
+      method: 'POST'
+      form: 'rows'
+      row: { username: SupabaseColumnType<'public.users.username', string> | null; messages: { id: SupabaseColumnType<'public.messages.id', number> }[] }
+      source: { row: { ... }; sources: { ... } }
+      sources: { username: 'username' }
+      embeds: {
+        messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
+      }
+    },
+  ]
+}
+```
+
+**Operands** (`printOperands`, `interface SupabaseOperands`): the key of every filter or order operand the scanner reports that is not a plain column of the row (the consumer reads those from the builder's row), planned as `select=<select>&<operand>=is.null` and typed from the planner's `filters`: `{ type, embed? }` (`type` is `SupabaseColumnType<key, T>` of the column the filter reaches, through views; `PgrstJson` / `PgrstJsonText` of it for a JSON path; `embed` is the embed path of the column), `{ type: unknown; embed: [...] }` for a tested embed (`.not('channels', 'is', null)`), `{ error }` when the planner rejects the request. An RPC's entry is `{ calls: [{ keys, method, type, embed? } | { keys, method, error }] }`, one per call of the chain. An operand through a `referencedTable` option has no entry: its key is never looked up. A column the planner cannot resolve because the catalog does not describe it (a computed field, the columns of an RPC returning a table type) is `unknown`.
+
+```ts
+'r|public|messages|id, channels(id, slug)|channels.slug': { type: SupabaseColumnType<'public.channels.slug', string>; embed: ['channels'] }
+```
 
 ## Planner host and database declarations
 

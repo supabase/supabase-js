@@ -1,4 +1,7 @@
-export { printDatabase } from './database'
+export { printDatabase, routineSignatures } from './database'
+export type { RoutineSignature } from './database'
+export { callReturnsOf, printOperands, printRpcEntry } from './rpc'
+export type { CallOutcome, CallPlan, CallReturns, OperandInput, RpcCall } from './rpc'
 export { pgrstFeatures, printModule } from './module'
 export { createSelectsContext } from './selects-context'
 export type { SelectsContext, SelectsContextInput } from './selects-context'

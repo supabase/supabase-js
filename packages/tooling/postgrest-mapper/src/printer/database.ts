@@ -181,6 +181,43 @@ function matchParams(fn: SupplementaryFunction, dump: DumpFacts): DumpParam[] | 
   return typed.length === 1 ? typed[0] : undefined
 }
 
+/** The argument names of one overload of a function, as `SupabaseDatabase` prints them in `Args`. */
+export interface RoutineSignature {
+  /** Names the caller must pass: required members of `Args` (`''` is an unnamed argument) */
+  required: string[]
+  /** Members printed optional (`name?:`): a default value, or variadic */
+  optional: string[]
+}
+
+/**
+ * Every printed overload of every function, by `schema.function`: the same names and optionality `printDatabase`
+ * puts in `Args`, so the key sets the generator plans are the ones the consumer's `KeyMethods` enumerates.
+ */
+export function routineSignatures(
+  supplementary: Supplementary,
+  dumpText: string
+): Map<string, RoutineSignature[]> {
+  const dump = readDump(dumpText)
+  const out = new Map<string, RoutineSignature[]>()
+  for (const fn of supplementary.functions) {
+    if (fn.returns.type === 'trigger' || fn.returns.type === 'event_trigger') continue
+    const params = matchParams(fn, dump)
+    const seen = new Set<string>()
+    const signature: RoutineSignature = { required: [], optional: [] }
+    fn.argTypes.forEach((_, i) => {
+      const name = fn.argNames?.[i] ?? ''
+      if (seen.has(name)) return
+      seen.add(name)
+      ;(params && !params[i]!.required ? signature.optional : signature.required).push(name)
+    })
+    const k = qualified(fn.schema, fn.name)
+    const list = out.get(k) ?? []
+    list.push(signature)
+    out.set(k, list)
+  }
+  return out
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Printing
 // ---------------------------------------------------------------------------------------------------------------

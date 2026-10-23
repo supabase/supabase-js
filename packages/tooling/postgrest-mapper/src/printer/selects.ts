@@ -50,7 +50,7 @@ export function quote(value: string): string {
 }
 
 /** An object type key: bare when it is an identifier. */
-const memberName = (name: string): string => (IDENT.test(name) ? name : quote(name))
+export const memberName = (name: string): string => (IDENT.test(name) ? name : quote(name))
 
 /** `PGRST200: Could not find ...`, plus the planner's hint: what the consumer shows for a rejected select. */
 export function plannerErrorMessage(failure: PlannerError): string {
@@ -86,7 +86,7 @@ function isCompound(ty: string): boolean {
 }
 
 const array = (ty: string): string => `${isCompound(ty) ? `(${ty})` : ty}[]`
-const orNull = (ty: string): string =>
+export const orNull = (ty: string): string =>
   /(^|\s)null$/.test(ty) && isCompound(ty) ? ty : `${ty} | null`
 
 /** What a spread does to the values it merges into its parent. */
@@ -120,22 +120,53 @@ function uniqueMembers(members: Member[]): Member[] {
 // ---------------------------------------------------------------------------------------------------------------
 
 /** Raised while typing a shape: becomes an `{ error }` entry. */
-class EntryError extends Error {}
+export class EntryError extends Error {}
 
-interface EmbedInfo {
+export interface EmbedInfo {
   path: string[]
   outputs: string[][]
   join: 'inner' | 'left'
   cardinality: 'one' | 'many'
 }
 
-interface PrintedShape {
+export interface PrintedShape {
   row: string
   sources: Member[]
   embeds: EmbedInfo[]
 }
 
-const tuple = (items: readonly string[]): string => `[${items.map(quote).join(', ')}]`
+export const tuple = (items: readonly string[]): string => `[${items.map(quote).join(', ')}]`
+
+/** The base column a (view) column passes through from, and its traced nullability */
+export function columnKeyOf(
+  context: SelectsContext,
+  source: { schema: string; relation: string; column: string }
+): { key: string; nullable?: boolean } {
+  const own = `${source.schema}.${source.relation}.${source.column}`
+  const traced = context.traces.get(`${source.schema}.${source.relation}`)?.get(source.column)
+  if (!traced) return { key: own }
+  const origin = traced.source
+  return {
+    key: origin ? `${origin.schema}.${origin.relation}.${origin.column}` : own,
+    nullable: traced.nullable,
+  }
+}
+
+/**
+ * The type of a column: its JSON Schema derived type when it has one, else the type mapping of its Postgres type.
+ * `bypassSchema` is for the rows of a function, which can hold values the table's CHECK constraints would refuse.
+ */
+export function derivedType(
+  context: SelectsContext,
+  columnKey: string,
+  pgType: string | null,
+  bypassSchema = false
+): string {
+  return (
+    (bypassSchema ? undefined : context.jsonSchemas.get(columnKey)) ??
+    (pgType === null ? 'unknown' : tsTypeOf(pgType, context.types))
+  )
+}
 
 class ShapePrinter {
   readonly embeds: EmbedInfo[] = []
@@ -190,11 +221,19 @@ class ShapePrinter {
   /** `sources`: root fields that are a stored column's value, so a filter fact on the column applies to them */
   private source(field: ShapeField): void {
     const prov = field.provenance
-    if (prov.kind !== 'plain' || field.pgType === null) return
+    const column =
+      prov.kind === 'plain'
+        ? prov.source.column
+        : prov.kind === 'outColumn'
+          ? prov.column
+          : prov.kind === 'compositeAttribute'
+            ? prov.attribute
+            : undefined
+    if (column === undefined || field.pgType === null) return
     const c = classifyType(field.pgType, this.context.types)
     if (c.kind === 'composite' || c.kind === 'relation') return
     if (c.kind === 'builtin' && (c.name === 'json' || c.name === 'jsonb')) return
-    this.sources.push({ name: field.name, type: quote(prov.source.column) })
+    this.sources.push({ name: field.name, type: quote(column) })
   }
 
   // -------------------------------------------------------------------------------------------------------------
@@ -209,13 +248,16 @@ class ShapePrinter {
       throw new EntryError(`\`${field.name}\`: ${prov.reason}`)
     }
     this.learnDomain(field)
+    // a function can return rows its table's constraints would refuse: no JSON Schema type, always nullable
+    const functionRows = field.reason === 'function-rows'
     if (prov.kind === 'plain') {
       const k = this.columnKey(prov.source)
-      const derived = this.derived(k.key, field.pgType)
-      return `SupabaseColumnType<${quote(k.key)}, ${derived}>${(k.nullable ?? field.nullable) ? ' | null' : ''}`
+      const derived = this.derived(k.key, field.pgType, functionRows)
+      const nullable = functionRows || (k.nullable ?? field.nullable)
+      return `SupabaseColumnType<${quote(k.key)}, ${derived}>${nullable ? ' | null' : ''}`
     }
     if (prov.kind === 'jsonPath') {
-      const path = this.jsonPath(prov)
+      const path = this.jsonPath(prov, functionRows)
       if (path !== undefined) return path
     }
     // cast, aggregate, computed, representation: the value is computed, nothing of the column's type is left
@@ -229,38 +271,28 @@ class ShapePrinter {
     }
   }
 
-  /** The base column a (view) column passes through from, and its traced nullability */
   private columnKey(source: { schema: string; relation: string; column: string }): {
     key: string
     nullable?: boolean
   } {
-    const own = `${source.schema}.${source.relation}.${source.column}`
-    const traced = this.context.traces
-      .get(`${source.schema}.${source.relation}`)
-      ?.get(source.column)
-    if (!traced) return { key: own }
-    const origin = traced.source
-    return {
-      key: origin ? `${origin.schema}.${origin.relation}.${origin.column}` : own,
-      nullable: traced.nullable,
-    }
+    return columnKeyOf(this.context, source)
   }
 
-  private derived(columnKey: string, pgType: string | null): string {
-    return (
-      this.context.jsonSchemas.get(columnKey) ??
-      (pgType === null ? 'unknown' : tsTypeOf(pgType, this.context.types))
-    )
+  private derived(columnKey: string, pgType: string | null, bypassSchema = false): string {
+    return derivedType(this.context, columnKey, pgType, bypassSchema)
   }
 
   /** `data->a->>b`: the indexed value, typed against the column's own (possibly JSON Schema derived) type */
-  private jsonPath(prov: Extract<FieldProvenance, { kind: 'jsonPath' }>): string | undefined {
+  private jsonPath(
+    prov: Extract<FieldProvenance, { kind: 'jsonPath' }>,
+    functionRows = false
+  ): string | undefined {
     if (prov.of.kind !== 'plain' || prov.path.length === 0) return undefined
     const source = prov.of.source
     const star = this.context.plans.get(`${source.schema}.${source.relation}`)
     const column = star?.find((f) => f.name === source.column)
     const k = this.columnKey(source)
-    const columnType = `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, column?.pgType ?? 'jsonb')}>`
+    const columnType = `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, column?.pgType ?? 'jsonb', functionRows)}>`
     const steps = prov.path.map((s) => ('key' in s ? s.key : String(s.index)))
     const last = prov.path[prov.path.length - 1]!
     const helper = last.op === '->>' ? 'PgrstJsonText' : 'PgrstJson'
@@ -268,9 +300,30 @@ class ShapePrinter {
   }
 }
 
-/** The row, sources and embeds of a planned entry. Throws `EntryError` for a shape that cannot be typed. */
-function printShape(context: SelectsContext, entry: PlannedEntry): PrintedShape {
-  return new ShapePrinter(context, entry.degraded ?? []).print(entry.shape)
+/** The row, sources and embeds of a shape. Throws `EntryError` for a shape that cannot be typed. */
+export function printResultShape(
+  context: SelectsContext,
+  shape: ResultShape,
+  degraded: readonly string[] = []
+): PrintedShape {
+  return new ShapePrinter(context, degraded).print(shape)
+}
+
+/** `{ id: 'id'; ... }`: the `sources` of an entry, `{}` for none. */
+export function printSources(sources: readonly { name: string; type: string }[]): string {
+  return sources.length === 0
+    ? '{}'
+    : `{ ${sources.map((s) => `${memberName(s.name)}: ${s.type}`).join('; ')} }`
+}
+
+/** The `embeds` of an entry, `{}` for none; `indent` is the indentation of the line the object opens on plus 2. */
+export function printEmbeds(embeds: readonly EmbedInfo[], indent: string): string {
+  if (embeds.length === 0) return '{}'
+  const lines = embeds.map(
+    (e) =>
+      `${indent}  ${memberName(e.path.join('.'))}: { path: ${tuple(e.path)}; outputs: [${e.outputs.map(tuple).join(', ')}]; join: ${quote(e.join)}; cardinality: ${quote(e.cardinality)} }`
+  )
+  return `{\n${lines.join('\n')}\n${indent}}`
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -284,27 +337,18 @@ function printEntry(key: string, body: string): string {
 function printPlanned(context: SelectsContext, entry: PlannedEntry): string | EntryError {
   let printed: PrintedShape
   try {
-    printed = printShape(context, entry)
+    printed = printResultShape(context, entry.shape, entry.degraded ?? [])
   } catch (error) {
     if (error instanceof EntryError) return error
     throw error
   }
-  const sources =
-    printed.sources.length === 0
-      ? '{}'
-      : `{ ${printed.sources.map((s) => `${memberName(s.name)}: ${s.type}`).join('; ')} }`
-  const embeds =
-    printed.embeds.length === 0
-      ? '{}'
-      : `{\n${printed.embeds
-          .map(
-            (e) =>
-              `        ${memberName(e.path.join('.'))}: { path: ${tuple(e.path)}; outputs: [${e.outputs.map(tuple).join(', ')}]; join: ${quote(e.join)}; cardinality: ${quote(e.cardinality)} }`
-          )
-          .join('\n')}\n      }`
   return printEntry(
     entry.key,
-    [`      row: ${printed.row}`, `      sources: ${sources}`, `      embeds: ${embeds}`].join('\n')
+    [
+      `      row: ${printed.row}`,
+      `      sources: ${printSources(printed.sources)}`,
+      `      embeds: ${printEmbeds(printed.embeds, '      ')}`,
+    ].join('\n')
   )
 }
 

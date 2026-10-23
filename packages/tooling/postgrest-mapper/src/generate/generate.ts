@@ -12,28 +12,50 @@ import type {
 import type { MapperDiagnostic, OptionDiagnostic } from '../content-mapper/protocol'
 import { HOST_ERROR, createPlannerHost } from '../host'
 import type { PlannerHost } from '../host'
-import { createSelectsContext, plannerErrorMessage, printModule, printSelects } from '../printer'
-import type { PrintDiagnostic, SelectsEntry } from '../printer'
-import { scanFiles } from '../index'
+import {
+  callReturnsOf,
+  createSelectsContext,
+  plannerErrorMessage,
+  printModule,
+  printOperands,
+  printRpcEntry,
+  printSelects,
+  routineSignatures,
+} from '../printer'
+import type { CallOutcome, OperandInput, PrintDiagnostic, RpcCall, SelectsEntry } from '../printer'
+import { scanFiles } from '../scanner'
 import { SchemaAcquisitionError, acquireSchema, exposedSchemas } from '../schema'
 import { defaultFs } from '../schema/snapshot'
 import type { AcquiredSchema, SchemaDeps, SchemaFs, SchemaSource } from '../schema'
 import { createTracer } from '../tracer'
 import type { Tracer } from '../tracer'
-import { cacheDirectoryOf, createPlanCache, deserializeContext, serializeContext } from './cache'
+import {
+  CACHE_FORMAT,
+  cacheDirectoryOf,
+  createPlanCache,
+  deserializeContext,
+  serializeContext,
+} from './cache'
 import type { CacheFile, PlanCache, StoredPlan } from './cache'
 import { planDatabase, printDatabaseMembers } from './database'
 import type { DatabasePlanContext } from './database'
 import { nodeProjectFs, resolveProjectFiles, displayPath } from './project'
 import type { ProjectFs } from './project'
-import { planKeysOf, planRequestOf } from './requests'
-import type { PlanKey } from './requests'
+import {
+  callIdOf,
+  operandRequestOf,
+  planKeysOf,
+  planOperandsOf,
+  planRequestOf,
+  planRpcOf,
+  rpcRequestOf,
+} from './requests'
 
 /**
  * Bump when what the cache stores, or what the printer prints from it, changes. It is part of the identity and of
  * the cache validity, so the TypeScript server and the disk cache both see a new generator as a new input.
  */
-export const GENERATOR_REVISION = 1
+export const GENERATOR_REVISION = 2
 
 export interface GeneratorLogger {
   debug(message: string): void
@@ -76,7 +98,10 @@ export interface GeneratorDeps {
 export type CacheOutcome = 'hit' | 'partial' | 'miss' | 'disabled'
 
 export interface GenerateOutput extends GenerateProjectResult {
-  /** Keys planned for (`SupabaseSelects` entries before the ones dropped as speculative) */
+  /**
+   * What was planned: the `SupabaseSelects` keys of relation chains before the ones dropped as speculative, and an id
+   * per rpc call and per operand request
+   */
   keys: string[]
   cache: CacheOutcome
 }
@@ -93,6 +118,16 @@ const EMPTY_MODULE = 'export {}\n'
 
 const byKey = (a: { key: string }, b: { key: string }): number =>
   a.key < b.key ? -1 : a.key > b.key ? 1 : 0
+
+/**
+ * One request to plan. `select`: a relation's `SupabaseSelects` entry, stored with its shape; `call`: an rpc call, stored
+ * with everything the printer reads of it; `operand`: an operand request, stored with its filters only.
+ */
+interface PlanItem {
+  id: string
+  request: PlanRequest
+  kind: 'select' | 'call' | 'operand'
+}
 
 interface SchemaOk {
   ok: true
@@ -262,16 +297,16 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
   const plan = async (
     acquired: AcquiredSchema,
     schemaId: string,
-    keys: PlanKey[],
+    keys: PlanItem[],
     cache: PlanCache | undefined
   ): Promise<Planned | { failure: string }> => {
     const cached = await cache?.read(schemaId)
     const entries = new Map<string, StoredPlan>()
     for (const k of keys) {
-      const stored = cached?.entries[k.key]
-      if (stored) entries.set(k.key, stored)
+      const stored = cached?.entries[k.id]
+      if (stored) entries.set(k.id, stored)
     }
-    const missing = keys.filter((k) => !entries.has(k.key))
+    const missing = keys.filter((k) => !entries.has(k.id))
     let context = cached ? deserializeContext(cached.context) : undefined
     if (context && missing.length === 0) {
       logger.debug(`cache hit: ${keys.length} keys of schema ${schemaId.slice(0, 12)}`)
@@ -313,31 +348,41 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       }
       if (missing.length > 0) {
         logger.debug(`planning ${missing.length} of ${keys.length} keys`)
-        const requests: PlanRequest[] = missing.map(planRequestOf)
-        const results = await h.planMany(requests)
+        const results = await h.planMany(missing.map((k) => k.request))
         missing.forEach((k, i) => {
           const result = results[i]!
           if (hostFailure(result)) {
-            failures.push(`${k.key}: ${plannerErrorMessage(result as never)}`)
+            failures.push(`${k.id}: ${plannerErrorMessage(result as never)}`)
             return
           }
           if (!result.ok) {
-            entries.set(k.key, {
+            entries.set(k.id, {
               error: plannerErrorMessage(result),
               code: typeof result.error.code === 'string' ? result.error.code : null,
             })
-          } else if (!result.shape) {
-            entries.set(k.key, {
-              error: 'the planner returned no result shape for this select',
-              code: null,
-            })
+          } else if (k.kind === 'select') {
+            entries.set(
+              k.id,
+              result.shape
+                ? { shape: result.shape, degraded: result.degraded ?? [] }
+                : { error: 'the planner returned no result shape for this select', code: null }
+            )
           } else {
-            entries.set(k.key, { shape: result.shape, degraded: result.degraded ?? [] })
+            entries.set(k.id, {
+              call: {
+                form: result.form ?? null,
+                shape: k.kind === 'call' ? (result.shape ?? null) : null,
+                rpc: k.kind === 'call' ? (result.rpc ?? null) : null,
+                returns: k.kind === 'call' ? callReturnsOf(result.routine) : null,
+                filters: k.kind === 'operand' ? (result.filters ?? []) : [],
+                degraded: result.degraded ?? [],
+              },
+            })
           }
         })
       }
       const file: CacheFile = {
-        format: 1,
+        format: CACHE_FORMAT,
         generator: GENERATOR_REVISION,
         planner: await plannerStamp(),
         schema: schemaId,
@@ -417,9 +462,22 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
           : exposedSchemas(acquired.config),
       }
     )
-    const keys = planKeysOf(scan)
+    const signatures = routineSignatures(acquired.supplementary, acquired.dump)
+    const selectKeys = planKeysOf(scan)
+    const rpcKeys = planRpcOf(scan, signatures)
+    const operandKeys = planOperandsOf(scan, signatures)
+    const items: PlanItem[] = [
+      ...selectKeys.map((k) => ({ id: k.key, request: planRequestOf(k), kind: 'select' as const })),
+      ...rpcKeys.map((k) => ({ id: k.id, request: rpcRequestOf(k), kind: 'call' as const })),
+      ...operandKeys.map((k) => ({
+        id: k.id,
+        request: operandRequestOf(k),
+        kind: 'operand' as const,
+      })),
+    ]
+    const ids = items.map((k) => k.id).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
     logger.debug(
-      `scanned ${resolved.files.length} files: ${keys.length} keys, ${scan.unresolved.length} unresolved uses`
+      `scanned ${resolved.files.length} files: ${selectKeys.length} selects, ${rpcKeys.length} rpc calls, ${operandKeys.length} operands, ${scan.unresolved.length} unresolved uses`
     )
     const watchedFiles = [...new Set([...resolved.files, ...schema.watched])].sort()
 
@@ -451,15 +509,15 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
 
     let planned: Awaited<ReturnType<typeof plan>>
     try {
-      planned = await plan(acquired, schema.id, keys, cache)
+      planned = await plan(acquired, schema.id, items, cache)
     } catch (error) {
       logger.warn(`planning failed: ${messageOf(error)}`)
       report(DiagnosticCode.PlannerUnavailable, `the planner failed: ${messageOf(error)}`)
-      return { ...empty(messageOf(error), watchedFiles), keys: keys.map((k) => k.key) }
+      return { ...empty(messageOf(error), watchedFiles), keys: ids }
     }
     if ('failure' in planned) {
       report(DiagnosticCode.PlannerUnavailable, planned.failure)
-      return { ...empty(planned.failure, watchedFiles), keys: keys.map((k) => k.key) }
+      return { ...empty(planned.failure, watchedFiles), keys: ids }
     }
     for (const failure of planned.failures) {
       report(DiagnosticCode.PlannerUnavailable, `the planner could not plan ${failure}`)
@@ -479,9 +537,9 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       ...(importFrom ? { importFrom } : {}),
     })
     const entries: SelectsEntry[] = []
-    for (const k of keys) {
+    for (const k of selectKeys) {
       const stored = planned.entries.get(k.key)
-      if (!stored) continue
+      if (!stored || 'call' in stored) continue
       if ('shape' in stored) {
         entries.push({ key: k.key, shape: stored.shape, degraded: stored.degraded })
       } else if (k.speculative) {
@@ -493,10 +551,81 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       }
     }
     entries.sort(byKey)
+
+    // ---- rpc entries and operands
+    const outcomeOf = (id: string): CallOutcome | undefined => {
+      const stored = planned.entries.get(id)
+      if (!stored) return undefined
+      if ('call' in stored) return { plan: stored.call }
+      if ('error' in stored) return { error: stored.error }
+      return undefined
+    }
+    const codeOf = (id: string): string | null => {
+      const stored = planned.entries.get(id)
+      return stored && 'error' in stored ? stored.code : null
+    }
+    /** A failure the call has no entry for: a guessed key set, or a function of another schema of the candidates */
+    const dropped = (id: string, exact: boolean, schemaCount: number): boolean =>
+      !exact || (codeOf(id) === 'PGRST202' && schemaCount > 1)
+    const rootFieldsOf = (id: string): ReadonlySet<string> | undefined => {
+      const outcome = outcomeOf(id)
+      return outcome && 'plan' in outcome && outcome.plan.shape
+        ? new Set(outcome.plan.shape.fields.map((f) => f.name))
+        : undefined
+    }
+
+    const rpcEntries = new Map<string, { select: string; calls: RpcCall[] }>()
+    for (const k of rpcKeys) {
+      const outcome = outcomeOf(k.id)
+      if (!outcome || ('error' in outcome && dropped(k.id, k.exact, k.schemaCount))) continue
+      const group = rpcEntries.get(k.entry) ?? { select: k.select, calls: [] }
+      rpcEntries.set(k.entry, group)
+      group.calls.push({
+        keys: k.keys,
+        method: k.method,
+        outcome,
+        ...(k.select === '*' ? {} : { star: outcomeOf(callIdOf(k, '*')) }),
+      })
+    }
+    for (const [key, { select, calls }] of rpcEntries) {
+      const printed = printRpcEntry(context, key, select, calls)
+      if (printed) entries.push(printed)
+    }
+
+    const operands: OperandInput[] = []
+    const rpcOperands = new Map<string, { operand: string; calls: RpcCall[]; plain: boolean }>()
+    for (const k of operandKeys) {
+      const outcome = outcomeOf(k.id)
+      if (!outcome) continue
+      if (k.kind !== 'f') {
+        const columns = planned.context.plans.get(`${k.schema}.${k.relation}`)
+        if (columns?.some((f) => f.name === k.operand)) continue // a column of the row: the consumer reads the row
+        if ('error' in outcome) {
+          if (k.select !== '*' && 'error' in (outcomeOf(k.selectEntry) ?? {})) continue // the select reports it
+          if (codeOf(k.id) === 'PGRST205' && k.schemaCount > 1) continue
+        }
+        operands.push({ key: k.entry, operand: k.operand, outcome })
+        continue
+      }
+      if ('error' in outcome) {
+        if (dropped(k.id, k.exact, k.schemaCount)) continue
+        if (k.select !== '*' && 'error' in (outcomeOf(callIdOf(k, k.select)) ?? {})) continue
+      }
+      const group = rpcOperands.get(k.entry) ?? { operand: k.operand, calls: [], plain: true }
+      rpcOperands.set(k.entry, group)
+      group.calls.push({ keys: k.keys, method: k.method, outcome })
+      if (!rootFieldsOf(callIdOf(k, '*'))?.has(k.operand)) group.plain = false
+    }
+    for (const [key, group] of rpcOperands) {
+      if (group.plain) continue // a column of every call's row: the consumer reads the row
+      operands.push({ key, operand: group.operand, calls: group.calls })
+    }
+
     const selects = printSelects(context, entries)
     const text = printModule({
       database: members.text,
       selects: selects.text,
+      operands: printOperands(context, operands),
       postgrestVersion: acquired.postgrestVersion,
       ...(options.unplanned ? { unplanned: options.unplanned } : {}),
       ...(importFrom ? { importFrom } : {}),
@@ -504,7 +633,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
 
     const identity = hashOptions({
       schema: schema.id,
-      keys: keys.map((k) => k.key),
+      keys: ids,
       generator: GENERATOR_REVISION,
       planner: stampValue,
       options,
@@ -516,7 +645,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       text,
       diagnostics,
       optionDiagnostics: [],
-      keys: keys.map((k) => k.key),
+      keys: ids,
       cache: planned.cache,
     }
   }
