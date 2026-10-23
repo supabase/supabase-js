@@ -1,7 +1,8 @@
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import type { Fetch } from './types/common/common'
 import { normalizeSelect } from './normalizeSelect'
-import type { Descs, MS, Q0, RB, Validate, WB } from './types/planner/lookup'
+import type { ColumnsArg, Selected } from './types/planner/distribute'
+import type { Descs, MS, Q0, RB, WB } from './types/planner/lookup'
 import type { MutM, MutOptions, ReadMethod, SelCount, SelectOptions } from './types/planner/options'
 import type { RejectExcessProperties } from './types/types'
 
@@ -897,14 +898,16 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
      * }
      * ```
        */
-  select<const Q extends string = '*', const O extends SelectOptions | undefined = {}>(
-    columns?: Validate<RB<S, R, Rel, Q0>, Q>,
-    // a rest tuple: an optional parameter would drop `undefined` from the inferred `O`, and a bag that may be absent is
-    // one more possible request
-    ...rest: [] | [options: O]
+  select<const Q extends string | undefined = '*', const O extends SelectOptions | undefined = {}>(
+    // rest tuples: an optional parameter would drop `undefined` from the inferred `Q` and `O`, and a select string or
+    // an option bag that may be absent is one more possible request
+    ...args:
+      | []
+      | [columns: ColumnsArg<RB<S, R, Rel, Q0>, Q>]
+      | [columns: ColumnsArg<RB<S, R, Rel, Q0>, Q>, options: O]
   ): PostgrestFilterBuilder<
-    RB<S, R, Rel, Q>,
-    Descs<RB<S, R, Rel, Q0>, Q>,
+    RB<S, R, Rel, Selected<Q>>,
+    Descs<RB<S, R, Rel, Q0>, Selected<Q>>,
     {},
     MS<ReadMethod<O>, true, 'many', 'default', 'json', false, SelCount<O>>
   >

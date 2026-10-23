@@ -2,18 +2,10 @@ import PostgrestBuilder from './PostgrestBuilder'
 import type PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import { normalizeSelect } from './normalizeSelect'
 import type { InvalidMethodError } from './PostgrestFilterBuilder'
+import type { ColumnsArg, Selected } from './types/planner/distribute'
 import type { Gate, HasRef, RefFacts } from './types/planner/facts'
 import type { PgrstFeature } from './types/planner/globals'
-import type {
-  BS,
-  BState,
-  ColArg,
-  Desc,
-  Descs,
-  MState,
-  SetM,
-  Validate,
-} from './types/planner/lookup'
+import type { BS, BState, ColArg, Desc, Descs, MState, SetM } from './types/planner/lookup'
 import type {
   KeepHead,
   OrCount,
@@ -106,14 +98,13 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
-  select<const Q extends string = '*', const O extends SelectOptions | undefined = {}>(
-    columns?: Validate<B, Q>,
-    // a rest tuple: an optional parameter would drop `undefined` from the inferred `O`, and a bag that may be absent is
-    // one more possible request
-    ...rest: [] | [options: O]
+  select<const Q extends string | undefined = '*', const O extends SelectOptions | undefined = {}>(
+    // rest tuples: an optional parameter would drop `undefined` from the inferred `Q` and `O`, and a select string or
+    // an option bag that may be absent is one more possible request
+    ...args: [] | [columns: ColumnsArg<B, Q>] | [columns: ColumnsArg<B, Q>, options: O]
   ): PostgrestFilterBuilder<
-    BS<B['k'], B['s'], B['r'], B['row'], B['st'], Q, B['km']>,
-    Descs<B, Q>,
+    BS<B['k'], B['s'], B['r'], B['row'], B['st'], Selected<Q>, B['km']>,
+    Descs<B, Selected<Q>>,
     F,
     SetM<M, { op: SelOp<B, M, O>; ret: true; count: OrCount<M['count'], SelCount<O>> }>
   >
