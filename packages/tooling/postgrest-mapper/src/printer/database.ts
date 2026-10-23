@@ -4,13 +4,12 @@ import type { TracedColumn } from '../tracer'
 import { relationKey } from '../keys'
 import { memberName as key, quote } from './literal'
 import {
+  canonicalType,
   classifyType,
-  normalizeType,
   rememberDomain,
   rowTypeOf,
   tsTypeOf,
   type TypeContext,
-  baseName,
 } from './pg-types'
 import type { PrintDatabaseInput, PrintDatabaseResult, PrintDiagnostic } from './types'
 
@@ -159,12 +158,6 @@ function readDump(text: string): DumpFacts {
     }
   }
   return facts
-}
-
-/** Type name without schema and modifiers, for comparing the dump's spelling with the catalog's. */
-function canonicalType(type: string): string {
-  const n = normalizeType(type)
-  return baseName(n.name) + '[]'.repeat(n.dims)
 }
 
 /** The dump's parameters of a catalog function, when exactly one overload matches by arity, names and types. */

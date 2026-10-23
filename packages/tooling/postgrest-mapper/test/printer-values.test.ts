@@ -214,6 +214,7 @@ export type One = Expect<Equal<F['one']['Returns'], number | null>>
       form: 'setof-scalar',
       shape: null,
       rpc: null,
+      routine: null,
       returns: { kind: 'scalar', multiplicity: 'setof', type: 'int4' },
       filters: [],
       degraded: [],

@@ -7,8 +7,10 @@ import type {
 } from '@supabase/postgrest-planner'
 import { relationKey } from '../keys'
 import { memberName, quote, quoteDouble } from './literal'
-import { classifyType, rememberDomain, tsTypeOf } from './pg-types'
+import type { FunctionRows } from './function-rows'
+import { classifyType, isJsonType, rememberDomain, tsTypeOf } from './pg-types'
 import type { SelectsContext } from './selects-context'
+import type { TracedColumn } from '../tracer'
 
 /** A planned key: the result shape the planner gave for it. */
 export interface PlannedEntry {
@@ -166,7 +168,8 @@ class ShapePrinter {
 
   constructor(
     private readonly context: SelectsContext,
-    private readonly degraded: readonly string[]
+    private readonly degraded: readonly string[],
+    private readonly rows?: FunctionRows
   ) {}
 
   print(shape: ResultShape): PrintedShape {
@@ -182,7 +185,7 @@ class ShapePrinter {
   private members(shape: ResultShape, ops: readonly SpreadOp[], root: boolean): Member[] {
     const members: Member[] = []
     for (const field of shape.fields) {
-      const member: Member = { name: field.name, type: applyOps(this.leaf(field), ops) }
+      const member: Member = { name: field.name, type: applyOps(this.leaf(field, root), ops) }
       const column = root ? this.sourceColumn(field) : undefined
       if (column !== undefined) member.column = column
       members.push(member)
@@ -195,25 +198,64 @@ class ShapePrinter {
         join: embed.join,
         cardinality: embed.cardinality,
       })
+      const nullable = root ? this.embedNullable(embed) : embed.nullable
       if (embed.spread) {
         const op: SpreadOp | undefined =
-          embed.cardinality === 'many' ? 'array' : embed.nullable ? 'null' : undefined
+          embed.cardinality === 'many' ? 'array' : nullable ? 'null' : undefined
         members.push(...this.members(embed.shape, op ? [...ops, op] : ops, false))
         continue
       }
       members.push({
         name: embed.key ?? embed.alias ?? embed.name,
-        type: applyOps(this.embed(embed), ops),
+        type: applyOps(this.embed(embed, nullable), ops),
       })
     }
     return members
   }
 
   /** The value of a plain embed: an object, an array of them, nullable per the planner. */
-  private embed(embed: ShapeEmbed): string {
+  private embed(embed: ShapeEmbed, nullable: boolean): string {
     const object = inlineObject(uniqueMembers(this.members(embed.shape, [], false)))
-    if (embed.cardinality === 'many') return embed.nullable ? orNull(array(object)) : array(object)
-    return embed.nullable ? orNull(object) : object
+    if (embed.cardinality === 'many') return nullable ? orNull(array(object)) : array(object)
+    return nullable ? orNull(object) : object
+  }
+
+  /**
+   * Whether a to-one embed of the root can be null. The planner makes it so for the rows of a function, whatever the
+   * key proves (`function-rows`): the function can return a row the key does not hold for. A set returned by a
+   * `STABLE` or `IMMUTABLE` function runs on the snapshot of the statement, so when the trace proves every key column
+   * is a stored one of the table that declares the key (design v5 section 4.3), the parent row exists.
+   */
+  private embedNullable(embed: ShapeEmbed): boolean {
+    const { rows } = this
+    const relationship = embed.relationship
+    if (
+      !rows?.setof ||
+      !rows.snapshot ||
+      !rows.table ||
+      !embed.nullable ||
+      embed.reason !== 'function-rows' ||
+      !embed.fkProven ||
+      embed.cardinality !== 'one' ||
+      embed.join !== 'left' ||
+      relationship?.fkSide !== 'origin' ||
+      // the columns of a composite key must come from one stored row, which the trace does not say
+      relationship.columns.length !== 1 ||
+      hasInner(embed.shape)
+    ) {
+      return embed.nullable
+    }
+    const { from } = relationship.columns[0]!
+    const traced = rows.columns.get(from)
+    const origin = traced?.source
+    const proven =
+      traced !== undefined &&
+      !traced.nullable &&
+      origin !== undefined &&
+      origin.schema === rows.table.schema &&
+      origin.relation === rows.table.name &&
+      origin.column === from
+    return !proven
   }
 
   /** The stored column a root field is the value of, so a filter fact on the column applies to it */
@@ -238,7 +280,7 @@ class ShapePrinter {
   // Leaves
   // -------------------------------------------------------------------------------------------------------------
 
-  private leaf(field: ShapeField): string {
+  private leaf(field: ShapeField, root: boolean): string {
     const prov = field.provenance
     if (prov.kind === 'unresolved') {
       // Without a catalog the planner cannot tell a computed field from a missing column: stay honest, not wrong
@@ -247,15 +289,37 @@ class ShapePrinter {
     }
     this.learnDomain(field)
     if (prov.kind === 'plain') {
-      // a function can return rows its table's constraints would refuse: no JSON Schema type, always nullable
+      // a function can return rows its table's constraints would refuse: no JSON Schema type, always nullable,
+      // unless the trace of its body proves the column
       const functionRows = prov.functionRows === true
-      const k = this.columnKey(prov.source)
-      const derived = this.derived(k.key, field.pgType, functionRows)
-      const nullable = functionRows || (k.nullable ?? field.nullable)
+      const traced = root && functionRows ? this.traced(prov.source.column) : undefined
+      const k = this.columnKey(prov.source, traced?.source)
+      const bypass = functionRows && (traced?.source === undefined || !this.isJson(field.pgType))
+      const derived = this.derived(k.key, field.pgType, bypass)
+      const nullable = traced
+        ? this.rowNullable(traced)
+        : functionRows || (k.nullable ?? field.nullable)
       return `SupabaseColumnType<${quote(k.key)}, ${derived}>${nullable ? ' | null' : ''}`
     }
+    if (prov.kind === 'outColumn' || prov.kind === 'compositeAttribute') {
+      // the rows of a function the trace of its body covers: a traced stored column keeps its identity
+      const traced = root
+        ? this.traced(prov.kind === 'outColumn' ? prov.column : prov.attribute)
+        : undefined
+      if (traced) {
+        const nullable = this.rowNullable(traced)
+        const origin = traced.source
+        if (origin) {
+          const key = `${origin.schema}.${origin.relation}.${origin.column}`
+          const derived = this.derived(key, field.pgType, !this.isJson(field.pgType))
+          return `SupabaseColumnType<${quote(key)}, ${derived}>${nullable ? ' | null' : ''}`
+        }
+        const ty = field.pgType === null ? 'unknown' : tsTypeOf(field.pgType, this.context.types)
+        return nullable ? orNull(ty) : ty
+      }
+    }
     if (prov.kind === 'jsonPath') {
-      const path = this.jsonPath(prov)
+      const path = this.jsonPath(prov, root)
       if (path !== undefined) return path
     }
     if (
@@ -266,12 +330,15 @@ class ShapePrinter {
       // the aggregated value itself (design v5 §5.3): what is known about the column and its path applies to it, the
       // planner's nullability stays outside
       if (prov.of.kind === 'plain') {
-        const k = this.columnKey(prov.of.source)
-        const derived = this.derived(k.key, field.pgType, prov.of.functionRows === true)
+        const functionRows = prov.of.functionRows === true
+        const traced = root && functionRows ? this.traced(prov.of.source.column) : undefined
+        const k = this.columnKey(prov.of.source, traced?.source)
+        const bypass = functionRows && (traced?.source === undefined || !this.isJson(field.pgType))
+        const derived = this.derived(k.key, field.pgType, bypass)
         return `SupabaseColumnType<${quote(k.key)}, ${derived}>${field.nullable ? ' | null' : ''}`
       }
       if (prov.of.kind === 'jsonPath') {
-        const path = this.jsonPath(prov.of)
+        const path = this.jsonPath(prov.of, root)
         if (path !== undefined) return path
       }
     }
@@ -280,16 +347,35 @@ class ShapePrinter {
     return field.nullable ? orNull(ty) : ty
   }
 
+  /** What the trace of the function body says about its output column, when there is a trace and the field is of the root. */
+  private traced(column: string): TracedColumn | undefined {
+    return this.rows ? (this.rows.columns.get(column) ?? { nullable: true }) : undefined
+  }
+
+  /** A single composite can be a null one, expanded to a row of nulls: every field of it is nullable whatever the trace says. */
+  private rowNullable(traced: TracedColumn): boolean {
+    return !this.rows?.setof || traced.nullable
+  }
+
+  private isJson(pgType: string | null): boolean {
+    return pgType !== null && isJsonType(pgType, this.context.types)
+  }
+
   private learnDomain(field: ShapeField): void {
     if (field.pgType && field.baseType && field.baseType !== field.pgType) {
       rememberDomain(this.context.domains, field.pgType, field.baseType)
     }
   }
 
-  private columnKey(source: { schema: string; relation: string; column: string }): {
+  /** The key of a column: the stored column the trace of a function body found, else what the view traces say. */
+  private columnKey(
+    source: { schema: string; relation: string; column: string },
+    stored?: { schema: string; relation: string; column: string }
+  ): {
     key: string
     nullable?: boolean
   } {
+    if (stored) return { key: `${stored.schema}.${stored.relation}.${stored.column}` }
     return columnKeyOf(this.context, source)
   }
 
@@ -298,13 +384,19 @@ class ShapePrinter {
   }
 
   /** `data->a->>b`: the indexed value, typed against the column's own (possibly JSON Schema derived) type */
-  private jsonPath(prov: Extract<FieldProvenance, { kind: 'jsonPath' }>): string | undefined {
+  private jsonPath(
+    prov: Extract<FieldProvenance, { kind: 'jsonPath' }>,
+    root: boolean
+  ): string | undefined {
     if (prov.of.kind !== 'plain' || prov.path.length === 0) return undefined
     const source = prov.of.source
     const star = this.context.plans.get(relationKey(source.schema, source.relation))
     const column = star?.find((f) => f.name === source.column)
-    const k = this.columnKey(source)
-    const columnType = `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, column?.pgType ?? 'jsonb', prov.of.functionRows === true)}>`
+    const functionRows = prov.of.functionRows === true
+    const stored = root && functionRows ? this.traced(source.column)?.source : undefined
+    const k = this.columnKey(source, stored)
+    const bypass = functionRows && stored === undefined
+    const columnType = `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, column?.pgType ?? 'jsonb', bypass)}>`
     const steps = prov.path.map((s) => ('key' in s ? s.key : String(s.index)))
     const last = prov.path[prov.path.length - 1]!
     const helper = last.op === '->>' ? 'PgrstJsonText' : 'PgrstJson'
@@ -316,9 +408,15 @@ class ShapePrinter {
 export function printResultShape(
   context: SelectsContext,
   shape: ResultShape,
-  degraded: readonly string[] = []
+  degraded: readonly string[] = [],
+  rows?: FunctionRows
 ): PrintedShape {
-  return new ShapePrinter(context, degraded).print(shape)
+  return new ShapePrinter(context, degraded, rows).print(shape)
+}
+
+/** Whether a `!inner` embed is anywhere under the shape: it can drop the row the embed hangs from. */
+function hasInner(shape: ResultShape): boolean {
+  return shape.embeds.some((e) => e.join === 'inner' || hasInner(e.shape))
 }
 
 /** `{ id: 'id'; ... }`: the `sources` of an entry, `{}` for none. */

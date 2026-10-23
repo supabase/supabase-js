@@ -115,14 +115,14 @@ describe('JSON Schema of a CHECK constraint', () => {
     }
   }
 
-  // a function can return rows its table's CHECK would refuse, however the select reads them
+  // a function the tracer cannot read can return rows its table's CHECK would refuse, however the select reads them
   it('is not applied to a JSON path or an aggregate over the rows of a function', async () => {
     const text = await declarationsOf(
       `
       supabase.from('users').select('theme:data->>theme')
-      supabase.rpc('function_returning_set_of_rows').select('theme:data->>theme')
-      supabase.rpc('function_returning_set_of_rows').select('theme:data->theme')
-      supabase.rpc('function_returning_set_of_rows').select('latest:data->>theme.max()')
+      supabase.rpc('set_users_offline', { name_param: 'x' }).select('theme:data->>theme')
+      supabase.rpc('set_users_offline', { name_param: 'x' }).select('theme:data->theme')
+      supabase.rpc('set_users_offline', { name_param: 'x' }).select('latest:data->>theme.max()')
     `,
       withThemeCheck()
     )
@@ -132,9 +132,9 @@ describe('JSON Schema of a CHECK constraint', () => {
     expect(derived('r|public|users|theme:data->>theme')).toContain("'light' | 'dark'")
     // the rows of a function do not have to
     for (const key of [
-      'f|public|function_returning_set_of_rows|theme:data->>theme',
-      'f|public|function_returning_set_of_rows|theme:data->theme',
-      'f|public|function_returning_set_of_rows|latest:data->>theme.max()',
+      'f|public|set_users_offline|theme:data->>theme',
+      'f|public|set_users_offline|theme:data->theme',
+      'f|public|set_users_offline|latest:data->>theme.max()',
     ]) {
       expect(derived(key)).toBe('Json')
     }

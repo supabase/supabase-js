@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import type { ResultShape, ShapeField } from '@supabase/postgrest-planner'
 import type { SchemaFs } from '../schema'
-import type { TracedColumn } from '../tracer'
+import type { TracedColumn, TracedFunction } from '../tracer'
 import type { CallPlan } from '../printer'
 import type { DatabasePlanContext } from './database'
 
@@ -24,6 +24,7 @@ export type StoredPlan =
 export interface StoredContext {
   plans: [string, ShapeField[]][]
   traces: [string, [string, TracedColumn][]][]
+  functions: [string, TracedFunction[]][]
   jsonSchemas: [string, string][]
   diagnostics: { severity: 'info' | 'warning' | 'error'; message: string }[]
 }
@@ -53,6 +54,7 @@ export function serializeContext(
   return {
     plans: [...context.plans].map(([k, v]) => [k, [...v]]),
     traces: [...context.traces].map(([k, v]) => [k, [...v]]),
+    functions: [...context.functions],
     jsonSchemas: [...context.jsonSchemas],
     diagnostics,
   }
@@ -64,6 +66,7 @@ export function deserializeContext(
   return {
     plans: new Map(stored.plans),
     traces: new Map(stored.traces.map(([k, v]) => [k, new Map(v)])),
+    functions: new Map(stored.functions),
     jsonSchemas: new Map(stored.jsonSchemas),
     diagnostics: stored.diagnostics,
   }

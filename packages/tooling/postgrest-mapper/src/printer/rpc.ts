@@ -1,5 +1,6 @@
 import type { PlanFilter, PlanForm, ResultShape, RpcInfo } from '@supabase/postgrest-planner'
 import type { RpcMethod } from '../types'
+import { functionRowsOf } from './function-rows'
 import { quote, quoteDouble } from './literal'
 import { rememberDomain, tsTypeOf } from './pg-types'
 import type { SelectsContext } from './selects-context'
@@ -27,11 +28,18 @@ export interface CallReturns {
   type: string
 }
 
+/** The overload the planner chose, from `routine.params`: what tells it apart from the others of its name. */
+export interface CallRoutine {
+  params: { name: string; type: string }[]
+}
+
 /** The parts of a successful plan of an RPC call (or of an operand request) the printer reads. */
 export interface CallPlan {
   form: PlanForm | null
   shape: ResultShape | null
   rpc: RpcInfo | null
+  /** `null` for an operand request, and when the planner did not say */
+  routine: CallRoutine | null
   returns: CallReturns | null
   filters: PlanFilter[]
   degraded: string[]
@@ -71,6 +79,17 @@ export function callReturnsOf(routine: unknown): CallReturns | null {
   }
   const qualified = schema === '' || schema === 'pg_catalog' ? name : `${schema}.${name}`
   return { kind, multiplicity, type: qualified + '[]'.repeat(dims) }
+}
+
+/** `PlanSuccess.routine` (untyped in the planner) as the parameters of the overload. `null` when it does not say. */
+export function callRoutineOf(routine: unknown): CallRoutine | null {
+  if (!isRecord(routine) || !Array.isArray(routine['params'])) return null
+  const params: CallRoutine['params'] = []
+  for (const p of routine['params']) {
+    if (!isRecord(p) || typeof p['name'] !== 'string' || typeof p['type'] !== 'string') return null
+    params.push({ name: p['name'], type: p['type'] })
+  }
+  return { params }
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -121,7 +140,8 @@ function callMembers(
   }
   if (!plan.shape)
     throw new CallError(`the planner returned no result shape for this call${degradedNotes(plan)}`)
-  const printed = printResultShape(context, plan.shape, plan.degraded)
+  const rows = functionRowsOf(context, plan)
+  const printed = printResultShape(context, plan.shape, plan.degraded, rows)
   const members = [
     `form: ${plan.form === 'rowset' ? "'rows'" : "'single-row'"}`,
     `row: ${printed.row}`,
@@ -130,7 +150,12 @@ function callMembers(
   let starPrinted: ReturnType<typeof printResultShape> | undefined
   if (select === '*') starPrinted = printed
   else if (star && 'plan' in star && star.plan.shape) {
-    starPrinted = printResultShape(context, star.plan.shape, star.plan.degraded)
+    starPrinted = printResultShape(
+      context,
+      star.plan.shape,
+      star.plan.degraded,
+      functionRowsOf(context, star.plan)
+    )
   }
   members.push(
     starPrinted

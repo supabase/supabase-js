@@ -248,6 +248,12 @@ export function classifyType(type: string, ctx: TypeContext): ClassifiedType {
   return { kind: 'unknown', name, dims }
 }
 
+/** A type without schema and modifiers, for comparing two spellings of it (a dump's, a catalog's, the planner's). */
+export function canonicalType(type: string): string {
+  const n = normalizeType(type)
+  return baseName(n.name) + '[]'.repeat(n.dims)
+}
+
 /** Whether values of this type are JSON documents (`json`, `jsonb`, or a domain over them), any array depth aside. */
 export function isJsonType(type: string, ctx: TypeContext): boolean {
   const c = classifyType(type, ctx)

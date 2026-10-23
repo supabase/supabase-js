@@ -1582,8 +1582,8 @@ declare global {
           keys: never
           method: 'POST'
           form: 'rows'
-          row: { username: SupabaseColumnType<'public.users.username', string> | null; data: SupabaseColumnType<'public.users.data', Json> | null; age_range: SupabaseColumnType<'public.users.age_range', unknown> | null; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null; catchphrase: SupabaseColumnType<'public.users.catchphrase', unknown> | null }
-          source: { row: { username: SupabaseColumnType<'public.users.username', string> | null; data: SupabaseColumnType<'public.users.data', Json> | null; age_range: SupabaseColumnType<'public.users.age_range', unknown> | null; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null; catchphrase: SupabaseColumnType<'public.users.catchphrase', unknown> | null }; sources: { username: 'username'; age_range: 'age_range'; status: 'status'; catchphrase: 'catchphrase' } }
+          row: { username: SupabaseColumnType<'public.users.username', string>; data: SupabaseColumnType<'public.users.data', Json> | null; age_range: SupabaseColumnType<'public.users.age_range', unknown> | null; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null; catchphrase: SupabaseColumnType<'public.users.catchphrase', unknown> | null }
+          source: { row: { username: SupabaseColumnType<'public.users.username', string>; data: SupabaseColumnType<'public.users.data', Json> | null; age_range: SupabaseColumnType<'public.users.age_range', unknown> | null; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null; catchphrase: SupabaseColumnType<'public.users.catchphrase', unknown> | null }; sources: { username: 'username'; age_range: 'age_range'; status: 'status'; catchphrase: 'catchphrase' } }
         },
       ]
     }
@@ -1593,8 +1593,8 @@ declare global {
           keys: 'user_row'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.user_profiles.id', number> | null; username: SupabaseColumnType<'public.user_profiles.username', string> | null }
-          source: { row: { id: SupabaseColumnType<'public.user_profiles.id', number> | null; username: SupabaseColumnType<'public.user_profiles.username', string> | null }; sources: { id: 'id'; username: 'username' } }
+          row: { id: SupabaseColumnType<'public.user_profiles.id', number>; username: SupabaseColumnType<'public.user_profiles.username', string> | null }
+          source: { row: { id: SupabaseColumnType<'public.user_profiles.id', number>; username: SupabaseColumnType<'public.user_profiles.username', string> | null }; sources: { id: 'id'; username: 'username' } }
         },
       ]
     }
@@ -1644,8 +1644,8 @@ declare global {
           keys: 'active_user_row'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
         },
       ]
     }
@@ -1655,8 +1655,8 @@ declare global {
           keys: 'search_username'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
         },
       ]
     }
@@ -1667,7 +1667,7 @@ declare global {
           method: 'POST'
           form: 'rows'
           row: { message: SupabaseColumnType<'public.messages.message', string> | null; blurb_message: string | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
           sources: { message: 'message' }
         },
       ]
@@ -1678,15 +1678,15 @@ declare global {
           keys: 'channel_row'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
         },
         {
           keys: 'user_row'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
         },
       ]
     }
@@ -1696,8 +1696,8 @@ declare global {
           keys: 'search_username'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
         },
       ]
     }
@@ -1707,8 +1707,8 @@ declare global {
           keys: 'search_username'
           method: 'POST'
           form: 'rows'
-          row: { channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null; message: SupabaseColumnType<'public.messages.message', string> | null; users: { username: SupabaseColumnType<'public.users.username', string>; catchphrase: SupabaseColumnType<'public.users.catchphrase', unknown> | null } | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { channel_id: SupabaseColumnType<'public.messages.channel_id', number>; message: SupabaseColumnType<'public.messages.message', string> | null; users: { username: SupabaseColumnType<'public.users.username', string>; catchphrase: SupabaseColumnType<'public.users.catchphrase', unknown> | null } | null }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
           sources: { channel_id: 'channel_id'; message: 'message' }
           embeds: {
             users: { path: ['users']; outputs: [['users']]; join: 'left'; cardinality: 'one' }
@@ -1747,8 +1747,8 @@ declare global {
           keys: 'user_row'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
         },
       ]
     }
@@ -1799,8 +1799,8 @@ declare global {
           keys: 'user_row'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
         },
       ]
     }
@@ -1810,8 +1810,8 @@ declare global {
           keys: 'name_param'
           method: 'POST'
           form: 'rows'
-          row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }
-          source: { row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }; sources: { username: 'username'; status: 'status' } }
+          row: { username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }
+          source: { row: { username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }; sources: { username: 'username'; status: 'status' } }
         },
       ]
     }
@@ -1821,8 +1821,8 @@ declare global {
           keys: 'name_param'
           method: 'POST'
           form: 'rows'
-          row: { name: string | null }
-          source: { row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }; sources: { username: 'username'; status: 'status' } }
+          row: { name: SupabaseColumnType<'public.users.username', string> }
+          source: { row: { username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }; sources: { username: 'username'; status: 'status' } }
           sources: { name: 'username' }
         },
       ]
@@ -1833,8 +1833,8 @@ declare global {
           keys: 'name_param'
           method: 'POST'
           form: 'rows'
-          row: { status: SupabaseDatabase['public']['Enums']['user_status'] | null }
-          source: { row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }; sources: { username: 'username'; status: 'status' } }
+          row: { status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }
+          source: { row: { username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }; sources: { username: 'username'; status: 'status' } }
           sources: { status: 'status' }
         },
       ]
@@ -1846,7 +1846,7 @@ declare global {
           method: 'POST'
           form: 'rows'
           row: { status: string | null }
-          source: { row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }; sources: { username: 'username'; status: 'status' } }
+          source: { row: { username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }; sources: { username: 'username'; status: 'status' } }
         },
       ]
     }
@@ -1856,8 +1856,8 @@ declare global {
           keys: 'name_param'
           method: 'POST'
           form: 'rows'
-          row: { username: string | null }
-          source: { row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }; sources: { username: 'username'; status: 'status' } }
+          row: { username: SupabaseColumnType<'public.users.username', string> }
+          source: { row: { username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }; sources: { username: 'username'; status: 'status' } }
           sources: { username: 'username' }
         },
       ]
@@ -1868,8 +1868,8 @@ declare global {
           keys: 'name_param'
           method: 'POST'
           form: 'rows'
-          row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }
-          source: { row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }; sources: { username: 'username'; status: 'status' } }
+          row: { username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }
+          source: { row: { username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }; sources: { username: 'username'; status: 'status' } }
           sources: { username: 'username'; status: 'status' }
         },
       ]
@@ -1880,8 +1880,8 @@ declare global {
           keys: 'name_param'
           method: 'POST'
           form: 'rows'
-          row: { count: number; status: SupabaseDatabase['public']['Enums']['user_status'] | null }
-          source: { row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }; sources: { username: 'username'; status: 'status' } }
+          row: { count: number; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }
+          source: { row: { username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }; sources: { username: 'username'; status: 'status' } }
           sources: { status: 'status' }
         },
       ]
@@ -2018,29 +2018,29 @@ declare global {
           keys: 'cid'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
         },
         {
           keys: 'cid' | 'search'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
         },
         {
           keys: 'profile_id'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.user_profiles.id', number> | null; username: SupabaseColumnType<'public.user_profiles.username', string> | null }
-          source: { row: { id: SupabaseColumnType<'public.user_profiles.id', number> | null; username: SupabaseColumnType<'public.user_profiles.username', string> | null }; sources: { id: 'id'; username: 'username' } }
+          row: { id: SupabaseColumnType<'public.user_profiles.id', number>; username: SupabaseColumnType<'public.user_profiles.username', string> | null }
+          source: { row: { id: SupabaseColumnType<'public.user_profiles.id', number>; username: SupabaseColumnType<'public.user_profiles.username', string> | null }; sources: { id: 'id'; username: 'username' } }
         },
         {
           keys: 'user_row'
           method: 'POST'
           form: 'rows'
-          row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }
-          source: { row: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
+          row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }
+          source: { row: { id: SupabaseColumnType<'public.messages.id', number>; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string>; channel_id: SupabaseColumnType<'public.messages.channel_id', number> }; sources: { id: 'id'; message: 'message'; username: 'username'; channel_id: 'channel_id' } }
         },
       ]
     }

@@ -19,6 +19,22 @@ export interface TracedColumn {
   reason?: string
 }
 
+/**
+ * What the tracer proved about the rows of one single-query `LANGUAGE sql` function (design v5 §4.3), kept per
+ * overload next to the traces of the views. Only a function whose body was traced is kept.
+ */
+export interface TracedFunction {
+  /** The input argument names, `''` for an unnamed one: with `argTypes`, what tells the overloads of a name apart */
+  argNames: string[]
+  argTypes: string[]
+  /** `SETOF` / `RETURNS TABLE`. A function that returns one row can return a null composite, expanded to a row of nulls */
+  setof: boolean
+  /** `STABLE` or `IMMUTABLE`: the function runs on the snapshot of the calling statement */
+  snapshot: boolean
+  /** The verdict per output column, by the column's name */
+  columns: [name: string, column: TracedColumn][]
+}
+
 export interface TraceResult {
   /** One entry per requested output column, in order. */
   columns: TracedColumn[]

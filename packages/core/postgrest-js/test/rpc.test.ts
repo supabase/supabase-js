@@ -62,7 +62,7 @@ test('RPC call with no params', async () => {
   const ExpectedSchema = z.array(
     z.object({
       status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
-      username: z.string().nullable(),
+      username: z.string(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -92,7 +92,7 @@ test('RPC call with star select', async () => {
   const ExpectedSchema = z.array(
     z.object({
       status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
-      username: z.string().nullable(),
+      username: z.string(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -120,7 +120,7 @@ test('RPC call with single field select', async () => {
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      username: z.string().nullable(),
+      username: z.string(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -150,7 +150,7 @@ test('RPC call with multiple fields select', async () => {
   const ExpectedSchema = z.array(
     z.object({
       status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
-      username: z.string().nullable(),
+      username: z.string(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>
@@ -178,7 +178,7 @@ test('RPC call with field aliasing', async () => {
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      name: z.string().nullable(),
+      name: z.string(),
     })
   )
   let expected: z.infer<typeof ExpectedSchema>

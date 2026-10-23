@@ -11,6 +11,7 @@ export type {
   TraceInput,
   TraceResult,
   TracedColumn,
+  TracedFunction,
   Tracer,
   TracerOptions,
 } from './types'

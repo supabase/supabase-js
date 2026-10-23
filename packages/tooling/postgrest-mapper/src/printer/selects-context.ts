@@ -1,7 +1,7 @@
 import type { ShapeField } from '@supabase/postgrest-planner'
 import { relationKey } from '../keys'
 import type { Supplementary } from '../schema'
-import type { TracedColumn } from '../tracer'
+import type { TracedColumn, TracedFunction } from '../tracer'
 import { rememberDomain, rowTypeOf, type TypeContext } from './pg-types'
 
 /** What the selects printer reads about the database: the same inputs `printDatabase` is fed. */
@@ -11,6 +11,8 @@ export interface SelectsContextInput {
   plans: ReadonlyMap<string, readonly ShapeField[]>
   /** Tracer verdicts per `relationKey(schema, view)`, then per column name */
   traces: ReadonlyMap<string, ReadonlyMap<string, TracedColumn>>
+  /** The traced single-query SQL functions per `relationKey(schema, name)`, one per overload. Default: none */
+  functions?: ReadonlyMap<string, readonly TracedFunction[]>
   /** `schema.table.column` to the TypeScript type of its `pg_jsonschema` CHECK constraints */
   jsonSchemas: ReadonlyMap<string, string>
   /** Where the generated module imports `SupabaseColumnType` from. Default `@supabase/postgrest-js` */
@@ -25,6 +27,7 @@ export interface SelectsContext {
   domains: Map<string, string>
   plans: ReadonlyMap<string, readonly ShapeField[]>
   traces: ReadonlyMap<string, ReadonlyMap<string, TracedColumn>>
+  functions: ReadonlyMap<string, readonly TracedFunction[]>
   jsonSchemas: ReadonlyMap<string, string>
   /** The module the helper types (`PgrstJson`, `PgrstJsonText`) are imported from */
   importFrom: string
@@ -60,6 +63,7 @@ export function createSelectsContext(input: SelectsContextInput): SelectsContext
     domains,
     plans: input.plans,
     traces: input.traces,
+    functions: input.functions ?? new Map(),
     jsonSchemas: input.jsonSchemas,
     importFrom: input.importFrom ?? '@supabase/postgrest-js',
   }

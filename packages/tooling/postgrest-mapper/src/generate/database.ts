@@ -5,9 +5,15 @@ import { jsonSchemaToTs } from '../jsonschema'
 import { relationKey } from '../keys'
 import { printDatabase, printModule } from '../printer'
 import type { PrintDiagnostic, PrintModuleInput } from '../printer'
-import { buildJsonSchemaInput, buildTraceCatalog, exposedSchemas } from '../schema'
+import {
+  buildFunctionTraceInputs,
+  buildJsonSchemaInput,
+  buildTraceCatalog,
+  exposedSchemas,
+  extraSearchPath,
+} from '../schema'
 import type { AcquiredSchema, SchemaLogger } from '../schema'
-import type { TracedColumn, Tracer } from '../tracer'
+import type { TracedColumn, TracedFunction, Tracer } from '../tracer'
 
 export interface BuildDatabaseOptions {
   acquired: AcquiredSchema
@@ -29,6 +35,11 @@ export interface DatabasePlanContext {
   plans: Map<string, readonly ShapeField[]>
   /** Tracer verdicts per `relationKey(schema, view)`, then per column */
   traces: Map<string, Map<string, TracedColumn>>
+  /**
+   * The single-query `LANGUAGE sql` functions the tracer read, per `relationKey(schema, name)`, one per overload
+   * (design v5 §4.3). A function whose body could not be traced is not here: its rows keep the conservative reading
+   */
+  functions: Map<string, TracedFunction[]>
   /** `schema.table.column` to the TypeScript type of its `pg_jsonschema` CHECK constraints */
   jsonSchemas: Map<string, string>
 }
@@ -98,6 +109,7 @@ export async function buildDatabaseMembers(
       loaded: false,
       plans: new Map(),
       traces: new Map(),
+      functions: new Map(),
       jsonSchemas: new Map(),
     }
   }
@@ -223,6 +235,34 @@ export async function planDatabase(
     )
   }
 
+  // ---- function rows (design v5 §4.3): the body of a single-query SQL function, traced like a view
+  const functions = new Map<string, TracedFunction[]>()
+  for (const f of buildFunctionTraceInputs(supplementary, {
+    searchPath: extraSearchPath(acquired.config),
+  })) {
+    const fn = f.function
+    // a scalar has no rows to read
+    if (fn.returns.kind === 'scalar' && !fn.outColumns) continue
+    const traced = await tracer.trace(f.input)
+    if (traced.error) {
+      // most functions are not a single query (plpgsql, DML): no diagnostic, their rows simply stay nullable
+      logger?.debug(
+        `${f.schema}.${f.name}(${f.argTypes.join(', ')}): body not traced, its rows stay nullable: ${traced.error}`
+      )
+      continue
+    }
+    const key = relationKey(f.schema, f.name)
+    const overloads = functions.get(key) ?? []
+    overloads.push({
+      argNames: fn.argNames ?? fn.argTypes.map(() => ''),
+      argTypes: fn.argTypes,
+      setof: fn.returns.setof,
+      snapshot: fn.volatility === 'i' || fn.volatility === 's',
+      columns: f.input.columns.map((c, i) => [c, traced.columns[i] ?? { nullable: true }]),
+    })
+    functions.set(key, overloads)
+  }
+
   // ---- JSON columns (design v5 §6.1)
   const jsonSchemas = new Map<string, string>()
   const json = await buildJsonSchemaInput(supplementary, {
@@ -238,5 +278,5 @@ export async function planDatabase(
     note('info', `${i.schema}.${i.table}: constraint ${i.constraint} ignored: ${i.reason}`)
   }
 
-  return { ok: true, inputs: { plans, traces, jsonSchemas, diagnostics, failures } }
+  return { ok: true, inputs: { plans, traces, functions, jsonSchemas, diagnostics, failures } }
 }

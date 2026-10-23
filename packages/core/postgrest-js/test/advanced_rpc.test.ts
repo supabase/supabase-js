@@ -8,15 +8,19 @@ const postgrest = new PostgrestClient(REST_URL)
 
 type MessagesRow = SupabaseDatabase['public']['Tables']['messages']['Row']
 type UsersRow = SupabaseDatabase['public']['Tables']['users']['Row']
-// the fields of the rows a function returns are nullable, whatever the table says
+// the fields of the single row a function returns are nullable, whatever the table says
 type FunctionRow<T> = { [K in keyof T]: T[K] | null }
+// a set-returning function keeps the NOT NULL of the column a row is traced to
+type FunctionSetOfUsersRow = {
+  [K in keyof UsersRow]: K extends 'username' ? string : UsersRow[K] | null
+}
 
 const MessagesWithoutBlurbSchema = z.object({
-  channel_id: z.number().nullable(),
+  channel_id: z.number(),
   data: z.unknown().nullable(),
-  id: z.number().nullable(),
+  id: z.number(),
   message: z.string().nullable(),
-  username: z.string().nullable(),
+  username: z.string(),
 })
 
 const UserProfileSchema = z.object({
@@ -24,16 +28,21 @@ const UserProfileSchema = z.object({
   username: z.string().nullable(),
 })
 
-const RecentMessagesSchema = z.object({
-  channel_id: z.number().nullable(),
-  data: z.unknown().nullable(),
-  id: z.number().nullable(),
-  message: z.string().nullable(),
+const UserProfileRowSchema = z.object({
+  id: z.number(),
   username: z.string().nullable(),
 })
 
+const RecentMessagesSchema = z.object({
+  channel_id: z.number(),
+  data: z.unknown().nullable(),
+  id: z.number(),
+  message: z.string().nullable(),
+  username: z.string(),
+})
+
 const SelectWithUsersSchema = z.object({
-  channel_id: z.number().nullable(),
+  channel_id: z.number(),
   message: z.string().nullable(),
   users: z
     .object({
@@ -62,6 +71,10 @@ const FunctionReturningRowSchema = z.object({
   username: z.string().nullable(),
 })
 
+const FunctionReturningSetOfRowsSchema = FunctionReturningRowSchema.extend({
+  username: z.string(),
+})
+
 describe('advanced rpc', () => {
   test('function returning a setof embeded table', async () => {
     const res = await postgrest.rpc('get_messages', {
@@ -69,7 +82,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: FunctionRow<MessagesRow>[]
+    let expected: MessagesRow[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
@@ -104,7 +117,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: FunctionRow<MessagesRow>[]
+    let expected: MessagesRow[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
@@ -184,7 +197,7 @@ describe('advanced rpc', () => {
     // Type assertion
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: FunctionRow<MessagesRow>[]
+    let expected: MessagesRow[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     // Runtime result
     expect(res).toMatchInlineSnapshot(`
@@ -241,7 +254,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: FunctionRow<MessagesRow>[]
+    let expected: MessagesRow[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
@@ -297,7 +310,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: FunctionRow<MessagesRow>[]
+    let expected: MessagesRow[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
@@ -352,7 +365,7 @@ describe('advanced rpc', () => {
       },
     })
     let result: Exclude<typeof res.data, null>
-    let expected: FunctionRow<MessagesRow>[]
+    let expected: MessagesRow[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
@@ -401,7 +414,7 @@ describe('advanced rpc', () => {
       search_username: 'supabot',
     })
     let result: Exclude<typeof res.data, null>
-    let expected: FunctionRow<MessagesRow>[]
+    let expected: MessagesRow[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
@@ -654,7 +667,7 @@ describe('advanced rpc', () => {
       profile_id: 1,
     })
     let result: Exclude<typeof res.data, null>
-    let expected: z.infer<typeof UserProfileSchema>[]
+    let expected: z.infer<typeof UserProfileRowSchema>[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
@@ -671,7 +684,7 @@ describe('advanced rpc', () => {
         "success": true,
       }
     `)
-    UserProfileSchema.array().parse(res.data)
+    UserProfileRowSchema.array().parse(res.data)
   })
 
   test('resolvable function with channel_id and search params', async () => {
@@ -681,7 +694,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: FunctionRow<MessagesRow>[]
+    let expected: MessagesRow[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
@@ -716,7 +729,7 @@ describe('advanced rpc', () => {
     })
     let result: Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: FunctionRow<MessagesRow>[]
+    let expected: MessagesRow[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
@@ -1148,8 +1161,8 @@ describe('advanced rpc', () => {
   test('function returning set of rows', async () => {
     const res = await postgrest.rpc('function_returning_set_of_rows')
     let result: Exclude<typeof res.data, null>
-    const ExpectedSchema = z.array(FunctionReturningRowSchema)
-    let expected: FunctionRow<UsersRow>[]
+    const ExpectedSchema = z.array(FunctionReturningSetOfRowsSchema)
+    let expected: FunctionSetOfUsersRow[]
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
@@ -1218,7 +1231,7 @@ describe('advanced rpc', () => {
       },
     })
     let result: Exclude<typeof res.data, null>
-    const ExpectedSchema = z.array(UserProfileSchema)
+    const ExpectedSchema = z.array(UserProfileRowSchema)
     let expected: z.infer<typeof ExpectedSchema>
     expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`

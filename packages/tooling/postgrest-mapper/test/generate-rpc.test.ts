@@ -30,15 +30,15 @@ const r2h = supabase.rpc('get_status', { name_param: 'x' }, { head: true, count:
 const r10 = supabase.rpc('void_func')
 export type R10 = Expect<Equal<Data<typeof r10>, null>>
 
-// setof table, with a projection and a to-many embed
+// setof table, with a projection and a to-many embed: the trace of the body proves the primary key non-null
 const r3 = supabase.rpc('function_returning_set_of_rows').select('username, messages(id)')
-export type R3 = Expect<Equal<Data<typeof r3>, { username: string | null; messages: { id: number }[] }[]>>
+export type R3 = Expect<Equal<Data<typeof r3>, { username: string; messages: { id: number }[] }[]>>
 const r3g = supabase.rpc('function_returning_set_of_rows', undefined, { get: true }).select('username')
-export type R3g = Expect<Equal<Data<typeof r3g>, { username: string | null }[]>>
+export type R3g = Expect<Equal<Data<typeof r3g>, { username: string }[]>>
 
 // RETURNS TABLE
 const r4 = supabase.rpc('get_username_and_status', { name_param: 'x' })
-export type R4 = Expect<Equal<Data<typeof r4>, { username: string | null; status: Status | null }[]>>
+export type R4 = Expect<Equal<Data<typeof r4>, { username: string; status: Status | null }[]>>
 
 // composite: one row of a table, every column nullable (a function can return what the table refuses)
 const r5 = supabase.rpc('function_returning_row')
@@ -148,7 +148,7 @@ describe('rpc entries and operands of a project', () => {
     // a projected call has the star row as its source, its own sources and embeds
     expect(text).toContain(`'f|public|function_returning_set_of_rows|username, messages(id)': {`)
     expect(text).toMatch(
-      /row: \{ username: SupabaseColumnType<'public\.users\.username', string> \| null; messages: \{ id: SupabaseColumnType<'public\.messages\.id', number> \}\[\] \}\n\s+source: \{ row: \{ username: SupabaseColumnType<'public\.users\.username', string> \| null; data:/
+      /row: \{ username: SupabaseColumnType<'public\.users\.username', string>; messages: \{ id: SupabaseColumnType<'public\.messages\.id', number> \}\[\] \}\n\s+source: \{ row: \{ username: SupabaseColumnType<'public\.users\.username', string>; data:/
     )
     expect(text).toContain(
       "messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }"

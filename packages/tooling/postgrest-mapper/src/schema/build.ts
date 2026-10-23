@@ -1,6 +1,6 @@
 import { PgParser } from '@supabase/pg-parser'
 import type { CatalogRelation, TraceCatalog, TraceInput } from '../tracer/types'
-import type { Supplementary, SupplementaryRelation } from './types'
+import type { Supplementary, SupplementaryFunction, SupplementaryRelation } from './types'
 
 // ---------------------------------------------------------------------------------------------------------------
 // Tracer input
@@ -48,7 +48,13 @@ export function buildTraceCatalog(
 export function buildFunctionTraceInputs(
   supplementary: Supplementary,
   options: BuildTraceCatalogOptions = {}
-): { schema: string; name: string; argTypes: string[]; input: TraceInput }[] {
+): {
+  schema: string
+  name: string
+  argTypes: string[]
+  function: SupplementaryFunction
+  input: TraceInput
+}[] {
   const base = options.searchPath ?? ['public']
   const composites = new Map(
     supplementary.composites.map((c) => [`${c.schema}.${c.name}`, c.attributes.map((a) => a.name)])
@@ -59,7 +65,9 @@ export function buildFunctionTraceInputs(
       r.columns.map((c) => c.name),
     ])
   )
-  const out: { schema: string; name: string; argTypes: string[]; input: TraceInput }[] = []
+  // one catalog per search path: the functions of a schema share it
+  const catalogs = new Map<string, TraceCatalog>()
+  const out: ReturnType<typeof buildFunctionTraceInputs> = []
   for (const fn of supplementary.functions) {
     if (fn.language !== 'sql' || !fn.source) continue
     const columns = fn.outColumns?.map((c) => c.name) ??
@@ -67,14 +75,21 @@ export function buildFunctionTraceInputs(
         ? (composites.get(fn.returns.type) ?? relations.get(fn.returns.type))
         : undefined) ?? [fn.name]
     const searchPath = [fn.schema, ...base.filter((s) => s !== fn.schema)]
+    const catalogKey = JSON.stringify(searchPath)
+    let catalog = catalogs.get(catalogKey)
+    if (!catalog) {
+      catalog = buildTraceCatalog(supplementary, { searchPath })
+      catalogs.set(catalogKey, catalog)
+    }
     out.push({
       schema: fn.schema,
       name: fn.name,
       argTypes: fn.argTypes,
+      function: fn,
       input: {
         sql: fn.source,
         columns,
-        catalog: buildTraceCatalog(supplementary, { searchPath }),
+        catalog,
         parameters: fn.argNames ?? fn.argTypes.map(() => ''),
         functionName: fn.name,
       },

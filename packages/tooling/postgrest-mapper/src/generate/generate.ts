@@ -14,6 +14,7 @@ import { createPlannerHost, isHostFailure, judgeReleases } from '../host'
 import type { PlannerHost, ReleaseClaim, ReleaseVerdict } from '../host'
 import {
   callReturnsOf,
+  callRoutineOf,
   createSelectsContext,
   plannerErrorMessage,
   printModule,
@@ -57,7 +58,7 @@ import {
  * Bump when what the cache stores, or what the printer prints from it, changes. It is part of the identity and of
  * the cache validity, so the TypeScript server and the disk cache both see a new generator as a new input.
  */
-export const GENERATOR_REVISION = 5
+export const GENERATOR_REVISION = 6
 
 export interface GeneratorLogger {
   debug(message: string): void
@@ -409,6 +410,10 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
                 form: result.form ?? null,
                 shape: k.kind === 'call' ? (result.shape ?? null) : null,
                 rpc: k.kind === 'call' ? (result.rpc ?? null) : null,
+                routine:
+                  k.kind === 'call' && result.action === 'rpc'
+                    ? callRoutineOf(result.routine)
+                    : null,
                 returns:
                   k.kind === 'call' && result.action === 'rpc'
                     ? callReturnsOf(result.routine)
@@ -586,6 +591,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       supplementary: acquired.supplementary,
       plans: planned.context.plans,
       traces: planned.context.traces,
+      functions: planned.context.functions,
       jsonSchemas: planned.context.jsonSchemas,
       ...(importFrom ? { importFrom } : {}),
     })
