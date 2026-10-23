@@ -150,6 +150,30 @@ Everything else covers exactly the exposed schemas (`db-schemas` of the config d
 
 Pure builders turn it into the other components' inputs: `buildTraceCatalog` and `buildFunctionTraceInputs` for the tracer, and `buildJsonSchemaInput` for `jsonSchemaToTs`. The last is asynchronous (it parses constraint definitions with libpg_query) and reports only validated constraints that are plain conjunctions of `json(b)_matches_schema('<constant>', col)` terms, each optionally guarded by `col IS NULL OR`; several constraints on a column become an `allOf`, and everything else lands in `ignored` with its reason.
 
+## Planner host and database declarations
+
+The acquire, plan, print pipeline for the `SupabaseDatabase` global (design v5 §5.1). Pure and typed; I/O is injected.
+
+```ts
+const acquired = await acquireSchema({ source: 'supabase-local', workdir: '.' })
+const host = createPlannerHost() // { wasmPath?, loadTimeoutMs = 20000, planTimeoutMs = 2000, logger? }
+const tracer = await createTracer()
+const { text, diagnostics } = await buildDatabaseDeclarations({ acquired, host, tracer, logger })
+await host.close()
+```
+
+**`createPlannerHost`** (`src/host/`) runs `@supabase/postgrest-planner` in a `worker_threads` worker, because the wasm runtime cannot be interrupted. Calls are serialised. A `load` over 20 s or a `plan` over 2 s terminates the worker; the next call starts a new one and reloads the cache from the inputs the host kept. `load(acquired)`, `plan(request)` and `planMany(requests)` never throw for planner failures: the result is the planner's own `PlannerError` value, or one with a `HOST_ERROR` code (`HOST_TIMEOUT`, `HOST_WORKER_FAILED` for a crash or a missing wasm, `HOST_NOT_LOADED`, `HOST_CLOSED`). `wasmPath` defaults to the planner package's copy.
+
+**`buildDatabaseDeclarations`** (`src/generate/`) loads the schema into the host, plans `GET /<relation>?select=*` for every exposed relation (the printed `ResultShape` is `Row`), traces views for nullability, converts JSON Schema CHECKs, and calls the printer. Relations outside the PostgREST schema cache (partitions) are left out with an `info` diagnostic; a load failure is an `error` diagnostic with an empty `text`. `module: { selects, operands, unplanned, importFrom }` passes through to `printModule`.
+
+**Printer** (`src/printer/`): `printDatabase` emits the members of `interface SupabaseDatabase` per exposed schema, `printModule` wraps them in the declaration file (`Json` / `JsonIn`, `declare global`, `SupabasePgrstStatus`). `selects` and `operands` are the extension point for the select index: complete `interface SupabaseSelects { ... }` / `interface SupabaseOperands { ... }` text spliced verbatim into the same `declare global`.
+
+- Every source column value is `SupabaseColumnType<'schema.relation.column', Derived>`, the column's own nullability outside the wrapper. A view column traced to a base column uses the base column's key and the traced nullability. A validated JSON Schema CHECK is the `Derived` type of its column.
+- `Insert` requires a column only when it is `NOT NULL` with no default and no identity; generated columns and `GENERATED ALWAYS` identities are left out of `Insert` and `Update`. Views get `Insert` / `Update` only when `pg_relation_is_updatable` says so (every column optional).
+- `FactColumns`: plain columns that are not `json(b)`, composite or row types. `Relationships` come from the PostgREST schema dump (many-to-one and one-to-one children).
+- Functions: `Args` / `Returns` with overloads as a union; arguments with a default are optional; trigger functions are left out.
+- Type mapping (`tsTypeOf`, `src/printer/pg-types.ts`): `bool` is `boolean`; `int2` `int4` `int8` `float4` `float8` `numeric` are `number`; `text`, `varchar`, `bpchar`, `uuid`, `bytea`, the date and time types, `citext` and `vector` are `string`; `json` / `jsonb` are `Json` (`JsonIn` in function arguments); `void` is `undefined`; enums are label unions, composites objects with nullable attributes, relation types their `Row`, domains resolve to their base type; arrays append `[]`; anything else (ranges, `tsvector`, `inet`, ...) is `unknown`.
+
 ## Node
 
 Compiled to CommonJS like the planner. `oxc-parser` and `@supabase/pg-parser` load ESM (the latter through its wasm loader), so the CJS build relies on `require(esm)` (Node `^20.19.0 || >=22.12.0`). Jest cannot do that itself: `test/support/oxc-parser.cjs` and `test/support/pg-parser.cjs` map the imports to Node's real `require`.

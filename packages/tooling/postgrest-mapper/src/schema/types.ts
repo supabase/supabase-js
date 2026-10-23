@@ -4,6 +4,12 @@
  * All I/O is injected (`SchemaDeps`), so the same functions run under the CLI, the content mapper and tests.
  */
 
+import type {
+  Supplementary as PlannerSupplementaryDocument,
+  SupplementaryComposite,
+  SupplementaryForeignKey,
+} from '@supabase/postgrest-planner'
+
 // ---------------------------------------------------------------------------------------------------------------
 // Supplementary catalog
 // ---------------------------------------------------------------------------------------------------------------
@@ -11,29 +17,8 @@
 /** `supplementary.format` and the snapshot's `supplementaryFormat`. */
 export const SUPPLEMENTARY_FORMAT = 1
 
-// mirrors @supabase/postgrest-planner Supplementary; replace with the import once exported
-export interface PlannerFunction {
-  schema: string
-  name: string
-  argTypes: string[]
-  /** `pg_proc.provolatile`: `i`, `s` or `v` */
-  volatility: string
-  returns: { kind: 'scalar' | 'composite'; setof: boolean; type: string }
-  outColumns: { name: string; type: string }[] | null
-}
-
-// mirrors @supabase/postgrest-planner Supplementary; replace with the import once exported
-export interface PlannerSupplementary {
-  format: 1
-  relations: { schema: string; name: string; columns: { name: string; attnum: number }[] }[]
-  composites: {
-    schema: string
-    name: string
-    attributes: { name: string; type: string; attnum: number }[]
-  }[]
-  foreignKeys: { schema: string; table: string; constraint: string; validated: boolean }[]
-  functions: PlannerFunction[]
-}
+/** The planner's format-1 document (`@supabase/postgrest-planner`); `Supplementary` below adds the mapper-only keys. */
+export type PlannerSupplementary = PlannerSupplementaryDocument
 
 /** `pg_class.relkind` of the relations the catalog describes. */
 export type RelationKind = 'r' | 'v' | 'm' | 'p' | 'f'
@@ -62,7 +47,14 @@ export interface SupplementaryRelation {
   updatable: { insert: boolean; update: boolean; delete: boolean }
 }
 
-export interface SupplementaryFunction extends PlannerFunction {
+export interface SupplementaryFunction {
+  schema: string
+  name: string
+  argTypes: string[]
+  /** `pg_proc.provolatile`: `i`, `s` or `v` */
+  volatility: string
+  returns: { kind: 'scalar' | 'composite'; setof: boolean; type: string }
+  outColumns: { name: string; type: string }[] | null
   /** `pg_language.lanname` */
   language: string
   /** `prosrc` of a `LANGUAGE sql` function (null for other languages and for `BEGIN ATOMIC` bodies) */
@@ -102,7 +94,10 @@ export interface SupplementaryJsonSchemaCheck {
  * body mentions is not tracked (Postgres records no dependency for a SQL function body), so the tracer treats it as
  * unknown and its columns as nullable. `pg_catalog`, `information_schema` and `pg_toast` are never included.
  */
-export interface Supplementary extends Omit<PlannerSupplementary, 'relations' | 'functions'> {
+export interface Supplementary {
+  format: 1
+  composites: SupplementaryComposite[]
+  foreignKeys: SupplementaryForeignKey[]
   relations: SupplementaryRelation[]
   functions: SupplementaryFunction[]
   referencedRelations: SupplementaryRelation[]

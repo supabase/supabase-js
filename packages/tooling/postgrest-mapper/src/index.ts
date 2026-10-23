@@ -194,3 +194,42 @@ export type {
   SupplementaryRelation,
   WriteSnapshotResult,
 } from './schema'
+
+// Planner host, database printer and the generate pipeline (design v5 §5.1, v3 §4.3)
+export {
+  createPlannerHost,
+  startPlannerWorker,
+  DEFAULT_LOAD_TIMEOUT_MS,
+  DEFAULT_PLAN_TIMEOUT_MS,
+  HOST_ERROR,
+} from './host'
+export type {
+  HostLogger,
+  PlannerHost,
+  PlannerHostOptions,
+  WorkerLike,
+  WorkerRequest,
+  WorkerResponse,
+} from './host'
+export {
+  BUILTIN_TS,
+  classifyType,
+  isJsonType,
+  normalizeType,
+  pgrstFeatures,
+  printDatabase,
+  printModule,
+  tsTypeOf,
+} from './printer'
+export type {
+  ClassifiedType,
+  NormalizedType,
+  PrintDatabaseInput,
+  PrintDatabaseResult,
+  PrintDiagnostic,
+  PrintModuleInput,
+  TypeContext,
+  TypeKind,
+} from './printer'
+export { buildDatabaseDeclarations } from './generate'
+export type { BuildDatabaseOptions, DatabaseDeclarations } from './generate'

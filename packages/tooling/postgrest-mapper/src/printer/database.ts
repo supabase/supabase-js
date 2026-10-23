@@ -1,0 +1,463 @@
+import type { ShapeField } from '@supabase/postgrest-planner'
+import type { Supplementary, SupplementaryFunction, SupplementaryRelation } from '../schema'
+import type { TracedColumn } from '../tracer'
+import { classifyType, normalizeType, tsTypeOf, type TypeContext, baseName } from './pg-types'
+import type { PrintDatabaseInput, PrintDatabaseResult, PrintDiagnostic } from './types'
+
+const IDENT = /^[A-Za-z_$][\w$]*$/
+
+function quote(value: string): string {
+  return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`
+}
+
+/** An object type key: bare when it is an identifier. */
+function key(name: string): string {
+  return IDENT.test(name) ? name : quote(name)
+}
+
+const EMPTY_OBJECT = '{ [_ in never]: never }'
+
+interface Member {
+  name: string
+  optional?: boolean
+  type: string
+}
+
+/** A multi-line object type; `indent` is the indentation of the line holding the opening brace. */
+function object(members: Member[], indent: string, empty = EMPTY_OBJECT): string {
+  if (members.length === 0) return empty
+  const inner = indent + '  '
+  const lines = members.map((m) => `${inner}${key(m.name)}${m.optional ? '?' : ''}: ${m.type}`)
+  return `{\n${lines.join('\n')}\n${indent}}`
+}
+
+/** `{ a: T }` fields of an inline object (used for the members of a union that is printed on several lines). */
+function union(items: string[], indent: string): string {
+  if (items.length === 1) return items[0]!
+  return items.map((i) => `\n${indent}  | ${i}`).join('')
+}
+
+function qualified(schema: string, name: string): string {
+  return `${schema}.${name}`
+}
+
+const byName = <T extends { name: string }>(a: T, b: T): number =>
+  a.name < b.name ? -1 : a.name > b.name ? 1 : 0
+
+function compare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// The schema dump: relationships and function argument optionality
+// ---------------------------------------------------------------------------------------------------------------
+
+interface Relationship {
+  foreignKeyName: string
+  columns: string[]
+  isOneToOne: boolean
+  referencedRelation: string
+  referencedColumns: string[]
+}
+
+interface DumpParam {
+  name: string
+  required: boolean
+  type: string
+}
+
+interface DumpFacts {
+  /** `schema.relation` to its forward foreign keys, sorted */
+  relationships: Map<string, Relationship[]>
+  /** `schema.function` to every overload's parameters */
+  routines: Map<string, DumpParam[][]>
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v)
+const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined)
+
+/** Reads the parts of the PostgREST schema cache dump the printer needs, defensively: anything unexpected is skipped. */
+function readDump(text: string): DumpFacts {
+  const facts: DumpFacts = { relationships: new Map(), routines: new Map() }
+  let dump: unknown
+  try {
+    dump = JSON.parse(text)
+  } catch {
+    return facts
+  }
+  if (!isRecord(dump)) return facts
+
+  const groups = Array.isArray(dump['dbRelationships']) ? dump['dbRelationships'] : []
+  for (const group of groups) {
+    const rels = Array.isArray(group) ? group[1] : undefined
+    if (!Array.isArray(rels)) continue
+    for (const rel of rels) {
+      if (!isRecord(rel) || rel['tag'] !== 'Relationship') continue
+      const card = rel['relCardinality']
+      const table = rel['relTable']
+      const foreign = rel['relForeignTable']
+      if (!isRecord(card) || !isRecord(table) || !isRecord(foreign)) continue
+      const tag = card['tag']
+      if (tag !== 'M2O' && tag !== 'O2O') continue
+      if (tag === 'O2O' && card['isParent'] === true) continue
+      const cols = Array.isArray(card['relColumns']) ? card['relColumns'] : []
+      const columns: string[] = []
+      const referencedColumns: string[] = []
+      for (const pair of cols) {
+        if (Array.isArray(pair) && typeof pair[0] === 'string' && typeof pair[1] === 'string') {
+          columns.push(pair[0])
+          referencedColumns.push(pair[1])
+        }
+      }
+      const owner = qualified(str(table['qiSchema']) ?? '', str(table['qiName']) ?? '')
+      const name = str(card['relCons'])
+      const referenced = str(foreign['qiName'])
+      if (name === undefined || referenced === undefined) continue
+      const list = facts.relationships.get(owner) ?? []
+      list.push({
+        foreignKeyName: name,
+        columns,
+        isOneToOne: tag === 'O2O',
+        referencedRelation: referenced,
+        referencedColumns,
+      })
+      facts.relationships.set(owner, list)
+    }
+  }
+  for (const list of facts.relationships.values()) {
+    list.sort(
+      (a, b) =>
+        compare(a.foreignKeyName, b.foreignKeyName) ||
+        compare(a.referencedRelation, b.referencedRelation) ||
+        compare(a.columns.join(','), b.columns.join(','))
+    )
+  }
+
+  const routines = Array.isArray(dump['dbRoutines']) ? dump['dbRoutines'] : []
+  for (const entry of routines) {
+    const overloads = Array.isArray(entry) ? entry[1] : undefined
+    if (!Array.isArray(overloads)) continue
+    for (const routine of overloads) {
+      if (!isRecord(routine)) continue
+      const schema = str(routine['pdSchema'])
+      const name = str(routine['pdName'])
+      if (schema === undefined || name === undefined || !Array.isArray(routine['pdParams']))
+        continue
+      const params: DumpParam[] = []
+      for (const p of routine['pdParams']) {
+        if (!isRecord(p)) continue
+        params.push({
+          name: str(p['ppName']) ?? '',
+          required: p['ppReq'] !== false,
+          type: str(p['ppType']) ?? '',
+        })
+      }
+      const k = qualified(schema, name)
+      const list = facts.routines.get(k) ?? []
+      list.push(params)
+      facts.routines.set(k, list)
+    }
+  }
+  return facts
+}
+
+/** Type name without schema and modifiers, for comparing the dump's spelling with the catalog's. */
+function canonicalType(type: string): string {
+  const n = normalizeType(type)
+  return baseName(n.name) + '[]'.repeat(n.dims)
+}
+
+/** The dump's parameters of a catalog function, when exactly one overload matches by arity, names and types. */
+function matchParams(fn: SupplementaryFunction, dump: DumpFacts): DumpParam[] | undefined {
+  const candidates = dump.routines.get(qualified(fn.schema, fn.name)) ?? []
+  const names = fn.argNames ?? fn.argTypes.map(() => '')
+  const named = candidates.filter(
+    (p) => p.length === fn.argTypes.length && p.every((param, i) => param.name === names[i])
+  )
+  if (named.length === 1) return named[0]
+  const wanted = fn.argTypes.map(canonicalType)
+  const typed = named.filter((p) => p.every((param, i) => canonicalType(param.type) === wanted[i]))
+  return typed.length === 1 ? typed[0] : undefined
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Printing
+// ---------------------------------------------------------------------------------------------------------------
+
+type Placement = 'Tables' | 'Views'
+
+const placementOf = (r: SupplementaryRelation): Placement =>
+  r.kind === 'r' || r.kind === 'p' ? 'Tables' : 'Views'
+/** Tables and foreign tables carry their own NOT NULL, a view's nullability is traced */
+const isTraced = (r: SupplementaryRelation): boolean => r.kind === 'v' || r.kind === 'm'
+
+/** What `printDatabase` knows about one printed relation. */
+interface PrintedRelation {
+  relation: SupplementaryRelation
+  placement: Placement
+  fields: readonly ShapeField[]
+  traces: ReadonlyMap<string, TracedColumn> | undefined
+}
+
+export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
+  const diagnostics: PrintDiagnostic[] = []
+  const supplementary: Supplementary = input.supplementary
+  const dump = readDump(input.dump)
+
+  // The relations that are printed: exposed, and in the schema cache (they have a plan)
+  const printed = new Map<string, PrintedRelation>()
+  for (const relation of supplementary.relations) {
+    const k = qualified(relation.schema, relation.name)
+    const fields = input.plans.get(k)
+    if (!fields) continue
+    printed.set(k, {
+      relation,
+      placement: placementOf(relation),
+      fields,
+      traces: isTraced(relation) ? input.traces.get(k) : undefined,
+    })
+  }
+
+  const domains = new Map<string, string>()
+  for (const fields of input.plans.values()) {
+    for (const f of fields) {
+      if (f.pgType && f.baseType && f.baseType !== f.pgType) domains.set(f.pgType, f.baseType)
+    }
+  }
+  const ctx: TypeContext = {
+    enums: new Set(supplementary.enums.map((e) => qualified(e.schema, e.name))),
+    composites: new Set(supplementary.composites.map((c) => qualified(c.schema, c.name))),
+    relations: new Map([...printed].map(([k, p]) => [k, p.placement])),
+    domains,
+  }
+  const argCtx: TypeContext = { ...ctx, jsonType: 'JsonIn' }
+
+  const schemaNames = new Set<string>(input.schemas ?? [])
+  for (const r of printed.values()) schemaNames.add(r.relation.schema)
+  for (const f of supplementary.functions) schemaNames.add(f.schema)
+  for (const e of supplementary.enums) schemaNames.add(e.schema)
+  for (const c of supplementary.composites) schemaNames.add(c.schema)
+
+  // ---- column values
+  /** `SupabaseColumnType<'s.r.c', Derived>` with the column's own nullability outside the wrapper */
+  const value = (columnKey: string, pgType: string | null, nullable: boolean): string => {
+    const derived =
+      input.jsonSchemas.get(columnKey) ?? (pgType === null ? 'unknown' : tsTypeOf(pgType, ctx))
+    return `SupabaseColumnType<${quote(columnKey)}, ${derived}>${nullable ? ' | null' : ''}`
+  }
+
+  /** The key a column goes by: the base column a view column passes through from, else its own */
+  const columnKey = (p: PrintedRelation, column: string): { key: string; nullable?: boolean } => {
+    const traced = p.traces?.get(column)
+    if (traced) {
+      const source = traced.source
+      return {
+        key: source
+          ? `${source.schema}.${source.relation}.${source.column}`
+          : qualified(qualified(p.relation.schema, p.relation.name), column),
+        nullable: traced.nullable,
+      }
+    }
+    return { key: qualified(qualified(p.relation.schema, p.relation.name), column) }
+  }
+
+  const rowMembers = (p: PrintedRelation): Member[] =>
+    p.fields.map((f) => {
+      const prov = f.provenance
+      if (prov.kind !== 'plain') {
+        // `select=*` yields plain columns only; anything else carries no source to override
+        const derived = f.pgType === null ? 'unknown' : tsTypeOf(f.pgType, ctx)
+        return { name: f.name, type: `${derived}${f.nullable ? ' | null' : ''}` }
+      }
+      const k = columnKey(p, f.name)
+      return { name: f.name, type: value(k.key, f.pgType, k.nullable ?? f.nullable) }
+    })
+
+  /** Insert / Update members from the catalog's columns */
+  const writeMembers = (p: PrintedRelation, mode: 'insert' | 'update'): Member[] => {
+    const members: Member[] = []
+    const columns = [...p.relation.columns].sort((a, b) => a.attnum - b.attnum)
+    for (const c of columns) {
+      if (c.generated !== null || c.identity === 'always') continue
+      const k = columnKey(p, c.name)
+      const nullable = k.nullable ?? !c.notNull
+      const required =
+        mode === 'insert' &&
+        !isTraced(p.relation) &&
+        c.notNull &&
+        !c.hasDefault &&
+        c.identity === null
+      members.push({
+        name: c.name,
+        optional: !required,
+        type: value(k.key, c.type, nullable),
+      })
+    }
+    return members
+  }
+
+  /** Columns whose returned value is the stored value (design v5 §6.3) */
+  const factColumns = (p: PrintedRelation): string => {
+    const names: string[] = []
+    for (const f of p.fields) {
+      if (f.provenance.kind !== 'plain' || f.pgType === null) continue
+      const c = classifyType(f.pgType, ctx)
+      if (c.kind === 'composite' || c.kind === 'relation') continue
+      if (c.kind === 'builtin' && (c.name === 'json' || c.name === 'jsonb')) continue
+      names.push(f.name)
+    }
+    names.sort(compare)
+    return names.length === 0 ? 'never' : names.map(quote).join(' | ')
+  }
+
+  const relationships = (p: PrintedRelation, indent: string): string => {
+    const list = dump.relationships.get(qualified(p.relation.schema, p.relation.name)) ?? []
+    if (list.length === 0) return '[]'
+    const inner = indent + '  '
+    const tuple = (items: string[]) => `[${items.map(quote).join(', ')}]`
+    const rows = list.map(
+      (r) =>
+        `${inner}{\n${inner}  foreignKeyName: ${quote(r.foreignKeyName)}\n${inner}  columns: ${tuple(r.columns)}\n${inner}  isOneToOne: ${r.isOneToOne}\n${inner}  referencedRelation: ${quote(r.referencedRelation)}\n${inner}  referencedColumns: ${tuple(r.referencedColumns)}\n${inner}}`
+    )
+    return `[\n${rows.join(',\n')}\n${indent}]`
+  }
+
+  const printRelation = (p: PrintedRelation, indent: string): string => {
+    const inner = indent + '  '
+    const lines = [`${inner}Row: ${object(rowMembers(p), inner)}`]
+    const updatable =
+      p.placement === 'Views' ? p.relation.updatable : { insert: true, update: true, delete: true }
+    if (updatable.insert) {
+      lines.push(
+        `${inner}Insert: ${object(writeMembers(p, 'insert'), inner, 'Record<string, never>')}`
+      )
+    }
+    if (updatable.update) {
+      lines.push(
+        `${inner}Update: ${object(writeMembers(p, 'update'), inner, 'Record<string, never>')}`
+      )
+    }
+    lines.push(`${inner}FactColumns: ${factColumns(p)}`)
+    lines.push(`${inner}Relationships: ${relationships(p, inner)}`)
+    return `{\n${lines.join('\n')}\n${indent}}`
+  }
+
+  // ---- functions
+  const returnsOf = (fn: SupplementaryFunction, indent: string): string => {
+    const { kind, setof, type } = fn.returns
+    if (fn.outColumns && fn.outColumns.length > 0) {
+      const row = object(
+        fn.outColumns.map((c) => ({ name: c.name, type: `${tsTypeOf(c.type, ctx)} | null` })),
+        indent
+      )
+      return setof ? `${row}[]` : row
+    }
+    if (kind === 'composite') {
+      const c = classifyType(type, ctx)
+      const row =
+        c.kind === 'composite' || c.kind === 'relation'
+          ? tsTypeOf(type, ctx)
+          : 'Record<string, unknown>'
+      return setof ? `${row}[]` : row
+    }
+    const ts = tsTypeOf(type, ctx)
+    if (ts === 'undefined') return setof ? 'undefined[]' : 'undefined'
+    if (setof) return /[|&]/.test(ts) ? `(${ts})[]` : `${ts}[]`
+    return `${ts} | null`
+  }
+
+  const argsOf = (fn: SupplementaryFunction, indent: string): string => {
+    if (fn.argTypes.length === 0) return 'Record<string, never>'
+    const params = matchParams(fn, dump)
+    const seen = new Set<string>()
+    const members: Member[] = []
+    fn.argTypes.forEach((type, i) => {
+      const name = fn.argNames?.[i] ?? ''
+      if (seen.has(name)) return
+      seen.add(name)
+      members.push({
+        name,
+        optional: params ? !params[i]!.required : false,
+        type: tsTypeOf(type, argCtx),
+      })
+    })
+    return object(members, indent)
+  }
+
+  const printFunctions = (functions: SupplementaryFunction[], indent: string): string => {
+    const byFunction = new Map<string, SupplementaryFunction[]>()
+    for (const fn of functions) {
+      if (fn.returns.type === 'trigger' || fn.returns.type === 'event_trigger') continue
+      const list = byFunction.get(fn.name) ?? []
+      list.push(fn)
+      byFunction.set(fn.name, list)
+    }
+    const inner = indent + '  '
+    const entries = [...byFunction.entries()].sort(([a], [b]) => compare(a, b))
+    if (entries.length === 0) return EMPTY_OBJECT
+    const lines = entries.map(([name, overloads]) => {
+      overloads.sort((a, b) => compare(a.argTypes.join(','), b.argTypes.join(',')))
+      const members = overloads.map((fn) => {
+        const memberIndent = overloads.length === 1 ? inner : inner + '  '
+        const body = `${memberIndent}  Args: ${argsOf(fn, memberIndent + '  ')}\n${memberIndent}  Returns: ${returnsOf(fn, memberIndent + '  ')}`
+        return `{\n${body}\n${memberIndent}}`
+      })
+      return `${inner}${key(name)}: ${union(members, inner)}`
+    })
+    return `{\n${lines.join('\n')}\n${indent}}`
+  }
+
+  // ---- schemas
+  const enumsOf = (schema: string, indent: string): string =>
+    object(
+      supplementary.enums
+        .filter((e) => e.schema === schema)
+        .sort(byName)
+        .map((e) => ({ name: e.name, type: e.labels.map(quote).join(' | ') || 'never' })),
+      indent
+    )
+
+  const compositesOf = (schema: string, indent: string): string =>
+    object(
+      supplementary.composites
+        .filter((c) => c.schema === schema)
+        .sort(byName)
+        .map((c) => ({
+          name: c.name,
+          type: object(
+            [...c.attributes]
+              .sort((a, b) => a.attnum - b.attnum)
+              .map((a) => ({ name: a.name, type: `${tsTypeOf(a.type, ctx)} | null` })),
+            indent + '  '
+          ),
+        })),
+      indent
+    )
+
+  const out: string[] = []
+  for (const schema of [...schemaNames].sort(compare)) {
+    const i2 = '      '
+    const i3 = '        '
+    const section = (placement: Placement): string => {
+      const rels = [...printed.values()]
+        .filter((p) => p.relation.schema === schema && p.placement === placement)
+        .sort((a, b) => compare(a.relation.name, b.relation.name))
+      return object(
+        rels.map((p) => ({ name: p.relation.name, type: printRelation(p, i3) })),
+        i2
+      )
+    }
+    const functions = supplementary.functions.filter((f) => f.schema === schema)
+    out.push(
+      `    ${key(schema)}: {\n` +
+        `${i2}Tables: ${section('Tables')}\n` +
+        `${i2}Views: ${section('Views')}\n` +
+        `${i2}Functions: ${printFunctions(functions, i2)}\n` +
+        `${i2}Enums: ${enumsOf(schema, i2)}\n` +
+        `${i2}CompositeTypes: ${compositesOf(schema, i2)}\n` +
+        `    }`
+    )
+  }
+  return { text: out.join('\n'), diagnostics }
+}
