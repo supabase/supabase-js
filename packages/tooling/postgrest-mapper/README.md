@@ -247,7 +247,18 @@ await host.close()
 - `Insert` requires a column only when it is `NOT NULL` with no default and no identity; generated columns and `GENERATED ALWAYS` identities are left out of `Insert` and `Update`. Views get `Insert` / `Update` only when `pg_relation_is_updatable` says so (every column optional).
 - `FactColumns`: plain columns that are not `json(b)`, composite or row types. `Relationships` come from the PostgREST schema dump (many-to-one and one-to-one children).
 - Functions: `Args` / `Returns` with overloads as a union; arguments with a default are optional; trigger functions are left out.
-- Type mapping (`tsTypeOf`, `src/printer/pg-types.ts`): `bool` is `boolean`; `int2` `int4` `int8` `float4` `float8` `numeric` are `number`; `text`, `varchar`, `bpchar`, `uuid`, `bytea`, the date and time types, `citext` and `vector` are `string`; `json` / `jsonb` are `Json` (`JsonIn` in function arguments); `void` is `undefined`; enums are label unions, composites objects with nullable attributes, a relation used as a type (a column, argument or return of a table's row type) a composite value with every attribute nullable (PostgreSQL enforces a table's constraints on its rows, not on standalone composite values, so it is not the table's `Row`), domains resolve to their base type; arrays append `[]`; the elements of a set-returning scalar function are `T | null`; string literals (enum labels, names, planner messages) are escaped by one shared escaper (`src/printer/literal.ts`), so line breaks, U+2028 / U+2029, control characters and lone surrogates stay on one line and read back exact; anything else (ranges, `tsvector`, `inet`, ...) is `unknown`.
+- Type mapping (`tsTypeOf`, `src/printer/pg-types.ts`): `bool` is `boolean`; `int2` `int4` `int8` `float4` `float8` `numeric` are `number`; `text`, `varchar`, `bpchar`, `uuid`, `bytea`, the date and time types, `citext` and `vector` are `string`; `json` / `jsonb` are `Json` (`JsonIn` in function arguments); `void` is `undefined`; enums are label unions, composites objects with nullable attributes, a relation used as a type (a column, argument or return of a table's row type) a composite value with every attribute nullable (PostgreSQL enforces a table's constraints on its rows, not on standalone composite values, so it is not the table's `Row`), domains resolve to their base type; arrays append `[]` (non-null elements, one dimension: see Limits below); the elements of a set-returning scalar function are `T | null`; string literals (enum labels, names, planner messages) are escaped by one shared escaper (`src/printer/literal.ts`), so line breaks, U+2028 / U+2029, control characters and lone surrogates stay on one line and read back exact; anything else (ranges, `tsvector`, `inet`, ...) is `unknown`.
+
+**Limits.** Array elements are typed non-null and one-dimensional: an `int4[]` column is `number[]`. PostgreSQL has no element-level `NOT NULL` and doesn't enforce the declared dimensions, so the same column can hold `{1,NULL}` or `{{1,2},{3,4}}`, and the catalog can't prove either away. When a column does hold null elements or nested arrays, state its type per column with `SupabaseColumnTypes` (declared next to your code; it replaces the derived type in every select, filter and mutation payload that reaches the column, and the column's own nullability stays outside):
+
+```ts
+declare global {
+  interface SupabaseColumnTypes {
+    'public.readings.samples': (number | null)[]
+    'public.boards.cells': number[][]
+  }
+}
+```
 
 ## CLI
 

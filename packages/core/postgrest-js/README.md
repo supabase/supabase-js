@@ -62,6 +62,16 @@ Without the generated interfaces every query is accepted and its rows are `Recor
 const { data } = await postgrest.from('users').select(columns).cast<{ id: number }>()
 ```
 
+To type a column yourself everywhere it appears (selects, filters, mutation payloads), declare it in `SupabaseColumnTypes`, keyed by `schema.table.column`; the column's own nullability stays outside. Postgres arrays are typed with non-null, one-dimensional elements (`int4[]` is `number[]`), because Postgres doesn't enforce element nullability or dimensions; override a column that holds `NULL` elements or nested arrays:
+
+```ts
+declare global {
+  interface SupabaseColumnTypes {
+    'public.readings.samples': (number | null)[]
+  }
+}
+```
+
 Typing requires TypeScript 5.1 or later (the builders use `const` type parameters, and the argument checks rely on template literal inference that TypeScript 5.0 doesn't do).
 
 #### Custom `fetch` implementation

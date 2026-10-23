@@ -238,7 +238,12 @@ function compositeValue(attributes: readonly CompositeAttribute[], ctx: TypeCont
   return `{ ${members.join('; ')} }`
 }
 
-/** `T[]` per dimension; a union element gets parentheses. */
+/**
+ * `T[]` per dimension; a union element gets parentheses. Elements stay non-null and the dimensions are the type's own
+ * (`format_type` spells every array with one `[]`): PostgreSQL has no element-level NOT NULL and doesn't enforce
+ * declared dimensions, so `{1,NULL}` and `{{1,2},{3,4}}` both fit an `int4[]` column. A column that holds either is
+ * typed per column through `SupabaseColumnTypes` (`'public.t.c': (number | null)[]`).
+ */
 export function withDims(ts: string, dims: number): string {
   if (dims === 0) return ts
   const element = /[|&]/.test(ts) ? `(${ts})` : ts
