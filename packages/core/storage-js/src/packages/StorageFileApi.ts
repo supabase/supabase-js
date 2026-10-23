@@ -35,6 +35,13 @@ const DEFAULT_FILE_OPTIONS: FileOptions = {
   upsert: false,
 }
 
+function mergeFileOptions(fileOptions?: FileOptions): FileOptions {
+  const definedOptions = Object.fromEntries(
+    Object.entries(fileOptions ?? {}).filter(([, value]) => value !== undefined)
+  )
+  return { ...DEFAULT_FILE_OPTIONS, ...definedOptions }
+}
+
 type FileBody =
   | ArrayBuffer
   | ArrayBufferView
@@ -84,7 +91,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   > {
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      const options = mergeFileOptions(fileOptions)
       let headers: Record<string, string> = {
         ...this.headers,
         ...(method === 'POST' && { 'x-upsert': String(options.upsert as boolean) }),
@@ -276,7 +283,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      const options = mergeFileOptions(fileOptions)
       let headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
