@@ -147,8 +147,9 @@ export interface EmbedPlan {
 
 /**
  * What the response body of a plan looks like. `rowset` is a list of rows (or one object under
- * `Accept: application/vnd.pgrst.object+json`); the RPC forms are produced for `/rpc/*` plans, whose
- * `shape` is not resolved yet (`degraded` carries `rpc-shape`). `none` is a mutation without
+ * `Accept: application/vnd.pgrst.object+json`). The other forms belong to `/rpc/*` plans: `single-scalar` and
+ * `setof-scalar` (a scalar or a list of scalars: no `shape`), `single-composite` (one object, `shape` is its
+ * row) and `rowset` (a set of composite rows, `shape` is a row). `none` is a mutation without
  * `Prefer: return=representation`. `null` is any plan that returns no rows of a relation (OpenAPI,
  * relation/routine info).
  */
@@ -164,6 +165,10 @@ export type FieldProvenance =
   | { kind: 'representation'; of: FieldProvenance; function: string }
   | { kind: 'cast'; of: FieldProvenance; to: string }
   | { kind: 'aggregate'; function: string; of: FieldProvenance }
+  /** An `OUT` or `RETURNS TABLE` column of the RPC the rows come from. */
+  | { kind: 'outColumn'; function: QualifiedName; column: string }
+  /** An attribute of the named composite type an RPC returns. */
+  | { kind: 'compositeAttribute'; type: QualifiedName; attribute: string }
   | { kind: 'unresolved'; reason: string }
 
 export interface ShapeField {
@@ -178,10 +183,21 @@ export interface ShapeField {
   /** The base type of a domain, only when it differs from `pgType`. */
   baseType?: string
   provenance: FieldProvenance
+  /**
+   * `function-rows`: the value is read straight from a row a function returns (the root of an RPC plan, possibly
+   * through a cast), so `nullable` is `true` whatever the table or type says: a function can return rows its
+   * relation's constraints would refuse. `provenance` says which column or attribute it is, for a printer
+   * that can trace the function and knows it cannot.
+   */
+  reason?: 'function-rows'
 }
 
 /** The relation a node of the result reads and its output: columns first, then embeds. */
 export interface ResultShape {
+  /**
+   * The relation. For the root of an RPC plan, what the rows come from: the table or view, the composite type
+   * or, for `RETURNS TABLE` / `OUT` columns, `pg_catalog.record`.
+   */
   relation: QualifiedName
   /** Output columns in the order PostgREST emits them (`*` expanded in `attnum` order). */
   fields: ShapeField[]
@@ -210,13 +226,17 @@ export interface ShapeEmbedRelationship {
  * limit of 0 can drop its row), `nested-inner` (a `!inner` child drops it), `spread-parent` (it is merged
  * by a nullable to-one spread) and what `fkProven: false` stands for: `computed`, `inverse-o2o`,
  * `view-origin`, `view-target`, `nullable-fk-column`, `fk-not-validated`, `fk-unknown` (the catalog does not
- * say whether the key is validated), `unknown-relationship`.
+ * say whether the key is validated), `unknown-relationship`. `function-rows`: a to-one embed of the rows of an
+ * RPC (first level only, not `!inner`): the row it hangs from may not satisfy the key, whatever `fkProven` says.
+ * A printer that traces a `STABLE` or `IMMUTABLE` function down to the table can restore the embed when
+ * `fkProven`.
  */
 export type ShapeEmbedReason =
   | 'array'
   | 'inner-join'
   | 'fk-proven'
   | 'write'
+  | 'function-rows'
   | 'filtered'
   | 'nested-inner'
   | 'spread-parent'
@@ -279,6 +299,81 @@ export interface ShapeEmbed {
   shape: ResultShape
 }
 
+export type RpcVolatility = 'immutable' | 'stable' | 'volatile'
+
+/** Where the rows of an RPC come from. */
+export type RpcSource =
+  /** `setof table` or `setof view` (also a single row of one). The `shape` columns are the relation's. */
+  | { kind: 'relation'; schema: string; name: string; view: boolean }
+  /** A named composite type that is not a table row. The `shape` fields are its attributes. */
+  | { kind: 'composite'; schema: string; name: string }
+  /** `RETURNS TABLE (...)` or `OUT` parameters, in order, typed as the supplementary catalog says. */
+  | { kind: 'returnsTable'; columns: { name: string; pgType: string }[] }
+
+/** What a `/rpc/*` plan calls. */
+export interface RpcInfo {
+  function: QualifiedName
+  /**
+   * `provolatile`, from the dump (upstream reads it from the same place to choose the transaction mode). A
+   * function that is not `volatile` runs in a read-only transaction under `GET`; upstream does not refuse a
+   * `GET` of a volatile function, Postgres does when it runs.
+   */
+  volatility: RpcVolatility
+  /**
+   * `null` for a scalar return (`form` is `single-scalar` or `setof-scalar`, `shape` is `null`) and when the
+   * columns are not known (`degraded` carries `rpc-columns:<function or type>`: no catalog, or it does not list
+   * them; `shape` then has the selected names with an `unresolved` provenance).
+   */
+  source: RpcSource | null
+}
+
+/** An enclosing `and(...)` / `or(...)` group of a filter, outermost first. `not.` is `negated`. */
+export interface FilterLogic {
+  operator: 'and' | 'or'
+  negated: boolean
+}
+
+/** A filter on a column, `col=op.value`, `embed.col=op.value` or a leaf of an `or=(...)` / `and=(...)` tree. */
+export interface ColumnFilter {
+  kind: 'column'
+  /** The embed the filter applies to: its keys (alias, else name) from the root. Empty for the root relation. */
+  embed: string[]
+  /** The column as written, without its JSON path. */
+  column: string
+  /** The JSON path of `col->a->>b`, empty for none. */
+  jsonPath: JsonPathStep[]
+  /** The column's type: `null` when `provenance.kind` is `unresolved` (no such column or computed field). */
+  pgType: string | null
+  /** The base type of a domain, only when it differs from `pgType`. */
+  baseType?: string
+  /** Whether the column (before the JSON path) can be null, as for a select item. */
+  nullable: boolean
+  /** `function-rows` for a column of the rows of an RPC: see {@link ShapeField.reason}. */
+  reason?: 'function-rows'
+  provenance: FieldProvenance
+  /** Empty for a plain `column=op.value` parameter. */
+  logic: FilterLogic[]
+}
+
+/**
+ * `embed=is.null` and `embed=not.is.null`, where the name is an embed of the select: tests whether the embedded
+ * row exists. (`is.not_null` and every other operator stay a {@link ColumnFilter} on the name.)
+ */
+export interface EmbedFilter {
+  kind: 'embed'
+  /** The embed the filter is written under (the parameter `a.b=is.null` has `embed: ['a']`). */
+  embed: string[]
+  /** The embed's key, as written. */
+  column: string
+  /** The embed the filter tests: `embed` plus `column`. */
+  tested: string[]
+  /** `not.is.null`: the row must exist. */
+  negated: boolean
+  logic: FilterLogic[]
+}
+
+export type PlanFilter = ColumnFilter | EmbedFilter
+
 export interface PlanSuccess {
   ok: true
   action: 'read' | 'insert' | 'update' | 'delete' | 'upsert' | 'rpc' | string
@@ -291,12 +386,23 @@ export interface PlanSuccess {
   warnings: unknown[]
   /** `null` for plans that return no rows of a relation. */
   form: PlanForm | null
-  /** `null` when `form` is `null`, `none` or an RPC form. */
+  /** `null` when `form` is `null`, `none`, `single-scalar` or `setof-scalar`. */
   shape: ResultShape | null
+  /** `null` for plans that are not `/rpc/*` calls. */
+  rpc: RpcInfo | null
+  /**
+   * The target of every filter of the request, in the order upstream applies them (per node, root first:
+   * `or=` / `and=` trees, then the other parameters). A mutation's filters come first. A filter under an
+   * embed the select does not name fails the whole plan (`PGRST108`), so there is no per-filter error: the
+   * plan is `ok: false`.
+   */
+  filters: PlanFilter[]
   /**
    * What this plan had to guess: `column-order:<schema>.<relation>`, `computed-field:<relation>.<name>`
    * (no catalog to resolve it), `fk-validation:<schema>.<table>.<constraint>` (the catalog does not say whether the
-   * key is validated), `rpc-shape`.
+   * key is validated), `rpc-columns:<function>` (an RPC returns a composite type or `RETURNS TABLE` the
+   * catalog does not describe), `rpc-embed-relation:<schema>.<relation>` (upstream resolves the embeds of an
+   * RPC against another table than the one the function returns: see the README).
    */
   degraded: string[]
   mutation?: unknown

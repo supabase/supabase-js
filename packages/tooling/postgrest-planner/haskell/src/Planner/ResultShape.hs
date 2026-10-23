@@ -18,7 +18,14 @@
 -- arrays. Aggregates inside a to-one spread are hoisted by upstream to the nearest non-spread ancestor
 -- (@hoistSpreadAggFunctions@); 'spreadFields' reads them back from that ancestor's @rsSpreadSel@.
 --
--- Not shaped yet: RPC rows (@shape@ is @null@, the plan is marked @rpc-shape@), filters.
+-- An RPC plan adds @rpc@ (function, volatility from the supplementary catalog, and the @source@ of its rows:
+-- a relation, a composite type or the @RETURNS TABLE@ columns). Its rows are function rows: every field is
+-- nullable (a function can return rows the table constraints would refuse) and so is every first-level
+-- to-one embed, with the reason @function-rows@; the embed keeps @fkProven@ for a printer that can trace the
+-- function. Scalar returns have no rows: @shape@ and @source@ are @null@.
+--
+-- @filters@ lists the target of every filter of the plan ('filtersOf'): the column it tests, or the embed
+-- that @embed=is.null@ tests.
 module Planner.ResultShape
   ( planShape
   ) where
@@ -28,7 +35,7 @@ import Data.Aeson.Types (Pair)
 import Data.Either (isRight)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.HashMap.Strict.InsOrd as HMI
-import Data.List (nub)
+import Data.List (find, nub)
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -38,61 +45,108 @@ import Text.Read (readMaybe)
 import PostgREST.ApiRequest (ApiRequest (..))
 import PostgREST.ApiRequest.Preferences (PreferRepresentation (..), Preferences (..))
 import PostgREST.ApiRequest.QueryParams (QueryParams (..))
-import PostgREST.ApiRequest.Types (AggregateFunction (..), JoinType (..), JsonOperand (..), JsonOperation (..), SelectItem (..))
+import PostgREST.ApiRequest.Types (AggregateFunction (..), JoinType (..), JsonOperand (..), JsonOperation (..), LogicOperator (..), SelectItem (..))
 import PostgREST.Plan (ActionPlan (..), CrudPlan (..), DbActionPlan (..))
 import PostgREST.Plan.CallPlan (CallPlan (..))
+import qualified PostgREST.Plan.MutatePlan as MP
 import qualified PostgREST.Plan.ReadPlan as RP
-import PostgREST.Plan.Types (CoercibleField (..), CoercibleSelectField (..), RelSelectField (..), SpreadSelectField (..), SpreadType (..))
+import PostgREST.Plan.Types (CoercibleField (..), CoercibleFilter (..), CoercibleLogicTree (..), CoercibleSelectField (..), RelSelectField (..), SpreadSelectField (..), SpreadType (..))
 import PostgREST.RangeQuery (allRange, hasLimitZero, rangeOffset)
 import PostgREST.SchemaCache (SchemaCache (..))
 import PostgREST.SchemaCache.Identifiers (QualifiedIdentifier (..))
 import PostgREST.SchemaCache.Relationship (Cardinality (..), Junction (..), Relationship (..), relIsToOne)
-import PostgREST.SchemaCache.Routine (funcReturnsSingleComposite)
+import PostgREST.SchemaCache.Routine (FuncVolatility (..), PgType (..), RetType (..), Routine (..), funcReturnsSingleComposite)
 import PostgREST.SchemaCache.Table (Column (..), Table (..))
 
 import Planner.PgType (aggregateType, normalizeType)
-import Planner.Supplementary (SuppFunction (..), SuppReturn (..), Supplementary, findComputedField, foreignKeyValidated, orderColumns)
+import Planner.Supplementary (SuppFunction (..), SuppReturn (..), Supplementary (..), findComputedField, findRoutine, foreignKeyValidated, orderColumns)
 
--- | @form@, @shape@ and @degraded@ for a plan. Plans that return no rows of a relation (inspection,
--- relation/routine info, mutations without a representation) have @shape: null@.
+-- | @form@, @shape@, @rpc@, @filters@ and @degraded@ for a plan. Plans that return no rows of a relation
+-- (inspection, relation/routine info, mutations without a representation, scalar RPCs) have @shape: null@.
 planShape :: SchemaCache -> Maybe Supplementary -> ApiRequest -> ActionPlan -> [Pair]
 planShape sc supp apiReq = \case
   Db (DbCrud _ crud) -> crudShape crud
-  _ -> result Nothing Nothing []
+  _ -> result Nothing Nothing [] Nothing ([], [])
   where
-    ctx = Ctx (dbTables sc) supp
+    ctx = Ctx (dbTables sc) supp Nothing
+    selectTree = qsSelect (iQueryParams apiReq)
 
     crudShape = \case
-      WrappedReadPlan{wrReadPlan, crudQi} -> rowset False crudQi wrReadPlan
-      MutateReadPlan{mrReadPlan, crudQi}
-        | preferRepresentation (iPreferences apiReq) == Just Full -> rowset True crudQi mrReadPlan
-        | otherwise -> result (Just "none") Nothing []
-      CallReadPlan{crCallPlan = FunctionCall{funCScalar, funCSetOfScalar}, crProc}
-        | funCScalar -> rpc "single-scalar"
-        | funCSetOfScalar -> rpc "setof-scalar"
-        | funcReturnsSingleComposite crProc -> rpc "single-composite"
-        | otherwise -> rpc "rowset"
+      WrappedReadPlan{wrReadPlan, crudQi} -> rowset False crudQi wrReadPlan []
+      MutateReadPlan{mrReadPlan, mrMutatePlan, crudQi}
+        | preferRepresentation (iPreferences apiReq) == Just Full -> rowset True crudQi mrReadPlan (mutationWhere mrMutatePlan)
+        | otherwise -> result (Just "none") Nothing [] Nothing (filtersOf ctx ctx crudQi (mutationWhere mrMutatePlan) mrReadPlan)
+      CallReadPlan{crReadPlan, crCallPlan = FunctionCall{funCScalar, funCSetOfScalar}, crProc}
+        | funCScalar -> rpc "single-scalar" crReadPlan crProc
+        | funCSetOfScalar -> rpc "setof-scalar" crReadPlan crProc
+        | funcReturnsSingleComposite crProc -> rpc "single-composite" crReadPlan crProc
+        | otherwise -> rpc "rowset" crReadPlan crProc
+
+    -- The filters of a mutation are @qsFiltersRoot@ followed by one tree per @qsLogic@ entry (@mutatePlan@). That
+    -- includes the trees that name an embed (@embed.or=(...)@), resolved against the mutated table: the read
+    -- plan carries them on the embed, which is where they are reported.
+    mutationWhere mp =
+      let logic = qsLogic (iQueryParams apiReq)
+          (filters, trees) = splitAt (length (MP.where_ mp) - length logic) (MP.where_ mp)
+      in  filters <> [t | ((path, _), t) <- zip logic trees, null path]
 
     -- @isWrite@: the read plan of a mutation (upstream reads its embeds from the physical tables, under the
-    -- statement's snapshot, so a to-one embed can be missing even when its key holds).
-    rowset isWrite rel tree@(Node rp _) =
+    -- statement's snapshot, so a to-one embed can be missing even when its key holds). @rootWhere@: the
+    -- filters of the mutation itself, which upstream keeps in the mutate plan.
+    rowset isWrite rel tree@(Node rp _) rootWhere =
       let env = Env ctx isWrite
-          selectTree = qsSelect (iQueryParams apiReq)
           (fields, notes) = nodeFields ctx selectTree rp rel
-          embeds = childEmbeds env (Parent [] [] Nothing selectTree) Nothing tree
+          embeds = childEmbeds env (Parent [] [] Nothing selectTree False) Nothing tree
           shape = object ["relation" .= qiJSON rel, "fields" .= (fieldJSON <$> fields), "embeds" .= (emJSON <$> embeds)]
-      in  result (Just "rowset") (Just shape) (notes <> concatMap emNotes embeds)
+      in  result (Just "rowset") (Just shape) (notes <> concatMap emNotes embeds) Nothing (filtersOf ctx ctx rel rootWhere tree)
 
-    -- P2 hook: the row shape of an RPC comes from its return type (supplementary @functions@).
-    rpc form = result (Just form) Nothing ["rpc-shape"]
+    -- The rows of a function come from its return type, not from the relation upstream reads the plan
+    -- against (@Plan.hs@ @callReadPlan@ names it @<function schema>.<return type name>@, which is another
+    -- table for a composite of a different schema and no table at all for @RETURNS TABLE@).
+    rpc form tree@(Node rp _) proc =
+      let RpcRows{rrRel, rrRows, rrSource, rrNotes} = rpcRows ctx proc
+          info =
+            object
+              [ "function" .= qiJSON (QualifiedIdentifier (pdSchema proc) (pdName proc))
+              , "volatility" .= routineVolatility proc
+              , "source" .= rrSource
+              ]
+          rootCtx = ctx{cxRows = Just rrRows}
+          filters = filtersOf rootCtx ctx (fromMaybe (QualifiedIdentifier "pg_catalog" "record") rrRel) [] tree
+          notes0 = rrNotes
+      in  case rrRel of
+            Nothing -> result (Just form) Nothing notes0 (Just info) filters
+            Just rel ->
+              let env = Env ctx False
+                  (fields, notes) = nodeFields rootCtx selectTree rp rel
+                  embeds = childEmbeds env (Parent [] [] Nothing selectTree True) Nothing tree
+                  upstreamRel = QualifiedIdentifier (pdSchema proc) (qiName rel)
+                  mismatch = ["rpc-embed-relation:" <> qualified rel | not (null embeds), upstreamRel /= rel, not (isRecord rel)]
+                  shape = object ["relation" .= qiJSON rel, "fields" .= (fieldJSON <$> fields), "embeds" .= (emJSON <$> embeds)]
+              in  result (Just form) (Just shape) (notes0 <> notes <> concatMap emNotes embeds <> mismatch) (Just info) filters
 
-    result :: Maybe Text -> Maybe Value -> [Text] -> [Pair]
-    result form shape notes = ["form" .= form, "shape" .= shape, "degraded" .= nub notes]
+    result :: Maybe Text -> Maybe Value -> [Text] -> Maybe Value -> ([Value], [Text]) -> [Pair]
+    result form shape notes info (filters, filterNotes) =
+      ["form" .= form, "shape" .= shape, "rpc" .= info, "filters" .= filters, "degraded" .= nub (notes <> filterNotes)]
+
+isRecord :: QualifiedIdentifier -> Bool
+isRecord = (== QualifiedIdentifier "pg_catalog" "record")
 
 data Ctx = Ctx
   { cxTables :: HM.HashMap QualifiedIdentifier Table
   , cxSupp :: Maybe Supplementary
+  , cxRows :: Maybe Rows
+  -- ^ Set for the root of an RPC plan: where its columns come from. Embeds resolve against their tables.
   }
+
+-- | The rows of a function.
+data Rows
+  = TableRows
+  -- ^ The rows of a table or view: its columns, read as function rows.
+  | AttrRows [(Text, Expr)]
+  -- ^ The attributes of a composite type or the @OUT@ / @RETURNS TABLE@ columns, in order.
+  | NoRows Text
+  -- ^ Nothing is known about the columns (scalar return, or the catalog does not describe them).
 
 -- | One output column.
 data Field = Field
@@ -102,17 +156,25 @@ data Field = Field
   -- ^ The base type of a domain, when it differs from 'fType'.
   , fNullable :: Bool
   , fProvenance :: Value
+  , fRows :: Bool
+  -- ^ Read straight from a function row: nullable because of that (reason @function-rows@).
   }
 
 fieldJSON :: Field -> Value
-fieldJSON Field{fName, fType, fBaseType, fNullable, fProvenance} =
-  object $
-    [ "name" .= fName
-    , "pgType" .= fType
-    , "nullable" .= fNullable
-    , "provenance" .= fProvenance
-    ]
-      <> [("baseType" .= b) | Just b <- [fBaseType]]
+fieldJSON f = object (("name" .= fName f) : valuePairs f)
+
+-- | What a field and a filter target say about the value they read.
+valuePairs :: Field -> [Pair]
+valuePairs Field{fType, fBaseType, fNullable, fProvenance, fRows} =
+  [ "pgType" .= fType
+  , "nullable" .= fNullable
+  , "provenance" .= fProvenance
+  ]
+    <> [("baseType" .= b) | Just b <- [fBaseType]]
+    <> ["reason" .= str "function-rows" | fRows]
+
+mkField :: Text -> Expr -> Field
+mkField name Expr{eType, eBase, eNullable, eProv, eRows} = Field name eType eBase eNullable eProv eRows
 
 -- | The value of a select item before its output name is attached.
 data Expr = Expr
@@ -120,6 +182,8 @@ data Expr = Expr
   , eBase :: Maybe Text
   , eNullable :: Bool
   , eProv :: Value
+  , eRows :: Bool
+  -- ^ A function row's value, not yet changed by a JSON path or an aggregate.
   }
 
 data Env = Env
@@ -138,6 +202,8 @@ data Parent = Parent
   -- ^ Why an enclosing to-one spread can be null (its values are merged into the parent, so they inherit it).
   , pSelect :: [Tree SelectItem]
   -- ^ The parsed select items below the parent (to tell whether a @*@ was written).
+  , pFunctionRows :: Bool
+  -- ^ The parent is the root of an RPC plan: its rows come from a function.
   }
 
 -- | Where the entries of a to-one spread start in the @rsSpreadSel@ of the nearest non-spread ancestor.
@@ -220,6 +286,7 @@ embedEntry env@Env{evCtx = ctx, evWrite} par hoist sel node@(Node rp kids) = Emb
       | not toOne = (False, "array")
       | joinInner = (False, "inner-join")
       | evWrite = (True, "write")
+      | pFunctionRows par = (True, "function-rows")
       | Left r <- proof = (True, r)
       | filtered = (True, "filtered")
       | nestedInner = (True, "nested-inner")
@@ -242,6 +309,7 @@ embedEntry env@Env{evCtx = ctx, evWrite} par hoist sel node@(Node rp kids) = Emb
           , pOutPath = outPath
           , pInherited = if isToOneSpread && nullable then Just reason else Nothing
           , pSelect = sub
+          , pFunctionRows = False
           }
         (if isToOneSpread then hoist else Nothing)
         node
@@ -373,13 +441,13 @@ resolveSelect ctx rel sels = (concat fs, concat ns)
 resolveOne :: Ctx -> QualifiedIdentifier -> CoercibleSelectField -> ([Field], [Text])
 resolveOne ctx rel CoercibleSelectField{csField = cf, csAggFunction = agg, csAggCast = aggCast, csCast = cast, csAlias = alias}
   | isStar && isNothing agg && not (cfFullRow cf) = expandStar ctx rel
-  | otherwise = ([Field name (eType final) (eBase final) (eNullable final) (eProv final)], notes)
+  | otherwise = ([mkField name final], notes)
   where
     isStar = cfName cf == "*" && null (cfJsonPath cf)
     name = fromMaybe (maybe (cfName cf) aggName agg) alias
 
     (start, notes)
-      | isStar = (Expr Nothing Nothing False Null, []) -- count(*): nothing is read
+      | isStar = (Expr Nothing Nothing False Null False, []) -- count(*): nothing is read
       | otherwise = baseExpr ctx rel cf
 
     final =
@@ -400,35 +468,47 @@ columnOrderKnown Ctx{cxTables, cxSupp} rel = case HM.lookup rel cxTables of
   Just table -> snd (orderColumns cxSupp rel (HMI.keys (tableColumns table)))
 
 -- | An unexpanded @*@ (upstream only expands it next to aggregates or data representations): every
--- physical column in @attnum@ order. Computed fields are not columns, so they are not part of it.
+-- physical column in @attnum@ order. Computed fields are not columns, so they are not part of it. The
+-- rows of a function have the columns of what it returns.
 expandStar :: Ctx -> QualifiedIdentifier -> ([Field], [Text])
-expandStar Ctx{cxTables, cxSupp} rel = case HM.lookup rel cxTables of
-  Nothing -> ([Field "*" Nothing Nothing True (unresolved ("unknown relation " <> qualified rel))], [])
-  Just table ->
-    let dumpOrder = HMI.keys (tableColumns table)
-        (ordered, known) = orderColumns cxSupp rel dumpOrder
-        columns = [col | n <- ordered, Just col <- [HMI.lookup n (tableColumns table)]]
-    in  (columnField rel <$> columns, ["column-order:" <> qualified rel | not known])
+expandStar ctx@Ctx{cxTables, cxSupp, cxRows} rel = case cxRows of
+  Just (AttrRows attrs) -> ([mkField n e | (n, e) <- attrs], [])
+  Just (NoRows reason) -> ([mkField "*" (unresolvedExpr reason)], [])
+  _ -> case HM.lookup rel cxTables of
+    Nothing -> ([mkField "*" (unresolvedExpr ("unknown relation " <> qualified rel))], [])
+    Just table ->
+      let dumpOrder = HMI.keys (tableColumns table)
+          (ordered, known) = orderColumns cxSupp rel dumpOrder
+          columns = [col | n <- ordered, Just col <- [HMI.lookup n (tableColumns table)]]
+      in  (columnField ctx rel <$> columns, ["column-order:" <> qualified rel | not known])
 
-columnField :: QualifiedIdentifier -> Column -> Field
-columnField rel col = Field (colName col) (eType e) (eBase e) (eNullable e) (eProv e)
-  where
-    e = columnExpr rel col
+columnField :: Ctx -> QualifiedIdentifier -> Column -> Field
+columnField ctx rel col = mkField (colName col) (columnExpr ctx rel col)
 
-columnExpr :: QualifiedIdentifier -> Column -> Expr
-columnExpr rel col = Expr (Just ty) base (colNullable col) prov
+-- | A column. Read from the rows of a function it is nullable, whatever the table says: the function may
+-- return rows the table constraints would refuse.
+columnExpr :: Ctx -> QualifiedIdentifier -> Column -> Expr
+columnExpr Ctx{cxRows} rel col = case cxRows of
+  Just TableRows -> e{eNullable = True, eRows = True}
+  _ -> e
   where
     ty = normalizeType (colNominalType col)
     base = let b = normalizeType (colType col) in if b == ty then Nothing else Just b
     prov = object ["kind" .= str "plain", "source" .= object ["schema" .= qiSchema rel, "relation" .= qiName rel, "column" .= colName col]]
+    e = Expr (Just ty) base (colNullable col) prov False
 
--- | A named field of the relation: a column, or a computed field (a function over the row type).
+-- | A named field of the relation: a column, or a computed field (a function over the row type). The root
+-- of an RPC plan reads its columns from the rows of the function.
 baseExpr :: Ctx -> QualifiedIdentifier -> CoercibleField -> (Expr, [Text])
-baseExpr Ctx{cxTables, cxSupp} rel CoercibleField{cfName = name} =
-  case HM.lookup rel cxTables of
+baseExpr ctx@Ctx{cxTables, cxSupp, cxRows} rel CoercibleField{cfName = name} = case cxRows of
+  Just (AttrRows attrs) -> case lookup name attrs of
+    Just e -> (e, [])
+    Nothing -> bad ("no attribute " <> name <> " in the rows of the function") []
+  Just (NoRows reason) -> bad reason []
+  _ -> case HM.lookup rel cxTables of
     Nothing -> bad ("unknown relation " <> qualified rel) []
     Just table -> case HMI.lookup name (tableColumns table) of
-      Just col -> (columnExpr rel col, [])
+      Just col -> (columnExpr ctx rel col, [])
       Nothing -> case cxSupp of
         Nothing -> bad (noField <> " (no supplementary catalog: computed fields are unknown)") ["computed-field:" <> qualified rel <> "." <> name]
         Just supp -> case findComputedField supp rel name of
@@ -446,11 +526,15 @@ baseExpr Ctx{cxTables, cxSupp} rel CoercibleField{cfName = name} =
                         , "relation" .= qiJSON rel
                         ]
                     )
+                    False
                 , []
                 )
   where
     noField = "no column or computed field " <> name <> " on " <> qualified rel
-    bad reason notes = (Expr Nothing Nothing True (unresolved reason), notes)
+    bad reason notes = (unresolvedExpr reason, notes)
+
+unresolvedExpr :: Text -> Expr
+unresolvedExpr reason = Expr Nothing Nothing True (unresolved reason) False
 
 unresolved :: Text -> Value
 unresolved reason = object ["kind" .= str "unresolved", "reason" .= reason]
@@ -464,12 +548,18 @@ applyJsonPath path e =
     (Just resultType)
     Nothing
     True
-    (object ["kind" .= str "jsonPath", "of" .= eProv e, "path" .= (step <$> path)])
+    (object ["kind" .= str "jsonPath", "of" .= eProv e, "path" .= jsonPathSteps path])
+    False
   where
     resultType = case reverse path of
       J2Arrow{} : _ -> "text"
       _ | eType e == Just "json" -> "json"
       _ -> "jsonb"
+
+-- | A JSON path as the plan writes it: each step with its operator and key or index.
+jsonPathSteps :: [JsonOperation] -> [Value]
+jsonPathSteps = map step
+  where
     step = \case
       JArrow o -> operand "->" o
       J2Arrow o -> operand "->>" o
@@ -482,12 +572,12 @@ applyJsonPath path e =
 -- mapping function returns, so the value is nullable json. (Untested: the fixture has no representations.)
 applyRepresentation :: Text -> Expr -> Expr
 applyRepresentation fn e =
-  Expr (Just "json") Nothing True (object ["kind" .= str "representation", "of" .= eProv e, "function" .= fn])
+  Expr (Just "json") Nothing True (object ["kind" .= str "representation", "of" .= eProv e, "function" .= fn]) False
 
 applyCast :: Maybe Text -> Expr -> Expr
 applyCast Nothing e = e
 applyCast (Just c) e =
-  Expr (Just ty) Nothing (eNullable e) (object ["kind" .= str "cast", "of" .= eProv e, "to" .= ty])
+  Expr (Just ty) Nothing (eNullable e) (object ["kind" .= str "cast", "of" .= eProv e, "to" .= ty]) (eRows e)
   where
     ty = normalizeType c
 
@@ -499,6 +589,113 @@ applyAggregate fn e =
     Nothing
     (case fn of Count -> False; _ -> True)
     (object ["kind" .= str "aggregate", "function" .= aggName fn, "of" .= eProv e])
+    False
+
+-- | Where the rows of a function come from.
+data RpcRows = RpcRows
+  { rrRel :: Maybe QualifiedIdentifier
+  -- ^ The relation of the shape; 'Nothing' for a scalar return (no rows, no shape). @pg_catalog.record@ for
+  -- @RETURNS TABLE@ / @OUT@ columns.
+  , rrRows :: Rows
+  , rrSource :: Value
+  , rrNotes :: [Text]
+  }
+
+-- | The rows of a function, from its return type (the dump) and, for a composite type or @RETURNS TABLE@, the
+-- supplementary catalog.
+rpcRows :: Ctx -> Routine -> RpcRows
+rpcRows Ctx{cxTables, cxSupp} proc = case pdReturnType proc of
+  Single (Scalar _) -> scalar
+  SetOf (Scalar _) -> scalar
+  Single (Composite qi _) -> composite qi
+  SetOf (Composite qi _) -> composite qi
+  where
+    fn = QualifiedIdentifier (pdSchema proc) (pdName proc)
+    scalar = RpcRows Nothing (NoRows "the function returns a scalar") Null []
+    unknown qi = RpcRows (Just qi) (NoRows ("the columns of " <> qualified qi <> " are unknown")) Null ["rpc-columns:" <> qualified fn]
+    composite qi
+      | isRecord qi = case cxSupp >>= (`findRoutine` proc) >>= sfOutColumns of
+          Just cols ->
+            RpcRows
+              (Just qi)
+              (AttrRows [(n, attribute (object ["kind" .= str "outColumn", "function" .= qiJSON fn, "column" .= n]) t) | (n, t) <- cols])
+              (object ["kind" .= str "returnsTable", "columns" .= [object ["name" .= n, "pgType" .= normalizeType t] | (n, t) <- cols]])
+              []
+          Nothing -> unknown qi
+      | Just table <- HM.lookup qi cxTables =
+          RpcRows (Just qi) TableRows (object ["kind" .= str "relation", "schema" .= qiSchema qi, "name" .= qiName qi, "view" .= tableIsView table]) []
+      | Just attrs <- cxSupp >>= HM.lookup qi . suppComposites =
+          RpcRows
+            (Just qi)
+            (AttrRows [(n, attribute (object ["kind" .= str "compositeAttribute", "type" .= qiJSON qi, "attribute" .= n]) t) | (n, t) <- attrs])
+            (object ["kind" .= str "composite", "schema" .= qiSchema qi, "name" .= qiName qi])
+            []
+      | otherwise = unknown qi
+    -- Neither an @OUT@ column nor an attribute carries a constraint, and a function can return anything.
+    attribute prov t = Expr (Just (normalizeType t)) Nothing True prov True
+
+-- | @provolatile@ of the function. The dump carries it (it is what upstream picks the transaction mode from).
+routineVolatility :: Routine -> Text
+routineVolatility proc = case pdVolatility proc of
+  Immutable -> "immutable"
+  Stable -> "stable"
+  Volatile -> "volatile"
+
+-- | The target of every filter of a plan, in the order upstream applies them: for each node of the tree
+-- (the root first), its @where_@, which holds the filters and the @or@ / @and@ trees of the query that name
+-- the node. @rootWhere@ is the filter of a mutation, which upstream keeps in the mutate plan.
+--
+-- A filter on a column reports the column (its type, nullability and provenance, as a select item would) and
+-- its JSON path. A filter that names an embed (@embed=is.null@, @embed=not.is.null@) reports the embed it
+-- tests. A filter that names neither a column nor a selected embed has an unresolved provenance; a filter
+-- under an embed that is not selected makes upstream fail the plan (PGRST108), so it never gets here.
+filtersOf :: Ctx -> Ctx -> QualifiedIdentifier -> [CoercibleLogicTree] -> ReadPlanTree -> ([Value], [Text])
+filtersOf rootCtx ctx rootRel rootWhere tree = (concat vs, concat ns)
+  where
+    (vs, ns) = unzip (map (treeEntries rootCtx rootRel [] [] []) rootWhere <> walk rootCtx rootRel [] tree)
+
+    walk c rel path (Node rp kids) =
+      map (treeEntries c rel path kids []) (RP.where_ rp)
+        <> concat [walk ctx (RP.from k) (path <> [nodeKey k]) n | n@(Node k _) <- kids]
+
+    nodeKey rp = fromMaybe (RP.relName rp) (RP.relAlias rp)
+
+-- | The filters of a logic tree. @groups@ are the enclosing @and@ / @or@ groups, outermost first.
+treeEntries :: Ctx -> QualifiedIdentifier -> [Text] -> [ReadPlanTree] -> [(LogicOperator, Bool)] -> CoercibleLogicTree -> ([Value], [Text])
+treeEntries ctx rel embed kids groups = \case
+  CoercibleExpr negated op trees ->
+    let (vs, ns) = unzip (map (treeEntries ctx rel embed kids (groups <> [(op, negated)])) trees)
+    in  (concat vs, concat ns)
+  CoercibleStmnt (CoercibleFilterNullEmbed negated aggAlias) ->
+    let key = case find ((== aggAlias) . RP.relAggAlias . rootLabel) kids of
+          Just (Node rp _) -> fromMaybe (RP.relName rp) (RP.relAlias rp)
+          Nothing -> aggAlias
+    in  ( [ object
+              [ "kind" .= str "embed"
+              , "embed" .= embed
+              , "column" .= key
+              , "tested" .= (embed <> [key])
+              , "negated" .= negated
+              , "logic" .= logic
+              ]
+          ]
+        , []
+        )
+  CoercibleStmnt (CoercibleFilter{field = cf}) ->
+    let (e, notes) = baseExpr ctx rel cf
+    in  ( [ object $
+              [ "kind" .= str "column"
+              , "embed" .= embed
+              , "column" .= cfName cf
+              , "jsonPath" .= jsonPathSteps (cfJsonPath cf)
+              , "logic" .= logic
+              ]
+                <> valuePairs (mkField (cfName cf) e)
+          ]
+        , notes
+        )
+  where
+    logic = [object ["operator" .= (case op of And -> "and"; Or -> "or" :: Text), "negated" .= negated] | (op, negated) <- groups]
 
 qiJSON :: QualifiedIdentifier -> Value
 qiJSON (QualifiedIdentifier s n) = object ["schema" .= s, "name" .= n]

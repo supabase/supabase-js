@@ -469,18 +469,6 @@ describe('postgrest-planner', () => {
       )
       expect(summary(fieldsOf(del))).toEqual([['username', 'text', false, 'plain']])
     })
-
-    it('says what it does not shape yet', () => {
-      const rpc = ok(
-        planner.plan(catalog, {
-          method: 'POST',
-          url: '/rpc/get_status',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name_param: 'supabot' }),
-        })
-      )
-      expect(rpc).toMatchObject({ form: 'single-scalar', shape: null, degraded: ['rpc-shape'] })
-    })
   })
 
   describe('result shape of embeds', () => {
@@ -864,12 +852,6 @@ describe('postgrest-planner', () => {
       expect(mutate('/messages?select=id,users(username)', 'return=minimal').shape).toBeNull()
     })
 
-    it('fails the plan when a filter targets an embed that is not selected', () => {
-      expect(
-        planner.plan(catalog, { method: 'GET', url: '/messages?select=id&users.username=eq.x' })
-      ).toMatchObject({ ok: false, error: { code: 'PGRST108' } })
-    })
-
     it('identifies aliased embeds by their keys', () => {
       const p = plan(
         catalog,
@@ -892,6 +874,423 @@ describe('postgrest-planner', () => {
         path: ['c', 'channel_details'],
         outputs: [['c', 'details']],
       })
+    })
+  })
+
+  describe('rpc plans', () => {
+    const post = (h: number, name: string, args: object = {}) =>
+      planner.plan(h, {
+        method: 'POST',
+        url: `/rpc/${name}`,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(args),
+      })
+    const get = (h: number, path: string) => planner.plan(h, { method: 'GET', url: `/rpc/${path}` })
+    const shapeOf = (p: PlanSuccess) => {
+      if (!p.shape) throw new Error(`no shape: ${JSON.stringify(p)}`)
+      return p.shape
+    }
+    /** [name, pgType, nullable, reason] */
+    const summary = (fields: ShapeField[]) =>
+      fields.map((f) => [f.name, f.pgType, f.nullable, f.reason])
+
+    it('gives a scalar function a form and no shape', () => {
+      const p = ok(post(catalog, 'get_status', { name_param: 'supabot' }))
+      expect(p).toMatchObject({
+        form: 'single-scalar',
+        shape: null,
+        filters: [],
+        degraded: [],
+        rpc: {
+          function: { schema: 'public', name: 'get_status' },
+          volatility: 'immutable',
+          source: null,
+        },
+      })
+      expect(ok(post(catalog, 'void_func')).form).toBe('single-scalar')
+    })
+
+    it('gives a set of scalars its own form', () => {
+      // the test database has no function that returns a set of scalars: make get_status one
+      const dump = JSON.parse(readFileSync(join(fixtures, 'dump-schema.json'), 'utf8'))
+      for (const [, routines] of dump.dbRoutines) {
+        for (const r of routines) {
+          if (r.pdSchema === 'public' && r.pdName === 'get_status') r.pdReturnType.tag = 'SetOf'
+        }
+      }
+      const custom = loaded(
+        planner.load({
+          ...baseInput(),
+          schema: JSON.stringify(dump),
+          supplementary: supplementaryText(),
+        })
+      ).handle
+      try {
+        expect(ok(post(custom, 'get_status', { name_param: 'supabot' }))).toMatchObject({
+          form: 'setof-scalar',
+          shape: null,
+          rpc: { function: { name: 'get_status' }, source: null },
+        })
+      } finally {
+        planner.freeCache(custom)
+      }
+    })
+
+    it('shapes a composite type by its attributes', () => {
+      const p = ok(post(catalog, 'echo_address', { address: { street: 's', city: 'c' } }))
+      expect(p.form).toBe('single-composite')
+      expect(p.rpc).toMatchObject({
+        function: { name: 'echo_address' },
+        volatility: 'immutable',
+        source: { kind: 'composite', schema: 'public', name: 'address' },
+      })
+      const shape = shapeOf(p)
+      expect(shape.relation).toEqual({ schema: 'public', name: 'address' })
+      expect(summary(shape.fields)).toEqual([
+        ['street', 'text', true, 'function-rows'],
+        ['city', 'text', true, 'function-rows'],
+      ])
+      expect(shape.fields[0].provenance).toEqual({
+        kind: 'compositeAttribute',
+        type: { schema: 'public', name: 'address' },
+        attribute: 'street',
+      })
+    })
+
+    it('shapes a row of a table, and a set of rows of a table or a view', () => {
+      const row = ok(post(catalog, 'function_returning_row'))
+      expect(row.form).toBe('single-composite')
+      expect(row.rpc?.source).toEqual({
+        kind: 'relation',
+        schema: 'public',
+        name: 'users',
+        view: false,
+      })
+
+      const set = ok(get(catalog, 'get_messages_by_username?search_username=x'))
+      expect(set.form).toBe('rowset')
+      expect(set.rpc).toMatchObject({
+        volatility: 'stable',
+        source: { kind: 'relation', schema: 'public', name: 'messages', view: false },
+      })
+      const direct = ok(planner.plan(catalog, { method: 'GET', url: '/messages' }))
+      // the columns of the table, in attnum order, with the provenance a read gives them
+      expect(shapeOf(set).fields.map((f) => [f.name, f.pgType])).toEqual(
+        shapeOf(direct).fields.map((f) => [f.name, f.pgType])
+      )
+      expect(shapeOf(set).fields[0].provenance).toEqual(shapeOf(direct).fields[0].provenance)
+
+      const view = ok(get(catalog, 'get_recent_messages_by_username?search_username=x&select=id'))
+      expect(view.rpc?.source).toEqual({
+        kind: 'relation',
+        schema: 'public',
+        name: 'recent_messages',
+        view: true,
+      })
+    })
+
+    it('makes every field of function rows nullable, whatever the column says', () => {
+      const p = ok(get(catalog, 'get_messages_by_username?search_username=x'))
+      const fields = shapeOf(p).fields
+      expect(fields.length).toBeGreaterThan(1)
+      expect(fields.every((f) => f.nullable && f.reason === 'function-rows')).toBe(true)
+      // read with the same columns, the primary key is not null
+      const read = ok(planner.plan(catalog, { method: 'GET', url: '/messages?select=id' }))
+      expect(shapeOf(read).fields[0]).toMatchObject({ name: 'id', nullable: false })
+
+      // a cast keeps what it casts, a JSON path and an aggregate are nullable by themselves
+      const mixed = ok(
+        get(catalog, 'function_returning_set_of_rows?select=username::text,data->a,status')
+      )
+      expect(summary(shapeOf(mixed).fields)).toEqual([
+        ['username', 'text', true, 'function-rows'],
+        ['a', 'jsonb', true, undefined],
+        ['status', 'public.user_status', true, 'function-rows'],
+      ])
+    })
+
+    it('types the columns of RETURNS TABLE from the catalog', () => {
+      const p = ok(get(catalog, 'get_username_and_status?name_param=x'))
+      expect(p.form).toBe('rowset')
+      expect(p.degraded).toEqual([])
+      expect(p.rpc?.source).toEqual({
+        kind: 'returnsTable',
+        columns: [
+          { name: 'username', pgType: 'text' },
+          { name: 'status', pgType: 'public.user_status' },
+        ],
+      })
+      const shape = shapeOf(p)
+      expect(shape.relation).toEqual({ schema: 'pg_catalog', name: 'record' })
+      expect(summary(shape.fields)).toEqual([
+        ['username', 'text', true, 'function-rows'],
+        ['status', 'public.user_status', true, 'function-rows'],
+      ])
+      expect(shape.fields[1].provenance).toEqual({
+        kind: 'outColumn',
+        function: { schema: 'public', name: 'get_username_and_status' },
+        column: 'status',
+      })
+      // only the selected columns, under their alias
+      const picked = ok(get(catalog, 'get_username_and_status?name_param=x&select=u:username'))
+      expect(shapeOf(picked).fields.map((f) => f.name)).toEqual(['u'])
+    })
+
+    it('says so when the columns of a function are not known', () => {
+      for (const name of ['get_username_and_status?name_param=x', 'echo_address?address={}']) {
+        const p = ok(get(handle, name))
+        expect(p.rpc?.source).toBeNull()
+        expect(p.degraded).toEqual([`rpc-columns:public.${name.split('?')[0]}`])
+      }
+      const p = ok(get(handle, 'get_username_and_status?name_param=x&select=username'))
+      expect(shapeOf(p).fields).toMatchObject([
+        { name: 'username', pgType: null, nullable: true, provenance: { kind: 'unresolved' } },
+      ])
+      // a table or a view row is in the dump
+      expect(
+        ok(get(handle, 'get_messages_by_username?search_username=x&select=id')).degraded
+      ).toEqual([])
+    })
+
+    it('makes a first-level to-one embed nullable but keeps what proves it', () => {
+      const p = ok(
+        get(
+          catalog,
+          'get_messages_by_username?search_username=x&select=id,users(username,messages(id)),channels!inner(slug)'
+        )
+      )
+      const [users, channels] = shapeOf(p).embeds
+      expect(users).toMatchObject({
+        key: 'users',
+        cardinality: 'one',
+        nullable: true,
+        reason: 'function-rows',
+        fkProven: true,
+        relationship: {
+          kind: 'm2o',
+          constraint: 'messages_username_fkey',
+          columns: [{ from: 'username', to: 'username' }],
+        },
+      })
+      // below the first level the usual rules apply, and a missing !inner row drops the row
+      expect(users.shape.embeds[0]).toMatchObject({ nullable: false, reason: 'array' })
+      expect(channels).toMatchObject({ nullable: false, reason: 'inner-join', fkProven: true })
+    })
+
+    it('reads the volatility from the dump, and plans a GET of a volatile function as upstream does', () => {
+      expect(ok(get(catalog, 'get_status?name_param=x')).rpc?.volatility).toBe('immutable')
+      expect(ok(get(catalog, 'get_messages_by_username?search_username=x')).rpc?.volatility).toBe(
+        'stable'
+      )
+      const volatile = ok(get(catalog, 'offline_user?name_param=x'))
+      expect(volatile.rpc?.volatility).toBe('volatile')
+      // upstream plans the GET as a read: Postgres refuses it when it runs
+      expect(volatile.txMode).toBe('read')
+      expect(ok(post(catalog, 'offline_user', { name_param: 'x' })).txMode).toBe('write')
+      expect(ok(post(catalog, 'set_users_offline', { name_param: 'x' })).rpc?.volatility).toBe(
+        'volatile'
+      )
+    })
+
+    it('does not treat the arguments of a call as filters', () => {
+      const p = ok(get(catalog, 'get_messages_by_username?search_username=x&username=eq.a'))
+      expect(p.filters).toMatchObject([
+        { kind: 'column', column: 'username', reason: 'function-rows' },
+      ])
+    })
+
+    it('names the relation an embed of a function is really resolved against', () => {
+      // upstream looks for the relationship from public.users, the schema of the function and the name of the table
+      const p = ok(get(catalog, 'get_personal_users?select=username,messages(id)'))
+      expect(shapeOf(p).relation).toEqual({ schema: 'personal', name: 'users' })
+      expect(p.degraded).toEqual(['rpc-embed-relation:personal.users'])
+      expect(p.rpc?.source).toMatchObject({ schema: 'personal', name: 'users' })
+    })
+
+    it('returns the dispatch errors of upstream as values', () => {
+      expect(get(catalog, 'postgrest_unresolvable_function?a=1')).toMatchObject({
+        ok: false,
+        error: { code: 'PGRST203' },
+      })
+      expect(post(catalog, 'postgrest_unresolvable_function', { a: 1 })).toMatchObject({
+        ok: false,
+        error: { code: 'PGRST203' },
+      })
+      expect(get(catalog, 'nope')).toMatchObject({ ok: false, error: { code: 'PGRST202' } })
+      expect(
+        planner.plan(catalog, { method: 'DELETE', url: '/rpc/get_status?name_param=x' })
+      ).toMatchObject({ ok: false, error: { code: 'PGRST101' } })
+    })
+  })
+
+  describe('filter targets', () => {
+    const filtersOf = (url: string, extra: Partial<PlanRequest> = {}, h = catalog) =>
+      ok(planner.plan(h, { method: 'GET', url, ...extra })).filters
+    const key = (column: string) => encodeURIComponent(column)
+
+    it('resolves a filter on the root relation like a select item', () => {
+      expect(filtersOf('/messages?select=id&username=eq.supabot&message=not.is.null')).toEqual([
+        {
+          kind: 'column',
+          embed: [],
+          column: 'username',
+          jsonPath: [],
+          pgType: 'text',
+          nullable: false,
+          provenance: {
+            kind: 'plain',
+            source: { schema: 'public', relation: 'messages', column: 'username' },
+          },
+          logic: [],
+        },
+        expect.objectContaining({ kind: 'column', column: 'message', embed: [] }),
+      ])
+      expect(filtersOf('/messages?select=id')).toEqual([])
+    })
+
+    it('resolves a filter on an embed by its key', () => {
+      expect(filtersOf('/messages?select=id,channels(slug)&channels.id=gt.1')).toEqual([
+        {
+          kind: 'column',
+          embed: ['channels'],
+          column: 'id',
+          jsonPath: [],
+          pgType: 'int8',
+          nullable: false,
+          provenance: {
+            kind: 'plain',
+            source: { schema: 'public', relation: 'channels', column: 'id' },
+          },
+          logic: [],
+        },
+      ])
+      const aliased = filtersOf('/messages?select=id,c:channels(slug)&c.slug=eq.x')
+      expect(aliased).toMatchObject([{ embed: ['c'], column: 'slug', nullable: true }])
+      const nested = filtersOf(
+        '/channels?select=id,messages(id,users(username))&messages.users.username=eq.x'
+      )
+      expect(nested).toMatchObject([{ embed: ['messages', 'users'], column: 'username' }])
+    })
+
+    it('says which embed a column filter tests', () => {
+      expect(filtersOf('/messages?select=id,channels(slug)&channels=not.is.null')).toEqual([
+        {
+          kind: 'embed',
+          embed: [],
+          column: 'channels',
+          tested: ['channels'],
+          negated: true,
+          logic: [],
+        },
+      ])
+      expect(filtersOf('/messages?select=id,channels(slug)&channels=is.null')).toMatchObject([
+        { kind: 'embed', negated: false },
+      ])
+      expect(
+        filtersOf('/channels?select=id,messages(id,users(username))&messages.users=is.null')
+      ).toMatchObject([
+        { kind: 'embed', embed: ['messages'], column: 'users', tested: ['messages', 'users'] },
+      ])
+      // upstream rewrites is.null and not.is.null only
+      expect(filtersOf('/messages?select=id,channels(slug)&channels=is.not_null')).toMatchObject([
+        { kind: 'column', column: 'channels', pgType: null, provenance: { kind: 'unresolved' } },
+      ])
+    })
+
+    it('reports the JSON path of a column filter', () => {
+      const [f] = filtersOf(`/users?select=username&${key('data->a->>b')}=eq.1`)
+      expect(f).toMatchObject({
+        kind: 'column',
+        column: 'data',
+        pgType: 'jsonb',
+        jsonPath: [
+          { op: '->', key: 'a' },
+          { op: '->>', key: 'b' },
+        ],
+        provenance: { kind: 'plain', source: { relation: 'users', column: 'data' } },
+      })
+    })
+
+    it('reports a column that does not exist as unresolved', () => {
+      expect(filtersOf('/messages?select=id&nope=eq.1')).toMatchObject([
+        {
+          kind: 'column',
+          column: 'nope',
+          pgType: null,
+          nullable: true,
+          provenance: { kind: 'unresolved' },
+        },
+      ])
+    })
+
+    it('lists the leaves of and= and or= trees with their groups, embeds included', () => {
+      const filters = filtersOf(
+        '/messages?select=id,channels(slug)&or=(id.eq.1,and(username.eq.x,channels.is.null))&not.and=(message.eq.y)&channels.or=(slug.eq.a)'
+      )
+      expect(
+        filters.map((f) => [
+          f.kind,
+          f.embed.join('.'),
+          f.column,
+          f.logic.map((l) => `${l.negated ? 'not.' : ''}${l.operator}`).join('/'),
+        ])
+      ).toEqual([
+        ['column', '', 'id', 'or'],
+        ['column', '', 'username', 'or/and'],
+        ['embed', '', 'channels', 'or/and'],
+        ['column', '', 'message', 'not.and'],
+        ['column', 'channels', 'slug', 'or'],
+      ])
+    })
+
+    it('fails the plan when a filter targets an embed that is not selected', () => {
+      expect(
+        planner.plan(catalog, { method: 'GET', url: '/messages?select=id&channels.slug=eq.x' })
+      ).toMatchObject({ ok: false, error: { code: 'PGRST108' } })
+      expect(
+        planner.plan(catalog, { method: 'GET', url: '/messages?select=id&channels.or=(slug.eq.x)' })
+      ).toMatchObject({ ok: false, error: { code: 'PGRST108' } })
+    })
+
+    it('reports the filters of a mutation where they were written', () => {
+      const patch = ok(
+        planner.plan(catalog, {
+          method: 'PATCH',
+          url: '/messages?id=eq.1&select=id,users(username)&users.or=(username.eq.a)',
+          headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+          body: JSON.stringify({ message: 'x' }),
+        })
+      )
+      expect(patch.filters.map((f) => [f.embed, f.column])).toEqual([
+        [[], 'id'],
+        [['users'], 'username'],
+      ])
+      const del = ok(
+        planner.plan(catalog, { method: 'DELETE', url: '/messages?id=eq.1&username=eq.x' })
+      )
+      expect(del.filters.map((f) => f.column)).toEqual(['id', 'username'])
+    })
+
+    it('types the filters on function rows as function rows', () => {
+      const p = ok(
+        planner.plan(catalog, {
+          method: 'GET',
+          url: '/rpc/get_messages_by_username?search_username=x&id=gt.1',
+        })
+      )
+      expect(p.filters).toMatchObject([
+        { kind: 'column', column: 'id', pgType: 'int8', nullable: true, reason: 'function-rows' },
+      ])
+      const embedded = ok(
+        planner.plan(catalog, {
+          method: 'GET',
+          url: '/rpc/get_messages_by_username?search_username=x&select=id,users(username)&users.username=eq.a',
+        })
+      )
+      expect(embedded.filters).toMatchObject([
+        { embed: ['users'], column: 'username', nullable: false },
+      ])
+      expect(embedded.filters[0]).not.toHaveProperty('reason')
     })
   })
 

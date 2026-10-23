@@ -1,7 +1,9 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 -- | The supplementary catalog: facts the @--dump-schema@ document does not carry.
 --
--- The dump loses column order (its tables are JSON objects), foreign-key validity, routine
--- volatility and the OUT/@RETURNS TABLE@ columns of a function. One JSON document (@format: 1@)
+-- The dump loses column order (its tables are JSON objects), foreign-key validity and the
+-- OUT/@RETURNS TABLE@ columns of a function (it does carry routine volatility, which is what plans report). One JSON document (@format: 1@)
 -- supplies them; see @test/fixtures/supplementary.sql@ for the generator and the README for the
 -- contract. The decoder is lenient on purpose: unknown top-level keys and unknown per-item keys are
 -- ignored (the mapper stores view definitions, function bodies and JSON Schema CHECKs in the same
@@ -15,6 +17,7 @@ module Planner.Supplementary
   , applyColumnOrder
   , foreignKeyValidated
   , findComputedField
+  , findRoutine
   ) where
 
 import Control.Monad (unless)
@@ -29,7 +32,10 @@ import Data.Text (Text)
 
 import PostgREST.SchemaCache (SchemaCache (..))
 import PostgREST.SchemaCache.Identifiers (QualifiedIdentifier (..))
+import PostgREST.SchemaCache.Routine (Routine (..), RoutineParam (..))
 import PostgREST.SchemaCache.Table (Table (..))
+
+import Planner.PgType (normalizeType)
 
 data Supplementary = Supplementary
   { suppRelations :: HM.HashMap QualifiedIdentifier [(Text, Int)]
@@ -154,3 +160,16 @@ findComputedField supp (QualifiedIdentifier schema rel) name =
     [] -> Nothing
   where
     relationType = schema <> "." <> rel
+
+-- | The catalog entry of a routine of the schema cache: the overload of the same schema and name whose input
+-- argument types are the routine's. A name the catalog lists once matches whatever the spelling of its types.
+findRoutine :: Supplementary -> Routine -> Maybe SuppFunction
+findRoutine supp Function{pdSchema, pdName, pdParams} =
+  case [f | f <- named, map normalizeType (sfArgTypes f) == args] of
+    (f : _) -> Just f
+    [] -> case named of
+      [f] -> Just f
+      _ -> Nothing
+  where
+    named = [f | f <- suppFunctions supp, sfSchema f == pdSchema, sfName f == pdName]
+    args = normalizeType . ppType <$> pdParams

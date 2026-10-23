@@ -44,11 +44,11 @@ All payloads are UTF-8 JSON in linear memory; results are a pointer to `[u32 LE 
 - `planner_free_cache(handle)`
 - `planner_plan(handle, reqP, reqN) -> res`: plan description or upstream error
 
-ABI 2 differs from 1 by the second buffer pair of `planner_load`, the `degraded` and `columnOrderKnown` fields of its result, and the `form`, `shape` and `degraded` fields of a plan. The abi 1 summary fields of a plan (`select`, `embeds`, `mutation`, `routine`, ...) are unchanged.
+ABI 2 differs from 1 by the second buffer pair of `planner_load`, the `degraded` and `columnOrderKnown` fields of its result, and the `form`, `shape`, `rpc`, `filters` and `degraded` fields of a plan. The abi 1 summary fields of a plan (`select`, `embeds`, `mutation`, `routine`, ...) are unchanged.
 
 ## Supplementary catalog
 
-The schema dump loses facts the planner needs to describe a result: the dump decoder cannot keep the order of the columns of a table (JSON objects), and the dump has neither the computed fields' return types nor foreign key validity, routine volatility or OUT columns. One JSON document supplies them (`Supplementary` in `src/index.ts`, `format: 1`):
+The schema dump loses facts the planner needs to describe a result: the dump decoder cannot keep the order of the columns of a table (JSON objects), and the dump has neither the computed fields' return types nor foreign key validity or the `OUT` columns of a function (a routine's volatility is in the dump, and is what a plan reports). One JSON document supplies them (`Supplementary` in `src/index.ts`, `format: 1`):
 
 | key           | content                                                                                               |
 | ------------- | ----------------------------------------------------------------------------------------------------- |
@@ -78,7 +78,8 @@ Without a catalog everything still plans, but what the planner had to guess is l
 | `column-order:<schema>.<relation>`            | load, plan | the relation has no `attnum` order: `*` is in the dump's order, not the table's  |
 | `computed-field:<relation>.<name>`            | plan       | no catalog to tell whether `<name>` is a computed field: field is unresolved     |
 | `fk-validation:<schema>.<table>.<constraint>` | plan       | no catalog entry says whether the key is validated: a to-one on it is not proven |
-| `rpc-shape`                                   | plan       | RPC row shapes are not resolved yet                                              |
+| `rpc-columns:<function>`                      | plan       | an RPC returns a composite type or `RETURNS TABLE` the catalog does not describe |
+| `rpc-embed-relation:<schema>.<relation>`      | plan       | upstream resolves the embeds of an RPC against another relation (see RPC)        |
 
 `columnOrderKnown` in the load result is `true` when no relation lacks its order.
 
@@ -86,8 +87,10 @@ Without a catalog everything still plans, but what the planner had to guess is l
 
 A plan carries, next to the abi 1 summary:
 
-- `form`: what the body looks like. `rowset` for reads and for mutations that return the representation, `none` for mutations without `Prefer: return=representation`, `single-scalar`, `setof-scalar` and `single-composite` for RPC (their `shape` is `null` until the RPC slice), `null` for plans that return no rows of a relation.
-- `shape`: `{relation: {schema, name}, fields, embeds}` for the root relation of reads (GET, HEAD) and of mutations with `return=representation`; `null` otherwise. `embeds` is described below.
+- `form`: what the body looks like. `rowset` for reads, for mutations that return the representation and for RPC that return a set of composite rows, `none` for mutations without `Prefer: return=representation`, `single-scalar`, `setof-scalar` and `single-composite` for RPC, `null` for plans that return no rows of a relation.
+- `shape`: `{relation: {schema, name}, fields, embeds}` for the root relation of reads (GET, HEAD), of mutations with `return=representation` and of RPC that return composite rows; `null` otherwise (including the scalar RPC forms). `embeds` is described below.
+- `rpc`: `null` unless the plan is a `/rpc/*` call, see below.
+- `filters`: the target of every filter parameter, see below.
 - `degraded`: the notes above that apply to this plan.
 
 Every entry of `fields` is `{name, pgType, nullable, provenance, baseType?}`, in the order PostgREST emits the columns:
@@ -95,11 +98,45 @@ Every entry of `fields` is `{name, pgType, nullable, provenance, baseType?}`, in
 - `name`: the alias, else the aggregate's lowercased name (`count`, `sum`, ...), else the last JSON key (`data->a->>b` is `b`), else the column name.
 - `pgType`: normalised spelling: internal names (`int4`, `timestamptz`), no type modifiers, `schema.name` outside `pg_catalog`, `[]` for arrays; `null` when unresolved. `baseType` is the base type of a domain, only when it differs.
 - `nullable`: a column is nullable unless declared `NOT NULL`; a JSON path always is; `count` is never; other aggregates always are; a cast keeps the nullability of what it casts; a computed field always is.
-- `provenance`, nested through `of`: `plain` (`source: {schema, relation, column}`), `computed`, `jsonPath` (`path` of `->`/`->>` steps with `key` or `index`), `cast` (`to`), `aggregate` (`function`), `representation` (data representation, untested: the fixture has none) or `unresolved` (`reason`; neither a column nor a computed field of the relation).
+- `provenance`, nested through `of`: `plain` (`source: {schema, relation, column}`), `computed`, `jsonPath` (`path` of `->`/`->>` steps with `key` or `index`), `cast` (`to`), `aggregate` (`function`), `representation` (data representation, untested: the fixture has none), `outColumn` (`function`, `column`: an `OUT` or `RETURNS TABLE` column of an RPC), `compositeAttribute` (`type`, `attribute`: an attribute of the composite type an RPC returns) or `unresolved` (`reason`; neither a column nor a computed field of the relation).
+- `reason`: `function-rows` on the fields of the rows of an RPC, see below.
 
 Select items are evaluated the way upstream prints them: expression (column, JSON path), field cast, aggregate, aggregate cast.
 
-Not covered yet: RPC rows, filter targets.
+### RPC
+
+`rpc` is `{function: {schema, name}, volatility, source}` for a `/rpc/*` plan. Dispatch is upstream's: an unknown function is `PGRST202` and an overload the arguments cannot choose between is `PGRST203`, both a top-level `ok: false`; `GET`, `POST` and the other methods are as upstream accepts them (`DELETE` is `PGRST101`).
+
+| return type                            | `form`             | `shape`                                       | `source`                                                                          |
+| -------------------------------------- | ------------------ | --------------------------------------------- | --------------------------------------------------------------------------------- |
+| a scalar (`void` included)             | `single-scalar`    | `null`                                        | `null`                                                                            |
+| `setof` a scalar                       | `setof-scalar`     | `null`                                        | `null`                                                                            |
+| a table or view row, composite         | `single-composite` | the relation's columns, `*` in `attnum` order | `{kind: relation, schema, name, view}` or `{kind: composite, schema, name}`       |
+| `setof` a table, view or composite     | `rowset`           | the same                                      | the same                                                                          |
+| `RETURNS TABLE (...)`, `OUT`, `record` | `rowset`           | the columns, relation `pg_catalog.record`     | `{kind: returnsTable, columns: [{name, pgType}]}`, from the supplementary catalog |
+
+`volatility` is `immutable`, `stable` or `volatile`, read from the schema dump (`pdVolatility`, the value upstream picks the transaction mode with; the supplementary catalog's copy is not used). Upstream does not refuse a `GET` of a volatile function, Postgres does when it runs.
+
+Function rows. A function can return rows its relation's constraints would refuse (a view-like `select`, a row built by hand), so every field read from the rows of an RPC is `nullable: true` with `reason: function-rows`, whatever the column says. The reason survives a cast (it keeps the nullability of what it casts) and not a JSON path or an aggregate, which are nullable on their own. A first-level to-one embed of the rows (not under another embed, not `!inner`) is nullable with reason `function-rows` and keeps `fkProven` and its `relationship.columns`: a printer that traces a `STABLE` or `IMMUTABLE` function down to the table can restore the embed when the key proves it. An `!inner` embed stays non-null (a missing row drops the parent), embeds deeper than the first level follow the usual rules.
+
+Unknown columns. When the catalog does not list the composite type or `OUT` columns, the plan carries `rpc-columns:<function>` and the selected names have an `unresolved` provenance (no catalog at all: a `RETURNS TABLE` function is in this case; a function returning a table or view is not, the dump has its columns).
+
+Upstream quirk. For the embeds of an RPC upstream resolves the relationship against `<schema of the function>.<name of the returned table>` (`Plan.hs` `callReadPlan`, `QI pdSchema (funcTableName proc)`), not against the table the function returns: a function in `public` that returns `personal.users` reads `public.users`, and `record` finds no relation (`PGRST200` for any embed). The planner reports the embeds as upstream plans them and adds `rpc-embed-relation:<schema>.<relation>`, naming the relation the function really returns, whenever an RPC has embeds and upstream resolves them against another relation. `shape.fields` always come from the returned type.
+
+### Filters
+
+`filters` has one entry per filter parameter, in the order upstream applies them: node by node (root first, then the embeds in the order of the select), and within a node the `and=` / `or=` trees, then the column filters, then the embed tests. For a mutation the filters of the mutated table come first. Upstream parses `or=` and `and=` (also `not.or=`, nested groups and `embed.or=`): every leaf is an entry of `filters`, whose `logic` lists its enclosing groups, outermost first (`[{operator: 'or', negated: false}, {operator: 'and', negated: false}]`). On a mutation upstream also puts every logic tree on the root's `where_`, including the ones written for an embed (`users.or=...`); the planner reports each one only where it was written (the embed) and not against the mutated table.
+
+Non-operator `GET` parameters of an RPC are arguments, not filters (`filters` stays empty for them).
+
+| `kind`   | keys                                                                                               | meaning                                                                          |
+| -------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `column` | `embed`, `column`, `jsonPath`, `pgType`, `baseType?`, `nullable`, `reason?`, `provenance`, `logic` | `col=op.value`, `col->a->>b=op.value`, `embed.col=op.value` or a leaf of a tree  |
+| `embed`  | `embed`, `column`, `tested`, `negated`, `logic`                                                    | `embed=is.null` and `embed=not.is.null`, where `embed` is an embed of the select |
+
+`embed` is the path of keys (alias, else name) from the root of the embed the filter is written under (`[]` for the root). A `column` entry is resolved as a select item is: `pgType`, `nullable` and `provenance` are those of the column before its JSON path (`jsonPath` is the same `key`/`index` steps as in a field), a column that does not exist gives `pgType: null` and an `unresolved` provenance (a filter on it fails in Postgres, not in the planner), and the columns of the rows of an RPC root carry `reason: function-rows`. An `embed` entry is what upstream rewrites into a join test: `embed=is.null` and `embed=not.is.null` (with the name of an embed of the select) only; `tested` is the embed it tests (`embed` followed by `column`) and `negated` is `not.is.null`. `is.not_null` and every other operator are not rewritten: they are `column` entries on the name.
+
+There is no per-filter error. A filter written under an embed the select does not name (`channels.slug=eq.x` without `channels(...)`) is `PGRST108` upstream and fails the whole request, so the whole plan is `ok: false` with that error.
 
 ### Embeds
 
