@@ -49,6 +49,143 @@
   },
   "supplementaryFormat": 1,
   "supplementary": {
+    "casts": [
+      {
+        "method": "f",
+        "source": "bytea",
+        "target": "extensions.geography"
+      },
+      {
+        "method": "f",
+        "source": "bytea",
+        "target": "extensions.geometry"
+      },
+      {
+        "method": "f",
+        "source": "extensions.box2d",
+        "target": "extensions.box3d"
+      },
+      {
+        "method": "f",
+        "source": "extensions.box2d",
+        "target": "extensions.geometry"
+      },
+      {
+        "method": "f",
+        "source": "extensions.box3d",
+        "target": "box"
+      },
+      {
+        "method": "f",
+        "source": "extensions.box3d",
+        "target": "extensions.box2d"
+      },
+      {
+        "method": "f",
+        "source": "extensions.box3d",
+        "target": "extensions.geometry"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geography",
+        "target": "bytea"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geography",
+        "target": "extensions.geography"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geography",
+        "target": "extensions.geometry"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "box"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "bytea"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "extensions.box2d"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "extensions.box3d"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "extensions.geography"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "extensions.geometry"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "json"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "jsonb"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "path"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "point"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "polygon"
+      },
+      {
+        "method": "f",
+        "source": "extensions.geometry",
+        "target": "text"
+      },
+      {
+        "method": "f",
+        "source": "path",
+        "target": "extensions.geometry"
+      },
+      {
+        "method": "f",
+        "source": "point",
+        "target": "extensions.geometry"
+      },
+      {
+        "method": "f",
+        "source": "polygon",
+        "target": "extensions.geometry"
+      },
+      {
+        "method": "f",
+        "source": "public.cast_mood",
+        "target": "text"
+      },
+      {
+        "method": "f",
+        "source": "text",
+        "target": "extensions.geometry"
+      }
+    ],
     "composites": [
       {
         "attributes": [
@@ -75,6 +212,14 @@
         ],
         "name": "user_status",
         "schema": "personal"
+      },
+      {
+        "labels": [
+          "ok",
+          "bad"
+        ],
+        "name": "cast_mood",
+        "schema": "public"
       },
       {
         "labels": [
@@ -224,6 +369,23 @@
         "volatility": "i"
       },
       {
+        "argNames": null,
+        "argTypes": [
+          "public.cast_cases"
+        ],
+        "language": "sql",
+        "name": "label",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "personal",
+        "source": " SELECT 1; ",
+        "volatility": "i"
+      },
+      {
         "argNames": [
           "user_row"
         ],
@@ -243,6 +405,25 @@
         "volatility": "s"
       },
       {
+        "argNames": [
+          "item"
+        ],
+        "argTypes": [
+          "public.domain_items"
+        ],
+        "language": "sql",
+        "name": "amount",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "public.item_amount"
+        },
+        "schema": "public",
+        "source": "\n  SELECT item.qty;\n",
+        "volatility": "s"
+      },
+      {
         "argNames": null,
         "argTypes": [
           "public.messages"
@@ -257,6 +438,76 @@
         },
         "schema": "public",
         "source": "\nselect substring($1.message, 1, 3);\n",
+        "volatility": "s"
+      },
+      {
+        "argNames": null,
+        "argTypes": [
+          "public.cast_mood"
+        ],
+        "language": "sql",
+        "name": "cast_mood_text",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "text"
+        },
+        "schema": "public",
+        "source": " SELECT NULL::text; ",
+        "volatility": "i"
+      },
+      {
+        "argNames": null,
+        "argTypes": [
+          "public.computed_parents"
+        ],
+        "language": "sql",
+        "name": "computed_child",
+        "outColumns": null,
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "public.computed_children"
+        },
+        "schema": "public",
+        "source": "\n  SELECT * FROM public.computed_children WHERE false;\n",
+        "volatility": "s"
+      },
+      {
+        "argNames": [
+          "n"
+        ],
+        "argTypes": [
+          "integer"
+        ],
+        "language": "sql",
+        "name": "computed_child",
+        "outColumns": null,
+        "returns": {
+          "kind": "composite",
+          "setof": false,
+          "type": "public.computed_children"
+        },
+        "schema": "public",
+        "source": "\n  SELECT * FROM public.computed_children WHERE id = n;\n",
+        "volatility": "s"
+      },
+      {
+        "argNames": null,
+        "argTypes": [
+          "public.computed_parents"
+        ],
+        "language": "sql",
+        "name": "computed_only_child",
+        "outColumns": null,
+        "returns": {
+          "kind": "composite",
+          "setof": false,
+          "type": "public.computed_children"
+        },
+        "schema": "public",
+        "source": "\n  SELECT * FROM public.computed_children WHERE false;\n",
         "volatility": "s"
       },
       {
@@ -868,6 +1119,78 @@
         "volatility": "v"
       },
       {
+        "argNames": [
+          "n"
+        ],
+        "argTypes": [
+          "integer"
+        ],
+        "language": "sql",
+        "name": "out_inout",
+        "outColumns": [
+          {
+            "name": "n",
+            "type": "integer"
+          }
+        ],
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "public",
+        "source": "\n  SELECT n + 1;\n",
+        "volatility": "i"
+      },
+      {
+        "argNames": [
+          "a"
+        ],
+        "argTypes": [
+          "integer"
+        ],
+        "language": "sql",
+        "name": "out_single",
+        "outColumns": [
+          {
+            "name": "doubled",
+            "type": "bigint"
+          }
+        ],
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "bigint"
+        },
+        "schema": "public",
+        "source": "\n  SELECT a * 2::bigint;\n",
+        "volatility": "i"
+      },
+      {
+        "argNames": [
+          "a"
+        ],
+        "argTypes": [
+          "integer"
+        ],
+        "language": "sql",
+        "name": "out_table_one_column",
+        "outColumns": [
+          {
+            "name": "doubled",
+            "type": "bigint"
+          }
+        ],
+        "returns": {
+          "kind": "scalar",
+          "setof": true,
+          "type": "bigint"
+        },
+        "schema": "public",
+        "source": "\n  SELECT a * 2::bigint;\n",
+        "volatility": "i"
+      },
+      {
         "argNames": null,
         "argTypes": [
           "boolean"
@@ -1317,6 +1640,25 @@
       },
       {
         "argNames": [
+          "item"
+        ],
+        "argTypes": [
+          "public.domain_items"
+        ],
+        "language": "sql",
+        "name": "return_only",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "public.return_only_amount"
+        },
+        "schema": "public",
+        "source": "\n  SELECT item.qty::public.return_only_amount;\n",
+        "volatility": "s"
+      },
+      {
+        "argNames": [
           "name_param"
         ],
         "argTypes": [
@@ -1551,6 +1893,154 @@
             "attnum": 1,
             "generated": null,
             "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "v",
+            "notNull": false,
+            "type": "character varying"
+          },
+          {
+            "attnum": 3,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "bp",
+            "notNull": false,
+            "type": "character(3)"
+          },
+          {
+            "attnum": 4,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "nm",
+            "notNull": false,
+            "type": "name"
+          },
+          {
+            "attnum": 5,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "qc",
+            "notNull": false,
+            "type": "\"char\""
+          },
+          {
+            "attnum": 6,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "cd",
+            "notNull": false,
+            "type": "cidr"
+          },
+          {
+            "attnum": 7,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "ip",
+            "notNull": false,
+            "type": "inet"
+          },
+          {
+            "attnum": 8,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "rc",
+            "notNull": false,
+            "type": "regclass"
+          },
+          {
+            "attnum": 9,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "ts",
+            "notNull": false,
+            "type": "timestamp with time zone"
+          },
+          {
+            "attnum": 10,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "nu",
+            "notNull": false,
+            "type": "numeric(10,2)"
+          },
+          {
+            "attnum": 11,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "ar",
+            "notNull": false,
+            "type": "integer[]"
+          },
+          {
+            "attnum": 12,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "st",
+            "notNull": false,
+            "type": "public.user_status"
+          },
+          {
+            "attnum": 13,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "u",
+            "notNull": false,
+            "type": "uuid"
+          },
+          {
+            "attnum": 14,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "flag",
+            "notNull": false,
+            "type": "boolean"
+          },
+          {
+            "attnum": 15,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "doc",
+            "notNull": false,
+            "type": "jsonb"
+          }
+        ],
+        "kind": "r",
+        "name": "aggregate_types",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
             "identity": "by default",
             "name": "id",
             "notNull": true,
@@ -1617,6 +2107,100 @@
         ],
         "kind": "r",
         "name": "booking",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "tstz",
+            "notNull": true,
+            "type": "timestamp with time zone"
+          },
+          {
+            "attnum": 3,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "ts",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "attnum": 4,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "n",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "attnum": 5,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "b",
+            "notNull": true,
+            "type": "cast_b.d"
+          },
+          {
+            "attnum": 6,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "c",
+            "notNull": true,
+            "type": "cast_c.int4"
+          },
+          {
+            "attnum": 7,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "mood",
+            "notNull": true,
+            "type": "public.cast_mood"
+          },
+          {
+            "attnum": 8,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "mood_dom",
+            "notNull": true,
+            "type": "public.cast_mood_dom"
+          },
+          {
+            "attnum": 9,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "status",
+            "notNull": true,
+            "type": "public.user_status"
+          }
+        ],
+        "kind": "r",
+        "name": "cast_cases",
         "schema": "public",
         "updatable": {
           "delete": true,
@@ -1785,6 +2369,59 @@
             "identity": null,
             "name": "id",
             "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "parent_id",
+            "notNull": false,
+            "type": "bigint"
+          }
+        ],
+        "kind": "r",
+        "name": "computed_children",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          }
+        ],
+        "kind": "r",
+        "name": "computed_parents",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
             "type": "integer"
           },
           {
@@ -1808,6 +2445,37 @@
         ],
         "kind": "r",
         "name": "cornercase",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "qty",
+            "notNull": true,
+            "type": "public.item_amount"
+          }
+        ],
+        "kind": "r",
+        "name": "domain_items",
         "schema": "public",
         "updatable": {
           "delete": true,
@@ -2714,6 +3382,438 @@
           "update": true
         },
         "viewDefinition": null
+      }
+    ],
+    "schemas": [
+      "extensions",
+      "graphql_public",
+      "personal",
+      "public"
+    ],
+    "searchPathFunctions": [
+      {
+        "argTypes": [],
+        "name": "grant_pg_cron_access",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "event_trigger"
+        },
+        "schema": "extensions",
+        "volatility": "v"
+      },
+      {
+        "argTypes": [],
+        "name": "grant_pg_graphql_access",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "event_trigger"
+        },
+        "schema": "extensions",
+        "volatility": "v"
+      },
+      {
+        "argTypes": [],
+        "name": "grant_pg_net_access",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "event_trigger"
+        },
+        "schema": "extensions",
+        "volatility": "v"
+      },
+      {
+        "argTypes": [
+          "public.cast_cases"
+        ],
+        "name": "label",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "text"
+        },
+        "schema": "extensions",
+        "volatility": "i"
+      },
+      {
+        "argTypes": [],
+        "name": "pgrst_ddl_watch",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "event_trigger"
+        },
+        "schema": "extensions",
+        "volatility": "v"
+      },
+      {
+        "argTypes": [],
+        "name": "pgrst_drop_watch",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "event_trigger"
+        },
+        "schema": "extensions",
+        "volatility": "v"
+      },
+      {
+        "argTypes": [],
+        "name": "set_graphql_placeholder",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "event_trigger"
+        },
+        "schema": "extensions",
+        "volatility": "v"
+      }
+    ],
+    "types": [
+      {
+        "base": null,
+        "kind": "b",
+        "name": "box2d",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "b",
+        "name": "box2df",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "b",
+        "name": "box3d",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "b",
+        "name": "geography",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "geography_columns",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "b",
+        "name": "geometry",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "geometry_columns",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "geometry_dump",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "b",
+        "name": "gidx",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "pg_stat_statements",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "pg_stat_statements_info",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "spatial_ref_sys",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "b",
+        "name": "spheroid",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "valid_detail",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "user_notes",
+        "schema": "personal"
+      },
+      {
+        "base": null,
+        "kind": "e",
+        "name": "user_status",
+        "schema": "personal"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "users",
+        "schema": "personal"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "active_users",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "address",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "aggregate_types",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "best_friends",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "booking",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "cast_cases",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "e",
+        "name": "cast_mood",
+        "schema": "public"
+      },
+      {
+        "base": "public.cast_mood",
+        "kind": "d",
+        "name": "cast_mood_dom",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "categories",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "channel_details",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "channels",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "collections",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "computed_children",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "computed_parents",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "cornercase",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "domain_items",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "events",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "events_2024",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "events_2025",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "hotel",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "inference_cases",
+        "schema": "public"
+      },
+      {
+        "base": "integer",
+        "kind": "d",
+        "name": "item_amount",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "lab",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "messages",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "non_updatable_view",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "product_categories",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "products",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "recent_messages",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "remote_users",
+        "schema": "public"
+      },
+      {
+        "base": "integer",
+        "kind": "d",
+        "name": "return_only_amount",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "shops",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "trigger_writable_view",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "updatable_view",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "update_only_trigger_view",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "user_profiles",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "e",
+        "name": "user_status",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "user_status_counts",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "users",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "kind": "c",
+        "name": "users_audit",
+        "schema": "public"
       }
     ]
   },
@@ -4449,6 +5549,59 @@
       [
         [
           {
+            "qiName": "computed_parents",
+            "qiSchema": "public"
+          },
+          "public"
+        ],
+        [
+          {
+            "relForeignTable": {
+              "qiName": "computed_children",
+              "qiSchema": "public"
+            },
+            "relFunction": {
+              "qiName": "computed_child",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "computed_parents",
+              "qiSchema": "public"
+            },
+            "relTableAlias": {
+              "qiName": "",
+              "qiSchema": ""
+            },
+            "relToOne": true,
+            "tag": "ComputedRelationship"
+          },
+          {
+            "relForeignTable": {
+              "qiName": "computed_children",
+              "qiSchema": "public"
+            },
+            "relFunction": {
+              "qiName": "computed_only_child",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "computed_parents",
+              "qiSchema": "public"
+            },
+            "relTableAlias": {
+              "qiName": "",
+              "qiSchema": ""
+            },
+            "relToOne": true,
+            "tag": "ComputedRelationship"
+          }
+        ]
+      ],
+      [
+        [
+          {
             "qiName": "product_categories",
             "qiSchema": "public"
           },
@@ -5951,6 +7104,45 @@
     "dbRoutines": [
       [
         {
+          "qiName": "out_inout",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "out_inout",
+            "pdParams": [
+              {
+                "ppName": "n",
+                "ppReq": true,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "int4",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Immutable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "function_returning_row",
           "qiSchema": "public"
         },
@@ -6091,6 +7283,42 @@
       ],
       [
         {
+          "qiName": "amount",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "amount",
+            "pdParams": [
+              {
+                "ppName": "item",
+                "ppReq": true,
+                "ppType": "public.domain_items",
+                "ppTypeMaxLength": "public.domain_items",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "int4",
+                  "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "void_func",
           "qiSchema": "public"
         },
@@ -6145,6 +7373,45 @@
             },
             "pdSchema": "public",
             "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "out_table_one_column",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "out_table_one_column",
+            "pdParams": [
+              {
+                "ppName": "a",
+                "ppReq": true,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "int8",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Immutable"
           }
         ]
       ],
@@ -6401,6 +7668,45 @@
       ],
       [
         {
+          "qiName": "out_single",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "out_single",
+            "pdParams": [
+              {
+                "ppName": "a",
+                "ppReq": true,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "int8",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Immutable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "describe_remote_user",
           "qiSchema": "public"
         },
@@ -6427,6 +7733,45 @@
                   "qiSchema": "pg_catalog"
                 },
                 "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "computed_child",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "computed_child",
+            "pdParams": [
+              {
+                "ppName": "n",
+                "ppReq": true,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "computed_children",
+                    "qiSchema": "public"
+                  },
+                  false
+                ],
+                "tag": "Composite"
               },
               "tag": "Single"
             },
@@ -6705,6 +8050,42 @@
             },
             "pdSchema": "public",
             "pdVolatility": "Volatile"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "return_only",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "return_only",
+            "pdParams": [
+              {
+                "ppName": "item",
+                "ppReq": true,
+                "ppType": "public.domain_items",
+                "ppTypeMaxLength": "public.domain_items",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "int4",
+                  "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
           }
         ]
       ],
@@ -8071,6 +9452,46 @@
       ],
       [
         {
+          "qiName": "computed_children",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "parent_id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "parent_id",
+              "colNominalType": "bigint",
+              "colNullable": true,
+              "colType": "bigint"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "computed_children",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
           "qiName": "users",
           "qiSchema": "personal"
         },
@@ -8839,6 +10260,46 @@
       ],
       [
         {
+          "qiName": "domain_items",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "qty": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "qty",
+              "colNominalType": "public.item_amount",
+              "colNullable": false,
+              "colType": "integer"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "domain_items",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
           "qiName": "channels",
           "qiSchema": "public"
         },
@@ -9235,6 +10696,125 @@
       ],
       [
         {
+          "qiName": "cast_cases",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "b": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "b",
+              "colNominalType": "cast_b.d",
+              "colNullable": false,
+              "colType": "integer"
+            },
+            "c": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "c",
+              "colNominalType": "cast_c.int4",
+              "colNullable": false,
+              "colType": "text"
+            },
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "mood": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [
+                "ok",
+                "bad"
+              ],
+              "colMaxLen": null,
+              "colName": "mood",
+              "colNominalType": "public.cast_mood",
+              "colNullable": false,
+              "colType": "public.cast_mood"
+            },
+            "mood_dom": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [
+                "ok",
+                "bad"
+              ],
+              "colMaxLen": null,
+              "colName": "mood_dom",
+              "colNominalType": "public.cast_mood_dom",
+              "colNullable": false,
+              "colType": "public.cast_mood_dom"
+            },
+            "n": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "n",
+              "colNominalType": "integer",
+              "colNullable": false,
+              "colType": "integer"
+            },
+            "status": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [
+                "ONLINE",
+                "OFFLINE"
+              ],
+              "colMaxLen": null,
+              "colName": "status",
+              "colNominalType": "public.user_status",
+              "colNullable": false,
+              "colType": "public.user_status"
+            },
+            "ts": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "ts",
+              "colNominalType": "timestamp without time zone",
+              "colNullable": false,
+              "colType": "timestamp without time zone"
+            },
+            "tstz": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "tstz",
+              "colNominalType": "timestamp with time zone",
+              "colNullable": false,
+              "colType": "timestamp with time zone"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "cast_cases",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
           "qiName": "user_status_counts",
           "qiSchema": "public"
         },
@@ -9420,6 +11000,209 @@
           "tableInsertable": true,
           "tableIsView": false,
           "tableName": "categories",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "aggregate_types",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "ar": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "ar",
+              "colNominalType": "integer[]",
+              "colNullable": true,
+              "colType": "integer[]"
+            },
+            "bp": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": 3,
+              "colName": "bp",
+              "colNominalType": "character(3)",
+              "colNullable": true,
+              "colType": "character"
+            },
+            "cd": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "cd",
+              "colNominalType": "cidr",
+              "colNullable": true,
+              "colType": "cidr"
+            },
+            "doc": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "doc",
+              "colNominalType": "jsonb",
+              "colNullable": true,
+              "colType": "jsonb"
+            },
+            "flag": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "flag",
+              "colNominalType": "boolean",
+              "colNullable": true,
+              "colType": "boolean"
+            },
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "ip": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "ip",
+              "colNominalType": "inet",
+              "colNullable": true,
+              "colType": "inet"
+            },
+            "nm": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "nm",
+              "colNominalType": "name",
+              "colNullable": true,
+              "colType": "name"
+            },
+            "nu": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "nu",
+              "colNominalType": "numeric(10,2)",
+              "colNullable": true,
+              "colType": "numeric"
+            },
+            "qc": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "qc",
+              "colNominalType": "\"char\"",
+              "colNullable": true,
+              "colType": "\"char\""
+            },
+            "rc": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "rc",
+              "colNominalType": "regclass",
+              "colNullable": true,
+              "colType": "regclass"
+            },
+            "st": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [
+                "ONLINE",
+                "OFFLINE"
+              ],
+              "colMaxLen": null,
+              "colName": "st",
+              "colNominalType": "public.user_status",
+              "colNullable": true,
+              "colType": "public.user_status"
+            },
+            "ts": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "ts",
+              "colNominalType": "timestamp with time zone",
+              "colNullable": true,
+              "colType": "timestamp with time zone"
+            },
+            "u": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "u",
+              "colNominalType": "uuid",
+              "colNullable": true,
+              "colType": "uuid"
+            },
+            "v": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "v",
+              "colNominalType": "character varying",
+              "colNullable": true,
+              "colType": "character varying"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "aggregate_types",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "computed_parents",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "computed_parents",
           "tablePKCols": [
             "id"
           ],

@@ -138,7 +138,7 @@ declare global {
         }
         username_label: {
           Args: {
-            user_row: SupabaseDatabase['personal']['Tables']['users']['Row']
+            user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }
           }
           Returns: string | null
         }
@@ -150,6 +150,61 @@ declare global {
     }
     public: {
       Tables: {
+        aggregate_types: {
+          Row: {
+            id: SupabaseColumnType<'public.aggregate_types.id', number>
+            v: SupabaseColumnType<'public.aggregate_types.v', string> | null
+            bp: SupabaseColumnType<'public.aggregate_types.bp', string> | null
+            nm: SupabaseColumnType<'public.aggregate_types.nm', unknown> | null
+            qc: SupabaseColumnType<'public.aggregate_types.qc', unknown> | null
+            cd: SupabaseColumnType<'public.aggregate_types.cd', unknown> | null
+            ip: SupabaseColumnType<'public.aggregate_types.ip', unknown> | null
+            rc: SupabaseColumnType<'public.aggregate_types.rc', unknown> | null
+            ts: SupabaseColumnType<'public.aggregate_types.ts', string> | null
+            nu: SupabaseColumnType<'public.aggregate_types.nu', number> | null
+            ar: SupabaseColumnType<'public.aggregate_types.ar', number[]> | null
+            st: SupabaseColumnType<'public.aggregate_types.st', SupabaseDatabase['public']['Enums']['user_status']> | null
+            u: SupabaseColumnType<'public.aggregate_types.u', string> | null
+            flag: SupabaseColumnType<'public.aggregate_types.flag', boolean> | null
+            doc: SupabaseColumnType<'public.aggregate_types.doc', Json> | null
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.aggregate_types.id', number>
+            v?: SupabaseColumnType<'public.aggregate_types.v', string> | null
+            bp?: SupabaseColumnType<'public.aggregate_types.bp', string> | null
+            nm?: SupabaseColumnType<'public.aggregate_types.nm', unknown> | null
+            qc?: SupabaseColumnType<'public.aggregate_types.qc', unknown> | null
+            cd?: SupabaseColumnType<'public.aggregate_types.cd', unknown> | null
+            ip?: SupabaseColumnType<'public.aggregate_types.ip', unknown> | null
+            rc?: SupabaseColumnType<'public.aggregate_types.rc', unknown> | null
+            ts?: SupabaseColumnType<'public.aggregate_types.ts', string> | null
+            nu?: SupabaseColumnType<'public.aggregate_types.nu', number> | null
+            ar?: SupabaseColumnType<'public.aggregate_types.ar', number[]> | null
+            st?: SupabaseColumnType<'public.aggregate_types.st', SupabaseDatabase['public']['Enums']['user_status']> | null
+            u?: SupabaseColumnType<'public.aggregate_types.u', string> | null
+            flag?: SupabaseColumnType<'public.aggregate_types.flag', boolean> | null
+            doc?: SupabaseColumnType<'public.aggregate_types.doc', Json> | null
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.aggregate_types.id', number>
+            v?: SupabaseColumnType<'public.aggregate_types.v', string> | null
+            bp?: SupabaseColumnType<'public.aggregate_types.bp', string> | null
+            nm?: SupabaseColumnType<'public.aggregate_types.nm', unknown> | null
+            qc?: SupabaseColumnType<'public.aggregate_types.qc', unknown> | null
+            cd?: SupabaseColumnType<'public.aggregate_types.cd', unknown> | null
+            ip?: SupabaseColumnType<'public.aggregate_types.ip', unknown> | null
+            rc?: SupabaseColumnType<'public.aggregate_types.rc', unknown> | null
+            ts?: SupabaseColumnType<'public.aggregate_types.ts', string> | null
+            nu?: SupabaseColumnType<'public.aggregate_types.nu', number> | null
+            ar?: SupabaseColumnType<'public.aggregate_types.ar', number[]> | null
+            st?: SupabaseColumnType<'public.aggregate_types.st', SupabaseDatabase['public']['Enums']['user_status']> | null
+            u?: SupabaseColumnType<'public.aggregate_types.u', string> | null
+            flag?: SupabaseColumnType<'public.aggregate_types.flag', boolean> | null
+            doc?: SupabaseColumnType<'public.aggregate_types.doc', Json> | null
+          }
+          FactColumns: 'ar' | 'bp' | 'cd' | 'flag' | 'id' | 'ip' | 'nm' | 'nu' | 'qc' | 'rc' | 'st' | 'ts' | 'u' | 'v'
+          Relationships: []
+        }
         best_friends: {
           Row: {
             id: SupabaseColumnType<'public.best_friends.id', number>
@@ -323,6 +378,43 @@ declare global {
             }
           ]
         }
+        cast_cases: {
+          Row: {
+            id: SupabaseColumnType<'public.cast_cases.id', number>
+            tstz: SupabaseColumnType<'public.cast_cases.tstz', string>
+            ts: SupabaseColumnType<'public.cast_cases.ts', string>
+            n: SupabaseColumnType<'public.cast_cases.n', number>
+            b: SupabaseColumnType<'public.cast_cases.b', number>
+            c: SupabaseColumnType<'public.cast_cases.c', string>
+            mood: SupabaseColumnType<'public.cast_cases.mood', SupabaseDatabase['public']['Enums']['cast_mood']>
+            mood_dom: SupabaseColumnType<'public.cast_cases.mood_dom', unknown>
+            status: SupabaseColumnType<'public.cast_cases.status', SupabaseDatabase['public']['Enums']['user_status']>
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.cast_cases.id', number>
+            tstz: SupabaseColumnType<'public.cast_cases.tstz', string>
+            ts: SupabaseColumnType<'public.cast_cases.ts', string>
+            n: SupabaseColumnType<'public.cast_cases.n', number>
+            b: SupabaseColumnType<'public.cast_cases.b', number>
+            c: SupabaseColumnType<'public.cast_cases.c', string>
+            mood: SupabaseColumnType<'public.cast_cases.mood', SupabaseDatabase['public']['Enums']['cast_mood']>
+            mood_dom: SupabaseColumnType<'public.cast_cases.mood_dom', unknown>
+            status: SupabaseColumnType<'public.cast_cases.status', SupabaseDatabase['public']['Enums']['user_status']>
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.cast_cases.id', number>
+            tstz?: SupabaseColumnType<'public.cast_cases.tstz', string>
+            ts?: SupabaseColumnType<'public.cast_cases.ts', string>
+            n?: SupabaseColumnType<'public.cast_cases.n', number>
+            b?: SupabaseColumnType<'public.cast_cases.b', number>
+            c?: SupabaseColumnType<'public.cast_cases.c', string>
+            mood?: SupabaseColumnType<'public.cast_cases.mood', SupabaseDatabase['public']['Enums']['cast_mood']>
+            mood_dom?: SupabaseColumnType<'public.cast_cases.mood_dom', unknown>
+            status?: SupabaseColumnType<'public.cast_cases.status', SupabaseDatabase['public']['Enums']['user_status']>
+          }
+          FactColumns: 'b' | 'c' | 'id' | 'mood' | 'mood_dom' | 'n' | 'status' | 'ts' | 'tstz'
+          Relationships: []
+        }
         categories: {
           Row: {
             id: SupabaseColumnType<'public.categories.id', number>
@@ -412,6 +504,35 @@ declare global {
             }
           ]
         }
+        computed_children: {
+          Row: {
+            id: SupabaseColumnType<'public.computed_children.id', number>
+            parent_id: SupabaseColumnType<'public.computed_children.parent_id', number> | null
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.computed_children.id', number>
+            parent_id?: SupabaseColumnType<'public.computed_children.parent_id', number> | null
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.computed_children.id', number>
+            parent_id?: SupabaseColumnType<'public.computed_children.parent_id', number> | null
+          }
+          FactColumns: 'id' | 'parent_id'
+          Relationships: []
+        }
+        computed_parents: {
+          Row: {
+            id: SupabaseColumnType<'public.computed_parents.id', number>
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.computed_parents.id', number>
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.computed_parents.id', number>
+          }
+          FactColumns: 'id'
+          Relationships: []
+        }
         cornercase: {
           Row: {
             id: SupabaseColumnType<'public.cornercase.id', number>
@@ -429,6 +550,22 @@ declare global {
             array_column?: SupabaseColumnType<'public.cornercase.array_column', string[]> | null
           }
           FactColumns: 'array_column' | 'column whitespace' | 'id'
+          Relationships: []
+        }
+        domain_items: {
+          Row: {
+            id: SupabaseColumnType<'public.domain_items.id', number>
+            qty: SupabaseColumnType<'public.domain_items.qty', number>
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.domain_items.id', number>
+            qty: SupabaseColumnType<'public.domain_items.qty', number>
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.domain_items.id', number>
+            qty?: SupabaseColumnType<'public.domain_items.qty', number>
+          }
+          FactColumns: 'id' | 'qty'
           Relationships: []
         }
         events: {
@@ -946,23 +1083,35 @@ declare global {
         }
         user_status_counts: {
           Row: {
-            status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null
-            total: SupabaseColumnType<'public.user_status_counts.total', number>
+            status: SupabaseColumnType<'public.user_status_counts.status', SupabaseDatabase['public']['Enums']['user_status']> | null
+            total: SupabaseColumnType<'public.user_status_counts.total', number> | null
           }
           FactColumns: 'status' | 'total'
           Relationships: []
         }
       }
       Functions: {
+        amount: {
+          Args: {
+            item: { id: number | null; qty: number | null }
+          }
+          Returns: number | null
+        }
+        computed_child: {
+          Args: {
+            n: number
+          }
+          Returns: { id: number | null; parent_id: number | null }
+        }
         describe_remote_user: {
           Args: {
-            remote_row: SupabaseDatabase['public']['Views']['remote_users']['Row']
+            remote_row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }
           }
           Returns: string | null
         }
         describe_status_count: {
           Args: {
-            count_row: SupabaseDatabase['public']['Views']['user_status_counts']['Row']
+            count_row: { status: SupabaseDatabase['public']['Enums']['user_status'] | null; total: number | null }
           }
           Returns: string | null
         }
@@ -986,29 +1135,29 @@ declare global {
         }
         function_returning_row: {
           Args: Record<string, never>
-          Returns: SupabaseDatabase['public']['Tables']['users']['Row']
+          Returns: { username: string | null; data: Json | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
         }
         function_returning_set_of_rows: {
           Args: Record<string, never>
-          Returns: SupabaseDatabase['public']['Tables']['users']['Row'][]
+          Returns: { username: string | null; data: Json | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }[]
         }
         function_returning_single_row: {
           Args: {
-            messages: SupabaseDatabase['public']['Tables']['messages']['Row']
+            messages: { id: number | null; data: JsonIn | null; message: string | null; username: string | null; channel_id: number | null }
           }
-          Returns: SupabaseDatabase['public']['Tables']['users']['Row']
+          Returns: { username: string | null; data: Json | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
         }
         function_using_setof_rows_one: {
           Args: {
-            user_row: SupabaseDatabase['public']['Tables']['users']['Row']
+            user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
           }
-          Returns: SupabaseDatabase['public']['Tables']['user_profiles']['Row'][]
+          Returns: { id: number | null; username: string | null }[]
         }
         function_using_table_returns: {
           Args: {
-            user_row: SupabaseDatabase['public']['Tables']['users']['Row']
+            user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
           }
-          Returns: SupabaseDatabase['public']['Tables']['user_profiles']['Row']
+          Returns: { id: number | null; username: string | null }
         }
         function_with_array_param: {
           Args: {
@@ -1024,42 +1173,42 @@ declare global {
         }
         get_active_user_messages: {
           Args: {
-            active_user_row: SupabaseDatabase['public']['Views']['active_users']['Row']
+            active_user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
           }
-          Returns: SupabaseDatabase['public']['Tables']['messages']['Row'][]
+          Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
         }
         get_messages: 
           | {
             Args: {
-              channel_row: SupabaseDatabase['public']['Tables']['channels']['Row']
+              channel_row: { id: number | null; data: JsonIn | null; slug: string | null }
             }
-            Returns: SupabaseDatabase['public']['Tables']['messages']['Row'][]
+            Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
           }
           | {
             Args: {
-              user_row: SupabaseDatabase['public']['Tables']['users']['Row']
+              user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
             }
-            Returns: SupabaseDatabase['public']['Tables']['messages']['Row'][]
+            Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
           }
         get_messages_by_username: {
           Args: {
             search_username: string
           }
-          Returns: SupabaseDatabase['public']['Tables']['messages']['Row'][]
+          Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
         }
         get_personal_users: {
           Args: Record<string, never>
-          Returns: SupabaseDatabase['personal']['Tables']['users']['Row'][]
+          Returns: { username: string | null; data: Json | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }[]
         }
         get_recent_messages_by_username: {
           Args: {
             search_username: string
           }
-          Returns: SupabaseDatabase['public']['Views']['recent_messages']['Row'][]
+          Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
         }
         get_remote_users: {
           Args: Record<string, never>
-          Returns: SupabaseDatabase['public']['Views']['remote_users']['Row'][]
+          Returns: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }[]
         }
         get_status: {
           Args: {
@@ -1069,44 +1218,44 @@ declare global {
         }
         get_user_first_message: {
           Args: {
-            active_user_row: SupabaseDatabase['public']['Views']['active_users']['Row']
+            active_user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
           }
-          Returns: SupabaseDatabase['public']['Views']['recent_messages']['Row'][]
+          Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
         }
         get_user_messages: {
           Args: {
-            user_row: SupabaseDatabase['public']['Tables']['users']['Row']
+            user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
           }
-          Returns: SupabaseDatabase['public']['Tables']['messages']['Row'][]
+          Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
         }
         get_user_profile: {
           Args: {
-            user_row: SupabaseDatabase['public']['Tables']['users']['Row']
+            user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
           }
-          Returns: SupabaseDatabase['public']['Tables']['user_profiles']['Row']
+          Returns: { id: number | null; username: string | null }
         }
         get_user_profile_non_nullable: {
           Args: {
-            user_row: SupabaseDatabase['public']['Tables']['users']['Row']
+            user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
           }
-          Returns: SupabaseDatabase['public']['Tables']['user_profiles']['Row'][]
+          Returns: { id: number | null; username: string | null }[]
         }
         get_user_recent_messages: 
           | {
             Args: {
-              active_user_row: SupabaseDatabase['public']['Views']['active_users']['Row']
+              active_user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
             }
-            Returns: SupabaseDatabase['public']['Views']['recent_messages']['Row'][]
+            Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
           }
           | {
             Args: {
-              user_row: SupabaseDatabase['public']['Tables']['users']['Row']
+              user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
             }
-            Returns: SupabaseDatabase['public']['Views']['recent_messages']['Row'][]
+            Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
           }
         get_user_status_counts: {
           Args: Record<string, never>
-          Returns: SupabaseDatabase['public']['Views']['user_status_counts']['Row'][]
+          Returns: { status: SupabaseDatabase['public']['Enums']['user_status'] | null; total: number | null }[]
         }
         get_username_and_status: {
           Args: {
@@ -1119,7 +1268,7 @@ declare global {
         }
         inference_case_label: {
           Args: {
-            inference_row: SupabaseDatabase['public']['Tables']['inference_cases']['Row']
+            inference_row: { id: number | null; sequence_id: number | null; price: number | null; quantity: number | null; total: number | null; note: string | null; required_payload: JsonIn | null; optional_payload: JsonIn | null; tags: string[] | null; scores: number[] | null; shipping_address: SupabaseDatabase['public']['CompositeTypes']['address'] | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }
           }
           Returns: string | null
         }
@@ -1132,6 +1281,30 @@ declare global {
             name_param: string
           }
           Returns: SupabaseDatabase['public']['Enums']['user_status'] | null
+        }
+        out_inout: {
+          Args: {
+            n: number
+          }
+          Returns: {
+            n: number | null
+          }
+        }
+        out_single: {
+          Args: {
+            a: number
+          }
+          Returns: {
+            doubled: number | null
+          }
+        }
+        out_table_one_column: {
+          Args: {
+            a: number
+          }
+          Returns: {
+            doubled: number | null
+          }[]
         }
         polymorphic_function_with_different_return: {
           Args: {
@@ -1199,14 +1372,14 @@ declare global {
             Args: {
               profile_id: number
             }
-            Returns: SupabaseDatabase['public']['Tables']['user_profiles']['Row'][]
+            Returns: { id: number | null; username: string | null }[]
           }
           | {
             Args: {
               cid: number
               search?: string
             }
-            Returns: SupabaseDatabase['public']['Tables']['messages']['Row'][]
+            Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
           }
           | {
             Args: {
@@ -1216,9 +1389,9 @@ declare global {
           }
           | {
             Args: {
-              user_row: SupabaseDatabase['public']['Tables']['users']['Row']
+              user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }
             }
-            Returns: SupabaseDatabase['public']['Tables']['messages']['Row'][]
+            Returns: { id: number | null; data: Json | null; message: string | null; username: string | null; channel_id: number | null }[]
           }
           | {
             Args: {
@@ -1243,11 +1416,17 @@ declare global {
             }
             Returns: number | null
           }
+        return_only: {
+          Args: {
+            item: { id: number | null; qty: number | null }
+          }
+          Returns: unknown | null
+        }
         set_users_offline: {
           Args: {
             name_param: string
           }
-          Returns: SupabaseDatabase['public']['Tables']['users']['Row'][]
+          Returns: { username: string | null; data: Json | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }[]
         }
         sum_scores: {
           Args: {
@@ -1262,6 +1441,7 @@ declare global {
         }
       }
       Enums: {
+        cast_mood: 'ok' | 'bad'
         user_status: 'ONLINE' | 'OFFLINE'
       }
       CompositeTypes: {

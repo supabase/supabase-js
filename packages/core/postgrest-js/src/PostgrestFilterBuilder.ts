@@ -671,9 +671,12 @@ export default class PostgrestFilterBuilder<
   /**
    * Match only rows where `column` IS DISTINCT FROM `value`.
    *
-   * Unlike `.neq()`, this treats `NULL` as a comparable value. Two `NULL` values
-   * are considered equal (not distinct), and comparing `NULL` with any non-NULL
-   * value returns true (distinct).
+   * Unlike `.neq()`, rows where `column` is `NULL` match: a `NULL` column is
+   * distinct from any non-NULL `value`.
+   *
+   * `value` can't be `null`: PostgREST would compare against the text `'null'`,
+   * not SQL `NULL`. To filter on nullness use `.not(column, 'is', null)` or
+   * `.is(column, null)`.
    *
    * @param column - The column to filter on
    * @param value - The value to filter with
