@@ -52,6 +52,18 @@ const postgrest = new PostgrestClient(REST_URL)
 - [update()](https://supabase.com/docs/reference/javascript/update)
 - [delete()](https://supabase.com/docs/reference/javascript/delete)
 
+#### Typing
+
+Query results are typed by a planner: a separate tool scans your queries and emits global interfaces (`SupabaseSelects`, `SupabaseOperands`, `SupabaseDatabase`, `SupabasePgrstStatus`, `SupabaseColumnTypes`) that the builders look up, so `select('id, channels(id)')` returns the row that query produces and filters take the column's type. The client no longer parses select strings at the type level and takes no `Database` type for inference; `new PostgrestClient<Database>()` still accepts a `supabase gen types typescript` database.
+
+Without the generated interfaces every query is accepted and its rows are `Record<string, unknown>`; with `SupabasePgrstStatus['unplanned']` set to `'error'`, a query the planner didn't index is a type error. When you need to state a result yourself, use `.cast<T>()`, which replaces the builder's `.returns<T>()` and `.overrideTypes<T>()` and does nothing at runtime:
+
+```ts
+const { data } = await postgrest.from('users').select(columns).cast<{ id: number }>()
+```
+
+Typing requires TypeScript 5.1 or later (the builders use `const` type parameters, and the argument checks rely on template literal inference that TypeScript 5.0 doesn't do).
+
 #### Custom `fetch` implementation
 
 `postgrest-js` uses the runtime's global `fetch` to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is useful in environments where the global `fetch` is unavailable or where you want to customize request behavior:
@@ -168,7 +180,7 @@ The generated types are written to `test/types.generated.ts`.
 #### Test Types Explained
 
 - **Unit Tests** - Jest tests covering all client functionality (`pnpm nx test:run postgrest-js`)
-- **Type Tests** - Validates TypeScript types using tstyche (`pnpm nx test:types postgrest-js`)
+- **Type Tests** - Validates the planner-typed builders using tstyche (`pnpm nx test:types postgrest-js`). The tests live in `test/types/` and run twice, against a loose and a strict `SupabasePgrstStatus` fixture (`tstyche.config.json` and `tstyche.strict.config.json`). `test/types/mutate.sh` is a negative control: it breaks one rule of the type machinery at a time and checks that the tests fail
 - **Smoke Tests** - Basic import/require tests for CommonJS and ESM (`pnpm nx test:smoke postgrest-js`)
 
 #### Prerequisites
@@ -193,12 +205,6 @@ This command:
 1. Starts PostgREST v12 + PostgreSQL in Docker (ports 3012/5433)
 2. Runs runtime tests that verify v12-specific behavior
 3. Cleans up containers
-
-**Type-only tests** for v12 compatibility also run as part of the regular type tests:
-
-```bash
-pnpm nx test:types postgrest-js  # Includes v12-compat.test-d.ts
-```
 
 **Note:** These v12 tests will be removed when v3 ships (sometime in 2026).
 

@@ -1,8 +1,17 @@
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
-import { JsonPathToAccessor, JsonPathToType } from './select-query-parser/utils'
-import { ClientServerOptions, GenericSchema } from './types/common/common'
+import type {
+  Gate,
+  MultiOpFacts,
+  NotNullFact,
+  OpFacts,
+  ColFact,
+  EqFact,
+  RefFacts,
+} from './types/planner/facts'
+import type { BState, ColArg, MState, ValueOf } from './types/planner/lookup'
+import type { RefOpts } from './types/planner/options'
 
-type FilterOperator =
+export type FilterOperator =
   | 'eq'
   | 'neq'
   | 'gt'
@@ -29,110 +38,18 @@ type FilterOperator =
   | 'match'
   | 'imatch'
 
-export type IsStringOperator<Path extends string> = Path extends `${string}->>${string}`
-  ? true
-  : false
-
 const PostgrestReservedCharsRegexp = new RegExp('[,()]')
-
-// Match relationship filters with `table.column` syntax and resolve underlying
-// column value. If not matched, fallback to generic type.
-// TODO: Validate the relationship itself ala select-query-parser. Currently we
-// assume that all tables have valid relationships to each other, despite
-// nonexistent foreign keys.
-type ResolveFilterValue<
-  Schema extends GenericSchema,
-  Row extends Record<string, unknown>,
-  ColumnName extends string,
-> = ColumnName extends `${infer RelationshipTable}.${infer Remainder}`
-  ? Remainder extends `${infer _}.${infer _}`
-    ? ResolveFilterValue<Schema, Row, Remainder>
-    : ResolveFilterRelationshipValue<Schema, RelationshipTable, Remainder>
-  : ColumnName extends keyof Row
-    ? Row[ColumnName]
-    : // If the column selection is a jsonpath like `data->value` or `data->>value` we attempt to match
-      // the expected type with the parsed custom json type
-      IsStringOperator<ColumnName> extends true
-      ? string
-      : JsonPathToType<Row, JsonPathToAccessor<ColumnName>> extends infer JsonPathValue
-        ? JsonPathValue extends never
-          ? never
-          : JsonPathValue
-        : never
-
-type ResolveFilterRelationshipValue<
-  Schema extends GenericSchema,
-  RelationshipTable extends string,
-  RelationshipColumn extends string,
-> = Schema['Tables'] & Schema['Views'] extends infer TablesAndViews
-  ? RelationshipTable extends keyof TablesAndViews
-    ? 'Row' extends keyof TablesAndViews[RelationshipTable]
-      ? RelationshipColumn extends keyof TablesAndViews[RelationshipTable]['Row']
-        ? TablesAndViews[RelationshipTable]['Row'][RelationshipColumn]
-        : unknown
-      : unknown
-    : unknown
-  : never
 
 export type InvalidMethodError<S extends string> = { Error: S }
 
-type NonNullableColumn<T extends Record<string, unknown>, Col extends string> = Col extends keyof T
-  ? { [K in keyof T]: K extends Col ? NonNullable<T[K]> : T[K] }
-  : T
-
-type NarrowResultColumn<T, Col extends string> = T extends (infer Item)[]
-  ? Item extends Record<string, unknown>
-    ? Col extends keyof Item
-      ? { [K in keyof Item]: K extends Col ? NonNullable<Item[K]> : Item[K] }[]
-      : T
-    : T
-  : T extends Record<string, unknown>
-    ? Col extends keyof T
-      ? { [K in keyof T]: K extends Col ? NonNullable<T[K]> : T[K] }
-      : T
-    : T
+export type TextSearchOptions = { config?: string; type?: 'plain' | 'phrase' | 'websearch' }
 
 export default class PostgrestFilterBuilder<
-  ClientOptions extends ClientServerOptions,
-  Schema extends GenericSchema,
-  Row extends Record<string, unknown>,
-  Result,
-  RelationName = unknown,
-  Relationships = unknown,
-  Method = unknown,
-  ThrowOnError extends boolean = false,
-> extends PostgrestTransformBuilder<
-  ClientOptions,
-  Schema,
-  Row,
-  Result,
-  RelationName,
-  Relationships,
-  Method,
-  ThrowOnError
-> {
-  throwOnError(): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Row,
-    Result,
-    RelationName,
-    Relationships,
-    Method,
-    true
-  > {
-    return super.throwOnError() as PostgrestFilterBuilder<
-      ClientOptions,
-      Schema,
-      Row,
-      Result,
-      RelationName,
-      Relationships,
-      Method,
-      true
-    >
-  }
-
+  B extends BState,
+  E,
+  F,
+  M extends MState,
+> extends PostgrestTransformBuilder<B, E, F, M> {
   /**
    * Match only rows where `column` is equal to `value`.
    *
@@ -179,20 +96,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  eq<ColumnName extends string>(
-    column: ColumnName extends keyof Row
-      ? ColumnName
-      : ColumnName extends `${string}.${string}` | `${string}->${string}`
-        ? ColumnName
-        : string extends ColumnName
-          ? string
-          : keyof Row,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
-      ? NonNullable<unknown>
-      : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-        ? NonNullable<ResolvedFilterValue>
-        : never
-  ): this {
+  eq<const C extends string, const V extends NonNullable<ValueOf<B, C>>>(
+    column: ColArg<B, C>,
+    value: V
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C> & EqFact<B, C, V>>, M>
+  eq(column: string, value: unknown): any {
     this.url.searchParams.append(column as string, `eq.${value}`)
     return this
   }
@@ -248,20 +156,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  neq<ColumnName extends string>(
-    column: ColumnName extends keyof Row
-      ? ColumnName
-      : ColumnName extends `${string}.${string}` | `${string}->${string}`
-        ? ColumnName
-        : string extends ColumnName
-          ? string
-          : keyof Row,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
-      ? unknown
-      : ResolveFilterValue<Schema, Row, ColumnName> extends infer Resolved
-        ? Resolved
-        : never
-  ): this {
+  neq<const C extends string, const V extends NonNullable<ValueOf<B, C>>>(
+    column: ColArg<B, C>,
+    value: V
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  neq(column: string, value: unknown): any {
     this.url.searchParams.append(column as string, `neq.${value}`)
     return this
   }
@@ -314,9 +213,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  gt<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  gt(column: string, value: unknown): this
-  gt(column: string, value: unknown): this {
+  gt<const C extends string>(
+    column: ColArg<B, C>,
+    value: NonNullable<ValueOf<B, C>>
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  gt(column: string, value: unknown): any {
     this.url.searchParams.append(column, `gt.${value}`)
     return this
   }
@@ -369,9 +270,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  gte<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  gte(column: string, value: unknown): this
-  gte(column: string, value: unknown): this {
+  gte<const C extends string>(
+    column: ColArg<B, C>,
+    value: NonNullable<ValueOf<B, C>>
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  gte(column: string, value: unknown): any {
     this.url.searchParams.append(column, `gte.${value}`)
     return this
   }
@@ -420,9 +323,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  lt<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  lt(column: string, value: unknown): this
-  lt(column: string, value: unknown): this {
+  lt<const C extends string>(
+    column: ColArg<B, C>,
+    value: NonNullable<ValueOf<B, C>>
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  lt(column: string, value: unknown): any {
     this.url.searchParams.append(column, `lt.${value}`)
     return this
   }
@@ -475,9 +380,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  lte<ColumnName extends string & keyof Row>(column: ColumnName, value: Row[ColumnName]): this
-  lte(column: string, value: unknown): this
-  lte(column: string, value: unknown): this {
+  lte<const C extends string>(
+    column: ColArg<B, C>,
+    value: NonNullable<ValueOf<B, C>>
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  lte(column: string, value: unknown): any {
     this.url.searchParams.append(column, `lte.${value}`)
     return this
   }
@@ -526,9 +433,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  like<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
-  like(column: string, pattern: string): this
-  like(column: string, pattern: string): this {
+  like<const C extends string>(
+    column: ColArg<B, C>,
+    pattern: string
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  like(column: string, pattern: string): any {
     this.url.searchParams.append(column, `like.${pattern}`)
     return this
   }
@@ -542,12 +451,11 @@ export default class PostgrestFilterBuilder<
    * @category Database
    * @subcategory Using filters
    */
-  likeAllOf<ColumnName extends string & keyof Row>(
-    column: ColumnName,
+  likeAllOf<const C extends string>(
+    column: ColArg<B, C>,
     patterns: readonly string[]
-  ): this
-  likeAllOf(column: string, patterns: readonly string[]): this
-  likeAllOf(column: string, patterns: readonly string[]): this {
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  likeAllOf(column: string, patterns: readonly string[]): any {
     this.url.searchParams.append(column, `like(all).{${patterns.join(',')}}`)
     return this
   }
@@ -561,12 +469,11 @@ export default class PostgrestFilterBuilder<
    * @category Database
    * @subcategory Using filters
    */
-  likeAnyOf<ColumnName extends string & keyof Row>(
-    column: ColumnName,
+  likeAnyOf<const C extends string>(
+    column: ColArg<B, C>,
     patterns: readonly string[]
-  ): this
-  likeAnyOf(column: string, patterns: readonly string[]): this
-  likeAnyOf(column: string, patterns: readonly string[]): this {
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  likeAnyOf(column: string, patterns: readonly string[]): any {
     this.url.searchParams.append(column, `like(any).{${patterns.join(',')}}`)
     return this
   }
@@ -615,9 +522,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  ilike<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
-  ilike(column: string, pattern: string): this
-  ilike(column: string, pattern: string): this {
+  ilike<const C extends string>(
+    column: ColArg<B, C>,
+    pattern: string
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  ilike(column: string, pattern: string): any {
     this.url.searchParams.append(column, `ilike.${pattern}`)
     return this
   }
@@ -631,12 +540,11 @@ export default class PostgrestFilterBuilder<
    * @category Database
    * @subcategory Using filters
    */
-  ilikeAllOf<ColumnName extends string & keyof Row>(
-    column: ColumnName,
+  ilikeAllOf<const C extends string>(
+    column: ColArg<B, C>,
     patterns: readonly string[]
-  ): this
-  ilikeAllOf(column: string, patterns: readonly string[]): this
-  ilikeAllOf(column: string, patterns: readonly string[]): this {
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  ilikeAllOf(column: string, patterns: readonly string[]): any {
     this.url.searchParams.append(column, `ilike(all).{${patterns.join(',')}}`)
     return this
   }
@@ -650,12 +558,11 @@ export default class PostgrestFilterBuilder<
    * @category Database
    * @subcategory Using filters
    */
-  ilikeAnyOf<ColumnName extends string & keyof Row>(
-    column: ColumnName,
+  ilikeAnyOf<const C extends string>(
+    column: ColArg<B, C>,
     patterns: readonly string[]
-  ): this
-  ilikeAnyOf(column: string, patterns: readonly string[]): this
-  ilikeAnyOf(column: string, patterns: readonly string[]): this {
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  ilikeAnyOf(column: string, patterns: readonly string[]): any {
     this.url.searchParams.append(column, `ilike(any).{${patterns.join(',')}}`)
     return this
   }
@@ -667,9 +574,11 @@ export default class PostgrestFilterBuilder<
    * @param column - The column to filter on
    * @param pattern - The PostgreSQL regular expression pattern to match with
    */
-  regexMatch<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
-  regexMatch(column: string, pattern: string): this
-  regexMatch(column: string, pattern: string): this {
+  regexMatch<const C extends string>(
+    column: ColArg<B, C>,
+    pattern: string
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  regexMatch(column: string, pattern: string): any {
     this.url.searchParams.append(column, `match.${pattern}`)
     return this
   }
@@ -681,9 +590,11 @@ export default class PostgrestFilterBuilder<
    * @param column - The column to filter on
    * @param pattern - The PostgreSQL regular expression pattern to match with
    */
-  regexIMatch<ColumnName extends string & keyof Row>(column: ColumnName, pattern: string): this
-  regexIMatch(column: string, pattern: string): this
-  regexIMatch(column: string, pattern: string): this {
+  regexIMatch<const C extends string>(
+    column: ColArg<B, C>,
+    pattern: string
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  regexIMatch(column: string, pattern: string): any {
     this.url.searchParams.append(column, `imatch.${pattern}`)
     return this
   }
@@ -742,12 +653,16 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  is<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: Row[ColumnName] & (boolean | null)
-  ): this
-  is(column: string, value: boolean | null): this
-  is(column: string, value: boolean | null): this {
+  is<const C extends string, const V extends boolean | null>(
+    column: ColArg<B, C>,
+    value: V
+  ): PostgrestFilterBuilder<
+    B,
+    E,
+    F & Gate<B, OpFacts<B, C> & (V extends null ? ColFact<B, C, null> : {})>,
+    M
+  >
+  is(column: string, value: boolean | null): any {
     this.url.searchParams.append(column, `is.${value}`)
     return this
   }
@@ -762,14 +677,11 @@ export default class PostgrestFilterBuilder<
    * @param column - The column to filter on
    * @param value - The value to filter with
    */
-  isDistinct<ColumnName extends string>(
-    column: ColumnName,
-    value: ResolveFilterValue<Schema, Row, ColumnName> extends never
-      ? unknown
-      : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-        ? ResolvedFilterValue
-        : never
-  ): this {
+  isDistinct<const C extends string>(
+    column: ColArg<B, C>,
+    value: NonNullable<ValueOf<B, C>>
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  isDistinct(column: string, value: unknown): any {
     this.url.searchParams.append(column, `isdistinct.${value}`)
     return this
   }
@@ -822,19 +734,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  in<ColumnName extends string>(
-    column: ColumnName,
-    values: ReadonlyArray<
-      ResolveFilterValue<Schema, Row, ColumnName> extends never
-        ? unknown
-        : // We want to infer the type before wrapping it into a `NonNullable` to avoid too deep
-          // type resolution error
-          ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-          ? ResolvedFilterValue
-          : // We should never enter this case as all the branches are covered above
-            never
-    >
-  ): this {
+  in<const C extends string, const V extends NonNullable<ValueOf<B, C>>>(
+    column: ColArg<B, C>,
+    values: readonly V[]
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C> & EqFact<B, C, V>>, M>
+  in(column: string, values: readonly unknown[]): any {
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
         // handle postgrest reserved characters
@@ -853,16 +757,11 @@ export default class PostgrestFilterBuilder<
    * @param column - The column to filter on
    * @param values - The values array to filter with
    */
-  notIn<ColumnName extends string>(
-    column: ColumnName,
-    values: ReadonlyArray<
-      ResolveFilterValue<Schema, Row, ColumnName> extends never
-        ? unknown
-        : ResolveFilterValue<Schema, Row, ColumnName> extends infer ResolvedFilterValue
-          ? ResolvedFilterValue
-          : never
-    >
-  ): this {
+  notIn<const C extends string, const V extends NonNullable<ValueOf<B, C>>>(
+    column: ColArg<B, C>,
+    values: readonly V[]
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  notIn(column: string, values: readonly unknown[]): any {
     const cleanedValues = Array.from(new Set(values))
       .map((s) => {
         // handle postgrest reserved characters
@@ -1004,12 +903,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  contains<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: string | ReadonlyArray<Row[ColumnName]> | Record<string, unknown>
-  ): this
-  contains(column: string, value: string | readonly unknown[] | Record<string, unknown>): this
-  contains(column: string, value: string | readonly unknown[] | Record<string, unknown>): this {
+  contains<const C extends string>(
+    column: ColArg<B, C>,
+    value: string | readonly unknown[] | Record<string, unknown>
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  contains(column: string, value: string | readonly unknown[] | Record<string, unknown>): any {
     if (typeof value === 'string') {
       // range types can be inclusive '[', ']' or exclusive '(', ')' so just
       // keep it simple and accept a string
@@ -1154,12 +1052,11 @@ export default class PostgrestFilterBuilder<
    *
    * ```
    */
-  containedBy<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: string | ReadonlyArray<Row[ColumnName]> | Record<string, unknown>
-  ): this
-  containedBy(column: string, value: string | readonly unknown[] | Record<string, unknown>): this
-  containedBy(column: string, value: string | readonly unknown[] | Record<string, unknown>): this {
+  containedBy<const C extends string>(
+    column: ColArg<B, C>,
+    value: string | readonly unknown[] | Record<string, unknown>
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  containedBy(column: string, value: string | readonly unknown[] | Record<string, unknown>): any {
     if (typeof value === 'string') {
       // range
       this.url.searchParams.append(column, `cd.${value}`)
@@ -1229,9 +1126,11 @@ export default class PostgrestFilterBuilder<
    *
    * ```
    */
-  rangeGt<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
-  rangeGt(column: string, range: string): this
-  rangeGt(column: string, range: string): this {
+  rangeGt<const C extends string>(
+    column: ColArg<B, C>,
+    range: string
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  rangeGt(column: string, range: string): any {
     this.url.searchParams.append(column, `sr.${range}`)
     return this
   }
@@ -1293,9 +1192,11 @@ export default class PostgrestFilterBuilder<
    *
    * ```
    */
-  rangeGte<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
-  rangeGte(column: string, range: string): this
-  rangeGte(column: string, range: string): this {
+  rangeGte<const C extends string>(
+    column: ColArg<B, C>,
+    range: string
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  rangeGte(column: string, range: string): any {
     this.url.searchParams.append(column, `nxl.${range}`)
     return this
   }
@@ -1355,9 +1256,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  rangeLt<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
-  rangeLt(column: string, range: string): this
-  rangeLt(column: string, range: string): this {
+  rangeLt<const C extends string>(
+    column: ColArg<B, C>,
+    range: string
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  rangeLt(column: string, range: string): any {
     this.url.searchParams.append(column, `sl.${range}`)
     return this
   }
@@ -1419,9 +1322,11 @@ export default class PostgrestFilterBuilder<
    *
    * ```
    */
-  rangeLte<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
-  rangeLte(column: string, range: string): this
-  rangeLte(column: string, range: string): this {
+  rangeLte<const C extends string>(
+    column: ColArg<B, C>,
+    range: string
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  rangeLte(column: string, range: string): any {
     this.url.searchParams.append(column, `nxr.${range}`)
     return this
   }
@@ -1482,9 +1387,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  rangeAdjacent<ColumnName extends string & keyof Row>(column: ColumnName, range: string): this
-  rangeAdjacent(column: string, range: string): this
-  rangeAdjacent(column: string, range: string): this {
+  rangeAdjacent<const C extends string>(
+    column: ColArg<B, C>,
+    range: string
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  rangeAdjacent(column: string, range: string): any {
     this.url.searchParams.append(column, `adj.${range}`)
     return this
   }
@@ -1581,12 +1488,11 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  overlaps<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    value: string | ReadonlyArray<Row[ColumnName]>
-  ): this
-  overlaps(column: string, value: string | readonly unknown[]): this
-  overlaps(column: string, value: string | readonly unknown[]): this {
+  overlaps<const C extends string>(
+    column: ColArg<B, C>,
+    value: string | readonly unknown[]
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  overlaps(column: string, value: string | readonly unknown[]): any {
     if (typeof value === 'string') {
       // range
       this.url.searchParams.append(column, `ov.${value}`)
@@ -1701,21 +1607,12 @@ export default class PostgrestFilterBuilder<
    *   })
    * ```
    */
-  textSearch<ColumnName extends string & keyof Row>(
-    column: ColumnName,
+  textSearch<const C extends string>(
+    column: ColArg<B, C>,
     query: string,
-    options?: { config?: string; type?: 'plain' | 'phrase' | 'websearch' }
-  ): this
-  textSearch(
-    column: string,
-    query: string,
-    options?: { config?: string; type?: 'plain' | 'phrase' | 'websearch' }
-  ): this
-  textSearch(
-    column: string,
-    query: string,
-    { config, type }: { config?: string; type?: 'plain' | 'phrase' | 'websearch' } = {}
-  ): this {
+    options?: TextSearchOptions
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C>>, M>
+  textSearch(column: string, query: string, { config, type }: TextSearchOptions = {}): any {
     let typePart = ''
     if (type === 'plain') {
       typePart = 'pl'
@@ -1773,9 +1670,10 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  match<ColumnName extends string & keyof Row>(query: Record<ColumnName, Row[ColumnName]>): this
-  match(query: Record<string, unknown>): this
-  match(query: Record<string, unknown>): this {
+  match<const Q extends Record<string, unknown>>(
+    query: Q
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, MultiOpFacts<B, keyof Q & string>>, M>
+  match(query: Record<string, unknown>): any {
     Object.entries(query)
       // columns with `undefined` value needs to be filtered out, otherwise it'll
       // show up as `?column=eq.undefined`
@@ -1786,43 +1684,6 @@ export default class PostgrestFilterBuilder<
     return this
   }
 
-  /**
-   * Match only rows which doesn't satisfy the filter.
-   *
-   * Unlike most filters, `opearator` and `value` are used as-is and need to
-   * follow [PostgREST
-   * syntax](https://postgrest.org/en/stable/api.html#operators). You also need
-   * to make sure they are properly sanitized.
-   *
-   * @param column - The column to filter on
-   * @param operator - The operator to be negated to filter with, following
-   * PostgREST syntax
-   * @param value - The value to filter with, following PostgREST syntax
-   *
-   * @category Database
-   * @subcategory Using filters
-   */
-  not<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    operator: 'is',
-    value: null
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    NonNullableColumn<Row, ColumnName>,
-    NarrowResultColumn<Result, ColumnName>,
-    RelationName,
-    Relationships,
-    Method,
-    ThrowOnError
-  > &
-    this
-  not<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    operator: FilterOperator,
-    value: Row[ColumnName]
-  ): this
-  not(column: string, operator: string, value: unknown): this
   /**
    * Match only rows which doesn't satisfy the filter.
    *
@@ -1882,21 +1743,17 @@ export default class PostgrestFilterBuilder<
    *
    * ```
    */
-  not(
-    column: string,
-    operator: string,
-    value: unknown
+  not<const C extends string, const Op extends string, const V>(
+    column: ColArg<B, C>,
+    operator: Op,
+    value: V
   ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    any,
-    any,
-    RelationName,
-    Relationships,
-    Method,
-    ThrowOnError
-  > &
-    this {
+    B,
+    E,
+    F & Gate<B, OpFacts<B, C> & (Op extends 'is' ? (V extends null ? NotNullFact<B, C> : {}) : {})>,
+    M
+  >
+  not(column: string, operator: string, value: unknown): any {
     this.url.searchParams.append(column, `not.${operator}.${value}`)
     return this as any
   }
@@ -2052,13 +1909,17 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
+  or<const O extends RefOpts = {}>(
+    filters: string,
+    options?: O
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, RefFacts<O>>, M>
   or(
     filters: string,
     {
       foreignTable,
       referencedTable = foreignTable,
     }: { foreignTable?: string; referencedTable?: string } = {}
-  ): this {
+  ): any {
     const key = referencedTable ? `${referencedTable}.or` : 'or'
     this.url.searchParams.append(key, `(${filters})`)
     return this
@@ -2177,14 +2038,22 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  filter<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    operator: `${'' | 'not.'}${FilterOperator}`,
-    value: unknown
-  ): this
-  filter(column: string, operator: string, value: unknown): this
-  filter(column: string, operator: string, value: unknown): this {
-    this.url.searchParams.append(column, `${operator}.${value}`)
+  filter<const C extends string, const Op extends string, const V, const O extends RefOpts = {}>(
+    column: ColArg<B, C>,
+    operator: Op,
+    value: V,
+    options?: O
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C> & RefFacts<O>>, M>
+  filter(
+    column: string,
+    operator: string,
+    value: unknown,
+    { referencedTable }: { referencedTable?: string } = {}
+  ): any {
+    this.url.searchParams.append(
+      referencedTable ? `${referencedTable}.${column}` : column,
+      `${operator}.${value}`
+    )
     return this
   }
 }

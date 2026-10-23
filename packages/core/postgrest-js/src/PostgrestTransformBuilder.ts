@@ -1,42 +1,39 @@
 import PostgrestBuilder from './PostgrestBuilder'
-import PostgrestFilterBuilder, { InvalidMethodError } from './PostgrestFilterBuilder'
-import { GetResult } from './select-query-parser/result'
-import { CheckMatchingArrayTypes } from './types/types'
-import { ClientServerOptions, GenericSchema } from './types/common/common'
-import type { MaxAffectedEnabled } from './types/feature-flags'
+import type PostgrestFilterBuilder from './PostgrestFilterBuilder'
+import type { InvalidMethodError } from './PostgrestFilterBuilder'
+import type { Gate, RefFacts } from './types/planner/facts'
+import type { PgrstFeature } from './types/planner/globals'
+import type {
+  BS,
+  BState,
+  ColArg,
+  Desc,
+  Descs,
+  MState,
+  SetM,
+  Validate,
+} from './types/planner/lookup'
+import type { RefOpts, SelCount, SelOp, SelectOptions } from './types/planner/options'
+
+/** Options of `order()`. */
+export type OrderOptions = RefOpts & { ascending?: boolean; nullsFirst?: boolean }
+
+/** Options of `explain()`. */
+export type ExplainOptions = {
+  analyze?: boolean
+  verbose?: boolean
+  settings?: boolean
+  buffers?: boolean
+  wal?: boolean
+  format?: 'json' | 'text'
+}
 
 export default class PostgrestTransformBuilder<
-  ClientOptions extends ClientServerOptions,
-  Schema extends GenericSchema,
-  Row extends Record<string, unknown>,
-  Result,
-  RelationName = unknown,
-  Relationships = unknown,
-  Method = unknown,
-  ThrowOnError extends boolean = false,
-> extends PostgrestBuilder<ClientOptions, Result, ThrowOnError> {
-  throwOnError(): PostgrestTransformBuilder<
-    ClientOptions,
-    Schema,
-    Row,
-    Result,
-    RelationName,
-    Relationships,
-    Method,
-    true
-  > {
-    return super.throwOnError() as PostgrestTransformBuilder<
-      ClientOptions,
-      Schema,
-      Row,
-      Result,
-      RelationName,
-      Relationships,
-      Method,
-      true
-    >
-  }
-
+  B extends BState,
+  E,
+  F,
+  M extends MState,
+> extends PostgrestBuilder<B, E, F, M> {
   /**
    * Perform a SELECT on the query result.
    *
@@ -82,24 +79,14 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
-  select<
-    Query extends string = '*',
-    NewResultOne = GetResult<Schema, Row, RelationName, Relationships, Query, ClientOptions>,
-  >(
-    columns?: Query
+  select<const Q extends string = '*', const O extends SelectOptions = {}>(
+    columns?: Validate<B, Q>,
+    options?: O
   ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Row,
-    Method extends 'RPC'
-      ? Result extends unknown[]
-        ? NewResultOne[]
-        : NewResultOne
-      : NewResultOne[],
-    RelationName,
-    Relationships,
-    Method,
-    ThrowOnError
+    BS<B['k'], B['s'], B['r'], B['row'], B['st'], Q, B['km']>,
+    Descs<B, Q>,
+    F,
+    SetM<M, { op: SelOp<B, M, O>; ret: true; count: SelCount<O> }>
   > {
     // Remove whitespaces except when quoted
     let quoted = false
@@ -117,20 +104,13 @@ export default class PostgrestTransformBuilder<
       .join('')
     this.url.searchParams.set('select', cleanedColumns)
     this.headers.append('Prefer', 'return=representation')
-    return this as unknown as PostgrestFilterBuilder<
-      ClientOptions,
-      Schema,
-      Row,
-      Method extends 'RPC'
-        ? Result extends unknown[]
-          ? NewResultOne[]
-          : NewResultOne
-        : NewResultOne[],
-      RelationName,
-      Relationships,
-      Method,
-      ThrowOnError
-    >
+    if (options?.count) {
+      this.headers.append('Prefer', `count=${options.count}`)
+    }
+    if (options?.head && this.method === 'GET') {
+      this.method = 'HEAD'
+    }
+    return this as any
   }
 
   /**
@@ -148,49 +128,6 @@ export default class PostgrestTransformBuilder<
    * `null`s appear last.
    * @param options.referencedTable - Set this to order a referenced table by
    * its columns
-   *
-   * @category Database
-   * @subcategory Using modifiers
-   */
-  order<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: undefined }
-  ): this
-  order(
-    column: string,
-    options?: { ascending?: boolean; nullsFirst?: boolean; referencedTable?: string }
-  ): this
-  /**
-   * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
-   */
-  order<ColumnName extends string & keyof Row>(
-    column: ColumnName,
-    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: undefined }
-  ): this
-  /**
-   * @deprecated Use `options.referencedTable` instead of `options.foreignTable`
-   */
-  order(
-    column: string,
-    options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string }
-  ): this
-  /**
-   * Order the query result by `column`.
-   *
-   * You can call this method multiple times to order by multiple columns.
-   *
-   * You can order referenced tables, but it only affects the ordering of the
-   * parent table if you use `!inner` in the query.
-   *
-   * @param column - The column to order by
-   * @param options - Named parameters
-   * @param options.ascending - If `true`, the result will be in ascending order
-   * @param options.nullsFirst - If `true`, `null`s appear first. If `false`,
-   * `null`s appear last.
-   * @param options.referencedTable - Set this to order a referenced table by
-   * its columns
-   * @param options.foreignTable - Deprecated, use `options.referencedTable`
-   * instead
    *
    * @category Database
    * @subcategory Using modifiers
@@ -363,6 +300,11 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
+  order<const C extends string, const O extends OrderOptions = {}>(
+    // a referencedTable order column belongs to the embed: not checked against the root
+    column: O extends { referencedTable: string } ? C : ColArg<B, C>,
+    options?: O
+  ): PostgrestFilterBuilder<B, E, F, M>
   order(
     column: string,
     {
@@ -376,7 +318,7 @@ export default class PostgrestTransformBuilder<
       foreignTable?: string
       referencedTable?: string
     } = {}
-  ): this {
+  ): any {
     const key = referencedTable ? `${referencedTable}.order` : 'order'
     const existingOrder = this.url.searchParams.get(key)
 
@@ -396,8 +338,6 @@ export default class PostgrestTransformBuilder<
    * @param options - Named parameters
    * @param options.referencedTable - Set this to limit rows of referenced
    * tables instead of the parent table
-   * @param options.foreignTable - Deprecated, use `options.referencedTable`
-   * instead
    *
    * @category Database
    * @subcategory Using modifiers
@@ -489,13 +429,17 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
+  limit<const O extends RefOpts = {}>(
+    rows: number,
+    options?: O
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, RefFacts<O>>, M>
   limit(
     rows: number,
     {
       foreignTable,
       referencedTable = foreignTable,
     }: { foreignTable?: string; referencedTable?: string } = {}
-  ): this {
+  ): any {
     const key = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
     this.url.searchParams.set(key, `${rows}`)
     return this
@@ -513,8 +457,6 @@ export default class PostgrestTransformBuilder<
    * @param options - Named parameters
    * @param options.referencedTable - Set this to limit rows of referenced
    * tables instead of the parent table
-   * @param options.foreignTable - Deprecated, use `options.referencedTable`
-   * instead
    *
    * @category Database
    * @subcategory Using modifiers
@@ -556,6 +498,11 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
+  range<const O extends RefOpts = {}>(
+    from: number,
+    to: number,
+    options?: O
+  ): PostgrestFilterBuilder<B, E, F & Gate<B, RefFacts<O>>, M>
   range(
     from: number,
     to: number,
@@ -563,7 +510,7 @@ export default class PostgrestTransformBuilder<
       foreignTable,
       referencedTable = foreignTable,
     }: { foreignTable?: string; referencedTable?: string } = {}
-  ): this {
+  ): any {
     const keyOffset =
       typeof referencedTable === 'undefined' ? 'offset' : `${referencedTable}.offset`
     const keyLimit = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
@@ -686,13 +633,9 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
-  single<ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never>(): PostgrestBuilder<
-    ClientOptions,
-    ResultOne,
-    ThrowOnError
-  > {
+  single(): PostgrestFilterBuilder<B, E, F, SetM<M, { card: 'one' }>> {
     this.headers.set('Accept', 'application/vnd.pgrst.object+json')
-    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne, ThrowOnError>
+    return this as any
   }
 
   /**
@@ -734,13 +677,11 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
-  maybeSingle<
-    ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never,
-  >(): PostgrestBuilder<ClientOptions, ResultOne | null, ThrowOnError> {
+  maybeSingle(): PostgrestFilterBuilder<B, E, F, SetM<M, { card: 'maybe' }>> {
     // No Accept header override — we fetch as a list and enforce cardinality client-side.
     // Fixes https://github.com/supabase/postgrest-js/issues/361 for all request methods.
     this.isMaybeSingle = true
-    return this as unknown as PostgrestBuilder<ClientOptions, ResultOne | null, ThrowOnError>
+    return this as any
   }
 
   /**
@@ -782,9 +723,9 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
-  csv(): PostgrestBuilder<ClientOptions, string, ThrowOnError> {
+  csv(): PostgrestFilterBuilder<B, E, F, SetM<M, { fmt: 'csv' }>> {
     this.headers.set('Accept', 'text/csv')
-    return this as unknown as PostgrestBuilder<ClientOptions, string, ThrowOnError>
+    return this as any
   }
 
   /**
@@ -793,9 +734,14 @@ export default class PostgrestTransformBuilder<
    * @category Database
    * @subcategory Using modifiers
    */
-  geojson(): PostgrestBuilder<ClientOptions, Record<string, unknown>, ThrowOnError> {
+  geojson(): PostgrestBuilder<
+    B,
+    Desc<Record<string, unknown>, {}, {}, 'one'>,
+    F,
+    SetM<M, { op: 'GET'; ret: true; card: 'default'; fmt: 'json'; strip: false }>
+  > {
     this.headers.set('Accept', 'application/geo+json')
-    return this as unknown as PostgrestBuilder<ClientOptions, Record<string, unknown>, ThrowOnError>
+    return this as any
   }
 
   /**
@@ -894,6 +840,14 @@ export default class PostgrestTransformBuilder<
    * Execution Time: 0.119 ms
    * ```
    */
+  explain<const O extends ExplainOptions = {}>(
+    options?: O
+  ): PostgrestBuilder<
+    B,
+    Desc<O extends { format: 'json' } ? Record<string, unknown>[] : string, {}, {}, 'one'>,
+    F,
+    SetM<M, { op: 'GET'; ret: true; card: 'default'; fmt: 'json'; strip: false }>
+  >
   explain({
     analyze = false,
     verbose = false,
@@ -901,15 +855,8 @@ export default class PostgrestTransformBuilder<
     buffers = false,
     wal = false,
     format = 'text',
-  }: {
-    analyze?: boolean
-    verbose?: boolean
-    settings?: boolean
-    buffers?: boolean
-    wal?: boolean
-    format?: 'json' | 'text'
-  } = {}) {
-    const options = [
+  }: ExplainOptions = {}): any {
+    const parts = [
       analyze ? 'analyze' : null,
       verbose ? 'verbose' : null,
       settings ? 'settings' : null,
@@ -922,17 +869,9 @@ export default class PostgrestTransformBuilder<
     const forMediatype = this.headers.get('Accept') ?? 'application/json'
     this.headers.set(
       'Accept',
-      `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${options};`
+      `application/vnd.pgrst.plan+${format}; for="${forMediatype}"; options=${parts};`
     )
-    if (format === 'json') {
-      return this as unknown as PostgrestBuilder<
-        ClientOptions,
-        Record<string, unknown>[],
-        ThrowOnError
-      >
-    } else {
-      return this as unknown as PostgrestBuilder<ClientOptions, string, ThrowOnError>
-    }
+    return this
   }
 
   /**
@@ -970,64 +909,27 @@ export default class PostgrestTransformBuilder<
   }
 
   /**
-   * Override the type of the returned `data`.
+   * Replace the type of the returned `data` with `T`.
    *
-   * @typeParam NewResult - The new result type to override with
-   * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
+   * The new type is taken as is: it is not checked against the selected columns, and filter facts do not
+   * narrow it. `.single()` and `.maybeSingle()` still decide the cardinality, so `T` is the type of one row.
+   *
+   * @typeParam T - The type of one row
    *
    * @category Database
    * @subcategory Using modifiers
    *
-   * @remarks
-   * - Deprecated: use overrideTypes method instead
-   *
-   * @example Override type of successful response
+   * @example Cast a row
    * ```ts
    * const { data } = await supabase
    *   .from('countries')
    *   .select()
-   *   .returns<Array<MyType>>()
-   * ```
-   *
-   * @exampleResponse Override type of successful response
-   * ```js
-   * let x: typeof data // MyType[]
-   * ```
-   *
-   * @example Override type of object response
-   * ```ts
-   * const { data } = await supabase
-   *   .from('countries')
-   *   .select()
-   *   .maybeSingle()
-   *   .returns<MyType>()
-   * ```
-   *
-   * @exampleResponse Override type of object response
-   * ```js
-   * let x: typeof data // MyType | null
+   *   .cast<{ id: number; name: string }>()
+   * // data: { id: number; name: string }[]
    * ```
    */
-  returns<NewResult>(): PostgrestTransformBuilder<
-    ClientOptions,
-    Schema,
-    Row,
-    CheckMatchingArrayTypes<Result, NewResult>,
-    RelationName,
-    Relationships,
-    Method,
-    ThrowOnError
-  > {
-    return this as unknown as PostgrestTransformBuilder<
-      ClientOptions,
-      Schema,
-      Row,
-      CheckMatchingArrayTypes<Result, NewResult>,
-      RelationName,
-      Relationships,
-      Method,
-      ThrowOnError
-    >
+  cast<T>(): PostgrestFilterBuilder<B, Desc<T>, F, M> {
+    return this as any
   }
 
   /**
@@ -1039,18 +941,15 @@ export default class PostgrestTransformBuilder<
    * @category Database
    * @subcategory Using modifiers
    */
-  maxAffected(rows: number): MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
-    ? // TODO: update the RPC case to only work on RPC that returns SETOF rows
-      Method extends 'PATCH' | 'DELETE' | 'RPC'
-      ? this
+  maxAffected(
+    rows: number
+  ): PgrstFeature<'maxAffected'> extends true
+    ? M['ma'] extends true
+      ? PostgrestFilterBuilder<B, E, F, M>
       : InvalidMethodError<'maxAffected method only available on update or delete'>
     : InvalidMethodError<'maxAffected method only available on postgrest 13+'> {
     this.headers.append('Prefer', 'handling=strict')
     this.headers.append('Prefer', `max-affected=${rows}`)
-    return this as unknown as MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
-      ? Method extends 'PATCH' | 'DELETE' | 'RPC'
-        ? this
-        : InvalidMethodError<'maxAffected method only available on update or delete'>
-      : InvalidMethodError<'maxAffected method only available on postgrest 13+'>
+    return this as any
   }
 }

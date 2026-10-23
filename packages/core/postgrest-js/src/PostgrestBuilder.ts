@@ -1,22 +1,16 @@
-import type {
-  PostgrestSingleResponse,
-  PostgrestResponseSuccess,
-  CheckMatchingArrayTypes,
-  MergePartialResult,
-  IsValidResultOverride,
-} from './types/types'
-import { ClientServerOptions, Fetch } from './types/common/common'
+import type { Fetch } from './types/common/common'
+import type { BState, MState, SetM } from './types/planner/lookup'
+import type { Res } from './types/planner/response'
+import type PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import PostgrestError from './PostgrestError'
 import { fetchWithRetry } from './fetchWithRetry'
-import { ContainsNull } from './select-query-parser/types'
 
 export default abstract class PostgrestBuilder<
-  ClientOptions extends ClientServerOptions,
-  Result,
-  ThrowOnError extends boolean = false,
-> implements PromiseLike<
-  ThrowOnError extends true ? PostgrestResponseSuccess<Result> : PostgrestSingleResponse<Result>
-> {
+  B extends BState,
+  E,
+  F,
+  M extends MState,
+> implements PromiseLike<Res<E, F, M>> {
   protected method: 'GET' | 'HEAD' | 'POST' | 'PATCH' | 'DELETE'
   protected url: URL
   protected headers: Headers
@@ -98,9 +92,9 @@ export default abstract class PostgrestBuilder<
    * @category Database
    * @subcategory Using modifiers
    */
-  throwOnError(): PostgrestBuilder<ClientOptions, Result, true> {
+  throwOnError(): PostgrestFilterBuilder<B, E, F, SetM<M, { thr: true }>> {
     this.shouldThrowOnError = true
-    return this as PostgrestBuilder<ClientOptions, Result, true>
+    return this as any
   }
 
   /**
@@ -153,12 +147,12 @@ export default abstract class PostgrestBuilder<
    * }
    * ```
    */
-  stripNulls(): this {
+  stripNulls(): PostgrestFilterBuilder<B, E, F, SetM<M, { strip: true }>> {
     if (this.headers.get('Accept') === 'text/csv') {
       throw new Error('stripNulls() cannot be used with csv()')
     }
     this.shouldStripNulls = true
-    return this
+    return this as any
   }
 
   /**
@@ -209,20 +203,8 @@ export default abstract class PostgrestBuilder<
     return this
   }
 
-  then<
-    TResult1 = ThrowOnError extends true
-      ? PostgrestResponseSuccess<Result>
-      : PostgrestSingleResponse<Result>,
-    TResult2 = never,
-  >(
-    onfulfilled?:
-      | ((
-          value: ThrowOnError extends true
-            ? PostgrestResponseSuccess<Result>
-            : PostgrestSingleResponse<Result>
-        ) => TResult1 | PromiseLike<TResult1>)
-      | undefined
-      | null,
+  then<TResult1 = Res<E, F, M>, TResult2 = never>(
+    onfulfilled?: ((value: Res<E, F, M>) => TResult1 | PromiseLike<TResult1>) | undefined | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
   ): PromiseLike<TResult1 | TResult2> {
     // https://postgrest.org/en/stable/api.html#switching-schemas
@@ -358,13 +340,7 @@ export default abstract class PostgrestBuilder<
       })
     }
 
-    return (
-      res as Promise<
-        ThrowOnError extends true
-          ? PostgrestResponseSuccess<Result>
-          : PostgrestSingleResponse<Result>
-      >
-    ).then(onfulfilled, onrejected)
+    return (res as Promise<Res<E, F, M>>).then(onfulfilled, onrejected)
   }
 
   /**
@@ -481,146 +457,5 @@ export default abstract class PostgrestBuilder<
       status,
       statusText,
     }
-  }
-
-  /**
-   * Override the type of the returned `data`.
-   *
-   * @typeParam NewResult - The new result type to override with
-   * @deprecated Use overrideTypes<yourType, { merge: false }>() method at the end of your call chain instead
-   *
-   * @category Database
-   * @subcategory Using modifiers
-   */
-  returns<NewResult>(): PostgrestBuilder<
-    ClientOptions,
-    CheckMatchingArrayTypes<Result, NewResult>,
-    ThrowOnError
-  > {
-    /* istanbul ignore next */
-    return this as unknown as PostgrestBuilder<
-      ClientOptions,
-      CheckMatchingArrayTypes<Result, NewResult>,
-      ThrowOnError
-    >
-  }
-
-  /**
-   * Override the type of the returned `data` field in the response.
-   *
-   * @typeParam NewResult - The new type to cast the response data to
-   * @typeParam Options - Optional type configuration (defaults to { merge: true })
-   * @typeParam Options.merge - When true, merges the new type with existing return type. When false, replaces the existing types entirely (defaults to true)
-   * @example
-   * ```typescript
-   * // Merge with existing types (default behavior)
-   * const query = supabase
-   *   .from('users')
-   *   .select()
-   *   .overrideTypes<{ custom_field: string }>()
-   *
-   * // Replace existing types completely
-   * const replaceQuery = supabase
-   *   .from('users')
-   *   .select()
-   *   .overrideTypes<{ id: number; name: string }, { merge: false }>()
-   * ```
-   * @returns A PostgrestBuilder instance with the new type
-   *
-   * @category Database
-   * @subcategory Using modifiers
-   *
-   * @example Complete Override type of successful response
-   * ```ts
-   * const { data } = await supabase
-   *   .from('countries')
-   *   .select()
-   *   .overrideTypes<Array<MyType>, { merge: false }>()
-   * ```
-   *
-   * @exampleResponse Complete Override type of successful response
-   * ```ts
-   * let x: typeof data // MyType[]
-   * ```
-   *
-   * @example Complete Override type of object response
-   * ```ts
-   * const { data } = await supabase
-   *   .from('countries')
-   *   .select()
-   *   .maybeSingle()
-   *   .overrideTypes<MyType, { merge: false }>()
-   * ```
-   *
-   * @exampleResponse Complete Override type of object response
-   * ```ts
-   * let x: typeof data // MyType | null
-   * ```
-   *
-   * @example Partial Override type of successful response
-   * ```ts
-   * const { data } = await supabase
-   *   .from('countries')
-   *   .select()
-   *   .overrideTypes<Array<{ status: "A" | "B" }>>()
-   * ```
-   *
-   * @exampleResponse Partial Override type of successful response
-   * ```ts
-   * let x: typeof data // Array<CountryRowProperties & { status: "A" | "B" }>
-   * ```
-   *
-   * @example Partial Override type of object response
-   * ```ts
-   * const { data } = await supabase
-   *   .from('countries')
-   *   .select()
-   *   .maybeSingle()
-   *   .overrideTypes<{ status: "A" | "B" }>()
-   * ```
-   *
-   * @exampleResponse Partial Override type of object response
-   * ```ts
-   * let x: typeof data // CountryRowProperties & { status: "A" | "B" } | null
-   * ```
-   *
-   * @example Merge vs replace existing types
-   * ```typescript
-   * // Merge with existing types (default behavior)
-   * const query = supabase
-   *   .from('users')
-   *   .select()
-   *   .overrideTypes<{ custom_field: string }>()
-   *
-   * // Replace existing types completely
-   * const replaceQuery = supabase
-   *   .from('users')
-   *   .select()
-   *   .overrideTypes<{ id: number; name: string }, { merge: false }>()
-   * ```
-   */
-  overrideTypes<
-    NewResult,
-    Options extends { merge?: boolean } = { merge: true },
-  >(): PostgrestBuilder<
-    ClientOptions,
-    IsValidResultOverride<Result, NewResult, false, false> extends true
-      ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
-        ContainsNull<Result> extends true
-        ? MergePartialResult<NewResult, NonNullable<Result>, Options> | null
-        : MergePartialResult<NewResult, Result, Options>
-      : CheckMatchingArrayTypes<Result, NewResult>,
-    ThrowOnError
-  > {
-    return this as unknown as PostgrestBuilder<
-      ClientOptions,
-      IsValidResultOverride<Result, NewResult, false, false> extends true
-        ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
-          ContainsNull<Result> extends true
-          ? MergePartialResult<NewResult, NonNullable<Result>, Options> | null
-          : MergePartialResult<NewResult, Result, Options>
-        : CheckMatchingArrayTypes<Result, NewResult>,
-      ThrowOnError
-    >
   }
 }

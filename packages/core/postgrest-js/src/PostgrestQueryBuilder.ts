@@ -1,21 +1,15 @@
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
-import { GetResult } from './select-query-parser/result'
-import {
-  ClientServerOptions,
-  Fetch,
-  GenericSchema,
-  GenericTable,
-  GenericView,
-} from './types/common/common'
-import { RejectExcessProperties } from './types/types'
+import type { Fetch } from './types/common/common'
+import type { Descs, MS, Q0, RB, Validate, WB } from './types/planner/lookup'
+import type { MutM, MutOptions, ReadMethod, SelCount, SelectOptions } from './types/planner/options'
+import type { RejectExcessProperties } from './types/types'
 
-export default class PostgrestQueryBuilder<
-  ClientOptions extends ClientServerOptions,
-  Schema extends GenericSchema,
-  Relation extends GenericTable | GenericView,
-  RelationName = unknown,
-  Relationships = Relation extends { Relationships: infer R } ? R : unknown,
-> {
+/** Options of `insert()`. */
+export type InsertOptions = MutOptions & { defaultToNull?: boolean }
+/** Options of `upsert()`. */
+export type UpsertOptions = InsertOptions & { onConflict?: string; ignoreDuplicates?: boolean }
+
+export default class PostgrestQueryBuilder<S extends string, R extends string, Rel> {
   url: URL
   headers: Headers
   schema?: string
@@ -902,30 +896,14 @@ export default class PostgrestQueryBuilder<
      * }
      * ```
        */
-  select<
-    Query extends string = '*',
-    ResultOne = GetResult<
-      Schema,
-      Relation['Row'],
-      RelationName,
-      Relationships,
-      Query,
-      ClientOptions
-    >,
-  >(
-    columns?: Query,
-    options?: {
-      head?: boolean
-      count?: 'exact' | 'planned' | 'estimated' | (string & {})
-    }
+  select<const Q extends string = '*', const O extends SelectOptions = {}>(
+    columns?: Validate<RB<S, R, Rel, Q0>, Q>,
+    options?: O
   ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Relation['Row'],
-    ResultOne[],
-    RelationName,
-    Relationships,
-    'GET'
+    RB<S, R, Rel, Q>,
+    Descs<RB<S, R, Rel, Q0>, Q>,
+    {},
+    MS<ReadMethod<O>, true, 'many', 'default', 'json', false, SelCount<O>>
   > {
     const { head = false, count } = options ?? {}
 
@@ -952,7 +930,7 @@ export default class PostgrestQueryBuilder<
       headers.append('Prefer', `count=${count}`)
     }
 
-    return new PostgrestFilterBuilder({
+    return new PostgrestFilterBuilder<any, any, any, any>({
       method,
       url,
       headers,
@@ -1083,32 +1061,16 @@ export default class PostgrestQueryBuilder<
    * }
    * ```
    */
-  insert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
+  insert<
+    const O extends InsertOptions = {},
+    Row extends Rel extends { Insert: unknown } ? Rel['Insert'] : never = never,
+  >(
     values:
-      | RejectExcessProperties<
-          Relation extends { Insert: unknown } ? Relation['Insert'] : never,
-          Row
-        >
-      | RejectExcessProperties<
-          Relation extends { Insert: unknown } ? Relation['Insert'] : never,
-          Row
-        >[],
-    {
-      count,
-      defaultToNull = true,
-    }: {
-      count?: 'exact' | 'planned' | 'estimated' | (string & {})
-      defaultToNull?: boolean
-    } = {}
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Relation['Row'],
-    null,
-    RelationName,
-    Relationships,
-    'POST'
-  > {
+      | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>
+      | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>[],
+    options?: O
+  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, false>> {
+    const { count, defaultToNull = true } = (options ?? {}) as InsertOptions
     const method = 'POST'
     const { url, headers } = this.cloneRequestState()
 
@@ -1127,7 +1089,7 @@ export default class PostgrestQueryBuilder<
       }
     }
 
-    return new PostgrestFilterBuilder({
+    return new PostgrestFilterBuilder<any, any, any, any>({
       method,
       url,
       headers,
@@ -1357,36 +1319,21 @@ export default class PostgrestQueryBuilder<
    * ```
    */
 
-  upsert<Row extends Relation extends { Insert: unknown } ? Relation['Insert'] : never>(
+  upsert<
+    const O extends UpsertOptions = {},
+    Row extends Rel extends { Insert: unknown } ? Rel['Insert'] : never = never,
+  >(
     values:
-      | RejectExcessProperties<
-          Relation extends { Insert: unknown } ? Relation['Insert'] : never,
-          Row
-        >
-      | RejectExcessProperties<
-          Relation extends { Insert: unknown } ? Relation['Insert'] : never,
-          Row
-        >[],
-    {
+      | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>
+      | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>[],
+    options?: O
+  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, false>> {
+    const {
       onConflict,
       ignoreDuplicates = false,
       count,
       defaultToNull = true,
-    }: {
-      onConflict?: string
-      ignoreDuplicates?: boolean
-      count?: 'exact' | 'planned' | 'estimated' | (string & {})
-      defaultToNull?: boolean
-    } = {}
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Relation['Row'],
-    null,
-    RelationName,
-    Relationships,
-    'POST'
-  > {
+    } = (options ?? {}) as UpsertOptions
     const method = 'POST'
     const { url, headers } = this.cloneRequestState()
 
@@ -1408,7 +1355,7 @@ export default class PostgrestQueryBuilder<
       }
     }
 
-    return new PostgrestFilterBuilder({
+    return new PostgrestFilterBuilder<any, any, any, any>({
       method,
       url,
       headers,
@@ -1568,25 +1515,14 @@ export default class PostgrestQueryBuilder<
    * }
    * ```
    */
-  update<Row extends Relation extends { Update: unknown } ? Relation['Update'] : never>(
-    values: RejectExcessProperties<
-      Relation extends { Update: unknown } ? Relation['Update'] : never,
-      Row
-    >,
-    {
-      count,
-    }: {
-      count?: 'exact' | 'planned' | 'estimated' | (string & {})
-    } = {}
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Relation['Row'],
-    null,
-    RelationName,
-    Relationships,
-    'PATCH'
-  > {
+  update<
+    const O extends MutOptions = {},
+    Row extends Rel extends { Update: unknown } ? Rel['Update'] : never = never,
+  >(
+    values: RejectExcessProperties<Rel extends { Update: unknown } ? Rel['Update'] : never, Row>,
+    options?: O
+  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, true>> {
+    const { count } = (options ?? {}) as MutOptions
     const method = 'PATCH'
     const { url, headers } = this.cloneRequestState()
 
@@ -1594,7 +1530,7 @@ export default class PostgrestQueryBuilder<
       headers.append('Prefer', `count=${count}`)
     }
 
-    return new PostgrestFilterBuilder({
+    return new PostgrestFilterBuilder<any, any, any, any>({
       method,
       url,
       headers,
@@ -1733,19 +1669,10 @@ export default class PostgrestQueryBuilder<
    * }
    * ```
    */
-  delete({
-    count,
-  }: {
-    count?: 'exact' | 'planned' | 'estimated' | (string & {})
-  } = {}): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    Relation['Row'],
-    null,
-    RelationName,
-    Relationships,
-    'DELETE'
-  > {
+  delete<const O extends MutOptions = {}>(
+    options?: O
+  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, true>> {
+    const { count } = (options ?? {}) as MutOptions
     const method = 'DELETE'
     const { url, headers } = this.cloneRequestState()
 
@@ -1753,7 +1680,7 @@ export default class PostgrestQueryBuilder<
       headers.append('Prefer', `count=${count}`)
     }
 
-    return new PostgrestFilterBuilder({
+    return new PostgrestFilterBuilder<any, any, any, any>({
       method,
       url,
       headers,
