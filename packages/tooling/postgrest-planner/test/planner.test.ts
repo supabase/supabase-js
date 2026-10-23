@@ -370,19 +370,20 @@ describe('postgrest-planner', () => {
       })
     })
 
-    it('keeps non-null through a cast only between builtin types', () => {
-      // a cast function of a domain, enum, composite or extension type can return NULL
+    it('keeps non-null through a cast to text and a cast the allowlist covers, not into a user type', () => {
+      // the cast to a domain, enum, composite or extension type can return NULL; the output function of any
+      // type to text cannot (the allowlist is in castKeepsNonNull)
       const p = plan(
         catalog,
         '/inference_cases?select=a:status::text,b:id::user_status,c:id::text,d:tags::text,e:count()::text,f:shipping_address::text'
       )
       expect(summary(fieldsOf(p))).toEqual([
-        ['a', 'text', true, 'cast'],
+        ['a', 'text', false, 'cast'],
         ['b', 'public.user_status', true, 'cast'],
         ['c', 'text', false, 'cast'],
         ['d', 'text', false, 'cast'],
         ['e', 'text', false, 'cast'],
-        ['f', 'text', true, 'cast'],
+        ['f', 'text', true, 'cast'], // the column is nullable
       ])
     })
 
@@ -626,11 +627,12 @@ describe('postgrest-planner', () => {
           'public.address',
           'int4[]',
         ])
-        // the request schema comes first, then db-extra-search-path (public,extensions)
+        // the request schema comes first, then db-extra-search-path (public,extensions): personal has its own
+        // user_status, which the catalog enumerates although no column of the request schema mentions it
         const personal = plan(catalog, '/users?select=s:username::user_status', {
           headers: { 'Accept-Profile': 'personal' },
         })
-        expect(fieldsOf(personal)[0].pgType).toBe('public.user_status')
+        expect(fieldsOf(personal)[0].pgType).toBe('personal.user_status')
       })
     })
 
@@ -1836,6 +1838,173 @@ describe('postgrest-planner', () => {
     it('resolves a filter on a computed field the same way', () => {
       expect(typeOf('b,a', '/users?select=username&label=eq.1')[2]).toMatchObject([
         { kind: 'column', column: 'label', pgType: 'int4' },
+      ])
+    })
+  })
+
+  describe('cast types and computed fields along the search path', () => {
+    // The request searches its own schema (public), then db-extra-search-path. The fixture database has `cast_a.d`
+    // (text, used by no column), `cast_b.d` (integer, used by cast_cases.b), `cast_c.int4` (a domain named like a
+    // builtin), and `label(public.cast_cases)` in `extensions` (text) and `personal` (integer).
+    // supplementary.json was generated for public,personal,graphql_public + public,extensions;
+    // supplementary-search-path.json also for cast_a, cast_b and cast_c.
+    const wideCatalog = () => readFileSync(join(fixtures, 'supplementary-search-path.json'), 'utf8')
+    const shapeOf = (extraSearchPath: string, url: string, supplementary = wideCatalog()) => {
+      const h = loaded(
+        planner.load({
+          ...baseInput(),
+          config: { ...baseInput().config, 'db-extra-search-path': extraSearchPath },
+          supplementary,
+        })
+      ).handle
+      try {
+        const p = ok(planner.plan(h, { method: 'GET', url }))
+        return { fields: p.shape?.fields ?? [], degraded: p.degraded }
+      } finally {
+        planner.freeCache(h)
+      }
+    }
+    const typed = (extraSearchPath: string, url: string, supplementary?: string) => {
+      const { fields, degraded } = shapeOf(extraSearchPath, url, supplementary)
+      return { types: fields.map((f) => [f.pgType, f.baseType ?? null, f.nullable]), degraded }
+    }
+
+    it('keeps non-null through a cast only when the cast function cannot return NULL', () => {
+      // timestamptz::time, timestamp::time and timestamptz::timetz return NULL for infinity (date.c)
+      const { fields } = shapeOf(
+        'public,extensions',
+        '/cast_cases?select=a:tstz::time,b:ts::time,c:tstz::timetz,d:n::int8,e:n::text,f:tstz::text,g:n::float8,h:n::numeric,i:ts::timestamp,j:tstz::date,k:n::bool'
+      )
+      expect(fields.map((f) => [f.name, f.pgType, f.nullable])).toEqual([
+        ['a', 'time', true],
+        ['b', 'time', true],
+        ['c', 'timetz', true],
+        ['d', 'int8', false],
+        ['e', 'text', false],
+        ['f', 'text', false],
+        ['g', 'float8', false],
+        ['h', 'numeric', false],
+        ['i', 'timestamp', false],
+        ['j', 'date', true],
+        ['k', 'bool', true],
+      ])
+      // between the types of text, and a cast from text to a number, which can fail but is not allowlisted
+      expect(
+        shapeOf(
+          'public,extensions',
+          '/users?select=a:username::varchar,b:username::int4'
+        ).fields.map((f) => [f.pgType, f.nullable])
+      ).toEqual([
+        ['varchar', false],
+        ['int4', true],
+      ])
+    })
+
+    it('keeps non-null through a user type to text only when the catalog lists no cast function for it', () => {
+      // `cast_mood` has CREATE CAST (cast_mood AS text) WITH FUNCTION that returns NULL; PostgreSQL uses a cast
+      // function ahead of the output function, and for a domain the cast of its base type. `user_status` has none.
+      const url = '/cast_cases?select=a:mood::text,b:mood_dom::text,c:status::text,d:mood::varchar'
+      expect(
+        shapeOf('public,extensions', url).fields.map((f) => [f.name, f.pgType, f.nullable])
+      ).toEqual([
+        ['a', 'text', true],
+        ['b', 'text', true],
+        ['c', 'text', false],
+        ['d', 'varchar', false],
+      ])
+      // without a catalog nothing says which user casts exist: a user type is nullable
+      const h = loaded(planner.load({ ...baseInput(), supplementary: undefined })).handle
+      try {
+        const p = ok(
+          planner.plan(h, { method: 'GET', url: '/cast_cases?select=c:status::text,a:mood::text' })
+        )
+        expect((p.shape?.fields ?? []).map((f) => [f.name, f.nullable])).toEqual([
+          ['c', true],
+          ['a', true],
+        ])
+      } finally {
+        planner.freeCache(h)
+      }
+    })
+
+    it('resolves a cast to the type of the first schema of the search path that has it', () => {
+      // cast_a.d is mentioned by nothing but the catalog's list of types
+      expect(typed('cast_a,cast_b', '/cast_cases?select=x:id::d')).toEqual({
+        types: [['cast_a.d', 'text', true]],
+        degraded: [],
+      })
+      expect(typed('cast_b,cast_a', '/cast_cases?select=x:id::d')).toEqual({
+        types: [['cast_b.d', 'int4', true]],
+        degraded: [],
+      })
+    })
+
+    it('does not pick a later schema when a schema of the path is not covered by the catalog', () => {
+      // supplementary.json does not cover cast_a (nor cast_b): cast_a.d may exist
+      const narrow = supplementaryText()
+      expect(typed('cast_a,cast_b', '/cast_cases?select=x:id::d', narrow)).toEqual({
+        types: [[null, null, true]],
+        degraded: ['cast-type:d'],
+      })
+      // a type found in a schema is there whatever the schemas after it
+      expect(typed('cast_b,cast_a', '/cast_cases?select=x:id::d', narrow).types).toEqual([
+        ['cast_b.d', 'int4', true],
+      ])
+    })
+
+    it('searches pg_catalog first only when the path does not list it', () => {
+      // cast_c.int4 is a domain named like the builtin
+      expect(typed('cast_c', '/cast_cases?select=x:n::int4').types).toEqual([['int4', null, false]])
+      expect(typed('cast_c,pg_catalog', '/cast_cases?select=x:n::int4').types).toEqual([
+        ['cast_c.int4', 'text', true],
+      ])
+      expect(typed('pg_catalog,cast_c', '/cast_cases?select=x:n::int4').types).toEqual([
+        ['int4', null, false],
+      ])
+      // the SQL spelling is the builtin, wherever pg_catalog is
+      expect(typed('cast_c,pg_catalog', '/cast_cases?select=x:n::integer').types).toEqual([
+        ['int4', null, false],
+      ])
+    })
+
+    it('picks the computed field of the first schema of the search path, extra search path schemas included', () => {
+      const field = (extraSearchPath: string, supplementary?: string) => {
+        const { fields } = shapeOf(extraSearchPath, '/cast_cases?select=label', supplementary)
+        return [fields[0].pgType, fields[0].provenance]
+      }
+      expect(field('extensions,personal')).toEqual([
+        'text',
+        expect.objectContaining({ function: { schema: 'extensions', name: 'label' } }),
+      ])
+      expect(field('personal,extensions')).toEqual([
+        'int4',
+        expect.objectContaining({ function: { schema: 'personal', name: 'label' } }),
+      ])
+      // only the schemas of the path are searched
+      expect(field('personal')[0]).toBe('int4')
+      expect(field('public')[0]).toBeNull()
+    })
+
+    it('degrades a computed field when a schema of the path is not covered by the catalog', () => {
+      const { fields, degraded } = shapeOf(
+        'cast_a,extensions',
+        '/cast_cases?select=label',
+        supplementaryText()
+      )
+      expect(fields[0]).toMatchObject({ pgType: null })
+      expect(degraded).toEqual(['computed-field:public.cast_cases.label'])
+    })
+
+    it('knows the base of a domain that only a computed field returns', () => {
+      const p = ok(
+        planner.plan(catalog, {
+          method: 'GET',
+          url: '/domain_items?select=return_only,t:return_only.sum()',
+        })
+      )
+      expect(p.shape?.fields.map((f) => [f.pgType, f.baseType ?? null])).toEqual([
+        ['public.return_only_amount', 'int4'],
+        ['int8', null],
       ])
     })
   })

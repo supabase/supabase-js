@@ -9,6 +9,7 @@ module Planner.PgType
   ( normalizeType
   , qualifiedTypeName
   , isBuiltinType
+  , isSqlTypeAlias
   , aggregateType
   ) where
 
@@ -84,6 +85,20 @@ builtin t = case t of
     | "interval " `T.isPrefixOf` t -> "interval" -- @interval year to month@
     | otherwise -> t
 
+-- | Whether a type name (lower case, single spaces) is one the SQL grammar itself maps to a @pg_catalog@ type:
+-- @int@, @integer@, @double precision@, @character varying@, @timestamp with time zone@, ... (@gram.y@
+-- builds @SystemTypeName@ for them). Postgres never looks such a spelling up in the search path, whereas a plain
+-- name like @int4@ or @text@ is an identifier and is searched like any other.
+isSqlTypeAlias :: Text -> Bool
+isSqlTypeAlias t = t `elem` aliases || "interval " `T.isPrefixOf` t
+  where
+    aliases =
+      [ "int", "integer", "smallint", "bigint", "real", "float", "double precision", "decimal", "dec", "numeric"
+      , "boolean", "character", "char", "character varying", "char varying", "varchar", "bit", "bit varying"
+      , "time", "time with time zone", "time without time zone", "timestamp", "timestamp with time zone"
+      , "timestamp without time zone", "interval"
+      ]
+
 -- | A @pg_type@-sourced name (routine return types in the schema dump): a leading underscore is an
 -- array type, @pg_catalog@ is dropped, everything else is @schema.name@.
 qualifiedTypeName :: QualifiedIdentifier -> Text
@@ -145,9 +160,8 @@ minMaxCoerced =
 -- | Whether a 'normalizeType'd name is a type of @pg_catalog@ (or an array of one). 'normalizeType' drops
 -- @pg_catalog@ and qualifies every other type with its schema, but a client-typed cast can leave a user type
 -- unqualified (@::user_status@, which the search path resolves), so the name is checked against the types
--- @pg_catalog@ ships rather than against the absence of a schema. A cast between two such types is a builtin
--- cast, which keeps NULL as NULL and non-NULL as non-NULL; the cast function of any other type can return
--- NULL.
+-- @pg_catalog@ ships rather than against the absence of a schema. Being builtin does not make a cast keep
+-- non-NULL (@timestamptz::time@ returns NULL for infinity): that is an explicit allowlist in "Planner.ResultShape".
 isBuiltinType :: Text -> Bool
 isBuiltinType t = stripArrays t `elem` builtinTypes
   where

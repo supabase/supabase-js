@@ -1,0 +1,2549 @@
+{
+    "casts": [
+        {
+            "method": "f",
+            "source": "bytea",
+            "target": "extensions.geography"
+        },
+        {
+            "method": "f",
+            "source": "bytea",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "extensions.box2d",
+            "target": "extensions.box3d"
+        },
+        {
+            "method": "f",
+            "source": "extensions.box2d",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "extensions.box3d",
+            "target": "box"
+        },
+        {
+            "method": "f",
+            "source": "extensions.box3d",
+            "target": "extensions.box2d"
+        },
+        {
+            "method": "f",
+            "source": "extensions.box3d",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geography",
+            "target": "bytea"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geography",
+            "target": "extensions.geography"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geography",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "box"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "bytea"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "extensions.box2d"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "extensions.box3d"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "extensions.geography"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "json"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "jsonb"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "path"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "point"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "polygon"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "text"
+        },
+        {
+            "method": "f",
+            "source": "path",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "point",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "polygon",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "public.cast_mood",
+            "target": "text"
+        },
+        {
+            "method": "f",
+            "source": "text",
+            "target": "extensions.geometry"
+        }
+    ],
+    "types": [
+        {
+            "base": "text",
+            "kind": "d",
+            "name": "d",
+            "schema": "cast_a"
+        },
+        {
+            "base": "integer",
+            "kind": "d",
+            "name": "d",
+            "schema": "cast_b"
+        },
+        {
+            "base": "text",
+            "kind": "d",
+            "name": "int4",
+            "schema": "cast_c"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "box2d",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "box2df",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "box3d",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "geography",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "geography_columns",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "geometry",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "geometry_columns",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "geometry_dump",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "gidx",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "pg_stat_statements",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "pg_stat_statements_info",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "spatial_ref_sys",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "spheroid",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "valid_detail",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "user_notes",
+            "schema": "personal"
+        },
+        {
+            "base": null,
+            "kind": "e",
+            "name": "user_status",
+            "schema": "personal"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "users",
+            "schema": "personal"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "active_users",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "address",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "aggregate_types",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "best_friends",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "booking",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "cast_cases",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "e",
+            "name": "cast_mood",
+            "schema": "public"
+        },
+        {
+            "base": "public.cast_mood",
+            "kind": "d",
+            "name": "cast_mood_dom",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "categories",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "channel_details",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "channels",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "collections",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "computed_children",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "computed_parents",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "cornercase",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "domain_items",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "events",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "events_2024",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "events_2025",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "hotel",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "inference_cases",
+            "schema": "public"
+        },
+        {
+            "base": "integer",
+            "kind": "d",
+            "name": "item_amount",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "lab",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "messages",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "non_updatable_view",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "product_categories",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "products",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "recent_messages",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "remote_users",
+            "schema": "public"
+        },
+        {
+            "base": "integer",
+            "kind": "d",
+            "name": "return_only_amount",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "shops",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "trigger_writable_view",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "updatable_view",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "update_only_trigger_view",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "user_profiles",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "e",
+            "name": "user_status",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "user_status_counts",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "users",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "users_audit",
+            "schema": "public"
+        }
+    ],
+    "format": 1,
+    "schemas": [
+        "cast_a",
+        "cast_b",
+        "cast_c",
+        "extensions",
+        "graphql_public",
+        "personal",
+        "public"
+    ],
+    "functions": [
+        {
+            "name": "graphql",
+            "schema": "graphql_public",
+            "returns": {
+                "kind": "scalar",
+                "type": "jsonb",
+                "setof": false
+            },
+            "argTypes": [
+                "text",
+                "text",
+                "jsonb",
+                "jsonb"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "get_status",
+            "schema": "personal",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.user_status",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "label",
+            "schema": "personal",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.cast_cases"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "username_label",
+            "schema": "personal",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "personal.users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "amount",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.item_amount",
+                "setof": false
+            },
+            "argTypes": [
+                "public.domain_items"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "blurb_message",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "character varying",
+                "setof": false
+            },
+            "argTypes": [
+                "public.messages"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "cast_mood_text",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.cast_mood"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "computed_child",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.computed_children",
+                "setof": true
+            },
+            "argTypes": [
+                "public.computed_parents"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "computed_child",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.computed_children",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "computed_only_child",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.computed_children",
+                "setof": false
+            },
+            "argTypes": [
+                "public.computed_parents"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "created_ago",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "numeric",
+                "setof": false
+            },
+            "argTypes": [
+                "public.users_audit"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "days_since_event",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "numeric",
+                "setof": false
+            },
+            "argTypes": [
+                "public.events"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "describe_remote_user",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.remote_users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "describe_status_count",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.user_status_counts"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "echo_address",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.address",
+                "setof": false
+            },
+            "argTypes": [
+                "public.address"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "echo_bigint_as_text",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "bigint"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "extract_jsonb_bigint_as_text",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "jsonb"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "function_returning_row",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.users",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "function_returning_set_of_rows",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.users",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "function_returning_single_row",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.users",
+                "setof": false
+            },
+            "argTypes": [
+                "public.messages"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "function_using_setof_rows_one",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.user_profiles",
+                "setof": true
+            },
+            "argTypes": [
+                "public.users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "function_using_table_returns",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.user_profiles",
+                "setof": false
+            },
+            "argTypes": [
+                "public.users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "function_with_array_param",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "void",
+                "setof": false
+            },
+            "argTypes": [
+                "uuid[]"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "function_with_optional_param",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "get_active_user_messages",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.messages",
+                "setof": true
+            },
+            "argTypes": [
+                "public.active_users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_messages",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.messages",
+                "setof": true
+            },
+            "argTypes": [
+                "public.channels"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_messages",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.messages",
+                "setof": true
+            },
+            "argTypes": [
+                "public.users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_messages_by_username",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.messages",
+                "setof": true
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_personal_users",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "personal.users",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_recent_messages_by_username",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.recent_messages",
+                "setof": true
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_remote_users",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.remote_users",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_status",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.user_status",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "get_user_first_message",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.recent_messages",
+                "setof": true
+            },
+            "argTypes": [
+                "public.active_users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_user_messages",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.messages",
+                "setof": true
+            },
+            "argTypes": [
+                "public.users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_user_profile",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.user_profiles",
+                "setof": false
+            },
+            "argTypes": [
+                "public.users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_user_profile_non_nullable",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.user_profiles",
+                "setof": true
+            },
+            "argTypes": [
+                "public.users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_user_recent_messages",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.recent_messages",
+                "setof": true
+            },
+            "argTypes": [
+                "public.users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_user_recent_messages",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.recent_messages",
+                "setof": true
+            },
+            "argTypes": [
+                "public.active_users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_user_status_counts",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.user_status_counts",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "get_username_and_status",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "record",
+                "setof": true
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": [
+                {
+                    "name": "username",
+                    "type": "text"
+                },
+                {
+                    "name": "status",
+                    "type": "public.user_status"
+                }
+            ],
+            "volatility": "i"
+        },
+        {
+            "name": "inference_case_label",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.inference_cases"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "note",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "offline_user",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.user_status",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "out_inout",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": [
+                {
+                    "name": "n",
+                    "type": "integer"
+                }
+            ],
+            "volatility": "i"
+        },
+        {
+            "name": "out_single",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "bigint",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": [
+                {
+                    "name": "doubled",
+                    "type": "bigint"
+                }
+            ],
+            "volatility": "i"
+        },
+        {
+            "name": "out_table_one_column",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "bigint",
+                "setof": true
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": [
+                {
+                    "name": "doubled",
+                    "type": "bigint"
+                }
+            ],
+            "volatility": "i"
+        },
+        {
+            "name": "polymorphic_function_with_different_return",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "boolean"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_different_return",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_different_return",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_no_params_or_unnamed",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_no_params_or_unnamed",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "boolean"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_no_params_or_unnamed",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_default",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_default",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_default",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_default_overload",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_default_overload",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_default_overload",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_default_overload",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "boolean"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_integer",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_json",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "json"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_jsonb",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "jsonb"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "polymorphic_function_with_unnamed_text",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "postgrest_resolvable_with_override_function",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "void",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "postgrest_resolvable_with_override_function",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "postgrest_resolvable_with_override_function",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "postgrest_resolvable_with_override_function",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.user_profiles",
+                "setof": true
+            },
+            "argTypes": [
+                "bigint"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "postgrest_resolvable_with_override_function",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.messages",
+                "setof": true
+            },
+            "argTypes": [
+                "bigint",
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "postgrest_resolvable_with_override_function",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.messages",
+                "setof": true
+            },
+            "argTypes": [
+                "public.users"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "postgrest_unresolvable_function",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "void",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "postgrest_unresolvable_function",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "postgrest_unresolvable_function",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "return_only",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.return_only_amount",
+                "setof": false
+            },
+            "argTypes": [
+                "public.domain_items"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "set_users_offline",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "public.users",
+                "setof": true
+            },
+            "argTypes": [
+                "text"
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "sum_scores",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "integer[]",
+                "integer"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "void_func",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "void",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "write_users_through_view",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        }
+    ],
+    "relations": [
+        {
+            "name": "user_notes",
+            "schema": "personal",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "author",
+                    "attnum": 2
+                },
+                {
+                    "name": "personal_author",
+                    "attnum": 3
+                },
+                {
+                    "name": "note",
+                    "attnum": 4
+                }
+            ]
+        },
+        {
+            "name": "users",
+            "schema": "personal",
+            "columns": [
+                {
+                    "name": "username",
+                    "attnum": 1
+                },
+                {
+                    "name": "data",
+                    "attnum": 2
+                },
+                {
+                    "name": "age_range",
+                    "attnum": 3
+                },
+                {
+                    "name": "status",
+                    "attnum": 4
+                }
+            ]
+        },
+        {
+            "name": "active_users",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "username",
+                    "attnum": 1
+                },
+                {
+                    "name": "data",
+                    "attnum": 2
+                },
+                {
+                    "name": "age_range",
+                    "attnum": 3
+                },
+                {
+                    "name": "status",
+                    "attnum": 4
+                },
+                {
+                    "name": "catchphrase",
+                    "attnum": 5
+                }
+            ]
+        },
+        {
+            "name": "aggregate_types",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "v",
+                    "attnum": 2
+                },
+                {
+                    "name": "bp",
+                    "attnum": 3
+                },
+                {
+                    "name": "nm",
+                    "attnum": 4
+                },
+                {
+                    "name": "qc",
+                    "attnum": 5
+                },
+                {
+                    "name": "cd",
+                    "attnum": 6
+                },
+                {
+                    "name": "ip",
+                    "attnum": 7
+                },
+                {
+                    "name": "rc",
+                    "attnum": 8
+                },
+                {
+                    "name": "ts",
+                    "attnum": 9
+                },
+                {
+                    "name": "nu",
+                    "attnum": 10
+                },
+                {
+                    "name": "ar",
+                    "attnum": 11
+                },
+                {
+                    "name": "st",
+                    "attnum": 12
+                },
+                {
+                    "name": "u",
+                    "attnum": 13
+                },
+                {
+                    "name": "flag",
+                    "attnum": 14
+                },
+                {
+                    "name": "doc",
+                    "attnum": 15
+                }
+            ]
+        },
+        {
+            "name": "best_friends",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "first_user",
+                    "attnum": 2
+                },
+                {
+                    "name": "second_user",
+                    "attnum": 3
+                },
+                {
+                    "name": "third_wheel",
+                    "attnum": 4
+                }
+            ]
+        },
+        {
+            "name": "booking",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "hotel_id",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "cast_cases",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "tstz",
+                    "attnum": 2
+                },
+                {
+                    "name": "ts",
+                    "attnum": 3
+                },
+                {
+                    "name": "n",
+                    "attnum": 4
+                },
+                {
+                    "name": "b",
+                    "attnum": 5
+                },
+                {
+                    "name": "c",
+                    "attnum": 6
+                },
+                {
+                    "name": "mood",
+                    "attnum": 7
+                },
+                {
+                    "name": "mood_dom",
+                    "attnum": 8
+                },
+                {
+                    "name": "status",
+                    "attnum": 9
+                }
+            ]
+        },
+        {
+            "name": "categories",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "name",
+                    "attnum": 2
+                },
+                {
+                    "name": "description",
+                    "attnum": 3
+                }
+            ]
+        },
+        {
+            "name": "channel_details",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "details",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "channels",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "data",
+                    "attnum": 2
+                },
+                {
+                    "name": "slug",
+                    "attnum": 3
+                }
+            ]
+        },
+        {
+            "name": "collections",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "description",
+                    "attnum": 2
+                },
+                {
+                    "name": "parent_id",
+                    "attnum": 3
+                }
+            ]
+        },
+        {
+            "name": "computed_children",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "parent_id",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "computed_parents",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                }
+            ]
+        },
+        {
+            "name": "cornercase",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "column whitespace",
+                    "attnum": 2
+                },
+                {
+                    "name": "array_column",
+                    "attnum": 3
+                }
+            ]
+        },
+        {
+            "name": "domain_items",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "qty",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "events",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "created_at",
+                    "attnum": 2
+                },
+                {
+                    "name": "event_type",
+                    "attnum": 3
+                },
+                {
+                    "name": "data",
+                    "attnum": 4
+                }
+            ]
+        },
+        {
+            "name": "events_2024",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "created_at",
+                    "attnum": 2
+                },
+                {
+                    "name": "event_type",
+                    "attnum": 3
+                },
+                {
+                    "name": "data",
+                    "attnum": 4
+                }
+            ]
+        },
+        {
+            "name": "events_2025",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "created_at",
+                    "attnum": 2
+                },
+                {
+                    "name": "event_type",
+                    "attnum": 3
+                },
+                {
+                    "name": "data",
+                    "attnum": 4
+                }
+            ]
+        },
+        {
+            "name": "hotel",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "name",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "inference_cases",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "sequence_id",
+                    "attnum": 2
+                },
+                {
+                    "name": "price",
+                    "attnum": 3
+                },
+                {
+                    "name": "quantity",
+                    "attnum": 4
+                },
+                {
+                    "name": "total",
+                    "attnum": 5
+                },
+                {
+                    "name": "note",
+                    "attnum": 6
+                },
+                {
+                    "name": "required_payload",
+                    "attnum": 7
+                },
+                {
+                    "name": "optional_payload",
+                    "attnum": 8
+                },
+                {
+                    "name": "tags",
+                    "attnum": 9
+                },
+                {
+                    "name": "scores",
+                    "attnum": 10
+                },
+                {
+                    "name": "shipping_address",
+                    "attnum": 11
+                },
+                {
+                    "name": "status",
+                    "attnum": 12
+                }
+            ]
+        },
+        {
+            "name": "lab",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "name",
+                    "attnum": 2
+                },
+                {
+                    "name": "type",
+                    "attnum": 3
+                },
+                {
+                    "name": "parent",
+                    "attnum": 4
+                },
+                {
+                    "name": "main",
+                    "attnum": 5
+                }
+            ]
+        },
+        {
+            "name": "messages",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "data",
+                    "attnum": 2
+                },
+                {
+                    "name": "message",
+                    "attnum": 3
+                },
+                {
+                    "name": "username",
+                    "attnum": 4
+                },
+                {
+                    "name": "channel_id",
+                    "attnum": 5
+                }
+            ]
+        },
+        {
+            "name": "non_updatable_view",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "username",
+                    "attnum": 1
+                }
+            ]
+        },
+        {
+            "name": "product_categories",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "product_id",
+                    "attnum": 1
+                },
+                {
+                    "name": "category_id",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "products",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "name",
+                    "attnum": 2
+                },
+                {
+                    "name": "description",
+                    "attnum": 3
+                },
+                {
+                    "name": "price",
+                    "attnum": 4
+                }
+            ]
+        },
+        {
+            "name": "recent_messages",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "data",
+                    "attnum": 2
+                },
+                {
+                    "name": "message",
+                    "attnum": 3
+                },
+                {
+                    "name": "username",
+                    "attnum": 4
+                },
+                {
+                    "name": "channel_id",
+                    "attnum": 5
+                }
+            ]
+        },
+        {
+            "name": "remote_users",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "username",
+                    "attnum": 1
+                },
+                {
+                    "name": "status",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "shops",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "address",
+                    "attnum": 2
+                },
+                {
+                    "name": "shop_geom",
+                    "attnum": 3
+                }
+            ]
+        },
+        {
+            "name": "trigger_writable_view",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "username",
+                    "attnum": 1
+                },
+                {
+                    "name": "status",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "updatable_view",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "username",
+                    "attnum": 1
+                },
+                {
+                    "name": "non_updatable_column",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "update_only_trigger_view",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "username",
+                    "attnum": 1
+                },
+                {
+                    "name": "status",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "user_profiles",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "username",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "user_status_counts",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "status",
+                    "attnum": 1
+                },
+                {
+                    "name": "total",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "users",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "username",
+                    "attnum": 1
+                },
+                {
+                    "name": "data",
+                    "attnum": 2
+                },
+                {
+                    "name": "age_range",
+                    "attnum": 3
+                },
+                {
+                    "name": "status",
+                    "attnum": 4
+                },
+                {
+                    "name": "catchphrase",
+                    "attnum": 5
+                }
+            ]
+        },
+        {
+            "name": "users_audit",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "created_at",
+                    "attnum": 2
+                },
+                {
+                    "name": "previous_value",
+                    "attnum": 3
+                }
+            ]
+        }
+    ],
+    "composites": [
+        {
+            "name": "address",
+            "schema": "public",
+            "attributes": [
+                {
+                    "name": "street",
+                    "type": "text",
+                    "attnum": 1
+                },
+                {
+                    "name": "city",
+                    "type": "text",
+                    "attnum": 2
+                }
+            ]
+        }
+    ],
+    "foreignKeys": [
+        {
+            "table": "user_notes",
+            "schema": "personal",
+            "validated": true,
+            "constraint": "user_notes_author_fkey"
+        },
+        {
+            "table": "user_notes",
+            "schema": "personal",
+            "validated": true,
+            "constraint": "user_notes_personal_author_fkey"
+        },
+        {
+            "table": "best_friends",
+            "schema": "public",
+            "validated": true,
+            "constraint": "best_friends_first_user_fkey"
+        },
+        {
+            "table": "best_friends",
+            "schema": "public",
+            "validated": true,
+            "constraint": "best_friends_second_user_fkey"
+        },
+        {
+            "table": "best_friends",
+            "schema": "public",
+            "validated": true,
+            "constraint": "best_friends_third_wheel_fkey"
+        },
+        {
+            "table": "booking",
+            "schema": "public",
+            "validated": true,
+            "constraint": "booking_hotel_id_fkey"
+        },
+        {
+            "table": "channel_details",
+            "schema": "public",
+            "validated": true,
+            "constraint": "channel_details_id_fkey"
+        },
+        {
+            "table": "collections",
+            "schema": "public",
+            "validated": true,
+            "constraint": "collections_parent_id_fkey"
+        },
+        {
+            "table": "lab",
+            "schema": "public",
+            "validated": true,
+            "constraint": "lab_main_fkey"
+        },
+        {
+            "table": "lab",
+            "schema": "public",
+            "validated": true,
+            "constraint": "lab_parent_fkey"
+        },
+        {
+            "table": "messages",
+            "schema": "public",
+            "validated": true,
+            "constraint": "messages_channel_id_fkey"
+        },
+        {
+            "table": "messages",
+            "schema": "public",
+            "validated": true,
+            "constraint": "messages_username_fkey"
+        },
+        {
+            "table": "product_categories",
+            "schema": "public",
+            "validated": true,
+            "constraint": "product_categories_category_id_fkey"
+        },
+        {
+            "table": "product_categories",
+            "schema": "public",
+            "validated": true,
+            "constraint": "product_categories_product_id_fkey"
+        },
+        {
+            "table": "user_profiles",
+            "schema": "public",
+            "validated": true,
+            "constraint": "user_profiles_username_fkey"
+        }
+    ],
+    "searchPathFunctions": [
+        {
+            "name": "grant_pg_cron_access",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "grant_pg_graphql_access",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "grant_pg_net_access",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "label",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.cast_cases"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "pgrst_ddl_watch",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "pgrst_drop_watch",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "set_graphql_placeholder",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        }
+    ]
+}

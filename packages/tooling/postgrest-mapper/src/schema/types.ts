@@ -8,6 +8,9 @@ import type {
   Supplementary as PlannerSupplementaryDocument,
   SupplementaryComposite,
   SupplementaryForeignKey,
+  SupplementaryFunction as PlannerSupplementaryFunction,
+  SupplementaryCast,
+  SupplementaryType,
 } from '@supabase/postgrest-planner'
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -63,6 +66,11 @@ export interface SupplementaryFunction {
   argNames: string[] | null
 }
 
+/** The planner's view of a function (a computed-field candidate): the mapper-only keys are not read for these. */
+export type SupplementarySearchPathFunction = PlannerSupplementaryFunction
+
+export type { SupplementaryCast, SupplementaryType }
+
 export interface SupplementaryEnum {
   schema: string
   name: string
@@ -88,6 +96,13 @@ export interface SupplementaryJsonSchemaCheck {
  * unknown keys at every level, so the whole document is passed to it unchanged (`plannerSupplementary` projects
  * the planner part when a minimal document is wanted).
  *
+ * Planner-only sections (the printers do not read them): `schemas`, the schemas the catalog covers (the exposed ones
+ * plus `db-extra-search-path`, `pg_catalog` excluded); `searchPathFunctions`, the functions of the covered schemas
+ * that are not exposed (a computed field is looked up along the request's search path); `types`, every user type
+ * (domain, enum, composite, range...) of the covered schemas, used or not, so a cast name resolves against
+ * the whole path; `casts`, every `pg_cast` row with a side outside `pg_catalog`, which tells the planner whether
+ * a cast from a user type runs a function.
+ *
  * Scope: `relations`, `composites`, `foreignKeys`, `functions` and `enums` cover exactly the exposed schemas
  * (`db-schemas`). `referencedRelations` adds the relations OUTSIDE them that an exposed view (transitively) selects
  * from, which is all the view tracer needs to follow a view into a private schema. A relation that only a function
@@ -100,6 +115,10 @@ export interface Supplementary {
   foreignKeys: SupplementaryForeignKey[]
   relations: SupplementaryRelation[]
   functions: SupplementaryFunction[]
+  schemas: string[]
+  searchPathFunctions: SupplementarySearchPathFunction[]
+  types: SupplementaryType[]
+  casts: SupplementaryCast[]
   referencedRelations: SupplementaryRelation[]
   enums: SupplementaryEnum[]
   jsonSchemaChecks: SupplementaryJsonSchemaCheck[]

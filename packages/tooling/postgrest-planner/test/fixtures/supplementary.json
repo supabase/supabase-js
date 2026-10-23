@@ -1,5 +1,486 @@
 {
+    "casts": [
+        {
+            "method": "f",
+            "source": "bytea",
+            "target": "extensions.geography"
+        },
+        {
+            "method": "f",
+            "source": "bytea",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "extensions.box2d",
+            "target": "extensions.box3d"
+        },
+        {
+            "method": "f",
+            "source": "extensions.box2d",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "extensions.box3d",
+            "target": "box"
+        },
+        {
+            "method": "f",
+            "source": "extensions.box3d",
+            "target": "extensions.box2d"
+        },
+        {
+            "method": "f",
+            "source": "extensions.box3d",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geography",
+            "target": "bytea"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geography",
+            "target": "extensions.geography"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geography",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "box"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "bytea"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "extensions.box2d"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "extensions.box3d"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "extensions.geography"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "json"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "jsonb"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "path"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "point"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "polygon"
+        },
+        {
+            "method": "f",
+            "source": "extensions.geometry",
+            "target": "text"
+        },
+        {
+            "method": "f",
+            "source": "path",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "point",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "polygon",
+            "target": "extensions.geometry"
+        },
+        {
+            "method": "f",
+            "source": "public.cast_mood",
+            "target": "text"
+        },
+        {
+            "method": "f",
+            "source": "text",
+            "target": "extensions.geometry"
+        }
+    ],
+    "types": [
+        {
+            "base": null,
+            "kind": "b",
+            "name": "box2d",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "box2df",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "box3d",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "geography",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "geography_columns",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "geometry",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "geometry_columns",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "geometry_dump",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "gidx",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "pg_stat_statements",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "pg_stat_statements_info",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "spatial_ref_sys",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "spheroid",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "valid_detail",
+            "schema": "extensions"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "user_notes",
+            "schema": "personal"
+        },
+        {
+            "base": null,
+            "kind": "e",
+            "name": "user_status",
+            "schema": "personal"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "users",
+            "schema": "personal"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "active_users",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "address",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "aggregate_types",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "best_friends",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "booking",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "cast_cases",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "e",
+            "name": "cast_mood",
+            "schema": "public"
+        },
+        {
+            "base": "public.cast_mood",
+            "kind": "d",
+            "name": "cast_mood_dom",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "categories",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "channel_details",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "channels",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "collections",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "computed_children",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "computed_parents",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "cornercase",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "domain_items",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "events",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "events_2024",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "events_2025",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "hotel",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "inference_cases",
+            "schema": "public"
+        },
+        {
+            "base": "integer",
+            "kind": "d",
+            "name": "item_amount",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "lab",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "messages",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "non_updatable_view",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "product_categories",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "products",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "recent_messages",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "remote_users",
+            "schema": "public"
+        },
+        {
+            "base": "integer",
+            "kind": "d",
+            "name": "return_only_amount",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "shops",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "trigger_writable_view",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "updatable_view",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "update_only_trigger_view",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "user_profiles",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "e",
+            "name": "user_status",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "user_status_counts",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "users",
+            "schema": "public"
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "users_audit",
+            "schema": "public"
+        }
+    ],
     "format": 1,
+    "schemas": [
+        "extensions",
+        "graphql_public",
+        "personal",
+        "public"
+    ],
     "functions": [
         {
             "name": "graphql",
@@ -28,6 +509,20 @@
             },
             "argTypes": [
                 "text"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "label",
+            "schema": "personal",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.cast_cases"
             ],
             "outColumns": null,
             "volatility": "i"
@@ -73,6 +568,20 @@
             ],
             "outColumns": null,
             "volatility": "s"
+        },
+        {
+            "name": "cast_mood_text",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.cast_mood"
+            ],
+            "outColumns": null,
+            "volatility": "i"
         },
         {
             "name": "computed_child",
@@ -999,6 +1508,20 @@
             "volatility": "v"
         },
         {
+            "name": "return_only",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.return_only_amount",
+                "setof": false
+            },
+            "argTypes": [
+                "public.domain_items"
+            ],
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
             "name": "set_users_offline",
             "schema": "public",
             "returns": {
@@ -1224,6 +1747,48 @@
                 {
                     "name": "hotel_id",
                     "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "cast_cases",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "tstz",
+                    "attnum": 2
+                },
+                {
+                    "name": "ts",
+                    "attnum": 3
+                },
+                {
+                    "name": "n",
+                    "attnum": 4
+                },
+                {
+                    "name": "b",
+                    "attnum": 5
+                },
+                {
+                    "name": "c",
+                    "attnum": 6
+                },
+                {
+                    "name": "mood",
+                    "attnum": 7
+                },
+                {
+                    "name": "mood_dom",
+                    "attnum": 8
+                },
+                {
+                    "name": "status",
+                    "attnum": 9
                 }
             ]
         },
@@ -1864,6 +2429,100 @@
             "schema": "public",
             "validated": true,
             "constraint": "user_profiles_username_fkey"
+        }
+    ],
+    "searchPathFunctions": [
+        {
+            "name": "grant_pg_cron_access",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "grant_pg_graphql_access",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "grant_pg_net_access",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "label",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.cast_cases"
+            ],
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "pgrst_ddl_watch",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "pgrst_drop_watch",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
+        },
+        {
+            "name": "set_graphql_placeholder",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "event_trigger",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "outColumns": null,
+            "volatility": "v"
         }
     ]
 }

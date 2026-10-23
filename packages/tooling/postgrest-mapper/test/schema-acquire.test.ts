@@ -10,9 +10,11 @@ import {
   checkSnapshot,
   connectPg,
   createTracer,
+  exposedSchemas,
   jsonSchemaToTs,
   nodeExec,
   plannerSupplementary,
+  querySupplementary,
   readSnapshot,
   serializeSnapshot,
   snapshotFromSchema,
@@ -38,6 +40,11 @@ const LOCAL: SchemaSource = {
 const PLANNER_FIXTURE = resolve(
   __dirname,
   '../../postgrest-planner/test/fixtures/supplementary.json'
+)
+// The same generator with an extra search path that also names the cast_* schemas of the fixture database
+const PLANNER_FIXTURE_SEARCH_PATH = resolve(
+  __dirname,
+  '../../postgrest-planner/test/fixtures/supplementary-search-path.json'
 )
 
 describe('schema acquisition from the supabase-local stack', () => {
@@ -108,6 +115,33 @@ describe('schema acquisition from the supabase-local stack', () => {
     const expected = JSON.parse(readFileSync(PLANNER_FIXTURE, 'utf8'))
     expect(plannerSupplementary(schema.supplementary)).toEqual(expected)
   })
+
+  test('the planner part follows the extra search path: the catalog covers every path schema', async () => {
+    const connection = await connectPg(dbUrl)
+    try {
+      const supplementary = await withReadOnlyTransaction(connection, (tx) =>
+        querySupplementary(tx, exposedSchemas(schema.config), [
+          'public',
+          'extensions',
+          'cast_a',
+          'cast_b',
+          'cast_c',
+        ])
+      )
+      const expected = JSON.parse(readFileSync(PLANNER_FIXTURE_SEARCH_PATH, 'utf8'))
+      expect(plannerSupplementary(supplementary)).toEqual(expected)
+      // a path schema outside `db-schemas` brings its functions and its types, not its relations
+      expect(supplementary.schemas).toEqual(expect.arrayContaining(['cast_a', 'extensions']))
+      expect(
+        supplementary.searchPathFunctions?.some(
+          (f) => f.schema === 'extensions' && f.name === 'label'
+        )
+      ).toBe(true)
+      expect(supplementary.relations.some((r) => r.schema === 'cast_a')).toBe(false)
+    } finally {
+      await connection.close()
+    }
+  }, 60_000)
 
   test('the tracer takes the catalog: a view column of a NOT NULL base column is non-null', async () => {
     const catalog = buildTraceCatalog(schema.supplementary)

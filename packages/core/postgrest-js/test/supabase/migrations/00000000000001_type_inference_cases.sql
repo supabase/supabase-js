@@ -188,6 +188,54 @@ CREATE TABLE public.aggregate_types (
   doc jsonb
 );
 
+-- Cast and search path resolution (planner): the same domain name `d` in two schemas, a domain named like a
+-- builtin (`cast_c.int4`), and `label(public.cast_cases)` in two schemas, one of them outside the exposed ones.
+CREATE SCHEMA cast_a;
+CREATE SCHEMA cast_b;
+CREATE SCHEMA cast_c;
+GRANT USAGE ON SCHEMA cast_a, cast_b, cast_c TO anon, authenticated, service_role;
+
+-- cast_a.d is not used by any column: nothing but the schema itself mentions it
+CREATE DOMAIN cast_a.d AS text;
+CREATE DOMAIN cast_b.d AS integer;
+CREATE DOMAIN cast_c.int4 AS text;
+
+-- an enum with a user cast function to text that returns NULL, and a domain over it: PostgreSQL uses the cast
+-- function (of the base type for the domain) instead of the output function
+CREATE TYPE public.cast_mood AS ENUM ('ok', 'bad');
+CREATE DOMAIN public.cast_mood_dom AS public.cast_mood;
+CREATE FUNCTION public.cast_mood_text(public.cast_mood)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;
+CREATE CAST (public.cast_mood AS text) WITH FUNCTION public.cast_mood_text(public.cast_mood);
+
+CREATE TABLE public.cast_cases (
+  id bigint PRIMARY KEY,
+  tstz timestamptz NOT NULL,
+  ts timestamp NOT NULL,
+  n integer NOT NULL,
+  b cast_b.d NOT NULL,
+  c cast_c.int4 NOT NULL,
+  mood public.cast_mood NOT NULL,
+  mood_dom public.cast_mood_dom NOT NULL,
+  status public.user_status NOT NULL
+);
+
+CREATE FUNCTION extensions.label(public.cast_cases)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'label'::text; $$;
+
+CREATE FUNCTION personal.label(public.cast_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+-- a domain that only a computed field returns
+CREATE DOMAIN public.return_only_amount AS integer;
+
+CREATE FUNCTION public.return_only(item public.domain_items)
+RETURNS public.return_only_amount LANGUAGE sql STABLE AS $$
+  SELECT item.qty::public.return_only_amount;
+$$;
+
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION extensions.label(public.cast_cases) TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA personal TO anon, authenticated;

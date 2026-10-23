@@ -166,6 +166,10 @@ describe('catalog builders', () => {
       relation('public', 'v', 'v', ['id'], 'SELECT t.id FROM public.t t'),
       relation('public', 'mv', 'm', ['id'], 'SELECT t.id FROM public.t t'),
     ],
+    schemas: [],
+    searchPathFunctions: [],
+    types: [],
+    casts: [],
     referencedRelations: [relation('private', 'x', 'r', ['id'])],
     composites: [
       {

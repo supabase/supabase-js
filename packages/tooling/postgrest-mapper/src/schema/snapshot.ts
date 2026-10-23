@@ -89,6 +89,9 @@ const SUPPLEMENTARY_ARRAYS = [
   'composites',
   'foreignKeys',
   'functions',
+  'searchPathFunctions',
+  'types',
+  'casts',
   'enums',
   'jsonSchemaChecks',
 ] as const
@@ -134,6 +137,9 @@ export function parseSnapshot(text: string, label = 'snapshot'): Snapshot {
   } else {
     if (supplementary.format !== SUPPLEMENTARY_FORMAT)
       bad('supplementary.format', `${SUPPLEMENTARY_FORMAT}`)
+    const schemas = supplementary.schemas
+    if (!Array.isArray(schemas) || schemas.some((s) => typeof s !== 'string'))
+      bad('supplementary.schemas', 'an array of schema names')
     for (const key of SUPPLEMENTARY_ARRAYS) {
       const list = supplementary[key]
       if (!Array.isArray(list)) bad(`supplementary.${key}`, 'an array')

@@ -52,7 +52,51 @@ export interface Supplementary {
   /** Composite types, attributes in `attnum` order. */
   composites?: SupplementaryComposite[]
   foreignKeys?: SupplementaryForeignKey[]
+  /** Functions of the exposed schemas (`db-schemas`). */
   functions?: SupplementaryFunction[]
+  /**
+   * Functions of the schemas of `db-extra-search-path` that are not exposed: a computed field is found
+   * through the whole search path of the request, so they take part in resolving it.
+   */
+  searchPathFunctions?: SupplementaryFunction[]
+  /**
+   * User-defined types (domains, enums, composites, ranges...) of every covered schema, whether or not
+   * anything else mentions them. A cast name resolves against this list.
+   */
+  types?: SupplementaryType[]
+  /**
+   * The schemas this catalog covers: it lists the functions and the types of each. A lookup that crosses
+   * a schema off this list (a request path the catalog was not generated for) cannot prove a name absent
+   * from it, so the field or cast is left unresolved with a degraded note.
+   */
+  schemas?: string[]
+  /**
+   * Every `pg_cast` row with a source or a target outside `pg_catalog`. A cast to `text`, `varchar` or `bpchar`
+   * from such a type keeps a non-NULL value non-NULL only when none of them is a cast function for that pair
+   * (PostgreSQL prefers it to the I/O conversion, and a user function may return NULL). Without this section
+   * such a cast is nullable.
+   */
+  casts?: SupplementaryCast[]
+  [k: string]: unknown
+}
+
+export interface SupplementaryCast {
+  /** `format_type` of the source, under an empty `search_path` (schema-qualified outside `pg_catalog`). */
+  source: string
+  /** Same spelling, for the target. */
+  target: string
+  /** `pg_cast.castmethod`: `f` function, `i` I/O conversion, `b` binary coercible. */
+  method: string
+  [k: string]: unknown
+}
+
+export interface SupplementaryType {
+  schema: string
+  name: string
+  /** `pg_type.typtype`: `b` base, `c` composite, `d` domain, `e` enum, `m` multirange, `r` range. */
+  kind?: string
+  /** Base type of a domain, spelled like `argTypes`; `null` otherwise. */
+  base?: string | null
   [k: string]: unknown
 }
 
@@ -397,7 +441,7 @@ interface PlanBase {
   filters: PlanFilter[]
   /**
    * What this plan had to guess: `column-order:<schema>.<relation>`, `computed-field:<relation>.<name>`
-   * (no catalog to resolve it), `cast-type:<name>` (a cast names a type the catalog does not mention), `fk-validation:<schema>.<table>.<constraint>` (the catalog does not say whether the
+   * (no catalog to resolve it, or a schema of the request's search path that the catalog does not cover), `cast-type:<name>` (a cast names a type that is neither builtin nor in a schema the catalog covers, or a covered path schema comes after an uncovered one), `fk-validation:<schema>.<table>.<constraint>` (the catalog does not say whether the
    * key is validated), `rpc-columns:<function>` (an RPC returns a composite type or `RETURNS TABLE` the
    * catalog does not describe), `rpc-embed-relation:<schema>.<relation>` (upstream resolves the embeds of an
    * RPC against another table than the one the function returns: see the README), `media-handler:<function>`

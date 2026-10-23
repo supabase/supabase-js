@@ -16,6 +16,8 @@ module Planner.Supplementary
   , orderColumns
   , applyColumnOrder
   , foreignKeyValidated
+  , Lookup (..)
+  , covers
   , findComputedField
   , findRoutine
   , findFunction
@@ -28,7 +30,7 @@ import Data.Aeson.Types (Parser)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.HashMap.Strict as HM
 import qualified Data.HashMap.Strict.InsOrd as HMI
-import Data.List (elemIndex, sortOn)
+import Data.List (sortOn)
 import Data.Text (Text)
 
 import PostgREST.SchemaCache (SchemaCache (..))
@@ -46,6 +48,17 @@ data Supplementary = Supplementary
   , suppForeignKeys :: HM.HashMap (QualifiedIdentifier, Text) Bool
   -- ^ (owning table, constraint name) to @convalidated@.
   , suppFunctions :: [SuppFunction]
+  -- ^ The functions of the exposed schemas, then those of the other schemas of the search path.
+  , suppSchemas :: [Text]
+  -- ^ The schemas the catalog enumerates the functions (@functions@, @searchPathFunctions@) and the types
+  -- (@types@) of: the exposed schemas and the schemas of @db-extra-search-path@ it was generated for. A
+  -- schema outside this list may hold a function or a type the catalog does not mention.
+  , suppTypes :: HM.HashMap QualifiedIdentifier (Maybe Text)
+  -- ^ The user types of those schemas (arrays excluded) with the base type of each domain.
+  , suppCasts :: Maybe [(Text, Text, Text)]
+  -- ^ Every @pg_cast@ row with a side outside @pg_catalog@: source, target (both 'normalizeType'd) and
+  -- @castmethod@ (@f@ function, @i@ I/O, @b@ binary). 'Nothing' when the document has no @casts@ section: which
+  -- casts exist is then unknown.
   }
 
 data Composite = Composite QualifiedIdentifier [(Text, Text)]
@@ -77,12 +90,19 @@ instance FromJSON Supplementary where
     comps <- o .:? "composites" .!= []
     fks <- o .:? "foreignKeys" .!= []
     fns <- o .:? "functions" .!= []
+    pathFns <- o .:? "searchPathFunctions" .!= []
+    schemas <- o .:? "schemas" .!= []
+    types <- o .:? "types" .!= []
+    casts <- o .:? "casts" :: Parser (Maybe [CastItem])
     pure
       Supplementary
         { suppRelations = HM.fromList [(QualifiedIdentifier s n, sortOn snd cols) | RelItem s n cols <- rels]
         , suppComposites = HM.fromList [(qi, as) | Composite qi as <- comps]
         , suppForeignKeys = HM.fromList [((QualifiedIdentifier s t, c), v) | FkItem s t c v <- fks]
-        , suppFunctions = fns
+        , suppFunctions = fns <> pathFns
+        , suppSchemas = schemas
+        , suppTypes = HM.fromList [(QualifiedIdentifier s n, normalizeType <$> base) | TypeItem s n base <- types]
+        , suppCasts = fmap (\items -> [(normalizeType src, normalizeType tgt, m) | CastItem src tgt m <- items]) casts
         }
 
 data RelItem = RelItem Text Text [(Text, Int)]
@@ -100,6 +120,16 @@ instance FromJSON Composite where
     n <- o .: "name"
     attrs <- o .: "attributes" >>= traverse (withObject "attribute" (\a -> (,,) <$> a .: "name" <*> a .: "type" <*> (a .: "attnum" :: Parser Int)))
     pure (Composite (QualifiedIdentifier s n) [(an, at) | (an, at, _) <- sortOn (\(_, _, i) -> i) attrs])
+
+data TypeItem = TypeItem Text Text (Maybe Text)
+
+instance FromJSON TypeItem where
+  parseJSON = withObject "type" $ \o -> TypeItem <$> o .: "schema" <*> o .: "name" <*> o .:? "base"
+
+data CastItem = CastItem Text Text Text
+
+instance FromJSON CastItem where
+  parseJSON = withObject "cast" $ \o -> CastItem <$> o .: "source" <*> o .: "target" <*> o .: "method"
 
 data FkItem = FkItem Text Text Text Bool
 
@@ -151,19 +181,34 @@ applyColumnOrder supp sc = sc{dbTables = HM.mapWithKey reorder (dbTables sc)}
 foreignKeyValidated :: Supplementary -> QualifiedIdentifier -> Text -> Maybe Bool
 foreignKeyValidated supp table constraint = HM.lookup (table, constraint) (suppForeignKeys supp)
 
+-- | What a lookup along the search path found.
+data Lookup a
+  = Found a
+  | Absent
+  -- ^ Nothing of that name in any schema of the path, all of which the catalog covers.
+  | Uncovered
+  -- ^ Not found before a schema of the path the catalog does not cover: it may be there.
+
+-- | Whether the catalog enumerates the functions and types of a schema. @pg_catalog@ is always the builtins.
+covers :: Supplementary -> Text -> Bool
+covers supp schema = schema == "pg_catalog" || schema `elem` suppSchemas supp
+
 -- | A computed field is a function @name(relation)@ with exactly the relation's row type as its only
 -- argument. Upstream selects it as @"schema"."relation"."name"@; Postgres reads that as the call
 -- @name(relation)@ with an unqualified function name, which it looks up through the @search_path@ of the
 -- request (its schema, then @db-extra-search-path@: @PreQuery.hs@). Of the functions of that name and argument
 -- type the one in the first schema of the path is called, and a function of a schema off the path is not
--- visible at all. The path is the first argument.
-findComputedField :: Supplementary -> [Text] -> QualifiedIdentifier -> Text -> Maybe SuppFunction
-findComputedField supp searchPath (QualifiedIdentifier schema rel) name =
-  case sortOn fst [(pos, f) | f <- suppFunctions supp, sfName f == name, sfArgTypes f == [relationType], Just pos <- [elemIndex (sfSchema f) searchPath]] of
-    (_, f) : _ -> Just f
-    [] -> Nothing
+-- visible at all. The path is the first argument. A schema of the path the catalog does not cover, reached
+-- before any candidate, leaves the answer open ('Uncovered').
+findComputedField :: Supplementary -> [Text] -> QualifiedIdentifier -> Text -> Lookup SuppFunction
+findComputedField supp searchPath (QualifiedIdentifier schema rel) name = go searchPath
   where
     relationType = schema <> "." <> rel
+    go [] = Absent
+    go (s : rest) = case [f | f <- suppFunctions supp, sfSchema f == s, sfName f == name, sfArgTypes f == [relationType]] of
+      f : _ -> Found f
+      [] | covers supp s -> go rest
+         | otherwise -> Uncovered
 
 -- | The catalog entry of a routine of the schema cache: the overload of the same schema and name whose input
 -- argument types are the routine's. A name the catalog lists once matches whatever the spelling of its types.

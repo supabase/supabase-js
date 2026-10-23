@@ -62,8 +62,8 @@ import PostgREST.SchemaCache.Relationship (Cardinality (..), Junction (..), Rela
 import PostgREST.SchemaCache.Routine (FuncVolatility (..), MediaHandler (..), PgType (..), RetType (..), Routine (..), RoutineParam (..), RoutineMap, funcReturnsSingleComposite)
 import PostgREST.SchemaCache.Table (Column (..), Table (..))
 
-import Planner.PgType (aggregateType, isBuiltinType, normalizeType, qualifiedTypeName)
-import Planner.Supplementary (SuppFunction (..), SuppReturn (..), Supplementary (..), findComputedField, findFunction, findRoutine, foreignKeyValidated, orderColumns)
+import Planner.PgType (aggregateType, isBuiltinType, isSqlTypeAlias, normalizeType, qualifiedTypeName)
+import Planner.Supplementary (Lookup (..), SuppFunction (..), SuppReturn (..), Supplementary (..), covers, findComputedField, findFunction, findRoutine, foreignKeyValidated, orderColumns)
 
 -- | @form@, @shape@, @rpc@, @filters@ and @degraded@ for a plan. Plans that return no rows of a relation
 -- (inspection, relation/routine info, mutations without a representation, scalar RPCs) have @shape: null@.
@@ -156,7 +156,7 @@ data Ctx = Ctx
   , cxRows :: Maybe Rows
   -- ^ Set for the root of an RPC plan: where its columns come from. Embeds resolve against their tables.
   , cxTypes :: HM.HashMap Text (Maybe Text)
-  -- ^ The user types the catalog mentions (see 'knownTypes').
+  -- ^ The user types the schema dump and the catalog know, with the base type of each domain (see 'knownTypes').
   , cxSearchPath :: [Text]
   -- ^ The search path of the request: its schema, then @db-extra-search-path@ (upstream @PreQuery.hs@).
   }
@@ -507,7 +507,7 @@ resolveOne ctx rel csf@CoercibleSelectField{csField = cf, csAggFunction = agg, c
       | isNothing agg, legacyCount ctx rel cf = (applyAggregate Count (Expr Nothing Nothing False Null False), [])
       | otherwise = baseExpr ctx rel cf
 
-    notes = startNotes <> ["cast-type:" <> c | Just c <- [cast, aggCast'], isNothing (resolveCastType ctx c)]
+    notes = startNotes <> ["cast-type:" <> c | Just c <- [cast, aggCast'], not (isCastFound (resolveCastType ctx c))]
 
     -- Upstream's @pgFmtApplyAggregate Nothing _@ drops the second cast: it only applies after an aggregate.
     aggCast' = if isJust agg then aggCast else Nothing
@@ -573,9 +573,12 @@ columnExpr Ctx{cxRows} rel col = case cxRows of
 legacyCount :: Ctx -> QualifiedIdentifier -> CoercibleField -> Bool
 legacyCount Ctx{cxTables, cxSupp, cxRows, cxSearchPath} rel CoercibleField{cfName, cfJsonPath} =
   cfName == "count" && null cfJsonPath && rowsAreTable && case (HM.lookup rel cxTables, cxSupp) of
-    (Just table, Just supp) -> isNothing (HMI.lookup cfName (tableColumns table)) && isNothing (findComputedField supp cxSearchPath rel cfName)
+    (Just table, Just supp) -> isNothing (HMI.lookup cfName (tableColumns table)) && absent (findComputedField supp cxSearchPath rel cfName)
     _ -> False
   where
+    absent = \case
+      Absent -> True
+      _ -> False
     rowsAreTable = case cxRows of
       Nothing -> True
       Just TableRows -> True
@@ -596,8 +599,12 @@ baseExpr ctx@Ctx{cxTables, cxSupp, cxRows, cxSearchPath, cxTypes} rel CoercibleF
       Nothing -> case cxSupp of
         Nothing -> bad (noField <> " (no supplementary catalog: computed fields are unknown)") ["computed-field:" <> qualified rel <> "." <> name]
         Just supp -> case findComputedField supp cxSearchPath rel name of
-          Nothing -> bad noField []
-          Just SuppFunction{sfSchema, sfName, sfReturns = SuppReturn{srSetof, srType}}
+          Absent -> bad noField []
+          Uncovered ->
+            bad
+              (noField <> " (the catalog does not cover every schema of the search path: a computed field may be there)")
+              ["computed-field:" <> qualified rel <> "." <> name]
+          Found SuppFunction{sfSchema, sfName, sfReturns = SuppReturn{srSetof, srType}}
             | srSetof -> bad ("function " <> sfSchema <> "." <> sfName <> " returns a set") []
             | otherwise ->
                 ( Expr
@@ -663,42 +670,122 @@ applyRepresentation fn e =
 applyCast :: Ctx -> Maybe Text -> Expr -> Expr
 applyCast _ Nothing e = e
 applyCast ctx (Just c) e = case resolveCastType ctx c of
-  Nothing -> unresolvedExpr ("no type named " <> c <> " is known to the catalog")
-  Just (ty, base) ->
-    Expr (Just ty) base nullable (object ["kind" .= str "cast", "of" .= eProv e, "to" .= ty]) (eRows e)
-    where
-      -- A builtin cast keeps non-NULL, but the cast function of any other type (domain, enum, composite,
-      -- extension type) can return NULL for a non-NULL value.
-      nullable = eNullable e || not (maybe False isBuiltinType (eType e) && isBuiltinType ty)
+  CastUnknown -> unresolvedExpr ("no type named " <> c <> " is known to the catalog")
+  CastUncovered -> unresolvedExpr ("the catalog does not cover every schema of the search path, so the type named " <> c <> " cannot be told")
+  CastFound ty base ->
+    Expr (Just ty) base (eNullable e || not (maybe False (\from -> castKeepsNonNull ctx from ty) (eType e))) (object ["kind" .= str "cast", "of" .= eProv e, "to" .= ty]) (eRows e)
 
--- | The type a cast names, with the base type when it is a domain the catalog knows. Upstream pastes the name
--- into the SQL as it was written (@CAST(x AS name)@): the parser only lets letters, digits, @_@, @$@ and spaces
--- through, so there is no quoting, no schema and no @[]@, and Postgres folds the name to lower case. It names a
--- type of @pg_catalog@ (searched first: the SQL aliases like @int@ and @double precision@, or the @_int4@
--- spelling of an array) or, failing that, a type of the search path of the request. A name the catalog does not
--- mention is unknown: the type may exist, so nothing is invented.
-resolveCastType :: Ctx -> Text -> Maybe (Text, Maybe Text)
-resolveCastType Ctx{cxTypes, cxSearchPath} raw = go (T.toLower (T.unwords (T.words raw)))
+-- | Whether casting a non-NULL value from the first type to the second (both 'normalizeType'd) gives a non-NULL
+-- value. Only the pairs checked against the PostgreSQL sources are listed; every other cast is nullable.
+--
+-- Between builtin types the cast functions of @pg_cast@ never return NULL except @timestamp_time@,
+-- @timestamptz_time@ and @timestamptz_timetz@ (@date.c@: NULL for infinity), so the allowlist is:
+--
+-- * a type to itself;
+-- * among @int2@, @int4@, @int8@, @numeric@, @float4@ and @float8@: out-of-range values raise an error;
+-- * any type to @text@, @varchar@ or @bpchar@: the output function of a non-NULL value is never NULL;
+-- * among @text@, @varchar@, @bpchar@ and @name@.
+--
+-- A user type on either side keeps non-NULL only for a type to itself, or to @text@, @varchar@ or @bpchar@
+-- when the catalog lists its @pg_cast@ rows and none is a cast /function/ for that pair: PostgreSQL prefers a
+-- @pg_cast@ function over the I/O conversion (@find_coercion_pathway@), and a user function may return NULL.
+-- A domain is cast like its base type. Without that list a user type is nullable.
+castKeepsNonNull :: Ctx -> Text -> Text -> Bool
+castKeepsNonNull Ctx{cxTypes, cxSupp} from to
+  | builtin from && builtin to = builtinKeeps
+  | from == to = True
+  | to `elem` textual = case cxSupp >>= suppCasts of
+      Nothing -> False
+      Just casts -> maybe False (all (\src -> (src, to, "f") `notElem` casts)) (sources from)
+  | otherwise = False
   where
+    builtin = isBuiltinType
+    builtinKeeps =
+      from == to
+        || (from `elem` numbers && to `elem` numbers)
+        || to `elem` textual
+        || (from `elem` named && to `elem` named)
+    numbers = ["int2", "int4", "int8", "numeric", "float4", "float8"]
+    textual = ["text", "varchar", "bpchar"]
+    named = "name" : textual
+    -- The type and, for a domain, its base: those whose casts apply. 'Nothing' for a name the catalog and the dump
+    -- do not know: it may be a domain over a type with a cast.
+    sources t
+      | Just element <- T.stripSuffix "[]" t = map (<> "[]") <$> sources element
+      | isBuiltinType t = Just [t]
+      | otherwise = case HM.lookup t cxTypes of
+          Just (Just base) -> Just [t, base]
+          Just Nothing -> Just [t]
+          Nothing -> Nothing
+
+-- | What a cast name stands for.
+data CastType
+  = CastFound Text (Maybe Text)
+  -- ^ A type, with its base type when it is a domain the catalog knows.
+  | CastUnknown
+  -- ^ No type of that name on the search path (every schema of which the catalog covers).
+  | CastUncovered
+  -- ^ A schema of the search path the catalog does not cover comes before any type of that name.
+
+isCastFound :: CastType -> Bool
+isCastFound = \case
+  CastFound{} -> True
+  _ -> False
+
+-- | The type a cast names. Upstream pastes the name into the SQL as it was written (@CAST(x AS name)@): the
+-- parser only lets letters, digits, @_@, @$@ and spaces through, so there is no quoting, no schema and no
+-- @[]@, and Postgres folds the name to lower case. The SQL spellings of the grammar (@int@, @double
+-- precision@, @character varying@, ...) always mean the @pg_catalog@ type. Any other name is looked up like
+-- Postgres does through the search path of the request (its schema, then @db-extra-search-path@), with
+-- @pg_catalog@ in front unless the path lists it (@namespace.c@, @recomputeNamespacePath@): a user type of a
+-- schema before an explicit @pg_catalog@ hides the builtin of that name. A schema the catalog does not cover
+-- may hold a type of the name, so the answer is then open rather than the type of a later schema. @_name@ is
+-- the array of the type @name@.
+resolveCastType :: Ctx -> Text -> CastType
+resolveCastType Ctx{cxTypes, cxSupp, cxSearchPath} raw = go (T.toLower (T.unwords (T.words raw)))
+  where
+    path = if "pg_catalog" `elem` cxSearchPath then cxSearchPath else "pg_catalog" : cxSearchPath
+    covered s = s == "pg_catalog" || maybe False (`covers` s) cxSupp
     go name
-      | isBuiltinType builtin = Just (builtin, Nothing)
-      | (q : _) <- [q | s <- cxSearchPath, let q = s <> "." <> name, HM.member q cxTypes] = Just (q, join (HM.lookup q cxTypes))
-      | Just element <- T.stripPrefix "_" name, not (T.null element) = (\(t, _) -> (t <> "[]", Nothing)) <$> go element
-      | otherwise = Nothing
+      | isSqlTypeAlias name = CastFound (normalizeType name) Nothing
+      | otherwise = case walk path of
+          CastUnknown | Just element <- T.stripPrefix "_" name, not (T.null element) -> arrayOf (go element)
+          found -> found
       where
         builtin = normalizeType name
+        builtinElement = T.stripPrefix "_" name >>= \e -> if isBuiltinType (normalizeType e) then Just (normalizeType e) else Nothing
+        walk [] = CastUnknown
+        walk (s : rest)
+          | s == "pg_catalog" = case builtinElement of
+              _ | isBuiltinType builtin -> CastFound builtin Nothing
+              Just element -> CastFound (element <> "[]") Nothing
+              Nothing -> walk rest
+          | Just base <- HM.lookup (s <> "." <> name) cxTypes = CastFound (s <> "." <> name) base
+          | covered s = walk rest
+          | otherwise = CastUncovered
+    arrayOf = \case
+      CastFound t _ -> CastFound (t <> "[]") Nothing
+      other -> other
 
--- | The user types the catalog mentions, by @schema.name@ (element type of arrays), with the base type of
--- the ones it shows to be domains (a column whose type differs from its nominal type). Types are known from the
--- columns, tables and routines of the dump and from the composite types and functions of the supplementary
--- catalog; a type nothing mentions is not known.
+-- | The user types known by @schema.name@ (element type of arrays), with the base type of the ones that are
+-- domains. The supplementary catalog enumerates every type of the schemas it covers; the schema dump adds what
+-- it mentions (columns, tables and routines), which is all there is without a catalog, and the catalog adds
+-- the composite types and the types of its functions. A domain over a domain has the base of the last one.
 knownTypes :: SchemaCache -> Maybe Supplementary -> HM.HashMap Text (Maybe Text)
-knownTypes sc supp = HM.fromListWith (\new old -> old <|> new) (filter (userType . fst) entries)
+knownTypes sc supp = HM.map (fmap chase) known
   where
+    known = HM.fromListWith (\new old -> old <|> new) (filter (userType . fst) entries)
+    chase base = go (8 :: Int) base
+      where
+        go 0 b = b
+        go n b = case HM.lookup b known of
+          Just (Just next) -> go (n - 1) next
+          _ -> b
     userType t = not (T.null t) && not (isBuiltinType t) && not (T.any (== '"') t)
     entries =
       concat
-        [ [peel (normalizeType (colNominalType col)) (normalizeType (colType col)) | t <- HM.elems (dbTables sc), col <- HMI.elems (tableColumns t)]
+        [ [(qualified qi, base) | Just s <- [supp], (qi, base) <- HM.toList (suppTypes s)]
+        , [peel (normalizeType (colNominalType col)) (normalizeType (colType col)) | t <- HM.elems (dbTables sc), col <- HMI.elems (tableColumns t)]
         , [(qualified qi, Nothing) | qi <- HM.keys (dbTables sc)]
         , [(element t, Nothing) | rs <- HM.elems (dbRoutines sc), r <- rs, t <- routineTypes r]
         , [(qualified qi, Nothing) | Just s <- [supp], qi <- HM.keys (suppComposites s) <> HM.keys (suppRelations s)]

@@ -104,6 +104,16 @@ export function exposedSchemas(config: Record<string, unknown>): string[] {
   return schemas
 }
 
+/**
+ * `db-extra-search-path`, in order (PostgREST's default is `public`). A request searches its own schema first, then
+ * this list, so the supplementary catalog covers both.
+ */
+export function extraSearchPath(config: Record<string, unknown>): string[] {
+  const raw = config['db-extra-search-path']
+  const list = Array.isArray(raw) ? raw : typeof raw === 'string' ? raw.split(',') : ['public']
+  return list.map((s) => String(s).trim()).filter(Boolean)
+}
+
 /** Parses `postgrest --version`, for example `PostgREST 16.4` or `PostgREST 14.4.1 (a1b2c3d)`. */
 export function parseVersion(text: string): { release: string; commit?: string } {
   const match = /PostgREST\s+(\S+)(?:\s+\(([0-9a-f]+)\))?/i.exec(text)

@@ -7,6 +7,7 @@ import {
   dumpPostgrestImage,
   dumpSupabaseLocal,
   exposedSchemas,
+  extraSearchPath,
   parseConfigDump,
   parseVersion,
   redactConfig,
@@ -130,7 +131,7 @@ async function acquireLive(
       connection,
       async (tx) => ({
         pgVersionNum: await readPgVersionNum(tx),
-        supplementary: await querySupplementary(tx, schemas),
+        supplementary: await querySupplementary(tx, schemas, extraSearchPath(config)),
       })
     )
     const schema: AcquiredSchema = {

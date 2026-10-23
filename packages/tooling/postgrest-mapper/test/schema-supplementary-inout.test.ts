@@ -31,7 +31,7 @@ describe('supplementary catalog: INOUT parameters are result columns', () => {
       await db.query(`
         create function public.inout_probe_in(in a int, in b text)
         returns record language sql as $$ select 1, 2 $$`)
-      const { functions } = await querySupplementary(db, ['public'])
+      const { functions } = await querySupplementary(db, ['public'], ['public'])
       const outColumns = (name: string) => functions.find((f) => f.name === name)?.outColumns
       expect(outColumns('inout_probe_both')).toEqual([
         { name: 'b', type: 'text' },
