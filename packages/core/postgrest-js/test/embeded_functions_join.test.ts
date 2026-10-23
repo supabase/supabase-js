@@ -155,11 +155,30 @@ describe('embeded functions select', () => {
   })
 
   test('embeded_setof_function_double_definition - function double definition returning a setof embeded table', async () => {
-    const res = await postgrest.from('users').select('username, all_user_messages:get_messages(*)')
+    const res = await postgrest
+      .from('users')
+      .select('username, all_user_messages:get_messages(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "all_user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "all_user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "all_user_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "all_user_messages": [
               {
@@ -192,22 +211,6 @@ describe('embeded functions select', () => {
               },
             ],
             "username": "supabot",
-          },
-          {
-            "all_user_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "all_user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "all_user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "all_user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -242,10 +245,27 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, all_user_messages:get_messages(id,message)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "all_user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "all_user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "all_user_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "all_user_messages": [
               {
@@ -266,22 +286,6 @@ describe('embeded functions select', () => {
               },
             ],
             "username": "supabot",
-          },
-          {
-            "all_user_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "all_user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "all_user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "all_user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -313,10 +317,27 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, all_user_messages:get_messages(id,message, blurb_message)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "all_user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "all_user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "all_user_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "all_user_messages": [
               {
@@ -341,22 +362,6 @@ describe('embeded functions select', () => {
               },
             ],
             "username": "supabot",
-          },
-          {
-            "all_user_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "all_user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "all_user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "all_user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -389,24 +394,18 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, setof_rows_one:function_using_setof_rows_one(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
-            "setof_rows_one": {
-              "id": 1,
-              "username": "supabot",
-            },
-            "username": "supabot",
-          },
-          {
-            "setof_rows_one": null,
-            "username": "kiwicopple",
-          },
-          {
             "setof_rows_one": null,
             "username": "awailas",
+          },
+          {
+            "setof_rows_one": null,
+            "username": "dragarcia",
           },
           {
             "setof_rows_one": null,
@@ -414,7 +413,14 @@ describe('embeded functions select', () => {
           },
           {
             "setof_rows_one": null,
-            "username": "dragarcia",
+            "username": "kiwicopple",
+          },
+          {
+            "setof_rows_one": {
+              "id": 1,
+              "username": "supabot",
+            },
+            "username": "supabot",
           },
         ],
         "error": null,
@@ -446,30 +452,24 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, returns_row:function_using_table_returns(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
             "returns_row": {
-              "id": 1,
-              "username": "supabot",
-            },
-            "username": "supabot",
-          },
-          {
-            "returns_row": {
-              "id": null,
-              "username": null,
-            },
-            "username": "kiwicopple",
-          },
-          {
-            "returns_row": {
               "id": null,
               "username": null,
             },
             "username": "awailas",
+          },
+          {
+            "returns_row": {
+              "id": null,
+              "username": null,
+            },
+            "username": "dragarcia",
           },
           {
             "returns_row": {
@@ -483,7 +483,14 @@ describe('embeded functions select', () => {
               "id": null,
               "username": null,
             },
-            "username": "dragarcia",
+            "username": "kiwicopple",
+          },
+          {
+            "returns_row": {
+              "id": 1,
+              "username": "supabot",
+            },
+            "username": "supabot",
           },
         ],
         "error": null,
@@ -554,27 +561,22 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, user_called_profile:get_user_profile(username)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
             "user_called_profile": {
-              "username": "supabot",
-            },
-            "username": "supabot",
-          },
-          {
-            "user_called_profile": {
-              "username": null,
-            },
-            "username": "kiwicopple",
-          },
-          {
-            "user_called_profile": {
               "username": null,
             },
             "username": "awailas",
+          },
+          {
+            "user_called_profile": {
+              "username": null,
+            },
+            "username": "dragarcia",
           },
           {
             "user_called_profile": {
@@ -586,7 +588,13 @@ describe('embeded functions select', () => {
             "user_called_profile": {
               "username": null,
             },
-            "username": "dragarcia",
+            "username": "kiwicopple",
+          },
+          {
+            "user_called_profile": {
+              "username": "supabot",
+            },
+            "username": "supabot",
           },
         ],
         "error": null,
@@ -699,11 +707,30 @@ describe('embeded functions select', () => {
   })
 
   test('embeded_function_with_table_row_input - function with table row input', async () => {
-    const res = await postgrest.from('users').select('username, user_messages:get_user_messages(*)')
+    const res = await postgrest
+      .from('users')
+      .select('username, user_messages:get_user_messages(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "user_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "user_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "user_messages": [
               {
@@ -736,22 +763,6 @@ describe('embeded functions select', () => {
               },
             ],
             "username": "supabot",
-          },
-          {
-            "user_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -786,10 +797,23 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('active_users')
       .select('username, active_user_messages:get_active_user_messages(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "active_user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "active_user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "active_user_messages": [],
+            "username": "jsonuser",
+          },
           {
             "active_user_messages": [
               {
@@ -822,18 +846,6 @@ describe('embeded functions select', () => {
               },
             ],
             "username": "supabot",
-          },
-          {
-            "active_user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "active_user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "active_user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -868,10 +880,27 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, recent_messages:get_user_recent_messages(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "recent_messages": [],
+            "username": "awailas",
+          },
+          {
+            "recent_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "recent_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "recent_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "recent_messages": [
               {
@@ -904,22 +933,6 @@ describe('embeded functions select', () => {
               },
             ],
             "username": "supabot",
-          },
-          {
-            "recent_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "recent_messages": [],
-            "username": "awailas",
-          },
-          {
-            "recent_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "recent_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -954,10 +967,23 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('active_users')
       .select('username, recent_messages:get_user_recent_messages(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "recent_messages": [],
+            "username": "awailas",
+          },
+          {
+            "recent_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "recent_messages": [],
+            "username": "jsonuser",
+          },
           {
             "recent_messages": [
               {
@@ -990,18 +1016,6 @@ describe('embeded functions select', () => {
               },
             ],
             "username": "supabot",
-          },
-          {
-            "recent_messages": [],
-            "username": "awailas",
-          },
-          {
-            "recent_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "recent_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -1036,10 +1050,27 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, user_messages:get_user_messages(id,message,blurb_message)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "user_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "user_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "user_messages": [
               {
@@ -1064,22 +1095,6 @@ describe('embeded functions select', () => {
               },
             ],
             "username": "supabot",
-          },
-          {
-            "user_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -1135,6 +1150,7 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('messages')
       .select('id, user:function_returning_single_row(status, username)')
+      .order('id')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1154,14 +1170,14 @@ describe('embeded functions select', () => {
             },
           },
           {
-            "id": 4,
+            "id": 3,
             "user": {
               "status": "ONLINE",
               "username": "supabot",
             },
           },
           {
-            "id": 3,
+            "id": 4,
             "user": {
               "status": "ONLINE",
               "username": "supabot",
@@ -1220,30 +1236,24 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, profile:function_using_table_returns(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
             "profile": {
-              "id": 1,
-              "username": "supabot",
-            },
-            "username": "supabot",
-          },
-          {
-            "profile": {
-              "id": null,
-              "username": null,
-            },
-            "username": "kiwicopple",
-          },
-          {
-            "profile": {
               "id": null,
               "username": null,
             },
             "username": "awailas",
+          },
+          {
+            "profile": {
+              "id": null,
+              "username": null,
+            },
+            "username": "dragarcia",
           },
           {
             "profile": {
@@ -1257,7 +1267,14 @@ describe('embeded functions select', () => {
               "id": null,
               "username": null,
             },
-            "username": "dragarcia",
+            "username": "kiwicopple",
+          },
+          {
+            "profile": {
+              "id": 1,
+              "username": "supabot",
+            },
+            "username": "supabot",
           },
         ],
         "error": null,
@@ -1286,24 +1303,18 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, profile:function_using_setof_rows_one(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
-            "profile": {
-              "id": 1,
-              "username": "supabot",
-            },
-            "username": "supabot",
-          },
-          {
-            "profile": null,
-            "username": "kiwicopple",
-          },
-          {
             "profile": null,
             "username": "awailas",
+          },
+          {
+            "profile": null,
+            "username": "dragarcia",
           },
           {
             "profile": null,
@@ -1311,7 +1322,14 @@ describe('embeded functions select', () => {
           },
           {
             "profile": null,
-            "username": "dragarcia",
+            "username": "kiwicopple",
+          },
+          {
+            "profile": {
+              "id": 1,
+              "username": "supabot",
+            },
+            "username": "supabot",
           },
         ],
         "error": null,

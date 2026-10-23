@@ -25,6 +25,7 @@ test('nested query with selective fields', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(id, message)')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -76,6 +77,7 @@ test('nested query with multiple levels and selective fields', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(id, message, channels(id, slug))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -147,6 +149,7 @@ test('query with multiple one-to-many relationships', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(id), user_profiles(id)')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -192,7 +195,7 @@ test('query with multiple one-to-many relationships', async () => {
 })
 
 test('many-to-one relationship', async () => {
-  const res = await postgrest.from('messages').select('user:users(*)').limit(1).single()
+  const res = await postgrest.from('messages').select('user:users(*)').order('id').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -221,7 +224,12 @@ test('many-to-one relationship', async () => {
 })
 
 test('one-to-many relationship', async () => {
-  const res = await postgrest.from('users').select('messages(*)').limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select('messages(*)')
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -281,7 +289,12 @@ test('one-to-many relationship', async () => {
 })
 
 test('one-to-many relationship with selective columns', async () => {
-  const res = await postgrest.from('users').select('messages(data)').limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select('messages(data)')
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -385,7 +398,12 @@ test('multiple times the same column in selection', async () => {
 })
 
 test('embed resource with no fields', async () => {
-  const res = await postgrest.from('messages').select('message, users()').limit(1).single()
+  const res = await postgrest
+    .from('messages')
+    .select('message, users()')
+    .order('id')
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -409,6 +427,7 @@ test('select JSON accessor', async () => {
   const res = await postgrest
     .from('users')
     .select('data->foo->bar, data->foo->>baz')
+    .order('username', { ascending: false })
     .limit(1)
     .filter('username', 'eq', 'jsonuser')
     .single()

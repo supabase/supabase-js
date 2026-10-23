@@ -9,6 +9,7 @@ test('select with aggregate count and spread', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(count(), ...channel_details(details)))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -70,6 +71,7 @@ test('spread resource with single column in select query', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(count(), ...channel_details(details)))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -131,6 +133,7 @@ test('spread resource with all columns in select query', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(count(), ...channel_details(*)))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -197,6 +200,7 @@ test('select with aggregate sum and spread', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(id.sum(), ...channel_details(details)))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -260,6 +264,7 @@ test('select with aggregate sum and spread on nested relation', async () => {
     .select(
       'username, messages(channels(id.sum(), ...channel_details(details_sum:id.sum(), details)))'
     )
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -326,6 +331,7 @@ test('select with spread on nested relation', async () => {
   const res = await postgrest
     .from('messages')
     .select('id, channels(id, ...channel_details(details_id:id, details))')
+    .order('id')
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`

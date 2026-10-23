@@ -6,7 +6,12 @@ const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient(REST_URL)
 
 test('select with aggregate count function', async () => {
-  const res = await postgrest.from('users').select('username, messages(count)').limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select('username, messages(count)')
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -42,6 +47,7 @@ test('select with aggregate count on a column function', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(id.count())')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -79,6 +85,7 @@ test('select with aggregate count function and alias', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(message_count:count())')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -116,6 +123,7 @@ test('select with aggregate nested count function', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(count))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -172,6 +180,7 @@ test('select with aggregate nested count function and alias', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(channel_count:count()))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -225,7 +234,12 @@ test('select with aggregate nested count function and alias', async () => {
 })
 
 test('select with aggregate sum function', async () => {
-  const res = await postgrest.from('users').select('username, messages(id.sum())').limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select('username, messages(id.sum())')
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -261,6 +275,7 @@ test('select with aggregate aliased sum function', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(sum_id:id.sum())')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -298,6 +313,7 @@ test('select with aggregate sum function on nested relation', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(id.sum()))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`

@@ -4,26 +4,24 @@ import type { CustomUserDataType } from './column-types'
 const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient(REST_URL)
 
+// The ids a sequence generates on insert differ on every run: label the ones this file inserted and
+// list the rows by id, so the snapshots pin the data the tests control but not the sequence values.
+function labelIds(res: { data: unknown }, generatedIds: number[]) {
+  const data = [...(res.data as { id: number }[])]
+    .sort((a, b) => a.id - b.id)
+    .map((row) => {
+      const index = generatedIds.indexOf(row.id)
+      return index === -1 ? row : { ...row, id: `generated #${index}` }
+    })
+  return { ...res, data }
+}
+
 test('basic select table', async () => {
-  const res = await postgrest.from('users').select()
+  const res = await postgrest.from('users').select().order('username')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
-        {
-          "age_range": "[1,2)",
-          "catchphrase": "'cat' 'fat'",
-          "data": null,
-          "status": "ONLINE",
-          "username": "supabot",
-        },
-        {
-          "age_range": "[25,35)",
-          "catchphrase": "'bat' 'cat'",
-          "data": null,
-          "status": "OFFLINE",
-          "username": "kiwicopple",
-        },
         {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'rat'",
@@ -51,6 +49,20 @@ test('basic select table', async () => {
           },
           "status": "ONLINE",
           "username": "jsonuser",
+        },
+        {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'cat'",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
         },
       ],
       "error": null,
@@ -62,25 +74,15 @@ test('basic select table', async () => {
 })
 
 test('basic select cast the row type', async () => {
-  const res = await postgrest.from('users').select().cast<{ status: 'ONLINE' | 'OFFLINE' }>()
+  const res = await postgrest
+    .from('users')
+    .select()
+    .order('username')
+    .cast<{ status: 'ONLINE' | 'OFFLINE' }>()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
-        {
-          "age_range": "[1,2)",
-          "catchphrase": "'cat' 'fat'",
-          "data": null,
-          "status": "ONLINE",
-          "username": "supabot",
-        },
-        {
-          "age_range": "[25,35)",
-          "catchphrase": "'bat' 'cat'",
-          "data": null,
-          "status": "OFFLINE",
-          "username": "kiwicopple",
-        },
         {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'rat'",
@@ -108,6 +110,20 @@ test('basic select cast the row type', async () => {
           },
           "status": "ONLINE",
           "username": "jsonuser",
+        },
+        {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'cat'",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
         },
       ],
       "error": null,
@@ -207,19 +223,11 @@ test('basic select with single yielding more than one result', async () => {
 })
 
 test('basic select view', async () => {
-  const res = await postgrest.from('updatable_view').select()
+  const res = await postgrest.from('updatable_view').select().order('username')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
-        {
-          "non_updatable_column": 1,
-          "username": "supabot",
-        },
-        {
-          "non_updatable_column": 1,
-          "username": "kiwicopple",
-        },
         {
           "non_updatable_column": 1,
           "username": "awailas",
@@ -231,6 +239,14 @@ test('basic select view', async () => {
         {
           "non_updatable_column": 1,
           "username": "jsonuser",
+        },
+        {
+          "non_updatable_column": 1,
+          "username": "kiwicopple",
+        },
+        {
+          "non_updatable_column": 1,
+          "username": "supabot",
         },
       ],
       "error": null,
@@ -331,23 +347,11 @@ test('switch schema', async () => {
   const postgrest = new PostgrestClient<SupabaseDatabase, 'personal'>(REST_URL, {
     schema: 'personal',
   })
-  const res = await postgrest.from('users').select()
+  const res = await postgrest.from('users').select().order('username')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
-        {
-          "age_range": "[1,2)",
-          "data": null,
-          "status": "ONLINE",
-          "username": "supabot",
-        },
-        {
-          "age_range": "[25,35)",
-          "data": null,
-          "status": "OFFLINE",
-          "username": "kiwicopple",
-        },
         {
           "age_range": "[25,35)",
           "data": null,
@@ -361,10 +365,22 @@ test('switch schema', async () => {
           "username": "dragarcia",
         },
         {
+          "age_range": "[25,35)",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        {
           "age_range": "[20,40)",
           "data": null,
           "status": "ONLINE",
           "username": "leroyjenkins",
+        },
+        {
+          "age_range": "[1,2)",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
         },
       ],
       "error": null,
@@ -377,23 +393,11 @@ test('switch schema', async () => {
 
 test('dynamic schema', async () => {
   const postgrest = new PostgrestClient(REST_URL)
-  const res = await postgrest.schema('personal').from('users').select()
+  const res = await postgrest.schema('personal').from('users').select().order('username')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
-        {
-          "age_range": "[1,2)",
-          "data": null,
-          "status": "ONLINE",
-          "username": "supabot",
-        },
-        {
-          "age_range": "[25,35)",
-          "data": null,
-          "status": "OFFLINE",
-          "username": "kiwicopple",
-        },
         {
           "age_range": "[25,35)",
           "data": null,
@@ -407,10 +411,22 @@ test('dynamic schema', async () => {
           "username": "dragarcia",
         },
         {
+          "age_range": "[25,35)",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        {
           "age_range": "[20,40)",
           "data": null,
           "status": "ONLINE",
           "username": "leroyjenkins",
+        },
+        {
+          "age_range": "[1,2)",
+          "data": null,
+          "status": "ONLINE",
+          "username": "supabot",
         },
       ],
       "error": null,
@@ -426,6 +442,8 @@ test('on_conflict insert', async () => {
     .from('users')
     .upsert({ username: 'dragarcia' }, { onConflict: 'username' })
     .select()
+    // Rolled back: committing the rewrite would move the row in the heap and reorder every unordered read
+    .rollback()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -464,19 +482,22 @@ test('ignoreDuplicates upsert', async () => {
 })
 
 describe('basic insert, update, delete', () => {
+  const generated: number[] = []
+
   test('basic insert', async () => {
     let res = await postgrest
       .from('messages')
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 })
       .select()
-    expect(res).toMatchInlineSnapshot(`
+    generated.push(...(res.data ?? []).map((row) => row.id))
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
             "channel_id": 1,
             "data": null,
-            "id": 5,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
@@ -488,8 +509,8 @@ describe('basic insert, update, delete', () => {
       }
     `)
 
-    res = await postgrest.from('messages').select()
-    expect(res).toMatchInlineSnapshot(`
+    res = await postgrest.from('messages').select().order('id')
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -524,7 +545,7 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 5,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
@@ -542,7 +563,7 @@ describe('basic insert, update, delete', () => {
       .from('messages')
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 })
       .select()
-    expect(res).toMatchInlineSnapshot(`
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -561,8 +582,8 @@ describe('basic insert, update, delete', () => {
       }
     `)
 
-    res = await postgrest.from('messages').select()
-    expect(res).toMatchInlineSnapshot(`
+    res = await postgrest.from('messages').select().order('id')
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -581,6 +602,13 @@ describe('basic insert, update, delete', () => {
             "username": "supabot",
           },
           {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
@@ -590,14 +618,7 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 5,
-            "message": "foo",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 3,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
@@ -618,21 +639,22 @@ describe('basic insert, update, delete', () => {
         { message: 'foo', username: 'supabot', channel_id: 1 },
       ])
       .select()
-    expect(res).toMatchInlineSnapshot(`
+    generated.push(...(res.data ?? []).map((row) => row.id))
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
             "channel_id": 1,
             "data": null,
-            "id": 6,
+            "id": "generated #1",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 7,
+            "id": "generated #2",
             "message": "foo",
             "username": "supabot",
           },
@@ -644,8 +666,8 @@ describe('basic insert, update, delete', () => {
       }
     `)
 
-    res = await postgrest.from('messages').select()
-    expect(res).toMatchInlineSnapshot(`
+    res = await postgrest.from('messages').select().order('id')
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -664,6 +686,13 @@ describe('basic insert, update, delete', () => {
             "username": "supabot",
           },
           {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
@@ -673,28 +702,21 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 5,
-            "message": "foo",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 3,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 6,
+            "id": "generated #1",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 7,
+            "id": "generated #2",
             "message": "foo",
             "username": "supabot",
           },
@@ -736,17 +758,10 @@ describe('basic insert, update, delete', () => {
       .update({ channel_id: 2 })
       .eq('message', 'foo')
       .select()
-    expect(res).toMatchInlineSnapshot(`
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 5,
-            "message": "foo",
-            "username": "supabot",
-          },
           {
             "channel_id": 2,
             "data": null,
@@ -757,14 +772,21 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 6,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 7,
+            "id": "generated #1",
+            "message": "foo",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 2,
+            "data": null,
+            "id": "generated #2",
             "message": "foo",
             "username": "supabot",
           },
@@ -776,8 +798,8 @@ describe('basic insert, update, delete', () => {
       }
     `)
 
-    res = await postgrest.from('messages').select()
-    expect(res).toMatchInlineSnapshot(`
+    res = await postgrest.from('messages').select().order('id')
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -796,6 +818,13 @@ describe('basic insert, update, delete', () => {
             "username": "supabot",
           },
           {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
@@ -805,28 +834,21 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 5,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 3,
+            "id": "generated #1",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 6,
-            "message": "foo",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 7,
+            "id": "generated #2",
             "message": "foo",
             "username": "supabot",
           },
@@ -841,17 +863,10 @@ describe('basic insert, update, delete', () => {
 
   test('basic delete', async () => {
     let res = await postgrest.from('messages').delete().eq('message', 'foo').select()
-    expect(res).toMatchInlineSnapshot(`
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 5,
-            "message": "foo",
-            "username": "supabot",
-          },
           {
             "channel_id": 2,
             "data": null,
@@ -862,14 +877,21 @@ describe('basic insert, update, delete', () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 6,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 7,
+            "id": "generated #1",
+            "message": "foo",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 2,
+            "data": null,
+            "id": "generated #2",
             "message": "foo",
             "username": "supabot",
           },
@@ -881,8 +903,8 @@ describe('basic insert, update, delete', () => {
       }
     `)
 
-    res = await postgrest.from('messages').select()
-    expect(res).toMatchInlineSnapshot(`
+    res = await postgrest.from('messages').select().order('id')
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -1049,28 +1071,22 @@ test('allow ordering on JSON column', async () => {
     .from('users')
     .select()
     .order('data->something' as any)
+    .order('username')
   expect(data).toMatchInlineSnapshot(`
     [
-      {
-        "age_range": "[1,2)",
-        "catchphrase": "'cat' 'fat'",
-        "data": null,
-        "status": "ONLINE",
-        "username": "supabot",
-      },
-      {
-        "age_range": "[25,35)",
-        "catchphrase": "'bat' 'cat'",
-        "data": null,
-        "status": "OFFLINE",
-        "username": "kiwicopple",
-      },
       {
         "age_range": "[25,35)",
         "catchphrase": "'bat' 'rat'",
         "data": null,
         "status": "ONLINE",
         "username": "awailas",
+      },
+      {
+        "age_range": "[20,30)",
+        "catchphrase": "'fat' 'rat'",
+        "data": null,
+        "status": "ONLINE",
+        "username": "dragarcia",
       },
       {
         "age_range": "[20,30)",
@@ -1087,11 +1103,18 @@ test('allow ordering on JSON column', async () => {
         "username": "jsonuser",
       },
       {
-        "age_range": "[20,30)",
-        "catchphrase": "'fat' 'rat'",
+        "age_range": "[25,35)",
+        "catchphrase": "'bat' 'cat'",
+        "data": null,
+        "status": "OFFLINE",
+        "username": "kiwicopple",
+      },
+      {
+        "age_range": "[1,2)",
+        "catchphrase": "'cat' 'fat'",
         "data": null,
         "status": "ONLINE",
-        "username": "dragarcia",
+        "username": "supabot",
       },
     ]
   `)
@@ -1167,31 +1190,24 @@ test('select with head:true, count:estimated', async () => {
 })
 
 test('select with count:exact', async () => {
-  const res = await postgrest.from('users').select('*', { count: 'exact' })
+  const res = await postgrest.from('users').select('*', { count: 'exact' }).order('username')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": 5,
       "data": [
-        {
-          "age_range": "[1,2)",
-          "catchphrase": "'cat' 'fat'",
-          "data": null,
-          "status": "ONLINE",
-          "username": "supabot",
-        },
-        {
-          "age_range": "[25,35)",
-          "catchphrase": "'bat' 'cat'",
-          "data": null,
-          "status": "OFFLINE",
-          "username": "kiwicopple",
-        },
         {
           "age_range": "[25,35)",
           "catchphrase": "'bat' 'rat'",
           "data": null,
           "status": "ONLINE",
           "username": "awailas",
+        },
+        {
+          "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
+          "data": null,
+          "status": "ONLINE",
+          "username": "dragarcia",
         },
         {
           "age_range": "[20,30)",
@@ -1208,11 +1224,18 @@ test('select with count:exact', async () => {
           "username": "jsonuser",
         },
         {
-          "age_range": "[20,30)",
-          "catchphrase": "'fat' 'rat'",
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'cat'",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
+        {
+          "age_range": "[1,2)",
+          "catchphrase": "'cat' 'fat'",
           "data": null,
           "status": "ONLINE",
-          "username": "dragarcia",
+          "username": "supabot",
         },
       ],
       "error": null,
@@ -1324,19 +1347,22 @@ test('rpc with dynamic schema', async () => {
 })
 
 describe("insert, update, delete with count: 'exact'", () => {
+  const generated: number[] = []
+
   test("insert with count: 'exact'", async () => {
     let res = await postgrest
       .from('messages')
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 }, { count: 'exact' })
       .select()
-    expect(res).toMatchInlineSnapshot(`
+    generated.push(...(res.data ?? []).map((row) => row.id))
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": 1,
         "data": [
           {
             "channel_id": 1,
             "data": null,
-            "id": 8,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
@@ -1348,8 +1374,8 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
 
-    const all = await postgrest.from('messages').select()
-    expect(all).toMatchInlineSnapshot(`
+    const all = await postgrest.from('messages').select().order('id')
+    expect(labelIds(all, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -1370,21 +1396,21 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 3,
             "data": null,
-            "id": 4,
+            "id": 3,
             "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
             "channel_id": 3,
             "data": null,
-            "id": 3,
+            "id": 4,
             "message": "Some message on channel without details",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 8,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
@@ -1402,7 +1428,7 @@ describe("insert, update, delete with count: 'exact'", () => {
       .from('messages')
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 }, { count: 'exact' })
       .select()
-    expect(res).toMatchInlineSnapshot(`
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": 1,
         "data": [
@@ -1421,8 +1447,8 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
 
-    const all = await postgrest.from('messages').select()
-    expect(all).toMatchInlineSnapshot(`
+    const all = await postgrest.from('messages').select().order('id')
+    expect(labelIds(all, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -1441,6 +1467,13 @@ describe("insert, update, delete with count: 'exact'", () => {
             "username": "supabot",
           },
           {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
@@ -1450,14 +1483,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 8,
-            "message": "foo",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 3,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
@@ -1481,21 +1507,22 @@ describe("insert, update, delete with count: 'exact'", () => {
         { count: 'exact' }
       )
       .select()
-    expect(res).toMatchInlineSnapshot(`
+    generated.push(...(res.data ?? []).map((row) => row.id))
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": 2,
         "data": [
           {
             "channel_id": 1,
             "data": null,
-            "id": 9,
+            "id": "generated #1",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 10,
+            "id": "generated #2",
             "message": "foo",
             "username": "supabot",
           },
@@ -1507,8 +1534,8 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
 
-    const all = await postgrest.from('messages').select()
-    expect(all).toMatchInlineSnapshot(`
+    const all = await postgrest.from('messages').select().order('id')
+    expect(labelIds(all, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -1527,6 +1554,13 @@ describe("insert, update, delete with count: 'exact'", () => {
             "username": "supabot",
           },
           {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
@@ -1536,28 +1570,21 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 1,
             "data": null,
-            "id": 8,
-            "message": "foo",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 3,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 9,
+            "id": "generated #1",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 1,
             "data": null,
-            "id": 10,
+            "id": "generated #2",
             "message": "foo",
             "username": "supabot",
           },
@@ -1576,7 +1603,9 @@ describe("insert, update, delete with count: 'exact'", () => {
       .insert([{ id: 100 }, { slug: 'test-slug' }], { defaultToNull: false })
       .select()
       .rollback()
-    expect(res).toMatchInlineSnapshot(`
+    expect(res).toMatchInlineSnapshot(
+      { data: [{ id: 100 }, { id: expect.any(Number) }] },
+      `
       {
         "count": null,
         "data": [
@@ -1587,7 +1616,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           },
           {
             "data": null,
-            "id": 5,
+            "id": Any<Number>,
             "slug": "test-slug",
           },
         ],
@@ -1596,7 +1625,8 @@ describe("insert, update, delete with count: 'exact'", () => {
         "statusText": "Created",
         "success": true,
       }
-    `)
+    `
+    )
   })
 
   test('bulk upsert with column defaults', async () => {
@@ -1605,7 +1635,9 @@ describe("insert, update, delete with count: 'exact'", () => {
       .upsert([{ id: 1 }, { slug: 'test-slug' }], { defaultToNull: false })
       .select()
       .rollback()
-    expect(res).toMatchInlineSnapshot(`
+    expect(res).toMatchInlineSnapshot(
+      { data: [{ id: 1 }, { id: expect.any(Number) }] },
+      `
       {
         "count": null,
         "data": [
@@ -1616,7 +1648,7 @@ describe("insert, update, delete with count: 'exact'", () => {
           },
           {
             "data": null,
-            "id": 7,
+            "id": Any<Number>,
             "slug": "test-slug",
           },
         ],
@@ -1625,7 +1657,8 @@ describe("insert, update, delete with count: 'exact'", () => {
         "statusText": "Created",
         "success": true,
       }
-    `)
+    `
+    )
   })
 
   test("update with count: 'exact'", async () => {
@@ -1634,17 +1667,10 @@ describe("insert, update, delete with count: 'exact'", () => {
       .update({ channel_id: 2 }, { count: 'exact' })
       .eq('message', 'foo')
       .select()
-    expect(res).toMatchInlineSnapshot(`
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": 4,
         "data": [
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 8,
-            "message": "foo",
-            "username": "supabot",
-          },
           {
             "channel_id": 2,
             "data": null,
@@ -1655,14 +1681,21 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 9,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 10,
+            "id": "generated #1",
+            "message": "foo",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 2,
+            "data": null,
+            "id": "generated #2",
             "message": "foo",
             "username": "supabot",
           },
@@ -1674,8 +1707,8 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
 
-    const all = await postgrest.from('messages').select()
-    expect(all).toMatchInlineSnapshot(`
+    const all = await postgrest.from('messages').select().order('id')
+    expect(labelIds(all, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -1694,6 +1727,13 @@ describe("insert, update, delete with count: 'exact'", () => {
             "username": "supabot",
           },
           {
+            "channel_id": 2,
+            "data": null,
+            "id": 3,
+            "message": "foo",
+            "username": "supabot",
+          },
+          {
             "channel_id": 3,
             "data": null,
             "id": 4,
@@ -1703,28 +1743,21 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 8,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 3,
+            "id": "generated #1",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 9,
-            "message": "foo",
-            "username": "supabot",
-          },
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 10,
+            "id": "generated #2",
             "message": "foo",
             "username": "supabot",
           },
@@ -1743,17 +1776,10 @@ describe("insert, update, delete with count: 'exact'", () => {
       .delete({ count: 'exact' })
       .eq('message', 'foo')
       .select()
-    expect(res).toMatchInlineSnapshot(`
+    expect(labelIds(res, generated)).toMatchInlineSnapshot(`
       {
         "count": 4,
         "data": [
-          {
-            "channel_id": 2,
-            "data": null,
-            "id": 8,
-            "message": "foo",
-            "username": "supabot",
-          },
           {
             "channel_id": 2,
             "data": null,
@@ -1764,14 +1790,21 @@ describe("insert, update, delete with count: 'exact'", () => {
           {
             "channel_id": 2,
             "data": null,
-            "id": 9,
+            "id": "generated #0",
             "message": "foo",
             "username": "supabot",
           },
           {
             "channel_id": 2,
             "data": null,
-            "id": 10,
+            "id": "generated #1",
+            "message": "foo",
+            "username": "supabot",
+          },
+          {
+            "channel_id": 2,
+            "data": null,
+            "id": "generated #2",
             "message": "foo",
             "username": "supabot",
           },
@@ -1783,8 +1816,8 @@ describe("insert, update, delete with count: 'exact'", () => {
       }
     `)
 
-    const all = await postgrest.from('messages').select()
-    expect(all).toMatchInlineSnapshot(`
+    const all = await postgrest.from('messages').select().order('id')
+    expect(labelIds(all, generated)).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
@@ -1912,7 +1945,12 @@ test('!left join on one to one relation', async () => {
 })
 
 test('!left join on one to many relation', async () => {
-  const res = await postgrest.from('users').select('messages!left(username)').limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select('messages!left(username)')
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(Array.isArray(res.data?.messages)).toBe(true)
   expect(res).toMatchInlineSnapshot(`
     {
@@ -1946,6 +1984,7 @@ test('!left join on one to 0-1 non-empty relation', async () => {
     .from('users')
     .select('user_profiles!left(username)')
     .eq('username', 'supabot')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(Array.isArray(res.data?.user_profiles)).toBe(true)
@@ -2028,6 +2067,7 @@ test('!left join on zero to one empty relation', async () => {
     .from('users')
     .select('user_profiles!left(username)')
     .eq('username', 'dragarcia')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(Array.isArray(res.data?.user_profiles)).toBe(true)
@@ -2055,6 +2095,7 @@ test('join on 1-M relation', async () => {
       third_wheel_of:best_friends_third_wheel_fkey(*)`
     )
     .eq('username', 'supabot')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(Array.isArray(res.data?.first_friend_of)).toBe(true)

@@ -9,11 +9,23 @@ type MessageRow = SupabaseDatabase['public']['Tables']['messages']['Row']
 
 test('embedded select', async () => {
   // By default postgrest will omit computed field from "star" selector
-  const res = await postgrest.from('users').select('messages(*)')
+  const res = await postgrest.from('users').select('messages(*)').order('username')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
         {
           "messages": [
             {
@@ -46,18 +58,6 @@ test('embedded select', async () => {
             },
           ],
         },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
       ],
       "error": null,
       "status": 200,
@@ -86,11 +86,23 @@ test('embedded select', async () => {
 
 test('embedded select with computed field explicit selection', async () => {
   // If the computed field is explicitely requested on top of the star selector, it should be present in the result
-  const res = await postgrest.from('users').select('messages(*, blurb_message)')
+  const res = await postgrest.from('users').select('messages(*, blurb_message)').order('username')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
         {
           "messages": [
             {
@@ -126,18 +138,6 @@ test('embedded select with computed field explicit selection', async () => {
               "username": "supabot",
             },
           ],
-        },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
         },
       ],
       "error": null,
@@ -181,11 +181,24 @@ describe('embedded filters', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
+      .order('username')
       .eq('messages.channel_id' as any, 1)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -196,18 +209,6 @@ describe('embedded filters', () => {
                 "username": "supabot",
               },
             ],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
           },
         ],
         "error": null,
@@ -238,11 +239,24 @@ describe('embedded filters', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
+      .order('username')
       .or('channel_id.eq.2,message.eq.Hello World 👋', { referencedTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -260,18 +274,6 @@ describe('embedded filters', () => {
                 "username": "supabot",
               },
             ],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
           },
         ],
         "error": null,
@@ -302,6 +304,7 @@ describe('embedded filters', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
+      .order('username')
       .or('channel_id.eq.2,and(message.eq.Hello World 👋,username.eq.supabot)', {
         referencedTable: 'messages',
       })
@@ -309,6 +312,18 @@ describe('embedded filters', () => {
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -326,18 +341,6 @@ describe('embedded filters', () => {
                 "username": "supabot",
               },
             ],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
           },
         ],
         "error": null,
@@ -371,11 +374,24 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
+      .order('username')
       .order('channel_id' as any, { referencedTable: 'messages', ascending: false })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -407,18 +423,6 @@ describe('embedded transforms', () => {
                 "username": "supabot",
               },
             ],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
           },
         ],
         "error": null,
@@ -450,12 +454,25 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
+      .order('username')
       .order('channel_id' as any, { referencedTable: 'messages', ascending: false })
       .order('username', { referencedTable: 'messages', ascending: false })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -488,18 +505,6 @@ describe('embedded transforms', () => {
               },
             ],
           },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
         ],
         "error": null,
         "status": 200,
@@ -530,11 +535,24 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
+      .order('username')
       .limit(1, { referencedTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -545,18 +563,6 @@ describe('embedded transforms', () => {
                 "username": "supabot",
               },
             ],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
           },
         ],
         "error": null,
@@ -588,11 +594,24 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
+      .order('username')
       .range(1, 1, { referencedTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -603,18 +622,6 @@ describe('embedded transforms', () => {
                 "username": "supabot",
               },
             ],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
           },
         ],
         "error": null,

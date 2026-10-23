@@ -54,6 +54,7 @@ test('!inner relationship', async () => {
   const res = await postgrest
     .from('messages')
     .select('channels!inner(*, channel_details!inner(*))')
+    .order('id')
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -194,7 +195,12 @@ test('!left oneToOne', async () => {
 })
 
 test('!left oneToMany', async () => {
-  const res = await postgrest.from('users').select('messages!left(*)').limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select('messages!left(*)')
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -341,6 +347,7 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
         second_friend_of:best_friends!best_friends_second_user_fkey(*),
         third_wheel_of:best_friends!best_friends_third_wheel_fkey(*)`
     )
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -391,6 +398,7 @@ test('join on 1-M relation', async () => {
         third_wheel_of:best_friends_third_wheel_fkey(*)`
     )
     .eq('username', 'supabot')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -548,6 +556,7 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
     .select(
       'first_friend_of:best_friends!first_user(*), second_friend_of:best_friends!second_user(*), third_wheel_of:best_friends!third_wheel(*)'
     )
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -595,6 +604,7 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
     .select(
       'first_friend_of:best_friends!first_user(*, first_user:users!first_user(*)), second_friend_of:best_friends!second_user(*), third_wheel_of:best_friends!third_wheel(*)'
     )
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -668,6 +678,7 @@ test('!left join on one to 0-1 non-empty relation', async () => {
     .from('users')
     .select('user_profiles!left(username)')
     .eq('username', 'supabot')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(Array.isArray(res.data?.user_profiles)).toBe(true)
@@ -703,6 +714,7 @@ test('join on one to 0-1 non-empty relation via column name', async () => {
     .from('users')
     .select('user_profiles(username)')
     .eq('username', 'supabot')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res.error).toBeNull()
@@ -816,6 +828,7 @@ test('!left join on zero to one empty relation', async () => {
     .from('users')
     .select('user_profiles!left(username)')
     .eq('username', 'dragarcia')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res.data).toMatchInlineSnapshot(`
@@ -841,6 +854,7 @@ test('join on 1-M relation with selective fk hinting', async () => {
         second_friend_of:best_friends_second_user_fkey(*),
         third_wheel_of:best_friends_third_wheel_fkey(*)`
     )
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(Array.isArray(res.data?.first_friend_of)).toBe(true)
@@ -1034,7 +1048,12 @@ test('join select via view name relationship', async () => {
 })
 
 test('join select via column with string templating', async () => {
-  const res = await postgrest.from('users').select(`status, ${userColumn}`).limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select(`status, ${userColumn}`)
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
