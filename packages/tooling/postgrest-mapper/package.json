@@ -13,6 +13,9 @@
     "./package.json": "./package.json"
   },
   "sideEffects": false,
+  "bin": {
+    "postgrest-mapper": "bin/postgrest-mapper.cjs"
+  },
   "typescript": {
     "contentMapper": {
       "exec": [

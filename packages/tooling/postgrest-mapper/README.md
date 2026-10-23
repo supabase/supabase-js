@@ -218,6 +218,23 @@ await host.close()
 - Functions: `Args` / `Returns` with overloads as a union; arguments with a default are optional; trigger functions are left out.
 - Type mapping (`tsTypeOf`, `src/printer/pg-types.ts`): `bool` is `boolean`; `int2` `int4` `int8` `float4` `float8` `numeric` are `number`; `text`, `varchar`, `bpchar`, `uuid`, `bytea`, the date and time types, `citext` and `vector` are `string`; `json` / `jsonb` are `Json` (`JsonIn` in function arguments); `void` is `undefined`; enums are label unions, composites objects with nullable attributes, relation types their `Row`, domains resolve to their base type; arrays append `[]`; anything else (ranges, `tsvector`, `inet`, ...) is `unknown`.
 
+## CLI
+
+`postgrest-mapper` (`bin/postgrest-mapper.cjs`) is a thin front end: it parses arguments, builds the injected dependencies and calls the library. `runCli(argv, { stdout, stderr, fs?, env?, cwd?, deps?, signal?, watch?, debounceMs?, version? })` (`src/cli/`) is the whole program and resolves to the exit code (0 success, 1 failure, 2 usage error), so it runs in-process in tests.
+
+```sh
+postgrest-mapper generate --project tsconfig.json --out src/supabase.types.d.ts [--check | --watch]
+postgrest-mapper print --project tsconfig.json
+postgrest-mapper refresh --project tsconfig.json [--out src/supabase.types.d.ts]
+postgrest-mapper init --project tsconfig.json [--out src/supabase.types.d.ts]
+postgrest-mapper snapshot --out supabase/postgrest-schema.json [--check] [--workdir dir] [--schema-source postgrest --db-url-env NAME]
+```
+
+- The mapper options come from the tsconfig's `contentMappers` entry for `.pgrst-index`; `--schema-source`, `--snapshot` and `--db-url-env` replace the matching part of its `schema` option. Diagnostics print as `file:line:col code message` (option problems at the value in the tsconfig) and exit 1; nothing is written then.
+- `generate --check` never writes and prints the first differing lines when the file is stale. `--watch` regenerates (debounced) when a scanned file, the snapshot or the tsconfig changes, and stops on SIGINT. It watches the directories of those files without recursing, so a file in a new directory is picked up at the next run.
+- `init` adds the file to the tsconfig's `include` (or `files`), and to `compilerOptions.types` of a `deno.json(c)` beside it. It edits the text in place, so comments and formatting stay (a new property is inserted in the style of the neighbouring ones); a second run changes nothing. It does not add the `contentMappers` entry.
+- `refresh` removes `node_modules/.cache/postgrest-mapper` of the project and regenerates.
+
 ## Node
 
 Compiled to CommonJS like the planner. `oxc-parser` and `@supabase/pg-parser` load ESM (the latter through its wasm loader), so the CJS build relies on `require(esm)` (Node `^20.19.0 || >=22.12.0`). Jest cannot do that itself: `test/support/oxc-parser.cjs` and `test/support/pg-parser.cjs` map the imports to Node's real `require`.
