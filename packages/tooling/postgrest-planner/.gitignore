@@ -1,0 +1,3 @@
+dist/
+test-dist/
+haskell/src/Planner/BuildInfo.hs

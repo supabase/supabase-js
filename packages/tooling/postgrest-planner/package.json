@@ -1,0 +1,40 @@
+{
+  "name": "@supabase/postgrest-planner",
+  "version": "0.0.0-automated",
+  "private": true,
+  "description": "Upstream PostgREST request planner compiled to WASI wasm, with a typed Node host.",
+  "main": "dist/main/index.js",
+  "types": "dist/main/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/main/index.js",
+      "types": "./dist/main/index.d.ts"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/supabase/supabase-js.git",
+    "directory": "packages/tooling/postgrest-planner"
+  },
+  "author": "Supabase",
+  "files": [
+    "dist/main",
+    "dist/postgrest-planner.wasm"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "jest": "catalog:",
+    "ts-jest": "catalog:",
+    "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

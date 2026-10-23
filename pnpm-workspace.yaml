@@ -1,6 +1,7 @@
 packages:
   - 'packages/core/*'
   - 'packages/shared/*'
+  - 'packages/tooling/*'
   - 'packages/core/auth-js/example/react'
   - 'packages/core/realtime-js/example'
 
