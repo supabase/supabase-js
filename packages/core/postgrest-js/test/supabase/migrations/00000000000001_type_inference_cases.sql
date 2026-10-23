@@ -320,3 +320,50 @@ LANGUAGE sql IMMUTABLE AS $$ SELECT 7; $$;
 
 GRANT ALL ON public.empty_select_pk, public.empty_select_nopk, public.empty_select_cpk, public.out_domain_users TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.out_domain(), public.single_unnamed_out() TO anon, authenticated, service_role;
+
+-- Planner review round 4, computed fields whose extra arguments all have defaults. The request searches public,
+-- then db-extra-search-path (public,extensions); PostgreSQL calls the function of the first schema that has a
+-- candidate, a function whose extra arguments all have defaults being one, and finds none when that schema has two.
+CREATE TABLE public.default_arg_cases (id bigint PRIMARY KEY);
+
+CREATE FUNCTION public.da_default_first(public.default_arg_cases, n integer DEFAULT 0)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'default'::text; $$;
+CREATE FUNCTION extensions.da_default_first(public.default_arg_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+CREATE FUNCTION public.da_exact_first(public.default_arg_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+CREATE FUNCTION extensions.da_exact_first(public.default_arg_cases, n integer DEFAULT 0)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'default'::text; $$;
+
+CREATE FUNCTION public.da_same_schema(public.default_arg_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+CREATE FUNCTION public.da_same_schema(public.default_arg_cases, n integer DEFAULT 0)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'default'::text; $$;
+
+-- an extra argument without a default (or only some of them with one) is not a candidate
+CREATE FUNCTION public.da_required(public.default_arg_cases, n integer)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'required'::text; $$;
+CREATE FUNCTION extensions.da_required(public.default_arg_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+CREATE FUNCTION public.da_partial(public.default_arg_cases, n integer, m integer DEFAULT 0)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'partial'::text; $$;
+CREATE FUNCTION extensions.da_partial(public.default_arg_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+-- the same for a member of an extension: the catalog must not leave out a function a lookup can reach
+CREATE FUNCTION ext_owned.ext_defaulted(public.ext_label_cases, n integer DEFAULT 0)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'default'::text; $$;
+ALTER EXTENSION lo ADD FUNCTION ext_owned.ext_defaulted(public.ext_label_cases, integer);
+CREATE FUNCTION personal.ext_defaulted(public.ext_label_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+-- Planner review round 4, builtin array names. `_integer` is no builtin type (the array of int4 is `_int4`), so a
+-- domain of that name is what `::_integer` means.
+CREATE DOMAIN public._integer AS text;
+
+GRANT ALL ON public.default_arg_cases TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION extensions.da_default_first(public.default_arg_cases), extensions.da_exact_first(public.default_arg_cases, integer), extensions.da_required(public.default_arg_cases), extensions.da_partial(public.default_arg_cases) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION ext_owned.ext_defaulted(public.ext_label_cases, integer) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION personal.ext_defaulted(public.ext_label_cases) TO anon, authenticated;

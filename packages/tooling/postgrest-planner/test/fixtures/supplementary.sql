@@ -54,6 +54,8 @@ select jsonb_pretty(jsonb_build_object(
       'argTypes', (select coalesce(jsonb_agg(format_type(t, null) order by o), '[]')
                    from unnest(coalesce(p.proargtypes::oid[], '{}')) with ordinality as u(t, o)),
       'volatility', p.provolatile,
+      -- the trailing input arguments that have a default: a call may leave them out
+      'defaults', p.pronargdefaults,
       'returns', jsonb_build_object(
         'kind', case when rt.oid in (select oid from composite_types) then 'composite' else 'scalar' end,
         'setof', p.proretset,
@@ -78,6 +80,8 @@ select jsonb_pretty(jsonb_build_object(
       'argTypes', (select coalesce(jsonb_agg(format_type(t, null) order by o), '[]')
                    from unnest(coalesce(p.proargtypes::oid[], '{}')) with ordinality as u(t, o)),
       'volatility', p.provolatile,
+      -- the trailing input arguments that have a default: a call may leave them out
+      'defaults', p.pronargdefaults,
       'returns', jsonb_build_object(
         'kind', case when rt.oid in (select oid from composite_types) then 'composite' else 'scalar' end,
         'setof', p.proretset,
@@ -96,9 +100,10 @@ select jsonb_pretty(jsonb_build_object(
       and n.nspname = any ((select covered from s)::text[])
       and case when exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e')
                -- a member of an extension (postgis alone has hundreds): listed, in any covered schema, only where a
-               -- lookup can reach it: the one argument of a computed field or relationship is the row type of a
-               -- relation, and a function with OUT columns describes the rows of an RPC
-               then (p.pronargs = 1 and exists (select 1 from unnest(p.proargtypes::oid[]) a(t) join pg_class c on c.reltype = a.t))
+               -- lookup can reach it: the first argument of a computed field or relationship is the row type of a
+               -- relation and the others, if any, have defaults, and a function with OUT columns describes the rows
+               -- of an RPC
+               then (p.pronargs >= 1 and p.pronargs - p.pronargdefaults <= 1 and exists (select 1 from pg_class c where c.reltype = p.proargtypes[0]))
                     or exists (select 1 from unnest(p.proargmodes) m where m in ('t', 'b', 'o'))
                else n.nspname <> all ((select exposed from s)::text[])
           end

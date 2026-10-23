@@ -139,6 +139,8 @@ export interface SupplementaryFunction {
   argTypes?: string[]
   /** `pg_proc.provolatile`: `i`, `s` or `v`. */
   volatility?: string
+  /** `pg_proc.pronargdefaults`: how many of the trailing input arguments have a default (a call may leave them out). */
+  defaults?: number
   returns: { kind: 'scalar' | 'composite'; setof?: boolean; type: string }
   /** OUT / `RETURNS TABLE` columns (`null` when the function has none). */
   outColumns?: { name: string; type: string }[] | null

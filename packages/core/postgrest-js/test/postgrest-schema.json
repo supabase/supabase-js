@@ -337,6 +337,7 @@
           "jsonb",
           "jsonb"
         ],
+        "defaults": 4,
         "language": "plpgsql",
         "name": "graphql",
         "outColumns": null,
@@ -354,6 +355,25 @@
         "argTypes": [
           "public.ext_label_cases"
         ],
+        "defaults": 0,
+        "language": "sql",
+        "name": "ext_defaulted",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "personal",
+        "source": " SELECT 1; ",
+        "volatility": "i"
+      },
+      {
+        "argNames": null,
+        "argTypes": [
+          "public.ext_label_cases"
+        ],
+        "defaults": 0,
         "language": "sql",
         "name": "ext_label",
         "outColumns": null,
@@ -373,6 +393,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_status",
         "outColumns": null,
@@ -390,6 +411,7 @@
         "argTypes": [
           "public.cast_cases"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "label",
         "outColumns": null,
@@ -409,6 +431,7 @@
         "argTypes": [
           "personal.users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "username_label",
         "outColumns": null,
@@ -428,6 +451,7 @@
         "argTypes": [
           "public.domain_items"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "amount",
         "outColumns": null,
@@ -445,6 +469,7 @@
         "argTypes": [
           "public.quoted_amounts"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "amount",
         "outColumns": null,
@@ -462,6 +487,7 @@
         "argTypes": [
           "public.arity_parents"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "arity_child",
         "outColumns": null,
@@ -483,6 +509,7 @@
           "public.arity_parents",
           "integer"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "arity_child",
         "outColumns": null,
@@ -500,6 +527,7 @@
         "argTypes": [
           "public.messages"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "blurb_message",
         "outColumns": null,
@@ -517,6 +545,7 @@
         "argTypes": [
           "public.cast_mood"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "cast_mood_text",
         "outColumns": null,
@@ -534,6 +563,7 @@
         "argTypes": [
           "public.computed_parents"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "computed_child",
         "outColumns": null,
@@ -553,6 +583,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "computed_child",
         "outColumns": null,
@@ -570,6 +601,7 @@
         "argTypes": [
           "public.computed_parents"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "computed_only_child",
         "outColumns": null,
@@ -587,6 +619,7 @@
         "argTypes": [
           "public.users_audit"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "created_ago",
         "outColumns": null,
@@ -600,10 +633,137 @@
         "volatility": "v"
       },
       {
+        "argNames": [
+          "",
+          "n"
+        ],
+        "argTypes": [
+          "public.default_arg_cases",
+          "integer"
+        ],
+        "defaults": 1,
+        "language": "sql",
+        "name": "da_default_first",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "text"
+        },
+        "schema": "public",
+        "source": " SELECT 'default'::text; ",
+        "volatility": "i"
+      },
+      {
+        "argNames": null,
+        "argTypes": [
+          "public.default_arg_cases"
+        ],
+        "defaults": 0,
+        "language": "sql",
+        "name": "da_exact_first",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "public",
+        "source": " SELECT 1; ",
+        "volatility": "i"
+      },
+      {
+        "argNames": [
+          "",
+          "n",
+          "m"
+        ],
+        "argTypes": [
+          "public.default_arg_cases",
+          "integer",
+          "integer"
+        ],
+        "defaults": 1,
+        "language": "sql",
+        "name": "da_partial",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "text"
+        },
+        "schema": "public",
+        "source": " SELECT 'partial'::text; ",
+        "volatility": "i"
+      },
+      {
+        "argNames": [
+          "",
+          "n"
+        ],
+        "argTypes": [
+          "public.default_arg_cases",
+          "integer"
+        ],
+        "defaults": 0,
+        "language": "sql",
+        "name": "da_required",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "text"
+        },
+        "schema": "public",
+        "source": " SELECT 'required'::text; ",
+        "volatility": "i"
+      },
+      {
+        "argNames": null,
+        "argTypes": [
+          "public.default_arg_cases"
+        ],
+        "defaults": 0,
+        "language": "sql",
+        "name": "da_same_schema",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "public",
+        "source": " SELECT 1; ",
+        "volatility": "i"
+      },
+      {
+        "argNames": [
+          "",
+          "n"
+        ],
+        "argTypes": [
+          "public.default_arg_cases",
+          "integer"
+        ],
+        "defaults": 1,
+        "language": "sql",
+        "name": "da_same_schema",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "text"
+        },
+        "schema": "public",
+        "source": " SELECT 'default'::text; ",
+        "volatility": "i"
+      },
+      {
         "argNames": null,
         "argTypes": [
           "public.events"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "days_since_event",
         "outColumns": null,
@@ -623,6 +783,7 @@
         "argTypes": [
           "public.remote_users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "describe_remote_user",
         "outColumns": null,
@@ -642,6 +803,7 @@
         "argTypes": [
           "public.user_status_counts"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "describe_status_count",
         "outColumns": null,
@@ -661,6 +823,7 @@
         "argTypes": [
           "public.address"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "echo_address",
         "outColumns": null,
@@ -680,6 +843,7 @@
         "argTypes": [
           "bigint"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "echo_bigint_as_text",
         "outColumns": null,
@@ -699,6 +863,7 @@
         "argTypes": [
           "jsonb"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "extract_jsonb_bigint_as_text",
         "outColumns": null,
@@ -714,6 +879,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "function_returning_row",
         "outColumns": null,
@@ -729,6 +895,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "function_returning_set_of_rows",
         "outColumns": null,
@@ -748,6 +915,7 @@
         "argTypes": [
           "public.messages"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "function_returning_single_row",
         "outColumns": null,
@@ -767,6 +935,7 @@
         "argTypes": [
           "public.users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "function_using_setof_rows_one",
         "outColumns": null,
@@ -786,6 +955,7 @@
         "argTypes": [
           "public.users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "function_using_table_returns",
         "outColumns": null,
@@ -805,6 +975,7 @@
         "argTypes": [
           "uuid[]"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "function_with_array_param",
         "outColumns": null,
@@ -824,6 +995,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 1,
         "language": "sql",
         "name": "function_with_optional_param",
         "outColumns": null,
@@ -843,6 +1015,7 @@
         "argTypes": [
           "public.active_users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_active_user_messages",
         "outColumns": null,
@@ -862,6 +1035,7 @@
         "argTypes": [
           "public.channels"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_messages",
         "outColumns": null,
@@ -881,6 +1055,7 @@
         "argTypes": [
           "public.users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_messages",
         "outColumns": null,
@@ -900,6 +1075,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_messages_by_username",
         "outColumns": null,
@@ -915,6 +1091,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "get_personal_users",
         "outColumns": null,
@@ -934,6 +1111,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_recent_messages_by_username",
         "outColumns": null,
@@ -949,6 +1127,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "plpgsql",
         "name": "get_remote_users",
         "outColumns": null,
@@ -968,6 +1147,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_status",
         "outColumns": null,
@@ -987,6 +1167,7 @@
         "argTypes": [
           "public.active_users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_user_first_message",
         "outColumns": null,
@@ -1006,6 +1187,7 @@
         "argTypes": [
           "public.users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_user_messages",
         "outColumns": null,
@@ -1025,6 +1207,7 @@
         "argTypes": [
           "public.users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_user_profile",
         "outColumns": null,
@@ -1044,6 +1227,7 @@
         "argTypes": [
           "public.users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_user_profile_non_nullable",
         "outColumns": null,
@@ -1063,6 +1247,7 @@
         "argTypes": [
           "public.users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_user_recent_messages",
         "outColumns": null,
@@ -1082,6 +1267,7 @@
         "argTypes": [
           "public.active_users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_user_recent_messages",
         "outColumns": null,
@@ -1097,6 +1283,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "get_user_status_counts",
         "outColumns": null,
@@ -1116,6 +1303,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "get_username_and_status",
         "outColumns": [
@@ -1144,6 +1332,7 @@
         "argTypes": [
           "public.inference_cases"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "inference_case_label",
         "outColumns": null,
@@ -1157,8 +1346,29 @@
         "volatility": "s"
       },
       {
+        "argNames": [
+          "n"
+        ],
+        "argTypes": [
+          "integer"
+        ],
+        "defaults": 0,
+        "language": "sql",
+        "name": "int_array_upto",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer[]"
+        },
+        "schema": "public",
+        "source": "\n  SELECT CASE WHEN n < 0 THEN NULL ELSE array(SELECT generate_series(1, n)) END;\n",
+        "volatility": "i"
+      },
+      {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "note",
         "outColumns": null,
@@ -1178,6 +1388,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "offline_user",
         "outColumns": null,
@@ -1193,6 +1404,7 @@
       {
         "argNames": [],
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "out_composite",
         "outColumns": [
@@ -1213,6 +1425,7 @@
       {
         "argNames": [],
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "out_domain",
         "outColumns": [
@@ -1237,6 +1450,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "out_inout",
         "outColumns": [
@@ -1261,6 +1475,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "out_single",
         "outColumns": [
@@ -1285,6 +1500,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "out_table_one_column",
         "outColumns": [
@@ -1307,6 +1523,7 @@
         "argTypes": [
           "boolean"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_different_return",
         "outColumns": null,
@@ -1324,6 +1541,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_different_return",
         "outColumns": null,
@@ -1341,6 +1559,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_different_return",
         "outColumns": null,
@@ -1356,6 +1575,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_no_params_or_unnamed",
         "outColumns": null,
@@ -1373,6 +1593,7 @@
         "argTypes": [
           "boolean"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_no_params_or_unnamed",
         "outColumns": null,
@@ -1390,6 +1611,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_no_params_or_unnamed",
         "outColumns": null,
@@ -1405,6 +1627,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_default",
         "outColumns": null,
@@ -1422,6 +1645,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 1,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_default",
         "outColumns": null,
@@ -1439,6 +1663,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 1,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_default",
         "outColumns": null,
@@ -1454,6 +1679,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_default_overload",
         "outColumns": null,
@@ -1471,6 +1697,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 1,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_default_overload",
         "outColumns": null,
@@ -1488,6 +1715,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 1,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_default_overload",
         "outColumns": null,
@@ -1505,6 +1733,7 @@
         "argTypes": [
           "boolean"
         ],
+        "defaults": 1,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_default_overload",
         "outColumns": null,
@@ -1522,6 +1751,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_integer",
         "outColumns": null,
@@ -1539,6 +1769,7 @@
         "argTypes": [
           "json"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_json",
         "outColumns": null,
@@ -1556,6 +1787,7 @@
         "argTypes": [
           "jsonb"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_jsonb",
         "outColumns": null,
@@ -1573,6 +1805,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "polymorphic_function_with_unnamed_text",
         "outColumns": null,
@@ -1588,6 +1821,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "postgrest_resolvable_with_override_function",
         "outColumns": null,
@@ -1607,6 +1841,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "postgrest_resolvable_with_override_function",
         "outColumns": null,
@@ -1626,6 +1861,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "postgrest_resolvable_with_override_function",
         "outColumns": null,
@@ -1645,6 +1881,7 @@
         "argTypes": [
           "bigint"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "postgrest_resolvable_with_override_function",
         "outColumns": null,
@@ -1666,6 +1903,7 @@
           "bigint",
           "text"
         ],
+        "defaults": 1,
         "language": "sql",
         "name": "postgrest_resolvable_with_override_function",
         "outColumns": null,
@@ -1685,6 +1923,7 @@
         "argTypes": [
           "public.users"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "postgrest_resolvable_with_override_function",
         "outColumns": null,
@@ -1700,6 +1939,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "postgrest_unresolvable_function",
         "outColumns": null,
@@ -1719,6 +1959,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "postgrest_unresolvable_function",
         "outColumns": null,
@@ -1738,6 +1979,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "postgrest_unresolvable_function",
         "outColumns": null,
@@ -1757,6 +1999,7 @@
         "argTypes": [
           "public.domain_items"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "return_only",
         "outColumns": null,
@@ -1776,6 +2019,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "set_users_offline",
         "outColumns": null,
@@ -1791,6 +2035,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "single_unnamed_out",
         "outColumns": [
@@ -1817,6 +2062,7 @@
           "integer[]",
           "integer"
         ],
+        "defaults": 1,
         "language": "sql",
         "name": "sum_scores",
         "outColumns": null,
@@ -1836,6 +2082,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "unnamed_out",
         "outColumns": [
@@ -1860,6 +2107,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "sql",
         "name": "void_func",
         "outColumns": null,
@@ -1875,6 +2123,7 @@
       {
         "argNames": null,
         "argTypes": [],
+        "defaults": 0,
         "language": "plpgsql",
         "name": "write_users_through_view",
         "outColumns": null,
@@ -2658,6 +2907,28 @@
         ],
         "kind": "r",
         "name": "cornercase",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          }
+        ],
+        "kind": "r",
+        "name": "default_arg_cases",
         "schema": "public",
         "updatable": {
           "delete": true,
@@ -3791,7 +4062,69 @@
     ],
     "searchPathFunctions": [
       {
+        "argTypes": [
+          "public.default_arg_cases"
+        ],
+        "defaults": 0,
+        "name": "da_default_first",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "extensions",
+        "volatility": "i"
+      },
+      {
+        "argTypes": [
+          "public.default_arg_cases",
+          "integer"
+        ],
+        "defaults": 1,
+        "name": "da_exact_first",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "text"
+        },
+        "schema": "extensions",
+        "volatility": "i"
+      },
+      {
+        "argTypes": [
+          "public.default_arg_cases"
+        ],
+        "defaults": 0,
+        "name": "da_partial",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "extensions",
+        "volatility": "i"
+      },
+      {
+        "argTypes": [
+          "public.default_arg_cases"
+        ],
+        "defaults": 0,
+        "name": "da_required",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "extensions",
+        "volatility": "i"
+      },
+      {
         "argTypes": [],
+        "defaults": 0,
         "name": "grant_pg_cron_access",
         "outColumns": null,
         "returns": {
@@ -3804,6 +4137,7 @@
       },
       {
         "argTypes": [],
+        "defaults": 0,
         "name": "grant_pg_graphql_access",
         "outColumns": null,
         "returns": {
@@ -3816,6 +4150,7 @@
       },
       {
         "argTypes": [],
+        "defaults": 0,
         "name": "grant_pg_net_access",
         "outColumns": null,
         "returns": {
@@ -3830,6 +4165,7 @@
         "argTypes": [
           "public.cast_cases"
         ],
+        "defaults": 0,
         "name": "label",
         "outColumns": null,
         "returns": {
@@ -3844,6 +4180,7 @@
         "argTypes": [
           "boolean"
         ],
+        "defaults": 0,
         "name": "pg_stat_statements",
         "outColumns": [
           {
@@ -4053,6 +4390,7 @@
       },
       {
         "argTypes": [],
+        "defaults": 0,
         "name": "pg_stat_statements_info",
         "outColumns": [
           {
@@ -4076,6 +4414,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "name": "pgp_armor_headers",
         "outColumns": [
           {
@@ -4097,6 +4436,7 @@
       },
       {
         "argTypes": [],
+        "defaults": 0,
         "name": "pgrst_ddl_watch",
         "outColumns": null,
         "returns": {
@@ -4109,6 +4449,7 @@
       },
       {
         "argTypes": [],
+        "defaults": 0,
         "name": "pgrst_drop_watch",
         "outColumns": null,
         "returns": {
@@ -4121,6 +4462,7 @@
       },
       {
         "argTypes": [],
+        "defaults": 0,
         "name": "postgres_fdw_get_connections",
         "outColumns": [
           {
@@ -4142,6 +4484,7 @@
       },
       {
         "argTypes": [],
+        "defaults": 0,
         "name": "set_graphql_placeholder",
         "outColumns": null,
         "returns": {
@@ -4157,6 +4500,7 @@
           "double precision",
           "extensions.geometry"
         ],
+        "defaults": 0,
         "name": "st_hexagongrid",
         "outColumns": [
           {
@@ -4184,6 +4528,7 @@
         "argTypes": [
           "extensions.geometry"
         ],
+        "defaults": 0,
         "name": "st_maximuminscribedcircle",
         "outColumns": [
           {
@@ -4211,6 +4556,7 @@
         "argTypes": [
           "extensions.geometry"
         ],
+        "defaults": 0,
         "name": "st_minimumboundingradius",
         "outColumns": [
           {
@@ -4235,6 +4581,7 @@
           "double precision",
           "extensions.geometry"
         ],
+        "defaults": 0,
         "name": "st_squaregrid",
         "outColumns": [
           {
@@ -4514,6 +4861,13 @@
       },
       {
         "base": null,
+        "element": "public._integer",
+        "kind": "b",
+        "name": "__integer",
+        "schema": "public"
+      },
+      {
+        "base": null,
         "element": "public.active_users",
         "kind": "b",
         "name": "_active_users",
@@ -4633,6 +4987,13 @@
       },
       {
         "base": null,
+        "element": "public.default_arg_cases",
+        "kind": "b",
+        "name": "_default_arg_cases",
+        "schema": "public"
+      },
+      {
+        "base": null,
         "element": "public.domain_items",
         "kind": "b",
         "name": "_domain_items",
@@ -4699,6 +5060,13 @@
         "element": "public.inference_cases",
         "kind": "b",
         "name": "_inference_cases",
+        "schema": "public"
+      },
+      {
+        "base": "text",
+        "element": null,
+        "kind": "d",
+        "name": "_integer",
         "schema": "public"
       },
       {
@@ -4965,6 +5333,13 @@
         "element": null,
         "kind": "c",
         "name": "cornercase",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "default_arg_cases",
         "schema": "public"
       },
       {
@@ -8720,6 +9095,42 @@
       ],
       [
         {
+          "qiName": "int_array_upto",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "int_array_upto",
+            "pdParams": [
+              {
+                "ppName": "n",
+                "ppReq": true,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "_int4",
+                  "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Immutable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "void_func",
           "qiSchema": "public"
         },
@@ -8955,6 +9366,49 @@
             },
             "pdSchema": "public",
             "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "da_default_first",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "da_default_first",
+            "pdParams": [
+              {
+                "ppName": "",
+                "ppReq": true,
+                "ppType": "public.default_arg_cases",
+                "ppTypeMaxLength": "public.default_arg_cases",
+                "ppVar": false
+              },
+              {
+                "ppName": "n",
+                "ppReq": false,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "text",
+                  "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Immutable"
           }
         ]
       ],
@@ -9390,6 +9844,49 @@
       ],
       [
         {
+          "qiName": "da_required",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "da_required",
+            "pdParams": [
+              {
+                "ppName": "",
+                "ppReq": true,
+                "ppType": "public.default_arg_cases",
+                "ppTypeMaxLength": "public.default_arg_cases",
+                "ppVar": false
+              },
+              {
+                "ppName": "n",
+                "ppReq": true,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "text",
+                  "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Immutable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "function_using_table_returns",
           "qiSchema": "public"
         },
@@ -9424,6 +9921,56 @@
             },
             "pdSchema": "public",
             "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "da_partial",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "da_partial",
+            "pdParams": [
+              {
+                "ppName": "",
+                "ppReq": true,
+                "ppType": "public.default_arg_cases",
+                "ppTypeMaxLength": "public.default_arg_cases",
+                "ppVar": false
+              },
+              {
+                "ppName": "n",
+                "ppReq": true,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              },
+              {
+                "ppName": "m",
+                "ppReq": false,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "text",
+                  "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Immutable"
           }
         ]
       ],
@@ -10367,6 +10914,49 @@
       ],
       [
         {
+          "qiName": "da_same_schema",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "da_same_schema",
+            "pdParams": [
+              {
+                "ppName": "",
+                "ppReq": true,
+                "ppType": "public.default_arg_cases",
+                "ppTypeMaxLength": "public.default_arg_cases",
+                "ppVar": false
+              },
+              {
+                "ppName": "n",
+                "ppReq": false,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "text",
+                  "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Immutable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "note",
           "qiSchema": "public"
         },
@@ -10913,6 +11503,36 @@
           "tableName": "users",
           "tablePKCols": [
             "username"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "default_arg_cases",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "default_arg_cases",
+          "tablePKCols": [
+            "id"
           ],
           "tableSchema": "public",
           "tableUpdatable": true

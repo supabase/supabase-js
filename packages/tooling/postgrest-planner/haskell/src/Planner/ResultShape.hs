@@ -634,6 +634,10 @@ baseExpr ctx@Ctx{cxTables, cxSupp, cxRows, cxSearchPath, cxTypes} rel CoercibleF
             bad
               (noField <> " (the catalog does not cover every schema of the search path: a computed field may be there)")
               ["computed-field:" <> qualified rel <> "." <> name]
+          Ambiguous ->
+            bad
+              (noField <> " (several functions of that name take the row type, with defaults for their other arguments: PostgreSQL cannot choose)")
+              ["computed-field:" <> qualified rel <> "." <> name]
           Found SuppFunction{sfSchema, sfName, sfReturns = SuppReturn{srSetof, srType}}
             | srSetof -> bad ("function " <> sfSchema <> "." <> sfName <> " returns a set") []
             | otherwise ->
@@ -781,7 +785,9 @@ resolveCastType Ctx{cxTypes, cxSupp, cxSearchPath} raw = go (T.toLower (T.unword
       | otherwise = walk path
       where
         builtin = normalizeType name
-        builtinElement = T.stripPrefix "_" name >>= \e -> if isBuiltinType (normalizeType e) then Just (normalizeType e) else Nothing
+        -- the array of a builtin has the @pg_type@ name of its element behind an underscore (@_int4@, @_text@): the
+        -- element is named as @pg_catalog@ names it, so @_integer@ is not the array of @int4@
+        builtinElement = T.stripPrefix "_" name >>= \e -> if isBuiltinType e then Just e else Nothing
         walk [] = CastUnknown
         walk (s : rest)
           | s == "pg_catalog" = case builtinElement of

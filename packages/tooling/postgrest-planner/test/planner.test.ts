@@ -2179,6 +2179,51 @@ describe('postgrest-planner', () => {
       expect(degraded).toEqual(['computed-field:public.cast_cases.label'])
     })
 
+    it('resolves a computed field whose extra arguments all have defaults like PostgreSQL', () => {
+      // The request searches public, then extensions. A function whose extra arguments all have defaults is a
+      // candidate for `t.name`; the first schema with a candidate decides, and two candidates in it find none.
+      const field = (name: string) =>
+        typed('public,extensions', `/default_arg_cases?select=${name}`)
+      // public.da_default_first(t, n int DEFAULT 0) text hides extensions.da_default_first(t) integer
+      expect(field('da_default_first')).toEqual({ types: [['text', null, true]], degraded: [] })
+      expect(
+        shapeOf('public,extensions', '/default_arg_cases?select=da_default_first').fields[0]
+          .provenance
+      ).toMatchObject({
+        function: { schema: 'public', name: 'da_default_first' },
+      })
+      // public.da_exact_first(t) integer comes first, extensions has the defaulted text one
+      expect(field('da_exact_first')).toEqual({ types: [['int4', null, true]], degraded: [] })
+      // a required or only partly defaulted extra argument is no candidate: extensions answers
+      expect(field('da_required')).toEqual({ types: [['int4', null, true]], degraded: [] })
+      expect(field('da_partial')).toEqual({ types: [['int4', null, true]], degraded: [] })
+      // two candidates in the schema that decides: PostgreSQL finds no column
+      expect(field('da_same_schema')).toEqual({
+        types: [[null, null, true]],
+        degraded: ['computed-field:public.default_arg_cases.da_same_schema'],
+      })
+    })
+
+    it('names a builtin array by its pg_type name, not by an alias of its element', () => {
+      // public._integer is a text domain (`_integer` is no builtin: the array of int4 is `_int4`)
+      expect(typed('public,extensions', '/cast_cases?select=x:id::_integer')).toEqual({
+        types: [['public._integer', 'text', true]],
+        degraded: [],
+      })
+      // a name no schema has is no type: PostgreSQL refuses `_bigint` (the array of int8 is `_int8`)
+      const { types, degraded } = typed('public,extensions', '/cast_cases?select=x:id::_bigint')
+      expect(types).toEqual([[null, null, true]])
+      expect(degraded).toEqual(['cast-type:_bigint'])
+      // the real names still are the builtin arrays
+      expect(
+        typed('public,extensions', '/cast_cases?select=x:id::_int8,y:id::_text,z:id::_int4').types
+      ).toEqual([
+        ['int8[]', null, true],
+        ['text[]', null, true],
+        ['int4[]', null, true],
+      ])
+    })
+
     it('resolves _name to the array type of the first schema of the path that has it', () => {
       // arr_a.d is a text domain, arr_b._d an integer domain named like the array type of arr_a.d: on the path
       // arr_a,arr_b PostgreSQL reads `_d` as arr_a._d, the array of arr_a.d
@@ -2224,6 +2269,14 @@ describe('postgrest-planner', () => {
         expect.objectContaining({ function: { schema: 'personal', name: 'ext_label' } }),
         [],
       ])
+    })
+
+    it('lists a member of an extension whose extra arguments all have defaults', () => {
+      // ext_owned.ext_defaulted(t, n int DEFAULT 0) is a candidate for `t.ext_defaulted` like a function of one argument
+      const field = (extraSearchPath: string) =>
+        shapeOf(extraSearchPath, '/ext_label_cases?select=ext_defaulted').fields[0].pgType
+      expect(field('ext_owned,personal')).toBe('text')
+      expect(field('personal,ext_owned')).toBe('int4')
     })
 
     it('knows the base of a domain whose name needs quotes', () => {

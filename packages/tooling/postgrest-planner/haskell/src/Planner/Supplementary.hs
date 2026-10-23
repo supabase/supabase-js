@@ -73,6 +73,8 @@ data SuppFunction = SuppFunction
   -- ^ Input argument types as @format_type@ spells them (schema-qualified outside @pg_catalog@).
   , sfVolatility :: Text
   -- ^ @provolatile@: @i@, @s@ or @v@.
+  , sfDefaults :: Int
+  -- ^ @pronargdefaults@: how many of the trailing input arguments have a default, so a call may leave them out.
   , sfReturns :: SuppReturn
   , sfOutColumns :: Maybe [(Text, Text)]
   -- ^ OUT / TABLE columns (name, type), when the function has any.
@@ -148,6 +150,7 @@ instance FromJSON SuppFunction where
       <*> o .: "name"
       <*> o .:? "argTypes" .!= []
       <*> o .:? "volatility" .!= "v"
+      <*> o .:? "defaults" .!= 0
       <*> o .: "returns"
       <*> (o .:? "outColumns" >>= traverse (traverse (withObject "out column" (\c -> (,) <$> c .: "name" <*> c .: "type"))))
 
@@ -192,25 +195,33 @@ data Lookup a
   -- ^ Nothing of that name in any schema of the path, all of which the catalog covers.
   | Uncovered
   -- ^ Not found before a schema of the path the catalog does not cover: it may be there.
+  | Ambiguous
+  -- ^ The first schema of the path with a candidate has several: Postgres cannot choose between them.
 
 -- | Whether the catalog enumerates the functions and types of a schema. @pg_catalog@ is always the builtins.
 covers :: Supplementary -> Text -> Bool
 covers supp schema = schema == "pg_catalog" || schema `elem` suppSchemas supp
 
--- | A computed field is a function @name(relation)@ with exactly the relation's row type as its only
--- argument. Upstream selects it as @"schema"."relation"."name"@; Postgres reads that as the call
--- @name(relation)@ with an unqualified function name, which it looks up through the @search_path@ of the
--- request (its schema, then @db-extra-search-path@: @PreQuery.hs@). Of the functions of that name and argument
--- type the one in the first schema of the path is called, and a function of a schema off the path is not
--- visible at all. The path is the first argument. A schema of the path the catalog does not cover, reached
--- before any candidate, leaves the answer open ('Uncovered').
+-- | A computed field is a function @name(relation)@ whose first argument is the relation's row type and whose
+-- other arguments, if any, all have defaults. Upstream selects it as @"schema"."relation"."name"@; Postgres reads
+-- that as the call @name(relation)@ with an unqualified function name, which it looks up through the
+-- @search_path@ of the request (its schema, then @db-extra-search-path@: @PreQuery.hs@), a function with
+-- defaulted arguments being a candidate for a call that leaves them out (@parse_func.c@, @namespace.c@). The
+-- candidates of the first schema of the path that has any decide, and a function of a schema off the path is not
+-- visible at all: a lone candidate is called, several (@f(t)@ with @f(t, n int default 0)@ of one schema) are
+-- ambiguous and Postgres finds no column. The path is the first argument. A schema of the path the catalog does
+-- not cover, reached before any candidate, leaves the answer open ('Uncovered').
 findComputedField :: Supplementary -> [Text] -> QualifiedIdentifier -> Text -> Lookup SuppFunction
 findComputedField supp searchPath (QualifiedIdentifier schema rel) name = go searchPath
   where
     relationType = QualifiedIdentifier schema rel
+    candidate f = case sfArgTypes f of
+      a : extra -> length extra <= sfDefaults f && parseTypeName a == Just relationType
+      [] -> False
     go [] = Absent
-    go (s : rest) = case [f | f <- suppFunctions supp, sfSchema f == s, sfName f == name, [a] <- [sfArgTypes f], parseTypeName a == Just relationType] of
-      f : _ -> Found f
+    go (s : rest) = case [f | f <- suppFunctions supp, sfSchema f == s, sfName f == name, candidate f] of
+      [f] -> Found f
+      _ : _ -> Ambiguous
       [] | covers supp s -> go rest
          | otherwise -> Uncovered
 

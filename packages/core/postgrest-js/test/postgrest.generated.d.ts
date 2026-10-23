@@ -581,6 +581,19 @@ declare global {
           FactColumns: 'array_column' | 'column whitespace' | 'id'
           Relationships: []
         }
+        default_arg_cases: {
+          Row: {
+            id: SupabaseColumnType<'public.default_arg_cases.id', number>
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.default_arg_cases.id', number>
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.default_arg_cases.id', number>
+          }
+          FactColumns: 'id'
+          Relationships: []
+        }
         domain_items: {
           Row: {
             id: SupabaseColumnType<'public.domain_items.id', number>
@@ -1235,6 +1248,35 @@ declare global {
           }
           Returns: { id: number | null; parent_id: number | null }
         }
+        da_default_first: {
+          Args: {
+            '': { id: number | null }
+            n?: number
+          }
+          Returns: string | null
+        }
+        da_partial: {
+          Args: {
+            '': { id: number | null }
+            n: number
+            m?: number
+          }
+          Returns: string | null
+        }
+        da_required: {
+          Args: {
+            '': { id: number | null }
+            n: number
+          }
+          Returns: string | null
+        }
+        da_same_schema: {
+          Args: {
+            '': { id: number | null }
+            n?: number
+          }
+          Returns: string | null
+        }
         describe_remote_user: {
           Args: {
             remote_row: { username: string | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }
@@ -1403,6 +1445,12 @@ declare global {
             inference_row: { id: number | null; sequence_id: number | null; price: number | null; quantity: number | null; total: number | null; note: string | null; required_payload: JsonIn | null; optional_payload: JsonIn | null; tags: string[] | null; scores: number[] | null; shipping_address: SupabaseDatabase['public']['CompositeTypes']['address'] | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }
           }
           Returns: string | null
+        }
+        int_array_upto: {
+          Args: {
+            n: number
+          }
+          Returns: number[] | null
         }
         note: {
           Args: Record<string, never>
@@ -1960,6 +2008,17 @@ declare global {
           row: { count: number; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }
           source: { row: { username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }; sources: { username: 'username'; status: 'status' } }
           sources: { status: 'status' }
+        },
+      ]
+    }
+    'f|public|int_array_upto|*': {
+      calls: [
+        {
+          keys: 'n'
+          method: 'POST'
+          form: 'single-scalar'
+          row: number[] | null
+          source: never
         },
       ]
     }

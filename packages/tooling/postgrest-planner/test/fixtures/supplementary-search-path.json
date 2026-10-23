@@ -476,6 +476,13 @@
         {
             "base": null,
             "kind": "b",
+            "name": "__integer",
+            "schema": "public",
+            "element": "public._integer"
+        },
+        {
+            "base": null,
+            "kind": "b",
             "name": "_active_users",
             "schema": "public",
             "element": "public.active_users"
@@ -595,6 +602,13 @@
         {
             "base": null,
             "kind": "b",
+            "name": "_default_arg_cases",
+            "schema": "public",
+            "element": "public.default_arg_cases"
+        },
+        {
+            "base": null,
+            "kind": "b",
             "name": "_domain_items",
             "schema": "public",
             "element": "public.domain_items"
@@ -661,6 +675,13 @@
             "name": "_inference_cases",
             "schema": "public",
             "element": "public.inference_cases"
+        },
+        {
+            "base": "text",
+            "kind": "d",
+            "name": "_integer",
+            "schema": "public",
+            "element": null
         },
         {
             "base": null,
@@ -931,6 +952,13 @@
         {
             "base": null,
             "kind": "c",
+            "name": "default_arg_cases",
+            "schema": "public",
+            "element": null
+        },
+        {
+            "base": null,
+            "kind": "c",
             "name": "domain_items",
             "schema": "public",
             "element": null
@@ -1174,8 +1202,24 @@
                 "jsonb",
                 "jsonb"
             ],
+            "defaults": 4,
             "outColumns": null,
             "volatility": "v"
+        },
+        {
+            "name": "ext_defaulted",
+            "schema": "personal",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.ext_label_cases"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
         },
         {
             "name": "ext_label",
@@ -1188,6 +1232,7 @@
             "argTypes": [
                 "public.ext_label_cases"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1202,6 +1247,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1216,6 +1262,7 @@
             "argTypes": [
                 "public.cast_cases"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1230,6 +1277,7 @@
             "argTypes": [
                 "personal.users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1244,6 +1292,7 @@
             "argTypes": [
                 "public.domain_items"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1258,6 +1307,7 @@
             "argTypes": [
                 "public.quoted_amounts"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1272,6 +1322,7 @@
             "argTypes": [
                 "public.arity_parents"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1287,6 +1338,7 @@
                 "public.arity_parents",
                 "integer"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1301,6 +1353,7 @@
             "argTypes": [
                 "public.messages"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1315,6 +1368,7 @@
             "argTypes": [
                 "public.cast_mood"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1329,6 +1383,7 @@
             "argTypes": [
                 "public.computed_parents"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1343,6 +1398,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1357,6 +1413,7 @@
             "argTypes": [
                 "public.computed_parents"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1371,8 +1428,104 @@
             "argTypes": [
                 "public.users_audit"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
+        },
+        {
+            "name": "da_default_first",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.default_arg_cases",
+                "integer"
+            ],
+            "defaults": 1,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "da_exact_first",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.default_arg_cases"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "da_partial",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.default_arg_cases",
+                "integer",
+                "integer"
+            ],
+            "defaults": 1,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "da_required",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.default_arg_cases",
+                "integer"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "da_same_schema",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.default_arg_cases"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "da_same_schema",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.default_arg_cases",
+                "integer"
+            ],
+            "defaults": 1,
+            "outColumns": null,
+            "volatility": "i"
         },
         {
             "name": "days_since_event",
@@ -1385,6 +1538,7 @@
             "argTypes": [
                 "public.events"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -1399,6 +1553,7 @@
             "argTypes": [
                 "public.remote_users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1413,6 +1568,7 @@
             "argTypes": [
                 "public.user_status_counts"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1427,6 +1583,7 @@
             "argTypes": [
                 "public.address"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1441,6 +1598,7 @@
             "argTypes": [
                 "bigint"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1455,6 +1613,7 @@
             "argTypes": [
                 "jsonb"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1468,6 +1627,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1481,6 +1641,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1495,6 +1656,7 @@
             "argTypes": [
                 "public.messages"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1509,6 +1671,7 @@
             "argTypes": [
                 "public.users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1523,6 +1686,7 @@
             "argTypes": [
                 "public.users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1537,6 +1701,7 @@
             "argTypes": [
                 "uuid[]"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1551,6 +1716,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 1,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1565,6 +1731,7 @@
             "argTypes": [
                 "public.active_users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1579,6 +1746,7 @@
             "argTypes": [
                 "public.channels"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1593,6 +1761,7 @@
             "argTypes": [
                 "public.users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1607,6 +1776,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1620,6 +1790,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1634,6 +1805,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1647,6 +1819,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1661,6 +1834,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -1675,6 +1849,7 @@
             "argTypes": [
                 "public.active_users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1689,6 +1864,7 @@
             "argTypes": [
                 "public.users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1703,6 +1879,7 @@
             "argTypes": [
                 "public.users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1717,6 +1894,7 @@
             "argTypes": [
                 "public.users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1731,6 +1909,7 @@
             "argTypes": [
                 "public.users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1745,6 +1924,7 @@
             "argTypes": [
                 "public.active_users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1758,6 +1938,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1772,6 +1953,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "username",
@@ -1795,8 +1977,24 @@
             "argTypes": [
                 "public.inference_cases"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
+        },
+        {
+            "name": "int_array_upto",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer[]",
+                "setof": false
+            },
+            "argTypes": [
+                "integer"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
         },
         {
             "name": "note",
@@ -1808,6 +2006,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -1822,6 +2021,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -1835,6 +2035,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "u",
@@ -1853,6 +2054,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "u",
@@ -1872,6 +2074,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "n",
@@ -1891,6 +2094,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "doubled",
@@ -1910,6 +2114,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "doubled",
@@ -1929,6 +2134,7 @@
             "argTypes": [
                 "boolean"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -1943,6 +2149,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -1957,6 +2164,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -1970,6 +2178,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -1984,6 +2193,7 @@
             "argTypes": [
                 "boolean"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -1998,6 +2208,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2011,6 +2222,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2025,6 +2237,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 1,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2039,6 +2252,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 1,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2052,6 +2266,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2066,6 +2281,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 1,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2080,6 +2296,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 1,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2094,6 +2311,7 @@
             "argTypes": [
                 "boolean"
             ],
+            "defaults": 1,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2108,6 +2326,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2122,6 +2341,7 @@
             "argTypes": [
                 "json"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2136,6 +2356,7 @@
             "argTypes": [
                 "jsonb"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2150,6 +2371,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2163,6 +2385,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2177,6 +2400,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2191,6 +2415,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2205,6 +2430,7 @@
             "argTypes": [
                 "bigint"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -2220,6 +2446,7 @@
                 "bigint",
                 "text"
             ],
+            "defaults": 1,
             "outColumns": null,
             "volatility": "s"
         },
@@ -2234,6 +2461,7 @@
             "argTypes": [
                 "public.users"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -2247,6 +2475,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2261,6 +2490,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2275,6 +2505,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2289,6 +2520,7 @@
             "argTypes": [
                 "public.domain_items"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "s"
         },
@@ -2303,6 +2535,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2316,6 +2549,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "pgrst_call",
@@ -2336,6 +2570,7 @@
                 "integer[]",
                 "integer"
             ],
+            "defaults": 1,
             "outColumns": null,
             "volatility": "i"
         },
@@ -2350,6 +2585,7 @@
             "argTypes": [
                 "integer"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "column1",
@@ -2372,6 +2608,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -2385,6 +2622,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         }
@@ -2735,6 +2973,16 @@
                 {
                     "name": "array_column",
                     "attnum": 3
+                }
+            ]
+        },
+        {
+            "name": "default_arg_cases",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
                 }
             ]
         },
@@ -3353,6 +3601,22 @@
     ],
     "searchPathFunctions": [
         {
+            "name": "ext_defaulted",
+            "schema": "ext_owned",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.ext_label_cases",
+                "integer"
+            ],
+            "defaults": 1,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
             "name": "ext_label",
             "schema": "ext_owned",
             "returns": {
@@ -3363,6 +3627,68 @@
             "argTypes": [
                 "public.ext_label_cases"
             ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "da_default_first",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.default_arg_cases"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "da_exact_first",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.default_arg_cases",
+                "integer"
+            ],
+            "defaults": 1,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "da_partial",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.default_arg_cases"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "da_required",
+            "schema": "extensions",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.default_arg_cases"
+            ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -3376,6 +3702,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -3389,6 +3716,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -3402,6 +3730,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -3416,6 +3745,7 @@
             "argTypes": [
                 "public.cast_cases"
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "i"
         },
@@ -3430,6 +3760,7 @@
             "argTypes": [
                 "boolean"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "userid",
@@ -3640,6 +3971,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "dealloc",
@@ -3663,6 +3995,7 @@
             "argTypes": [
                 "text"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "key",
@@ -3685,6 +4018,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -3698,6 +4032,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -3711,6 +4046,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "server_name",
@@ -3733,6 +4069,7 @@
             },
             "argTypes": [
             ],
+            "defaults": 0,
             "outColumns": null,
             "volatility": "v"
         },
@@ -3748,6 +4085,7 @@
                 "double precision",
                 "extensions.geometry"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "geom",
@@ -3775,6 +4113,7 @@
             "argTypes": [
                 "extensions.geometry"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "center",
@@ -3802,6 +4141,7 @@
             "argTypes": [
                 "extensions.geometry"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "center",
@@ -3826,6 +4166,7 @@
                 "double precision",
                 "extensions.geometry"
             ],
+            "defaults": 0,
             "outColumns": [
                 {
                     "name": "geom",

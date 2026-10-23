@@ -56,6 +56,8 @@ export interface SupplementaryFunction {
   argTypes: string[]
   /** `pg_proc.provolatile`: `i`, `s` or `v` */
   volatility: string
+  /** `pg_proc.pronargdefaults`: how many of the trailing input arguments have a default */
+  defaults: number
   returns: { kind: 'scalar' | 'composite'; setof: boolean; type: string }
   outColumns: { name: string; type: string }[] | null
   /** `pg_language.lanname` */
