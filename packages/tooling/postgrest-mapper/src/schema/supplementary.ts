@@ -173,8 +173,7 @@ export function plannerSupplementary(supplementary: Supplementary): PlannerSuppl
       argTypes: f.argTypes,
       volatility: f.volatility,
       returns: f.returns,
-      // the planner's decoder reads `null` as absent (its own fixture has it); its type only spells `undefined`
-      outColumns: f.outColumns as { name: string; type: string }[] | undefined,
+      outColumns: f.outColumns,
     })),
   }
 }

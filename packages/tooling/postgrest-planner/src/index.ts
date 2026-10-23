@@ -88,8 +88,8 @@ export interface SupplementaryFunction {
   /** `pg_proc.provolatile`: `i`, `s` or `v`. */
   volatility?: string
   returns: { kind: 'scalar' | 'composite'; setof?: boolean; type: string }
-  /** OUT / `RETURNS TABLE` columns. */
-  outColumns?: { name: string; type: string }[]
+  /** OUT / `RETURNS TABLE` columns (`null` when the function has none). */
+  outColumns?: { name: string; type: string }[] | null
   [k: string]: unknown
 }
 
