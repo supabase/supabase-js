@@ -38,7 +38,8 @@ export default class Serializer {
   }
 
   private _binaryEncodeUserBroadcastPush(message: Msg<{ event: string } & { [key: string]: any }>) {
-    if (this._isArrayBuffer(message.payload?.payload)) {
+    const userPayload = message.payload?.payload
+    if (this._isArrayBuffer(userPayload) || ArrayBuffer.isView(userPayload)) {
       return this._encodeBinaryUserBroadcastPush(message)
     } else {
       return this._encodeJsonUserBroadcastPush(message)
@@ -46,21 +47,27 @@ export default class Serializer {
   }
 
   private _encodeBinaryUserBroadcastPush(message: Msg<{ event: string } & { [key: string]: any }>) {
-    const userPayload = message.payload?.payload ?? new ArrayBuffer(0)
-    return this._encodeUserBroadcastPush(message, this.BINARY_ENCODING, userPayload)
+    const userPayload: ArrayBuffer | ArrayBufferView =
+      message.payload?.payload ?? new ArrayBuffer(0)
+    // Typed arrays and DataViews can be a window into a larger buffer (a Node.js
+    // Buffer usually is), so take only the bytes the view covers.
+    const bytes = ArrayBuffer.isView(userPayload)
+      ? new Uint8Array(userPayload.buffer, userPayload.byteOffset, userPayload.byteLength)
+      : new Uint8Array(userPayload)
+    return this._encodeUserBroadcastPush(message, this.BINARY_ENCODING, bytes)
   }
 
   private _encodeJsonUserBroadcastPush(message: Msg<{ event: string } & { [key: string]: any }>) {
     const userPayload = message.payload?.payload ?? {}
     const encoder = new TextEncoder()
-    const encodedUserPayload = encoder.encode(JSON.stringify(userPayload)).buffer
+    const encodedUserPayload = encoder.encode(JSON.stringify(userPayload))
     return this._encodeUserBroadcastPush(message, this.JSON_ENCODING, encodedUserPayload)
   }
 
   private _encodeUserBroadcastPush(
     message: Msg<{ event: string } & { [key: string]: any }>,
     encodingType: number,
-    encodedPayload: ArrayBuffer
+    encodedPayload: Uint8Array
   ) {
     // Encode each header field as UTF-8. The length prefixes are byte counts and
     // the decode side uses TextDecoder (UTF-8), so measuring with String.length
@@ -129,7 +136,7 @@ export default class Serializer {
 
     var combined = new Uint8Array(header.byteLength + encodedPayload.byteLength)
     combined.set(new Uint8Array(header), 0)
-    combined.set(new Uint8Array(encodedPayload), header.byteLength)
+    combined.set(encodedPayload, header.byteLength)
 
     return combined.buffer
   }
