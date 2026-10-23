@@ -13,7 +13,7 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node node_modules/typescript/bin/tsc -p tsconfig.json",
     "test": "jest"
   },
   "repository": {
@@ -29,15 +29,18 @@
   "devDependencies": {
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
+    "@types/pg": "^8.23.1",
     "jest": "catalog:",
     "ts-jest": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "typescript-7.1": "npm:typescript@7.1.0-beta"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
   "dependencies": {
     "@supabase/pg-parser": "^0.1.7",
-    "oxc-parser": "^0.154.0"
+    "oxc-parser": "^0.154.0",
+    "pg": "^8.23.1"
   }
 }

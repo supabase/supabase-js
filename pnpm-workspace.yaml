@@ -56,6 +56,8 @@ minimumReleaseAgeExclude:
   - '@supabase/*'
   - supabase # first-party Supabase CLI
   - source-map-js@1.2.2
+  - typescript@7.1.0-beta # TS 7.1 content-mapper e2e in postgrest-mapper
+  - '@typescript/typescript-*' # its native binaries
 blockExoticSubdeps: true
 
 # Whitelist of packages allowed to run install scripts (preinstall/install/postinstall).
