@@ -1,6 +1,5 @@
 import { PostgrestClient } from '../src/index'
 import PostgrestError from '../src/PostgrestError'
-import { Database } from './types.override'
 
 const REST_URL = 'https://example.com'
 
@@ -15,7 +14,7 @@ const okJson = (payload: unknown) => ({
 describe('maybeSingle cardinality handling', () => {
   test('unwraps a single row', async () => {
     const fetchMock = jest.fn().mockResolvedValue(okJson([{ username: 'supabot' }]))
-    const postgrest = new PostgrestClient<Database>(REST_URL, { fetch: fetchMock as any })
+    const postgrest = new PostgrestClient(REST_URL, { fetch: fetchMock as any })
 
     const res = await postgrest.from('users').select('username').maybeSingle()
 
@@ -26,7 +25,7 @@ describe('maybeSingle cardinality handling', () => {
 
   test('returns null data when no rows match', async () => {
     const fetchMock = jest.fn().mockResolvedValue(okJson([]))
-    const postgrest = new PostgrestClient<Database>(REST_URL, { fetch: fetchMock as any })
+    const postgrest = new PostgrestClient(REST_URL, { fetch: fetchMock as any })
 
     const res = await postgrest.from('users').select('username').maybeSingle()
 
@@ -38,7 +37,7 @@ describe('maybeSingle cardinality handling', () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue(okJson([{ username: 'supabot' }, { username: 'kiwicopple' }]))
-    const postgrest = new PostgrestClient<Database>(REST_URL, { fetch: fetchMock as any })
+    const postgrest = new PostgrestClient(REST_URL, { fetch: fetchMock as any })
 
     const res = await postgrest.from('users').select('username').maybeSingle()
 
@@ -52,7 +51,7 @@ describe('maybeSingle cardinality handling', () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue(okJson([{ username: 'supabot' }, { username: 'kiwicopple' }]))
-    const postgrest = new PostgrestClient<Database>(REST_URL, { fetch: fetchMock as any })
+    const postgrest = new PostgrestClient(REST_URL, { fetch: fetchMock as any })
 
     await expect(
       postgrest.from('users').select('username').maybeSingle().throwOnError()

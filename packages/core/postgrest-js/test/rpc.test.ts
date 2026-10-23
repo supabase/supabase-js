@@ -1,10 +1,9 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-export const postgrest = new PostgrestClient<Database>(REST_URL)
+export const postgrest = new PostgrestClient(REST_URL)
 
 export const RPC_NAME = 'get_username_and_status'
 const BIGINT_PARAM = 9223372036854775807n
@@ -19,7 +18,7 @@ test('RPC call serializes bigint values in the request body', async () => {
     text: async () => '',
   })
 
-  const client = new PostgrestClient<Database>('https://example.com', {
+  const client = new PostgrestClient('https://example.com', {
     fetch: mockFetch as any,
   })
 

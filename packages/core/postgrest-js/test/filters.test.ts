@@ -1,7 +1,6 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 
-const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')
+const postgrest = new PostgrestClient('http://localhost:54321/rest/v1')
 
 test('not', async () => {
   const res = await postgrest.from('users').select('status').not('status', 'eq', 'OFFLINE')

@@ -1771,7 +1771,6 @@ export default class PostgrestFilterBuilder<
    * @param options - Named parameters
    * @param options.referencedTable - Set this to filter on referenced tables
    * instead of the parent table
-   * @param options.foreignTable - Deprecated, use `referencedTable` instead
    *
    * @category Database
    * @subcategory Using filters
@@ -1913,13 +1912,7 @@ export default class PostgrestFilterBuilder<
     filters: string,
     options?: O
   ): PostgrestFilterBuilder<B, E, F & Gate<B, RefFacts<O>>, M>
-  or(
-    filters: string,
-    {
-      foreignTable,
-      referencedTable = foreignTable,
-    }: { foreignTable?: string; referencedTable?: string } = {}
-  ): any {
+  or(filters: string, { referencedTable }: { referencedTable?: string } = {}): any {
     const key = referencedTable ? `${referencedTable}.or` : 'or'
     this.url.searchParams.append(key, `(${filters})`)
     return this

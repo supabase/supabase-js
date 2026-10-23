@@ -484,11 +484,11 @@ jobs:
             echo "::error::Could not diff against origin/${BASE_REF}, refusing to skip the codegen check."
             exit 1
           fi
-          # types.generated.ts depends on the test schema AND on the pinned Supabase CLI version,
-          # which selects the postgres-meta image that does the introspection. Watch both, or a
-          # CLI bump silently changes the generated output with nothing to catch it.
+          # The generated test declarations depend on the test schema, the queries in the tests,
+          # the mapper and planner that print them, and the pinned Supabase CLI version (which
+          # selects the stack the schema is snapshotted from). Watch all of them.
           if printf '%s\n' "$CHANGED_FILES" \
-            | grep -qE '^packages/core/postgrest-js/test/supabase/|^package\.json$'; then
+            | grep -qE '^packages/core/postgrest-js/(test/|tsconfig\.test\.json$)|^packages/tooling/postgrest-(mapper|planner)/|^scripts/generate-postgrest-types\.js$|^package\.json$'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"

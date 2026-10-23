@@ -2,10 +2,9 @@ import type { RequiredDeep } from 'type-fest'
 import { z } from 'zod'
 import { PostgrestClient } from '../src/index'
 import { expectType, type TypeEqual } from './types'
-import type { Database } from './types.override'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 describe('embeded functions select', () => {
   test('embeded_setof_function - function returning a setof embeded table', async () => {
@@ -1432,36 +1431,5 @@ describe('embeded functions select', () => {
         } & 'the function public.days_since_event with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
       >
     >(true)
-  })
-
-  // The two tests below are type-only. They cover the scalar computed field contract declared by
-  // hand in types.override.ts — PostgREST does not expose scalar computed fields in its schema
-  // cache, so pg-meta cannot emit these entries and there is no live function to call. The query
-  // builder is deliberately left un-awaited: it is lazy (PostgrestBuilder only fetches in then()),
-  // so no request is made, and the assertions read the resolved type via Awaited<>.
-  test('scalar_computed_count - non-SETOF non-nullable scalar returns number (not null)', () => {
-    const query = postgrest.from('users').select('username, scalar_computed_count()')
-    let result: Exclude<Awaited<typeof query>['data'], null>
-    const ExpectedSchema = z.array(
-      z.object({
-        username: z.string(),
-        scalar_computed_count: z.number(),
-      })
-    )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
-  })
-
-  test('scalar_computed_ids - SETOF scalar returns string[] (not null)', () => {
-    const query = postgrest.from('users').select('username, scalar_computed_ids()')
-    let result: Exclude<Awaited<typeof query>['data'], null>
-    const ExpectedSchema = z.array(
-      z.object({
-        username: z.string(),
-        scalar_computed_ids: z.array(z.string()),
-      })
-    )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
   })
 })

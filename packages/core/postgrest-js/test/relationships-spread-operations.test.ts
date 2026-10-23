@@ -1,10 +1,9 @@
 import { PostgrestClient } from '../src/index'
-import { Database as DatabaseWithOptions13 } from './types.override-with-options-postgrest14'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<DatabaseWithOptions13>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 test('select with aggregate count and spread', async () => {
   const res = await postgrest

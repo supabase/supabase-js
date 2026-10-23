@@ -1,11 +1,11 @@
 import { PostgrestClient } from '../src/index'
-import { Database, CustomUserDataTypeSchema } from './types.override'
+import { CustomUserDataTypeSchema } from './column-types'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 const userColumn: 'catchphrase' | 'username' = 'username'
 
 // Zod schemas for common types

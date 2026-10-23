@@ -1,12 +1,11 @@
 import { PostgrestClient } from '../src/index'
-import { Database as DatabasePostgrest14 } from './types.override-with-options-postgrest14'
 import { expectType, TypeEqual } from './types'
 import { InvalidMethodError } from '../src/PostgrestFilterBuilder'
 import { z } from 'zod'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<DatabasePostgrest14>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 const MessageRowSchema = z.object({
   channel_id: z.number(),

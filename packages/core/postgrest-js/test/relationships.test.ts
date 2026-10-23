@@ -1,13 +1,12 @@
 import { PostgrestClient } from '../src/index'
-import { CustomUserDataTypeSchema, Database } from './types.override'
+import { CustomUserDataTypeSchema } from './column-types'
+import type { Json } from './postgrest.generated'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
-import { Json } from '../src/select-query-parser/types'
-import type { SelectQueryError } from '../src/select-query-parser/utils'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 const UsersRowSchema = z.object({
   age_range: z.unknown().nullable(),
@@ -590,11 +589,6 @@ test('self reference relation via aliased column with multiple foreign keys', as
 
   const ambiguousRes = await postgrest.from('lab').select('children:lab(*)')
   expect(ambiguousRes.error?.code).toBe('PGRST201')
-  type AmbiguousResult = Exclude<typeof ambiguousRes.data, null>
-  type ExpectedAmbiguousResult = {
-    children: SelectQueryError<"Could not embed because more than one relationship was found for 'lab' and 'lab' you need to hint the column with lab!<columnName> ?">
-  }[]
-  expectType<TypeEqual<AmbiguousResult, ExpectedAmbiguousResult>>(true)
 })
 
 test('self reference relation via hint matching column name', async () => {

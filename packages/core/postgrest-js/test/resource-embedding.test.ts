@@ -1,10 +1,9 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 import { RequiredDeep } from 'type-fest'
 
-const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')
+const postgrest = new PostgrestClient('http://localhost:54321/rest/v1')
 
 test('embedded select', async () => {
   // By default postgrest will omit computed field from "star" selector
@@ -234,7 +233,7 @@ describe('embedded filters', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .or('channel_id.eq.2,message.eq.Hello World 👋', { foreignTable: 'messages' })
+      .or('channel_id.eq.2,message.eq.Hello World 👋', { referencedTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -301,7 +300,7 @@ describe('embedded filters', () => {
       .from('users')
       .select('messages(*)')
       .or('channel_id.eq.2,and(message.eq.Hello World 👋,username.eq.supabot)', {
-        foreignTable: 'messages',
+        referencedTable: 'messages',
       })
     expect(res).toMatchInlineSnapshot(`
       {
@@ -371,7 +370,7 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .order('channel_id' as any, { foreignTable: 'messages', ascending: false })
+      .order('channel_id' as any, { referencedTable: 'messages', ascending: false })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -452,8 +451,8 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .order('channel_id' as any, { foreignTable: 'messages', ascending: false })
-      .order('username', { foreignTable: 'messages', ascending: false })
+      .order('channel_id' as any, { referencedTable: 'messages', ascending: false })
+      .order('username', { referencedTable: 'messages', ascending: false })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -534,7 +533,7 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .limit(1, { foreignTable: 'messages' })
+      .limit(1, { referencedTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -594,7 +593,7 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .range(1, 1, { foreignTable: 'messages' })
+      .range(1, 1, { referencedTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,

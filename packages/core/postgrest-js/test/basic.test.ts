@@ -1,8 +1,8 @@
 import { PostgrestClient, PostgrestError } from '../src/index'
-import { CustomUserDataType, Database } from './types.override'
+import type { CustomUserDataType } from './column-types'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 test('basic select table', async () => {
   const res = await postgrest.from('users').select()
@@ -61,8 +61,8 @@ test('basic select table', async () => {
   `)
 })
 
-test('basic select returns types override', async () => {
-  const res = await postgrest.from('users').select().returns<{ status: 'ONLINE' | 'OFFLINE' }>()
+test('basic select cast the row type', async () => {
+  const res = await postgrest.from('users').select().cast<{ status: 'ONLINE' | 'OFFLINE' }>()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -124,7 +124,7 @@ test('basic select returns from builder', async () => {
     .select()
     .eq('username', 'supabot')
     .single()
-    .returns<{ status: 'ONLINE' | 'OFFLINE' }>()
+    .cast<{ status: 'ONLINE' | 'OFFLINE' }>()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -143,13 +143,13 @@ test('basic select returns from builder', async () => {
   `)
 })
 
-test('basic select overrideTypes from builder', async () => {
+test('basic select cast from builder', async () => {
   const res = await postgrest
     .from('users')
     .select()
     .eq('username', 'supabot')
     .single()
-    .overrideTypes<{ status: 'ONLINE' | 'OFFLINE' }>()
+    .cast<{ status: 'ONLINE' | 'OFFLINE' }>()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -270,12 +270,12 @@ test('rpc returns void', async () => {
 })
 
 test('custom headers', async () => {
-  const postgrest = new PostgrestClient<Database>(REST_URL, { headers: { apikey: 'foo' } })
+  const postgrest = new PostgrestClient(REST_URL, { headers: { apikey: 'foo' } })
   expect((postgrest.from('users').select() as any).headers.get('apikey')).toEqual('foo')
 })
 
 test('custom headers on a per-call basis', async () => {
-  const postgrest1 = new PostgrestClient<Database>(REST_URL, { headers: { apikey: 'foo' } })
+  const postgrest1 = new PostgrestClient(REST_URL, { headers: { apikey: 'foo' } })
   const postgrest2 = postgrest1.rpc('void_func').setHeader('apikey', 'bar')
   // Original client object isn't affected
   expect((postgrest1.from('users').select() as any).headers.get('apikey')).toEqual('foo')
@@ -285,7 +285,7 @@ test('custom headers on a per-call basis', async () => {
 
 describe('custom prefer headers with ', () => {
   test('insert', async () => {
-    const postgrest = new PostgrestClient<Database>(REST_URL, {
+    const postgrest = new PostgrestClient(REST_URL, {
       headers: { Prefer: 'tx=rollback' },
     })
     const postgrestFilterBuilder = postgrest
@@ -296,7 +296,7 @@ describe('custom prefer headers with ', () => {
     expect(postgrestFilterBuilder.headers.get('Prefer')).toContain('return=')
   })
   test('update', async () => {
-    const postgrest = new PostgrestClient<Database>(REST_URL, {
+    const postgrest = new PostgrestClient(REST_URL, {
       headers: { Prefer: 'tx=rollback' },
     })
     const postgrestFilterBuilder = postgrest
@@ -307,7 +307,7 @@ describe('custom prefer headers with ', () => {
     expect(postgrestFilterBuilder.headers.get('Prefer')).toContain('return=')
   })
   test('upsert', async () => {
-    const postgrest = new PostgrestClient<Database>(REST_URL, {
+    const postgrest = new PostgrestClient(REST_URL, {
       headers: { Prefer: 'tx=rollback' },
     })
     const postgrestFilterBuilder = postgrest
@@ -318,7 +318,7 @@ describe('custom prefer headers with ', () => {
     expect(postgrestFilterBuilder.headers.get('Prefer')).toContain('return=')
   })
   test('delete', async () => {
-    const postgrest = new PostgrestClient<Database>(REST_URL, {
+    const postgrest = new PostgrestClient(REST_URL, {
       headers: { Prefer: 'tx=rollback' },
     })
     const postgrestFilterBuilder = postgrest.from('users').delete().select() as any
@@ -328,12 +328,9 @@ describe('custom prefer headers with ', () => {
 })
 
 test('switch schema', async () => {
-  const postgrest = new PostgrestClient<Database, { PostgrestVersion: '12' }, 'personal'>(
-    REST_URL,
-    {
-      schema: 'personal',
-    }
-  )
+  const postgrest = new PostgrestClient<SupabaseDatabase, 'personal'>(REST_URL, {
+    schema: 'personal',
+  })
   const res = await postgrest.from('users').select()
   expect(res).toMatchInlineSnapshot(`
     {
@@ -379,7 +376,7 @@ test('switch schema', async () => {
 })
 
 test('dynamic schema', async () => {
-  const postgrest = new PostgrestClient<Database>(REST_URL)
+  const postgrest = new PostgrestClient(REST_URL)
   const res = await postgrest.schema('personal').from('users').select()
   expect(res).toMatchInlineSnapshot(`
     {
@@ -962,7 +959,7 @@ test('throwOnError throws errors which include stack', async () => {
 
 // test('throwOnError setting at the client level - query', async () => {
 //   let isErrorCaught = false
-//   const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
+//   const postgrest_ = new PostgrestClient(REST_URL, { throwOnError: true })
 
 //   try {
 //     // @ts-expect-error! missing table
@@ -977,7 +974,7 @@ test('throwOnError throws errors which include stack', async () => {
 
 // test('throwOnError setting at the client level - rpc', async () => {
 //   let isErrorCaught = false
-//   const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
+//   const postgrest_ = new PostgrestClient(REST_URL, { throwOnError: true })
 
 //   try {
 //     // @ts-expect-error! missing function
@@ -992,7 +989,7 @@ test('throwOnError throws errors which include stack', async () => {
 
 // test('throwOnError can be disabled per call', async () => {
 //   let isErrorCaught = false
-//   const postgrest_ = new PostgrestClient<Database>(REST_URL, { throwOnError: true })
+//   const postgrest_ = new PostgrestClient(REST_URL, { throwOnError: true })
 //   // @ts-expect-error! missing table
 //   const { error } = await postgrest_.from('missing_table').select().throwOnError(false)
 
@@ -1001,7 +998,7 @@ test('throwOnError throws errors which include stack', async () => {
 // })
 
 test('connection error w/o throwing', async () => {
-  const postgrest = new PostgrestClient<Database>('http://foo.invalid')
+  const postgrest = new PostgrestClient('http://foo.invalid')
   let isErrorCaught = false
   await postgrest
     .from('users')
@@ -1013,7 +1010,7 @@ test('connection error w/o throwing', async () => {
 })
 
 test('connection error w/ throwOnError', async () => {
-  const postgrest = new PostgrestClient<Database>('http://foo.invalid')
+  const postgrest = new PostgrestClient('http://foo.invalid')
   let isErrorCaught = false
   await postgrest
     .from('users')
@@ -2153,7 +2150,7 @@ test('custom fetch function', async () => {
     })
   )
 
-  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+  const postgrestWithCustomFetch = new PostgrestClient(REST_URL, {
     fetch: customFetch,
   })
 
@@ -2172,7 +2169,7 @@ test('uses native fetch when no custom fetch provided', async () => {
   // Spy on the global fetch to verify it's being called
   const fetchSpy = jest.spyOn(globalThis, 'fetch')
 
-  const postgrestClient = new PostgrestClient<Database>(REST_URL)
+  const postgrestClient = new PostgrestClient(REST_URL)
   const result = await postgrestClient.from('users').select()
 
   // Verify native fetch was called
@@ -2204,7 +2201,7 @@ test('handles array error with 404 status', async () => {
     })
   )
 
-  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+  const postgrestWithCustomFetch = new PostgrestClient(REST_URL, {
     fetch: customFetch,
   })
 
@@ -2233,7 +2230,7 @@ test('handles empty body with 404 status', async () => {
     })
   )
 
-  const postgrestWithCustomFetch = new PostgrestClient<Database>(REST_URL, {
+  const postgrestWithCustomFetch = new PostgrestClient(REST_URL, {
     fetch: customFetch,
   })
 

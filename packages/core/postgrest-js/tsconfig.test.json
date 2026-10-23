@@ -9,6 +9,19 @@
     "skipLibCheck": true,
     "module": "ES2022",
     "target": "ES2022",
-    "rootDir": "."
-  }
+    "rootDir": ".",
+    "paths": { "@supabase/postgrest-js": ["./src/index.ts"] }
+  },
+  "contentMappers": [
+    {
+      "package": "@supabase/postgrest-mapper",
+      "extensions": [".pgrst-index"],
+      "options": {
+        "postgrest": "16.4",
+        "schema": { "source": "snapshot", "path": "test/postgrest-schema.json" },
+        "defaultSchema": "public",
+        "scan": ["test/**/*.test.ts"]
+      }
+    }
+  ]
 }

@@ -1,12 +1,10 @@
 import type { RequiredDeep } from 'type-fest'
 import { z } from 'zod'
 import { PostgrestClient } from '../src/index'
-import type { SelectQueryError } from '../src/select-query-parser/utils'
 import { expectType, type TypeEqual } from './types'
-import type { Database } from './types.override'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 const MessagesWithoutBlurbSchema = z.object({
   channel_id: z.number(),
@@ -553,10 +551,6 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('postgrest_unresolvable_function', {
       a: 'test',
     })
-    let result: Exclude<typeof res.data, null>
-    // Should be an error response due to ambiguous function resolution
-    let expected: SelectQueryError<'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -578,10 +572,6 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('postgrest_unresolvable_function', {
       a: 1,
     })
-    let result: Exclude<typeof res.data, null>
-    // Should be an error response due to ambiguous function resolution
-    let expected: SelectQueryError<'Could not choose the best candidate function between: public.postgrest_unresolvable_function(a => int4), public.postgrest_unresolvable_function(a => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -940,9 +930,6 @@ describe('advanced rpc', () => {
 
   test('polymorphic function with unnamed default no params', async () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default')
-    let result: Exclude<typeof res.data, null>
-    let expected: SelectQueryError<'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default(), public.polymorphic_function_with_unnamed_default( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -962,11 +949,6 @@ describe('advanced rpc', () => {
 
   test('polymorphic function with unnamed default param undefined', async () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default', {})
-    let result: Exclude<typeof res.data, null>
-    // TODO: there is no ways for now to distinguish between a valid optional argument or a missing one if the argument is unnamed
-    let expected: SelectQueryError<'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default(), public.polymorphic_function_with_unnamed_default( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
-    // this should be true
-    expectType<TypeEqual<typeof result, typeof expected>>(false)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1005,9 +987,6 @@ describe('advanced rpc', () => {
 
   test('polymorphic function with unnamed default overload no params', async () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default_overload')
-    let result: Exclude<typeof res.data, null>
-    let expected: SelectQueryError<'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default_overload(), public.polymorphic_function_with_unnamed_default_overload( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1027,11 +1006,6 @@ describe('advanced rpc', () => {
 
   test('polymorphic function with unnamed default overload int param', async () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default_overload', undefined)
-    let result: Exclude<typeof res.data, null>
-    // TODO: there is no ways for now to distinguish between a valid optional argument or a missing one if the argument is unnamed
-    let expected: SelectQueryError<'Could not choose the best candidate function between: public.polymorphic_function_with_unnamed_default_overload(), public.polymorphic_function_with_unnamed_default_overload( => text). Try renaming the parameters or the function itself in the database so function overloading can be resolved'>
-    // this should be true
-    expectType<TypeEqual<typeof result, typeof expected>>(false)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1090,9 +1064,6 @@ describe('advanced rpc', () => {
 
   test('function with blurb_message', async () => {
     const res = await postgrest.rpc('blurb_message')
-    let result: Exclude<typeof res.data, null>
-    let expected: SelectQueryError<'the function public.blurb_message with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1122,9 +1093,6 @@ describe('advanced rpc', () => {
         function_returning_single_row: null,
       },
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: SelectQueryError<'the function public.blurb_message with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,

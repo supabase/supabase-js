@@ -298,12 +298,10 @@ export default class PostgrestTransformBuilder<
     {
       ascending = true,
       nullsFirst,
-      foreignTable,
-      referencedTable = foreignTable,
+      referencedTable,
     }: {
       ascending?: boolean
       nullsFirst?: boolean
-      foreignTable?: string
       referencedTable?: string
     } = {}
   ): any {
@@ -421,13 +419,7 @@ export default class PostgrestTransformBuilder<
     rows: number,
     options?: O
   ): PostgrestFilterBuilder<B, E, F & Gate<B, RefFacts<O>>, M>
-  limit(
-    rows: number,
-    {
-      foreignTable,
-      referencedTable = foreignTable,
-    }: { foreignTable?: string; referencedTable?: string } = {}
-  ): any {
+  limit(rows: number, { referencedTable }: { referencedTable?: string } = {}): any {
     const key = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
     this.url.searchParams.set(key, `${rows}`)
     return this
@@ -491,14 +483,7 @@ export default class PostgrestTransformBuilder<
     to: number,
     options?: O
   ): PostgrestFilterBuilder<B, E, F & Gate<B, RefFacts<O>>, M>
-  range(
-    from: number,
-    to: number,
-    {
-      foreignTable,
-      referencedTable = foreignTable,
-    }: { foreignTable?: string; referencedTable?: string } = {}
-  ): any {
+  range(from: number, to: number, { referencedTable }: { referencedTable?: string } = {}): any {
     const keyOffset =
       typeof referencedTable === 'undefined' ? 'offset' : `${referencedTable}.offset`
     const keyLimit = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`

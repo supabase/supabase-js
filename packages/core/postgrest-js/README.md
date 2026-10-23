@@ -159,23 +159,20 @@ npx supabase --workdir ./test stop         # Stop all services
 
 #### Regenerating TypeScript Types
 
-When the database schema changes, regenerate TypeScript types from the actual database:
+The tests are typed by declarations that `@supabase/postgrest-mapper` generates from the test schema and from the queries the tests make. After changing the schema or a query in a test, regenerate them:
 
 ```bash
 # From the monorepo root
 pnpm run codegen:postgrest
 ```
 
-This command automatically:
+This command:
 
-1. Cleans up any existing Supabase containers
-2. Starts Supabase (PostgreSQL, PostgREST, and all services)
-3. Generates TypeScript types from the database schema
-4. Post-processes the generated types (updates JSON type definitions)
-5. Formats the generated file with Prettier
-6. Cleans up Supabase containers
+1. Uses the running test stack, or starts one for the run and stops it afterwards
+2. Snapshots the schema into `test/postgrest-schema.json` (`postgrest-mapper snapshot`)
+3. Generates `test/postgrest.generated.d.ts` from that snapshot and the queries in `test/**/*.test.ts` (`postgrest-mapper generate`, options in `tsconfig.test.json`)
 
-The generated types are written to `test/types.generated.ts`.
+`pnpm run codegen:check:postgrest` verifies both files without writing them.
 
 #### Test Types Explained
 

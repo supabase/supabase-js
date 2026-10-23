@@ -1,13 +1,10 @@
 import { PostgrestClient } from '../src/index'
 import PostgrestError from '../src/PostgrestError'
-import { Database } from './types.override'
 
 describe('Fetch error handling', () => {
   test('should bubble up DNS error cause in details', async () => {
     // Create a client with an invalid domain that will trigger DNS resolution error
-    const postgrest = new PostgrestClient<Database>(
-      'https://invalid-domain-that-does-not-exist.local'
-    )
+    const postgrest = new PostgrestClient('https://invalid-domain-that-does-not-exist.local')
 
     const res = await postgrest.from('users').select()
 
@@ -45,7 +42,7 @@ describe('Fetch error handling', () => {
       })
     )
 
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockFetch as any,
     })
 
@@ -74,7 +71,7 @@ describe('Fetch error handling', () => {
       })
     )
 
-    const postgrest = new PostgrestClient<Database>('http://localhost:9999', {
+    const postgrest = new PostgrestClient('http://localhost:9999', {
       fetch: mockFetch as any,
     })
 
@@ -99,7 +96,7 @@ describe('Fetch error handling', () => {
       })
     )
 
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockFetch as any,
     })
 
@@ -120,7 +117,7 @@ describe('Fetch error handling', () => {
       })
     )
 
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockFetch as any,
     })
 
@@ -138,7 +135,7 @@ describe('Fetch error handling', () => {
     // Simulate a generic error
     const mockFetch = jest.fn().mockRejectedValue(new Error('Something went wrong'))
 
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockFetch as any,
     })
 
@@ -159,7 +156,7 @@ describe('Fetch error handling', () => {
       })
     )
 
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockFetch as any,
     })
 
@@ -170,7 +167,7 @@ describe('Fetch error handling', () => {
   test('rpc with head: true and object args is refused client-side, never switching to POST', async () => {
     const mockFetch = jest.fn()
 
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockFetch as any,
     })
 
@@ -209,7 +206,7 @@ describe('Fetch error handling', () => {
 
   test('returns a structured error when a successful response has a non-JSON body', async () => {
     const htmlBody = '<html><body>502 Bad Gateway</body></html>'
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockOkResponseWithBody(htmlBody) as any,
     })
 
@@ -221,7 +218,7 @@ describe('Fetch error handling', () => {
   })
 
   test('preserves the real HTTP status instead of reporting a status: 0 network failure', async () => {
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockOkResponseWithBody('upstream connect error') as any,
     })
 
@@ -234,7 +231,7 @@ describe('Fetch error handling', () => {
   })
 
   test('handles a truncated JSON body on a successful response', async () => {
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockOkResponseWithBody('[{"id":1,"name":"tru') as any,
     })
 
@@ -246,7 +243,7 @@ describe('Fetch error handling', () => {
   })
 
   test('rejects with a PostgrestError (not a raw SyntaxError) when throwOnError is set', async () => {
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockOkResponseWithBody('not json') as any,
     })
 

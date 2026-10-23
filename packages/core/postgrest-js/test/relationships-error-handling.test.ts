@@ -1,10 +1,7 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
-import { expectType, TypeEqual } from './types'
-import { SelectQueryError } from '../src/select-query-parser/utils'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 test('join over a 1-1 relation with both nullables and non-nullables fields with no hinting', async () => {
   const res = await postgrest
@@ -42,13 +39,6 @@ test('join over a 1-1 relation with both nullables and non-nullables fields with
       "success": false,
     }
   `)
-  let result: Exclude<typeof res.data, null>
-  let expected: {
-    first_user: SelectQueryError<"Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?">
-    second_user: SelectQueryError<"Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?">
-    third_wheel: SelectQueryError<"Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?">
-  }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('join over a 1-M relation with both nullables and non-nullables fields with no hinting', async () => {
@@ -90,13 +80,6 @@ test('join over a 1-M relation with both nullables and non-nullables fields with
       "success": false,
     }
   `)
-  let result: Exclude<typeof res.data, null>
-  let expected: {
-    first_friend_of: SelectQueryError<"Could not embed because more than one relationship was found for 'best_friends' and 'users' you need to hint the column with best_friends!<columnName> ?">
-    second_friend_of: SelectQueryError<"Could not embed because more than one relationship was found for 'best_friends' and 'users' you need to hint the column with best_friends!<columnName> ?">
-    third_wheel_of: SelectQueryError<"Could not embed because more than one relationship was found for 'best_friends' and 'users' you need to hint the column with best_friends!<columnName> ?">
-  }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('join over a 1-M relation with both nullables and non-nullables fields using no hinting on nested relation', async () => {
@@ -138,18 +121,6 @@ test('join over a 1-M relation with both nullables and non-nullables fields usin
       "success": false,
     }
   `)
-  let result: Exclude<typeof res.data, null>
-  let expected: {
-    first_friend_of: Array<{
-      id: number
-      second_user: string
-      third_wheel: string | null
-      first_user: SelectQueryError<"Could not embed because more than one relationship was found for 'users' and 'best_friends' you need to hint the column with users!<columnName> ?">
-    }>
-    second_friend_of: Array<Database['public']['Tables']['best_friends']['Row']>
-    third_wheel_of: Array<Database['public']['Tables']['best_friends']['Row']>
-  }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('join with same dest twice column hinting', async () => {
@@ -173,11 +144,6 @@ test('join with same dest twice column hinting', async () => {
       "success": false,
     }
   `)
-  let result: Exclude<typeof res.data, null>
-  let expected: {
-    users: SelectQueryError<'table "best_friends" specified more than once use hinting for desambiguation'>
-  }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('nested query with selective fields and inner join should error on non existing relation', async () => {
@@ -203,14 +169,6 @@ test('nested query with selective fields and inner join should error on non exis
       "success": false,
     }
   `)
-  let result: Exclude<typeof res.data, null>
-  let expected: {
-    msgs: {
-      id: number
-      message_details: SelectQueryError<'could not find the relation between messages and message_details'>
-    }[]
-  }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('aggregate on missing column with alias', async () => {
@@ -235,9 +193,6 @@ test('aggregate on missing column with alias', async () => {
       "success": false,
     }
   `)
-  let result: Exclude<typeof res.data, null>
-  let expected: SelectQueryError<`column 'missing_column' does not exist on 'users'.`>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('typecasting and aggregate', async () => {
@@ -263,9 +218,6 @@ test('typecasting and aggregate', async () => {
       "success": false,
     }
   `)
-  let result: Exclude<typeof res.data, null>
-  let expected: SelectQueryError<`column 'users' does not exist on 'messages'.`>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 test('select with aggregate sum function without column should error', async () => {
@@ -285,10 +237,4 @@ test('select with aggregate sum function without column should error', async () 
       "success": false,
     }
   `)
-  let result: Exclude<typeof res.data, null>
-  let expected: {
-    username: string
-    messages: SelectQueryError<"column 'sum' does not exist on 'messages'.">[]
-  }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
