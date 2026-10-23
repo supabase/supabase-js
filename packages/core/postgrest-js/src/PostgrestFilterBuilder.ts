@@ -2039,11 +2039,17 @@ export default class PostgrestFilterBuilder<
    * ```
    */
   filter<const C extends string, const Op extends string, const V, const O extends RefOpts = {}>(
-    column: ColArg<B, C>,
+    // a referencedTable filter column belongs to the embed: not checked against the root
+    column: O extends { referencedTable: string } ? C : ColArg<B, C>,
     operator: Op,
     value: V,
     options?: O
-  ): PostgrestFilterBuilder<B, E, F & Gate<B, OpFacts<B, C> & RefFacts<O>>, M>
+  ): PostgrestFilterBuilder<
+    B,
+    E,
+    F & Gate<B, (O extends { referencedTable: string } ? {} : OpFacts<B, C>) & RefFacts<O>>,
+    M
+  >
   filter(
     column: string,
     operator: string,

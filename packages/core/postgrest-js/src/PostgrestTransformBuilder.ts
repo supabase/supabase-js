@@ -1,5 +1,6 @@
 import PostgrestBuilder from './PostgrestBuilder'
 import type PostgrestFilterBuilder from './PostgrestFilterBuilder'
+import { normalizeSelect } from './normalizeSelect'
 import type { InvalidMethodError } from './PostgrestFilterBuilder'
 import type { Gate, RefFacts } from './types/planner/facts'
 import type { PgrstFeature } from './types/planner/globals'
@@ -88,20 +89,7 @@ export default class PostgrestTransformBuilder<
     F,
     SetM<M, { op: SelOp<B, M, O>; ret: true; count: SelCount<O> }>
   > {
-    // Remove whitespaces except when quoted
-    let quoted = false
-    const cleanedColumns = (columns ?? '*')
-      .split('')
-      .map((c) => {
-        if (/\s/.test(c) && !quoted) {
-          return ''
-        }
-        if (c === '"') {
-          quoted = !quoted
-        }
-        return c
-      })
-      .join('')
+    const cleanedColumns = normalizeSelect(columns ?? '*')
     this.url.searchParams.set('select', cleanedColumns)
     this.headers.append('Prefer', 'return=representation')
     if (options?.count) {

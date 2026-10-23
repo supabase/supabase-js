@@ -1,5 +1,6 @@
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import type { Fetch } from './types/common/common'
+import { normalizeSelect } from './normalizeSelect'
 import type { Descs, MS, Q0, RB, Validate, WB } from './types/planner/lookup'
 import type { MutM, MutOptions, ReadMethod, SelCount, SelectOptions } from './types/planner/options'
 import type { RejectExcessProperties } from './types/types'
@@ -908,20 +909,7 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
     const { head = false, count } = options ?? {}
 
     const method = head ? 'HEAD' : 'GET'
-    // Remove whitespaces except when quoted
-    let quoted = false
-    const cleanedColumns = (columns ?? '*')
-      .split('')
-      .map((c) => {
-        if (/\s/.test(c) && !quoted) {
-          return ''
-        }
-        if (c === '"') {
-          quoted = !quoted
-        }
-        return c
-      })
-      .join('')
+    const cleanedColumns = normalizeSelect(columns ?? '*')
 
     const { url, headers } = this.cloneRequestState()
     url.searchParams.set('select', cleanedColumns)

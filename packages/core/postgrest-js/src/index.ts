@@ -4,6 +4,7 @@ import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
 import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestError from './PostgrestError'
+import { normalizeSelect } from './normalizeSelect'
 
 export {
   PostgrestClient,
@@ -12,6 +13,7 @@ export {
   PostgrestTransformBuilder,
   PostgrestBuilder,
   PostgrestError,
+  normalizeSelect,
 }
 export default {
   PostgrestClient,

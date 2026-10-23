@@ -25,6 +25,11 @@ supabase.from('messages').select('id, channels(id)').eq('channels.slug', 'x')
 // plain columns, dynamic columns and indexed operands are fine
 supabase.from('messages').select('id, channels(id)').eq('channel_id', 1).eq('channels.id', 1)
 supabase.from('messages').select('id, channels(id)').eq('channels.id', 1).eq(cols, 1)
+// a referencedTable filter column belongs to the embed, so it needs no root operand entry
+supabase
+  .from('messages')
+  .select('id, channels(id)')
+  .filter('slug', 'eq', 'x', { referencedTable: 'channels' })
 
 // 8. wrong key set rejected on args
 // @ts-expect-error not indexed by @supabase/postgrest-mapper: no planned call matches this rpc name, argument key set and method
