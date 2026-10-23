@@ -780,8 +780,8 @@ describe('advanced rpc', () => {
   })
 
   test('polymorphic function with bool param', async () => {
+    // @ts-expect-error Type 'boolean' is not assignable to type 'string': only the text overload is callable
     const res = await postgrest.rpc('polymorphic_function_with_different_return', {
-      // @ts-expect-error Type 'boolean' is not assignable to type 'string'
       '': true,
     })
     expect(res).toMatchInlineSnapshot(`
@@ -798,8 +798,8 @@ describe('advanced rpc', () => {
 
   test('polymorphic function with unnamed int param', async () => {
     const res = await postgrest.rpc(
+      // @ts-expect-error PGRST202: a single unnamed integer parameter is not callable
       'polymorphic_function_with_unnamed_integer',
-      // @ts-expect-error PGRST202
       {
         '': 1,
       }
@@ -1052,8 +1052,8 @@ describe('advanced rpc', () => {
   })
 
   test('polymorphic function with unnamed default overload bool param', async () => {
+    // @ts-expect-error Type 'boolean' is not assignable to type 'string': the bool overload is not callable
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default_overload', {
-      // @ts-expect-error Type 'boolean' is not assignable to type 'string'
       '': true,
     })
     let result: Exclude<typeof res.data, null>

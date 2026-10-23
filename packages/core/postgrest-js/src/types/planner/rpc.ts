@@ -1,4 +1,4 @@
-import type { Dynamic, Entry, BS, BState, CallBase, Q0, Unplanned } from './lookup'
+import type { Dynamic, Entry, BS, BState, CallBase, IsAny, Q0, Unplanned, Untyped } from './lookup'
 import type { Strict, UnplannedRpcMessage } from './globals'
 import type { RequestedOf } from './options'
 
@@ -135,16 +135,27 @@ export type AllKeys<A> = A extends unknown ? keyof A & string : never
 export type BaseOfCalls<Calls> = Calls extends Dynamic ? 'one' : CallBase<Calls>
 
 // ---------------------------------------------------------------- rpc (§4.3 RPC)
-export type FnDefs<DB, S extends string> = S extends keyof DB
-  ? DB[S] extends { Functions: infer Fs }
-    ? Fs
-    : {}
-  : {}
-export type RelDefs<DB, S extends string> = S extends keyof DB
-  ? DB[S] extends { Tables: infer T; Views: infer V }
-    ? T & V
-    : {}
-  : {}
+// `any` as the Database is an untyped client: every relation and function name is accepted, rows and results are `any`
+type AnyRelation = { Row: any; Insert: any; Update: any; Relationships: any }
+type AnyFunction = { Args: any; Returns: any }
+export type FnDefs<DB, S extends string> =
+  IsAny<DB> extends true
+    ? { [F: string]: AnyFunction }
+    : S extends keyof DB
+      ? DB[S] extends { Functions: infer Fs }
+        ? Fs
+        : {}
+      : {}
+export type RelDefs<DB, S extends string> =
+  IsAny<DB> extends true
+    ? { [R: string]: AnyRelation }
+    : S extends keyof DB
+      ? DB[S] extends { Tables: infer T; Views: infer V }
+        ? T & V
+        : {}
+      : {}
+// the schema a chain is keyed by: `any` for an untyped client, which marks the chain as untyped (`Untyped`)
+export type SchemaOf<DB, S extends string> = IsAny<DB> extends true ? any : S
 export type FnArgs<DB, S extends string, F extends string> = F extends keyof FnDefs<DB, S>
   ? FnDefs<DB, S>[F] extends { Args: infer X }
     ? X
@@ -178,7 +189,13 @@ export type CallReject<Call> = Call extends { error: infer E extends string }
       : never
     : never
 // no routine information to check the argument values against
-export type Unchecked<Calls> = Unplanned extends Calls ? true : Dynamic extends Calls ? true : false
+export type Unchecked<Calls> = Untyped extends Calls
+  ? true
+  : Unplanned extends Calls
+    ? true
+    : Dynamic extends Calls
+      ? true
+      : false
 // the unprojected row of the matched calls' `source`: the columns a plain-column filter can name
 export type CallRow<Call> = Call extends { source: infer Src }
   ? [Src] extends [never]

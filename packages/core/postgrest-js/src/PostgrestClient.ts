@@ -16,6 +16,7 @@ import type {
   RelDefs,
   RowCalls,
   RpcB,
+  SchemaOf,
   Sent,
   Unchecked,
 } from './types/planner/rpc'
@@ -212,7 +213,7 @@ export default class PostgrestClient<
    */
   from<const R extends string & keyof RelDefs<Database, SchemaName>>(
     relation: R
-  ): PostgrestQueryBuilder<SchemaName, R, RelDefs<Database, SchemaName>[R]>
+  ): PostgrestQueryBuilder<SchemaOf<Database, SchemaName>, R, RelDefs<Database, SchemaName>[R]>
   from(relation: string): PostgrestQueryBuilder<any, any, any> {
     if (!relation || typeof relation !== 'string' || relation.trim() === '') {
       throw new Error('Invalid relation name: relation must be a non-empty string.')
@@ -509,9 +510,9 @@ export default class PostgrestClient<
   >(
     // with no arguments there is no `args` to flag: the rejection lands on the name
     fn: [AllKeys<A>] extends [never]
-      ? [CallReject<CallsOf<SchemaName, F, A, O>>] extends [never]
+      ? [CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>] extends [never]
         ? F
-        : CallReject<CallsOf<SchemaName, F, A, O>>
+        : CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>
       : F,
     // a rest tuple: an optional parameter next to a conditional type would infer A one union member at a time
     ...rest:
@@ -520,24 +521,30 @@ export default class PostgrestClient<
           args: [AllKeys<A>] extends [never]
             ? A
             : [ReadRefusal<A, O>] extends [never]
-              ? [CallReject<CallsOf<SchemaName, F, A, O>>] extends [never]
-                ? Unchecked<CallsOf<SchemaName, F, A, O>> extends true
+              ? [CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>] extends [never]
+                ? Unchecked<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>> extends true
                   ? A
                   : [Sent<A>] extends [FnArgs<Database, SchemaName, F>]
                     ? A
                     : FnArgs<Database, SchemaName, F> // wrong value types: the error points at the offending property
-                : CallReject<CallsOf<SchemaName, F, A, O>>
+                : CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>
               : ReadRefusal<A, O>,
           options?: O,
         ]
   ): PostgrestFilterBuilder<
-    RpcB<SchemaName, F, A, O, CallRow<CallsOf<SchemaName, F, A, O>>>,
-    RpcDesc<RowCalls<CallsOf<SchemaName, F, A, O>, O>, true>,
+    RpcB<
+      SchemaOf<Database, SchemaName>,
+      F,
+      A,
+      O,
+      CallRow<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>
+    >,
+    RpcDesc<RowCalls<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>, O>, true>,
     {},
     MS<
       RpcOp<O>,
       true,
-      BaseOfCalls<CallsOf<SchemaName, F, A, O>>,
+      BaseOfCalls<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>,
       'default',
       'json',
       false,
@@ -548,7 +555,8 @@ export default class PostgrestClient<
   >
   rpc(
     fn: string,
-    args: object = {},
+    // `any`: the overload's `args` is, for the checker's erased signature, also the rejection message
+    args: any = {},
     {
       head = false,
       get = false,

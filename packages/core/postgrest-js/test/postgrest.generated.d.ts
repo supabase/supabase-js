@@ -954,24 +954,6 @@ declare global {
         }
       }
       Functions: {
-        blurb_message: {
-          Args: {
-            '': SupabaseDatabase['public']['Tables']['messages']['Row']
-          }
-          Returns: string | null
-        }
-        created_ago: {
-          Args: {
-            '': SupabaseDatabase['public']['Tables']['users_audit']['Row']
-          }
-          Returns: number | null
-        }
-        days_since_event: {
-          Args: {
-            '': SupabaseDatabase['public']['Tables']['events']['Row']
-          }
-          Returns: number | null
-        }
         describe_remote_user: {
           Args: {
             remote_row: SupabaseDatabase['public']['Views']['remote_users']['Row']
@@ -1151,34 +1133,15 @@ declare global {
           }
           Returns: SupabaseDatabase['public']['Enums']['user_status'] | null
         }
-        polymorphic_function_with_different_return: 
-          | {
-            Args: {
-              '': boolean
-            }
-            Returns: number | null
+        polymorphic_function_with_different_return: {
+          Args: {
+            '': string
           }
-          | {
-            Args: {
-              '': number
-            }
-            Returns: number | null
-          }
-          | {
-            Args: {
-              '': string
-            }
-            Returns: string | null
-          }
+          Returns: string | null
+        }
         polymorphic_function_with_no_params_or_unnamed: 
           | {
             Args: Record<string, never>
-            Returns: number | null
-          }
-          | {
-            Args: {
-              '': boolean
-            }
             Returns: number | null
           }
           | {
@@ -1194,12 +1157,6 @@ declare global {
           }
           | {
             Args: {
-              ''?: number
-            }
-            Returns: number | null
-          }
-          | {
-            Args: {
               ''?: string
             }
             Returns: string | null
@@ -1211,28 +1168,10 @@ declare global {
           }
           | {
             Args: {
-              ''?: boolean
-            }
-            Returns: number | null
-          }
-          | {
-            Args: {
-              ''?: number
-            }
-            Returns: number | null
-          }
-          | {
-            Args: {
               ''?: string
             }
             Returns: string | null
           }
-        polymorphic_function_with_unnamed_integer: {
-          Args: {
-            '': number
-          }
-          Returns: number | null
-        }
         polymorphic_function_with_unnamed_json: {
           Args: {
             '': JsonIn
@@ -1343,38 +1282,6 @@ declare global {
           form: 'single-scalar'
           row: SupabaseDatabase['public']['Enums']['user_status'] | null
           source: never
-        },
-      ]
-    }
-    'f|public|blurb_message|*': {
-      calls: [
-        {
-          keys: ''
-          method: 'POST'
-          error: "PGRST202: Could not find the function public.blurb_message() in the schema cache"
-        },
-        {
-          keys: never
-          method: 'POST'
-          error: "PGRST202: Could not find the function public.blurb_message without parameters in the schema cache"
-        },
-      ]
-    }
-    'f|public|created_ago|*': {
-      calls: [
-        {
-          keys: 'id'
-          method: 'POST'
-          error: "PGRST202: Could not find the function public.created_ago(id) in the schema cache"
-        },
-      ]
-    }
-    'f|public|days_since_event|*': {
-      calls: [
-        {
-          keys: 'id'
-          method: 'POST'
-          error: "PGRST202: Could not find the function public.days_since_event(id) in the schema cache"
         },
       ]
     }
@@ -1793,15 +1700,6 @@ declare global {
         },
       ]
     }
-    'f|public|polymorphic_function_with_unnamed_integer|*': {
-      calls: [
-        {
-          keys: ''
-          method: 'POST'
-          error: "PGRST202: Could not find the function public.polymorphic_function_with_unnamed_integer() in the schema cache Hint: Perhaps you meant to call the function public.polymorphic_function_with_unnamed_text"
-        },
-      ]
-    }
     'f|public|polymorphic_function_with_unnamed_jsonb|*': {
       calls: [
         {
@@ -2133,7 +2031,7 @@ declare global {
       }
     }
     'r|public|messages|id, user:function_returning_single_row(status, username)': {
-      row: { id: SupabaseColumnType<'public.messages.id', number>; user: { status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null; username: SupabaseColumnType<'public.users.username', string> } | null }
+      row: { id: SupabaseColumnType<'public.messages.id', number>; user: { status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null; username: SupabaseColumnType<'public.users.username', string> | null } }
       sources: { id: 'id' }
       embeds: {
         user: { path: ['user']; outputs: [['user']]; join: 'left'; cardinality: 'one' }
@@ -2434,7 +2332,12 @@ declare global {
       }
     }
     'r|public|users|username, messages(channels(count))': {
-      error: "unresolved select item `count`: no column or computed field count on public.channels"
+      row: { username: SupabaseColumnType<'public.users.username', string>; messages: { channels: { count: number } }[] }
+      sources: { username: 'username' }
+      embeds: {
+        messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
+        'messages.channels': { path: ['messages', 'channels']; outputs: [['messages', 'channels']]; join: 'left'; cardinality: 'one' }
+      }
     }
     'r|public|users|username, messages(channels(id.sum()))': {
       row: { username: SupabaseColumnType<'public.users.username', string>; messages: { channels: { sum: number | null } }[] }
@@ -2463,7 +2366,11 @@ declare global {
       }
     }
     'r|public|users|username, messages(count)': {
-      error: "unresolved select item `count`: no column or computed field count on public.messages"
+      row: { username: SupabaseColumnType<'public.users.username', string>; messages: { count: number }[] }
+      sources: { username: 'username' }
+      embeds: {
+        messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
+      }
     }
     'r|public|users|username, messages(id), user_profiles(id)': {
       row: { username: SupabaseColumnType<'public.users.username', string>; messages: { id: SupabaseColumnType<'public.messages.id', number> }[]; user_profiles: { id: SupabaseColumnType<'public.user_profiles.id', number> }[] }
@@ -2527,7 +2434,7 @@ declare global {
       }
     }
     'r|public|users|username, profile:function_using_table_returns(*)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; profile: { id: SupabaseColumnType<'public.user_profiles.id', number>; username: SupabaseColumnType<'public.user_profiles.username', string> | null } | null }
+      row: { username: SupabaseColumnType<'public.users.username', string>; profile: { id: SupabaseColumnType<'public.user_profiles.id', number> | null; username: SupabaseColumnType<'public.user_profiles.username', string> | null } }
       sources: { username: 'username' }
       embeds: {
         profile: { path: ['profile']; outputs: [['profile']]; join: 'left'; cardinality: 'one' }
@@ -2541,7 +2448,7 @@ declare global {
       }
     }
     'r|public|users|username, returns_row:function_using_table_returns(*)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; returns_row: { id: SupabaseColumnType<'public.user_profiles.id', number>; username: SupabaseColumnType<'public.user_profiles.username', string> | null } | null }
+      row: { username: SupabaseColumnType<'public.users.username', string>; returns_row: { id: SupabaseColumnType<'public.user_profiles.id', number> | null; username: SupabaseColumnType<'public.user_profiles.username', string> | null } }
       sources: { username: 'username' }
       embeds: {
         returns_row: { path: ['returns_row']; outputs: [['returns_row']]; join: 'left'; cardinality: 'one' }
@@ -2560,7 +2467,7 @@ declare global {
       embeds: {}
     }
     'r|public|users|username, user_called_profile:get_user_profile(username)': {
-      row: { username: SupabaseColumnType<'public.users.username', string>; user_called_profile: { username: SupabaseColumnType<'public.user_profiles.username', string> | null } | null }
+      row: { username: SupabaseColumnType<'public.users.username', string>; user_called_profile: { username: SupabaseColumnType<'public.user_profiles.username', string> | null } }
       sources: { username: 'username' }
       embeds: {
         user_called_profile: { path: ['user_called_profile']; outputs: [['user_called_profile']]; join: 'left'; cardinality: 'one' }

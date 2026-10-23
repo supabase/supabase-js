@@ -594,11 +594,10 @@ describe('embeded functions select', () => {
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
-        user_called_profile: z
-          .object({
-            username: z.string().nullable(),
-          })
-          .nullable(),
+        // A function returning one composite always yields a row (all fields NULL when nothing matches)
+        user_called_profile: z.object({
+          username: z.string().nullable(),
+        }),
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
@@ -1166,12 +1165,11 @@ describe('embeded functions select', () => {
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
-        user: z
-          .object({
-            status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
-            username: z.string(),
-          })
-          .nullable(),
+        // A function returning one composite always yields a row (all fields NULL when nothing matches)
+        user: z.object({
+          status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
+          username: z.string().nullable(),
+        }),
       })
     )
     let expected: z.infer<typeof ExpectedSchema>
@@ -1374,7 +1372,8 @@ describe('embeded functions select', () => {
       }
     `)
     let result_rpc: Exclude<typeof use_rpc_call.data, null>
-    expectType<TypeEqual<typeof result_rpc, never>>(true)
+    // Computed-field functions are not RPC-callable: the call is rejected and its data is untyped
+    expectType<TypeEqual<typeof result_rpc, unknown>>(true)
   })
   // Test the days_since_event embeded function over partitioned table
   test('select the days_since_event embeded function over partitioned table', async () => {
@@ -1423,6 +1422,7 @@ describe('embeded functions select', () => {
       }
     `)
     let result_rpc: Exclude<typeof use_rpc_call.data, null>
-    expectType<TypeEqual<typeof result_rpc, never>>(true)
+    // Computed-field functions are not RPC-callable: the call is rejected and its data is untyped
+    expectType<TypeEqual<typeof result_rpc, unknown>>(true)
   })
 })

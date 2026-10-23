@@ -68,6 +68,14 @@ export type OKey<B extends BState, Q extends string, C extends string> = `${Key<
 export type Unplanned = { unplanned: true }
 // an rpc whose key set can't be enumerated: nothing to look up, rows unknown
 export type Dynamic = { dynamic: true }
+// the entry of every lookup on an untyped client (`PostgrestClient<any>`): nothing is planned, nothing is rejected
+export type Untyped = { untyped: true }
+
+// `0 extends 1 & T` would fold to `never` early for a `T extends string`: compare for identity with `any` instead
+export type IsAny<T> =
+  (<X>() => X extends T ? 1 : 2) extends <X>() => X extends any ? 1 : 2 ? true : false
+// an untyped client keys its chains by the schema `any` (`SchemaOf`)
+type IsUntyped<B extends BState> = IsAny<B['s']>
 
 // true for `string` and template patterns such as `id,${string}`; false for finite literals
 export type IsDynamic<Q extends string> = Q extends unknown
@@ -120,7 +128,9 @@ export type Resolve<B extends BState, En> = B['k'] extends 'f'
 
 // one entry per member of a literal union of Q (and of schema / relation / possible rpc call)
 export type Entry<B extends BState, Q extends string> = Q extends unknown
-  ? Resolve<B, Stored<Key<B, Q>>>
+  ? IsUntyped<B> extends true
+    ? Untyped
+    : Resolve<B, Stored<Key<B, Q>>>
   : never
 
 // per member of Q: the message that rejects it, or never
@@ -178,37 +188,45 @@ export type CallSources<Call, Star extends boolean> = Call extends { sources: in
     : {}
 export type RpcDesc<En, Star extends boolean = false> = En extends { error: string }
   ? never
-  : En extends Unplanned
-    ? Desc<unknown, {}, {}, 'one'> // the call form is unknown: so is the data
-    : En extends Dynamic
-      ? Desc<unknown>
-      : En extends { row: infer R }
-        ? Desc<R, CallSources<En, Star>, En extends { embeds: infer E } ? E : {}, CallBase<En>>
-        : never
+  : En extends Untyped
+    ? Desc<any, {}, {}, 'one'>
+    : En extends Unplanned
+      ? Desc<unknown, {}, {}, 'one'> // the call form is unknown: so is the data
+      : En extends Dynamic
+        ? Desc<unknown>
+        : En extends { row: infer R }
+          ? Desc<R, CallSources<En, Star>, En extends { embeds: infer E } ? E : {}, CallBase<En>>
+          : never
 
 export type Descs<B extends BState, Q extends string> =
-  true extends IsDynamic<Q>
-    ? Desc<unknown>
-    : Q extends unknown
-      ? B['k'] extends 'f'
-        ? RpcDesc<Entry<B, Q>, Q extends '*' ? true : false>
-        : Q extends '*'
-          ? B['st']
-          : DescOf<Entry<B, Q>>
-      : never
+  IsUntyped<B> extends true
+    ? B['k'] extends 'f'
+      ? Desc<any, {}, {}, 'one'>
+      : Desc<any>
+    : true extends IsDynamic<Q>
+      ? Desc<unknown>
+      : Q extends unknown
+        ? B['k'] extends 'f'
+          ? RpcDesc<Entry<B, Q>, Q extends '*' ? true : false>
+          : Q extends '*'
+            ? B['st']
+            : DescOf<Entry<B, Q>>
+        : never
 
 export type RowOf<Rel> = Rel extends { Row: infer R } ? R : {}
 
 // ---------------------------------------------------------------- §4.3 filter operands
 // on an rpc chain the operand entry is `{ calls }` too, matched by the same dispatch as the call
 export type OperandEntry<B extends BState, C extends string> =
-  true extends IsDynamic<B['q']>
-    ? { type: unknown }
-    : B['q'] extends infer Q extends string
-      ? Q extends unknown
-        ? Resolve<B, StoredOp<OKey<B, Q, C>>>
+  IsUntyped<B> extends true
+    ? { type: any }
+    : true extends IsDynamic<B['q']>
+      ? { type: unknown }
+      : B['q'] extends infer Q extends string
+        ? Q extends unknown
+          ? Resolve<B, StoredOp<OKey<B, Q, C>>>
+          : never
         : never
-      : never
 
 export type ValueOf<B extends BState, C extends string> = C extends keyof B['row']
   ? B['row'][C]

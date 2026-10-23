@@ -13,10 +13,10 @@ const setup = () => {
     headers: new Headers(),
     text: async () => '"ok"',
   })
-  const client = new PostgrestClient(BASE, { fetch: fetchMock as any })
-  // `fn` is not in the schema: the function name and the arguments are cast, the request building is what is tested
+  const client = new PostgrestClient<any>(BASE, { fetch: fetchMock as any })
+  // untyped client: `fn` is not in any schema, the request building is what is tested
   const call = (args: object | undefined, options: { get?: boolean; head?: boolean } = {}) =>
-    client.rpc('fn' as any, args as any, options as any) as any
+    client.rpc('fn', args as any, options) as any
   return { fetchMock, call }
 }
 

@@ -90,7 +90,7 @@ describe('Automatic Retries', () => {
         text: () => Promise.resolve('Cloudflare timeout'),
       })
 
-      const client: any = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const client = new PostgrestClient<any>('http://localhost:3000', { fetch: fetchMock })
       const result = await runWithTimers<any>(client.from('users').insert({ name: 'test' }))
 
       expect(result.error).not.toBeNull()
@@ -251,7 +251,7 @@ describe('Automatic Retries', () => {
           headers: new Headers(),
         })
 
-      const client: any = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const client = new PostgrestClient<any>('http://localhost:3000', { fetch: fetchMock })
       const result = await runWithTimers<any>(client.rpc('my_function', {}, { get: true }))
 
       expect(result.error).toBeNull()
@@ -267,7 +267,7 @@ describe('Automatic Retries', () => {
         text: () => Promise.resolve('Cloudflare timeout'),
       })
 
-      const client: any = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const client = new PostgrestClient<any>('http://localhost:3000', { fetch: fetchMock })
       const result = await runWithTimers<any>(client.rpc('my_function', { arg: 1 }))
 
       expect(result.error).not.toBeNull()
@@ -296,7 +296,7 @@ describe('Automatic Retries', () => {
     it('should NOT retry on network errors for POST requests', async () => {
       fetchMock.mockRejectedValueOnce(new Error('Network error'))
 
-      const client: any = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const client = new PostgrestClient<any>('http://localhost:3000', { fetch: fetchMock })
       const result = await runWithTimers<any>(client.from('users').insert({ name: 'test' }))
 
       expect(result.error).not.toBeNull()
@@ -542,7 +542,7 @@ describe('Automatic Retries', () => {
         text: () => Promise.resolve('Cloudflare timeout'),
       })
 
-      const client: any = new PostgrestClient('http://localhost:3000', {
+      const client = new PostgrestClient<any>('http://localhost:3000', {
         fetch: fetchMock,
         retry: false,
       })
