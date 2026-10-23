@@ -6,18 +6,17 @@ import type { MS } from './types/planner/lookup'
 import type { RpcOp, RpcOptions, SelCount } from './types/planner/options'
 import type {
   AllKeys,
+  ArgsMismatch,
   BaseOfCalls,
   CallReject,
   CallRow,
   CallsOf,
-  FnArgs,
   FnDefs,
   ReadRefusal,
   RelDefs,
   RowCalls,
   RpcB,
   SchemaOf,
-  Sent,
   Unchecked,
 } from './types/planner/rpc'
 import type { RpcDesc } from './types/planner/lookup'
@@ -524,9 +523,9 @@ export default class PostgrestClient<
               ? [CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>] extends [never]
                 ? Unchecked<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>> extends true
                   ? A
-                  : [Sent<A>] extends [FnArgs<Database, SchemaName, F>]
+                  : [ArgsMismatch<A, FnDefs<Database, SchemaName>[F]>] extends [never]
                     ? A
-                    : FnArgs<Database, SchemaName, F> // wrong value types: the error points at the offending property
+                    : ArgsMismatch<A, FnDefs<Database, SchemaName>[F]> // wrong value types: the error points at the offending property
                 : CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>
               : ReadRefusal<A, O>,
           options?: O,

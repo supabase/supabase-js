@@ -156,11 +156,33 @@ export type RelDefs<DB, S extends string> =
       : {}
 // the schema a chain is keyed by: `any` for an untyped client, which marks the chain as untyped (`Untyped`)
 export type SchemaOf<DB, S extends string> = IsAny<DB> extends true ? any : S
-export type FnArgs<DB, S extends string, F extends string> = F extends keyof FnDefs<DB, S>
-  ? FnDefs<DB, S>[F] extends { Args: infer X }
+// The values are checked against the overloads PostgREST can pick for the argument names (`findProc`): the required
+// parameters are all sent and nothing else is, so required <= keys <= all parameters. Never against another overload
+// that structurally accepts the object with extra keys. A zero-argument function is `Record<string, never>`: no names.
+type ParamNames<X> = string extends keyof X ? never : keyof X & string
+type RequiredNames<X> = string extends keyof X
+  ? never
+  : { [K in keyof X & string]-?: {} extends Pick<X, K> ? never : K }[keyof X & string]
+// the Args of the overloads (`Defs` is the union of the function's definitions) that fit the argument object `A`
+export type FitArgs<A, Defs> = Defs extends { Args: infer X }
+  ? [SureKeys<A>] extends [ParamNames<X>]
+    ? [RequiredNames<X>] extends [SureKeys<A> | MaybeKeys<A>]
+      ? X
+      : never
+    : never
+  : never
+// no overload fits (a key set the planner placed some other way, such as the unnamed parameter): every overload
+export type ArgsFor<A, Defs> = [FitArgs<A, Defs>] extends [never]
+  ? Defs extends { Args: infer X }
     ? X
-    : {}
-  : {}
+    : never
+  : FitArgs<A, Defs>
+// per member of an argument union: its own expected Args when its sent values don't fit them
+export type ArgsMismatch<A, Defs> = A extends unknown
+  ? [Sent<A>] extends [ArgsFor<A, Defs>]
+    ? never
+    : ArgsFor<A, Defs>
+  : never
 export type RpcB<S extends string, F extends string, A, O, Row = {}> = BS<
   'f',
   S,

@@ -118,6 +118,14 @@ declare global {
         sorted: { Args: { sort_order: number }; Returns: string }
         colors: { Args: { color: number; ordered: number }; Returns: string }
         post_only: { Args: { n: number }; Returns: string }
+        // overloads told apart by their argument names: PostgREST picks one by the key set, never by the values
+        by_names:
+          | { Args: { a: string }; Returns: string }
+          | { Args: { a: number; b: number }; Returns: string }
+        // optional parameters: required <= keys <= all
+        by_optional:
+          | { Args: { c: number; d?: number }; Returns: string }
+          | { Args: { e: string }; Returns: string }
         postgrest_unresolvable_function:
           | { Args: { a: string }; Returns: undefined }
           | { Args: { a: number }; Returns: undefined }
@@ -278,6 +286,47 @@ declare global {
       sources: { id: 'id' }
       embeds: {
         messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
+      }
+    }
+
+    // ---- three levels: the nullability walk goes through inner joins and stops at a to-many
+    'r|public|messages|id, channels(id, channel_details(id))': {
+      row: { id: number; channels: { id: number; channel_details: { id: number } } }
+      sources: { id: 'id' }
+      embeds: {
+        channels: { path: ['channels']; outputs: [['channels']]; join: 'left'; cardinality: 'one' }
+        'channels.channel_details': {
+          path: ['channels', 'channel_details']
+          outputs: [['channels', 'channel_details']]
+          join: 'left'
+          cardinality: 'one'
+        }
+      }
+    }
+    'r|public|messages|id, channels(id, channel_details!inner(id))': {
+      row: { id: number; channels: { id: number; channel_details: { id: number } } }
+      sources: { id: 'id' }
+      embeds: {
+        channels: { path: ['channels']; outputs: [['channels']]; join: 'left'; cardinality: 'one' }
+        'channels.channel_details': {
+          path: ['channels', 'channel_details']
+          outputs: [['channels', 'channel_details']]
+          join: 'inner'
+          cardinality: 'one'
+        }
+      }
+    }
+    'r|public|users|username, messages(id, channels!inner(id))': {
+      row: { username: string; messages: { id: number; channels: { id: number } }[] }
+      sources: { username: 'username' }
+      embeds: {
+        messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
+        'messages.channels': {
+          path: ['messages', 'channels']
+          outputs: [['messages', 'channels']]
+          join: 'inner'
+          cardinality: 'one'
+        }
       }
     }
 
@@ -538,6 +587,19 @@ declare global {
         },
       ]
     }
+    'f|public|by_names|*': {
+      calls: [
+        { keys: 'a'; method: 'POST'; form: 'single-scalar'; row: 'one'; source: never },
+        { keys: 'a' | 'b'; method: 'POST'; form: 'single-scalar'; row: 'two'; source: never },
+      ]
+    }
+    'f|public|by_optional|*': {
+      calls: [
+        { keys: 'c'; method: 'POST'; form: 'single-scalar'; row: 'c'; source: never },
+        { keys: 'c' | 'd'; method: 'POST'; form: 'single-scalar'; row: 'cd'; source: never },
+        { keys: 'e'; method: 'POST'; form: 'single-scalar'; row: 'e'; source: never },
+      ]
+    }
     // planned for POST only: the exact method decides, so `{ get: true }` is unplanned
     'f|public|post_only|*': {
       calls: [{ keys: 'n'; method: 'POST'; form: 'single-scalar'; row: 'post'; source: never }]
@@ -600,6 +662,23 @@ declare global {
     'r|public|users|username, messages(id, channels(id))|messages.id': {
       type: number
       embed: ['messages']
+    }
+    'r|public|messages|id, channels(id, channel_details(id))|channels.channel_details.id': {
+      type: number
+      embed: ['channels', 'channel_details']
+    }
+    // an embed filter: the mapper names the tested embed itself
+    'r|public|messages|id, channels(id, channel_details(id))|channels.channel_details': {
+      type: unknown
+      embed: ['channels', 'channel_details']
+    }
+    'r|public|messages|id, channels(id, channel_details!inner(id))|channels.channel_details.id': {
+      type: number
+      embed: ['channels', 'channel_details']
+    }
+    'r|public|users|username, messages(id, channels!inner(id))|messages.channels.id': {
+      type: number
+      embed: ['messages', 'channels']
     }
     // the embed itself (`.not('channels', 'is', null)`)
     'r|public|messages|id, channels(id)|channels': { type: unknown; embed: ['channels'] }

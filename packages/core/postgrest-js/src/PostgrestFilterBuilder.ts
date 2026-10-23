@@ -7,6 +7,7 @@ import type {
   ColFact,
   EqFact,
   RefFacts,
+  HasRef,
 } from './types/planner/facts'
 import type { BState, ColArg, MState, ValueOf } from './types/planner/lookup'
 import type { RefOpts } from './types/planner/options'
@@ -2033,7 +2034,7 @@ export default class PostgrestFilterBuilder<
    */
   filter<const C extends string, const Op extends string, const V, const O extends RefOpts = {}>(
     // a referencedTable filter column belongs to the embed: not checked against the root
-    column: O extends { referencedTable: string } ? C : ColArg<B, C>,
+    column: HasRef<O> extends true ? C : ColArg<B, C>,
     operator: Op,
     value: V,
     options?: O

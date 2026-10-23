@@ -18,6 +18,26 @@ export type EmbedPathOf<B extends BState, C extends string> =
       : never
     : never
 
+// the path without its last segment: the embed a nested embed lives in (`never` at the root)
+export type Init<T extends readonly string[]> = T extends readonly [
+  ...infer H extends string[],
+  string,
+]
+  ? Join<H>
+  : never
+
+// An embed filter (`.not('channels.channel_details', 'is', null)`) names the tested embed itself as the entry's
+// `embed`. Its predicate runs inside the embed it is written under, so that enclosing embed is the one a failing
+// row takes down with it.
+export type EnclosingOf<B extends BState, C extends string> =
+  OperandEntry<B, C> extends infer En
+    ? En extends { embed: infer P extends readonly string[] }
+      ? [Join<P>] extends [C]
+        ? Init<P>
+        : never
+      : never
+    : never
+
 // facts on reads (GET / HEAD) and rpc (the filters constrain the returned rows); mutation filters constrain the old row
 export type Gate<B extends BState, X> = B['k'] extends 'w' ? {} : X
 
@@ -55,7 +75,9 @@ export type OpFacts<B extends BState, C extends string> =
         ? { wide: true }
         : Dynamic extends OperandEntry<B, C>
           ? { wide: true }
-          : { embeds: { [P in EmbedPathOf<B, C>]: { widen: true } } }
+          : {
+              embeds: { [P in EmbedPathOf<B, C> | EnclosingOf<B, C>]: { widen: true } }
+            }
 
 type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (
   x: infer I
@@ -74,16 +96,24 @@ export type NotNullFact<B extends BState, C extends string> =
       ? { cols: { [P in C]: {} } }
       : { embeds: { [P in EmbedPathOf<B, C> & C]: { nn: true } } }
 
-// a literal widens that embed, a non-literal one (or a possibly-present one) can be any: widen them all
-export type RefFacts<O> = 'referencedTable' extends keyof O
+// the tables an option may name: `never` when it is absent (or only ever `undefined`), like the runtime's truthiness check
+export type RefTables<O> = 'referencedTable' extends keyof O
   ? Exclude<O['referencedTable' & keyof O], undefined> extends infer T extends string
+    ? T
+    : never
+  : never
+// the option may name an embed: its column belongs to that embed, not to the root
+export type HasRef<O> = [RefTables<O>] extends [never] ? false : true
+
+// a literal widens that embed, a non-literal one (or a possibly-present one) can be any: widen them all
+export type RefFacts<O> =
+  RefTables<O> extends infer T extends string
     ? [T] extends [never]
       ? {}
       : string extends T
         ? { wide: true }
         : { embeds: { [P in T]: { widen: true } } }
     : {}
-  : {}
 
 export type Cols<F> = F extends { cols: infer C } ? C : {}
 export type EmbedFactsOf<F, K> = F extends { embeds: infer Em }
@@ -147,10 +177,35 @@ export type FieldFact<V, K, S, E, OM, F, W> = K extends keyof S
     : V
   : EmbedField<V, E, OM, F, K, W>
 
+// A `widen` fact is recorded on the embed path a filter names. The embed that actually turns null is the nearest
+// left-joined to-one at or above it: the walk goes up through `!inner` joins (removing an inner-joined row removes its
+// parent) and stops at a to-many (which loses elements, not its parent) or at the root.
+export type Land<E, P> = P extends keyof E
+  ? E[P] extends { cardinality: 'many' }
+    ? never
+    : E[P] extends { join: 'inner'; path: infer Pa extends readonly string[] }
+      ? Land<E, Init<Pa>>
+      : P
+  : never
+
+type KeysWith<Em, T> = { [K in keyof Em]: Em[K] extends T ? K : never }[keyof Em]
+
+// the facts as the response applies them: `widen` on the embeds the walk lands on, `nn` where it was recorded
+export type ResolveFacts<E, F> = F extends { embeds: infer Em }
+  ? (F extends { cols: infer C } ? { cols: C } : {}) &
+      (F extends { wide: true } ? { wide: true } : {}) & {
+        embeds: { [K in Land<E, KeysWith<Em, { widen: true }>>]: { widen: true } } & {
+          [K in KeysWith<Em, { nn: true }>]: { nn: true }
+        }
+      }
+  : F
+
 export type ApplyFacts<D, F> = D extends { row: infer R; sources: infer S; embeds: infer E }
   ? keyof F extends never
     ? R
     : R extends object
-      ? { [K in keyof R]: FieldFact<R[K], K, S, E, OutMap<E>, F, NeedsWalk<F>> }
+      ? ResolveFacts<E, F> extends infer Fx
+        ? { [K in keyof R]: FieldFact<R[K], K, S, E, OutMap<E>, Fx, NeedsWalk<Fx>> }
+        : never
       : R
   : never
