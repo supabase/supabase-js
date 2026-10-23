@@ -429,15 +429,14 @@ test('select JSON accessor', async () => {
   `)
   let result: Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
-    bar: z.unknown(),
+    bar: z.object({ nested: z.string() }),
     baz: z.string(),
   })
-  // `users.data` is typed as CustomUserDataType by the column override (column-types.ts), whose `foo`
-  // is a string: a path through it (`->bar`, `->>baz`) can only be `null` for the planner, even if the
-  // seeded jsonuser row stores an object there.
+  // `users.data` is typed by the column override (column-types.ts), so the paths follow its shape;
+  // a JSON path is nullable because the key may be missing from a row.
   let expected: {
-    bar: null
-    baz: null
+    bar: { nested: string } | null
+    baz: string | null
   }
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)

@@ -1,7 +1,10 @@
 import { z } from 'zod'
 
 export const CustomUserDataTypeSchema = z.object({
-  foo: z.string(),
+  foo: z.object({
+    bar: z.object({ nested: z.string() }),
+    baz: z.string(),
+  }),
   bar: z.object({
     baz: z.number(),
   }),
