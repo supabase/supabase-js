@@ -22,6 +22,7 @@ import type {
 import type { RpcDesc } from './types/planner/lookup'
 import PostgrestError from './PostgrestError'
 import { fetchWithRetry } from './fetchWithRetry'
+import { rpcReadRefusal } from './rpcReadRefusal'
 import type {
   PostgrestOpenApiSpec,
   PostgrestResponseFailure,
@@ -330,13 +331,22 @@ export default class PostgrestClient<
   /**
    * Perform a function call.
    *
+   * The request is a `POST` by default, a `GET` with `get: true` and a `HEAD` with `head: true` (`head` wins over
+   * `get`). The method never changes on its own. `GET` and `HEAD` run the function in a read-only transaction and
+   * send the arguments in the query string, so a request the query string can't carry faithfully is refused
+   * client-side, before any network call: the result is `{ data: null, error }` with a `PostgrestError` whose `code`
+   * is `PGRSTJS01` (it throws instead after `.throwOnError()`). That covers a reserved key (`select`, `columns`,
+   * `on_conflict`, or a key ending in `.order`, `.limit`, `.offset`, `.and` or `.or`), an object value (or an array
+   * containing one), and a string value PostgREST would read as a filter (such as `'eq.x'` or `'in.(1,2)'`). Use
+   * `POST` for those.
+   *
    * @param fn - The function name to call
    * @param args - The arguments to pass to the function call
    * @param options - Named parameters
-   * @param options.head - When set to `true`, `data` will not be returned.
+   * @param options.head - When set to `true`, the function is called with `HEAD`: `data` will not be returned.
    * Useful if you only need the count.
-   * @param options.get - When set to `true`, the function will be called with
-   * read-only access mode.
+   * @param options.get - When set to `true`, the function is called with `GET`, which gives it read-only access
+   * mode.
    * @param options.count - Count algorithm to use to count rows returned by the
    * function. Only applicable for [set-returning
    * functions](https://www.postgresql.org/docs/current/functions-srf.html).
@@ -549,18 +559,15 @@ export default class PostgrestClient<
       count?: 'exact' | 'planned' | 'estimated'
     } = {}
   ): any {
-    let method: 'HEAD' | 'GET' | 'POST'
+    // never switches method on its own: `head` wins over `get`, and arguments the query string can't carry are refused
+    const method: 'HEAD' | 'GET' | 'POST' = head ? 'HEAD' : get ? 'GET' : 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
-    // objects/arrays-of-objects can't be serialized to URL params, use POST + return=minimal instead
-    const _isObject = (v: unknown): boolean =>
-      v !== null && typeof v === 'object' && (!Array.isArray(v) || v.some(_isObject))
-    const _hasObjectArg = head && Object.values(args as object).some(_isObject)
-    if (_hasObjectArg) {
-      method = 'POST'
+    let clientError: PostgrestError | undefined
+    if (method === 'POST') {
       body = args
-    } else if (head || get) {
-      method = head ? 'HEAD' : 'GET'
+    } else {
+      clientError = rpcReadRefusal(args) ?? undefined
       Object.entries(args)
         // params with undefined value needs to be filtered out, otherwise it'll
         // show up as `?param=undefined`
@@ -570,15 +577,10 @@ export default class PostgrestClient<
         .forEach(([name, value]) => {
           url.searchParams.append(name, value)
         })
-    } else {
-      method = 'POST'
-      body = args
     }
 
     const headers = new Headers(this.headers)
-    if (_hasObjectArg) {
-      headers.set('Prefer', count ? `count=${count},return=minimal` : 'return=minimal')
-    } else if (count) {
+    if (count) {
       headers.set('Prefer', `count=${count}`)
     }
 
@@ -591,6 +593,7 @@ export default class PostgrestClient<
       fetch: this.fetch ?? fetch,
       urlLengthLimit: this.urlLengthLimit,
       retry: this.retry,
+      clientError,
     })
   }
 }

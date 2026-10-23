@@ -33,7 +33,8 @@ export type Sent<A> = A extends unknown
 // The runtime refuses such a request client-side, so the argument check rejects what the types prove it would refuse:
 // - a value that is certainly an object (a non-null object, or an array whose elements are certainly objects);
 // - a string literal that starts with an operator expression (upstream's grammar as a finite template-literal union,
-//   not a parser; a plain `string` is accepted and checked at run time);
+//   not a parser; a plain `string` is accepted and checked at run time). `OpName` mirrors `RPC_READ_OPERATOR_PATTERN`
+//   in `src/rpcReadRefusal.ts`, which is the runtime's source of truth with the reserved keys; keep them in sync;
 // - a reserved key: `select`, `columns`, `on_conflict`, or one whose last `.`-separated segment is `order`, `limit`,
 //   `offset`, `and` or `or` (`x.limit` is, `color` isn't). Only literal keys.
 // Maybe-keys are checked too, on the value type without `undefined`: whenever one is sent the runtime refuses.

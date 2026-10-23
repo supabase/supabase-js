@@ -22,6 +22,8 @@ export default abstract class PostgrestBuilder<
   protected isMaybeSingle: boolean
   protected shouldStripNulls: boolean
   protected urlLengthLimit: number
+  // a request refused before sending: `then` settles with it and never calls fetch
+  protected clientError?: PostgrestError
 
   // Retry configuration - enabled by default
   protected retryEnabled: boolean = true
@@ -63,6 +65,7 @@ export default abstract class PostgrestBuilder<
     urlLengthLimit?: number
     // Retry option
     retry?: boolean
+    clientError?: PostgrestError
   }) {
     this.method = builder.method
     this.url = builder.url
@@ -75,6 +78,7 @@ export default abstract class PostgrestBuilder<
     this.shouldStripNulls = builder.shouldStripNulls ?? false
     this.urlLengthLimit = builder.urlLengthLimit ?? 8000
     this.retryEnabled = builder.retry ?? true
+    this.clientError = builder.clientError
 
     if (builder.fetch) {
       this.fetch = builder.fetch
@@ -207,6 +211,20 @@ export default abstract class PostgrestBuilder<
     onfulfilled?: ((value: Res<E, F, M>) => TResult1 | PromiseLike<TResult1>) | undefined | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
   ): PromiseLike<TResult1 | TResult2> {
+    if (this.clientError) {
+      const refused: Promise<any> = this.shouldThrowOnError
+        ? Promise.reject(this.clientError)
+        : Promise.resolve({
+            success: false as const,
+            error: this.clientError,
+            data: null,
+            count: null,
+            status: 0,
+            statusText: '',
+          })
+      return (refused as Promise<Res<E, F, M>>).then(onfulfilled, onrejected)
+    }
+
     // https://postgrest.org/en/stable/api.html#switching-schemas
     if (this.schema === undefined) {
       // skip
