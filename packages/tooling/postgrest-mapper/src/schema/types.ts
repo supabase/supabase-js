@@ -66,6 +66,11 @@ export interface SupplementaryFunction {
   source: string | null
   /** Names of the input arguments, aligned with `argTypes` (`''` for an unnamed one); null when none is named */
   argNames: string[] | null
+  /**
+   * The value of the function's own `SET search_path` (`proconfig`), as PostgreSQL stores it: identifiers separated by
+   * commas, quoted where needed. null when the function sets none and runs along the search path of the request.
+   */
+  searchPath: string | null
 }
 
 /** The planner's view of a function (a computed-field candidate): the mapper-only keys are not read for these. */

@@ -83,6 +83,8 @@ const fn = (
   language: 'sql',
   source: null,
   argNames: argTypes.map((_, i) => `a${i}`),
+  defaults: 0,
+  searchPath: null,
 })
 
 function printed(

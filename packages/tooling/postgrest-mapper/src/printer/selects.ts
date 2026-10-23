@@ -303,9 +303,7 @@ class ShapePrinter {
     }
     if (prov.kind === 'outColumn' || prov.kind === 'compositeAttribute') {
       // the rows of a function the trace of its body covers: a traced stored column keeps its identity
-      const traced = root
-        ? this.traced(prov.kind === 'outColumn' ? prov.column : prov.attribute)
-        : undefined
+      const traced = root ? this.tracedOf(prov) : undefined
       if (traced) {
         const nullable = this.rowNullable(traced)
         const origin = traced.source
@@ -337,6 +335,12 @@ class ShapePrinter {
         const derived = this.derived(k.key, field.pgType, bypass)
         return `SupabaseColumnType<${quote(k.key)}, ${derived}>${field.nullable ? ' | null' : ''}`
       }
+      const origin = root ? this.tracedOf(prov.of)?.source : undefined
+      if (origin) {
+        const key = `${origin.schema}.${origin.relation}.${origin.column}`
+        const derived = this.derived(key, field.pgType, !this.isJson(field.pgType))
+        return `SupabaseColumnType<${quote(key)}, ${derived}>${field.nullable ? ' | null' : ''}`
+      }
       if (prov.of.kind === 'jsonPath') {
         const path = this.jsonPath(prov.of, root)
         if (path !== undefined) return path
@@ -350,6 +354,15 @@ class ShapePrinter {
   /** What the trace of the function body says about its output column, when there is a trace and the field is of the root. */
   private traced(column: string): TracedColumn | undefined {
     return this.rows ? (this.rows.columns.get(column) ?? { nullable: true }) : undefined
+  }
+
+  /** The verdict of the trace for an `OUT` column or composite attribute of the rows of a function, when there is one */
+  private tracedOf(prov: FieldProvenance): TracedColumn | undefined {
+    return prov.kind === 'outColumn'
+      ? this.traced(prov.column)
+      : prov.kind === 'compositeAttribute'
+        ? this.traced(prov.attribute)
+        : undefined
   }
 
   /** A single composite can be a null one, expanded to a row of nulls: every field of it is nullable whatever the trace says. */
@@ -388,14 +401,25 @@ class ShapePrinter {
     prov: Extract<FieldProvenance, { kind: 'jsonPath' }>,
     root: boolean
   ): string | undefined {
-    if (prov.of.kind !== 'plain' || prov.path.length === 0) return undefined
-    const source = prov.of.source
+    if (prov.path.length === 0) return undefined
+    const base = prov.of
+    let source: { schema: string; relation: string; column: string }
+    let stored: typeof source | undefined
+    let bypass = false
+    if (base.kind === 'plain') {
+      source = base.source
+      const functionRows = base.functionRows === true
+      stored = root && functionRows ? this.traced(source.column)?.source : undefined
+      bypass = functionRows && stored === undefined
+    } else {
+      // an `OUT` column or composite attribute of the rows of a function: only the column the trace found is known
+      stored = root ? this.tracedOf(base)?.source : undefined
+      if (!stored) return undefined
+      source = stored
+    }
     const star = this.context.plans.get(relationKey(source.schema, source.relation))
     const column = star?.find((f) => f.name === source.column)
-    const functionRows = prov.of.functionRows === true
-    const stored = root && functionRows ? this.traced(source.column)?.source : undefined
     const k = this.columnKey(source, stored)
-    const bypass = functionRows && stored === undefined
     const columnType = `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, column?.pgType ?? 'jsonb', bypass)}>`
     const steps = prov.path.map((s) => ('key' in s ? s.key : String(s.index)))
     const last = prov.path[prov.path.length - 1]!

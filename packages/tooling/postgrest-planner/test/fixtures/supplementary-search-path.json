@@ -2599,6 +2599,29 @@
             "volatility": "i"
         },
         {
+            "name": "users_payload_and_name",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "record",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": [
+                {
+                    "name": "payload",
+                    "type": "jsonb"
+                },
+                {
+                    "name": "name",
+                    "type": "text"
+                }
+            ],
+            "volatility": "s"
+        },
+        {
             "name": "void_func",
             "schema": "public",
             "returns": {

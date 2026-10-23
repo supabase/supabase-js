@@ -239,6 +239,7 @@ export async function planDatabase(
   const functions = new Map<string, TracedFunction[]>()
   for (const f of buildFunctionTraceInputs(supplementary, {
     searchPath: extraSearchPath(acquired.config),
+    exposedSchemas: exposedSchemas(acquired.config),
   })) {
     const fn = f.function
     // a scalar has no rows to read

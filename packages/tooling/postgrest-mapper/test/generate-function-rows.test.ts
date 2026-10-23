@@ -164,3 +164,21 @@ describe('the to-one embeds of the rows of a function', () => {
     expect(row).toContain("id: SupabaseColumnType<'public.messages.id', number>;")
   }, 180_000)
 })
+
+describe('a JSON path or an aggregate over a column of the rows of a function', () => {
+  const SELECT = 'kind:payload->>kind, name.max()'
+  const KEY = `f|public|users_payload_and_name|${SELECT}`
+  const SOURCE = `supabase.rpc('users_payload_and_name').select('${SELECT}')`
+
+  it('keeps the stored column the body passes through, so its JSON Schema and overrides apply', async () => {
+    const text = await declarationsOf(SOURCE, withThemeCheck())
+    const row = rowOf(text, KEY)
+    expect(row).toMatch(
+      /PgrstJsonText<SupabaseColumnType<'public\.users\.data', [^>]*'light' \| 'dark'[^>]*>, \['kind'\]>/
+    )
+    expect(row).toContain("max: SupabaseColumnType<'public.users.username', string> | null")
+    expect(typecheckConsumer({ files: { 'db.d.ts': text } }).byFile.get('db.d.ts') ?? []).toEqual(
+      []
+    )
+  }, 180_000)
+})

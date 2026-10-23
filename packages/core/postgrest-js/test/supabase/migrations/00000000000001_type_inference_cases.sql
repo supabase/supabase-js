@@ -362,6 +362,10 @@ RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
 -- domain of that name is what `::_integer` means.
 CREATE DOMAIN public._integer AS text;
 
+-- the traced columns of a SQL function read under a JSON path and an aggregate
+CREATE FUNCTION public.users_payload_and_name()
+RETURNS TABLE(payload jsonb, name text) LANGUAGE sql STABLE AS $$ SELECT data, username FROM public.users; $$;
+
 GRANT ALL ON public.default_arg_cases TO anon, authenticated, service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION extensions.da_default_first(public.default_arg_cases), extensions.da_exact_first(public.default_arg_cases, integer), extensions.da_required(public.default_arg_cases), extensions.da_partial(public.default_arg_cases) TO anon, authenticated, service_role;

@@ -103,6 +103,8 @@ select jsonb_build_object(
                     end,
       'language', l.lanname,
       'source', case when l.lanname = 'sql' and p.prosrc <> '' then p.prosrc end,
+      -- the value of the function's own SET search_path as stored (mapper-only: its body runs along it)
+      'searchPath', (select substr(c, length('search_path=') + 1) from unnest(p.proconfig) c where c like 'search_path=%'),
       'argNames', case when p.proargnames is null then null
                        when p.proargmodes is null then to_jsonb(p.proargnames)
                        else (select coalesce(jsonb_agg(coalesce(p.proargnames[i], '') order by i), '[]')

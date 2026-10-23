@@ -212,6 +212,8 @@ describe('catalog builders', () => {
       language,
       source,
       argNames,
+      defaults: 0,
+      searchPath: null,
     }
   }
 

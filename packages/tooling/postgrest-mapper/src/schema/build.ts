@@ -23,6 +23,11 @@ function toCatalogRelation(r: SupplementaryRelation): CatalogRelation {
 export interface BuildTraceCatalogOptions {
   /** Schemas searched, in order, for an unqualified name (function bodies). Defaults to `['public']`. */
   searchPath?: string[]
+  /**
+   * The exposed schemas (`db-schemas`), the ones whose relations the catalog lists completely. Read by
+   * `buildFunctionTraceInputs` for a function that sets its own `search_path`. Defaults to the schemas of `relations`.
+   */
+  exposedSchemas?: string[]
 }
 
 /**
@@ -41,9 +46,61 @@ export function buildTraceCatalog(
 }
 
 /**
+ * The schemas a body can resolve a relation name in, in order, for a function that sets its own `search_path`:
+ * `value` is split the way PostgreSQL splits it (comma separated identifiers, a quoted one kept as written with
+ * `""` for a quote, an unquoted one folded to lower case). `pg_catalog` is dropped: it holds no relation the tracer
+ * reads. The list ends before the first schema the catalog does not list completely (one that is not `exposed`):
+ * a relation of that schema could take the name, so nothing after it is sound. `undefined` when the path cannot be
+ * resolved statically (`$user`, a temporary schema) or does not parse: the function is not traced then.
+ */
+function ownSearchPath(value: string, exposed: ReadonlySet<string>): string[] | undefined {
+  const names: string[] = []
+  let i = 0
+  const n = value.length
+  const blank = (c: string | undefined): boolean =>
+    c === ' ' || c === '\t' || c === '\n' || c === '\r'
+  for (;;) {
+    while (blank(value[i])) i++
+    let name = ''
+    if (value[i] === '"') {
+      i++
+      for (;;) {
+        if (i >= n) return undefined
+        if (value[i] === '"') {
+          if (value[i + 1] !== '"') break
+          i++
+        }
+        name += value[i++]
+      }
+      i++
+    } else {
+      const start = i
+      while (i < n && value[i] !== ',' && !blank(value[i])) i++
+      if (i === start) return undefined
+      name = value.slice(start, i).replace(/[A-Z]/g, (c) => c.toLowerCase())
+    }
+    names.push(name)
+    while (blank(value[i])) i++
+    if (i >= n) break
+    if (value[i] !== ',') return undefined
+    i++
+  }
+  if (names.some((x) => x === '$user' || x === 'pg_temp' || /^pg_temp_\d+$/.test(x)))
+    return undefined
+  const path: string[] = []
+  for (const name of names) {
+    if (name === 'pg_catalog') continue
+    if (!exposed.has(name)) break
+    if (!path.includes(name)) path.push(name)
+  }
+  return path
+}
+
+/**
  * One tracer input per single-body `LANGUAGE sql` function of the exposed schemas: its body, its output column
  * names (OUT / `RETURNS TABLE` columns, the attributes of a composite return type, or the function's own name for a
- * scalar) and its parameter names. The search path of a function is its own schema followed by `searchPath`.
+ * scalar) and its parameter names. The search path of a function is its own schema followed by `searchPath`, or the one
+ * its own `SET search_path` names (`ownSearchPath`).
  */
 export function buildFunctionTraceInputs(
   supplementary: Supplementary,
@@ -56,6 +113,10 @@ export function buildFunctionTraceInputs(
   input: TraceInput
 }[] {
   const base = options.searchPath ?? ['public']
+  const exposed = new Set(
+    options.exposedSchemas ??
+      [...supplementary.relations, ...supplementary.referencedRelations].map((r) => r.schema)
+  )
   const composites = new Map(
     supplementary.composites.map((c) => [`${c.schema}.${c.name}`, c.attributes.map((a) => a.name)])
   )
@@ -74,7 +135,12 @@ export function buildFunctionTraceInputs(
       (fn.returns.kind === 'composite'
         ? (composites.get(fn.returns.type) ?? relations.get(fn.returns.type))
         : undefined) ?? [fn.name]
-    const searchPath = [fn.schema, ...base.filter((s) => s !== fn.schema)]
+    let searchPath = [fn.schema, ...base.filter((s) => s !== fn.schema)]
+    if (fn.searchPath != null) {
+      const own = ownSearchPath(fn.searchPath, exposed)
+      if (!own) continue
+      searchPath = own
+    }
     const catalogKey = JSON.stringify(searchPath)
     let catalog = catalogs.get(catalogKey)
     if (!catalog) {

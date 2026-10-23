@@ -347,6 +347,7 @@
           "type": "jsonb"
         },
         "schema": "graphql_public",
+        "searchPath": null,
         "source": null,
         "volatility": "v"
       },
@@ -365,6 +366,7 @@
           "type": "integer"
         },
         "schema": "personal",
+        "searchPath": null,
         "source": " SELECT 1; ",
         "volatility": "i"
       },
@@ -383,6 +385,7 @@
           "type": "integer"
         },
         "schema": "personal",
+        "searchPath": null,
         "source": " SELECT 1; ",
         "volatility": "i"
       },
@@ -403,6 +406,7 @@
           "type": "public.user_status"
         },
         "schema": "personal",
+        "searchPath": null,
         "source": "\n  SELECT status from users WHERE username=name_param;\n",
         "volatility": "i"
       },
@@ -421,6 +425,7 @@
           "type": "integer"
         },
         "schema": "personal",
+        "searchPath": null,
         "source": " SELECT 1; ",
         "volatility": "i"
       },
@@ -441,6 +446,7 @@
           "type": "text"
         },
         "schema": "personal",
+        "searchPath": null,
         "source": "\n  SELECT upper(user_row.username);\n",
         "volatility": "s"
       },
@@ -461,6 +467,7 @@
           "type": "public.item_amount"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT item.qty;\n",
         "volatility": "s"
       },
@@ -479,6 +486,7 @@
           "type": "public.\"Amount\""
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 1::public.\"Amount\"; ",
         "volatility": "i"
       },
@@ -497,6 +505,7 @@
           "type": "public.arity_children"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.arity_children WHERE false;\n",
         "volatility": "s"
       },
@@ -519,6 +528,7 @@
           "type": "public.arity_children"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.arity_children WHERE id = n;\n",
         "volatility": "s"
       },
@@ -537,6 +547,7 @@
           "type": "character varying"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\nselect substring($1.message, 1, 3);\n",
         "volatility": "s"
       },
@@ -555,6 +566,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT NULL::text; ",
         "volatility": "i"
       },
@@ -573,6 +585,7 @@
           "type": "public.computed_children"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.computed_children WHERE false;\n",
         "volatility": "s"
       },
@@ -593,6 +606,7 @@
           "type": "public.computed_children"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.computed_children WHERE id = n;\n",
         "volatility": "s"
       },
@@ -611,6 +625,7 @@
           "type": "public.computed_children"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.computed_children WHERE false;\n",
         "volatility": "s"
       },
@@ -629,6 +644,7 @@
           "type": "numeric"
         },
         "schema": "public",
+        "searchPath": "\"\"",
         "source": "\n  SELECT ROUND(EXTRACT(EPOCH FROM (NOW() - $1.created_at)));\n",
         "volatility": "v"
       },
@@ -651,6 +667,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 'default'::text; ",
         "volatility": "i"
       },
@@ -669,6 +686,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 1; ",
         "volatility": "i"
       },
@@ -693,6 +711,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 'partial'::text; ",
         "volatility": "i"
       },
@@ -715,6 +734,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 'required'::text; ",
         "volatility": "i"
       },
@@ -733,6 +753,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 1; ",
         "volatility": "i"
       },
@@ -755,6 +776,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 'default'::text; ",
         "volatility": "i"
       },
@@ -773,6 +795,7 @@
           "type": "numeric"
         },
         "schema": "public",
+        "searchPath": "\"\"",
         "source": "\n  SELECT ROUND(EXTRACT(EPOCH FROM (NOW() - $1.created_at)) / 86400);\n",
         "volatility": "v"
       },
@@ -793,6 +816,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT remote_row.username;\n",
         "volatility": "s"
       },
@@ -813,6 +837,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT count_row.status::text || ': ' || count_row.total;\n",
         "volatility": "s"
       },
@@ -833,6 +858,7 @@
           "type": "public.address"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT address;\n",
         "volatility": "i"
       },
@@ -853,6 +879,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  select bigint_param::text;\n",
         "volatility": "i"
       },
@@ -873,6 +900,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  select payload->>'id';\n",
         "volatility": "i"
       },
@@ -889,6 +917,7 @@
           "type": "public.users"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  select * from public.users limit 1;\n",
         "volatility": "s"
       },
@@ -905,6 +934,7 @@
           "type": "public.users"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  select * from public.users order by username;\n",
         "volatility": "s"
       },
@@ -925,6 +955,7 @@
           "type": "public.users"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  select * from public.users limit 1;\n",
         "volatility": "s"
       },
@@ -945,6 +976,7 @@
           "type": "public.user_profiles"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.user_profiles WHERE username = user_row.username LIMIT 1;\n",
         "volatility": "s"
       },
@@ -965,6 +997,7 @@
           "type": "public.user_profiles"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.user_profiles WHERE username = user_row.username LIMIT 1;\n",
         "volatility": "s"
       },
@@ -985,6 +1018,7 @@
           "type": "void"
         },
         "schema": "public",
+        "searchPath": null,
         "source": null,
         "volatility": "i"
       },
@@ -1005,6 +1039,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  select param;\n",
         "volatility": "i"
       },
@@ -1025,6 +1060,7 @@
           "type": "public.messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT * FROM public.messages WHERE username = active_user_row.username ORDER BY id;\n",
         "volatility": "s"
       },
@@ -1045,6 +1081,7 @@
           "type": "public.messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.messages WHERE channel_id = channel_row.id ORDER BY id;\n",
         "volatility": "s"
       },
@@ -1065,6 +1102,7 @@
           "type": "public.messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.messages WHERE username = user_row.username ORDER BY id;\n",
         "volatility": "s"
       },
@@ -1085,6 +1123,7 @@
           "type": "public.messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT * FROM public.messages WHERE username = search_username ORDER BY id;\n",
         "volatility": "s"
       },
@@ -1101,6 +1140,7 @@
           "type": "personal.users"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM personal.users;\n",
         "volatility": "s"
       },
@@ -1121,6 +1161,7 @@
           "type": "public.recent_messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT * FROM public.recent_messages WHERE username = search_username ORDER BY id DESC;\n",
         "volatility": "s"
       },
@@ -1137,6 +1178,7 @@
           "type": "public.remote_users"
         },
         "schema": "public",
+        "searchPath": null,
         "source": null,
         "volatility": "s"
       },
@@ -1157,6 +1199,7 @@
           "type": "public.user_status"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT status from users WHERE username=name_param;\n",
         "volatility": "i"
       },
@@ -1177,6 +1220,7 @@
           "type": "public.recent_messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT * FROM public.recent_messages WHERE username = active_user_row.username ORDER BY id ASC LIMIT 1;\n",
         "volatility": "s"
       },
@@ -1197,6 +1241,7 @@
           "type": "public.messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT * FROM public.messages WHERE username = user_row.username ORDER BY id;\n",
         "volatility": "s"
       },
@@ -1217,6 +1262,7 @@
           "type": "public.user_profiles"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.user_profiles WHERE username = user_row.username LIMIT 1;\n",
         "volatility": "s"
       },
@@ -1237,6 +1283,7 @@
           "type": "public.user_profiles"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.user_profiles WHERE username = user_row.username;\n",
         "volatility": "s"
       },
@@ -1257,6 +1304,7 @@
           "type": "public.recent_messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT * FROM public.recent_messages WHERE username = user_row.username ORDER BY id DESC;\n",
         "volatility": "s"
       },
@@ -1277,6 +1325,7 @@
           "type": "public.recent_messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT * FROM public.recent_messages WHERE username = active_user_row.username ORDER BY id DESC;\n",
         "volatility": "s"
       },
@@ -1293,6 +1342,7 @@
           "type": "public.user_status_counts"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT * FROM public.user_status_counts;\n",
         "volatility": "s"
       },
@@ -1322,6 +1372,7 @@
           "type": "record"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT username, status from users WHERE username=name_param;\n",
         "volatility": "i"
       },
@@ -1342,6 +1393,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT inference_row.note;\n",
         "volatility": "s"
       },
@@ -1362,6 +1414,7 @@
           "type": "integer[]"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT CASE WHEN n < 0 THEN NULL ELSE array(SELECT generate_series(1, n)) END;\n",
         "volatility": "i"
       },
@@ -1378,6 +1431,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT 'note';\n",
         "volatility": "s"
       },
@@ -1398,6 +1452,7 @@
           "type": "public.user_status"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  UPDATE users SET status = 'OFFLINE' WHERE username=name_param\n  RETURNING status;\n",
         "volatility": "v"
       },
@@ -1419,6 +1474,7 @@
           "type": "public.arity_children"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT ROW(1, 2)::public.arity_children;\n",
         "volatility": "s"
       },
@@ -1440,6 +1496,7 @@
           "type": "public.out_domain_row"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT ROW(1, 'Ada')::public.out_domain_users; ",
         "volatility": "s"
       },
@@ -1465,6 +1522,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT n + 1;\n",
         "volatility": "i"
       },
@@ -1490,6 +1548,7 @@
           "type": "bigint"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT a * 2::bigint;\n",
         "volatility": "i"
       },
@@ -1515,6 +1574,7 @@
           "type": "bigint"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT a * 2::bigint;\n",
         "volatility": "i"
       },
@@ -1533,6 +1593,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 1",
         "volatility": "v"
       },
@@ -1551,6 +1612,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 2",
         "volatility": "v"
       },
@@ -1569,6 +1631,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 'foo' ",
         "volatility": "v"
       },
@@ -1585,6 +1648,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 1",
         "volatility": "v"
       },
@@ -1603,6 +1667,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 2",
         "volatility": "v"
       },
@@ -1621,6 +1686,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 'foo' ",
         "volatility": "v"
       },
@@ -1637,6 +1703,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 1",
         "volatility": "v"
       },
@@ -1655,6 +1722,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 2",
         "volatility": "v"
       },
@@ -1673,6 +1741,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 'foo' ",
         "volatility": "v"
       },
@@ -1689,6 +1758,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 1",
         "volatility": "v"
       },
@@ -1707,6 +1777,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 2",
         "volatility": "v"
       },
@@ -1725,6 +1796,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 'foo' ",
         "volatility": "v"
       },
@@ -1743,6 +1815,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 3",
         "volatility": "v"
       },
@@ -1761,6 +1834,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 1",
         "volatility": "v"
       },
@@ -1779,6 +1853,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 1",
         "volatility": "v"
       },
@@ -1797,6 +1872,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 1",
         "volatility": "v"
       },
@@ -1815,6 +1891,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "SELECT 1",
         "volatility": "v"
       },
@@ -1831,6 +1908,7 @@
           "type": "void"
         },
         "schema": "public",
+        "searchPath": null,
         "source": null,
         "volatility": "v"
       },
@@ -1851,6 +1929,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "select 1",
         "volatility": "v"
       },
@@ -1871,6 +1950,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT 'foo'\n",
         "volatility": "v"
       },
@@ -1891,6 +1971,7 @@
           "type": "public.user_profiles"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT * FROM user_profiles WHERE id = profile_id;\n",
         "volatility": "s"
       },
@@ -1913,6 +1994,7 @@
           "type": "public.messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT * FROM messages WHERE channel_id = cid AND message = search ORDER BY id;\n",
         "volatility": "s"
       },
@@ -1933,6 +2015,7 @@
           "type": "public.messages"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT * FROM messages WHERE messages.username = user_row.username ORDER BY id;\n",
         "volatility": "s"
       },
@@ -1949,6 +2032,7 @@
           "type": "void"
         },
         "schema": "public",
+        "searchPath": null,
         "source": null,
         "volatility": "v"
       },
@@ -1969,6 +2053,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "select 1",
         "volatility": "v"
       },
@@ -1989,6 +2074,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n    SELECT 'foo'\n",
         "volatility": "v"
       },
@@ -2009,6 +2095,7 @@
           "type": "public.return_only_amount"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT item.qty::public.return_only_amount;\n",
         "volatility": "s"
       },
@@ -2029,6 +2116,7 @@
           "type": "public.users"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  UPDATE users SET status = 'OFFLINE' WHERE username LIKE name_param RETURNING *;\n",
         "volatility": "v"
       },
@@ -2050,6 +2138,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT 7; ",
         "volatility": "i"
       },
@@ -2072,6 +2161,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  SELECT coalesce(sum(score), 0)::integer + offset_by FROM unnest(scores) AS score;\n",
         "volatility": "i"
       },
@@ -2101,8 +2191,35 @@
           "type": "record"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " SELECT a, 'x'::text; ",
         "volatility": "i"
+      },
+      {
+        "argNames": [],
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "users_payload_and_name",
+        "outColumns": [
+          {
+            "name": "payload",
+            "type": "jsonb"
+          },
+          {
+            "name": "name",
+            "type": "text"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "record"
+        },
+        "schema": "public",
+        "searchPath": null,
+        "source": " SELECT data, username FROM public.users; ",
+        "volatility": "s"
       },
       {
         "argNames": null,
@@ -2117,6 +2234,7 @@
           "type": "void"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n",
         "volatility": "v"
       },
@@ -2133,6 +2251,7 @@
           "type": "trigger"
         },
         "schema": "public",
+        "searchPath": null,
         "source": null,
         "volatility": "v"
       }
@@ -10841,6 +10960,37 @@
               "tag": "Single"
             },
             "pdSchema": "personal",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "users_payload_and_name",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "users_payload_and_name",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "record",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
             "pdVolatility": "Stable"
           }
         ]

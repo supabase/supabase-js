@@ -1638,6 +1638,13 @@ declare global {
             column2: string | null
           }
         }
+        users_payload_and_name: {
+          Args: Record<string, never>
+          Returns: {
+            payload: Json | null
+            name: string | null
+          }[]
+        }
         void_func: {
           Args: Record<string, never>
           Returns: undefined
