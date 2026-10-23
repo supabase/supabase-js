@@ -163,25 +163,51 @@ type ParamNames<X> = string extends keyof X ? never : keyof X & string
 type RequiredNames<X> = string extends keyof X
   ? never
   : { [K in keyof X & string]-?: {} extends Pick<X, K> ? never : K }[keyof X & string]
-// the Args of the overloads (`Defs` is the union of the function's definitions) that fit the argument object `A`
-export type FitArgs<A, Defs> = Defs extends { Args: infer X }
+// the Args of the overloads (`Defs` is the union of the function's definitions) that fit the sent key set `K`
+export type FitSet<K extends string, Defs> = Defs extends { Args: infer X }
+  ? [K] extends [ParamNames<X>]
+    ? [RequiredNames<X>] extends [K]
+      ? X
+      : never
+    : never
+  : never
+// no overload fits (a key set the planner placed some other way, such as the unnamed parameter): every overload
+export type ArgsForSet<K extends string, Defs> = [FitSet<K, Defs>] extends [never]
+  ? Defs extends { Args: infer X }
+    ? X
+    : never
+  : FitSet<K, Defs>
+// the values sent under the key set `K` of `A`: a maybe-sent key that is in the set was sent, so it isn't undefined
+export type SentUnder<A, K extends string> = {
+  [P in K & keyof A]-?: Exclude<A[P], undefined>
+}
+// the argument object checked against the overloads that fit each key set it can serialize to, as PostgREST picks
+// one per request: the expected Args of every set whose values fit none of them
+type SetMismatch<A, Defs, KS> = KS extends [infer K extends string]
+  ? [SentUnder<A, K>] extends [ArgsForSet<K, Defs>]
+    ? never
+    : ArgsForSet<K, Defs>
+  : never
+// no key sets to enumerate (an index signature or too many maybe-keys): the sure keys pick the candidate overloads
+type FitArgs<A, Defs> = Defs extends { Args: infer X }
   ? [SureKeys<A>] extends [ParamNames<X>]
     ? [RequiredNames<X>] extends [SureKeys<A> | MaybeKeys<A>]
       ? X
       : never
     : never
   : never
-// no overload fits (a key set the planner placed some other way, such as the unnamed parameter): every overload
-export type ArgsFor<A, Defs> = [FitArgs<A, Defs>] extends [never]
+type ArgsFor<A, Defs> = [FitArgs<A, Defs>] extends [never]
   ? Defs extends { Args: infer X }
     ? X
     : never
   : FitArgs<A, Defs>
 // per member of an argument union: its own expected Args when its sent values don't fit them
 export type ArgsMismatch<A, Defs> = A extends unknown
-  ? [Sent<A>] extends [ArgsFor<A, Defs>]
-    ? never
-    : ArgsFor<A, Defs>
+  ? [string] extends KeySetsOf<A>
+    ? [Sent<A>] extends [ArgsFor<A, Defs>]
+      ? never
+      : ArgsFor<A, Defs>
+    : SetMismatch<A, Defs, KeySetsOf<A>>
   : never
 export type RpcB<S extends string, F extends string, A, O, Row = {}> = BS<
   'f',
