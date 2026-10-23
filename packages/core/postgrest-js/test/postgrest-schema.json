@@ -1211,6 +1211,26 @@
         "volatility": "s"
       },
       {
+        "argNames": [],
+        "argTypes": [],
+        "language": "sql",
+        "name": "out_domain",
+        "outColumns": [
+          {
+            "name": "u",
+            "type": "public.out_domain_row"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": false,
+          "type": "public.out_domain_row"
+        },
+        "schema": "public",
+        "source": " SELECT ROW(1, 'Ada')::public.out_domain_users; ",
+        "volatility": "s"
+      },
+      {
         "argNames": [
           "n"
         ],
@@ -1767,6 +1787,26 @@
         "schema": "public",
         "source": "\n  UPDATE users SET status = 'OFFLINE' WHERE username LIKE name_param RETURNING *;\n",
         "volatility": "v"
+      },
+      {
+        "argNames": null,
+        "argTypes": [],
+        "language": "sql",
+        "name": "single_unnamed_out",
+        "outColumns": [
+          {
+            "name": "pgrst_call",
+            "type": "integer"
+          }
+        ],
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "public",
+        "source": " SELECT 7; ",
+        "volatility": "i"
       },
       {
         "argNames": [
@@ -2663,6 +2703,108 @@
             "attnum": 1,
             "generated": null,
             "hasDefault": false,
+            "identity": null,
+            "name": "z",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "a",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "attnum": 3,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "note",
+            "notNull": false,
+            "type": "text"
+          }
+        ],
+        "kind": "r",
+        "name": "empty_select_cpk",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "a",
+            "notNull": false,
+            "type": "integer"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "b",
+            "notNull": false,
+            "type": "text"
+          }
+        ],
+        "kind": "r",
+        "name": "empty_select_nopk",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "name",
+            "notNull": false,
+            "type": "text"
+          }
+        ],
+        "kind": "r",
+        "name": "empty_select_pk",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
             "identity": "by default",
             "name": "id",
             "notNull": true,
@@ -3115,6 +3257,37 @@
           "update": false
         },
         "viewDefinition": " SELECT username\n   FROM public.users\n LIMIT 1;"
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": false,
+            "type": "integer"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "name",
+            "notNull": false,
+            "type": "text"
+          }
+        ],
+        "kind": "r",
+        "name": "out_domain_users",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
       },
       {
         "columns": [
@@ -4467,6 +4640,27 @@
       },
       {
         "base": null,
+        "element": "public.empty_select_cpk",
+        "kind": "b",
+        "name": "_empty_select_cpk",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.empty_select_nopk",
+        "kind": "b",
+        "name": "_empty_select_nopk",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.empty_select_pk",
+        "kind": "b",
+        "name": "_empty_select_pk",
+        "schema": "public"
+      },
+      {
+        "base": null,
         "element": "public.events",
         "kind": "b",
         "name": "_events",
@@ -4533,6 +4727,20 @@
         "element": "public.non_updatable_view",
         "kind": "b",
         "name": "_non_updatable_view",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.out_domain_row",
+        "kind": "b",
+        "name": "_out_domain_row",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.out_domain_users",
+        "kind": "b",
+        "name": "_out_domain_users",
         "schema": "public"
       },
       {
@@ -4770,6 +4978,27 @@
         "base": null,
         "element": null,
         "kind": "c",
+        "name": "empty_select_cpk",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "empty_select_nopk",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "empty_select_pk",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "c",
         "name": "events",
         "schema": "public"
       },
@@ -4834,6 +5063,20 @@
         "element": null,
         "kind": "c",
         "name": "non_updatable_view",
+        "schema": "public"
+      },
+      {
+        "base": "public.out_domain_users",
+        "element": null,
+        "kind": "d",
+        "name": "out_domain_row",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "out_domain_users",
         "schema": "public"
       },
       {
@@ -8865,6 +9108,37 @@
       ],
       [
         {
+          "qiName": "out_domain",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "out_domain",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "out_domain_users",
+                    "qiSchema": "public"
+                  },
+                  true
+                ],
+                "tag": "Composite"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "unnamed_out",
           "qiSchema": "public"
         },
@@ -9150,6 +9424,37 @@
             },
             "pdSchema": "public",
             "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "single_unnamed_out",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "single_unnamed_out",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "int4",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Immutable"
           }
         ]
       ],
@@ -11012,6 +11317,44 @@
       ],
       [
         {
+          "qiName": "empty_select_nopk",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "a": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "a",
+              "colNominalType": "integer",
+              "colNullable": true,
+              "colType": "integer"
+            },
+            "b": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "b",
+              "colNominalType": "text",
+              "colNullable": true,
+              "colType": "text"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "empty_select_nopk",
+          "tablePKCols": [],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
           "qiName": "hotel",
           "qiSchema": "public"
         },
@@ -11225,6 +11568,57 @@
           "tableName": "cornercase",
           "tablePKCols": [
             "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "empty_select_cpk",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "a": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "a",
+              "colNominalType": "text",
+              "colNullable": false,
+              "colType": "text"
+            },
+            "note": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "note",
+              "colNominalType": "text",
+              "colNullable": true,
+              "colType": "text"
+            },
+            "z": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "z",
+              "colNominalType": "integer",
+              "colNullable": false,
+              "colType": "integer"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "empty_select_cpk",
+          "tablePKCols": [
+            "a",
+            "z"
           ],
           "tableSchema": "public",
           "tableUpdatable": true
@@ -11688,6 +12082,44 @@
           "tablePKCols": [
             "id"
           ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "out_domain_users",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "integer",
+              "colNullable": true,
+              "colType": "integer"
+            },
+            "name": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "name",
+              "colNominalType": "text",
+              "colNullable": true,
+              "colType": "text"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "out_domain_users",
+          "tablePKCols": [],
           "tableSchema": "public",
           "tableUpdatable": true
         }
@@ -12547,6 +12979,46 @@
           "tableInsertable": true,
           "tableIsView": false,
           "tableName": "aggregate_types",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "empty_select_pk",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "name": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "name",
+              "colNominalType": "text",
+              "colNullable": true,
+              "colType": "text"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "empty_select_pk",
           "tablePKCols": [
             "id"
           ],

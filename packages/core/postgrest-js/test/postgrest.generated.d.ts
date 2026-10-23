@@ -597,6 +597,57 @@ declare global {
           FactColumns: 'id' | 'qty'
           Relationships: []
         }
+        empty_select_cpk: {
+          Row: {
+            z: SupabaseColumnType<'public.empty_select_cpk.z', number>
+            a: SupabaseColumnType<'public.empty_select_cpk.a', string>
+            note: SupabaseColumnType<'public.empty_select_cpk.note', string> | null
+          }
+          Insert: {
+            z: SupabaseColumnType<'public.empty_select_cpk.z', number>
+            a: SupabaseColumnType<'public.empty_select_cpk.a', string>
+            note?: SupabaseColumnType<'public.empty_select_cpk.note', string> | null
+          }
+          Update: {
+            z?: SupabaseColumnType<'public.empty_select_cpk.z', number>
+            a?: SupabaseColumnType<'public.empty_select_cpk.a', string>
+            note?: SupabaseColumnType<'public.empty_select_cpk.note', string> | null
+          }
+          FactColumns: 'a' | 'note' | 'z'
+          Relationships: []
+        }
+        empty_select_nopk: {
+          Row: {
+            a: SupabaseColumnType<'public.empty_select_nopk.a', number> | null
+            b: SupabaseColumnType<'public.empty_select_nopk.b', string> | null
+          }
+          Insert: {
+            a?: SupabaseColumnType<'public.empty_select_nopk.a', number> | null
+            b?: SupabaseColumnType<'public.empty_select_nopk.b', string> | null
+          }
+          Update: {
+            a?: SupabaseColumnType<'public.empty_select_nopk.a', number> | null
+            b?: SupabaseColumnType<'public.empty_select_nopk.b', string> | null
+          }
+          FactColumns: 'a' | 'b'
+          Relationships: []
+        }
+        empty_select_pk: {
+          Row: {
+            id: SupabaseColumnType<'public.empty_select_pk.id', number>
+            name: SupabaseColumnType<'public.empty_select_pk.name', string> | null
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.empty_select_pk.id', number>
+            name?: SupabaseColumnType<'public.empty_select_pk.name', string> | null
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.empty_select_pk.id', number>
+            name?: SupabaseColumnType<'public.empty_select_pk.name', string> | null
+          }
+          FactColumns: 'id' | 'name'
+          Relationships: []
+        }
         events: {
           Row: {
             id: SupabaseColumnType<'public.events.id', number>
@@ -804,6 +855,22 @@ declare global {
               referencedColumns: ['username']
             }
           ]
+        }
+        out_domain_users: {
+          Row: {
+            id: SupabaseColumnType<'public.out_domain_users.id', number> | null
+            name: SupabaseColumnType<'public.out_domain_users.name', string> | null
+          }
+          Insert: {
+            id?: SupabaseColumnType<'public.out_domain_users.id', number> | null
+            name?: SupabaseColumnType<'public.out_domain_users.name', string> | null
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.out_domain_users.id', number> | null
+            name?: SupabaseColumnType<'public.out_domain_users.name', string> | null
+          }
+          FactColumns: 'id' | 'name'
+          Relationships: []
         }
         product_categories: {
           Row: {
@@ -1351,6 +1418,10 @@ declare global {
           Args: Record<string, never>
           Returns: { id: number | null; parent_id: number | null }
         }
+        out_domain: {
+          Args: Record<string, never>
+          Returns: Record<string, unknown>
+        }
         out_inout: {
           Args: {
             n: number
@@ -1496,6 +1567,12 @@ declare global {
             name_param: string
           }
           Returns: { username: string | null; data: Json | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null; catchphrase: unknown | null }[]
+        }
+        single_unnamed_out: {
+          Args: Record<string, never>
+          Returns: {
+            pgrst_call: number | null
+          }
         }
         sum_scores: {
           Args: {
@@ -2273,6 +2350,13 @@ declare global {
       sources: { id: 'id' }
       embeds: {}
     }
+    'r|public|messages|id, channels(id)': {
+      row: { id: SupabaseColumnType<'public.messages.id', number>; channels: { id: SupabaseColumnType<'public.channels.id', number> } }
+      sources: { id: 'id' }
+      embeds: {
+        channels: { path: ['channels']; outputs: [['channels']]; join: 'left'; cardinality: 'one' }
+      }
+    }
     'r|public|messages|id, channels(id, ...channel_details(details_id:id, details))': {
       row: { id: SupabaseColumnType<'public.messages.id', number>; channels: { id: SupabaseColumnType<'public.channels.id', number>; details_id: SupabaseColumnType<'public.channel_details.id', number> | null; details: SupabaseColumnType<'public.channel_details.details', string> | null } }
       sources: { id: 'id' }
@@ -2512,6 +2596,11 @@ declare global {
     }
     'r|public|users|msgs:messages(id, ...message_details(created_at, channel!inner(id, slug, owner:users(*))))': {
       error: "PGRST200: Could not find a relationship between 'messages' and 'message_details' in the schema cache"
+    }
+    'r|public|users|s:status': {
+      row: { s: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }
+      sources: { s: 'status' }
+      embeds: {}
     }
     'r|public|users|status': {
       row: { status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }
