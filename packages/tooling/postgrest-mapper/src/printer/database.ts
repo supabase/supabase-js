@@ -181,6 +181,20 @@ function matchParams(fn: SupplementaryFunction, dump: DumpFacts): DumpParam[] | 
   return typed.length === 1 ? typed[0] : undefined
 }
 
+/** The only parameter types PostgREST passes the request body to when the parameter is unnamed. */
+const BODY_TYPES: ReadonlySet<string> = new Set(['bytea', 'json', 'jsonb', 'text', 'xml'])
+
+/**
+ * Whether PostgREST can call an overload: the `callable` column of its schema cache query (`SchemaCache.hs`, v16.4),
+ * which keeps a function unless it has no argument names at all (`proargnames` is null: every argument is unnamed)
+ * and takes more than one argument, or one whose type is not json, jsonb, text, xml or bytea. The name of an
+ * argument of a partly named function is an empty string, which that query counts as a name.
+ */
+function isCallable(fn: SupplementaryFunction): boolean {
+  if (fn.argNames !== null) return true
+  return fn.argTypes.length < 2 && (fn.argTypes.length === 0 || BODY_TYPES.has(fn.argTypes[0]!))
+}
+
 /** The argument names of one overload of a function, as `SupabaseDatabase` prints them in `Args`. */
 export interface RoutineSignature {
   /** Names the caller must pass: required members of `Args` (`''` is an unnamed argument) */
@@ -201,6 +215,7 @@ export function routineSignatures(
   const out = new Map<string, RoutineSignature[]>()
   for (const fn of supplementary.functions) {
     if (fn.returns.type === 'trigger' || fn.returns.type === 'event_trigger') continue
+    if (!isCallable(fn)) continue
     const params = matchParams(fn, dump)
     const seen = new Set<string>()
     const signature: RoutineSignature = { required: [], optional: [] }
@@ -426,6 +441,7 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
     const byFunction = new Map<string, SupplementaryFunction[]>()
     for (const fn of functions) {
       if (fn.returns.type === 'trigger' || fn.returns.type === 'event_trigger') continue
+      if (!isCallable(fn)) continue
       const list = byFunction.get(fn.name) ?? []
       list.push(fn)
       byFunction.set(fn.name, list)

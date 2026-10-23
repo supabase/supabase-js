@@ -69,6 +69,30 @@ const o6w = supabase.rpc('function_returning_set_of_rows').select('username, mes
 const o7 = supabase.rpc('function_returning_set_of_rows').select('username, data').eq('data->theme', 'x')
 `
 
+// overloads PostgREST cannot call are not in the database type: only a lone unnamed json, jsonb, text, xml or bytea
+// parameter takes the request body
+const APP_UNNAMED = `
+import type { PostgrestClient } from '@supabase/postgrest-js'
+import type { Data, Equal, Expect } from './helpers'
+declare const supabase: PostgrestClient
+
+// the text overload is the only callable one of three
+const u1 = supabase.rpc('polymorphic_function_with_different_return', { '': 'x' })
+export type U1 = Expect<Equal<Data<typeof u1>, string | null>>
+// @ts-expect-error a boolean body has no function: the boolean overload is not callable
+const u2 = supabase.rpc('polymorphic_function_with_different_return', { '': true })
+// @ts-expect-error a single unnamed integer parameter is not callable at all
+const u3 = supabase.rpc('polymorphic_function_with_unnamed_integer', { '': 1 })
+// a single unnamed json parameter is
+const u4 = supabase.rpc('polymorphic_function_with_unnamed_json', { '': { a: 1 } })
+export type U4 = Expect<Equal<Data<typeof u4>, number | null>>
+// the no-argument overload stays next to the unnamed text one
+const u5 = supabase.rpc('polymorphic_function_with_no_params_or_unnamed')
+export type U5 = Expect<Equal<Data<typeof u5>, number | null>>
+const u6 = supabase.rpc('polymorphic_function_with_no_params_or_unnamed', { '': 'x' })
+export type U6 = Expect<Equal<Data<typeof u6>, string | null>>
+`
+
 let acquired: AcquiredSchema
 beforeAll(async () => {
   acquired = await acquireFromStack()
@@ -151,6 +175,45 @@ describe('rpc entries and operands of a project', () => {
 
     const checked = typecheckConsumer({
       files: { 'db.d.ts': text, 'helpers.ts': HELPERS, 'app.ts': APP },
+    })
+    expect(checked.byFile.get('db.d.ts') ?? []).toEqual([])
+    expect(checked.byFile.get('app.ts') ?? []).toEqual([])
+  }, 180_000)
+
+  it('leaves the overloads PostgREST cannot call out of the database type and the plan', async () => {
+    const p = await project({ 'src/app.ts': APP_UNNAMED })
+    const result = await generateDeclarations({
+      configFileName: p.configFileName,
+      options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
+      deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
+    })
+    expect(result.diagnostics).toEqual([])
+    const { text } = result
+
+    // the integer and boolean overloads, and a function whose only overload is unnamed non-body, are gone
+    expect(text).toMatch(
+      /polymorphic_function_with_different_return: \{\n\s+Args: \{\n\s+'': string\n\s+\}\n\s+Returns: string \| null\n\s+\}\n/
+    )
+    expect(text).not.toContain('polymorphic_function_with_unnamed_integer')
+    // the callable ones are still there
+    expect(text).toContain('polymorphic_function_with_unnamed_json: {')
+    expect(text).toContain('polymorphic_function_with_unnamed_jsonb: {')
+    expect(text).toContain('polymorphic_function_with_unnamed_text: {')
+    expect(text).toMatch(
+      /polymorphic_function_with_no_params_or_unnamed: \n\s+\| \{\n\s+Args: Record<string, never>\n\s+Returns: number \| null\n\s+\}\n\s+\| \{\n\s+Args: \{\n\s+'': string\n/
+    )
+    // a computed field's function (one unnamed row parameter) is not an rpc target
+    expect(text).not.toContain('blurb_message: {')
+    // planned: the one callable overload of the key set '', not one per printed overload
+    const entry = text.slice(
+      text.indexOf("'f|public|polymorphic_function_with_different_return|*'"),
+      text.indexOf("'f|public|polymorphic_function_with_no_params_or_unnamed|*'")
+    )
+    expect(entry.match(/keys: ''/g)).toHaveLength(1)
+    expect(entry).not.toContain('error:')
+
+    const checked = typecheckConsumer({
+      files: { 'db.d.ts': text, 'helpers.ts': HELPERS, 'app.ts': APP_UNNAMED },
     })
     expect(checked.byFile.get('db.d.ts') ?? []).toEqual([])
     expect(checked.byFile.get('app.ts') ?? []).toEqual([])
