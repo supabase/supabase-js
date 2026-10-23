@@ -4026,12 +4026,30 @@ export default class GoTrueClient {
   }
 
   /**
-   * Inside a browser context, `signOut()` will remove the logged in user from the browser session and log them out - removing all items from localstorage and then trigger a `"SIGNED_OUT"` event.
+   * Inside a browser context, `signOut()` will remove the logged in user from the browser session
+   * and log them out - removing all items from localstorage and then trigger a `"SIGNED_OUT"`
+   * event.
    *
-   * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`.
-   * There is no way to revoke a user's access token jwt until it expires. It is recommended to set a shorter expiry on the jwt for this reason.
+   * For server-side management, you can revoke all refresh tokens for a user by passing a user's
+   * JWT through to `auth.api.signOut(JWT: string)`.
+   * There is no way to revoke a user's access token jwt until it expires. It is recommended to set
+   * a shorter expiry on the jwt for this reason.
    *
-   * If using `others` scope, no `SIGNED_OUT` event is fired!
+   * The behavior depends on the selected scope:
+   *
+   * - `local`: The local session is removed, and the client makes a best-effort request to revoke
+   *   the refresh token on the server. If the request fails, the client is still signed out
+   *   locally, but the server may retain the refresh token until it expires. A `SIGNED_OUT` event
+   *   is fired regardless of the server outcome.
+   *
+   * - `global`: All of the user's sessions are first invalidated on the server. Once the server
+   *   acknowledges the request, the local session is cleared. If server logout fails, the local
+   *   session is retained, no `SIGNED_OUT` event is triggered, and the server or network error is
+   *   returned. A 401, 403, or 404 response counts as a successful sign-out.
+   *
+   * - `others`: All other sessions are invalidated when the server accepts the request; the
+   *   current local session remains unchanged. In case of server or network failures, the error is
+   *   returned. A `SIGNED_OUT` event is never triggered, regardless of the outcome.
    *
    * **Warning:** the default `scope` is `'global'`. This signs the user out of
    * **every device they are currently signed in on**, not just the current
@@ -4049,7 +4067,10 @@ export default class GoTrueClient {
    *   usually what apps want on a "Sign out" button, especially when users
    *   sign in from multiple devices and do not expect signing out of one to
    *   terminate the others.
-   * - Since Supabase Auth uses JWTs for authentication, the access token JWT will be valid until it's expired. When the user signs out, Supabase revokes the refresh token and deletes the JWT from the client-side. This does not revoke the JWT and it will still be valid until it expires.
+   * - Since Supabase Auth uses JWTs for authentication, the access token JWT will be valid until
+   *   it's expired. When the user signs out, Supabase revokes the refresh token and deletes the
+   *   JWT from the client-side. This does not revoke the JWT and it will still be valid until it
+   *   expires.
    *
    * @example Sign out of every device (global – default)
    * ```js
@@ -4103,7 +4124,9 @@ export default class GoTrueClient {
               isAuthSessionMissingError(error)
             )
           ) {
-            if (scope !== 'others') {
+            // When using `local` sign out, we always log the local user out, regardless of the
+            // server outcome. All other logout types depend on the server acknowleding it first.
+            if (scope === 'local') {
               await removeCurrentSession()
             }
             return this._returnResult({ error })
