@@ -27,7 +27,7 @@ import Data.Aeson.Types (Parser)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.HashMap.Strict as HM
 import qualified Data.HashMap.Strict.InsOrd as HMI
-import Data.List (sortOn)
+import Data.List (elemIndex, sortOn)
 import Data.Text (Text)
 
 import PostgREST.SchemaCache (SchemaCache (..))
@@ -151,12 +151,15 @@ foreignKeyValidated :: Supplementary -> QualifiedIdentifier -> Text -> Maybe Boo
 foreignKeyValidated supp table constraint = HM.lookup (table, constraint) (suppForeignKeys supp)
 
 -- | A computed field is a function @name(relation)@ with exactly the relation's row type as its only
--- argument. A function in the relation's own schema wins; otherwise the first match in catalog order
--- (the order Postgres would try schemas in is not modelled).
-findComputedField :: Supplementary -> QualifiedIdentifier -> Text -> Maybe SuppFunction
-findComputedField supp (QualifiedIdentifier schema rel) name =
-  case sortOn ((/= schema) . sfSchema) [f | f <- suppFunctions supp, sfName f == name, sfArgTypes f == [relationType]] of
-    (f : _) -> Just f
+-- argument. Upstream selects it as @"schema"."relation"."name"@; Postgres reads that as the call
+-- @name(relation)@ with an unqualified function name, which it looks up through the @search_path@ of the
+-- request (its schema, then @db-extra-search-path@: @PreQuery.hs@). Of the functions of that name and argument
+-- type the one in the first schema of the path is called, and a function of a schema off the path is not
+-- visible at all. The path is the first argument.
+findComputedField :: Supplementary -> [Text] -> QualifiedIdentifier -> Text -> Maybe SuppFunction
+findComputedField supp searchPath (QualifiedIdentifier schema rel) name =
+  case sortOn fst [(pos, f) | f <- suppFunctions supp, sfName f == name, sfArgTypes f == [relationType], Just pos <- [elemIndex (sfSchema f) searchPath]] of
+    (_, f) : _ -> Just f
     [] -> Nothing
   where
     relationType = schema <> "." <> rel

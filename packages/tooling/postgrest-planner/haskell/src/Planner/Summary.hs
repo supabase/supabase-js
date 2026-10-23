@@ -50,6 +50,8 @@ import PostgREST.SchemaCache.Routine
   , RoutineParam (..)
   )
 
+import Planner.ResultShape (selectOutputName)
+
 summarize :: ApiRequest -> ActionPlan -> Value
 summarize apiReq plan =
   object $
@@ -113,11 +115,11 @@ rootSelect :: RP.ReadPlanTree -> [Value]
 rootSelect (Node rp _) = selectJSON <$> RP.select rp
 
 selectJSON :: CoercibleSelectField -> Value
-selectJSON CoercibleSelectField{csField, csAggFunction, csAggCast, csCast, csAlias} =
+selectJSON cs@CoercibleSelectField{csField, csAggFunction, csAggCast, csCast, csAlias} =
   object
     [ "name" .= cfName csField
     , "alias" .= csAlias
-    , "outputName" .= fromMaybe (cfName csField) csAlias
+    , "outputName" .= selectOutputName cs
     , "type" .= cfIRType csField
     , "jsonPath" .= (if null (cfJsonPath csField) then Nothing else Just (show (cfJsonPath csField)))
     , "aggregate" .= (show <$> csAggFunction)

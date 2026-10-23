@@ -382,7 +382,7 @@ export type PlanFilter = ColumnFilter | EmbedFilter
 interface PlanBase {
   ok: true
   warnings: unknown[]
-  /** `null` for plans that return no rows of a relation. */
+  /** `null` for plans that return no rows of a relation, and when a custom media handler writes the body. */
   form: PlanForm | null
   /** `null` when `form` is `null`, `none`, `single-scalar` or `setof-scalar`. */
   shape: ResultShape | null
@@ -400,7 +400,8 @@ interface PlanBase {
    * (no catalog to resolve it), `cast-type:<name>` (a cast names a type the catalog does not mention), `fk-validation:<schema>.<table>.<constraint>` (the catalog does not say whether the
    * key is validated), `rpc-columns:<function>` (an RPC returns a composite type or `RETURNS TABLE` the
    * catalog does not describe), `rpc-embed-relation:<schema>.<relation>` (upstream resolves the embeds of an
-   * RPC against another table than the one the function returns: see the README).
+   * RPC against another table than the one the function returns: see the README), `media-handler:<function>`
+   * (the negotiated media handler is a custom function: `form` and `shape` are `null`).
    */
   degraded: string[]
 }

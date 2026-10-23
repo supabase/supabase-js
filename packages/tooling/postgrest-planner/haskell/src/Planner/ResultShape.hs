@@ -29,6 +29,7 @@
 -- that @embed=is.null@ tests.
 module Planner.ResultShape
   ( planShape
+  , selectOutputName
   ) where
 
 import Data.Aeson (Value (..), object, (.=))
@@ -58,7 +59,7 @@ import PostgREST.RangeQuery (allRange, hasLimitZero, rangeOffset)
 import PostgREST.SchemaCache (SchemaCache (..))
 import PostgREST.SchemaCache.Identifiers (QualifiedIdentifier (..))
 import PostgREST.SchemaCache.Relationship (Cardinality (..), Junction (..), Relationship (..), relIsToOne)
-import PostgREST.SchemaCache.Routine (FuncVolatility (..), PgType (..), RetType (..), Routine (..), RoutineParam (..), RoutineMap, funcReturnsSingleComposite)
+import PostgREST.SchemaCache.Routine (FuncVolatility (..), MediaHandler (..), PgType (..), RetType (..), Routine (..), RoutineParam (..), RoutineMap, funcReturnsSingleComposite)
 import PostgREST.SchemaCache.Table (Column (..), Table (..))
 
 import Planner.PgType (aggregateType, isBuiltinType, normalizeType, qualifiedTypeName)
@@ -69,21 +70,30 @@ import Planner.Supplementary (SuppFunction (..), SuppReturn (..), Supplementary 
 planShape :: [Text] -> SchemaCache -> Maybe Supplementary -> ApiRequest -> ActionPlan -> [Pair]
 planShape searchPath sc supp apiReq = \case
   Db (DbCrud _ crud) -> crudShape crud
-  _ -> result Nothing Nothing [] Nothing ([], [])
+  _ -> result Nothing Nothing Nothing [] Nothing ([], [])
   where
     ctx = Ctx (dbTables sc) (dbRoutines sc) supp Nothing (knownTypes sc supp) searchPath
     selectTree = qsSelect (iQueryParams apiReq)
 
     crudShape = \case
-      WrappedReadPlan{wrReadPlan, crudQi} -> rowset False crudQi wrReadPlan []
-      MutateReadPlan{mrReadPlan, mrMutatePlan, crudQi}
-        | preferRepresentation (iPreferences apiReq) == Just Full -> rowset True crudQi mrReadPlan (mutationWhere mrMutatePlan)
-        | otherwise -> result (Just "none") Nothing [] Nothing (filtersOf ctx ctx crudQi (mutationWhere mrMutatePlan) mrReadPlan)
-      CallReadPlan{crReadPlan, crCallPlan = FunctionCall{funCScalar, funCSetOfScalar}, crProc}
-        | funCScalar -> rpc "single-scalar" crReadPlan crProc
-        | funCSetOfScalar -> rpc "setof-scalar" crReadPlan crProc
-        | funcReturnsSingleComposite crProc -> rpc "single-composite" crReadPlan crProc
-        | otherwise -> rpc "rowset" crReadPlan crProc
+      WrappedReadPlan{wrReadPlan, crudQi, wrHandler} -> rowset (custom wrHandler) False crudQi wrReadPlan []
+      MutateReadPlan{mrReadPlan, mrMutatePlan, crudQi, mrHandler}
+        | preferRepresentation (iPreferences apiReq) == Just Full -> rowset (custom mrHandler) True crudQi mrReadPlan (mutationWhere mrMutatePlan)
+        | otherwise -> result Nothing (Just "none") Nothing [] Nothing (filtersOf ctx ctx crudQi (mutationWhere mrMutatePlan) mrReadPlan)
+      CallReadPlan{crReadPlan, crCallPlan = FunctionCall{funCScalar, funCSetOfScalar}, crProc, crHandler}
+        | funCScalar -> rpc h "single-scalar" crReadPlan crProc
+        | funCSetOfScalar -> rpc h "setof-scalar" crReadPlan crProc
+        | funcReturnsSingleComposite crProc -> rpc h "single-composite" crReadPlan crProc
+        | otherwise -> rpc h "rowset" crReadPlan crProc
+        where
+          h = custom crHandler
+
+    -- A custom media handler (a table's @*/*@ or @application/json@ aggregate, upstream @Negotiate.hs@) writes the
+    -- body itself (@handlerF@): it is not the relational result the plan reads. The vnd.pgrst types cannot be
+    -- overridden and the other handlers are builtin: they keep their shape.
+    custom = \case
+      CustomFunc fn _ -> Just fn
+      _ -> Nothing
 
     -- The filters of a mutation are @qsFiltersRoot@ followed by one tree per @qsLogic@ entry (@mutatePlan@). That
     -- includes the trees that name an embed (@embed.or=(...)@), resolved against the mutated table: the read
@@ -96,17 +106,17 @@ planShape searchPath sc supp apiReq = \case
     -- @isWrite@: the read plan of a mutation (upstream reads its embeds from the physical tables, under the
     -- statement's snapshot, so a to-one embed can be missing even when its key holds). @rootWhere@: the
     -- filters of the mutation itself, which upstream keeps in the mutate plan.
-    rowset isWrite rel tree@(Node rp _) rootWhere =
+    rowset handler isWrite rel tree@(Node rp _) rootWhere =
       let env = Env ctx isWrite
           (fields, notes) = nodeFields ctx selectTree rp rel
           embeds = childEmbeds env (Parent [] [] Nothing selectTree False) Nothing tree
           shape = object ["relation" .= qiJSON rel, "fields" .= (fieldJSON <$> fields), "embeds" .= (emJSON <$> embeds)]
-      in  result (Just "rowset") (Just shape) (notes <> concatMap emNotes embeds) Nothing (filtersOf ctx ctx rel rootWhere tree)
+      in  result handler (Just "rowset") (Just shape) (notes <> concatMap emNotes embeds) Nothing (filtersOf ctx ctx rel rootWhere tree)
 
     -- The rows of a function come from its return type, not from the relation upstream reads the plan
     -- against (@Plan.hs@ @callReadPlan@ names it @<function schema>.<return type name>@, which is another
     -- table for a composite of a different schema and no table at all for @RETURNS TABLE@).
-    rpc form tree@(Node rp _) proc =
+    rpc handler form tree@(Node rp _) proc =
       let RpcRows{rrRel, rrRows, rrSource, rrNotes} = rpcRows ctx proc
           info =
             object
@@ -118,7 +128,7 @@ planShape searchPath sc supp apiReq = \case
           filters = filtersOf rootCtx ctx (fromMaybe (QualifiedIdentifier "pg_catalog" "record") rrRel) [] tree
           notes0 = rrNotes
       in  case rrRel of
-            Nothing -> result (Just form) Nothing notes0 (Just info) filters
+            Nothing -> result handler (Just form) Nothing notes0 (Just info) filters
             Just rel ->
               let env = Env ctx False
                   (fields, notes) = nodeFields rootCtx selectTree rp rel
@@ -126,11 +136,15 @@ planShape searchPath sc supp apiReq = \case
                   upstreamRel = QualifiedIdentifier (pdSchema proc) (qiName rel)
                   mismatch = ["rpc-embed-relation:" <> qualified rel | not (null embeds), upstreamRel /= rel, not (isRecord rel)]
                   shape = object ["relation" .= qiJSON rel, "fields" .= (fieldJSON <$> fields), "embeds" .= (emJSON <$> embeds)]
-              in  result (Just form) (Just shape) (notes0 <> notes <> concatMap emNotes embeds <> mismatch) (Just info) filters
+              in  result handler (Just form) (Just shape) (notes0 <> notes <> concatMap emNotes embeds <> mismatch) (Just info) filters
 
-    result :: Maybe Text -> Maybe Value -> [Text] -> Maybe Value -> ([Value], [Text]) -> [Pair]
-    result form shape notes info (filters, filterNotes) =
-      ["form" .= form, "shape" .= shape, "rpc" .= info, "filters" .= filters, "degraded" .= nub (notes <> filterNotes)]
+    -- With a custom media handler (@Just@ its function) the body is unknown: no form, no shape and no note about
+    -- either, only the handler. The request's filters and the function an RPC calls are still what they are.
+    result :: Maybe QualifiedIdentifier -> Maybe Text -> Maybe Value -> [Text] -> Maybe Value -> ([Value], [Text]) -> [Pair]
+    result handler form shape notes info (filters, filterNotes) =
+      case handler of
+        Nothing -> ["form" .= form, "shape" .= shape, "rpc" .= info, "filters" .= filters, "degraded" .= nub (notes <> filterNotes)]
+        Just fn -> ["form" .= Null, "shape" .= Null, "rpc" .= info, "filters" .= filters, "degraded" .= nub (("media-handler:" <> qualified fn) : filterNotes)]
 
 isRecord :: QualifiedIdentifier -> Bool
 isRecord = (== QualifiedIdentifier "pg_catalog" "record")
@@ -477,12 +491,12 @@ resolveSelect ctx rel sels = (concat fs, concat ns)
     (fs, ns) = unzip (map (resolveOne ctx rel) sels)
 
 resolveOne :: Ctx -> QualifiedIdentifier -> CoercibleSelectField -> ([Field], [Text])
-resolveOne ctx rel CoercibleSelectField{csField = cf, csAggFunction = agg, csAggCast = aggCast, csCast = cast, csAlias = alias}
+resolveOne ctx rel csf@CoercibleSelectField{csField = cf, csAggFunction = agg, csAggCast = aggCast, csCast = cast}
   | isStar && isNothing agg && not (cfFullRow cf) = expandStar ctx rel
   | otherwise = ([mkField name final], notes)
   where
     isStar = cfName cf == "*" && null (cfJsonPath cf)
-    name = fromMaybe (maybe (cfName cf) aggName agg) alias
+    name = selectOutputName csf
 
     (start, startNotes)
       | isStar = (Expr Nothing Nothing False Null False, []) -- count(*): nothing is read
@@ -501,6 +515,12 @@ resolveOne ctx rel CoercibleSelectField{csField = cf, csAggFunction = agg, csAgg
         . maybe id applyRepresentation (cfTransform cf)
         . applyJsonPath (cfToJson cf) (cfJsonPath cf)
         $ start
+
+-- | The name a select item has in the response, as PostgreSQL labels it: the alias, else the aggregate's name
+-- (@sum@, @count@), else the field name (upstream @addAliases@ has already put the last JSON key in the alias).
+selectOutputName :: CoercibleSelectField -> Text
+selectOutputName CoercibleSelectField{csField, csAggFunction, csAlias} =
+  fromMaybe (maybe (cfName csField) aggName csAggFunction) csAlias
 
 aggName :: AggregateFunction -> Text
 aggName = T.toLower . T.pack . show
@@ -547,9 +567,9 @@ columnExpr Ctx{cxRows} rel col = case cxRows of
 -- spelling (@sum@ and the like are not functions of a row), and a column or computed field of that name wins.
 -- It needs the supplementary catalog to rule a computed field out.
 legacyCount :: Ctx -> QualifiedIdentifier -> CoercibleField -> Bool
-legacyCount Ctx{cxTables, cxSupp, cxRows} rel CoercibleField{cfName, cfJsonPath} =
+legacyCount Ctx{cxTables, cxSupp, cxRows, cxSearchPath} rel CoercibleField{cfName, cfJsonPath} =
   cfName == "count" && null cfJsonPath && rowsAreTable && case (HM.lookup rel cxTables, cxSupp) of
-    (Just table, Just supp) -> isNothing (HMI.lookup cfName (tableColumns table)) && isNothing (findComputedField supp rel cfName)
+    (Just table, Just supp) -> isNothing (HMI.lookup cfName (tableColumns table)) && isNothing (findComputedField supp cxSearchPath rel cfName)
     _ -> False
   where
     rowsAreTable = case cxRows of
@@ -560,7 +580,7 @@ legacyCount Ctx{cxTables, cxSupp, cxRows} rel CoercibleField{cfName, cfJsonPath}
 -- | A named field of the relation: a column, or a computed field (a function over the row type). The root
 -- of an RPC plan reads its columns from the rows of the function.
 baseExpr :: Ctx -> QualifiedIdentifier -> CoercibleField -> (Expr, [Text])
-baseExpr ctx@Ctx{cxTables, cxSupp, cxRows} rel CoercibleField{cfName = name} = case cxRows of
+baseExpr ctx@Ctx{cxTables, cxSupp, cxRows, cxSearchPath} rel CoercibleField{cfName = name} = case cxRows of
   Just (AttrRows attrs) -> case lookup name attrs of
     Just e -> (e, [])
     Nothing -> bad ("no attribute " <> name <> " in the rows of the function") []
@@ -571,7 +591,7 @@ baseExpr ctx@Ctx{cxTables, cxSupp, cxRows} rel CoercibleField{cfName = name} = c
       Just col -> (columnExpr ctx rel col, [])
       Nothing -> case cxSupp of
         Nothing -> bad (noField <> " (no supplementary catalog: computed fields are unknown)") ["computed-field:" <> qualified rel <> "." <> name]
-        Just supp -> case findComputedField supp rel name of
+        Just supp -> case findComputedField supp cxSearchPath rel name of
           Nothing -> bad noField []
           Just SuppFunction{sfSchema, sfName, sfReturns = SuppReturn{srSetof, srType}}
             | srSetof -> bad ("function " <> sfSchema <> "." <> sfName <> " returns a set") []

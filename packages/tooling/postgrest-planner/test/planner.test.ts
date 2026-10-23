@@ -1575,6 +1575,187 @@ describe('postgrest-planner', () => {
     })
   })
 
+  describe('custom media handlers', () => {
+    // A table's `*/*` handler, or a custom `application/json` one, overrides the builtin JSON aggregate
+    // (upstream Plan/Negotiate.hs): the body is whatever that function returns, so no shape is known.
+    const rel = (name: string) => ({
+      tag: 'RelId',
+      contents: { qiSchema: 'public', qiName: name },
+    })
+    const custom = (mediaType: string, table: string, fn: string) => [
+      [rel(table), { tag: mediaType }],
+      [
+        {
+          tag: 'CustomFunc',
+          contents: [{ qiSchema: 'public', qiName: fn }, rel(table)],
+        },
+        { tag: mediaType === 'MTAny' ? 'MTApplicationJSON' : mediaType },
+      ],
+    ]
+    let handlers: number
+    beforeAll(() => {
+      const dump = JSON.parse(readFileSync(join(fixtures, 'dump-schema.json'), 'utf8'))
+      dump.dbMediaHandlers.push(
+        custom('MTAny', 'messages', 'messages_agg'),
+        custom('MTApplicationJSON', 'users', 'users_json_agg')
+      )
+      handlers = loaded(
+        planner.load({
+          ...baseInput(),
+          schema: JSON.stringify(dump),
+          supplementary: supplementaryText(),
+        })
+      ).handle
+    })
+    afterAll(() => planner.freeCache(handlers))
+
+    const json = { Accept: 'application/json' }
+    const get = (url: string, extra: Partial<PlanRequest> = {}) =>
+      ok(planner.plan(handlers, { method: 'GET', url, ...extra }))
+
+    it('reports no shape for a table whose application/json handler is custom', () => {
+      const p = get('/users', { headers: json })
+      expect(p).toMatchObject({
+        form: null,
+        shape: null,
+        degraded: ['media-handler:public.users_json_agg'],
+      })
+      expect(p.filters).toEqual([])
+      // no Accept header is `*/*`: the handler of `application/json` is not the one asked for
+      expect(get('/users')).toMatchObject({ form: 'rowset', degraded: [] })
+      // a handler of a table serves its default select only (`when' defaultSelect`, Negotiate.hs)
+      expect(get('/users?select=age_range,username', { headers: json })).toMatchObject({
+        form: 'rowset',
+        degraded: [],
+      })
+      // what the request filters on is still what it is
+      const filtered = get('/users?username=eq.a', { headers: json })
+      expect(filtered.filters).toMatchObject([{ kind: 'column', column: 'username' }])
+      expect(filtered.shape).toBeNull()
+    })
+
+    it('applies a `*/*` handler to a default select only', () => {
+      expect(get('/messages')).toMatchObject({
+        form: null,
+        shape: null,
+        degraded: ['media-handler:public.messages_agg'],
+      })
+      expect(get('/messages?select=*').shape).toBeNull()
+      expect(get('/messages?select=id,message')).toMatchObject({
+        form: 'rowset',
+        degraded: [],
+      })
+    })
+
+    it('keeps the builtin shape where no handler is custom', () => {
+      expect(get('/channels?select=id')).toMatchObject({ form: 'rowset', degraded: [] })
+      // the vnd.pgrst types cannot be overridden
+      expect(
+        get('/users?select=username', { headers: { Accept: 'application/vnd.pgrst.object+json' } })
+      ).toMatchObject({ form: 'rowset', degraded: [] })
+    })
+
+    it('reports no shape for a mutation that returns the representation through a custom handler', () => {
+      const body = JSON.stringify({ username: 'x' })
+      const full = ok(
+        planner.plan(handlers, {
+          method: 'POST',
+          url: '/users',
+          headers: { ...json, Prefer: 'return=representation', 'Content-Type': 'application/json' },
+          body,
+        })
+      )
+      expect(full).toMatchObject({ form: null, shape: null })
+      expect(full.degraded).toEqual(['media-handler:public.users_json_agg'])
+      const minimal = ok(
+        planner.plan(handlers, {
+          method: 'POST',
+          url: '/users',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        })
+      )
+      expect(minimal).toMatchObject({ form: 'none', degraded: [] })
+    })
+  })
+
+  describe('computed field resolution', () => {
+    // `"public"."users"."label"` is read by Postgres as the function `label(users)`, found through the search
+    // path of the request: its schema, then db-extra-search-path (PreQuery.hs).
+    let supp: ReturnType<typeof JSON.parse>
+    beforeAll(() => {
+      supp = JSON.parse(supplementaryText())
+      for (const [schema, type] of [
+        ['a', 'text'],
+        ['b', 'integer'],
+      ]) {
+        supp.functions.push({
+          schema,
+          name: 'label',
+          argTypes: ['public.users'],
+          volatility: 's',
+          returns: { kind: 'scalar', type },
+        })
+      }
+    })
+    const typeOf = (extraSearchPath: string, url = '/users?select=label') => {
+      const h = loaded(
+        planner.load({
+          ...baseInput(),
+          config: { ...baseInput().config, 'db-extra-search-path': extraSearchPath },
+          supplementary: supp,
+        })
+      ).handle
+      try {
+        const p = ok(planner.plan(h, { method: 'GET', url }))
+        return [p.shape?.fields[0].pgType ?? null, p.shape?.fields[0].provenance, p.filters]
+      } finally {
+        planner.freeCache(h)
+      }
+    }
+
+    it('picks the function of the first schema of the search path', () => {
+      expect(typeOf('b,a')[0]).toBe('int4')
+      expect(typeOf('a,b')[0]).toBe('text')
+      expect(typeOf('b,a')[1]).toMatchObject({
+        kind: 'computed',
+        function: { schema: 'b', name: 'label' },
+      })
+    })
+
+    it('does not see a function of a schema outside the search path', () => {
+      const [type, provenance] = typeOf('b')
+      expect(type).toBe('int4')
+      expect(provenance).toMatchObject({ function: { schema: 'b' } })
+      const [none, unresolved] = typeOf('extensions')
+      expect(none).toBeNull()
+      expect(unresolved).toMatchObject({ kind: 'unresolved' })
+    })
+
+    it('resolves a filter on a computed field the same way', () => {
+      expect(typeOf('b,a', '/users?select=username&label=eq.1')[2]).toMatchObject([
+        { kind: 'column', column: 'label', pgType: 'int4' },
+      ])
+    })
+  })
+
+  describe('summary output names', () => {
+    it('names aggregates the way PostgreSQL and the shape do', () => {
+      const p = ok(
+        planner.plan(catalog, {
+          method: 'GET',
+          url: '/inference_cases?select=price.sum(),count(),a:price.avg(),id,id.count(),optional_payload->>x',
+        })
+      )
+      expect(p.select.map((s) => s.outputName)).toEqual(['sum', 'count', 'a', 'id', 'count', 'x'])
+      expect(p.select.map((s) => s.outputName)).toEqual(p.shape?.fields.map((f) => f.name))
+      const embedded = ok(
+        planner.plan(catalog, { method: 'GET', url: '/users?select=username,messages(id.count())' })
+      )
+      expect(embedded.embeds[0].select.map((s) => s.outputName)).toEqual(['count'])
+    })
+  })
+
   it('throws when the wasm file is missing', async () => {
     await expect(loadPlanner({ wasmPath: '/nonexistent.wasm' })).rejects.toThrow(
       'nx build:wasm postgrest-planner'
