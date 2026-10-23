@@ -1,7 +1,17 @@
 import { watch as fsWatch } from 'node:fs'
 import { stat } from 'node:fs/promises'
-import { dirname, join, sep } from 'node:path'
-import type { MtimeFn, WatchFn, WatchHandle } from './types'
+import { dirname, join, resolve, sep } from 'node:path'
+import { createGenerator } from '../generate'
+import { messageOf } from './config'
+import { writeWith, type WriteInput, type WriteResult } from './generate'
+import {
+  resolveDeps,
+  type Clock,
+  type MtimeFn,
+  type OperationDeps,
+  type WatchFn,
+  type WatchHandle,
+} from './types'
 
 export const nodeWatch: WatchFn = (directory, onEvent) => {
   const watcher = fsWatch(directory, (_event, filename) => onEvent(filename))
@@ -16,6 +26,12 @@ export const nodeMtime: MtimeFn = (path) =>
     () => undefined
   )
 
+export const nodeClock: Clock = {
+  now: () => Date.now(),
+  setTimeout: (run, ms) => setTimeout(run, ms),
+  clearTimeout: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+}
+
 /**
  * File systems stamp modification times with a clock that may lag `Date.now()` (a few milliseconds on Linux), so an
  * edit just after a run started can carry a stamp just before it. A file stamped within this margin of the start
@@ -28,6 +44,7 @@ const SOURCE = /\.(?:[cm]?[jt]s|[jt]sx)$/
 export interface WatchLoopOptions {
   watch: WatchFn
   mtime: MtimeFn
+  clock?: Clock
   debounceMs: number
   signal?: AbortSignal
   /** Runs one generation and returns the files it depends on (absolute paths) */
@@ -45,9 +62,10 @@ export interface WatchLoopOptions {
  */
 export async function watchLoop(options: WatchLoopOptions): Promise<void> {
   const { watch, mtime, debounceMs, signal, ignore } = options
+  const clock = options.clock ?? nodeClock
   let watched = new Set<string>()
   let handles = new Map<string, WatchHandle>()
-  let timer: ReturnType<typeof setTimeout> | undefined
+  let timer: unknown
   let running: Promise<void> | undefined
   let dirty = false
   let stopped = false
@@ -71,8 +89,11 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
           directory,
           watch(directory, (filename) => {
             const path = filename === null ? undefined : join(directory, filename)
-            if (path === ignore || path?.split(sep).includes('node_modules')) return
-            if (path === undefined || watched.has(path) || SOURCE.test(path)) schedule()
+            if (path === ignore) return
+            // a file the run depends on counts wherever it lives (a tsconfig inherited from node_modules, the
+            // refresh stamp); a new source file does not when it sits in node_modules
+            if (path === undefined || watched.has(path)) return schedule()
+            if (SOURCE.test(path) && !path.split(sep).includes('node_modules')) schedule()
           })
         )
         added.add(directory)
@@ -93,7 +114,7 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
   const cycle = async (): Promise<void> => {
     do {
       dirty = false
-      const startedAt = Date.now()
+      const startedAt = clock.now()
       await sync(await options.run(), startedAt)
     } while (dirty && !stopped)
   }
@@ -108,8 +129,8 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
     })
   }
   function schedule(): void {
-    clearTimeout(timer)
-    timer = setTimeout(trigger, debounceMs)
+    clock.clearTimeout(timer)
+    timer = clock.setTimeout(trigger, debounceMs)
   }
 
   if (signal?.aborted) return
@@ -121,8 +142,71 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
     signal.addEventListener('abort', () => resolve(), { once: true })
   })
   stopped = true
-  clearTimeout(timer)
+  clock.clearTimeout(timer)
   for (const handle of handles.values()) handle.close()
   handles = new Map()
   await running
+}
+
+/** The I/O `watch` adds to the operations': how directories are watched, files stamped and time read. */
+export interface WatchDeps extends OperationDeps {
+  /** Defaults to `fs.watch` */
+  watch?: WatchFn
+  /** Defaults to `fs.stat` */
+  mtime?: MtimeFn
+  /** Defaults to the system clock */
+  clock?: Clock
+}
+
+/** What one pass of `watch` produced: the generation, or the failure that kept it from running. */
+export type WatchEvent =
+  | { kind: 'run'; result: WriteResult }
+  | { kind: 'error'; configFileName: string; message: string }
+
+export interface WatchOptions {
+  /** Quiet time before regenerating. Defaults to 100 */
+  debounceMs?: number
+  /** Ends the watch, after the run in flight has finished */
+  signal?: AbortSignal
+  /** Called after every pass, the first one included */
+  onEvent(event: WatchEvent): void
+}
+
+/**
+ * `write`, again whenever a file the generation depends on changes (the tsconfig and its `extends` chain, the schema
+ * snapshot, the refresh stamp of a live schema) or a source file appears next to one that is scanned. The planner and
+ * a live schema are kept between runs. A broken tsconfig is reported as an `error` event and waited out; nothing but
+ * `signal` ends the watch.
+ */
+export async function watch(
+  deps: WatchDeps,
+  input: WriteInput,
+  options: WatchOptions
+): Promise<void> {
+  const resolved = resolveDeps(deps)
+  const generator = createGenerator(resolved)
+  const configFileName = resolve(resolved.cwd, input.project ?? 'tsconfig.json')
+  try {
+    await watchLoop({
+      watch: deps.watch ?? nodeWatch,
+      mtime: deps.mtime ?? nodeMtime,
+      clock: deps.clock ?? nodeClock,
+      debounceMs: options.debounceMs ?? 100,
+      ...(options.signal ? { signal: options.signal } : {}),
+      ignore: resolve(resolved.cwd, input.out),
+      run: async () => {
+        try {
+          const result = await writeWith(resolved, input, generator)
+          options.onEvent({ kind: 'run', result })
+          return result.watchedFiles
+        } catch (error) {
+          // a broken tsconfig must not end the watch: report it and wait for the fix
+          options.onEvent({ kind: 'error', configFileName, message: messageOf(error) })
+          return [configFileName]
+        }
+      },
+    })
+  } finally {
+    await generator.close()
+  }
 }

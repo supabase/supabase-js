@@ -1,24 +1,15 @@
-import type { GeneratorDeps, GeneratorFs } from '../generate'
+import type { GeneratorDeps } from '../generate'
+import type { MtimeFn, OperationFs, WatchFn, WatchHandle } from '../operations'
 
 /** Where the CLI writes. `process.stdout` and `process.stderr` fit. */
 export interface CliOutput {
   write(chunk: string): unknown
 }
 
-export interface CliFs extends GeneratorFs {
-  /** Removes a file or directory; a missing path is not an error */
-  rm(path: string): Promise<void>
-}
+/** The file system the commands use: the operations' own. */
+export type CliFs = OperationFs
 
-export interface WatchHandle {
-  close(): void
-}
-
-/** Watches a directory (not recursively); `filename` is relative to it, or null when the platform does not say. */
-export type WatchFn = (directory: string, onEvent: (filename: string | null) => void) => WatchHandle
-
-/** Last modification time of a file in milliseconds since the epoch, or undefined when it cannot be read. */
-export type MtimeFn = (path: string) => Promise<number | undefined>
+export type { MtimeFn, WatchFn, WatchHandle }
 
 export interface CliOptions {
   stdout: CliOutput
@@ -41,20 +32,6 @@ export interface CliOptions {
   debounceMs?: number
   /** Printed by `--version`. */
   version?: string
-}
-
-/** What a command runs with: `CliOptions` with the defaults filled in. */
-export interface CliContext {
-  stdout: CliOutput
-  stderr: CliOutput
-  fs: CliFs
-  env: Record<string, string | undefined>
-  cwd: string
-  deps: NonNullable<CliOptions['deps']>
-  signal?: AbortSignal
-  watch: WatchFn
-  mtime: MtimeFn
-  debounceMs: number
 }
 
 export interface Flags {

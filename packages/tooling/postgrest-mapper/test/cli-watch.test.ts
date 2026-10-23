@@ -1,4 +1,4 @@
-import { watchLoop } from '../src/cli/watch'
+import { watchLoop } from '../src/operations/watch'
 import type { WatchHandle } from '../src/cli'
 
 const SRC = '/project/src'

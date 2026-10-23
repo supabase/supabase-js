@@ -1,8 +1,14 @@
 import { dirname, relative, resolve, sep } from 'node:path'
-import { stripJsonc } from '../generate'
 import type { OptionDiagnostic } from '../content-mapper'
+import { stripJsonc } from '../generate'
 import { locate, parseJsonc, positionOf } from './jsonc'
-import type { CliContext, Flags } from './types'
+import {
+  OperationError,
+  type LocatedDiagnostic,
+  type ProjectInput,
+  type ResolvedDeps,
+  type SchemaOverrides,
+} from './types'
 
 /** The extension the mapper's index file has. */
 export const INDEX_EXTENSION = '.pgrst-index'
@@ -17,6 +23,7 @@ export function display(cwd: string, path: string): string {
 }
 
 export interface MapperConfig {
+  /** Absolute path of the tsconfig */
   configFileName: string
   /** The `options` of the `.pgrst-index` entry, overrides applied */
   options: unknown
@@ -25,51 +32,63 @@ export interface MapperConfig {
   text: string
 }
 
-export class CliError extends Error {}
+export const projectDirOf = (config: Pick<MapperConfig, 'configFileName'>): string =>
+  dirname(config.configFileName)
 
-/** Reads the tsconfig's `contentMappers` entry for `.pgrst-index`; throws `CliError` when there is none. */
-export async function readMapperConfig(ctx: CliContext, flags: Flags): Promise<MapperConfig> {
-  const configFileName = resolve(ctx.cwd, flags.project ?? 'tsconfig.json')
-  const shown = display(ctx.cwd, configFileName)
+export const configFileOf = (deps: Pick<ResolvedDeps, 'cwd'>, input: ProjectInput): string =>
+  resolve(deps.cwd, input.project ?? 'tsconfig.json')
+
+/** Reads the tsconfig's `contentMappers` entry for `.pgrst-index`; throws `OperationError` when there is none. */
+export async function readMapperConfig(
+  deps: ResolvedDeps,
+  input: ProjectInput
+): Promise<MapperConfig> {
+  const configFileName = configFileOf(deps, input)
+  const shown = display(deps.cwd, configFileName)
   let text: string
   try {
-    text = await ctx.fs.readFile(configFileName)
+    text = await deps.fs.readFile(configFileName)
   } catch (error) {
-    throw new CliError(`cannot read ${shown}: ${messageOf(error)}`)
+    throw new OperationError('config-unreadable', `cannot read ${shown}: ${messageOf(error)}`)
   }
   let parsed: { contentMappers?: unknown }
   try {
     parsed = JSON.parse(stripJsonc(text)) as { contentMappers?: unknown }
   } catch (error) {
-    throw new CliError(`cannot parse ${shown}: ${messageOf(error)}`)
+    throw new OperationError('config-invalid', `cannot parse ${shown}: ${messageOf(error)}`)
   }
   const mappers = Array.isArray(parsed.contentMappers) ? (parsed.contentMappers as unknown[]) : []
-  const entryIndex = mappers.findIndex(
-    (entry) =>
-      typeof entry === 'object' &&
-      entry !== null &&
-      Array.isArray((entry as { extensions?: unknown }).extensions) &&
-      ((entry as { extensions: unknown[] }).extensions as unknown[]).includes(INDEX_EXTENSION)
-  )
+  const entryIndex = mappers.findIndex(isIndexEntry)
   if (entryIndex === -1) {
-    throw new CliError(`${shown} has no contentMappers entry for ${INDEX_EXTENSION}`)
+    throw new OperationError(
+      'no-mapper-entry',
+      `${shown} has no contentMappers entry for ${INDEX_EXTENSION}`
+    )
   }
   const entry = mappers[entryIndex] as { options?: unknown }
   return {
     configFileName,
-    options: applyOverrides(ctx, flags, entry.options),
+    options: applyOverrides(deps.cwd, input, entry.options),
     entryIndex,
     text,
   }
 }
 
+/** Is this `contentMappers` entry the one for the index file? */
+export const isIndexEntry = (entry: unknown): boolean =>
+  typeof entry === 'object' &&
+  entry !== null &&
+  Array.isArray((entry as { extensions?: unknown }).extensions) &&
+  ((entry as { extensions: unknown[] }).extensions as unknown[]).includes(INDEX_EXTENSION)
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-/** `--schema-source`, `--snapshot` and `--db-url-env` replace the matching part of the `schema` option. */
-export function applyOverrides(ctx: CliContext, flags: Flags, options: unknown): unknown {
-  const source = flags.schemaSource ?? (flags.snapshot !== undefined ? 'snapshot' : undefined)
-  if (source === undefined && flags.dbUrlEnv === undefined) return options
+/** The overrides replace the matching part of the `schema` option. */
+export function applyOverrides(cwd: string, overrides: SchemaOverrides, options: unknown): unknown {
+  const source =
+    overrides.schemaSource ?? (overrides.snapshot !== undefined ? 'snapshot' : undefined)
+  if (source === undefined && overrides.dbUrlEnv === undefined) return options
   if (!isRecord(options)) return options
   const current = isRecord(options.schema) ? options.schema : {}
   const target = source ?? (current.source as string | undefined)
@@ -78,14 +97,14 @@ export function applyOverrides(ctx: CliContext, flags: Flags, options: unknown):
   else if (target === 'snapshot') {
     schema = {
       source: 'snapshot',
-      ...(flags.snapshot !== undefined
-        ? { path: resolve(ctx.cwd, flags.snapshot) }
+      ...(overrides.snapshot !== undefined
+        ? { path: resolve(cwd, overrides.snapshot) }
         : current.path !== undefined
           ? { path: current.path }
           : {}),
     }
   } else if (target === 'postgrest') {
-    const dbUrlEnv = flags.dbUrlEnv ?? current.dbUrlEnv
+    const dbUrlEnv = overrides.dbUrlEnv ?? current.dbUrlEnv
     schema = {
       source: 'postgrest',
       ...(dbUrlEnv !== undefined ? { dbUrlEnv } : {}),
@@ -95,13 +114,11 @@ export function applyOverrides(ctx: CliContext, flags: Flags, options: unknown):
   return { ...options, schema }
 }
 
-/** `file:line:col code message` of an option diagnostic, at the value in the tsconfig when it can be found. */
-export function formatOptionDiagnostic(
-  ctx: CliContext,
+/** An option diagnostic placed at the value in the tsconfig, when it can be found. */
+export function locateOptionDiagnostic(
   config: MapperConfig,
   diagnostic: OptionDiagnostic
-): string {
-  const file = display(ctx.cwd, config.configFileName)
+): LocatedDiagnostic {
   let line = 1
   let column = 1
   try {
@@ -117,7 +134,11 @@ export function formatOptionDiagnostic(
   } catch {
     // the file was read and parsed once already; a failure here only costs the position
   }
-  return `${file}:${line}:${column} ${diagnostic.code} ${diagnostic.messageText}`
+  return {
+    file: config.configFileName,
+    line,
+    column,
+    code: diagnostic.code,
+    message: diagnostic.messageText,
+  }
 }
-
-export const projectDirOf = (config: MapperConfig): string => dirname(config.configFileName)

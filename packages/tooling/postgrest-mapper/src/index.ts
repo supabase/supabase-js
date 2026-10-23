@@ -233,4 +233,52 @@ export type {
   SelectsEntry,
 } from './printer'
 export { USAGE, nodeCliFs, runCli } from './cli'
-export type { CliFs, CliOptions, CliOutput, WatchFn, WatchHandle } from './cli'
+export type { CliFs, CliOptions, CliOutput } from './cli'
+
+// The commands as functions with injected I/O (the CLI only parses arguments and presents their results)
+export {
+  DEFAULT_INDEX,
+  DEFAULT_OUT,
+  DEFAULT_SNAPSHOT,
+  OperationError,
+  check,
+  generate,
+  init,
+  nodeClock,
+  nodeMtime,
+  nodeOperationFs,
+  nodeWatch,
+  refresh,
+  snapshot,
+  watch,
+  watchLoop,
+  write,
+} from './operations'
+export type {
+  CheckResult,
+  CheckStatus,
+  Clock,
+  GenerateResult,
+  InitChange,
+  InitInput,
+  InitResult,
+  LocatedDiagnostic,
+  MtimeFn,
+  OperationDeps,
+  OperationErrorCode,
+  OperationFs,
+  ProjectInput,
+  RefreshInput,
+  RefreshResult,
+  SchemaOverrides,
+  SnapshotInput,
+  SnapshotResult,
+  WatchDeps,
+  WatchEvent,
+  WatchFn,
+  WatchHandle,
+  WatchLoopOptions,
+  WatchOptions,
+  WriteInput,
+  WriteResult,
+} from './operations'

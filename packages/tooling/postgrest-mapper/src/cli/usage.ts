@@ -11,9 +11,13 @@ Commands:
   generate   Writes the declarations the content mapper would produce. --check exits 1 when the file is
              stale and never writes; --watch regenerates when a scanned file or the snapshot changes.
   print      Prints the declarations to stdout.
-  refresh    Clears the generator cache (node_modules/.cache/postgrest-mapper) and regenerates.
-  init       Adds the generated file to the tsconfig's "include" (or "files") and, next to a deno.json,
-             to its "compilerOptions.types". Comments are kept; running it again changes nothing.
+  refresh    Clears the generator cache (node_modules/.cache/postgrest-mapper), touches the refresh stamp
+             that makes a running watch or content mapper server acquire the live schema again, and
+             regenerates.
+  init       Sets a project up: adds the .pgrst-index contentMappers entry to the tsconfig (schema source
+             supabase-local next to a supabase/config.toml, a snapshot otherwise), creates the index file,
+             adds it and the generated file to "include" (or "files") and, next to a deno.json, to
+             "compilerOptions.types". Comments are kept; running it again changes nothing.
   snapshot   Acquires the schema and writes a snapshot file; --check compares instead of writing.
 
 Options:

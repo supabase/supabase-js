@@ -87,6 +87,17 @@ export interface PlanCacheOptions {
 
 export const cacheDirectoryOf = (projectDir: string): string => join(projectDir, ...CACHE_DIRECTORY)
 
+/** The file `refresh` rewrites inside the cache directory. */
+export const REFRESH_STAMP = 'refresh.stamp'
+
+/**
+ * A live schema is acquired once per process, so a process that did not run `refresh` cannot know it ran. The
+ * stamp is the signal: `refresh` gives it new content, every generator reads it before it reuses a live schema, and
+ * the content mapper lists it as a dependency so a running server regenerates when it changes.
+ */
+export const refreshStampOf = (cacheDirectory: string): string =>
+  join(cacheDirectory, REFRESH_STAMP)
+
 const fileName = (schemaId: string): string => `postgrest-mapper-${schemaId.slice(0, 32)}.json`
 
 export function createPlanCache(options: PlanCacheOptions): PlanCache {

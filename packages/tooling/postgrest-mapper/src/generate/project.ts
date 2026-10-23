@@ -301,3 +301,19 @@ export function displayPath(projectDir: string, file: string): string {
   const rel = relative(projectDir, file)
   return (rel.startsWith('..') ? file : rel).split(sep).join('/')
 }
+
+/** The nearest directory upwards from `startDir` that holds `supabase/config.toml`, or `undefined`. */
+export async function findSupabaseConfigDir(
+  fs: Pick<ProjectFs, 'readFile'>,
+  startDir: string
+): Promise<string | undefined> {
+  for (let dir = startDir; ; dir = dirname(dir)) {
+    try {
+      await fs.readFile(join(dir, 'supabase', 'config.toml'))
+      return dir
+    } catch {
+      // keep climbing
+    }
+    if (dirname(dir) === dir) return undefined
+  }
+}

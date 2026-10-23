@@ -42,6 +42,9 @@ const TSCONFIG = (options: unknown = undefined) => `{
 }
 `
 
+/** A tsconfig `contentMappers` entry that `init` finds already in place */
+const ENTRY = `{ "package": "@supabase/postgrest-mapper", "extensions": [".pgrst-index"], "options": { "postgrest": "16.4", "schema": { "source": "snapshot", "path": "schema.snapshot.json" } } }`
+
 async function setup(files: Record<string, string> = {}, tsconfig = TSCONFIG()) {
   project = await createTempProject(acquired, { 'src/app.ts': APP('username'), ...files })
   project.write('tsconfig.json', tsconfig)
@@ -187,6 +190,43 @@ describe('postgrest-mapper generate --watch', () => {
     controller.abort()
     expect((await done).code).toBe(0)
   }, 120_000)
+
+  it('regenerates when an inherited include is edited in a parent tsconfig', async () => {
+    const p = await setup(
+      {
+        'configs/base.json': '{ "include": ["../src"] }',
+        'more/app.ts': APP('status'),
+      },
+      TSCONFIG().replace('"include": ["src"],', '"extends": "./configs/base.json",')
+    )
+    const controller = new AbortController()
+    let stdout = ''
+    const done = run(
+      ['generate', '--project', 'tsconfig.json', '--out', 'types/supabase.d.ts', '--watch'],
+      {
+        signal: controller.signal,
+        debounceMs: 20,
+        stdout: { write: (chunk) => (stdout += chunk) },
+      }
+    )
+    const file = join(p.dir, 'types', 'supabase.d.ts')
+    const until = async (predicate: () => boolean): Promise<void> => {
+      const deadline = Date.now() + 60_000
+      while (!predicate()) {
+        if (Date.now() > deadline) throw new Error(`timed out; stdout: ${stdout}`)
+        await new Promise((r) => setTimeout(r, 50))
+      }
+    }
+    await until(() => stdout.includes('wrote types/supabase.d.ts'))
+    expect(readFileSync(file, 'utf8')).toContain('r|public|users|username')
+    expect(readFileSync(file, 'utf8')).not.toContain('r|public|users|status')
+
+    p.write('configs/base.json', '{ "include": ["../src", "../more"] }')
+    await until(() => readFileSync(file, 'utf8').includes('r|public|users|status'))
+
+    controller.abort()
+    expect((await done).code).toBe(0)
+  }, 120_000)
 })
 
 describe('postgrest-mapper init', () => {
@@ -198,16 +238,19 @@ describe('postgrest-mapper init', () => {
     const first = await run(['init', '--project', 'tsconfig.json', '--out', 'types/supabase.d.ts'])
     expect(first.code).toBe(0)
     const text = readFileSync(join(p.dir, 'tsconfig.json'), 'utf8')
-    expect(text).toBe(
-      '{\n  // keep me\n  "compilerOptions": {}, /* and me */\n  "include": ["lib", "types/supabase.d.ts"]\n}\n'
+    // the comments survive, and the mapper entry and the index file are part of the setup now
+    expect(text).toMatch(
+      /^\{\n {2}\/\/ keep me\n {2}"compilerOptions": \{\}, \/\* and me \*\/\n {2}"include": \["lib", "src\/supabase\.pgrst-index", "types\/supabase\.d\.ts"\],\n {2}"contentMappers": \[/
     )
+    expect(existsSync(join(p.dir, 'src', 'supabase.pgrst-index'))).toBe(true)
     const second = await run(['init', '--project', 'tsconfig.json', '--out', 'types/supabase.d.ts'])
     expect(second).toMatchObject({ code: 0, stdout: 'types/supabase.d.ts is already set up\n' })
     expect(readFileSync(join(p.dir, 'tsconfig.json'), 'utf8')).toBe(text)
   })
 
   it('leaves a project that already includes the file, or includes everything, alone', async () => {
-    const p = await setup({}, '{ "include": ["src/**/*.ts"] }')
+    const config = `{ "include": ["src/**/*.ts"], "contentMappers": [${ENTRY}] }`
+    const p = await setup({}, config)
     const result = await run([
       'init',
       '--project',
@@ -216,13 +259,11 @@ describe('postgrest-mapper init', () => {
       'src/gen/supabase.d.ts',
     ])
     expect(result.stdout).toContain('already set up')
-    expect(readFileSync(join(p.dir, 'tsconfig.json'), 'utf8')).toBe(
-      '{ "include": ["src/**/*.ts"] }'
-    )
+    expect(readFileSync(join(p.dir, 'tsconfig.json'), 'utf8')).toBe(config)
   })
 
   it('adds compilerOptions.types next to a deno.json', async () => {
-    const p = await setup({}, '{ "include": ["src"] }')
+    const p = await setup({}, `{ "include": ["src"], "contentMappers": [${ENTRY}] }`)
     p.write('deno.json', '{\n  // deno\n  "tasks": {}\n}\n')
     const args = ['init', '--project', 'tsconfig.json', '--out', 'types/supabase.d.ts']
     expect((await run(args)).code).toBe(0)

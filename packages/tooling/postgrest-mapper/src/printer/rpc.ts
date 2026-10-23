@@ -98,6 +98,10 @@ function scalarRow(context: SelectsContext, returns: CallReturns): string {
 
 const CALL_INDENT = '          '
 
+/** The planner's own reasons for a degraded call (` (media-handler:public.f)`), to say why there is no result. */
+const degradedNotes = (plan: CallPlan): string =>
+  plan.degraded.length ? ` (${plan.degraded.join(', ')})` : ''
+
 function callMembers(
   context: SelectsContext,
   select: string,
@@ -113,9 +117,10 @@ function callMembers(
     ]
   }
   if (plan.form !== 'rowset' && plan.form !== 'single-composite') {
-    throw new CallError('the planner returned no result form for this call')
+    throw new CallError(`the planner returned no result form for this call${degradedNotes(plan)}`)
   }
-  if (!plan.shape) throw new CallError('the planner returned no result shape for this call')
+  if (!plan.shape)
+    throw new CallError(`the planner returned no result shape for this call${degradedNotes(plan)}`)
   const printed = printResultShape(context, plan.shape, plan.degraded)
   const members = [
     `form: ${plan.form === 'rowset' ? "'rows'" : "'single-row'"}`,

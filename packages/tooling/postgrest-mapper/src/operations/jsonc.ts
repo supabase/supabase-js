@@ -148,6 +148,79 @@ function insertIntoObject(
   return text.slice(0, last.value.end) + separator + entry + text.slice(last.value.end)
 }
 
+const isObjectValue = (value: unknown): boolean => typeof value === 'object' && value !== null
+
+/** `value` as JSON; an object is spread over lines, continuing at `indent`. */
+const literalOf = (value: unknown, indent: string): string =>
+  isObjectValue(value)
+    ? JSON.stringify(value, null, 2).split('\n').join(`\n${indent}`)
+    : JSON.stringify(value)
+
+/**
+ * Adds `value` to the array at `path` (a missing array, and the objects leading to it, are created), leaving every
+ * other byte of `text` as it was. Returns `undefined` when `covered` says the array already holds it.
+ */
+export function addToArray(
+  text: string,
+  path: readonly string[],
+  value: unknown,
+  covered: (existing: JsoncNode[]) => boolean
+): string | undefined {
+  const root = parseJsonc(text)
+  if (root.kind !== 'object') throw new Error('the top-level value must be an object')
+  let object = root
+  for (let depth = 0; depth < path.length; depth++) {
+    const step = path[depth]!
+    const child = object.properties.find((p) => p.key === step)?.value
+    const isLast = depth === path.length - 1
+    if (!child) {
+      let literal: string
+      if (isObjectValue(value) && depth === path.length - 1) {
+        const first = object.properties[0]
+        const base = first
+          ? lineIndent(text, first.keyStart)
+          : `${lineIndent(text, object.start)}  `
+        literal = `[\n${base}  ${literalOf(value, `${base}  `)}\n${base}]`
+      } else {
+        literal = JSON.stringify([value])
+      }
+      for (let d = path.length - 1; d > depth; d--)
+        literal = `{ ${JSON.stringify(path[d])}: ${literal} }`
+      return insertIntoObject(text, object, step, literal)
+    }
+    if (isLast) {
+      if (child.kind !== 'array') throw new Error(`'${path.join('.')}' must be an array`)
+      if (covered(child.items)) return undefined
+      const lastItem = child.items[child.items.length - 1]
+      if (!lastItem) {
+        if (!isObjectValue(value)) {
+          return text.slice(0, child.start + 1) + literalOf(value, '') + text.slice(child.start + 1)
+        }
+        const base = lineIndent(text, child.start)
+        return (
+          text.slice(0, child.start) +
+          `[\n${base}  ${literalOf(value, `${base}  `)}\n${base}]` +
+          text.slice(child.end)
+        )
+      }
+      const first = child.items[0]!
+      const multiline = hasNewline(text, child.start, first.start)
+      const indent = multiline ? lineIndent(text, first.start) : ''
+      const separator = multiline ? `,\n${indent}` : ', '
+      return (
+        text.slice(0, lastItem.end) +
+        separator +
+        (multiline ? literalOf(value, indent) : JSON.stringify(value)) +
+        text.slice(lastItem.end)
+      )
+    }
+    if (child.kind !== 'object')
+      throw new Error(`'${path.slice(0, depth + 1).join('.')}' must be an object`)
+    object = child
+  }
+  return undefined
+}
+
 /**
  * Adds `value` to the string array at `path` (a missing array, and the objects leading to it, are created), leaving
  * every other byte of `text` as it was. Returns `undefined` when the array already holds it.
@@ -158,37 +231,11 @@ export function addToStringArray(
   value: string,
   covered: (existing: string[]) => boolean = (existing) => existing.includes(value)
 ): string | undefined {
-  const root = parseJsonc(text)
-  if (root.kind !== 'object') throw new Error('the top-level value must be an object')
-  let object = root
-  for (let depth = 0; depth < path.length; depth++) {
-    const step = path[depth]!
-    const child = object.properties.find((p) => p.key === step)?.value
-    const isLast = depth === path.length - 1
-    if (!child) {
-      let literal = JSON.stringify([value])
-      for (let d = path.length - 1; d > depth; d--)
-        literal = `{ ${JSON.stringify(path[d])}: ${literal} }`
-      return insertIntoObject(text, object, step, literal)
-    }
-    if (isLast) {
-      if (child.kind !== 'array') throw new Error(`'${path.join('.')}' must be an array`)
-      const existing = child.items.flatMap((item) =>
+  return addToArray(text, path, value, (items) =>
+    covered(
+      items.flatMap((item) =>
         item.kind === 'value' && typeof item.value === 'string' ? [item.value] : []
       )
-      if (covered(existing)) return undefined
-      const literal = JSON.stringify(value)
-      const lastItem = child.items[child.items.length - 1]
-      if (!lastItem) return text.slice(0, child.start + 1) + literal + text.slice(child.start + 1)
-      const first = child.items[0]!
-      const separator = hasNewline(text, child.start, first.start)
-        ? `,\n${lineIndent(text, first.start)}`
-        : ', '
-      return text.slice(0, lastItem.end) + separator + literal + text.slice(lastItem.end)
-    }
-    if (child.kind !== 'object')
-      throw new Error(`'${path.slice(0, depth + 1).join('.')}' must be an object`)
-    object = child
-  }
-  return undefined
+    )
+  )
 }

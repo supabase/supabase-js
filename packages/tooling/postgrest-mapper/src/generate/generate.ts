@@ -34,12 +34,13 @@ import {
   cacheDirectoryOf,
   createPlanCache,
   deserializeContext,
+  refreshStampOf,
   serializeContext,
 } from './cache'
 import type { CacheFile, PlanCache, StoredPlan } from './cache'
 import { planDatabase, printDatabaseMembers } from './database'
 import type { DatabasePlanContext } from './database'
-import { nodeProjectFs, resolveProjectFiles, displayPath } from './project'
+import { displayPath, findSupabaseConfigDir, nodeProjectFs, resolveProjectFiles } from './project'
 import type { ProjectFs } from './project'
 import {
   callIdOf,
@@ -158,7 +159,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
   const cwd = deps.cwd ?? process.cwd()
 
   // ---- state shared by every project of the process
-  const schemas = new Map<string, Promise<SchemaOk | SchemaFailure>>()
+  const schemas = new Map<string, { stamp: string; pending: Promise<SchemaOk | SchemaFailure> }>()
   let host: PlannerHost | undefined
   let tracer: Promise<Tracer> | undefined
   let stamp: Promise<string> | undefined
@@ -223,17 +224,8 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
   }
 
   /** The nearest directory upwards that holds `supabase/config.toml`, else the project's own */
-  const findSupabaseWorkdir = async (projectDir: string): Promise<string> => {
-    for (let dir = projectDir; ; dir = dirname(dir)) {
-      try {
-        await fs.readFile(resolve(dir, 'supabase', 'config.toml'))
-        return dir
-      } catch {
-        // keep climbing
-      }
-      if (dirname(dir) === dir) return projectDir
-    }
-  }
+  const findSupabaseWorkdir = async (projectDir: string): Promise<string> =>
+    (await findSupabaseConfigDir(fs, projectDir)) ?? projectDir
 
   const acquire = async (
     options: PostgrestMapperOptions,
@@ -265,21 +257,24 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
 
   /**
    * A snapshot is read at every open (it is a file the project watches and it is cheap); a live source is acquired
-   * once per process and source, because it costs a container round trip and a database connection.
+   * once per process and source, because it costs a container round trip and a database connection. It is acquired
+   * again when the project's refresh stamp changed: `refresh` in another process cannot reach this one's memory.
    */
   const schemaFor = async (
     options: PostgrestMapperOptions,
-    projectDir: string
+    projectDir: string,
+    stampPath: string | undefined
   ): Promise<SchemaOk | SchemaFailure> => {
     if (options.schema.source === 'snapshot') return acquire(options, projectDir)
     const key = hashOptions({ schema: options.schema, projectDir, db: dbKey(options) })
-    let pending = schemas.get(key)
-    if (!pending) {
-      pending = acquire(options, projectDir)
-      schemas.set(key, pending)
+    const stamp = stampPath === undefined ? '' : await fs.readFile(stampPath).catch(() => '')
+    let entry = schemas.get(key)
+    if (!entry || entry.stamp !== stamp) {
+      entry = { stamp, pending: acquire(options, projectDir) }
+      schemas.set(key, entry)
     }
-    const result = await pending
-    if (!result.ok) schemas.delete(key) // a failure is retried at the next open
+    const result = await entry.pending
+    if (!result.ok && schemas.get(key) === entry) schemas.delete(key) // a failure is retried at the next open
     return result
   }
   const dbKey = (options: PostgrestMapperOptions): string | undefined =>
@@ -371,7 +366,8 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
           acquired,
           host: h,
           tracer: await getTracer(),
-          logger,
+          // the non-info notes come back in `warnings`: the logger only keeps the debug trail
+          logger: { ...logger, warn: (message) => logger.debug(message) },
           loaded: true,
         })
         if (!planned.ok) {
@@ -472,12 +468,22 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       warnings: [],
     })
 
-    const schema = await schemaFor(options, projectDir)
+    const cacheDirectory =
+      deps.cacheDirectory === false
+        ? undefined
+        : (deps.cacheDirectory ?? cacheDirectoryOf)(projectDir)
+    // what `refresh` touches: only a live source is held in memory, so only it depends on the stamp
+    const stampPath =
+      cacheDirectory !== undefined && options.schema.source !== 'snapshot'
+        ? refreshStampOf(cacheDirectory)
+        : undefined
+    const schema = await schemaFor(options, projectDir, stampPath)
+    const schemaWatched = [...schema.watched, ...(stampPath ? [stampPath] : [])]
     if (!schema.ok) {
       if (schema.diagnostic) report(DiagnosticCode.SchemaUnavailable, schema.diagnostic)
       return empty(
         schema.diagnostic ?? schema.optionDiagnostic?.messageText ?? 'schema',
-        schema.watched,
+        schemaWatched,
         schema.optionDiagnostic ? [schema.optionDiagnostic] : []
       )
     }
@@ -525,14 +531,10 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       `scanned ${resolved.files.length} files: ${selectKeys.length} selects, ${rpcKeys.length} rpc calls, ${operandKeys.length} operands, ${scan.unresolved.length} unresolved uses`
     )
     const watchedFiles = [
-      ...new Set([...resolved.files, ...resolved.configFiles, ...schema.watched]),
+      ...new Set([...resolved.files, ...resolved.configFiles, ...schemaWatched]),
     ].sort()
 
     // ---- plan
-    const cacheDirectory =
-      deps.cacheDirectory === false
-        ? undefined
-        : (deps.cacheDirectory ?? cacheDirectoryOf)(projectDir)
     let cache: PlanCache | undefined
     let stampValue: string
     try {
@@ -703,7 +705,10 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       optionDiagnostics: [],
       keys: ids,
       cache: planned.cache,
-      warnings: planned.warnings,
+      warnings: [
+        ...planned.warnings,
+        ...planned.contextDiagnostics.filter((d) => d.severity !== 'info').map((d) => d.message),
+      ],
     }
   }
 
@@ -762,6 +767,23 @@ export interface GenerateDeclarationsResult extends GenerateOutput {}
 export async function generateDeclarations(
   input: GenerateDeclarationsInput
 ): Promise<GenerateDeclarationsResult> {
+  const configFileName = input.configFileName ?? resolve(input.projectDir, 'tsconfig.json')
+  const generator = createGenerator(input.deps)
+  try {
+    return await generateFrom(generator, { configFileName, options: input.options })
+  } finally {
+    await generator.close()
+  }
+}
+
+/**
+ * `generateDeclarations` on a generator the caller keeps: a long-lived caller (watch) reuses its planner host and
+ * its live schema between runs. Invalid options come back as `optionDiagnostics` with an empty module.
+ */
+export async function generateFrom(
+  generator: Generator,
+  input: { configFileName: string; options: unknown }
+): Promise<GenerateOutput> {
   const validation = validateOptions(input.options)
   if (!validation.ok) {
     return {
@@ -775,11 +797,5 @@ export async function generateDeclarations(
       warnings: [],
     }
   }
-  const configFileName = input.configFileName ?? resolve(input.projectDir, 'tsconfig.json')
-  const generator = createGenerator(input.deps)
-  try {
-    return await generator.generate({ configFileName, options: validation.options })
-  } finally {
-    await generator.close()
-  }
+  return generator.generate({ configFileName: input.configFileName, options: validation.options })
 }
