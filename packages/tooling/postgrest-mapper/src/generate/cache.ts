@@ -39,6 +39,8 @@ export interface CacheFile {
   generator: number
   /** Stamp of the planner build: another planner may answer differently */
   planner: string
+  /** `postgrest.version` the planner reported when it planned: checked against the configuration without starting it */
+  plannerRelease: string
   schema: string
   context: StoredContext
   entries: Record<string, StoredPlan>

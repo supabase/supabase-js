@@ -118,4 +118,44 @@ describe('resolveProjectFiles', () => {
     expect(result.warnings).toHaveLength(1)
     expect(dirname(at('missing.json'))).toBe(DIR)
   })
+
+  describe('the configs it read', () => {
+    it('is the config itself when it extends nothing', async () => {
+      const { configFiles } = await resolveWith(`{ "include": ["src"] }`)
+      expect(configFiles).toEqual([at('tsconfig.json')])
+    })
+
+    it('is the whole extends chain: relative, nested, an array and a package', async () => {
+      const { configFiles, files } = await resolveWith(
+        `{ "extends": ["./base.json", "@acme/tsconfig/lib.json", "@acme/preset"] }`,
+        undefined,
+        {
+          [at('base.json')]: `{ "extends": "./configs/root" }`,
+          [at('configs/root.json')]: `{ "include": ["../src"] }`,
+          // found in the nearest node_modules upwards
+          ['/work/node_modules/@acme/tsconfig/lib.json']: `{ "exclude": ["/work/app/src/skip"] }`,
+          // a bare package name is its tsconfig.json
+          [at('node_modules/@acme/preset/tsconfig.json')]:
+            `{ "compilerOptions": { "allowJs": true } }`,
+        }
+      )
+      expect(configFiles).toEqual(
+        [
+          at('tsconfig.json'),
+          at('base.json'),
+          at('configs/root.json'),
+          '/work/node_modules/@acme/tsconfig/lib.json',
+          at('node_modules/@acme/preset/tsconfig.json'),
+        ].sort()
+      )
+      // the package configs apply: the inherited include, exclude and allowJs
+      expect(files).toEqual([at('src/a.ts'), at('src/legacy.js'), at('src/nested/b.tsx')])
+    })
+
+    it('lists a parent that cannot be read, so creating it is noticed', async () => {
+      const { configFiles, warnings } = await resolveWith(`{ "extends": "./later.json" }`)
+      expect(configFiles).toEqual([at('later.json'), at('tsconfig.json')])
+      expect(warnings).toHaveLength(1)
+    })
+  })
 })

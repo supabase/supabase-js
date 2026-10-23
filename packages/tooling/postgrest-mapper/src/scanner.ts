@@ -42,11 +42,12 @@ type Root =
   | { type: 'function'; names: string[] | undefined; keys: string[] | null; methods: RpcMethod[] }
 
 /**
- * What a builder chain looks like at one point, mirroring the builder's type state: the schema (`undefined`: none
- * resolved, so every exposed schema), what `.from()` / `.rpc()` named, and the select the builder carries.
+ * What a builder chain looks like at one point, mirroring the builder's type state: the schema (`undefined`: no
+ * `.schema()` call, so the default schema; `'unresolved'`: a `.schema()` whose argument does not resolve, so any exposed
+ * schema), what `.from()` / `.rpc()` named, and the select the builder carries.
  */
 interface Chain {
-  schemas: string[] | undefined
+  schemas: string[] | 'unresolved' | undefined
   root: Root | undefined
   /** the current select: `['*']` until a `.select(q)`; `undefined` when it doesn't resolve */
   select: string[] | undefined
@@ -54,8 +55,8 @@ interface Chain {
 const EMPTY: Chain = { schemas: undefined, root: undefined, select: ['*'] }
 
 interface NameUse {
-  /** `undefined`: some use had no resolvable schema, so every exposed schema */
-  schemas: Set<string> | undefined
+  /** The schemas of every use (`scopeOf` of each): `'exposed'` once one of them is any exposed schema */
+  schemas: Set<string> | 'exposed'
   kinds: Set<'r' | 'w'>
 }
 
@@ -227,10 +228,11 @@ export class FileScanner {
     this.acc.unresolved.set(`${what}|${location.fileName}|${location.start}`, { what, location })
   }
 
-  private scopeOf(schemas: string[] | undefined): SchemaScope {
-    if (schemas) return [...new Set(schemas)].sort()
-    const exposed = this.options.exposedSchemas
-    return exposed ? [...new Set(exposed)].sort() : 'exposed'
+  private scopeOf(schemas: string[] | 'unresolved' | undefined): SchemaScope {
+    if (Array.isArray(schemas)) return [...new Set(schemas)].sort()
+    const { defaultSchema, exposedSchemas } = this.options
+    if (schemas === undefined && defaultSchema !== undefined) return [defaultSchema]
+    return exposedSchemas ? [...new Set(exposedSchemas)].sort() : 'exposed'
   }
 
   // -------------------------------------------------------------- chain evaluation
@@ -261,7 +263,7 @@ export class FileScanner {
     const recv = this.chainOf(receiver, scope)
     switch (name) {
       case 'schema': {
-        const schemas = args[0] ? resolveStrings(args[0], scope) : undefined
+        const schemas = args[0] ? (resolveStrings(args[0], scope) ?? 'unresolved') : undefined
         return { ...recv, schemas }
       }
       case 'from': {
@@ -379,7 +381,7 @@ export class FileScanner {
   private useName(
     type: 'relation' | 'function',
     name: string,
-    schemas: string[] | undefined,
+    schemas: string[] | 'unresolved' | undefined,
     kind: 'r' | 'w' = 'r'
   ): void {
     const map = type === 'relation' ? this.relations : this.functions
@@ -389,8 +391,9 @@ export class FileScanner {
       map.set(name, use)
     }
     if (type === 'relation') use.kinds.add(kind)
-    if (!schemas) use.schemas = undefined
-    else if (use.schemas) for (const s of schemas) use.schemas.add(s)
+    const scope = this.scopeOf(schemas)
+    if (scope === 'exposed') use.schemas = 'exposed'
+    else if (use.schemas !== 'exposed') for (const s of scope) use.schemas.add(s)
   }
 
   private addSelect(target: PlanTarget, select: string, location: SourceLocation): void {
@@ -499,7 +502,7 @@ export class FileScanner {
         const pair: FallbackPair = {
           select,
           target,
-          schemas: this.scopeOf(use.schemas ? [...use.schemas] : undefined),
+          schemas: use.schemas === 'exposed' ? 'exposed' : [...use.schemas].sort(),
           locations: [],
         }
         const key = JSON.stringify([

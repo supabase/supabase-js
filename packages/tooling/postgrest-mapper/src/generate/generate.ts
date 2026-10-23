@@ -1,6 +1,6 @@
 import { stat } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import type { PlanRequest, PlanResult } from '@supabase/postgrest-planner'
+import type { PlanRequest } from '@supabase/postgrest-planner'
 import { DiagnosticCode, validateOptions } from '../content-mapper/options'
 import type { PostgrestMapperOptions } from '../content-mapper/options'
 import { hashOptions } from '../content-mapper/hash'
@@ -10,8 +10,8 @@ import type {
   ProjectGenerator,
 } from '../content-mapper/generator'
 import type { MapperDiagnostic, OptionDiagnostic } from '../content-mapper/protocol'
-import { HOST_ERROR, createPlannerHost } from '../host'
-import type { PlannerHost } from '../host'
+import { createPlannerHost, isHostFailure, judgeReleases } from '../host'
+import type { PlannerHost, ReleaseClaim, ReleaseVerdict } from '../host'
 import {
   callReturnsOf,
   createSelectsContext,
@@ -55,7 +55,7 @@ import {
  * Bump when what the cache stores, or what the printer prints from it, changes. It is part of the identity and of
  * the cache validity, so the TypeScript server and the disk cache both see a new generator as a new input.
  */
-export const GENERATOR_REVISION = 2
+export const GENERATOR_REVISION = 4
 
 export interface GeneratorLogger {
   debug(message: string): void
@@ -104,6 +104,11 @@ export interface GenerateOutput extends GenerateProjectResult {
    */
   keys: string[]
   cache: CacheOutcome
+  /**
+   * Problems that do not stop the module: a configured or server release of another patch than the planner's
+   * (another line is a `PlannerIncompatible` diagnostic and an empty module)
+   */
+  warnings: string[]
 }
 
 export interface Generator {
@@ -283,23 +288,35 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       : undefined
 
   // ---- planning
-  const hostFailure = (result: PlanResult): boolean =>
-    !result.ok && Object.values(HOST_ERROR).includes(String(result.error.code) as never)
-
   interface Planned {
     entries: Map<string, StoredPlan>
     context: DatabasePlanContext
     contextDiagnostics: PrintDiagnostic[]
     cache: CacheOutcome
     failures: string[]
+    /** Releases of another patch than the planner's */
+    warnings: string[]
+    /** The release the planner models: what the cache file keeps for the next run */
+    plannerRelease: string
   }
+
+  interface PlanFailure {
+    failure: string
+    code: number
+  }
+
+  const incompatible = (verdict: ReleaseVerdict): PlanFailure => ({
+    failure: verdict.failures.join('; '),
+    code: DiagnosticCode.PlannerIncompatible,
+  })
 
   const plan = async (
     acquired: AcquiredSchema,
     schemaId: string,
     keys: PlanItem[],
-    cache: PlanCache | undefined
-  ): Promise<Planned | { failure: string }> => {
+    cache: PlanCache | undefined,
+    claims: ReleaseClaim[]
+  ): Promise<Planned | PlanFailure> => {
     const cached = await cache?.read(schemaId)
     const entries = new Map<string, StoredPlan>()
     for (const k of keys) {
@@ -308,19 +325,33 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
     }
     const missing = keys.filter((k) => !entries.has(k.id))
     let context = cached ? deserializeContext(cached.context) : undefined
-    if (context && missing.length === 0) {
+    if (cached && context && missing.length === 0) {
       logger.debug(`cache hit: ${keys.length} keys of schema ${schemaId.slice(0, 12)}`)
+      const verdict = judgeReleases(cached.plannerRelease, claims)
+      if (verdict.failures.length > 0) return incompatible(verdict)
       return {
         entries,
         context,
         contextDiagnostics: context.diagnostics,
         cache: 'hit',
         failures: [],
+        warnings: verdict.warnings,
+        plannerRelease: cached.plannerRelease,
       }
     }
 
     return exclusive(async () => {
       const h = getHost()
+      const info = await h.info()
+      if (!info.ok) {
+        return {
+          failure:
+            `the planner could not start: ${info.error.code ?? ''} ${info.error.message ?? ''}`.trim(),
+          code: DiagnosticCode.PlannerUnavailable,
+        }
+      }
+      const verdict = judgeReleases(info.postgrest.version, claims)
+      if (verdict.failures.length > 0) return incompatible(verdict)
       if (loadedSchema !== schemaId) {
         loadedSchema = undefined
         const loaded = await h.load(acquired)
@@ -328,6 +359,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
           return {
             failure:
               `the planner could not load the schema: ${loaded.error.code ?? ''} ${loaded.error.message ?? ''}`.trim(),
+            code: DiagnosticCode.PlannerUnavailable,
           }
         }
         loadedSchema = schemaId
@@ -342,16 +374,23 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
           logger,
           loaded: true,
         })
-        if (!planned.ok) return { failure: planned.diagnostics.map((d) => d.message).join('; ') }
+        if (!planned.ok) {
+          return {
+            failure: planned.diagnostics.map((d) => d.message).join('; '),
+            code: DiagnosticCode.PlannerUnavailable,
+          }
+        }
         context = { ...planned.inputs, diagnostics: planned.inputs.diagnostics }
         diagnostics = planned.inputs.diagnostics
+        // a relation the host could not plan is missing from the context: the output reports it and the run is not cached
+        for (const name of planned.inputs.failures) failures.push(`select=* of ${name}`)
       }
       if (missing.length > 0) {
         logger.debug(`planning ${missing.length} of ${keys.length} keys`)
         const results = await h.planMany(missing.map((k) => k.request))
         missing.forEach((k, i) => {
           const result = results[i]!
-          if (hostFailure(result)) {
+          if (isHostFailure(result)) {
             failures.push(`${k.id}: ${plannerErrorMessage(result as never)}`)
             return
           }
@@ -388,6 +427,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
         format: CACHE_FORMAT,
         generator: GENERATOR_REVISION,
         planner: await plannerStamp(),
+        plannerRelease: info.postgrest.version,
         schema: schemaId,
         context: serializeContext(context, diagnostics),
         entries: Object.fromEntries([...entries].sort(([a], [b]) => (a < b ? -1 : 1))),
@@ -404,6 +444,8 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
               ? ('partial' as const)
               : ('miss' as const),
         failures,
+        warnings: verdict.warnings,
+        plannerRelease: info.postgrest.version,
       }
     })
   }
@@ -427,6 +469,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       optionDiagnostics,
       keys: [],
       cache: 'disabled',
+      warnings: [],
     })
 
     const schema = await schemaFor(options, projectDir)
@@ -460,9 +503,8 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
     const scan = scanFiles(
       sources.filter((s) => s !== undefined),
       {
-        exposedSchemas: options.defaultSchema
-          ? [options.defaultSchema]
-          : exposedSchemas(acquired.config),
+        exposedSchemas: exposedSchemas(acquired.config),
+        ...(options.defaultSchema ? { defaultSchema: options.defaultSchema } : {}),
       }
     )
     const signatures = routineSignatures(acquired.supplementary, acquired.dump)
@@ -482,7 +524,9 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
     logger.debug(
       `scanned ${resolved.files.length} files: ${selectKeys.length} selects, ${rpcKeys.length} rpc calls, ${operandKeys.length} operands, ${scan.unresolved.length} unresolved uses`
     )
-    const watchedFiles = [...new Set([...resolved.files, ...schema.watched])].sort()
+    const watchedFiles = [
+      ...new Set([...resolved.files, ...resolved.configFiles, ...schema.watched]),
+    ].sort()
 
     // ---- plan
     const cacheDirectory =
@@ -512,14 +556,17 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
 
     let planned: Awaited<ReturnType<typeof plan>>
     try {
-      planned = await plan(acquired, schema.id, items, cache)
+      planned = await plan(acquired, schema.id, items, cache, [
+        { what: "option 'postgrest'", release: options.postgrest },
+        { what: 'the server release', release: acquired.postgrestVersion },
+      ])
     } catch (error) {
       logger.warn(`planning failed: ${messageOf(error)}`)
       report(DiagnosticCode.PlannerUnavailable, `the planner failed: ${messageOf(error)}`)
       return { ...empty(messageOf(error), watchedFiles), keys: ids }
     }
     if ('failure' in planned) {
-      report(DiagnosticCode.PlannerUnavailable, planned.failure)
+      report(planned.code, planned.failure)
       return { ...empty(planned.failure, watchedFiles), keys: ids }
     }
     for (const failure of planned.failures) {
@@ -634,9 +681,15 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       ...(importFrom ? { importFrom } : {}),
     })
 
+    // what the planner answered per key, not the keys asked: a plan that timed out (no entry) and the same plan once
+    // it recovers are different outputs (design v5 §5.1: the identity is the sorted (key, entry digest) list)
+    const digests = ids.map((id): [string, string | null] => {
+      const stored = planned.entries.get(id)
+      return [id, stored ? hashOptions(stored) : null]
+    })
     const identity = hashOptions({
       schema: schema.id,
-      keys: ids,
+      entries: digests,
       generator: GENERATOR_REVISION,
       planner: stampValue,
       options,
@@ -650,6 +703,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       optionDiagnostics: [],
       keys: ids,
       cache: planned.cache,
+      warnings: planned.warnings,
     }
   }
 
@@ -718,6 +772,7 @@ export async function generateDeclarations(
       optionDiagnostics: validation.diagnostics,
       keys: [],
       cache: 'disabled',
+      warnings: [],
     }
   }
   const configFileName = input.configFileName ?? resolve(input.projectDir, 'tsconfig.json')

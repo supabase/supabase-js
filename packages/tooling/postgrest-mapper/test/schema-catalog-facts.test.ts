@@ -1,6 +1,7 @@
 import {
   buildDatabaseDeclarations,
   buildJsonSchemaInput,
+  PLANNER_ABI,
   createTracer,
   type AcquiredSchema,
   type PlannerHost,
@@ -131,6 +132,12 @@ describe('materialized views (F5)', () => {
   }
   /** What the planner says about `select=*`: plain columns with their attnotnull */
   const host: PlannerHost = {
+    info: async () => ({
+      ok: true,
+      abi: PLANNER_ABI,
+      ghc: 'ghc',
+      postgrest: { version: '16.4', tag: 'v16.4', commit: '' },
+    }),
     load: async () => ({ ok: true, degraded: [] }) as never,
     plan: async () => ({ ok: false }) as never,
     planMany: async (requests: PlanRequest[]): Promise<PlanResult[]> =>

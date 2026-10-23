@@ -1,4 +1,5 @@
 import type { PlanResult, ShapeField } from '@supabase/postgrest-planner'
+import { isHostFailure } from '../host'
 import type { PlannerHost } from '../host'
 import { jsonSchemaToTs } from '../jsonschema'
 import { printDatabase, printModule } from '../printer'
@@ -34,6 +35,11 @@ export interface DatabasePlanContext {
 /** `DatabasePlanContext` plus what was noticed while computing it. */
 export interface DatabaseInputs extends DatabasePlanContext {
   diagnostics: PrintDiagnostic[]
+  /**
+   * The relations whose `select=*` the host could not plan (a timeout, a crashed worker). They are missing from
+   * `plans` for that reason only, so the context is incomplete and a caller must not keep it
+   */
+  failures: string[]
 }
 
 /** The `SupabaseDatabase` members, without the module around them. */
@@ -167,6 +173,7 @@ export async function planDatabase(
     }))
   )
   const plans = new Map<string, readonly ShapeField[]>()
+  const failures: string[] = []
   relations.forEach((r, i) => {
     const name = `${r.schema}.${r.name}`
     const result = results[i]!
@@ -174,6 +181,7 @@ export async function planDatabase(
       if (result.error.code === NOT_IN_SCHEMA_CACHE) {
         note('info', `${name} is not in the PostgREST schema cache: left out`)
       } else {
+        if (isHostFailure(result)) failures.push(name)
         note(
           'warning',
           `could not plan select=* of ${name}: ${result.error.code ?? ''} ${result.error.message ?? ''}`.trim()
@@ -227,5 +235,5 @@ export async function planDatabase(
     note('info', `${i.schema}.${i.table}: constraint ${i.constraint} ignored: ${i.reason}`)
   }
 
-  return { ok: true, inputs: { plans, traces, jsonSchemas, diagnostics } }
+  return { ok: true, inputs: { plans, traces, jsonSchemas, diagnostics, failures } }
 }

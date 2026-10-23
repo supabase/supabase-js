@@ -1,7 +1,16 @@
-import type { LoadResult, PlanRequest, PlanResult } from '@supabase/postgrest-planner'
+import type {
+  LoadResult,
+  PlanRequest,
+  PlanResult,
+  PlannerError,
+  PlannerInfo,
+} from '@supabase/postgrest-planner'
 import type { AcquiredSchema } from '../schema'
 
-export type { LoadResult, PlanRequest, PlanResult }
+export type { LoadResult, PlanRequest, PlanResult, PlannerInfo }
+
+/** What the planner says about its own build, or why the host could not ask. */
+export type InfoResult = PlannerInfo | PlannerError
 
 export interface HostLogger {
   debug(message: string): void
@@ -20,6 +29,11 @@ export const HOST_ERROR = {
   closed: 'HOST_CLOSED',
 } as const
 
+/** Whether a plan result is a failure of the host itself (a timeout, a dead worker) and not the planner's verdict. */
+export function isHostFailure(result: PlanResult): boolean {
+  return !result.ok && (Object.values(HOST_ERROR) as string[]).includes(String(result.error.code))
+}
+
 /** Request sent to the worker: one at a time, answered by one `WorkerResponse` with the same id. */
 export type WorkerRequest =
   | {
@@ -29,6 +43,7 @@ export type WorkerRequest =
     }
   | { id: number; op: 'plan'; handle: number; request: PlanRequest }
   | { id: number; op: 'free'; handle: number }
+  | { id: number; op: 'info' }
 
 export type WorkerResponse =
   | { id: number; ok: true; result: unknown }
@@ -58,6 +73,11 @@ export interface PlannerHostOptions {
 }
 
 export interface PlannerHost {
+  /**
+   * The planner build (ABI, upstream release). Starts the worker if needed; a wasm that speaks another ABI than
+   * `PLANNER_ABI` is a `HOST_WORKER_FAILED` failure here, as it is for `load` and `plan`. Failures are values.
+   */
+  info(): Promise<InfoResult>
   /**
    * Loads the schema cache from the acquired inputs (the whole supplementary document goes to the planner, which
    * ignores the keys it does not know). Replaces a previous load. A failure is a value, never a throw.

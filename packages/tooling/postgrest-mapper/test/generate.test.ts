@@ -123,7 +123,9 @@ describe('generated declarations of a project', () => {
     })
     expect(result.diagnostics).toEqual([])
     expect(result.optionDiagnostics).toEqual([])
-    expect(result.watchedFiles).toEqual([join(p.dir, 'src/app.ts'), p.snapshotPath].sort())
+    expect(result.watchedFiles).toEqual(
+      [join(p.dir, 'src/app.ts'), p.snapshotPath, p.configFileName].sort()
+    )
     expect(result.text).toContain("'r|public|messages|id, channels(id)': {")
     // an embed the planner rejects is an error entry carrying the planner's code and message
     expect(result.text).toMatch(
@@ -172,9 +174,67 @@ describe('generated declarations of a project', () => {
       expect((await run()).keys).toEqual(['r|public|users|status', 'r|public|users|username'])
       const only = await run(['src/a.ts'])
       expect(only.keys).toEqual(['r|public|users|username'])
-      expect(only.watchedFiles).toEqual([join(p.dir, 'src/a.ts'), p.snapshotPath].sort())
+      expect(only.watchedFiles).toEqual(
+        [join(p.dir, 'src/a.ts'), p.snapshotPath, p.configFileName].sort()
+      )
     } finally {
       await generator.close()
+    }
+  }, 120_000)
+})
+
+describe('schemas of a chain', () => {
+  it('plans a chain whose .schema() does not resolve in every exposed schema, not only the default one', async () => {
+    const p = await project({
+      'src/app.ts': `
+        declare const name: string
+        supabase.schema(name).from('user_notes').select('id')
+        supabase.from('users').select('username')
+      `,
+    })
+    const result = await generateDeclarations({
+      configFileName: p.configFileName,
+      options: optionsOf(p),
+      deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
+    })
+    expect(result.diagnostics).toEqual([])
+    expect(result.keys).toContain('r|personal|user_notes|id')
+    expect(result.text).toMatch(/'r\|personal\|user_notes\|id': \{\n\s+row: \{ id: /)
+    expect(result.text).not.toContain("'r|public|user_notes|id'")
+    // a chain with no .schema() is the default schema's alone
+    expect(result.keys).toContain('r|public|users|username')
+    expect(result.keys).not.toContain('r|personal|users|username')
+  }, 120_000)
+})
+
+describe('the files of a project', () => {
+  it('watches the tsconfig and every config it extends, and rereads a changed parent', async () => {
+    const p = await project({
+      'src/app.ts': `supabase.from('users').select('username')`,
+      'other/more.ts': `supabase.from('channels').select('slug')`,
+      'configs/base.json': JSON.stringify({ include: ['../src'] }),
+    })
+    p.write('tsconfig.json', JSON.stringify({ extends: './configs/base.json' }))
+    const g = createGenerator({ wasmPath: plannerWasmPath(), cacheDirectory: false })
+    try {
+      const run = () =>
+        g.generate({ configFileName: p.configFileName, options: optionsOf(p) as never })
+      const first = await run()
+      expect(first.watchedFiles).toEqual(
+        [
+          join(p.dir, 'src/app.ts'),
+          p.snapshotPath,
+          p.configFileName,
+          join(p.dir, 'configs/base.json'),
+        ].sort()
+      )
+      expect(first.keys).toEqual(['r|public|users|username'])
+      p.write('configs/base.json', JSON.stringify({ include: ['../src', '../other'] }))
+      const second = await run()
+      expect(second.keys).toEqual(['r|public|channels|slug', 'r|public|users|username'])
+      expect(second.watchedFiles).toContain(join(p.dir, 'other/more.ts'))
+    } finally {
+      await g.close()
     }
   }, 120_000)
 })
@@ -205,7 +265,7 @@ describe('failures are diagnostics, not exceptions', () => {
     const p = await project({ 'src/app.ts': '' })
     const result = await generateDeclarations({
       configFileName: p.configFileName,
-      options: { postgrest: '14.4', schema: { source: 'postgrest', dbUrlEnv: 'NO_SUCH_DB_URL' } },
+      options: { postgrest: '16.4', schema: { source: 'postgrest', dbUrlEnv: 'NO_SUCH_DB_URL' } },
       deps: { env: {} },
     })
     expect(result.optionDiagnostics).toMatchObject([{ path: ['schema', 'dbUrlEnv'] }])

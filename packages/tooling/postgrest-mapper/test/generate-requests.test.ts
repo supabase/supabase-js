@@ -2,6 +2,7 @@ import fs = require('node:fs')
 import path = require('node:path')
 import ts = require('typescript')
 import { normalizeSelect, planKeysOf, planRequestOf, scanSource } from '../src'
+import { planRpcOf } from '../src/generate/requests'
 
 const keysOf = (source: string, exposedSchemas?: string[]) =>
   planKeysOf(scanSource('a.ts', source, exposedSchemas ? { exposedSchemas } : {})).map((k) => k.key)
@@ -115,5 +116,31 @@ describe('plan requests', () => {
       },
       body: '{}',
     })
+  })
+})
+
+describe('rpc plan keys of a select that no chain reaches', () => {
+  const SIGNATURES = new Map([['public.f', [{ required: ['a'], optional: ['b'] }]]])
+  const HELPER = `
+    function projected(builder) { return builder.select('x') }
+    projected(supabase.rpc('f', { a: 1 }, { get: true }))
+  `
+  const entriesOf = (source: string, withObserved = true) => {
+    const scan = scanSource('a.ts', source, { exposedSchemas: ['public'] })
+    const used = withObserved ? scan : { ...scan, selects: [] }
+    return planRpcOf(used, SIGNATURES)
+      .filter((k) => k.select === 'x')
+      .map((k) => [k.entry, k.keys, k.method])
+  }
+
+  it('plans the select for the key sets and methods the file calls the function with', () => {
+    expect(entriesOf(HELPER)).toEqual([['f|public|f|x', ['a'], 'GET']])
+  })
+
+  it('plans it for every overload of the function when the file calls it with no key set it can see', () => {
+    expect(entriesOf(HELPER, false)).toEqual([
+      ['f|public|f|x', ['a', 'b'], 'POST'],
+      ['f|public|f|x', ['a'], 'POST'],
+    ])
   })
 })

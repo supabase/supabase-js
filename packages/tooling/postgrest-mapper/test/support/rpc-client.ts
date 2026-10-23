@@ -61,6 +61,6 @@ export class RpcClient {
 export const INITIALIZE = { positionEncodings: ['utf-8', 'utf-16'] }
 
 export const STUB_OPTIONS = {
-  postgrest: '14.4',
+  postgrest: '16.4',
   schema: { source: 'supabase-local' },
 }

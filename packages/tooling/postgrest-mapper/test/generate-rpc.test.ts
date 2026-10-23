@@ -270,3 +270,22 @@ describe('rpc entries and operands of a project', () => {
     }
   }, 180_000)
 })
+
+describe('a select no chain reaches', () => {
+  it('has a call for a function the file calls, whatever builder the select lands on', async () => {
+    const p = await project({
+      'src/app.ts': `
+        declare const supabase: any
+        function projected(builder: any) { return builder.select('username') }
+        projected(supabase.rpc('function_returning_set_of_rows'))
+      `,
+    })
+    const result = await generateDeclarations({
+      configFileName: p.configFileName,
+      options: { ...p.options, defaultSchema: 'public' },
+      deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
+    })
+    expect(result.diagnostics).toEqual([])
+    expect(result.text).toContain("'f|public|function_returning_set_of_rows|username': {")
+  }, 120_000)
+})

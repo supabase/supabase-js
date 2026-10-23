@@ -15,6 +15,8 @@ export const DiagnosticCode = {
   ScanFailed: 2004,
   /** The generator failed on something it did not expect; the module is empty */
   InternalError: 2005,
+  /** The planner models another PostgREST line than the configured option or the server the schema came from */
+  PlannerIncompatible: 2006,
 } as const
 
 /** Where the upstream schema dump comes from (design v3 §4.2). */
@@ -25,7 +27,7 @@ export type SchemaSourceOptions =
 
 /** The `options` object of the tsconfig `contentMappers` entry (design v5 §4.1). */
 export interface PostgrestMapperOptions {
-  /** Upstream PostgREST release line, for example `14.4`. */
+  /** Upstream PostgREST release the planner must model, for example `16.4`: another line is a failure, another patch a warning. */
   postgrest: string
   defaultSchema?: string
   schema: SchemaSourceOptions
@@ -88,7 +90,7 @@ export function validateOptions(raw: unknown): OptionsValidation {
     report(
       ['postgrest'],
       DiagnosticCode.InvalidOption,
-      "Option 'postgrest' must be an upstream release such as '14.4' or '14.4.1'."
+      "Option 'postgrest' must be an upstream release such as '16.4' or '16.4.1'."
     )
   }
 

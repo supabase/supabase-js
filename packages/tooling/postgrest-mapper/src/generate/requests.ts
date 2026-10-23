@@ -1,7 +1,7 @@
 import type { PlanRequest } from '@supabase/postgrest-planner'
 import { operandKey, selectKey } from '../keys'
 import type { RoutineSignature } from '../printer'
-import type { RpcMethod, ScanResult, SourceLocation } from '../types'
+import type { FunctionTarget, RpcMethod, ScanResult, SourceLocation } from '../types'
 
 /**
  * The `select` query parameter postgrest-js sends for a select string: whitespace is removed except inside double
@@ -210,38 +210,76 @@ export const callIdOf = (
 /**
  * Every rpc call the scan asks for: the function's schema (a function no schema of the chain defines gets no entry, the
  * consumer reports it itself), the select, the key set and the method. Sorted by id.
+ *
+ * A select the scanner could not connect to a chain (a helper that takes the rpc builder and calls `.select(...)`) is
+ * paired with every function of its file (`scan.fallbacks`): it is planned for the key sets and methods the file calls
+ * the function with, or for every overload of the function when none was seen. Such a pairing is a guess: it is not
+ * `exact`, so a failed plan of it is dropped like the ones of a guessed key set.
  */
 export function planRpcOf(scan: ScanResult, signatures: Signatures): RpcPlanKey[] {
   const out = new Map<string, RpcPlanKey>()
+  const add = (
+    target: Pick<FunctionTarget, 'function' | 'keys' | 'method'> & { schemas: string[] },
+    schema: string,
+    select: string,
+    locations: readonly SourceLocation[],
+    guessed: boolean
+  ): void => {
+    const overloads = signatures.get(`${schema}.${target.function}`)
+    if (!overloads) return
+    for (const variant of variantsOf(target.keys, overloads)) {
+      const id = callIdOf(
+        { schema, function: target.function, keys: variant.keys, method: target.method },
+        select
+      )
+      const exact = variant.exact && !guessed
+      const known = out.get(id)
+      if (known) {
+        known.locations.push(...locations)
+        known.exact ||= exact
+        continue
+      }
+      out.set(id, {
+        id,
+        entry: selectKey({ kind: 'f', ...target }, schema, select),
+        schema,
+        function: target.function,
+        select,
+        keys: variant.keys,
+        method: target.method,
+        exact,
+        schemaCount: target.schemas.length,
+        locations: [...locations],
+      })
+    }
+  }
   for (const request of scan.selects) {
     const { target, select } = request
     if (target.kind !== 'f' || target.schemas === 'exposed') continue
-    for (const schema of target.schemas) {
-      const overloads = signatures.get(`${schema}.${target.function}`)
-      if (!overloads) continue
-      for (const variant of variantsOf(target.keys, overloads)) {
-        const id = callIdOf(
-          { schema, function: target.function, keys: variant.keys, method: target.method },
-          select
-        )
-        const known = out.get(id)
-        if (known) {
-          known.locations.push(...request.locations)
-          known.exact ||= variant.exact
-          continue
-        }
-        out.set(id, {
-          id,
-          entry: selectKey(target, schema, select),
+    for (const schema of target.schemas)
+      add({ ...target, schemas: target.schemas }, schema, select, request.locations, false)
+  }
+  for (const pair of scan.fallbacks) {
+    if (pair.target.kind !== 'function' || pair.schemas === 'exposed' || pair.select === '*')
+      continue
+    const name = pair.target.name
+    for (const schema of pair.schemas) {
+      const seen = new Map<string, Pick<FunctionTarget, 'keys' | 'method'>>()
+      for (const { target } of scan.selects) {
+        if (target.kind !== 'f' || target.function !== name) continue
+        if (target.schemas !== 'exposed' && !target.schemas.includes(schema)) continue
+        seen.set(JSON.stringify([target.keys, target.method]), target)
+      }
+      // none seen (the call is in another file than the helper): the function as any of its overloads takes it
+      const calls = seen.size > 0 ? [...seen.values()] : [{ keys: null, method: 'POST' as const }]
+      for (const { keys, method } of calls) {
+        add(
+          { function: name, keys, method, schemas: pair.schemas },
           schema,
-          function: target.function,
-          select,
-          keys: variant.keys,
-          method: target.method,
-          exact: variant.exact,
-          schemaCount: target.schemas.length,
-          locations: [...request.locations],
-        })
+          pair.select,
+          pair.locations,
+          true
+        )
       }
     }
   }

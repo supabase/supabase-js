@@ -20,7 +20,12 @@ export const nodeProjectFs: ProjectFs = {
 export interface ProjectFiles {
   /** Absolute paths, sorted */
   files: string[]
-  /** Problems met while resolving (an unreadable tsconfig, an `extends` that is not relative) */
+  /**
+   * Absolute paths, sorted: the tsconfig and every config of its `extends` chain (relative or package based, an
+   * unreadable one included, so that creating it is noticed). What the files depend on besides themselves
+   */
+  configFiles: string[]
+  /** Problems met while resolving (an unreadable tsconfig, an `extends` that cannot be resolved) */
   warnings: string[]
 }
 
@@ -74,13 +79,29 @@ interface ResolvedConfig {
 const isStringArray = (v: unknown): v is string[] =>
   Array.isArray(v) && v.every((x) => typeof x === 'string')
 
+/** The files an `extends` can name, in the order TypeScript tries them: a path, or a package reached through `node_modules`. */
+function extendsCandidates(base: string, specifier: string): string[] {
+  const withExtension = (path: string): string => (path.endsWith('.json') ? path : `${path}.json`)
+  if (specifier.startsWith('.') || isAbsolute(specifier))
+    return [withExtension(resolve(base, specifier))]
+  const candidates: string[] = []
+  for (let dir = base; ; dir = dirname(dir)) {
+    const target = join(dir, 'node_modules', specifier)
+    candidates.push(withExtension(target))
+    if (!specifier.endsWith('.json')) candidates.push(join(target, 'tsconfig.json'))
+    if (dirname(dir) === dir) return candidates
+  }
+}
+
 async function loadConfig(
   fs: ProjectFs,
   configFileName: string,
   warnings: string[],
+  configs: Set<string>,
   seen = new Set<string>()
 ): Promise<ResolvedConfig> {
   const merged: ResolvedConfig = { allowJs: false }
+  configs.add(configFileName)
   if (seen.has(configFileName)) return merged
   seen.add(configFileName)
   let config: TsConfig
@@ -95,14 +116,27 @@ async function loadConfig(
   const base = dirname(configFileName)
   const parents = typeof config.extends === 'string' ? [config.extends] : (config.extends ?? [])
   for (const parent of Array.isArray(parents) ? parents : []) {
-    if (typeof parent !== 'string' || !(parent.startsWith('.') || isAbsolute(parent))) {
-      warnings.push(
-        `extends '${String(parent)}' of ${configFileName} is not a relative path: ignored`
-      )
+    if (typeof parent !== 'string') {
+      warnings.push(`extends '${String(parent)}' of ${configFileName} is not a path: ignored`)
       continue
     }
-    const target = resolve(base, parent.endsWith('.json') ? parent : `${parent}.json`)
-    Object.assign(merged, await loadConfig(fs, target, warnings, seen))
+    const candidates = extendsCandidates(base, parent)
+    let target = candidates[0]!
+    if (candidates.length > 1) {
+      // a package: the first candidate that exists, else the nearest one (its absence is reported by loadConfig)
+      for (const candidate of candidates) {
+        if (
+          await fs.readFile(candidate).then(
+            () => true,
+            () => false
+          )
+        ) {
+          target = candidate
+          break
+        }
+      }
+    }
+    Object.assign(merged, await loadConfig(fs, target, warnings, configs, seen))
   }
   if (isStringArray(config.files)) merged.files = { value: config.files, base }
   if (isStringArray(config.include)) merged.include = { value: config.include, base }
@@ -204,16 +238,17 @@ export interface ResolveProjectFilesOptions {
 /**
  * The files of a project that may hold builder chains (design v5 §4.1): the tsconfig's `files` and `include` minus
  * `exclude` (`node_modules` and `outDir` are always excluded), or `options.scan` when given. A small resolver, not
- * the TypeScript API (the mapper has no runtime dependency on it): `extends` follows relative paths only, a
- * `.d.ts` is never scanned, a JavaScript file only when `allowJs` is set (or a `scan` glob names it).
+ * the TypeScript API (the mapper has no runtime dependency on it): `extends` follows relative paths and packages
+ * (`node_modules`, upwards), a `.d.ts` is never scanned, a JavaScript file only when `allowJs` is set (or a `scan` glob names it).
  */
 export async function resolveProjectFiles(
   fs: ProjectFs,
   options: ResolveProjectFilesOptions
 ): Promise<ProjectFiles> {
   const warnings: string[] = []
+  const configs = new Set<string>()
   const config: ResolvedConfig = options.configFileName
-    ? await loadConfig(fs, options.configFileName, warnings)
+    ? await loadConfig(fs, options.configFileName, warnings, configs)
     : { allowJs: false }
   const root = options.projectDir
 
@@ -258,7 +293,7 @@ export async function resolveProjectFiles(
       )
     }
   }
-  return { files: [...found].sort(), warnings }
+  return { files: [...found].sort(), configFiles: [...configs].sort(), warnings }
 }
 
 /** A path relative to the project, `/`-separated, for messages. */

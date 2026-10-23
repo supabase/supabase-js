@@ -30,7 +30,7 @@ const TSCONFIG = (options: unknown = undefined) => `{
       "extensions": [".pgrst-index"],
       "options": ${JSON.stringify(
         options ?? {
-          postgrest: '14.4',
+          postgrest: '16.4',
           defaultSchema: 'public',
           schema: { source: 'snapshot', path: 'schema.snapshot.json' },
         },
@@ -110,7 +110,7 @@ describe('postgrest-mapper generate', () => {
   it('prints diagnostics as file:line:col code message and writes nothing', async () => {
     const p = await setup(
       {},
-      TSCONFIG({ postgrest: '14.4', schema: { source: 'snapshot', path: 'missing.json' } })
+      TSCONFIG({ postgrest: '16.4', schema: { source: 'snapshot', path: 'missing.json' } })
     )
     const result = await generate()
     expect(result.code).toBe(1)
@@ -128,7 +128,7 @@ describe('postgrest-mapper generate', () => {
   it('takes the schema from --snapshot instead of the tsconfig', async () => {
     const p = await setup(
       {},
-      TSCONFIG({ postgrest: '14.4', defaultSchema: 'public', schema: { source: 'supabase-local' } })
+      TSCONFIG({ postgrest: '16.4', defaultSchema: 'public', schema: { source: 'supabase-local' } })
     )
     const result = await generate('--snapshot', 'schema.snapshot.json')
     expect(result).toMatchObject({ code: 0, stderr: '' })

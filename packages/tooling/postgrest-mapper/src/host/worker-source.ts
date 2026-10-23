@@ -6,14 +6,21 @@
 export const WORKER_SOURCE = `
 const { parentPort, workerData } = require('node:worker_threads')
 let planner
-const ensurePlanner = () => {
-  planner ??= require(workerData.plannerModule).loadPlanner({ wasmPath: workerData.wasmPath })
-  return planner
+const startPlanner = async () => {
+  const p = await require(workerData.plannerModule).loadPlanner({ wasmPath: workerData.wasmPath })
+  const abi = p.info().abi
+  if (abi !== workerData.abi) {
+    throw new Error('the planner wasm speaks ABI ' + abi + ', expected ' + workerData.abi)
+  }
+  return p
 }
+const ensurePlanner = () => (planner ??= startPlanner())
 parentPort.on('message', async (message) => {
   try {
     const p = await ensurePlanner()
-    if (message.op === 'load') {
+    if (message.op === 'info') {
+      parentPort.postMessage({ id: message.id, ok: true, result: p.info() })
+    } else if (message.op === 'load') {
       parentPort.postMessage({ id: message.id, ok: true, result: p.load(message.input) })
     } else if (message.op === 'plan') {
       parentPort.postMessage({ id: message.id, ok: true, result: p.plan(message.handle, message.request) })

@@ -11,6 +11,11 @@ export interface ScanOptions {
    * actually has the relation is for the planning step to decide.
    */
   exposedSchemas?: readonly string[]
+  /**
+   * The schema of a chain that never calls `.schema()` (the client's `db.schema`). A chain whose `.schema()` argument
+   * does not resolve is not in it: it could be in any exposed schema.
+   */
+  defaultSchema?: string
 }
 
 /** Where a call was found. `start` / `end` are UTF-16 offsets into the file's source text, as in TypeScript. */

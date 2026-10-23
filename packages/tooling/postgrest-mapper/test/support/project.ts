@@ -21,7 +21,7 @@ export interface TempProject {
 export async function createTempProject(
   acquired: AcquiredSchema,
   files: Record<string, string>,
-  postgrest = '14.4'
+  postgrest = '16.4'
 ): Promise<TempProject> {
   const dir = mkdtempSync(join(realpathSync(tmpdir()), 'postgrest-mapper-project-'))
   const write = (name: string, text: string): void => {

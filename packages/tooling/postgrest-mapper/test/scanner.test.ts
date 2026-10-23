@@ -62,6 +62,34 @@ describe('relations and selects', () => {
     expect(selects(r)).toEqual(['r|api,public|t|a', 'r|x|t|b'])
   })
 
+  it('sends a chain without .schema() to the default schema and one with an unresolved .schema() to every exposed schema', () => {
+    const r = scan(
+      `
+      supabase.from('t').select('a')
+      supabase.schema(name).from('t').select('b')
+      supabase.schema('x').from('t').select('c')
+    `,
+      { exposedSchemas: ['public', 'api', 'x'], defaultSchema: 'public' }
+    )
+    expect(selects(r)).toEqual(['r|api,public,x|t|b', 'r|public|t|a', 'r|x|t|c'])
+    expect(r.unresolved.map((u) => u.what)).toEqual(['schema'])
+  })
+
+  it('keeps an unresolved .schema() on a function and a fallback pair wide', () => {
+    const r = scan(
+      `
+      function load(q) { return q.select('x') }
+      supabase.schema(name).from('t').select('a')
+      supabase.rpc('f')
+    `,
+      { exposedSchemas: ['public', 'api'], defaultSchema: 'public' }
+    )
+    expect(r.fallbacks.map((f) => [f.target.name, f.schemas])).toEqual([
+      ['f', ['public']],
+      ['t', ['api', 'public']],
+    ])
+  })
+
   it('reads from a split chain through consts', () => {
     const r = scan(`
       const table = supabase.schema('s').from('t')

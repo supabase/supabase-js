@@ -7,8 +7,9 @@
   "types": "dist/main/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/main/index.d.ts",
       "require": "./dist/main/index.js",
-      "types": "./dist/main/index.d.ts"
+      "default": "./dist/main/index.js"
     },
     "./package.json": "./package.json"
   },

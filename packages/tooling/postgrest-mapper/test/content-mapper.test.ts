@@ -78,7 +78,7 @@ describe('content mapper protocol (in memory)', () => {
     expect(transformed.result.mappings).toEqual([])
     expect(transformed.result.diagnostics).toEqual([])
     expect(transformed.result.text).toContain("'r|public|stub|*'")
-    expect(transformed.result.text).toContain('postgrest: "14.4"')
+    expect(transformed.result.text).toContain('postgrest: "16.4"')
 
     // TypeScript re-transforms the same file after an edit: same module again
     const again = await client.request('transform', {
@@ -114,7 +114,7 @@ describe('content mapper protocol (in memory)', () => {
     }
     const { client } = start(generator)
     await client.request('initialize', INITIALIZE)
-    const options = { postgrest: '14.4', schema: { source: 'snapshot', path: './schema.json' } }
+    const options = { postgrest: '16.4', schema: { source: 'snapshot', path: './schema.json' } }
     const opened = await open(client, 'h1', options)
     expect(opened.result).toEqual({
       configIdentity: 'identity-1',

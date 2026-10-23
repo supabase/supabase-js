@@ -1,9 +1,11 @@
 import { Worker } from 'node:worker_threads'
 import type { LoadSuccess, PlannerError } from '@supabase/postgrest-planner'
 import type { AcquiredSchema } from '../schema'
+import { PLANNER_ABI } from './compat'
 import { WORKER_SOURCE } from './worker-source'
 import {
   HOST_ERROR,
+  type InfoResult,
   type LoadResult,
   type PlanRequest,
   type PlanResult,
@@ -32,7 +34,7 @@ export function startPlannerWorker(wasmPath: string | undefined): WorkerLike {
   const plannerModule = require.resolve('@supabase/postgrest-planner')
   return new Worker(WORKER_SOURCE, {
     eval: true,
-    workerData: { plannerModule, wasmPath },
+    workerData: { plannerModule, wasmPath, abi: PLANNER_ABI },
   }) as unknown as WorkerLike
 }
 
@@ -59,6 +61,8 @@ export function createPlannerHost(options: PlannerHostOptions = {}): PlannerHost
   let input: Extract<WorkerRequest, { op: 'load' }>['input'] | undefined
   /** Handle of `input` in the current worker */
   let handle: number | undefined
+  /** The build of the wasm: the same for every worker of this host */
+  let plannerInfo: InfoResult | undefined
   let tail: Promise<unknown> = Promise.resolve()
 
   const kill = (reason: string): void => {
@@ -197,6 +201,22 @@ export function createPlannerHost(options: PlannerHostOptions = {}): PlannerHost
     })
 
   return {
+    info(): Promise<InfoResult> {
+      return serial(async () => {
+        if (closed) return failure(HOST_ERROR.closed, 'planner host is closed')
+        if (plannerInfo?.ok) return plannerInfo
+        const outcome = await call({ id: nextId++, op: 'info' }, loadTimeoutMs)
+        if (outcome.kind === 'failed') return outcome.error
+        if (!outcome.response.ok) {
+          kill(outcome.response.message)
+          return failure(HOST_ERROR.workerFailed, outcome.response.message)
+        }
+        const result = outcome.response.result as InfoResult
+        if (result.ok) plannerInfo = result
+        return result
+      })
+    },
+
     load(acquired: AcquiredSchema): Promise<LoadResult> {
       return serial(async () => {
         if (closed) return failure(HOST_ERROR.closed, 'planner host is closed')
