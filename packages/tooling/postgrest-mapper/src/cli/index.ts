@@ -30,7 +30,7 @@ import {
 import { runInit } from './init'
 import type { CliContext, CliFs, CliOptions, Flags } from './types'
 import { USAGE } from './usage'
-import { nodeWatch, watchLoop } from './watch'
+import { nodeMtime, nodeWatch, watchLoop } from './watch'
 
 export type {
   CliContext,
@@ -38,6 +38,7 @@ export type {
   CliOptions,
   CliOutput,
   Flags as CliFlags,
+  MtimeFn,
   WatchFn,
   WatchHandle,
 } from './types'
@@ -236,6 +237,7 @@ async function runGenerate(ctx: CliContext, flags: Flags): Promise<number> {
 
   await watchLoop({
     watch: ctx.watch,
+    mtime: ctx.mtime,
     debounceMs: ctx.debounceMs,
     ...(ctx.signal ? { signal: ctx.signal } : {}),
     ignore: out,
@@ -350,6 +352,7 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
     deps: options.deps ?? {},
     ...(options.signal ? { signal: options.signal } : {}),
     watch: options.watch ?? nodeWatch,
+    mtime: options.mtime ?? nodeMtime,
     debounceMs: options.debounceMs ?? 100,
   }
   let parsed: ReturnType<typeof parseFlags>

@@ -17,6 +17,9 @@ export interface WatchHandle {
 /** Watches a directory (not recursively); `filename` is relative to it, or null when the platform does not say. */
 export type WatchFn = (directory: string, onEvent: (filename: string | null) => void) => WatchHandle
 
+/** Last modification time of a file in milliseconds since the epoch, or undefined when it cannot be read. */
+export type MtimeFn = (path: string) => Promise<number | undefined>
+
 export interface CliOptions {
   stdout: CliOutput
   stderr: CliOutput
@@ -32,6 +35,8 @@ export interface CliOptions {
   signal?: AbortSignal
   /** Defaults to `fs.watch`. */
   watch?: WatchFn
+  /** Defaults to `fs.stat`. `--watch` uses it to catch edits made while a generation was running. */
+  mtime?: MtimeFn
   /** Quiet time before `--watch` regenerates. Defaults to 100. */
   debounceMs?: number
   /** Printed by `--version`. */
@@ -48,6 +53,7 @@ export interface CliContext {
   deps: NonNullable<CliOptions['deps']>
   signal?: AbortSignal
   watch: WatchFn
+  mtime: MtimeFn
   debounceMs: number
 }
 

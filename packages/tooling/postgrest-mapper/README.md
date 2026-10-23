@@ -258,7 +258,7 @@ postgrest-mapper snapshot --out supabase/postgrest-schema.json [--check] [--work
 ```
 
 - The mapper options come from the tsconfig's `contentMappers` entry for `.pgrst-index`; `--schema-source`, `--snapshot` and `--db-url-env` replace the matching part of its `schema` option. Diagnostics print as `file:line:col code message` (option problems at the value in the tsconfig) and exit 1; nothing is written then.
-- `generate --check` never writes and prints the first differing lines when the file is stale. `--watch` regenerates (debounced) when a scanned file, the snapshot or the tsconfig changes, and stops on SIGINT. It watches the directories of those files without recursing, so a file in a new directory is picked up at the next run.
+- `generate --check` never writes and prints the first differing lines when the file is stale. `--watch` regenerates (debounced) when a scanned file, the snapshot or the tsconfig changes, and stops on SIGINT. It watches the directories of those files without recursing, so a file in a new directory is picked up at the next run. A file edited while a generation was running, before its directory was watched, is caught by its modification time and regenerates.
 - `init` adds the file to the tsconfig's `include` (or `files`), and to `compilerOptions.types` of a `deno.json(c)` beside it. It edits the text in place, so comments and formatting stay (a new property is inserted in the style of the neighbouring ones); a second run changes nothing. It does not add the `contentMappers` entry.
 - `refresh` removes `node_modules/.cache/postgrest-mapper` of the project and regenerates.
 
