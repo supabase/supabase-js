@@ -119,6 +119,37 @@ The package is a TypeScript 7.1 content mapper (microsoft/typescript-go#4712) fo
 - **Index file**: the first file transformed in a project is its index file; any other file with the extension gets diagnostic 2001 and an empty module.
 - `bin/content-mapper.cjs` runs the placeholder `stubGenerator`, which declares one `SupabaseSelects` entry (`'r|public|stub|*'`).
 
+## Schema acquisition
+
+`src/schema/` acquires everything the planner and the mapper need about a database (design v3 §4.2). It is a library: typed functions with every effect injected (`exec`, database `connect`, `fs`, `logger`), so a CLI, the content mapper or tests drive it the same way.
+
+```ts
+const schema = await acquireSchema({ source: 'supabase-local', workdir: '.' })
+// { dump, config, pgVersionNum, postgrestVersion, supplementary }
+planner.load({ config: schema.config, schema: schema.dump /* , supplementary */ })
+```
+
+| Source           | How                                                                                                                                                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `supabase-local` | `supabase status -o json` for the database URL (or `dbUrl`); `docker exec supabase_rest_<project_id> postgrest --dump-config / --dump-schema / --version`. `project_id` comes from `projectId`, `supabase/config.toml`, or the one running stack.      |
+| `postgrest`      | `docker run` of a pinned image (`DEFAULT_POSTGREST_IMAGE`, the planner's upstream release) with `PGRST_DB_URI` and `config` as `PGRST_*` variables, all in the child's environment. A loopback host in `dbUrl` is rewritten to `host.docker.internal`. |
+| `snapshot`       | A committed JSON file. Nothing is executed or connected.                                                                                                                                                                                               |
+
+For the first two the supplementary catalog and `server_version_num` are read over `pg` (`connectPg`, or any `DbClient`) inside `BEGIN READ ONLY` ... `ROLLBACK` with an empty `search_path`; the connection must be a single session, not a pool.
+
+**Snapshot** (`writeSnapshot`, `readSnapshot`, `checkSnapshot`): `{ format: 1, postgrest: { release, commit? }, pgVersionNum, config, supplementaryFormat: 1, supplementary, dump }`. Key order is fixed at the top level and sorted below it, so the same data is the same bytes. `checkSnapshot` returns `{ ok }` or `{ reason: 'missing' | 'invalid' | 'drift', differences }` and never writes. The config is redacted (`db-uri`, `jwt-secret` and any key naming a secret or `app.settings.*` are dropped; the planner ignores them), and every error and log line is scrubbed of connection-string passwords, `PGPASSWORD`, `PGRST_*` values and the password of the given URL. Errors are `SchemaAcquisitionError` with a `code`.
+
+**Supplementary catalog** (`Supplementary`): the planner's format-1 document (`relations` with column ordinals, `composites`, `foreignKeys`, `functions`; `plannerSupplementary` projects exactly that part, and a test keeps it equal to the planner's fixture) plus mapper-only keys the planner ignores:
+
+- per relation: `kind`, `viewDefinition` (`pg_get_viewdef`), `updatable` (`pg_relation_is_updatable`), and per column `type`, `notNull`, `hasDefault`, `identity`, `generated`;
+- per function: `language`, `source` (`prosrc` of a `LANGUAGE sql` function) and `argNames`;
+- `enums`, and `jsonSchemaChecks` (every CHECK that mentions `json(b)_matches_schema`, with `convalidated`);
+- `referencedRelations`: relations outside the exposed schemas that an exposed view selects from, transitively (through `pg_rewrite` / `pg_depend`), so the tracer can follow a view into a private schema. A relation mentioned only inside a function body is not tracked (Postgres records no dependency for it), so the tracer sees it as unknown and its columns as nullable. `pg_catalog`, `information_schema` and `pg_toast` are never included.
+
+Everything else covers exactly the exposed schemas (`db-schemas` of the config dump).
+
+Pure builders turn it into the other components' inputs: `buildTraceCatalog` and `buildFunctionTraceInputs` for the tracer, and `buildJsonSchemaInput` for `jsonSchemaToTs`. The last is asynchronous (it parses constraint definitions with libpg_query) and reports only validated constraints that are plain conjunctions of `json(b)_matches_schema('<constant>', col)` terms, each optionally guarded by `col IS NULL OR`; several constraints on a column become an `allOf`, and everything else lands in `ignored` with its reason.
+
 ## Node
 
 Compiled to CommonJS like the planner. `oxc-parser` and `@supabase/pg-parser` load ESM (the latter through its wasm loader), so the CJS build relies on `require(esm)` (Node `^20.19.0 || >=22.12.0`). Jest cannot do that itself: `test/support/oxc-parser.cjs` and `test/support/pg-parser.cjs` map the imports to Node's real `require`.
