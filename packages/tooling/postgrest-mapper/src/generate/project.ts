@@ -240,6 +240,38 @@ function matcher(pattern: string, base: string): (absolute: string) => boolean {
   return (path) => regexp.test(path.replace(/\\/g, '/'))
 }
 
+/**
+ * The alternatives of a `scan` pattern's brace groups (`src/*.{ts,tsx}` is `src/*.ts` and `src/*.tsx`; groups may
+ * nest or repeat), or `undefined` for an unbalanced brace. tsconfig patterns never go through this: TypeScript has
+ * no braces in `include`.
+ */
+function expandBraces(pattern: string): string[] | undefined {
+  let open = -1
+  let depth = 0
+  const commas: number[] = []
+  for (let i = 0; i < pattern.length; i++) {
+    const c = pattern[i]
+    if (c === '{') {
+      if (depth++ === 0) open = i
+    } else if (c === '}') {
+      if (depth === 0) return undefined
+      if (--depth === 0) {
+        const head = pattern.slice(0, open)
+        const tail = pattern.slice(i + 1)
+        const bounds = [open, ...commas, i]
+        const expanded: string[] = []
+        for (let k = 0; k < bounds.length - 1; k++) {
+          const rest = expandBraces(head + pattern.slice(bounds[k]! + 1, bounds[k + 1]) + tail)
+          if (!rest) return undefined
+          expanded.push(...rest)
+        }
+        return expanded
+      }
+    } else if (c === ',' && depth === 1) commas.push(i)
+  }
+  return depth === 0 ? [pattern] : undefined
+}
+
 /** The directory a pattern starts in: its leading segments up to the first wildcard (or file name). */
 function staticRoot(pattern: string, base: string): string {
   const normalised = pattern.replace(/\\/g, '/')
@@ -321,7 +353,11 @@ export async function resolveProjectFiles(
   const patterns: { pattern: string; base: string }[] = []
   const explicit = new Set<string>()
   if (options.scan !== undefined) {
-    for (const pattern of options.scan) patterns.push({ pattern, base: root })
+    for (const pattern of options.scan) {
+      const alternatives = expandBraces(pattern)
+      if (alternatives) for (const p of alternatives) patterns.push({ pattern: p, base: root })
+      else warnings.push(`scan pattern '${pattern}' has an unbalanced brace: ignored`)
+    }
   } else {
     for (const file of config.files?.value ?? []) explicit.add(resolve(config.files!.base, file))
     if (config.include)

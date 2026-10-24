@@ -129,6 +129,35 @@ describe('resolveProjectFiles', () => {
     expect(files).toEqual([at('src/a.ts')])
   })
 
+  it('expands brace alternatives in scan globs, not in tsconfig include', async () => {
+    const extra = {
+      [at('src/m.mts')]: '',
+      [at('src/n.cts')]: '',
+      [at('src/b/x.tsx')]: '',
+      [at('src/c/y.ts')]: '',
+    }
+    const scanned = await resolveWith(`{}`, ['src/**/*.{ts,tsx,mts,cts}'], extra)
+    expect(scanned.files).toEqual([
+      at('src/a.ts'),
+      at('src/b/x.tsx'),
+      at('src/c/y.ts'),
+      at('src/m.mts'),
+      at('src/n.cts'),
+      at('src/nested/b.tsx'),
+      at('src/skip/c.ts'),
+    ])
+    const grouped = await resolveWith(`{}`, ['src/{b,c}/**/*.{ts,{tsx,js}}'], extra)
+    expect(grouped.files).toEqual([at('src/b/x.tsx'), at('src/c/y.ts')])
+    const included = await resolveWith(`{ "include": ["src/*.{ts,tsx}"] }`)
+    expect(included.files).toEqual([])
+  })
+
+  it('warns about a scan glob with an unbalanced brace and ignores it', async () => {
+    const { files, warnings } = await resolveWith(`{}`, ['src/*.{ts,tsx', 'tools/*.ts'])
+    expect(files).toEqual([at('tools/d.ts')])
+    expect(warnings).toEqual([`scan pattern 'src/*.{ts,tsx' has an unbalanced brace: ignored`])
+  })
+
   it('warns about a config it cannot read and scans nothing from it', async () => {
     const result = await resolveProjectFiles(memoryFs(SOURCES), {
       configFileName: at('missing.json'),
