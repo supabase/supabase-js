@@ -1954,7 +1954,7 @@ export default class GoTrueClient {
             : []),
           ...(options?.signInWithSolana?.resources?.length
             ? [
-                'Resources',
+                'Resources:',
                 ...options.signInWithSolana.resources.map((resource) => `- ${resource}`),
               ]
             : []),
