@@ -217,7 +217,7 @@ export type One = Expect<Equal<F['one']['Returns'], number | null>>
       shape: null,
       rpc: null,
       routine: null,
-      returns: { kind: 'scalar', multiplicity: 'setof', type: 'int4' },
+      returns: { kind: 'scalar', multiplicity: 'setof', type: { name: 'int4', dims: 0 } },
       filters: [],
       degraded: [],
     }

@@ -2,7 +2,9 @@ import type { PlanFilter, PlanForm, ResultShape, RpcInfo } from '@supabase/postg
 import type { RpcMethod } from '../types'
 import { functionRowsOf } from './function-rows'
 import { quote, quoteDouble } from './literal'
+import { columnTypeKey } from '../keys'
 import { rememberDomain, tsTypeOf } from './pg-types'
+import type { NormalizedType } from './pg-types'
 import type { SelectsContext } from './selects-context'
 import {
   EntryError,
@@ -24,8 +26,8 @@ import type { RawEntry } from './selects'
 export interface CallReturns {
   kind: 'scalar' | 'composite'
   multiplicity: 'single' | 'setof'
-  /** Normalised like a field's `pgType`: `int4`, `public.status`, `text[]` */
-  type: string
+  /** Structured, so a name with a dot or parenthesis in it is not mistaken for a qualified one: `int4`, `public.status`, `text[]` */
+  type: NormalizedType
 }
 
 /** The overload the planner chose, from `routine.params`: what tells it apart from the others of its name. */
@@ -77,8 +79,8 @@ export function callReturnsOf(routine: unknown): CallReturns | null {
     name = name.slice(1) // an array type is `_int4`
     dims = 1
   }
-  const qualified = schema === '' || schema === 'pg_catalog' ? name : `${schema}.${name}`
-  return { kind, multiplicity, type: qualified + '[]'.repeat(dims) }
+  const builtin = schema === '' || schema === 'pg_catalog'
+  return { kind, multiplicity, type: builtin ? { name, dims } : { schema, name, dims } }
 }
 
 /** `PlanSuccess.routine` (untyped in the planner) as the parameters of the overload. `null` when it does not say. */
@@ -111,7 +113,13 @@ const byCall = (a: { keys: readonly string[]; method: string }, b: typeof a): nu
 /** The row of a scalar return: `T | null`, for one value and for each element of a set (nothing proves it is not null). */
 function scalarRow(context: SelectsContext, returns: CallReturns): string {
   // `void` is sent as `null`
-  if (returns.type === 'void') return 'null'
+  if (
+    returns.type.schema === undefined &&
+    returns.type.name === 'void' &&
+    returns.type.dims === 0
+  ) {
+    return 'null'
+  }
   return orNull(tsTypeOf(returns.type, context.types))
 }
 
@@ -246,11 +254,11 @@ function operandTypeOf(context: SelectsContext, plan: CallPlan, operand: string)
     const k = columnKeyOf(context, prov.source)
     const own = derivedType(
       context,
-      k.key,
+      k.column,
       filter.pgType ?? 'jsonb',
       filter.reason === 'function-rows'
     )
-    const column = `SupabaseColumnType<${quote(k.key)}, ${own}>`
+    const column = `SupabaseColumnType<${quote(columnTypeKey(k.column))}, ${own}>`
     if (filter.jsonPath.length === 0) return { type: column, ...embed }
     const steps = filter.jsonPath.map((s) => ('key' in s ? s.key : String(s.index)))
     const helper =

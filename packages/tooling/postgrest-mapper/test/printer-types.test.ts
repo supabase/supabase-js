@@ -103,16 +103,28 @@ describe('pg type to TypeScript type', () => {
   test('names are normalised without losing the schema or the dimensions', () => {
     expect(normalizeType('character varying(20)[]')).toEqual({ name: 'varchar', dims: 1 })
     expect(normalizeType('"MyType"')).toEqual({ name: 'MyType', dims: 0 })
-    expect(normalizeType('public."Odd Name"[][]')).toEqual({ name: 'public.Odd Name', dims: 2 })
+    expect(normalizeType('public."Odd Name"[][]')).toEqual({
+      schema: 'public',
+      name: 'Odd Name',
+      dims: 2,
+    })
     expect(normalizeType('timestamp(3) with time zone')).toEqual({ name: 'timestamptz', dims: 0 })
   })
 
   test('dots, modifiers and quotes inside a quoted name belong to the name', () => {
-    expect(normalizeType('public."mood(1)"')).toEqual({ name: 'public.mood(1)', dims: 0 })
+    expect(normalizeType('public."mood(1)"')).toEqual({
+      schema: 'public',
+      name: 'mood(1)',
+      dims: 0,
+    })
     expect(normalizeType('"mood(1)"[]')).toEqual({ name: 'mood(1)', dims: 1 })
-    expect(normalizeType('public."a.b"')).toEqual({ name: 'public.a.b', dims: 0 })
-    expect(normalizeType('"public.a".b')).toEqual({ name: 'public.a.b', dims: 0 })
-    expect(normalizeType('public."say ""hi"""')).toEqual({ name: 'public.say "hi"', dims: 0 })
+    expect(normalizeType('public."a.b"')).toEqual({ schema: 'public', name: 'a.b', dims: 0 })
+    expect(normalizeType('"public.a".b')).toEqual({ schema: 'public.a', name: 'b', dims: 0 })
+    expect(normalizeType('public."say ""hi"""')).toEqual({
+      schema: 'public',
+      name: 'say "hi"',
+      dims: 0,
+    })
     expect(normalizeType('"integer"')).toEqual({ name: 'integer', dims: 0 })
   })
 })

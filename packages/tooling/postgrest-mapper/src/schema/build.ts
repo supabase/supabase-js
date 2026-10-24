@@ -1,4 +1,6 @@
 import { PgParser } from '@supabase/pg-parser'
+import { relationKey } from '../keys'
+import { normalizeType } from '../printer/pg-types'
 import type { CatalogRelation, TraceCatalog, TraceInput } from '../tracer/types'
 import type { Supplementary, SupplementaryFunction, SupplementaryRelation } from './types'
 
@@ -118,11 +120,14 @@ export function buildFunctionTraceInputs(
       [...supplementary.relations, ...supplementary.referencedRelations].map((r) => r.schema)
   )
   const composites = new Map(
-    supplementary.composites.map((c) => [`${c.schema}.${c.name}`, c.attributes.map((a) => a.name)])
+    supplementary.composites.map((c) => [
+      relationKey(c.schema, c.name),
+      c.attributes.map((a) => a.name),
+    ])
   )
   const relations = new Map(
     [...supplementary.relations, ...supplementary.referencedRelations].map((r) => [
-      `${r.schema}.${r.name}`,
+      relationKey(r.schema, r.name),
       r.columns.map((c) => c.name),
     ])
   )
@@ -131,9 +136,14 @@ export function buildFunctionTraceInputs(
   const out: ReturnType<typeof buildFunctionTraceInputs> = []
   for (const fn of supplementary.functions) {
     if (fn.language !== 'sql' || !fn.source) continue
+    const returned = normalizeType(fn.returns.type)
+    const returnedKey =
+      fn.returns.kind === 'composite' && returned.schema !== undefined && returned.dims === 0
+        ? relationKey(returned.schema, returned.name)
+        : undefined
     const columns = fn.outColumns?.map((c) => c.name) ??
-      (fn.returns.kind === 'composite'
-        ? (composites.get(fn.returns.type) ?? relations.get(fn.returns.type))
+      (returnedKey !== undefined
+        ? (composites.get(returnedKey) ?? relations.get(returnedKey))
         : undefined) ?? [fn.name]
     let searchPath = [fn.schema, ...base.filter((s) => s !== fn.schema)]
     if (fn.searchPath != null) {
@@ -226,7 +236,7 @@ function matchCall(node: Node, wanted: string | undefined): Parsed | string {
   const call = node?.FuncCall
   if (!call) return 'not a call of json(b)_matches_schema'
   const funcname: string = call.funcname?.[call.funcname.length - 1]?.String?.sval
-  if (!(funcname in MATCHES_SCHEMA)) return 'not a call of json(b)_matches_schema'
+  if (!Object.hasOwn(MATCHES_SCHEMA, funcname)) return 'not a call of json(b)_matches_schema'
   const [schemaArg, columnArg] = call.args ?? []
   const text = constantString(schemaArg)
   if (text === undefined) return 'the schema argument is not a constant'
@@ -306,7 +316,7 @@ export async function buildJsonSchemaInput(
   await parser.ready
   const relations = new Map(
     [...supplementary.relations, ...supplementary.referencedRelations].map((r) => [
-      `${r.schema}.${r.name}`,
+      relationKey(r.schema, r.name),
       r,
     ])
   )
@@ -354,7 +364,7 @@ export async function buildJsonSchemaInput(
       skip(reason)
       continue
     }
-    const relation = relations.get(`${check.schema}.${check.table}`)
+    const relation = relations.get(relationKey(check.schema, check.table))
     for (const term of terms) {
       const column = relation?.columns.find((c) => c.name === term.column)
       if (!column || (column.type !== 'json' && column.type !== 'jsonb')) {

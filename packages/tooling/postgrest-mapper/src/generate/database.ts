@@ -2,7 +2,7 @@ import type { PlanResult, ShapeField } from '@supabase/postgrest-planner'
 import { isHostFailure } from '../host'
 import type { PlannerHost } from '../host'
 import { jsonSchemaToTs } from '../jsonschema'
-import { relationKey } from '../keys'
+import { columnKey, relationKey } from '../keys'
 import { printDatabase, printModule } from '../printer'
 import type { PrintDiagnostic, PrintModuleInput } from '../printer'
 import {
@@ -271,7 +271,7 @@ export async function planDatabase(
   })
   for (const c of json.columns) {
     jsonSchemas.set(
-      `${c.schema}.${c.table}.${c.column}`,
+      columnKey({ schema: c.schema, relation: c.table, column: c.column }),
       jsonSchemaToTs(c.jsonSchema, { jsonType: 'Json' })
     )
   }

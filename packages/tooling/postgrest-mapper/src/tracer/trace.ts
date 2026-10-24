@@ -1,3 +1,4 @@
+import { relationKey } from '../keys'
 import { normalizeType } from '../printer/pg-types'
 import type {
   CatalogRelation,
@@ -91,8 +92,8 @@ const UNKNOWN = 'unknown'
  */
 function builtinType(type: string | undefined): string | undefined {
   if (type === undefined) return undefined
-  const { name, dims } = normalizeType(type)
-  return BUILTIN_TYPES.has(name) ? name + '[]'.repeat(dims) : undefined
+  const { schema, name, dims } = normalizeType(type)
+  return schema === undefined && BUILTIN_TYPES.has(name) ? name + '[]'.repeat(dims) : undefined
 }
 
 const NUMBERS = ['int2', 'int4', 'int8', 'numeric', 'float4', 'float8']
@@ -476,7 +477,8 @@ class Run {
   }
 
   private async relationCols(rel: CatalogRelation, ctx: Ctx): Promise<Col[]> {
-    const key = `${rel.schema}.${rel.name}`
+    const key = relationKey(rel.schema, rel.name)
+    const label = `${rel.schema}.${rel.name}`
     switch (rel.kind) {
       case 'table':
         return rel.columns.map((c) => ({
@@ -487,7 +489,7 @@ class Run {
           ...typeOf(c.type),
         }))
       case 'view': {
-        if (ctx.viewStack.includes(key)) return this.opaque(rel, `view ${key} is part of a cycle`)
+        if (ctx.viewStack.includes(key)) return this.opaque(rel, `view ${label} is part of a cycle`)
         const traced = Array.isArray(rel.traced) ? rel.traced : rel.traced?.columns
         if (traced && traced.length === rel.columns.length) {
           return rel.columns.map((c, i) => ({
@@ -500,7 +502,7 @@ class Run {
             ...typeOf(c.type),
           }))
         }
-        if (rel.definition === undefined) return this.opaque(rel, `view ${key} has no definition`)
+        if (rel.definition === undefined) return this.opaque(rel, `view ${label} has no definition`)
         let pending = this.views.get(key)
         if (!pending) {
           pending = this.traceView(rel, key, ctx)
@@ -509,7 +511,7 @@ class Run {
         return pending
       }
       default:
-        return this.opaque(rel, `${key} is not a table or view`)
+        return this.opaque(rel, `${label} is not a table or view`)
     }
   }
 
@@ -539,7 +541,7 @@ class Run {
       return rel.columns.map((c, i) => withType({ ...cols[i], name: c.name }, builtinType(c.type)))
     } catch (e) {
       if (e instanceof Unsupported)
-        return this.opaque(rel, `view ${key} could not be traced: ${e.message}`)
+        return this.opaque(rel, `view ${rel.schema}.${rel.name} could not be traced: ${e.message}`)
       throw e
     }
   }

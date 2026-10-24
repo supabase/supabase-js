@@ -6,6 +6,7 @@
  * as `format_type` does (`integer`, `character varying(255)`, `timestamp(3) with time zone`, `"MyType"[]`).
  */
 
+import { relationKey } from '../keys'
 import { memberName, quote } from './literal'
 
 /** Builtin name (internal spelling) to the TypeScript type `gen types` prints for it. Everything else is `unknown`. */
@@ -53,7 +54,9 @@ const SPELLINGS: Readonly<Record<string, string>> = {
 }
 
 export interface NormalizedType {
-  /** Internal name, schema qualified (`public.user_status`) outside `pg_catalog`, modifiers and `[]` removed */
+  /** The schema the spelling qualifies the name with (`public` of `public.user_status`); absent for a bare name */
+  schema?: string
+  /** Internal name without schema, modifiers and `[]`: a dot inside it belongs to the name */
   name: string
   /** Number of `[]` suffixes */
   dims: number
@@ -78,9 +81,14 @@ export function normalizeType(type: string): NormalizedType {
     dims++
   }
   const { parts, quoted } = parseIdentifiers(rest)
-  if (parts.length > 1) return { name: parts.join('.'), dims }
+  if (parts.length > 1)
+    return { schema: parts[parts.length - 2]!, name: parts[parts.length - 1]!, dims }
   const bare = parts[0] ?? ''
-  return { name: quoted && bare !== 'char' ? bare : (SPELLINGS[bare] ?? bare), dims }
+  return {
+    name:
+      quoted && bare !== 'char' ? bare : Object.hasOwn(SPELLINGS, bare) ? SPELLINGS[bare]! : bare,
+    dims,
+  }
 }
 
 const MODIFIER = /\(\s*\d+(?:\s*,\s*\d+)?\s*\)/y
@@ -130,13 +138,7 @@ function parseIdentifiers(text: string): { parts: string[]; quoted: boolean } {
   return { parts, quoted }
 }
 
-/** Unqualified part of a normalised name. */
-export function baseName(name: string): string {
-  const dot = name.indexOf('.')
-  return dot < 0 ? name : name.slice(dot + 1)
-}
-
-/** What the printer knows about the types of the database. Keys are `schema.name`. */
+/** What the printer knows about the types of the database. Keys are `relationKey(schema, name)`. */
 export interface TypeContext {
   /** Enum types of the exposed schemas */
   enums: ReadonlySet<string>
@@ -148,7 +150,7 @@ export interface TypeContext {
    * relation (`ROW(NULL)::person` is a value even when `person.id` is the primary key)
    */
   relations: ReadonlyMap<string, readonly CompositeAttribute[]>
-  /** Domain to the type it is defined over (`public.positive_int` to `int4`) */
+  /** Domain to the type it is defined over (`relationKey('public', 'positive_int')` to `int4`) */
   domains: ReadonlyMap<string, string>
   /** Schema an unqualified non-builtin name belongs to. Default `public` */
   defaultSchema?: string
@@ -173,8 +175,6 @@ export function rowTypeOf(
     .map((c) => ({ name: c.name, type: c.type }))
 }
 
-const isQualified = (name: string): boolean => name.includes('.')
-
 /** `SupabaseDatabase['public']['Enums']['user_status']` */
 export function databaseRef(
   ctx: TypeContext,
@@ -185,83 +185,81 @@ export function databaseRef(
   return `${ctx.databaseType ?? 'SupabaseDatabase'}[${quote(schema)}][${quote(section)}][${quote(name)}]`
 }
 
-function split(name: string, ctx: TypeContext): [string, string] {
-  const dot = name.indexOf('.')
-  return dot < 0 ? [ctx.defaultSchema ?? 'public', name] : [name.slice(0, dot), name.slice(dot + 1)]
-}
-
 /**
  * Records a domain the planner reported for a field: its `pgType` (as `format_type` spells it, quoted where the name
- * needs it: `public."Amount"`) and the base type under it. `TypeContext.domains` is keyed by `schema.name` as the
- * catalog holds it, the key `normalizeType` gives, so the quotes are taken off here and a quoted domain resolves.
+ * needs it: `public."Amount"`) and the base type under it. `TypeContext.domains` is keyed by the schema and name as
+ * the catalog holds them, so the quotes are taken off here and a quoted domain resolves. A name without a schema
+ * is not a domain the planner reports.
  */
 export function rememberDomain(
   domains: Map<string, string>,
   pgType: string,
   baseType: string
 ): void {
-  const { name, dims } = normalizeType(pgType)
-  if (dims === 0) domains.set(name, baseType)
+  const { schema, name, dims } = normalizeType(pgType)
+  if (schema !== undefined && dims === 0) domains.set(relationKey(schema, name), baseType)
 }
 
 /** Follows a domain to the type it is defined over (and the array dimensions it adds). Guards against a cycle. */
-function resolveDomain(name: string, ctx: TypeContext): NormalizedType {
-  let current = name
+function resolveDomain(type: NormalizedType, ctx: TypeContext): NormalizedType {
+  let current = type
   let dims = 0
   for (let i = 0; i < 8; i++) {
-    const key = isQualified(current) ? current : `${ctx.defaultSchema ?? 'public'}.${current}`
-    const next = ctx.domains.get(key)
+    const next = ctx.domains.get(relationKey(current.schema ?? defaultSchemaOf(ctx), current.name))
     if (next === undefined) break
-    const inner = normalizeType(next)
-    current = inner.name
-    dims += inner.dims
+    current = normalizeType(next)
+    dims += current.dims
   }
-  return { name: current, dims }
+  return { ...current, dims }
 }
+
+const defaultSchemaOf = (ctx: TypeContext): string => ctx.defaultSchema ?? 'public'
 
 /** Kind of a normalised, non-array name: builtin, enum, composite, relation row, or unknown. */
 export type TypeKind = 'builtin' | 'enum' | 'composite' | 'relation' | 'unknown'
 
 export interface ClassifiedType {
   kind: TypeKind
-  /** Normalised name after resolving domains */
+  /** The schema of an enum, a composite, a relation row (the default schema for a bare name); absent for a builtin */
+  schema?: string
+  /** Normalised name after resolving domains, without schema */
   name: string
   /** Array dimensions of the type itself plus those a domain over an array adds */
   dims: number
 }
 
-export function classifyType(type: string, ctx: TypeContext): ClassifiedType {
-  const normalized = normalizeType(type)
-  const resolved = resolveDomain(normalized.name, ctx)
+/** The type of a spelling (`format_type`, the planner's) or one a caller already normalised. */
+export function classifyType(type: string | NormalizedType, ctx: TypeContext): ClassifiedType {
+  const normalized = typeof type === 'string' ? normalizeType(type) : type
+  const resolved = resolveDomain(normalized, ctx)
   const dims = normalized.dims + resolved.dims
-  const name = resolved.name
-  const [schema, local] = split(name, ctx)
-  const key = `${schema}.${local}`
-  if (ctx.enums.has(key)) return { kind: 'enum', name: key, dims }
-  if (ctx.composites.has(key)) return { kind: 'composite', name: key, dims }
-  if (ctx.relations.has(key)) return { kind: 'relation', name: key, dims }
+  const { name } = resolved
+  const schema = resolved.schema ?? defaultSchemaOf(ctx)
+  const key = relationKey(schema, name)
+  if (ctx.enums.has(key)) return { kind: 'enum', schema, name, dims }
+  if (ctx.composites.has(key)) return { kind: 'composite', schema, name, dims }
+  if (ctx.relations.has(key)) return { kind: 'relation', schema, name, dims }
   // pg_catalog types are unqualified; extension types (`extensions.citext`, `extensions.vector`) map by name
-  const builtinName = isQualified(name) ? baseName(name) : name
-  if (builtinName in BUILTIN_TS && (!isQualified(name) || schema !== 'public')) {
-    return { kind: 'builtin', name: builtinName, dims }
+  if (Object.hasOwn(BUILTIN_TS, name) && resolved.schema !== 'public') {
+    return { kind: 'builtin', name, dims }
   }
-  return { kind: 'unknown', name, dims }
+  return { kind: 'unknown', ...(resolved.schema === undefined ? {} : { schema }), name, dims }
 }
 
 /** A type without schema and modifiers, for comparing two spellings of it (a dump's, a catalog's, the planner's). */
 export function canonicalType(type: string): string {
   const n = normalizeType(type)
-  return baseName(n.name) + '[]'.repeat(n.dims)
+  return n.name + '[]'.repeat(n.dims)
 }
 
 /** Whether values of this type are JSON documents (`json`, `jsonb`, or a domain over them), any array depth aside. */
-export function isJsonType(type: string, ctx: TypeContext): boolean {
+export function isJsonType(type: string | NormalizedType, ctx: TypeContext): boolean {
   const c = classifyType(type, ctx)
   return c.kind === 'builtin' && (c.name === 'json' || c.name === 'jsonb')
 }
 
 /** The TypeScript type expression for a PostgreSQL type, as a member of `Row` / `Returns` (JSON reads) or `Args`. */
-export function tsTypeOf(type: string, ctx: TypeContext): string {
+export function tsTypeOf(type: string | NormalizedType, ctx: TypeContext): string {
   const c = classifyType(type, ctx)
   let ts: string
   switch (c.kind) {
@@ -271,18 +269,16 @@ export function tsTypeOf(type: string, ctx: TypeContext): string {
       break
     }
     case 'enum': {
-      const [schema, name] = split(c.name, ctx)
-      ts = databaseRef(ctx, schema, 'Enums', name)
+      ts = databaseRef(ctx, c.schema!, 'Enums', c.name)
       break
     }
     case 'composite': {
-      const [schema, name] = split(c.name, ctx)
-      ts = databaseRef(ctx, schema, 'CompositeTypes', name)
+      ts = databaseRef(ctx, c.schema!, 'CompositeTypes', c.name)
       break
     }
     case 'relation': {
       // a composite value, not a row of the table: every attribute can be null
-      ts = compositeValue(ctx.relations.get(c.name)!, ctx)
+      ts = compositeValue(ctx.relations.get(relationKey(c.schema!, c.name))!, ctx)
       break
     }
     default:

@@ -1,7 +1,7 @@
 import type { ShapeField } from '@supabase/postgrest-planner'
 import type { Supplementary, SupplementaryFunction, SupplementaryRelation } from '../schema'
 import type { TracedColumn } from '../tracer'
-import { relationKey } from '../keys'
+import { columnKey, columnTypeKey, relationKey, type ColumnRef } from '../keys'
 import { memberName as key, quote } from './literal'
 import {
   canonicalType,
@@ -33,10 +33,6 @@ function object(members: Member[], indent: string, empty = EMPTY_OBJECT): string
 function union(items: string[], indent: string): string {
   if (items.length === 1) return items[0]!
   return items.map((i) => `\n${indent}  | ${i}`).join('')
-}
-
-function qualified(schema: string, name: string): string {
-  return `${schema}.${name}`
 }
 
 const byName = <T extends { name: string }>(a: T, b: T): number =>
@@ -271,11 +267,11 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
     }
   }
   const ctx: TypeContext = {
-    enums: new Set(supplementary.enums.map((e) => qualified(e.schema, e.name))),
-    composites: new Set(supplementary.composites.map((c) => qualified(c.schema, c.name))),
+    enums: new Set(supplementary.enums.map((e) => relationKey(e.schema, e.name))),
+    composites: new Set(supplementary.composites.map((c) => relationKey(c.schema, c.name))),
     relations: new Map(
       [...printed.values()].map((p) => [
-        qualified(p.relation.schema, p.relation.name),
+        relationKey(p.relation.schema, p.relation.name),
         rowTypeOf(p.relation.columns),
       ])
     ),
@@ -291,25 +287,21 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
 
   // ---- column values
   /** `SupabaseColumnType<'s.r.c', Derived>` with the column's own nullability outside the wrapper */
-  const value = (columnKey: string, pgType: string | null, nullable: boolean): string => {
+  const value = (column: ColumnRef, pgType: string | null, nullable: boolean): string => {
     const derived =
-      input.jsonSchemas.get(columnKey) ?? (pgType === null ? 'unknown' : tsTypeOf(pgType, ctx))
-    return `SupabaseColumnType<${quote(columnKey)}, ${derived}>${nullable ? ' | null' : ''}`
+      input.jsonSchemas.get(columnKey(column)) ??
+      (pgType === null ? 'unknown' : tsTypeOf(pgType, ctx))
+    return `SupabaseColumnType<${quote(columnTypeKey(column))}, ${derived}>${nullable ? ' | null' : ''}`
   }
 
-  /** The key a column goes by: the base column a view column passes through from, else its own */
-  const columnKey = (p: PrintedRelation, column: string): { key: string; nullable?: boolean } => {
+  /** The column a column goes by: the base column a view column passes through from, else its own */
+  const columnOf = (
+    p: PrintedRelation,
+    column: string
+  ): { column: ColumnRef; nullable?: boolean } => {
+    const own = { schema: p.relation.schema, relation: p.relation.name, column }
     const traced = p.traces?.get(column)
-    if (traced) {
-      const source = traced.source
-      return {
-        key: source
-          ? `${source.schema}.${source.relation}.${source.column}`
-          : qualified(qualified(p.relation.schema, p.relation.name), column),
-        nullable: traced.nullable,
-      }
-    }
-    return { key: qualified(qualified(p.relation.schema, p.relation.name), column) }
+    return traced ? { column: traced.source ?? own, nullable: traced.nullable } : { column: own }
   }
 
   const rowMembers = (p: PrintedRelation): Member[] =>
@@ -320,8 +312,8 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
         const derived = f.pgType === null ? 'unknown' : tsTypeOf(f.pgType, ctx)
         return { name: f.name, type: `${derived}${f.nullable ? ' | null' : ''}` }
       }
-      const k = columnKey(p, f.name)
-      return { name: f.name, type: value(k.key, f.pgType, k.nullable ?? f.nullable) }
+      const k = columnOf(p, f.name)
+      return { name: f.name, type: value(k.column, f.pgType, k.nullable ?? f.nullable) }
     })
 
   /** Insert / Update members from the catalog's columns */
@@ -330,7 +322,7 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
     const columns = [...p.relation.columns].sort((a, b) => a.attnum - b.attnum)
     for (const c of columns) {
       if (c.generated !== null || c.identity === 'always') continue
-      const k = columnKey(p, c.name)
+      const k = columnOf(p, c.name)
       const nullable = k.nullable ?? !c.notNull
       const required =
         mode === 'insert' &&
@@ -341,7 +333,7 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
       members.push({
         name: c.name,
         optional: !required,
-        type: value(k.key, c.type, nullable),
+        type: value(k.column, c.type, nullable),
       })
     }
     return members

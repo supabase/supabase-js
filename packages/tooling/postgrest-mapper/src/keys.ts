@@ -41,3 +41,27 @@ export function relationKey(schema: string, name: string): string {
   const escape = (part: string): string => part.replace(/[\\.]/g, '\\$&')
   return `${escape(schema)}.${escape(name)}`
 }
+
+/** A stored column: its relation and its name. */
+export interface ColumnRef {
+  schema: string
+  relation: string
+  column: string
+}
+
+/**
+ * The key of a column in the maps the generation shares between the planner step, the cache and the printers
+ * (`jsonSchemas`): the three parts as a JSON array, so no choice of names makes two columns one key. An internal
+ * identity, not an emitted string: `columnTypeKey` is what a `SupabaseColumnType` is keyed by.
+ */
+export function columnKey(column: ColumnRef): string {
+  return JSON.stringify([column.schema, column.relation, column.column])
+}
+
+/**
+ * The key a `SupabaseColumnType<K, ...>` carries: `schema.relation.column`, the spelling `SupabaseColumnTypes`
+ * augmentations are written against. It is a display spelling, so two columns can share it; never look anything up by it.
+ */
+export function columnTypeKey(column: ColumnRef): string {
+  return `${column.schema}.${column.relation}.${column.column}`
+}

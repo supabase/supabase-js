@@ -5,7 +5,7 @@ import type {
   ShapeEmbed,
   ShapeField,
 } from '@supabase/postgrest-planner'
-import { relationKey } from '../keys'
+import { columnKey, columnTypeKey, relationKey, type ColumnRef } from '../keys'
 import { memberName, quote, quoteDouble } from './literal'
 import type { FunctionRows } from './function-rows'
 import { classifyType, isJsonType, rememberDomain, tsTypeOf } from './pg-types'
@@ -135,16 +135,11 @@ export const tuple = (items: readonly string[]): string => `[${items.map(quote).
 /** The base column a (view) column passes through from, and its traced nullability */
 export function columnKeyOf(
   context: SelectsContext,
-  source: { schema: string; relation: string; column: string }
-): { key: string; nullable?: boolean } {
-  const own = `${source.schema}.${source.relation}.${source.column}`
+  source: ColumnRef
+): { column: ColumnRef; nullable?: boolean } {
   const traced = context.traces.get(relationKey(source.schema, source.relation))?.get(source.column)
-  if (!traced) return { key: own }
-  const origin = traced.source
-  return {
-    key: origin ? `${origin.schema}.${origin.relation}.${origin.column}` : own,
-    nullable: traced.nullable,
-  }
+  if (!traced) return { column: source }
+  return { column: traced.source ?? source, nullable: traced.nullable }
 }
 
 /**
@@ -153,12 +148,12 @@ export function columnKeyOf(
  */
 export function derivedType(
   context: SelectsContext,
-  columnKey: string,
+  column: ColumnRef,
   pgType: string | null,
   bypassSchema = false
 ): string {
   return (
-    (bypassSchema ? undefined : context.jsonSchemas.get(columnKey)) ??
+    (bypassSchema ? undefined : context.jsonSchemas.get(columnKey(column))) ??
     (pgType === null ? 'unknown' : tsTypeOf(pgType, context.types))
   )
 }
@@ -293,13 +288,13 @@ class ShapePrinter {
       // unless the trace of its body proves the column
       const functionRows = prov.functionRows === true
       const traced = root && functionRows ? this.traced(prov.source.column) : undefined
-      const k = this.columnKey(prov.source, traced?.source)
+      const k = this.columnOf(prov.source, traced?.source)
       const bypass = functionRows && (traced?.source === undefined || !this.isJson(field.pgType))
-      const derived = this.derived(k.key, field.pgType, bypass)
+      const derived = this.derived(k.column, field.pgType, bypass)
       const nullable = traced
         ? this.rowNullable(traced)
         : functionRows || (k.nullable ?? field.nullable)
-      return `SupabaseColumnType<${quote(k.key)}, ${derived}>${nullable ? ' | null' : ''}`
+      return `SupabaseColumnType<${quote(columnTypeKey(k.column))}, ${derived}>${nullable ? ' | null' : ''}`
     }
     if (prov.kind === 'outColumn' || prov.kind === 'compositeAttribute') {
       // the rows of a function the trace of its body covers: a traced stored column keeps its identity
@@ -308,9 +303,8 @@ class ShapePrinter {
         const nullable = this.rowNullable(traced)
         const origin = traced.source
         if (origin) {
-          const key = `${origin.schema}.${origin.relation}.${origin.column}`
-          const derived = this.derived(key, field.pgType, !this.isJson(field.pgType))
-          return `SupabaseColumnType<${quote(key)}, ${derived}>${nullable ? ' | null' : ''}`
+          const derived = this.derived(origin, field.pgType, !this.isJson(field.pgType))
+          return `SupabaseColumnType<${quote(columnTypeKey(origin))}, ${derived}>${nullable ? ' | null' : ''}`
         }
         const ty = field.pgType === null ? 'unknown' : tsTypeOf(field.pgType, this.context.types)
         return nullable ? orNull(ty) : ty
@@ -330,16 +324,15 @@ class ShapePrinter {
       if (prov.of.kind === 'plain') {
         const functionRows = prov.of.functionRows === true
         const traced = root && functionRows ? this.traced(prov.of.source.column) : undefined
-        const k = this.columnKey(prov.of.source, traced?.source)
+        const k = this.columnOf(prov.of.source, traced?.source)
         const bypass = functionRows && (traced?.source === undefined || !this.isJson(field.pgType))
-        const derived = this.derived(k.key, field.pgType, bypass)
-        return `SupabaseColumnType<${quote(k.key)}, ${derived}>${field.nullable ? ' | null' : ''}`
+        const derived = this.derived(k.column, field.pgType, bypass)
+        return `SupabaseColumnType<${quote(columnTypeKey(k.column))}, ${derived}>${field.nullable ? ' | null' : ''}`
       }
       const origin = root ? this.tracedOf(prov.of)?.source : undefined
       if (origin) {
-        const key = `${origin.schema}.${origin.relation}.${origin.column}`
-        const derived = this.derived(key, field.pgType, !this.isJson(field.pgType))
-        return `SupabaseColumnType<${quote(key)}, ${derived}>${field.nullable ? ' | null' : ''}`
+        const derived = this.derived(origin, field.pgType, !this.isJson(field.pgType))
+        return `SupabaseColumnType<${quote(columnTypeKey(origin))}, ${derived}>${field.nullable ? ' | null' : ''}`
       }
       if (prov.of.kind === 'jsonPath') {
         const path = this.jsonPath(prov.of, root)
@@ -381,19 +374,19 @@ class ShapePrinter {
   }
 
   /** The key of a column: the stored column the trace of a function body found, else what the view traces say. */
-  private columnKey(
-    source: { schema: string; relation: string; column: string },
-    stored?: { schema: string; relation: string; column: string }
+  private columnOf(
+    source: ColumnRef,
+    stored?: ColumnRef
   ): {
-    key: string
+    column: ColumnRef
     nullable?: boolean
   } {
-    if (stored) return { key: `${stored.schema}.${stored.relation}.${stored.column}` }
+    if (stored) return { column: stored }
     return columnKeyOf(this.context, source)
   }
 
-  private derived(columnKey: string, pgType: string | null, bypassSchema = false): string {
-    return derivedType(this.context, columnKey, pgType, bypassSchema)
+  private derived(column: ColumnRef, pgType: string | null, bypassSchema = false): string {
+    return derivedType(this.context, column, pgType, bypassSchema)
   }
 
   /** `data->a->>b`: the indexed value, typed against the column's own (possibly JSON Schema derived) type */
@@ -419,8 +412,8 @@ class ShapePrinter {
     }
     const star = this.context.plans.get(relationKey(source.schema, source.relation))
     const column = star?.find((f) => f.name === source.column)
-    const k = this.columnKey(source, stored)
-    const columnType = `SupabaseColumnType<${quote(k.key)}, ${this.derived(k.key, column?.pgType ?? 'jsonb', bypass)}>`
+    const k = this.columnOf(source, stored)
+    const columnType = `SupabaseColumnType<${quote(columnTypeKey(k.column))}, ${this.derived(k.column, column?.pgType ?? 'jsonb', bypass)}>`
     const steps = prov.path.map((s) => ('key' in s ? s.key : String(s.index)))
     const last = prov.path[prov.path.length - 1]!
     const helper = last.op === '->>' ? 'PgrstJsonText' : 'PgrstJson'

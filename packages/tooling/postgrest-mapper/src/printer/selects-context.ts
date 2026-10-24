@@ -42,9 +42,9 @@ export function createSelectsContext(input: SelectsContextInput): SelectsContext
   const { supplementary } = input
   const relations = new Map<string, ReturnType<typeof rowTypeOf>>()
   for (const r of supplementary.relations) {
-    const name = `${r.schema}.${r.name}`
-    if (!input.plans.has(relationKey(r.schema, r.name))) continue
-    relations.set(name, rowTypeOf(r.columns))
+    const key = relationKey(r.schema, r.name)
+    if (!input.plans.has(key)) continue
+    relations.set(key, rowTypeOf(r.columns))
   }
   const domains = new Map<string, string>()
   for (const fields of input.plans.values()) {
@@ -55,8 +55,8 @@ export function createSelectsContext(input: SelectsContextInput): SelectsContext
   }
   return {
     types: {
-      enums: new Set(supplementary.enums.map((e) => `${e.schema}.${e.name}`)),
-      composites: new Set(supplementary.composites.map((c) => `${c.schema}.${c.name}`)),
+      enums: new Set(supplementary.enums.map((e) => relationKey(e.schema, e.name))),
+      composites: new Set(supplementary.composites.map((c) => relationKey(c.schema, c.name))),
       relations,
       domains,
     },
