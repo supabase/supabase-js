@@ -12,6 +12,9 @@ type JsonStep<T, K extends string> = T extends readonly (infer U)[]
       : never
     : never
 
+// `T` without `null` / `undefined`, distributed over a union so a hover prints the members, not `NonNullable<…>`
+type Present<T> = T extends null | undefined ? never : T
+
 // the value at the path: a missing key, an index past a non-array, or a step through a null all end in `null`
 type JsonAt<T, P extends readonly string[]> =
   IsAny<T> extends true
@@ -19,8 +22,8 @@ type JsonAt<T, P extends readonly string[]> =
     : unknown extends T
       ? unknown
       : P extends readonly [infer H extends string, ...infer R extends string[]]
-        ? JsonAt<NonNullable<JsonStep<NonNullable<T>, H>>, R>
-        : NonNullable<T>
+        ? JsonAt<Present<JsonStep<Present<T>, H>>, R>
+        : Present<T>
 
 /**
  * The value `->` returns at `Path` in a `json` / `jsonb` value of type `T`, or `null` when the path doesn't
@@ -32,7 +35,9 @@ type JsonAt<T, P extends readonly string[]> =
  * // 'light' | 'dark' | null
  * ```
  */
-export type PgrstJson<T, Path extends readonly string[]> = JsonAt<T, Path> | null
+export type PgrstJson<T, Path extends readonly string[]> = [T] extends [unknown]
+  ? JsonAt<T, Path> | null
+  : never
 
 type TextOf<V> = V extends string ? V : string
 
@@ -46,4 +51,6 @@ type TextOf<V> = V extends string ? V : string
  * // string | null
  * ```
  */
-export type PgrstJsonText<T, Path extends readonly string[]> = TextOf<JsonAt<T, Path>> | null
+export type PgrstJsonText<T, Path extends readonly string[]> = [T] extends [unknown]
+  ? TextOf<JsonAt<T, Path>> | null
+  : never
