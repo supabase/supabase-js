@@ -96,6 +96,8 @@ interface Member {
   type: string
   /** The stored column the member's value is, for a root field that is one */
   column?: string
+  /** The embeds the member's value comes from, with the ones nested in them: they stand or fall with the member */
+  embeds: EmbedInfo[]
 }
 
 const inlineObject = (members: Member[]): string =>
@@ -159,8 +161,6 @@ export function derivedType(
 }
 
 class ShapePrinter {
-  readonly embeds: EmbedInfo[] = []
-
   constructor(
     private readonly context: SelectsContext,
     private readonly degraded: readonly string[],
@@ -173,46 +173,59 @@ class ShapePrinter {
     const sources = members.flatMap((m) =>
       m.column === undefined ? [] : [{ name: m.name, type: quote(m.column) }]
     )
-    return { row: inlineObject(members), sources, embeds: this.embeds }
+    // the embed of a member a later one replaced is not in the row, so it is not in the metadata either
+    const embeds = [...new Set(members.flatMap((m) => m.embeds))]
+    return { row: inlineObject(members), sources, embeds }
   }
 
   /** The members a shape adds to the object it is part of; `ops` are the spreads between it and that object. */
   private members(shape: ResultShape, ops: readonly SpreadOp[], root: boolean): Member[] {
     const members: Member[] = []
     for (const field of shape.fields) {
-      const member: Member = { name: field.name, type: applyOps(this.leaf(field, root), ops) }
+      const member: Member = {
+        name: field.name,
+        type: applyOps(this.leaf(field, root), ops),
+        embeds: [],
+      }
       const column = root ? this.sourceColumn(field) : undefined
       if (column !== undefined) member.column = column
       members.push(member)
     }
     for (const embed of shape.embeds) {
       if (embed.empty) continue
-      this.embeds.push({
+      const info: EmbedInfo = {
         path: embed.path,
         outputs: embed.outputs,
         join: embed.join,
         cardinality: embed.cardinality,
-      })
+      }
       const nullable = root ? this.embedNullable(embed) : embed.nullable
       if (embed.spread) {
         const op: SpreadOp | undefined =
           embed.cardinality === 'many' ? 'array' : nullable ? 'null' : undefined
-        members.push(...this.members(embed.shape, op ? [...ops, op] : ops, false))
+        for (const member of this.members(embed.shape, op ? [...ops, op] : ops, false)) {
+          members.push({ ...member, embeds: [info, ...member.embeds] })
+        }
         continue
       }
+      const value = this.embed(embed, nullable)
       members.push({
         name: embed.key ?? embed.alias ?? embed.name,
-        type: applyOps(this.embed(embed, nullable), ops),
+        type: applyOps(value.type, ops),
+        embeds: [info, ...value.embeds],
       })
     }
     return members
   }
 
-  /** The value of a plain embed: an object, an array of them, nullable per the planner. */
-  private embed(embed: ShapeEmbed, nullable: boolean): string {
-    const object = inlineObject(uniqueMembers(this.members(embed.shape, [], false)))
-    if (embed.cardinality === 'many') return nullable ? orNull(array(object)) : array(object)
-    return nullable ? orNull(object) : object
+  /** The value of a plain embed: an object, an array of them, nullable per the planner; and the embeds inside it. */
+  private embed(embed: ShapeEmbed, nullable: boolean): { type: string; embeds: EmbedInfo[] } {
+    const members = uniqueMembers(this.members(embed.shape, [], false))
+    const object = inlineObject(members)
+    const embeds = members.flatMap((m) => m.embeds)
+    if (embed.cardinality === 'many')
+      return { type: nullable ? orNull(array(object)) : array(object), embeds }
+    return { type: nullable ? orNull(object) : object, embeds }
   }
 
   /**

@@ -2277,7 +2277,6 @@ declare global {
       sources: {}
       embeds: {
         users: { path: ['users']; outputs: [['users']]; join: 'left'; cardinality: 'one' }
-        users: { path: ['users']; outputs: [['users']]; join: 'left'; cardinality: 'one' }
       }
     }
     'r|public|booking|id, hotel!inner(id, name)': {
