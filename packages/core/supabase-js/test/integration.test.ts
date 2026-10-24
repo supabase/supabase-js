@@ -422,7 +422,7 @@ describe('Supabase Integration Tests', () => {
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Timeout waiting for channelB')), 8000)
         channelB
-          .on('broadcast', { event: 'ping' }, () => {})
+          .on('broadcast', { event: 'ping' }, () => undefined)
           .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
               channelBSubscribed = true

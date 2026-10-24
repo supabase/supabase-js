@@ -290,7 +290,7 @@ describe('fetch module', () => {
       let warnSpy: jest.SpyInstance
 
       beforeEach(() => {
-        warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
       })
 
       afterEach(() => {
@@ -610,7 +610,7 @@ describe('fetch module', () => {
 
       test('warns once and skips tracing when enabled without the tracing runtime', async () => {
         _unregisterTraceContextExtractor()
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
 
         const mockSet = jest.fn()
         ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
@@ -638,7 +638,7 @@ describe('fetch module', () => {
 
       test('does not warn when trace propagation is disabled', async () => {
         _unregisterTraceContextExtractor()
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
 
         ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
         ;(global as any).Headers = jest.fn().mockReturnValue({
@@ -660,7 +660,7 @@ describe('fetch module', () => {
 
       test('picks up an extractor registered after the client was created', async () => {
         _unregisterTraceContextExtractor()
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
 
         const mockSet = jest.fn()
         ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
@@ -696,7 +696,7 @@ describe('fetch module', () => {
         // default `propagateTraceparent: false`: vendor headers were written
         // to the carrier, but no W3C traceparent.
         registerTraceContextExtractor(() => ({ carrierKeys: ['sentry-trace', 'baggage'] }))
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
 
         const mockSet = jest.fn()
         ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
@@ -726,7 +726,7 @@ describe('fetch module', () => {
 
       test('non-traceparent warning is generic when the propagator is not Sentry', async () => {
         registerTraceContextExtractor(() => ({ carrierKeys: ['b3'] }))
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
 
         ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
         ;(global as any).Headers = jest.fn().mockReturnValue({
@@ -755,7 +755,7 @@ describe('fetch module', () => {
         // Empty carrier: the propagator had nothing to write. Normal — the
         // warning must not fire for apps that simply have no span open.
         registerTraceContextExtractor(() => null)
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
 
         ;(global as any).fetch = jest.fn().mockResolvedValue({ ok: true })
         ;(global as any).Headers = jest.fn().mockReturnValue({

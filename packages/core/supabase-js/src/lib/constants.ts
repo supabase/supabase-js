@@ -3,13 +3,12 @@ import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { SupabaseAuthClientOptions, TracePropagationOptions } from './types'
 import { version } from './version'
 
-let JS_ENV = ''
+let JS_ENV: string
 let JS_RUNTIME_VERSION: string | undefined
-// @ts-ignore
-if (typeof Deno !== 'undefined') {
+const _deno = (globalThis as { Deno?: { version?: { deno?: string } } }).Deno
+if (typeof _deno !== 'undefined') {
   JS_ENV = 'deno'
-  // @ts-ignore
-  JS_RUNTIME_VERSION = Deno.version?.deno
+  JS_RUNTIME_VERSION = _deno.version?.deno
 } else if (typeof document !== 'undefined') {
   JS_ENV = 'web'
 } else if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {

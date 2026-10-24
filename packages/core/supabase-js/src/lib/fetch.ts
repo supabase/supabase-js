@@ -81,7 +81,7 @@ export const fetchWithAuth = (
 
   return async (input, init) => {
     const realToken = await getAccessToken()
-    let headers = new HeadersConstructor(init?.headers)
+    const headers = new HeadersConstructor(init?.headers)
 
     if (!headers.has('apikey')) {
       headers.set('apikey', supabaseKey)

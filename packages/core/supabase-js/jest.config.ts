@@ -24,9 +24,9 @@ const config: Config.InitialOptions = {
     '/test/integration/expo/', // Expo tests have their own runner
     '/test/integration/next/', // Next.js tests have their own setup
     '/test/integration/node-browser/', // Playwright tests
-    '\.spec\.ts$', // Playwright spec files
-    'integration\.browser\.test\.ts', // Browser integration tests for Deno
-    '\.[mc]js$', // standalone Node scripts run via test:esm / test:cjs (Jest 30 default testMatch now includes .mjs/.cjs)
+    '.spec.ts$', // Playwright spec files
+    'integration.browser.test.ts', // Browser integration tests for Deno
+    '.[mc]js$', // standalone Node scripts run via test:esm / test:cjs (Jest 30 default testMatch now includes .mjs/.cjs)
   ],
 }
 module.exports = config

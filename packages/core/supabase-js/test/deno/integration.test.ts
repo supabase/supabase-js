@@ -154,14 +154,13 @@ Deno.test(
           })
 
           const channelName = `channel-${crypto.randomUUID()}`
-          let channel: RealtimeChannel
           const email = `test-${Date.now()}@example.com`
           const password = 'password123'
 
           // Sign up and create channel
           await supabaseRealtime.auth.signUp({ email, password })
           const config = { broadcast: { self: true, ack: true }, private: true }
-          channel = supabaseRealtime.channel(channelName, { config })
+          const channel: RealtimeChannel = supabaseRealtime.channel(channelName, { config })
 
           const testMessage = { message: 'test' }
           let receivedMessage: any
@@ -169,7 +168,11 @@ Deno.test(
           let attempts = 0
 
           channel
-            .on('broadcast', { event: 'test-event' }, (payload: unknown) => (receivedMessage = payload))
+            .on(
+              'broadcast',
+              { event: 'test-event' },
+              (payload: unknown) => (receivedMessage = payload)
+            )
             .subscribe((status: string) => {
               if (status == 'SUBSCRIBED') subscribed = true
             })
