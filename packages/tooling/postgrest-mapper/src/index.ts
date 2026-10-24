@@ -103,6 +103,7 @@ export {
   readPgVersionNum,
   readSnapshot,
   redactConfig,
+  schemaFingerprint,
   schemaFromSnapshot,
   serializeSnapshot,
   snapshotFromSchema,

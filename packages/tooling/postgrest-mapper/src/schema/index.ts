@@ -3,6 +3,7 @@ export { connectPg, withReadOnlyTransaction } from './db'
 export { ExecTimeoutError, SchemaAcquisitionError } from './errors'
 export type { SchemaErrorCode } from './errors'
 export { nodeExec } from './exec'
+export { schemaFingerprint } from './fingerprint'
 export {
   configEnvName,
   containerDbUrl,
