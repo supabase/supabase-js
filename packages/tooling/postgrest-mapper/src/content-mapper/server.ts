@@ -143,6 +143,7 @@ export function createContentMapperServer(
     const rawOptions = p.options ?? {}
     const validation = validateOptions(rawOptions)
     if (!validation.ok) {
+      generator.closeProject?.(p.projectHandle)
       projects.set(p.projectHandle, { text: EMPTY_MODULE, diagnostics: [] })
       return {
         configIdentity: hashOptions(rawOptions),
@@ -216,6 +217,7 @@ export function createContentMapperServer(
       typeof r.projectHandle !== 'string' ? 'projectHandle must be a string' : undefined
     )
     projects.delete(p.projectHandle)
+    generator.closeProject?.(p.projectHandle)
     return null
   }
 
@@ -303,6 +305,7 @@ export function createContentMapperServer(
   const closed = stoppedSignal.then(async () => {
     await Promise.allSettled([...inFlight])
     finished = true
+    for (const handle of projects.keys()) generator.closeProject?.(handle)
     projects.clear()
   })
   return { closed, close: stop }

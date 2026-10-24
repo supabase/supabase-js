@@ -276,6 +276,9 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
   await running
 }
 
+/** `watch` is the one holder of its generator: a live schema is polled for as long as it runs. */
+const WATCH_HOLDER = 'watch'
+
 /** The I/O `watch` adds to the operations': how directories are watched, files stamped and time read. */
 export interface WatchDeps extends OperationDeps {
   /** Defaults to `fs.watch` */
@@ -302,7 +305,8 @@ export interface WatchOptions {
 
 /**
  * `write`, again whenever a file the generation depends on changes (the tsconfig and its `extends` chain, the schema
- * snapshot, the refresh stamp of a live schema), a source file appears next to one that is scanned, or a directory
+ * snapshot, the refresh stamp of a live schema: while it runs, a live schema is polled for DDL and the poller writes
+ * the stamp when the database changed, unless `pollIntervalMs` turns that off), a source file appears next to one that is scanned, or a directory
  * is created (or replaced) below a scanned one, so that the files in it are scanned. The planner and
  * a live schema are kept between runs. A broken tsconfig is reported as an `error` event and waited out; nothing but
  * `signal` ends the watch.
@@ -326,7 +330,7 @@ export async function watch(
       ignore: resolve(resolved.cwd, input.out),
       run: async () => {
         try {
-          const result = await writeWith(resolved, input, generator)
+          const result = await writeWith(resolved, input, generator, WATCH_HOLDER)
           options.onEvent({ kind: 'run', result })
           return {
             files: result.watchedFiles,

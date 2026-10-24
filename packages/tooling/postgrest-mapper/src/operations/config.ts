@@ -93,7 +93,9 @@ export function applyOverrides(cwd: string, overrides: SchemaOverrides, options:
   const current = isRecord(options.schema) ? options.schema : {}
   const target = source ?? (current.source as string | undefined)
   let schema: Record<string, unknown>
-  if (target === 'supabase-local') schema = { source: 'supabase-local' }
+  const poll =
+    current.pollIntervalMs !== undefined ? { pollIntervalMs: current.pollIntervalMs } : {}
+  if (target === 'supabase-local') schema = { source: 'supabase-local', ...poll }
   else if (target === 'snapshot') {
     schema = {
       source: 'snapshot',
@@ -109,6 +111,7 @@ export function applyOverrides(cwd: string, overrides: SchemaOverrides, options:
       source: 'postgrest',
       ...(dbUrlEnv !== undefined ? { dbUrlEnv } : {}),
       ...(current.config !== undefined ? { config: current.config } : {}),
+      ...poll,
     }
   } else return options
   return { ...options, schema }

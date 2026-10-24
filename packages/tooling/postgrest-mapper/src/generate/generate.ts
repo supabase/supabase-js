@@ -1,8 +1,12 @@
 import { stat } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import type { PlanRequest } from '@supabase/postgrest-planner'
-import { DiagnosticCode, validateOptions } from '../content-mapper/options'
-import type { PostgrestMapperOptions } from '../content-mapper/options'
+import {
+  DEFAULT_POLL_INTERVAL_MS,
+  DiagnosticCode,
+  validateOptions,
+} from '../content-mapper/options'
+import type { PostgrestMapperOptions, SchemaSourceOptions } from '../content-mapper/options'
 import { hashOptions } from '../content-mapper/hash'
 import type {
   GenerateProjectParams,
@@ -26,7 +30,7 @@ import {
 import { relationKey } from '../keys'
 import type { CallOutcome, OperandInput, PrintDiagnostic, RpcCall, SelectsEntry } from '../printer'
 import { scanFiles } from '../scanner'
-import { SchemaAcquisitionError, acquireSchema, exposedSchemas } from '../schema'
+import { SchemaAcquisitionError, acquireSchema, connectPg, exposedSchemas } from '../schema'
 import { defaultFs } from '../schema/snapshot'
 import type { AcquiredSchema, SchemaDeps, SchemaFs, SchemaSource } from '../schema'
 import { createTracer } from '../tracer'
@@ -42,6 +46,8 @@ import {
 import type { CacheFile, PlanCache, StoredPlan } from './cache'
 import { planDatabase, printDatabaseMembers } from './database'
 import type { DatabasePlanContext } from './database'
+import { createSchemaPoller } from './poll'
+import type { SchemaPoller } from './poll'
 import { displayPath, findSupabaseConfigDir, nodeProjectFs, resolveProjectFiles } from './project'
 import type { ProjectFs } from './project'
 import {
@@ -76,8 +82,11 @@ export const nodeGeneratorFs: GeneratorFs = { ...nodeProjectFs, ...defaultFs }
 export interface GeneratorDeps {
   /** Sources, snapshots and the cache. Defaults to `node:fs` */
   fs?: GeneratorFs
-  /** Process execution and database access of the schema sources. `fs` is taken from the field above */
-  schema?: Omit<SchemaDeps, 'fs'>
+  /**
+   * Process execution and database access of the schema sources (`connect` also opens the connection that watches a
+   * live source for changes). `fs` is taken from the field above
+   */
+  schema?: Omit<SchemaDeps, 'fs' | 'onResolvedDbUrl'>
   /** Where `postgrest.dbUrlEnv` is read. Defaults to `process.env` */
   env?: Record<string, string | undefined>
   /** Directory of a project without a tsconfig. Defaults to `process.cwd()` */
@@ -127,13 +136,37 @@ export interface GenerateOutput extends GenerateProjectResult {
 
 export interface Generator {
   generate(
-    params: Pick<GenerateProjectParams, 'configFileName' | 'options'>
+    params: Pick<GenerateProjectParams, 'configFileName' | 'options'> & {
+      /**
+       * Who wants the live schema kept fresh. A generate with a holder, a live schema source, a disk cache and a
+       * `pollIntervalMs` above zero starts (or keeps) the poller of that schema, which watches the database for DDL
+       * and writes the refresh stamp when it changes; the poller lives while some holder is on it. Without a holder
+       * nothing is polled.
+       */
+      holder?: string
+    }
   ): Promise<GenerateOutput>
-  /** Stops the planner host. The generator can be used again: the next miss starts a new host */
+  /** Takes the holder off every poller; a poller left without holders stops */
+  release(holder: string): void
+  /** Stops the pollers and the planner host. The generator can be used again: the next miss starts a new host */
   close(): Promise<void>
 }
 
 const EMPTY_MODULE = 'export {}\n'
+
+/** The options as far as the output depends on them: `pollIntervalMs` only paces the poller and is in no hash. */
+function identityOf(options: PostgrestMapperOptions): PostgrestMapperOptions {
+  if (!('pollIntervalMs' in options.schema)) return options
+  const schema: Record<string, unknown> = { ...options.schema }
+  delete schema.pollIntervalMs
+  return { ...options, schema: schema as unknown as SchemaSourceOptions }
+}
+
+const pollIntervalOf = (options: PostgrestMapperOptions): number => {
+  const { schema } = options
+  if (schema.source === 'snapshot') return 0
+  return schema.pollIntervalMs === false ? 0 : (schema.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS)
+}
 
 const byKey = (a: { key: string }, b: { key: string }): number =>
   a.key < b.key ? -1 : a.key > b.key ? 1 : 0
@@ -172,7 +205,19 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
   const cwd = deps.cwd ?? process.cwd()
 
   // ---- state shared by every project of the process
-  const schemas = new Map<string, { stamp: string; pending: Promise<SchemaOk | SchemaFailure> }>()
+  const schemas = new Map<
+    string,
+    {
+      stamp: string
+      pending: Promise<SchemaOk | SchemaFailure>
+      /** Where the acquisition read the catalog: kept here for the poller, in no result, hash or message */
+      dbUrl?: string
+    }
+  >()
+  /** One poller per live schema, alive while a holder is on it */
+  const pollers = new Map<string, { poller: SchemaPoller; holders: Set<string> }>()
+  /** Generations running per live schema: its poller does not write the stamp under one */
+  const running = new Map<string, number>()
   let host: PlannerHost | undefined
   let tracer: Promise<Tracer> | undefined
   let stamp: Promise<string> | undefined
@@ -242,14 +287,19 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
 
   const acquire = async (
     options: PostgrestMapperOptions,
-    projectDir: string
+    projectDir: string,
+    onDbUrl?: (url: string) => void
   ): Promise<SchemaOk | SchemaFailure> => {
     const resolved = await sourceOf(options, projectDir)
     if ('ok' in resolved) return resolved
     const { source, watched } = resolved
     try {
       logger.debug(`acquiring the schema from ${source.source}`)
-      const acquired = await acquireSchema(source, { ...deps.schema, fs })
+      const acquired = await acquireSchema(source, {
+        ...deps.schema,
+        fs,
+        ...(onDbUrl ? { onResolvedDbUrl: onDbUrl } : {}),
+      })
       return { ok: true, acquired, id: hashOptions(acquired), watched }
     } catch (error) {
       const message = messageOf(error)
@@ -276,24 +326,78 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
   const schemaFor = async (
     options: PostgrestMapperOptions,
     projectDir: string,
-    stampPath: string | undefined
+    stampPath: string | undefined,
+    key: string | undefined
   ): Promise<SchemaOk | SchemaFailure> => {
-    if (options.schema.source === 'snapshot') return acquire(options, projectDir)
-    const key = hashOptions({ schema: options.schema, projectDir, db: dbKey(options) })
+    if (key === undefined) return acquire(options, projectDir)
     const stamp = stampPath === undefined ? '' : await fs.readFile(stampPath).catch(() => '')
     let entry = schemas.get(key)
     if (!entry || entry.stamp !== stamp) {
-      entry = { stamp, pending: acquire(options, projectDir) }
+      const created: NonNullable<typeof entry> = {
+        stamp,
+        pending: undefined as unknown as Promise<SchemaOk | SchemaFailure>,
+      }
+      created.pending = acquire(options, projectDir, (url) => (created.dbUrl = url))
+      entry = created
       schemas.set(key, entry)
     }
     const result = await entry.pending
     if (!result.ok && schemas.get(key) === entry) schemas.delete(key) // a failure is retried at the next open
     return result
   }
+  /** What a live schema is memoised under (a snapshot has none): the source and where it is read, never `pollIntervalMs` */
+  const schemaKeyOf = (options: PostgrestMapperOptions, projectDir: string): string | undefined =>
+    options.schema.source === 'snapshot'
+      ? undefined
+      : hashOptions({ schema: identityOf(options).schema, projectDir, db: dbKey(options) })
   const dbKey = (options: PostgrestMapperOptions): string | undefined =>
     options.schema.source === 'postgrest'
       ? hashOptions(env[options.schema.dbUrlEnv] ?? '')
       : undefined
+
+  // ---- polling
+  const leave = (key: string, holder: string): void => {
+    const entry = pollers.get(key)
+    if (!entry) return
+    entry.holders.delete(holder)
+    if (entry.holders.size > 0) return
+    pollers.delete(key)
+    void entry.poller.stop()
+  }
+  const release = (holder: string): void => {
+    for (const key of [...pollers.keys()]) leave(key, holder)
+  }
+  /** Puts `holder` on the poller of `key`, starting it when the schema's last acquisition resolved a database */
+  const hold = (
+    key: string,
+    holder: string,
+    intervalMs: number,
+    stampPath: string,
+    schemaFs: GeneratorFs
+  ): void => {
+    const url = schemas.get(key)?.dbUrl
+    if (url === undefined) return
+    let entry = pollers.get(key)
+    if (entry) {
+      entry.poller.setUrl(url)
+      entry.poller.setInterval(intervalMs)
+    } else {
+      entry = {
+        poller: createSchemaPoller({
+          url,
+          intervalMs,
+          stampPath,
+          connect: deps.schema?.connect ?? connectPg,
+          fs: schemaFs,
+          logger,
+          busy: () => (running.get(key) ?? 0) > 0,
+        }),
+        holders: new Set(),
+      }
+      pollers.set(key, entry)
+    }
+    entry.holders.add(holder)
+  }
 
   // ---- planning
   interface Planned {
@@ -464,7 +568,27 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
   }
 
   // ---- one project
-  const generate: Generator['generate'] = async ({ configFileName, options }) => {
+  const generate: Generator['generate'] = async (params) => {
+    const key = schemaKeyOf(
+      params.options,
+      params.configFileName ? dirname(params.configFileName) : cwd
+    )
+    if (key !== undefined) running.set(key, (running.get(key) ?? 0) + 1)
+    try {
+      return await generateOne(params, key)
+    } finally {
+      if (key !== undefined) {
+        const left = (running.get(key) ?? 1) - 1
+        if (left > 0) running.set(key, left)
+        else running.delete(key)
+      }
+    }
+  }
+
+  const generateOne = async (
+    { configFileName, options, holder }: Parameters<Generator['generate']>[0],
+    key: string | undefined
+  ): Promise<GenerateOutput> => {
     const projectDir = configFileName ? dirname(configFileName) : cwd
     const diagnostics: MapperDiagnostic[] = []
     let scannedDirectories: string[] = []
@@ -477,7 +601,11 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       watchedFiles: readonly string[],
       optionDiagnostics: OptionDiagnostic[] = []
     ): GenerateOutput => ({
-      identity: hashOptions({ generator: GENERATOR_REVISION, failure: identity, options }),
+      identity: hashOptions({
+        generator: GENERATOR_REVISION,
+        failure: identity,
+        options: identityOf(options),
+      }),
       watchedFiles,
       text: EMPTY_MODULE,
       diagnostics,
@@ -498,7 +626,15 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       cacheDirectory !== undefined && options.schema.source !== 'snapshot'
         ? refreshStampOf(cacheDirectory)
         : undefined
-    const schema = await schemaFor(options, projectDir, stampPath)
+    // a holder polls only a live schema it can tell the others about (the stamp) and that was asked to be polled
+    const pollIntervalMs = pollIntervalOf(options)
+    const polled =
+      holder !== undefined && key !== undefined && stampPath !== undefined && pollIntervalMs > 0
+    if (holder !== undefined) {
+      for (const k of [...pollers.keys()]) if (!polled || k !== key) leave(k, holder)
+    }
+    const schema = await schemaFor(options, projectDir, stampPath, key)
+    if (schema.ok && polled) hold(key, holder, pollIntervalMs, stampPath, fs)
     const schemaWatched = [...schema.watched, ...(stampPath ? [stampPath] : [])]
     if (!schema.ok) {
       if (schema.diagnostic) report(DiagnosticCode.SchemaUnavailable, schema.diagnostic)
@@ -720,7 +856,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       entries: digests,
       generator: GENERATOR_REVISION,
       planner: stampValue,
-      options,
+      options: identityOf(options),
       importFrom,
       text,
       diagnostics,
@@ -744,11 +880,14 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
 
   return {
     generate,
+    release,
     async close() {
       const closing = host
       host = undefined
       loadedSchema = undefined
-      await closing?.close()
+      const polling = [...pollers.values()].map((entry) => entry.poller.stop())
+      pollers.clear()
+      await Promise.all([closing?.close(), ...polling])
     },
   }
 }
@@ -765,17 +904,23 @@ function defaultStamp(wasmPath: () => string): () => Promise<string> {
   }
 }
 
-/** A content-mapper generator over `createGenerator`; `close` stops the planner host. */
+/**
+ * A content-mapper generator over `createGenerator`: each project handle is a holder, so a live schema of an open
+ * project is watched for DDL until `closeProject`. `close` stops the pollers and the planner host.
+ */
 export function createProjectGenerator(
   deps: GeneratorDeps = {}
 ): ProjectGenerator & { close(): Promise<void> } {
   const generator = createGenerator(deps)
-  const run: ProjectGenerator = async ({ configFileName, options }) => {
+  const run: ProjectGenerator = async ({ configFileName, projectHandle, options }) => {
     const { identity, watchedFiles, text, diagnostics, optionDiagnostics } =
-      await generator.generate({ configFileName, options })
+      await generator.generate({ configFileName, options, holder: projectHandle })
     return { identity, watchedFiles, text, diagnostics, optionDiagnostics }
   }
-  return Object.assign(run, { close: () => generator.close() })
+  return Object.assign(run, {
+    close: () => generator.close(),
+    closeProject: (projectHandle: string) => generator.release(projectHandle),
+  })
 }
 
 export type GenerateDeclarationsInput = (
@@ -812,7 +957,7 @@ export async function generateDeclarations(
  */
 export async function generateFrom(
   generator: Generator,
-  input: { configFileName: string; options: unknown }
+  input: { configFileName: string; options: unknown; holder?: string }
 ): Promise<GenerateOutput> {
   const validation = validateOptions(input.options)
   if (!validation.ok) {
@@ -829,5 +974,9 @@ export async function generateFrom(
       warnings: [],
     }
   }
-  return generator.generate({ configFileName: input.configFileName, options: validation.options })
+  return generator.generate({
+    configFileName: input.configFileName,
+    options: validation.options,
+    ...(input.holder !== undefined ? { holder: input.holder } : {}),
+  })
 }

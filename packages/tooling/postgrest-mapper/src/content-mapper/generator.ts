@@ -35,4 +35,12 @@ export interface GenerateProjectResult {
  * that should outlive `closeProject` (a loaded schema, plan memos): the server drops its per-project state on
  * `closeProject` and never touches the generator's caches.
  */
-export type ProjectGenerator = (params: GenerateProjectParams) => Promise<GenerateProjectResult>
+export type ProjectGenerator = ((
+  params: GenerateProjectParams
+) => Promise<GenerateProjectResult>) & {
+  /**
+   * The server calls it when a project is closed (or reopened with options the generator is not asked about): what
+   * the generator keeps running for the handle, like the watch on a live schema, stops.
+   */
+  closeProject?(projectHandle: string): void
+}

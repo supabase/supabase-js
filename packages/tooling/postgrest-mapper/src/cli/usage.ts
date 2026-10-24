@@ -13,7 +13,8 @@ Commands:
   print      Prints the declarations to stdout.
   refresh    Clears the generator cache (node_modules/.cache/postgrest-mapper), touches the refresh stamp
              that makes a running watch or content mapper server acquire the live schema again, and
-             regenerates.
+             regenerates. A watch or server already polls the database for migrations (pollIntervalMs),
+             so refresh is for a forced reload.
   init       Sets a project up: adds the .pgrst-index contentMappers entry to the tsconfig (schema source
              supabase-local next to a supabase/config.toml, a snapshot otherwise), creates the index file,
              adds it and the generated file to "include" (or "files") and, next to a deno.json, to

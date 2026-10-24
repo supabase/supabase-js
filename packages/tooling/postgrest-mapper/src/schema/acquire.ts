@@ -108,6 +108,11 @@ async function acquireLive(
       'database',
       'no database URL to read the supplementary catalog from'
     )
+  try {
+    deps.onResolvedDbUrl?.(dumps.dbUrl)
+  } catch {
+    // a listener's failure is not the acquisition's
+  }
   const urlScrub = createScrubber([
     dumps.dbUrl,
     urlPassword(dumps.dbUrl),

@@ -21,9 +21,17 @@ export const DiagnosticCode = {
 
 /** Where the upstream schema dump comes from (design v3 §4.2). */
 export type SchemaSourceOptions =
-  | { source: 'supabase-local' }
-  | { source: 'postgrest'; dbUrlEnv: string; config?: Record<string, string> }
+  | { source: 'supabase-local'; pollIntervalMs?: number | false }
+  | {
+      source: 'postgrest'
+      dbUrlEnv: string
+      config?: Record<string, string>
+      pollIntervalMs?: number | false
+    }
   | { source: 'snapshot'; path: string }
+
+/** How often a live schema source is asked whether the database changed, in ms (`pollIntervalMs` of the schema option). */
+export const DEFAULT_POLL_INTERVAL_MS = 2000
 
 /** The `options` object of the tsconfig `contentMappers` entry (design v5 §4.1). */
 export interface PostgrestMapperOptions {
@@ -77,6 +85,18 @@ export function validateOptions(raw: unknown): OptionsValidation {
       return false
     }
     return true
+  }
+
+  const validatePollInterval = (schema: Record<string, unknown>): void => {
+    const value = schema.pollIntervalMs
+    if (!('pollIntervalMs' in schema) || value === false) return
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+      report(
+        ['schema', 'pollIntervalMs'],
+        DiagnosticCode.InvalidOption,
+        "Option 'pollIntervalMs' must be a non-negative number of milliseconds, or false."
+      )
+    }
   }
 
   if (!isRecord(raw)) {
@@ -146,13 +166,15 @@ export function validateOptions(raw: unknown): OptionsValidation {
         `Option 'source' must be one of: ${SOURCES.join(', ')}.`
       )
     } else if (source === 'supabase-local') {
-      unknownKeys(schema, ['source'], ['schema'])
+      unknownKeys(schema, ['source', 'pollIntervalMs'], ['schema'])
+      validatePollInterval(schema)
     } else if (source === 'snapshot') {
       unknownKeys(schema, ['source', 'path'], ['schema'])
       requireString(schema, 'path', ['schema'])
     } else {
-      unknownKeys(schema, ['source', 'dbUrlEnv', 'config'], ['schema'])
+      unknownKeys(schema, ['source', 'dbUrlEnv', 'config', 'pollIntervalMs'], ['schema'])
       requireString(schema, 'dbUrlEnv', ['schema'])
+      validatePollInterval(schema)
       if ('config' in schema) {
         const config = schema.config
         if (!isRecord(config)) {

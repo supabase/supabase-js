@@ -11,16 +11,21 @@ import {
   type ResolvedDeps,
 } from './types'
 
-/** One run of the generate pipeline on a generator the caller keeps (`watch` reuses its planner and live schema). */
+/**
+ * One run of the generate pipeline on a generator the caller keeps (`watch` reuses its planner and live schema).
+ * With a `holder` the generator keeps a live schema fresh for as long as the holder lives (see `Generator.generate`).
+ */
 export async function generateWith(
   deps: ResolvedDeps,
   input: ProjectInput,
-  generator: Generator
+  generator: Generator,
+  holder?: string
 ): Promise<GenerateResult> {
   const config = await readMapperConfig(deps, input)
   const output = await generateFrom(generator, {
     configFileName: config.configFileName,
     options: config.options,
+    ...(holder !== undefined ? { holder } : {}),
   })
   const diagnostics: LocatedDiagnostic[] = [
     ...output.optionDiagnostics.map((diagnostic) => locateOptionDiagnostic(config, diagnostic)),
@@ -93,10 +98,11 @@ export async function writeIfChanged(
 export async function writeWith(
   deps: ResolvedDeps,
   input: WriteInput,
-  generator: Generator
+  generator: Generator,
+  holder?: string
 ): Promise<WriteResult> {
   const out = resolve(deps.cwd, input.out)
-  const result = await generateWith(deps, input, generator)
+  const result = await generateWith(deps, input, generator, holder)
   const changed = result.ok ? await writeIfChanged(deps.fs, out, result.text) : false
   return { ...result, out, changed }
 }
