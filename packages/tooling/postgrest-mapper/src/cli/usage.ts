@@ -17,12 +17,16 @@ Commands:
              so refresh is for a forced reload.
   init       Sets a project up so that it works in one command: adds the .pgrst-index contentMappers entry
              to the tsconfig (schema source supabase-local next to a supabase/config.toml, a snapshot
-             otherwise), creates the index file, adds it and the generated file to "include" (or "files")
-             and, next to a deno.json, to "compilerOptions.types". With supabase-local it then writes
-             supabase/postgrest-schema.json from the running stack, generates the declarations once and adds
-             postgrest:watch, postgrest:check (reads the snapshot: no database in CI) and postgrest:snapshot to
-             the nearest package.json (scripts that exist stay as they are). A step that cannot run (stack
-             down, no schema yet) is reported, not fatal. Comments are kept; running it again changes nothing.
+             otherwise), creates the index file and adds it to "include" (or "files"). It picks one producer
+             of the declarations from the TypeScript the project resolves: on 7.1 or later the content mapper
+             (no declaration file is included or generated, only postgrest:snapshot is added, and an existing
+             declaration file is reported to delete); otherwise (older TypeScript, none found, Deno) the generated
+             file, which it adds to "include" (or "files") and, next to a deno.json, to "compilerOptions.types".
+             With supabase-local it writes supabase/postgrest-schema.json from the running stack and, in generated
+             file mode, generates the declarations once and adds postgrest:watch, postgrest:check (reads the
+             snapshot: no database in CI) and postgrest:snapshot to the nearest package.json (scripts that exist
+             stay as they are). A step that cannot run (stack down, no schema yet) is reported, not fatal.
+             Comments are kept; running it again changes nothing.
   snapshot   Acquires the schema and writes a snapshot file; --check compares instead of writing.
 
 Options:

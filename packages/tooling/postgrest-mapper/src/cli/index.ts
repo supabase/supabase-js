@@ -250,11 +250,22 @@ async function runInit(ctx: Context, flags: Flags): Promise<number> {
   for (const change of result.changes) {
     ctx.stdout.write(`${display(ctx.cwd, change.file)}: ${change.message}\n`)
   }
+  const mapper = result.producer.kind === 'content-mapper'
+  if (result.producer.stale !== undefined) {
+    ctx.stdout.write(
+      `${display(ctx.cwd, result.producer.stale)}: delete it (and its include or types entry): it declares the same globals as the index file, so they conflict after a schema change\n`
+    )
+  }
   if (result.changes.length === 0) {
-    ctx.stdout.write(`${display(ctx.cwd, result.out)} is already set up\n`)
+    ctx.stdout.write(`${display(ctx.cwd, mapper ? result.index : result.out)} is already set up\n`)
     return 0
   }
   const { snapshot: snap, generate: gen, scripts } = result
+  ctx.stdout.write(
+    mapper
+      ? `content mapper mode: ${result.producer.reason}. The index file supplies the declarations, so ${display(ctx.cwd, result.out)} is not included or generated, and no watch or check script is added\n`
+      : `generated file mode: ${result.producer.reason}. ${display(ctx.cwd, result.out)} supplies the declarations\n`
+  )
   if (snap?.status === 'skipped') {
     ctx.stdout.write(`${display(ctx.cwd, snap.file)}: snapshot skipped: ${snap.reason}\n`)
   }
@@ -270,7 +281,7 @@ async function runInit(ctx: Context, flags: Flags): Promise<number> {
       '  add @supabase/postgrest-mapper to devDependencies: the scripts run its binary\n'
     )
   }
-  if (result.schemaSource === 'snapshot' && gen?.status !== 'written') {
+  if (result.schemaSource === 'snapshot' && (mapper || gen?.status !== 'written')) {
     ctx.stdout.write(
       "  no supabase/config.toml found: write the schema with 'postgrest-mapper snapshot --out supabase/postgrest-schema.json'\n"
     )
@@ -291,7 +302,11 @@ async function runInit(ctx: Context, flags: Flags): Promise<number> {
       '  postgrest:snapshot after each migration, then commit supabase/postgrest-schema.json\n'
     )
   }
-  ctx.stdout.write('  on TypeScript 7.1 the content mapper in the tsconfig replaces the watcher\n')
+  ctx.stdout.write(
+    mapper
+      ? '  run tsc with --runExternalCode (language server: initializationOptions.runExternalCode) so the content mapper runs: it replaces the watcher and the check\n'
+      : '  on TypeScript 7.1 the content mapper in the tsconfig replaces the watcher\n'
+  )
   return 0
 }
 

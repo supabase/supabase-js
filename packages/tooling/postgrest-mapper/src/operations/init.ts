@@ -42,10 +42,23 @@ export interface InitChange {
 export interface InitResult {
   /** Absolute path of the tsconfig */
   configFileName: string
-  /** Absolute path of the declaration file the project now includes */
+  /** Absolute path of the declaration file: the project includes and generates it only in `generated-file` mode */
   out: string
   /** Absolute path of the index file (created only when the `contentMappers` entry was added) */
   index: string
+  /**
+   * What produces the project's global declarations, exactly one per tsconfig. `content-mapper`: TypeScript 7.1 or
+   * later resolves from the project, so the content mapper supplies them through the index file and no declaration
+   * file is included or generated. `generated-file`: any other compiler, no TypeScript, or Deno: the generated file
+   * is the producer, and the `contentMappers` entry is only the options holder the CLI reads (older compilers ignore it).
+   */
+  producer: {
+    kind: 'content-mapper' | 'generated-file'
+    /** Why this one, for example `TypeScript 7.1.0 resolves from the project` */
+    reason: string
+    /** Absolute path of a declaration file that exists but must go in `content-mapper` mode (it would declare the same globals as the index): `init` never deletes it */
+    stale?: string
+  }
   /** The schema source of the entry `init` added; undefined when the tsconfig already had one */
   schemaSource?: 'supabase-local' | 'snapshot'
   /** The snapshot step; undefined when it did not apply (no live source) or was switched off. `skipped`: the stack could not be read */
@@ -55,7 +68,7 @@ export interface InitResult {
     status: 'written' | 'unchanged' | 'skipped'
     reason?: string
   }
-  /** The generate step; undefined when switched off. `skipped`: no schema could be acquired, or the project reported diagnostics */
+  /** The generate step; undefined when switched off or when the content mapper is the producer. `skipped`: no schema could be acquired, or the project reported diagnostics */
   generate?: { status: 'written' | 'unchanged' | 'skipped'; reason?: string }
   /** The scripts step; undefined when switched off. Without a package.json `packageJson` is unset and `reason` says why */
   scripts?: {
@@ -125,9 +138,10 @@ export function entryCovers(entry: string, file: string): boolean {
 /**
  * Sets a project up for the mapper (design v5 §3): the `contentMappers` entry for `.pgrst-index` (schema source
  * `supabase-local` when a `supabase/config.toml` is found at or above the project, a snapshot at
- * `supabase/postgrest-schema.json` otherwise), the stub index file, and the generated declaration file in the
- * tsconfig's `include` (or `files`); next to a `deno.json` it also goes to `compilerOptions.types`, because Deno
- * does not discover ambient files. Comments and formatting are kept: only inserted text changes. Idempotent: a
+ * `supabase/postgrest-schema.json` otherwise), the stub index file in the tsconfig's `include` (or `files`), and
+ * exactly one producer of the declarations (see `InitResult.producer`): the content mapper on TypeScript 7.1 or
+ * later, else the generated declaration file, which is also included and, next to a `deno.json`, goes to
+ * `compilerOptions.types`, because Deno does not discover ambient files. Comments and formatting are kept: only inserted text changes. Idempotent: a
  * project that is set up gets no change. Throws `OperationError` when a file cannot be read or edited, or when the
  * planner cannot say which PostgREST line the entry should name.
  */
@@ -206,6 +220,9 @@ export async function init(deps: OperationDeps, input: InitInput = {}): Promise<
     }
   }
 
+  const producer = await chooseProducer(fs, projectDir)
+  const mapperMode = producer.kind === 'content-mapper'
+
   // without `include` and `files` the tsconfig already takes every file below it, unless it inherits some: a local
   // `include` (or `files`) replaces the inherited one, so the inherited entries are carried over, rebased to this tsconfig
   const own = root.properties.some((p) => p.key === 'include')
@@ -256,9 +273,9 @@ export async function init(deps: OperationDeps, input: InitInput = {}): Promise<
     }
     await include(indexRel)
   }
-  await include(outRel)
+  if (!mapperMode) await include(outRel)
 
-  for (const name of ['deno.json', 'deno.jsonc']) {
+  for (const name of mapperMode ? [] : ['deno.json', 'deno.jsonc']) {
     const denoFile = resolve(projectDir, name)
     const exists = await fs.readFile(denoFile).then(
       () => true,
@@ -304,7 +321,7 @@ export async function init(deps: OperationDeps, input: InitInput = {}): Promise<
   }
 
   let generateStep: InitResult['generate']
-  if (input.generate !== false) {
+  if (input.generate !== false && !mapperMode) {
     const existed = await exists(out)
     try {
       const result = await write(base, { project: configFileName, out })
@@ -331,17 +348,79 @@ export async function init(deps: OperationDeps, input: InitInput = {}): Promise<
           snapshotFile,
           workdir,
           shown,
+          mapperMode,
         })
 
   return {
     configFileName,
     out,
     index,
+    producer: {
+      ...producer,
+      ...(mapperMode && (await exists(out)) ? { stale: out } : {}),
+    },
     ...(schemaSource ? { schemaSource } : {}),
     ...(snapshotStep ? { snapshot: snapshotStep } : {}),
     ...(generateStep ? { generate: generateStep } : {}),
     ...(scriptsStep ? { scripts: scriptsStep } : {}),
     changes,
+  }
+}
+
+/** The version of the `typescript` package the project resolves, through the injected fs; undefined when there is none. */
+async function resolvedTypescriptVersion(
+  fs: ResolvedDeps['fs'],
+  projectDir: string
+): Promise<string | undefined> {
+  for (let dir = projectDir; ; dir = dirname(dir)) {
+    try {
+      const manifest = JSON.parse(
+        await fs.readFile(join(dir, 'node_modules', 'typescript', 'package.json'))
+      ) as { version?: unknown }
+      if (typeof manifest.version === 'string') return manifest.version
+    } catch {
+      // keep climbing
+    }
+    if (dirname(dir) === dir) return undefined
+  }
+}
+
+/**
+ * Exactly one producer of the global declarations is visible to a tsconfig: on TypeScript 7.1 or later the content
+ * mapper, whose index file declares them in memory; everywhere else (an older compiler, none found, Deno, which has
+ * no content mappers) the generated file. Both at once would declare the same globals twice and disagree after a
+ * schema change.
+ */
+async function chooseProducer(
+  fs: ResolvedDeps['fs'],
+  projectDir: string
+): Promise<{ kind: 'content-mapper' | 'generated-file'; reason: string }> {
+  for (const name of ['deno.json', 'deno.jsonc']) {
+    const found = await fs.readFile(resolve(projectDir, name)).then(
+      () => true,
+      () => false
+    )
+    if (found) {
+      return {
+        kind: 'generated-file',
+        reason: `${name} is next to the tsconfig: Deno has no content mappers`,
+      }
+    }
+  }
+  const version = await resolvedTypescriptVersion(fs, projectDir)
+  if (version === undefined) {
+    return {
+      kind: 'generated-file',
+      reason: 'no TypeScript resolves from the project, so no content mapper can run',
+    }
+  }
+  const [, major, minor] = /^(\d+)\.(\d+)/.exec(version) ?? []
+  if (Number(major) > 7 || (Number(major) === 7 && Number(minor) >= 1)) {
+    return { kind: 'content-mapper', reason: `TypeScript ${version} resolves from the project` }
+  }
+  return {
+    kind: 'generated-file',
+    reason: `TypeScript ${version} resolves from the project, and content mappers need 7.1`,
   }
 }
 
@@ -385,6 +464,8 @@ async function addScripts(
     snapshotFile: string
     workdir: string | undefined
     shown: (path: string) => string
+    /** The content mapper is the producer: no declaration file exists, so only the snapshot script applies */
+    mapperMode: boolean
   }
 ): Promise<NonNullable<InitResult['scripts']>> {
   const found = await findPackageJson(fs, dirname(project.configFileName))
@@ -402,15 +483,19 @@ async function addScripts(
       ? ''
       : ` --project ${rel(project.configFileName)}`
   } --out ${rel(project.out)}`
-  const scripts: [string, string][] = [
-    ['postgrest:watch', `${generateCommand} --watch`],
-    [
-      'postgrest:check',
-      `${generateCommand} --check${
-        project.workdir !== undefined ? ` --snapshot ${rel(project.snapshotFile)}` : ''
-      }`,
-    ],
-  ]
+  // the content mapper regenerates the declarations in memory on each compile from the schema the entry names, so
+  // there is no file to watch or to find stale: `tsc` is the check
+  const scripts: [string, string][] = project.mapperMode
+    ? []
+    : [
+        ['postgrest:watch', `${generateCommand} --watch`],
+        [
+          'postgrest:check',
+          `${generateCommand} --check${
+            project.workdir !== undefined ? ` --snapshot ${rel(project.snapshotFile)}` : ''
+          }`,
+        ],
+      ]
   if (project.workdir !== undefined) {
     scripts.push([
       'postgrest:snapshot',

@@ -1,7 +1,17 @@
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import ts from 'typescript'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import {
   generate,
   init,
@@ -610,4 +620,218 @@ describe('init leaves a working setup in one command', () => {
     })
     expect(unknown).toBe(2)
   }, 120_000)
+})
+
+describe('init gives a project exactly one declaration producer', () => {
+  const downExec: ExecFn = async () => {
+    throw new Error('the stack is down')
+  }
+  /** The `typescript` package a project resolves, as the package manager installs it */
+  const installTypescript = (version: string, at = ''): void =>
+    put(
+      join(at, 'node_modules', 'typescript', 'package.json'),
+      JSON.stringify({ name: 'typescript', version })
+    )
+  const includeOf = (): string[] => JSON.parse(read('tsconfig.json')).include
+  const cli = async (args: string[]): Promise<{ code: number; stdout: string }> => {
+    let stdout = ''
+    const code = await runCli(['init', ...args], {
+      stdout: { write: (chunk) => (stdout += chunk) },
+      stderr: { write: () => undefined },
+      cwd: dir,
+      env: { ...process.env },
+      deps: { ...(wasm ? { wasmPath: wasm } : {}), schema: { exec: downExec } },
+    })
+    return { code, stdout }
+  }
+
+  it('TypeScript 7.1: the content mapper is the producer, so the declaration file is neither included nor generated', async () => {
+    installTypescript('7.1.0-beta')
+    put('supabase/config.toml', 'project_id = "test"\n')
+    put('tsconfig.json', '{ "include": ["app"] }')
+    put('package.json', '{ "name": "app" }\n')
+    put('app/app.ts', SOURCE)
+
+    const result = await init(deps({ schema: { exec: downExec } }))
+    expect(result.producer).toEqual({
+      kind: 'content-mapper',
+      reason: 'TypeScript 7.1.0-beta resolves from the project',
+    })
+    const tsconfig = JSON.parse(read('tsconfig.json'))
+    expect(tsconfig.contentMappers).toHaveLength(1)
+    expect(tsconfig.include).toEqual(['app', 'src/supabase.pgrst-index'])
+    expect(existsSync(join(dir, 'src', 'supabase.pgrst-index'))).toBe(true)
+    expect(existsSync(join(dir, 'src', 'supabase.types.d.ts'))).toBe(false)
+    expect(result.generate).toBeUndefined()
+    // no watch or check script: they need the generated file
+    expect(result.scripts).toMatchObject({ added: ['postgrest:snapshot'], existing: [] })
+    expect(JSON.parse(read('package.json')).scripts).toEqual({
+      'postgrest:snapshot': 'postgrest-mapper snapshot --out supabase/postgrest-schema.json',
+    })
+    expect(result.changes.map((c) => c.file)).not.toContain(join(dir, 'src', 'supabase.types.d.ts'))
+  }, 120_000)
+
+  it('TypeScript 7.1 from a parent node_modules, as in a monorepo, and a later major, count too', async () => {
+    installTypescript('8.0.0')
+    put('packages/app/tsconfig.json', '{ "include": ["app"] }')
+    const result = await init(deps(), { project: 'packages/app/tsconfig.json', ...BARE })
+    expect(result.producer.kind).toBe('content-mapper')
+    expect(JSON.parse(read('packages/app/tsconfig.json')).include).toEqual([
+      'app',
+      'src/supabase.pgrst-index',
+    ])
+  }, 60_000)
+
+  it('TypeScript 5.x keeps the generated file as the producer, with the entry as its options holder', async () => {
+    installTypescript('5.8.3')
+    put('tsconfig.json', '{ "include": ["app"] }')
+    put('package.json', '{ "name": "app" }\n')
+    put('app/app.ts', SOURCE)
+    await writeSnapshot(join(dir, 'supabase', 'postgrest-schema.json'), acquired)
+
+    const result = await init(deps())
+    expect(result.producer).toEqual({
+      kind: 'generated-file',
+      reason: 'TypeScript 5.8.3 resolves from the project, and content mappers need 7.1',
+    })
+    expect(JSON.parse(read('tsconfig.json')).contentMappers).toHaveLength(1)
+    expect(includeOf()).toEqual(['app', 'src/supabase.pgrst-index', 'src/supabase.types.d.ts'])
+    expect(result.generate).toEqual({ status: 'written' })
+    expect(read('src/supabase.types.d.ts')).toContain('r|public|users|username')
+    expect(result.scripts?.added).toEqual(['postgrest:watch', 'postgrest:check'])
+  }, 120_000)
+
+  it('no TypeScript to resolve, and Deno even beside TypeScript 7.1, stay on the generated file', async () => {
+    put('tsconfig.json', '{ "include": ["app"] }')
+    const none = await init(deps(), BARE)
+    expect(none.producer).toMatchObject({ kind: 'generated-file' })
+    expect(none.producer.reason).toMatch(/no TypeScript/)
+    expect(includeOf()).toContain('src/supabase.types.d.ts')
+
+    rmSync(join(dir, 'tsconfig.json'))
+    installTypescript('7.1.0')
+    put('tsconfig.json', '{ "include": ["app"] }')
+    put('deno.json', '{}')
+    const deno = await init(deps(), BARE)
+    expect(deno.producer).toMatchObject({ kind: 'generated-file' })
+    expect(deno.producer.reason).toMatch(/deno\.json/)
+    expect(JSON.parse(read('deno.json')).compilerOptions.types).toEqual([
+      './src/supabase.types.d.ts',
+    ])
+  }, 60_000)
+
+  it('on 7.1 a declaration file that is already there is reported to delete, never deleted', async () => {
+    installTypescript('7.1.0')
+    put('tsconfig.json', '{ "include": ["app"] }')
+    put('src/supabase.types.d.ts', '// generated earlier\n')
+
+    const result = await init(deps(), BARE)
+    expect(result.producer.stale).toBe(join(dir, 'src', 'supabase.types.d.ts'))
+    expect(read('src/supabase.types.d.ts')).toBe('// generated earlier\n')
+    // the report stays on the next run, which has nothing else to change
+    const second = await init(deps(), BARE)
+    expect(second.changes).toEqual([])
+    expect(second.producer.stale).toBe(join(dir, 'src', 'supabase.types.d.ts'))
+
+    const output = await cli(['--skip-snapshot', '--skip-scripts'])
+    expect(output.stdout).toBe(
+      'src/supabase.types.d.ts: delete it (and its include or types entry): it declares the same globals as the index file, so they conflict after a schema change\n' +
+        'src/supabase.pgrst-index is already set up\n'
+    )
+  }, 60_000)
+
+  it('the CLI says which mode it chose and what that skipped', async () => {
+    installTypescript('7.1.0')
+    put('supabase/config.toml', 'project_id = "test"\n')
+    put('tsconfig.json', '{ "include": ["app"] }')
+    put('package.json', '{ "name": "app" }\n')
+
+    const mapper = await cli([])
+    expect(mapper.code).toBe(0)
+    const lines = mapper.stdout.split('\n')
+    expect(lines.slice(0, 3)).toEqual([
+      'tsconfig.json: added the .pgrst-index entry to contentMappers',
+      'src/supabase.pgrst-index: created the index file',
+      'tsconfig.json: added src/supabase.pgrst-index to include',
+    ])
+    expect(lines).toContain('package.json: added the postgrest:snapshot script')
+    expect(lines).toContain(
+      'content mapper mode: TypeScript 7.1.0 resolves from the project. The index file supplies the declarations, so src/supabase.types.d.ts is not included or generated, and no watch or check script is added'
+    )
+    expect(mapper.stdout).toContain('supabase/postgrest-schema.json: snapshot skipped')
+    expect(mapper.stdout).toContain('  postgrest:snapshot after each migration')
+    expect(mapper.stdout).toContain('run tsc with --runExternalCode')
+    expect(mapper.stdout).not.toMatch(/generate skipped|postgrest:(watch|check)/)
+  }, 60_000)
+
+  describe('with tsc 7.1', () => {
+    const PACKAGE_DIR = join(__dirname, '..')
+    const TSC = join(PACKAGE_DIR, 'node_modules', 'typescript-7.1', 'bin', 'tsc')
+    const POSTGREST_JS_SRC = resolve(__dirname, '../../../core/postgrest-js/src/index.ts')
+    const tsc = () => {
+      const run = spawnSync(
+        process.execPath,
+        [TSC, '--runExternalCode', '--noEmit', '--pretty', 'false', '-p', '.'],
+        {
+          cwd: dir,
+          encoding: 'utf8',
+          timeout: 120_000,
+          env: { ...process.env, ...(wasm ? { POSTGREST_PLANNER_WASM: wasm } : {}) },
+        }
+      )
+      return { status: run.status, output: `${run.stdout}${run.stderr}` }
+    }
+    const link = (name: string, target: string): void => {
+      mkdirSync(dirname(join(dir, name)), { recursive: true })
+      symlinkSync(target, join(dir, name), 'dir')
+    }
+    const app = (...columns: string[]): string =>
+      [
+        "import type { PostgrestClient } from '@supabase/postgrest-js'",
+        'declare const supabase: PostgrestClient',
+        ...columns.map((c, i) => `export const q${i} = supabase.from('users').select('${c}')`),
+      ].join('\n')
+
+    it('a project init set up compiles clean, and keeps compiling clean after a schema change', async () => {
+      if (!existsSync(join(PACKAGE_DIR, 'dist', 'main', 'generate', 'index.js'))) {
+        throw new Error('dist is missing: run `pnpm nx build postgrest-mapper` first')
+      }
+      link('node_modules/typescript', join(PACKAGE_DIR, 'node_modules', 'typescript-7.1'))
+      link('node_modules/@supabase/postgrest-mapper', PACKAGE_DIR)
+      put(
+        'tsconfig.json',
+        JSON.stringify({
+          compilerOptions: {
+            strict: true,
+            noEmit: true,
+            module: 'esnext',
+            moduleResolution: 'bundler',
+            target: 'es2022',
+            lib: ['es2022', 'dom'],
+            types: [],
+            paths: { '@supabase/postgrest-js': [POSTGREST_JS_SRC] },
+          },
+        })
+      )
+      put('package.json', '{ "name": "app" }\n')
+      put('src/app.ts', app('username'))
+      await writeSnapshot(join(dir, 'supabase', 'postgrest-schema.json'), acquired)
+
+      const result = await init(deps())
+      expect(result.producer.kind).toBe('content-mapper')
+      expect(existsSync(join(dir, 'src', 'supabase.types.d.ts'))).toBe(false)
+      expect(tsc()).toEqual({ status: 0, output: '' })
+
+      // a schema change alters the declarations: a generated file left in the project would now disagree with the index
+      const snapshotFile = join(dir, 'supabase', 'postgrest-schema.json')
+      const schema = JSON.parse(readFileSync(snapshotFile, 'utf8'))
+      for (const [name, table] of schema.dump.dbTables) {
+        if (name.qiSchema === 'public' && name.qiName === 'users') {
+          table.tableColumns.username.colNullable = true
+        }
+      }
+      writeFileSync(snapshotFile, JSON.stringify(schema))
+      expect(tsc()).toEqual({ status: 0, output: '' })
+    }, 240_000)
+  })
 })

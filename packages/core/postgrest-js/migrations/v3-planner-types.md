@@ -34,13 +34,13 @@ Run the mapper's `init` command in your project:
 npx postgrest-mapper init
 ```
 
-It configures the project, writes the schema snapshot `supabase/postgrest-schema.json` from your running local stack, generates the declarations once, and adds the `postgrest:watch`, `postgrest:check` and `postgrest:snapshot` package scripts. A step that cannot run (for example, the stack is down) is reported as skipped. `--skip-snapshot`, `--skip-generate` and `--skip-scripts` turn a step off.
+It configures the project and writes the schema snapshot `supabase/postgrest-schema.json` from your running local stack. It then picks one producer of the declarations from the TypeScript your project resolves. On TypeScript 7.1 or later the content mapper supplies them, so no declaration file is generated or included, and it adds only the `postgrest:snapshot` package script; a declaration file that already exists is reported for you to delete. On older TypeScript (or Deno) it generates the declarations once and adds the `postgrest:watch`, `postgrest:check` and `postgrest:snapshot` scripts. A step that cannot run (for example, the stack is down) is reported as skipped. `--skip-snapshot`, `--skip-generate` and `--skip-scripts` turn a step off.
 
 Then:
 
 - Commit the snapshot, and re-run `postgrest:snapshot` after each migration.
-- In CI, run `postgrest:check`. It reads the committed snapshot and needs no database.
-- During development, run `postgrest:watch`. It polls the live schema and regenerates on change.
+- On older TypeScript, in CI, run `postgrest:check`. It reads the committed snapshot and needs no database.
+- On older TypeScript, during development, run `postgrest:watch`. It polls the live schema and regenerates on change. On TypeScript 7.1, `tsc --runExternalCode` and the language server read the schema themselves, so neither script exists.
 
 The `@supabase/postgrest-mapper` package must be a dependency of the project, because the scripts call its binary.
 
