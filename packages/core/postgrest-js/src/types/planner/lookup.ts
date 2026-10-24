@@ -183,10 +183,23 @@ type PlainAt<V, OM, P extends string> = V extends readonly (infer U)[]
     : V
 export type PlainRow<R, E> = IsAny<R> extends true ? any : PlainAt<R, OutMap<E>, ''>
 
-export type DescOf<En> = En extends { error: string }
+// What a chain reads when no generated entry covers it (and `unplanned` isn't 'error'): the relation's Row from the
+// client's Database, whose known keys keep their types, and any other key `any`, since the select may alias or embed.
+// `Loose` stays for a Database that names no columns (`Record<string, unknown>`, or no such relation).
+export type UnplannedRows<Row, Loose> = Strict extends true
+  ? Loose
+  : [Row] extends [never]
+    ? Loose
+    : Row extends unknown
+      ? string extends keyof Row
+        ? Loose
+        : Plain<Row> & { [k: string]: any }
+      : never
+
+export type DescOf<En, Row = never> = En extends { error: string }
   ? never
   : En extends Unplanned
-    ? Desc<Record<string, unknown>>
+    ? Desc<UnplannedRows<Row, Record<string, unknown>>>
     : En extends { row: infer R }
       ? Desc<
           PlainRow<R, En extends { embeds: infer E } ? E : {}>,
@@ -224,12 +237,32 @@ type CallRowOf<Call, R> = Call extends { source: infer Src }
     ? R
     : PlainRow<R, Call extends { embeds: infer E } ? E : {}>
   : R
-export type RpcDesc<En, Star extends boolean = false> = En extends { error: string }
+// the data of an rpc no planned call matches: the function's `Returns` from the Database. An array is rows (the
+// setof / table form), anything else the one value; without a known `Returns` the call form is unknown, so is the data
+export type ReturnsBase<Ret> = Strict extends true
+  ? 'one'
+  : IsAny<Ret> extends true
+    ? 'one'
+    : [unknown] extends [Ret]
+      ? 'one'
+      : Ret extends readonly unknown[]
+        ? 'many'
+        : 'one'
+export type ReturnsDesc<Ret> = Strict extends true
+  ? Desc<unknown, {}, {}, 'one'>
+  : IsAny<Ret> extends true
+    ? Desc<any, {}, {}, 'one'>
+    : [unknown] extends [Ret]
+      ? Desc<unknown, {}, {}, 'one'>
+      : Ret extends readonly (infer U)[]
+        ? Desc<U, {}, {}, 'many'>
+        : Desc<Ret, {}, {}, 'one'>
+export type RpcDesc<En, Star extends boolean = false, Ret = unknown> = En extends { error: string }
   ? never
   : En extends Untyped
     ? Desc<any, {}, {}, 'one'>
     : En extends Unplanned
-      ? Desc<unknown, {}, {}, 'one'> // the call form is unknown: so is the data
+      ? ReturnsDesc<Ret>
       : En extends Dynamic
         ? Desc<unknown>
         : En extends { row: infer R }
@@ -247,13 +280,15 @@ export type Descs<B extends BState, Q extends string> =
       ? Desc<any, {}, {}, 'one'>
       : Desc<any>
     : true extends IsDynamic<Q>
-      ? Desc<unknown>
+      ? B['k'] extends 'f'
+        ? Desc<unknown>
+        : Desc<UnplannedRows<B['row'], unknown>>
       : Q extends unknown
         ? B['k'] extends 'f'
           ? RpcDesc<Entry<B, Q>, Q extends '*' ? true : false>
           : Q extends '*'
             ? B['st']
-            : DescOf<Entry<B, Q>>
+            : DescOf<Entry<B, Q>, B['row']>
         : never
 
 export type RowOf<Rel> = Rel extends { Row: infer R } ? R : {}

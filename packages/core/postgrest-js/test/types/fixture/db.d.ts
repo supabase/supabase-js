@@ -66,9 +66,23 @@ declare global {
           FactColumns: MessageFacts
           Relationships: []
         }
+        // Database-only: no generated entry for any select
+        notes: {
+          Row: { id: number; body: string | null; owner: string }
+          Insert: { id?: number; body?: string | null; owner: string }
+          Update: { id?: number; body?: string | null; owner?: string }
+          Relationships: []
+        }
       }
       Views: {}
       Functions: {
+        // Database-only: no generated entry, so a chain on them reads the Database types
+        db_only_count: { Args: { n: number }; Returns: number }
+        db_only_rows: { Args: { owner: string }; Returns: { id: number; title: string | null }[] }
+        db_only_nothing: { Args: Record<string, never>; Returns: undefined }
+        db_only_poly:
+          | { Args: { a: string }; Returns: { a_id: number }[] }
+          | { Args: { b: number }; Returns: string }
         // zero-arg functions are generated as `Args: Record<string, never>`
         get_online_users: { Args: Record<string, never>; Returns: UserRow[] }
         // a union of argument objects: each member is dispatched on its own

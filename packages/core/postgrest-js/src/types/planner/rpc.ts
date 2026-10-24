@@ -1,4 +1,15 @@
-import type { Dynamic, Entry, BS, BState, CallBase, IsAny, Q0, Unplanned, Untyped } from './lookup'
+import type {
+  Dynamic,
+  Entry,
+  BS,
+  BState,
+  CallBase,
+  IsAny,
+  Q0,
+  ReturnsBase,
+  Unplanned,
+  Untyped,
+} from './lookup'
 import type { Strict, UnplannedRpcMessage } from './globals'
 import type { RequestedOf } from './options'
 
@@ -132,7 +143,11 @@ export type KeyMethods<A, O> = A extends unknown
     : never
   : never
 export type AllKeys<A> = A extends unknown ? keyof A & string : never
-export type BaseOfCalls<Calls> = Calls extends Dynamic ? 'one' : CallBase<Calls>
+export type BaseOfCalls<Calls, Ret = unknown> = Calls extends Dynamic
+  ? 'one'
+  : Calls extends Unplanned
+    ? ReturnsBase<Ret>
+    : CallBase<Calls>
 
 // ---------------------------------------------------------------- rpc (§4.3 RPC)
 // `any` as the Database is an untyped client: every relation and function name is accepted, rows and results are `any`
@@ -146,6 +161,16 @@ export type FnDefs<DB, S extends string> =
         ? Fs
         : {}
       : {}
+// the `Returns` of every overload of a function in the Database. A name that failed to infer widens to every function
+// of the schema (a rejected call): the returns of all of them are no one's, so they stay unknown.
+type Returns<D> = D extends { Returns: infer R } ? R : never
+export type ReturnsOf<DB, S extends string, F extends string> = [
+  keyof FnDefs<DB, S> & string,
+] extends [F]
+  ? [F] extends [UnionToIntersection<F>]
+    ? Returns<FnDefs<DB, S>[F & keyof FnDefs<DB, S>]>
+    : unknown
+  : Returns<FnDefs<DB, S>[F & keyof FnDefs<DB, S>]>
 export type RelDefs<DB, S extends string> =
   IsAny<DB> extends true
     ? { [R: string]: AnyRelation }
@@ -248,14 +273,9 @@ export type CallReject<Call> = Call extends { error: infer E extends string }
       ? UnplannedRpcMessage
       : never
     : never
-// no routine information to check the argument values against
-export type Unchecked<Calls> = Untyped extends Calls
-  ? true
-  : Unplanned extends Calls
-    ? true
-    : Dynamic extends Calls
-      ? true
-      : false
+// no routine information to check the argument values against. A call with no entry is checked against the
+// function's `Args` in the Database.
+export type Unchecked<Calls> = Untyped extends Calls ? true : Dynamic extends Calls ? true : false
 // the unprojected row of the matched calls' `source`: the columns a plain-column filter can name
 export type CallRow<Call> = Call extends { source: infer Src }
   ? [Src] extends [never]

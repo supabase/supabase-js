@@ -13,6 +13,7 @@ import type {
   FnDefs,
   ReadRefusal,
   RelDefs,
+  ReturnsOf,
   RowCalls,
   RpcB,
   SchemaOf,
@@ -541,12 +542,19 @@ export default class PostgrestClient<
       | [args: RpcArgs<Database, SchemaName, F, A, O>, options: O]
   ): PostgrestFilterBuilder<
     RpcB<SchemaOf<Database, SchemaName>, F, A, O>,
-    RpcDesc<RowCalls<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>, O>, true>,
+    RpcDesc<
+      RowCalls<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>, O>,
+      true,
+      ReturnsOf<Database, SchemaName, F>
+    >,
     {},
     MS<
       RpcOp<O>,
       true,
-      BaseOfCalls<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>,
+      BaseOfCalls<
+        CallsOf<SchemaOf<Database, SchemaName>, F, A, O>,
+        ReturnsOf<Database, SchemaName, F>
+      >,
       'default',
       'json',
       false,
