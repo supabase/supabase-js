@@ -17,12 +17,16 @@ PostgREST's select grammar, embedding rules and nullability rules in types. It w
 
 - **Hard to maintain.** Every PostgREST feature (spreads, aggregates, JSON paths, computed fields, `!inner`, casts) had to be
   written a second time in type-level code.
-- **Never quite right.** The type parser guessed: it could not see foreign key validity, view definitions, function bodies,
-  JSON Schema CHECKs or overload resolution.
-- **Slow.** Long select strings made the type checker work hard on every keystroke.
+- **Never quite right.** The type parser guessed from the generated `Database` type. It could not see foreign key
+  validity, view definitions, function bodies or JSON Schema CHECKs, and filters never changed the result type.
+- **Costly to type-check.** Every select string was parsed again by the type checker, character by character, and large
+  schemas hit instantiation depth limits.
 
 In v3 the answer comes from PostgREST itself. The planner (the code that turns a request into SQL) is compiled from upstream
 PostgREST v16.4 to WebAssembly. Whatever PostgREST decides, the types say.
+
+[Compared with v2](#compared-with-v2) sums up what this gains and costs: features, type-check performance and the day-to-day
+workflow.
 
 ## Big picture
 
@@ -76,7 +80,7 @@ Four packages take part:
 | `@supabase/postgrest-planner` | The PostgREST planner compiled to wasm, with a small JS API: `load` a schema, `plan` a request.                        |
 | `@supabase/postgrest-mapper`  | Everything else: scanner, schema acquisition, tracer, printers, the `postgrest-mapper` CLI, the TS 7.1 content mapper. |
 | `@supabase/postgrest-js`      | The query builders. Their types read the generated globals; there is no select parser left.                            |
-| `@supabase/supabase-js`       | `createClient()` with no type argument. It forwards to postgrest-js.                                                   |
+| `@supabase/supabase-js`       | `createClient()`, with no type argument needed. It forwards to postgrest-js.                                           |
 
 The mapper is a library first. The CLI and the content mapper are thin wrappers around the same functions
 (`generate`, `check`, `watch`, `refresh`, `snapshot`, `init`), so other tools, such as the Supabase CLI, can call them
@@ -183,7 +187,7 @@ There is no recursion over the string and no parsing, so the cost does not grow 
 ## The generated globals
 
 Everything the builders need lives in global interfaces in one generated file. Global interfaces are why
-`createClient()` takes no type argument.
+`createClient()` needs no type argument.
 
 | Global                | Content                                                                                                                                                                            |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -246,7 +250,8 @@ sequenceDiagram
   Editor-->>Dev: hover: { title: string; excerpt: string | null }[]
 ```
 
-Plans are cached per schema, so a regeneration only plans keys it has not seen.
+Plans are cached per schema, so a regeneration only plans keys it has not seen (see
+[Caching](#caching-offline-use-and-freshness)).
 
 ### B. TypeScript 7.1 content mapper (no generated file)
 
@@ -291,24 +296,60 @@ extension. Its content is ignored.
 
 ## Where the schema comes from
 
-The planner needs the same inputs PostgREST loads at startup, plus facts PostgREST's schema dump does not keep.
+The planner needs the same inputs PostgREST loads at startup, plus facts PostgREST's schema dump does not keep. The
+`schema` option says where to read them:
 
-| `schema.source`  | How                                                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------------------------------- |
-| `snapshot`       | A committed `postgrest-schema.json`. No Docker, no network: CI and fresh clones just work.                 |
-| `supabase-local` | The running `supabase start` stack: PostgREST's own `--dump-schema` and `--dump-config`, plus SQL queries. |
-| `postgrest`      | A pinned PostgREST image run with `docker run` against a database URL.                                     |
-
-`postgrest-mapper snapshot` writes a snapshot from a live source.
+| `schema.source`  | What runs                                                                                                                             | Needs                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `snapshot`       | Reads a committed `postgrest-schema.json`.                                                                                            | Nothing: no Docker, no database, no network. |
+| `supabase-local` | `supabase status` finds the local stack. `docker exec` runs `postgrest --dump-schema` and `--dump-config` in its PostgREST container. | `supabase start` running, Docker.            |
+| `postgrest`      | `docker run` of the pinned `supabase/postgrest:v16.4` image with `--dump-schema` against the database URL in `schema.dbUrlEnv`.       | Docker, a reachable database.                |
 
 Each acquisition has three parts:
 
-1. **The PostgREST schema dump and config**: exactly what PostgREST itself uses to plan.
+1. **The PostgREST schema dump and config**: exactly what PostgREST itself uses to plan. The config is stored without
+   `db-uri`.
 2. **The supplementary catalog**: read-only SQL for what the dump lacks. That includes column order, foreign key validity
    (`convalidated`), function return and `OUT` types, view definitions, SQL function bodies, JSON Schema CHECK constraints,
-   enums, casts, and aggregate overloads.
-3. **Versions**: the mapper refuses a schema from another PostgREST `major.minor` line than the planner's, because the
-   planner's answers would not describe that server.
+   enums, casts, and aggregate overloads. It runs in a `READ ONLY` transaction that is rolled back.
+3. **Versions**: the PostgREST release and the Postgres version. The mapper refuses a schema from another PostgREST
+   `major.minor` line than the planner's (diagnostic 2006), because the planner's answers would not describe that server.
+   A different patch release is only a warning.
+
+```mermaid
+flowchart LR
+  live["supabase-local / postgrest<br/>(Docker + database)"] -- "postgrest-mapper snapshot" --> snap["postgrest-schema.json<br/>(commit it)"]
+  live -- "or read directly" --> gen["generate / watch /<br/>content mapper"]
+  snap --> gen
+  gen --> cache[("node_modules/.cache/<br/>postgrest-mapper")]
+  gen --> out["declarations"]
+```
+
+### Caching, offline use and freshness
+
+**Offline.** `postgrest-mapper snapshot` reads a live source once and writes everything above into one JSON file. With
+`schema.source: "snapshot"`, generating needs no Docker, no database and no network: the planner and the tracer are wasm
+inside the npm packages. This is the recommended setup for CI and for teammates who only change queries. The example
+project works this way.
+
+**What is cached.**
+
+- **Plans.** Each result shape is cached on disk in `node_modules/.cache/postgrest-mapper/`, in one file per schema. The
+  file name comes from a hash of the whole acquired schema. An entry is reused only when the schema hash, the planner
+  build and the generator version all match. Change the schema and every key is planned again. Add a query and only
+  that key is planned.
+- **The schema itself is not cached on disk.** Every run reads it first, even when every plan is in the cache. With a
+  snapshot that is a file read. With a live source, Docker and the database must be up. A long-running process (`--watch`,
+  the content mapper) reads a live schema once and keeps it in memory. It also keeps the planner loaded with that schema,
+  so a regeneration only plans the new keys.
+- `postgrest-mapper refresh` clears the cache and reads the schema again.
+
+**When the database changes.** Nothing listens to the database. `--watch` regenerates when a source file, the tsconfig
+chain or the snapshot file changes. After a migration:
+
+- with a snapshot: run `postgrest-mapper snapshot` again. The watcher sees the new file and regenerates.
+- with a live source: run `postgrest-mapper refresh`. It touches a stamp file in the cache directory. A running watcher
+  sees the stamp change and reads the schema again. The content mapper asks `tsc` to watch the same stamp.
 
 ## What the mapper adds on top of the planner
 
@@ -392,8 +433,8 @@ await supabase.rpc('find_posts', { author_id: 'one' }) // error: bigint expected
 ```
 
 A function returning rows accepts `.select()`, embeds and filters, like a table. With `{ get: true }`, arguments travel in
-the query string. An argument the query string cannot carry, such as an object for a `jsonb` parameter, is rejected at
-compile time with `PGRSTJS01`.
+the query string. An argument the query string cannot carry, such as an object for a `jsonb` parameter, is a type error
+that names the key. At runtime the same call returns the error `PGRSTJS01` instead of sending the request.
 
 ## Writes
 
@@ -451,6 +492,76 @@ const { data } = await supabase
   .select('id, title')
   .cast<{ id: number; title: string; note?: string }>()
 ```
+
+## Compared with v2
+
+### What v3 types that v2 did not
+
+Both versions type embeds, aliases, `!inner`, foreign key hints, spreads, aggregates, casts, JSON paths, computed fields,
+rpc overloads and filter values. The difference is in how right the answer is, and in what the type parser could not
+know:
+
+| Case                                                    | v2 (type-level parser)                                                            | v3 (planner)                                                                          |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| To-one embed through a `NOT VALID` foreign key          | Non-null when the FK column is `NOT NULL`, though the row may not exist           | Nullable: the FK is not validated                                                     |
+| View columns                                            | Whatever the generated `Database` type says                                       | Traced to the base table: `NOT NULL` through inner joins, nullable through left joins |
+| `LANGUAGE sql` function results                         | Whatever the generated `Database` type says                                       | Traced like a view                                                                    |
+| `jsonb` column with a JSON Schema CHECK (pg_jsonschema) | `Json`                                                                            | The TypeScript type of the schema, and JSON paths into it                             |
+| `sum`, `avg`, `min`, `max`                              | `number`                                                                          | `number \| null`: they are null on an empty set                                       |
+| A filter on an embedded column, `.eq('author.name', …)` | Result type unchanged, so `author` stays non-null though PostgREST returns `null` | `author` becomes nullable                                                             |
+| `.not('editor', 'is', null)` on an embed                | Root columns only                                                                 | Narrows the embed to non-null                                                         |
+| rpc `{ get: true }` with an object argument             | Not checked                                                                       | Type error naming the key                                                             |
+| Unknown column or relationship                          | A parser error type                                                               | PostgREST's own error, e.g. `PGRST200: Could not find a relationship …`               |
+| Select string that is not a literal                     | Error type                                                                        | Loose rows, or an error with `unplanned: 'error'`                                     |
+| Column type the database does not describe              | `.returns<T>()` / `.overrideTypes<T>()` per call                                  | `SupabaseColumnTypes` once per column, or `.cast<T>()` per call                       |
+
+More generally, any PostgREST behaviour the parser did not reimplement was wrong or missing in v2. In v3 it is right by
+construction, and a new PostgREST release is a rebuild of the wasm, not new type-level code.
+
+### Performance
+
+The same queries were type-checked with each version: 500 chains over the example project's schema (selects with
+embeds, aliases, casts, spreads and `!inner`, filters, writes, rpc calls, and some long nested selects). v2 is
+`@supabase/supabase-js` 2.118.0 with a `Database` type from postgres-meta, the generator behind `supabase gen types`. v3
+is this branch with the generated file. Both compile with zero errors. Results are the median of 7 runs of
+`tsc --noEmit --extendedDiagnostics` on an Apple M3.
+
+| TypeScript | v2 check time | v3 check time | v2 instantiations | v3 instantiations | v2 peak memory | v3 peak memory |
+| ---------- | ------------- | ------------- | ----------------- | ----------------- | -------------- | -------------- |
+| 5.8        | 6.12 s        | 0.56 s        | 14.6 M            | 473 k             | 906 MB         | 383 MB         |
+| 6.0        | 3.99 s        | 0.56 s        | 5.5 M             | 381 k             | 1222 MB        | 383 MB         |
+| 7.0        | 0.86 s        | 0.09 s        | 5.8 M             | 429 k             | 693 MB         | 183 MB         |
+| 7.1 beta   | 0.67 s        | 0.09 s        | 5.7 M             | 429 k             | not measured   | not measured   |
+
+- **7 to 11 times faster** to check, with 13 to 31 times fewer type instantiations, on every TypeScript version.
+- **Each extra query** costs about 12 ms in v2 and 1 ms in v3 (TypeScript 5.8). In v3 the cost does not depend on the
+  length of the select string.
+- **Hover in the editor** (TypeScript 5.8 language service, a long select in a 200-query project): 136 ms in v2 and 4 ms in
+  v3 once warm, 185 ms and 21 ms right after an edit.
+- **Generating the types** with the mapper, from a snapshot: 0.68 s for 500 queries from an empty cache, 0.19 s after
+  editing one select. The generated file is 365 KB.
+
+The schema is small (three tables and a view). v2's cost also grows with the size of the `Database` type, which v3's
+lookup does not depend on, so on a real project the gap is likely wider. 412 of the 500 result types are identical in both
+versions. The other 88 differ because v3 is more precise (the `NOT VALID` foreign key, view columns, filters, write
+responses).
+
+### Developer experience
+
+|                            | v2                                               | v3, TypeScript 5.1 to 7.0, Deno                                       | v3, TypeScript 7.1                       |
+| -------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- | ---------------------------------------- |
+| Setup                      | `supabase gen types`, `createClient<Database>()` | `postgrest-mapper init` once, no type argument                        | Same, plus `--runExternalCode`           |
+| A new or edited select     | Typed as you type                                | Loose until you save, then typed a moment later by `generate --watch` | Typed by the compiler itself, no watcher |
+| Schema change              | Run `supabase gen types` again                   | `snapshot` (or `refresh` for a live source); the watcher regenerates  | Same                                     |
+| Generated file in the repo | `database.types.ts`                              | `supabase.types.d.ts`                                                 | None, only the `.pgrst-index` stub       |
+| CI                         | `tsc`                                            | `generate --check`, then `tsc` with `unplanned: 'error'`              | `tsc --runExternalCode`                  |
+| Errors                     | Parser error types                               | PostgREST's messages at the call                                      | Same                                     |
+
+The main cost is the watcher. Below TypeScript 7.1, the generated file only knows the queries that existed at the last
+generation, so `generate --watch` has to run during development (the example's `pnpm types:watch`). Between a keystroke
+and the next save, a new select is loosely typed rather than wrong, and `--check` with `unplanned: 'error'` keeps a stale
+file out of CI. TypeScript 7.1 removes the watcher and the generated file. Its editor support is still being verified,
+which is why the generated file is the default for now.
 
 ## Known limits
 
