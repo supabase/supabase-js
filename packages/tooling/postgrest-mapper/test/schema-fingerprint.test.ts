@@ -110,6 +110,9 @@ describe('schema fingerprint', () => {
   test('granting a privilege changes it', () =>
     expectChange(`GRANT SELECT ON ${scratch}.items TO anon`))
 
+  test('creating a cast changes it', () =>
+    expectChange(`CREATE CAST (${scratch}.mood AS int) WITH INOUT AS ASSIGNMENT`))
+
   test('dropping a table changes it', () => expectChange(`DROP TABLE ${scratch}.doomed`))
 
   test('ANALYZE leaves it unchanged', () => expectUnchanged(`ANALYZE ${scratch}.items`))

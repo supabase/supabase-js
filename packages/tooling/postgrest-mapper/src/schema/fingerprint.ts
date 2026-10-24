@@ -50,13 +50,15 @@ SELECT to_hex(bit_xor(pg_catalog.hashtextextended(s, 0))) AS fingerprint FROM (
   FROM pg_catalog.pg_description d
   WHERE d.classoid <> 'pg_catalog.pg_class'::pg_catalog.regclass OR d.objoid IN (SELECT oid FROM cls)
   UNION ALL
+  SELECT 'x:' || oid || ':' || xmin::text FROM pg_catalog.pg_cast
+  UNION ALL
   SELECT 's:' || setdatabase || ':' || setrole || ':' || xmin::text FROM pg_catalog.pg_db_role_setting
 ) rows
 `
 
 /**
  * A cheap read-only hash of everything in the database catalogs that PostgREST's schema cache depends on:
- * namespaces, relations, columns, functions, types, enum labels, constraints, view rules, inheritance, comments
+ * namespaces, relations, columns, functions, types, enum labels, constraints, view rules, inheritance, casts, comments
  * and per-role/database settings. It changes whenever DDL changes any of them (including a `GRANT`, which
  * rewrites the ACL of the object) and stays the same under routine maintenance (`ANALYZE`,
  * `VACUUM`, `TRUNCATE`, `REFRESH MATERIALIZED VIEW`). One query in a read-only transaction.
