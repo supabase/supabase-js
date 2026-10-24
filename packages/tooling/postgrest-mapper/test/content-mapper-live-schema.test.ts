@@ -126,7 +126,7 @@ function start() {
   const server = createContentMapperServer({
     input: toServer,
     output: fromServer,
-    logger: { debug() {}, error() {} },
+    logger: { debug: () => undefined, error: () => undefined },
     generator,
   })
   const client = new RpcClient(toServer, fromServer)

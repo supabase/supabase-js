@@ -225,7 +225,7 @@ describe('rpc entries and operands of a project', () => {
     const hosts = { started: 0 }
     const deps = {
       wasmPath: plannerWasmPath(),
-      logger: { debug() {}, warn() {} },
+      logger: { debug: () => undefined, warn: () => undefined },
     }
     const g1 = createGenerator(deps)
     let miss

@@ -47,6 +47,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function quote(value: string): string {
   return (
     "'" +
+    // eslint-disable-next-line no-control-regex -- it escapes control characters into a quoted literal
     value.replace(/[\\'\u0000-\u001f\u2028\u2029]/g, (ch) => {
       switch (ch) {
         case '\\':

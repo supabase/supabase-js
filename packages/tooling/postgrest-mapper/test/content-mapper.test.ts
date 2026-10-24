@@ -14,7 +14,8 @@ import {
 } from '../src'
 import { INITIALIZE, RpcClient, STUB_OPTIONS } from './support/rpc-client'
 
-const silent = { debug() {}, error() {} }
+const noop = (): void => undefined
+const silent = { debug: noop, error: noop }
 const INDEX = '/p/src/supabase.pgrst-index'
 
 interface Harness {
@@ -32,7 +33,7 @@ function start(generator: ProjectGenerator = stubGenerator): Harness {
   const server = createContentMapperServer({
     input: toServer,
     output: fromServer,
-    logger: { debug() {}, error: (message) => errors.push(message) },
+    logger: { debug: noop, error: (message) => errors.push(message) },
     generator,
   })
   return { client: new RpcClient(toServer, fromServer), server, toServer, fromServer, errors }

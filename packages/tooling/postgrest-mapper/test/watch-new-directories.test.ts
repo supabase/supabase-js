@@ -109,16 +109,16 @@ async function watching(run: (session: Session) => Promise<void>): Promise<void>
     watched: (name) =>
       until(`${name} to be watched`, () =>
         watchedDirectories.has(join(project.dir, name)) ? true : undefined
-      ).then(() => {}),
+      ).then(() => undefined),
     generated: (key) =>
       until(`a run that declares ${key}`, () =>
         events.some((e) => e.kind === 'run' && e.result.ok && e.result.text.includes(key))
           ? true
           : undefined
-      ).then(() => {}),
+      ).then(() => undefined),
     runAfter: (count) =>
       until(`a run after run ${count}`, () => (events.length > count ? true : undefined)).then(
-        () => {}
+        () => undefined
       ),
   }
   try {

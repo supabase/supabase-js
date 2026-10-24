@@ -71,7 +71,8 @@ export interface GeneratorLogger {
   warn(message: string): void
 }
 
-const silent: GeneratorLogger = { debug() {}, warn() {} }
+const noop = (): void => undefined
+const silent: GeneratorLogger = { debug: noop, warn: noop }
 
 /** The file system the generator reads sources and writes its cache with. */
 export type GeneratorFs = ProjectFs & SchemaFs
@@ -944,7 +945,7 @@ export type GenerateDeclarationsInput = (
   deps?: GeneratorDeps
 }
 
-export interface GenerateDeclarationsResult extends GenerateOutput {}
+export type GenerateDeclarationsResult = GenerateOutput
 
 /**
  * The pipeline the content mapper runs, as a function (and the one a CLI `generate` command calls): scan the project,

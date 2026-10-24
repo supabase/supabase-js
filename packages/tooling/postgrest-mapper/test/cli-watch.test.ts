@@ -21,7 +21,7 @@ function harness(
     count: number,
     edit: (path: string) => void,
     abort: () => void
-  ) => void | Promise<void> = () => {}
+  ) => void | Promise<void> = () => undefined
 ) {
   const controller = new AbortController()
   const idle = deferred()

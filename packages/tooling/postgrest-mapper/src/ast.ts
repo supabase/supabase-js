@@ -23,11 +23,7 @@ export class Scope {
   constructor(readonly parent?: Scope) {}
 
   lookup(name: string): Binding | undefined {
-    for (let s: Scope | undefined = this; s; s = s.parent) {
-      const b = s.bindings.get(name)
-      if (b) return b
-    }
-    return undefined
+    return this.bindings.get(name) ?? this.parent?.lookup(name)
   }
 
   declare(name: string, init?: Node, annotated = false): void {

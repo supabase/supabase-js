@@ -46,7 +46,7 @@ function setup(overrides: { busy?: () => boolean } = {}) {
       },
       mkdir: async () => undefined,
     },
-    logger: { debug() {}, warn: (message) => warnings.push(message) },
+    logger: { debug: () => undefined, warn: (message) => warnings.push(message) },
     busy: overrides.busy ?? (() => false),
     timeoutMs: 2_000,
   })

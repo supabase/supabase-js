@@ -21,7 +21,8 @@ import type { Deadline } from './deadline'
 import { DEFAULT_ACQUIRE_TIMEOUT_MS, DEFAULT_POSTGREST_IMAGE } from './types'
 import type { AcquiredSchema, DbConnection, SchemaDeps, SchemaLogger, SchemaSource } from './types'
 
-const silent: SchemaLogger = { debug() {}, info() {}, warn() {} }
+const noop = (): void => undefined
+const silent: SchemaLogger = { debug: noop, info: noop, warn: noop }
 
 /**
  * Acquires everything the planner and the mapper need about a database from one source (design v3 §4.2):

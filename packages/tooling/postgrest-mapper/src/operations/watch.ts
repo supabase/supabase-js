@@ -16,7 +16,7 @@ import {
 export const nodeWatch: WatchFn = (directory, onEvent) => {
   const watcher = fsWatch(directory, (_event, filename) => onEvent(filename))
   // a directory that disappears must not crash the process
-  watcher.on('error', () => {})
+  watcher.on('error', () => undefined)
   return { close: () => watcher.close() }
 }
 
