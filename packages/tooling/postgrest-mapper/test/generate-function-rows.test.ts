@@ -182,3 +182,37 @@ describe('a JSON path or an aggregate over a column of the rows of a function', 
     )
   }, 180_000)
 })
+
+describe('an overload set of a function only partly traced', () => {
+  const NAME = 'postgrest_resolvable_with_override_function'
+  const SOURCE = `supabase.rpc('${NAME}', { profile_id: 1 })`
+  const KEY = `f|public|${NAME}|*`
+
+  /** The `profile_id bigint` overload made untraced (not SQL), and optionally a traced SQL twin taking `text` */
+  function withUntracedProfileOverload(twin: boolean): AcquiredSchema {
+    const isProfile = (f: { name: string; argNames: string[] | null }): boolean =>
+      f.name === NAME && f.argNames?.[0] === 'profile_id'
+    const original = acquired.supplementary.functions.find(isProfile)!
+    expect(original.language).toBe('sql')
+    return {
+      ...acquired,
+      supplementary: {
+        ...acquired.supplementary,
+        functions: [
+          ...acquired.supplementary.functions.map((f) =>
+            isProfile(f) ? { ...f, language: 'plpgsql', source: null } : f
+          ),
+          ...(twin ? [{ ...original, argTypes: ['text'] }] : []),
+        ],
+      },
+    }
+  }
+
+  it('does not take the rows of a traced overload of other argument types', async () => {
+    const untraced = rowOf(await declarationsOf(SOURCE, withUntracedProfileOverload(false)), KEY)
+    expect(untraced).toContain(' | null')
+    expect(rowOf(await declarationsOf(SOURCE, withUntracedProfileOverload(true)), KEY)).toBe(
+      untraced
+    )
+  }, 180_000)
+})

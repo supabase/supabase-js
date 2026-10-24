@@ -33,12 +33,12 @@ export function functionRowsOf(
       f.argNames.length === routine.params.length &&
       f.argNames.every((n, i) => n === routine.params[i]!.name)
   )
-  const typed =
-    named.length > 1
-      ? named.filter((f) =>
-          f.argTypes.every((t, i) => canonicalType(t) === canonicalType(routine.params[i]!.type))
-        )
-      : named
+  // compared by type even when one overload has the names: an untraced overload of other types may be the one called
+  const typed = named.filter(
+    (f) =>
+      f.argTypes.length === routine.params.length &&
+      f.argTypes.every((t, i) => canonicalType(t) === canonicalType(routine.params[i]!.type))
+  )
   const found: TracedFunction | undefined = typed.length === 1 ? typed[0] : undefined
   if (!found) return undefined
   const source = rpc.source
