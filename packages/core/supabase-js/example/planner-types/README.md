@@ -55,12 +55,6 @@ Every chain is commented with what to hover and what it shows.
 - `db/schema.sql`, `db/seed.sql`: the schema (tables, a NOT VALID foreign key, a view, an enum, a domain, a JSON Schema CHECK, a computed
   field, rpc functions, grants) and the data.
 
-### What the hover shows
-
-A plain column shows as `SupabaseColumnType<'public.posts.title', string>`: that is `string`, wrapped so that a
-`SupabaseColumnTypes` override (see `src/overrides.ts`) can replace it by column key. `pnpm hover` prints the resolved types
-(`title: string`). Embeds, nullability, arrays and aggregates are shown as they are.
-
 ### The loose fallback
 
 A chain the generated file has no entry for is typed loosely (rows are `unknown` / `Record<string, unknown>`), because the mapper
