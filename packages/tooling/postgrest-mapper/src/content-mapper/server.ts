@@ -87,6 +87,8 @@ export function createContentMapperServer(
 ): ContentMapperServer {
   const { input, output, logger, generator } = options
   const projects = new Map<string, ProjectState>()
+  /** The latest `openProject` per open handle: `closeProject` drops it, so an open still awaiting finds out */
+  const opens = new Map<string, symbol>()
   const inFlight = new Set<Promise<void>>()
   let encoding: PositionEncoding | undefined
   let stopped = false // no more input is read
@@ -140,6 +142,8 @@ export function createContentMapperServer(
     )
     // A reopened handle starts from scratch, whatever happens below.
     projects.delete(p.projectHandle)
+    const token = Symbol(p.projectHandle)
+    opens.set(p.projectHandle, token)
     const rawOptions = p.options ?? {}
     const validation = validateOptions(rawOptions)
     if (!validation.ok) {
@@ -162,13 +166,20 @@ export function createContentMapperServer(
     } catch (error) {
       logger.error(`generator failed for ${p.configFileName || '(no config file)'}`, error)
       // it may have taken the live-schema hold before failing, and no project is left to close it
-      generator.closeProject?.(p.projectHandle)
+      if (opens.get(p.projectHandle) === token || !opens.has(p.projectHandle)) {
+        generator.closeProject?.(p.projectHandle)
+      }
       throw new RpcError(
         ErrorCode.InternalError,
         `generator failed: ${error instanceof Error ? error.message : String(error)}`
       )
     }
-    projects.set(p.projectHandle, { text: generated.text, diagnostics: generated.diagnostics })
+    // closed while generating: nothing may stay behind; reopened: the newer open owns the handle
+    if (opens.get(p.projectHandle) !== token) {
+      if (!opens.has(p.projectHandle)) generator.closeProject?.(p.projectHandle)
+    } else {
+      projects.set(p.projectHandle, { text: generated.text, diagnostics: generated.diagnostics })
+    }
     return {
       configIdentity: generated.identity,
       watchedFiles: [...generated.watchedFiles],
@@ -219,6 +230,7 @@ export function createContentMapperServer(
       typeof r.projectHandle !== 'string' ? 'projectHandle must be a string' : undefined
     )
     projects.delete(p.projectHandle)
+    opens.delete(p.projectHandle)
     generator.closeProject?.(p.projectHandle)
     return null
   }
@@ -309,6 +321,7 @@ export function createContentMapperServer(
     finished = true
     for (const handle of projects.keys()) generator.closeProject?.(handle)
     projects.clear()
+    opens.clear()
   })
   return { closed, close: stop }
 }

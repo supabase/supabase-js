@@ -302,6 +302,37 @@ describe('content mapper protocol (in memory)', () => {
       expect([...held]).toEqual([])
     })
 
+    it('drops a project closed while it was still opening', async () => {
+      const held = new Set<string>()
+      let entered!: () => void
+      const started = new Promise<void>((resolve) => (entered = resolve))
+      let finish!: () => void
+      const gate = new Promise<void>((resolve) => (finish = resolve))
+      const generator: ProjectGenerator = Object.assign(
+        async (params: Parameters<ProjectGenerator>[0]) => {
+          entered()
+          await gate
+          held.add(params.projectHandle) // the live-schema hold is taken once the schema is acquired
+          return stubGenerator(params)
+        },
+        { closeProject: (projectHandle: string) => void held.delete(projectHandle) }
+      )
+      const { client } = start(generator)
+      await client.request('initialize', INITIALIZE)
+      const opening = open(client)
+      await started
+      expect((await client.request('closeProject', { projectHandle: 'h1' })).result).toBeNull()
+      finish()
+      await opening
+      expect([...held]).toEqual([])
+      const transformed = await client.request('transform', {
+        fileName: INDEX,
+        content: '',
+        projectHandle: 'h1',
+      })
+      expect(transformed.error?.code).toBe(-32602)
+    })
+
     it('turns a throwing generator into an error response', async () => {
       let fail = true
       const generator: ProjectGenerator = async (params) => {
