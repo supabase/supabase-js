@@ -221,19 +221,31 @@ export function printRpcEntry(
 // `SupabaseOperands`
 // ---------------------------------------------------------------------------------------------------------------
 
-/** An entry of `SupabaseOperands`: a relation's has one outcome, an RPC's one per call. */
+/**
+ * An entry of `SupabaseOperands`: a relation's has one outcome, an RPC's one per call. `order` marks the entry of an
+ * `.order()` column, which only says whether the column is accepted.
+ */
 export type OperandInput =
-  | { key: string; operand: string; outcome: CallOutcome }
+  | { key: string; operand: string; outcome: CallOutcome; order?: true }
   | {
       key: string
       operand: string
       calls: readonly { keys: readonly string[]; method: RpcMethod; outcome: CallOutcome }[]
+      order?: true
     }
 
-type OperandType = { type: string; embed?: string[] } | { error: string }
+type OperandType = { type: string; embed?: string[] } | { ok: true } | { error: string }
 
-/** The type a filter on `operand` compares against, from the planner's `filters` of the `is.null` request. */
-function operandTypeOf(context: SelectsContext, plan: CallPlan, operand: string): OperandType {
+/**
+ * The type a filter on `operand` compares against, from the planner's `filters` of the `is.null` request. `what` names
+ * the use of the column in a failure.
+ */
+function operandTypeOf(
+  context: SelectsContext,
+  plan: CallPlan,
+  operand: string,
+  what: 'filter' | 'order column' = 'filter'
+): OperandType {
   const filter = plan.filters[0]
   if (!filter) return { type: 'unknown' }
   if (filter.kind === 'embed') return { type: 'unknown', embed: filter.tested }
@@ -245,7 +257,7 @@ function operandTypeOf(context: SelectsContext, plan: CallPlan, operand: string)
       plan.degraded.some((d) => d.startsWith('computed-field:') || d.startsWith('rpc-columns:')) ||
       prov.reason === 'the function returns a scalar'
     if (unknowable) return { type: 'unknown', ...embed }
-    return { error: `unresolved filter \`${operand}\`: ${prov.reason}` }
+    return { error: `unresolved ${what} \`${operand}\`: ${prov.reason}` }
   }
   if (filter.pgType && filter.baseType && filter.baseType !== filter.pgType) {
     rememberDomain(context.domains, filter.pgType, filter.baseType)
@@ -275,22 +287,27 @@ function operandTypeOf(context: SelectsContext, plan: CallPlan, operand: string)
 function operandOutcome(
   context: SelectsContext,
   operand: string,
-  outcome: CallOutcome
+  outcome: CallOutcome,
+  order: boolean
 ): OperandType {
-  return 'error' in outcome
-    ? { error: outcome.error }
-    : operandTypeOf(context, outcome.plan, operand)
+  if ('error' in outcome) return { error: outcome.error }
+  const typed = operandTypeOf(context, outcome.plan, operand, order ? 'order column' : 'filter')
+  // an order column is accepted or not: the planner validated it as an order, the filter on it resolved the column
+  return order && !('error' in typed) ? { ok: true } : typed
 }
 
 const operandMembers = (t: OperandType): string[] =>
   'error' in t
     ? [`error: ${quoteDouble(t.error)}`]
-    : [`type: ${t.type}`, ...(t.embed ? [`embed: ${tuple(t.embed)}`] : [])]
+    : 'ok' in t
+      ? ['ok: true']
+      : [`type: ${t.type}`, ...(t.embed ? [`embed: ${tuple(t.embed)}`] : [])]
 
 /**
  * `interface SupabaseOperands { ... }`, indented for `declare global { ... }`, entries sorted by key (the first of a
- * key repeated wins). A relation's entry is `{ type, embed? }` or `{ error }`; an RPC's is `{ calls }` matched by the
- * same dispatch as the call. Empty without entries.
+ * key repeated wins). A relation's entry is `{ type, embed? }` or `{ error }`, `{ ok: true }` or `{ error }` for an
+ * `.order()` column (the key starts with `order|`); an RPC's is `{ calls }` matched by the same dispatch as the call.
+ * Empty without entries.
  */
 export function printOperands(context: SelectsContext, entries: readonly OperandInput[]): string {
   const sorted = [...entries].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
@@ -305,13 +322,17 @@ export function printOperands(context: SelectsContext, entries: readonly Operand
         const members = [
           `keys: ${keysType(call.keys)}`,
           `method: ${quote(call.method)}`,
-          ...operandMembers(operandOutcome(context, entry.operand, call.outcome)),
+          ...operandMembers(
+            operandOutcome(context, entry.operand, call.outcome, entry.order === true)
+          ),
         ]
         return `        { ${members.join('; ')} },`
       })
       blocks.push(`    ${quote(entry.key)}: {\n      calls: [\n${lines.join('\n')}\n      ]\n    }`)
     } else {
-      const members = operandMembers(operandOutcome(context, entry.operand, entry.outcome))
+      const members = operandMembers(
+        operandOutcome(context, entry.operand, entry.outcome, entry.order === true)
+      )
       blocks.push(`    ${quote(entry.key)}: { ${members.join('; ')} }`)
     }
   }

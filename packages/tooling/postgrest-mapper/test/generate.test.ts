@@ -183,6 +183,60 @@ describe('generated declarations of a project', () => {
   }, 120_000)
 })
 
+const ORDER_APP = `
+import type { PostgrestClient } from '@supabase/postgrest-js'
+import type { Data, Equal, Expect } from './helpers'
+declare const supabase: PostgrestClient
+
+// ordering by a column of a to-one embed is an order parameter, not a filter
+const q1 = supabase.from('messages').select('id, channels(id)').order('channels(id)')
+export type T1 = Expect<Equal<Data<typeof q1>, { id: number; channels: { id: number } }[]>>
+supabase.from('messages').select('id, channels(id)').order('channels(id)', { ascending: false })
+// a plain column of the row is read from the row
+supabase.from('messages').select('id, channels(id)').order('id')
+// an order column goes by the embed's alias
+supabase.from('messages').select('id, ch:channels(id)').order('ch(id)')
+// the original name of an aliased embed is not an embedded resource of the request
+// @ts-expect-error PGRST108: channels is not an embedded resource in this request
+supabase.from('messages').select('id, ch:channels(id)').order('channels(id)')
+// an embed that is not in the select
+// @ts-expect-error PGRST108: channels is not an embedded resource in this request
+supabase.from('messages').select('id').order('channels(id)')
+// a to-many embed cannot order its parent
+// @ts-expect-error PGRST118: a related order on messages is not possible
+supabase.from('users').select('username, messages(id)').order('messages(id)')
+`
+
+describe('order columns', () => {
+  it.each([
+    ['loose', undefined],
+    ['strict', 'error'],
+  ] as const)(
+    'validates an order column as an order, not as a filter (%s)',
+    async (_policy, unplanned) => {
+      const p = await project({ 'src/app.ts': ORDER_APP })
+      const result = await generateDeclarations({
+        configFileName: p.configFileName,
+        options: optionsOf(p, unplanned ? { unplanned } : {}),
+        deps: { wasmPath: plannerWasmPath() },
+      })
+      expect(result.diagnostics).toEqual([])
+      const checked = typecheckConsumer({
+        files: { 'db.d.ts': result.text, 'helpers.ts': HELPERS, 'app.ts': ORDER_APP },
+      })
+      expect(checked.byFile.get('db.d.ts') ?? []).toEqual([])
+      expect(checked.byFile.get('app.ts') ?? []).toEqual([])
+      expect(result.text).toContain(
+        "'order|r|public|messages|id, channels(id)|channels(id)': { ok: true }"
+      )
+      expect(result.text).toMatch(
+        /'order\|r\|public\|users\|username, messages\(id\)\|messages\(id\)': \{ error: "PGRST118/
+      )
+    },
+    120_000
+  )
+})
+
 describe('schemas of a chain', () => {
   it('plans a chain whose .schema() does not resolve in every exposed schema, not only the default one', async () => {
     const p = await project({

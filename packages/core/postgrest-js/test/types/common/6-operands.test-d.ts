@@ -41,5 +41,19 @@ supabase.from('messages').select(cols).eq('channels.id', 'x')
 // order: plain root column checked, referencedTable column not
 supabase.from('messages').select('id').order('id')
 supabase.from('messages').select('id, channels(id)').order('id', { referencedTable: 'channels' })
-// @ts-expect-error PGRST108 at `channels`: 'channels' is not an embedded resource in this request. Hint: add channels(...) to the select.
-supabase.from('messages').select('id').order('channels.id')
+// @ts-expect-error PGRST108: 'channels' is not an embedded resource in this request
+supabase.from('messages').select('id').order('channels(id)')
+// an order has its own grammar: a dotted path is not an order column
+// @ts-expect-error PGRST100
+supabase.from('messages').select('id, channels(id)').order('channels.id')
+// @ts-expect-error PGRST118: A related order on 'messages' is not possible
+supabase.from('users').select('username, messages(id, channels(id))').order('messages(id)')
+// a to-one embed's column is a valid order column, and ordering leaves the result type alone
+const ordered = supabase.from('messages').select('id, channels(id)').order('channels(id)')
+type _6ord = Expect<Equal<Data<typeof ordered>, { id: number; channels: { id: number } }[]>>
+const orderedDesc = supabase
+  .from('messages')
+  .select('id, channels(id)')
+  .order('channels(id)', { ascending: false })
+  .order('id')
+type _6ordDesc = Expect<Equal<Data<typeof orderedDesc>, Data<typeof ordered>>>

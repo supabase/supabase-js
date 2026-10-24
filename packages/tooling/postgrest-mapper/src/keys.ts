@@ -20,13 +20,27 @@ export function operandKey(
   return `${selectKey(target, schema, select)}|${operand}`
 }
 
+/**
+ * The key of a `SupabaseOperands` entry for an `.order()` column: `order|` before the select key
+ * (`OrdKey` in `lookup.ts`). A select key starts with its kind (`r`, `w` or `f`), so no filter operand key can be one
+ * of these, whatever the column is called.
+ */
+export function orderKey(
+  target: PlanTarget,
+  schema: string,
+  select: string,
+  column: string
+): string {
+  return `order|${operandKey(target, schema, select, column)}`
+}
+
 /** Every concrete key of a request, one per schema (`'exposed'` has none until it is expanded). */
 export function requestKeys(request: SelectRequest | OperandRequest): string[] {
   const { target, select } = request
   if (target.schemas === 'exposed') return []
   return target.schemas.map((schema) =>
     'operand' in request
-      ? operandKey(target, schema, select, request.operand)
+      ? (request.via === 'order' ? orderKey : operandKey)(target, schema, select, request.operand)
       : selectKey(target, schema, select)
   )
 }

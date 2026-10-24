@@ -1,5 +1,5 @@
 import type { PlanRequest } from '@supabase/postgrest-planner'
-import { operandKey, relationKey, selectKey } from '../keys'
+import { operandKey, orderKey, relationKey, selectKey } from '../keys'
 import type { RoutineSignature } from '../printer'
 import type { FunctionTarget, RpcMethod, ScanResult, SourceLocation } from '../types'
 
@@ -294,8 +294,10 @@ export function planRpcOf(scan: ScanResult, signatures: Signatures): RpcPlanKey[
 export type OperandPlanKey = {
   /** Unique among every planned item; the cache key */
   id: string
-  /** The `SupabaseOperands` key (`OKey`) */
+  /** The `SupabaseOperands` key: `OKey` for a filter operand, `OrdKey` for an `.order()` column */
   entry: string
+  /** The context the column is used in: a filter operand or an `.order()` column */
+  via: 'column' | 'order'
   /** The `SupabaseSelects` key of the chain's select */
   selectEntry: string
   schema: string
@@ -309,18 +311,21 @@ export type OperandPlanKey = {
 )
 
 /**
- * The operands the scan reports, expanded per schema (and per call for an rpc). An operand through
- * `referencedTable` is not planned: its key (`@table`) is never looked up, the consumer reads the options.
+ * The operands the scan reports, expanded per schema (and per call for an rpc): the columns of filters and of
+ * `.order()`, each under its own key. An operand through `referencedTable` is not planned: its key (`@table`) is never
+ * looked up, the consumer reads the options.
  */
 export function planOperandsOf(scan: ScanResult, signatures: Signatures): OperandPlanKey[] {
   const out = new Map<string, OperandPlanKey>()
   for (const request of scan.operands) {
     const { target, select, operand } = request
-    if (request.via !== 'column' || target.schemas === 'exposed') continue
+    if (request.via === 'referencedTable' || target.schemas === 'exposed') continue
+    const via = request.via
     for (const schema of target.schemas) {
-      const entry = operandKey(target, schema, select, operand)
+      const entry = (via === 'order' ? orderKey : operandKey)(target, schema, select, operand)
       const base = {
         entry,
+        via,
         selectEntry: selectKey(target, schema, select),
         schema,
         select,
@@ -377,15 +382,17 @@ const q = encodeURIComponent
 /**
  * The request the runtime sends for an rpc call: `POST` carries the arguments as a JSON body, `GET` and `HEAD` as query
  * parameters (the planner reads the names, never the values). `operand` adds the `is.null` filter an operand entry is
- * typed from.
+ * typed from; `order` adds the `order` parameter an order entry is validated by.
  */
 export function rpcRequestOf(
   call: Pick<RpcPlanKey, 'schema' | 'function' | 'select' | 'keys' | 'method'>,
-  operand?: string
+  operand?: string,
+  order?: boolean
 ): PlanRequest {
   const params: string[] = []
   if (call.method !== 'POST') for (const k of call.keys) params.push(`${q(k)}=1`)
   if (call.select !== '*') params.push(`select=${q(normalizeSelect(call.select))}`)
+  if (operand !== undefined && order) params.push(`order=${q(operand)}.asc`)
   if (operand !== undefined) params.push(`${q(operand)}=is.null`)
   const url = `/rpc/${q(call.function)}${params.length > 0 ? `?${params.join('&')}` : ''}`
   if (call.method !== 'POST') {
@@ -399,10 +406,18 @@ export function rpcRequestOf(
   }
 }
 
-/** The request of an operand: the chain's select with `operand=is.null` (design v5 section 4.2). */
+/**
+ * The request of an operand: the chain's select with `operand=is.null` (design v5 section 4.2). An `.order()` column
+ * adds `order=operand.asc`: the planner rejects an order column that is not an embed of the select or not a to-one
+ * one (PGRST108, PGRST118, PGRST100), and the `is.null` filter resolves the column, which an order alone leaves to the
+ * database.
+ */
 export function operandRequestOf(key: OperandPlanKey): PlanRequest {
-  if (key.kind === 'f') return rpcRequestOf(key, key.operand)
-  const url = `/${q(key.relation)}?select=${q(normalizeSelect(key.select))}&${q(key.operand)}=is.null`
+  const order = key.via === 'order'
+  if (key.kind === 'f') return rpcRequestOf(key, key.operand, order)
+  const url = `/${q(key.relation)}?select=${q(normalizeSelect(key.select))}${
+    order ? `&order=${q(key.operand)}.asc` : ''
+  }&${q(key.operand)}=is.null`
   if (key.kind === 'r') return { method: 'GET', url, headers: { 'Accept-Profile': key.schema } }
   return {
     method: 'PATCH',

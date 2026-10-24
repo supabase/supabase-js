@@ -5,7 +5,7 @@ import type { InvalidMethodError } from './PostgrestFilterBuilder'
 import type { ColumnsArg, Selected } from './types/planner/distribute'
 import type { Gate, HasRef, RefFacts } from './types/planner/facts'
 import type { PgrstFeature } from './types/planner/globals'
-import type { BState, ColArg, Desc, Descs, MState, Reselect, SetM } from './types/planner/lookup'
+import type { BState, Desc, Descs, MState, OrderArg, Reselect, SetM } from './types/planner/lookup'
 import type {
   KeepHead,
   OrCount,
@@ -310,7 +310,7 @@ export default class PostgrestTransformBuilder<
    */
   order<const C extends string, const O extends OrderOptions = {}>(
     // a referencedTable order column belongs to the embed: not checked against the root
-    column: HasRef<O> extends true ? C : ColArg<B, C>,
+    column: HasRef<O> extends true ? C : OrderArg<B, C>,
     options?: O
   ): PostgrestFilterBuilder<B, E, F, M>
   order(

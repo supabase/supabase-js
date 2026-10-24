@@ -5,7 +5,10 @@ import type { GenericSchema } from '../common/common'
 declare global {
   /** Planned selects: `${kind}|${schema}|${relation}|${select}` -> entry */
   interface SupabaseSelects {}
-  /** Planned filter operands: `${kind}|${schema}|${relation}|${select}|${column}` -> entry */
+  /**
+   * Planned filter operands, `${kind}|${schema}|${relation}|${select}|${column}` -> entry, and planned `.order()`
+   * columns, `order|${kind}|${schema}|${relation}|${select}|${column}` -> entry
+   */
   interface SupabaseOperands {}
   /** The database types (`supabase gen types typescript` shape) the client reads. */
   interface SupabaseDatabase {}

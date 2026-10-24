@@ -786,6 +786,20 @@ declare global {
     'r|public|messages|id|channels.id': {
       error: "PGRST108 at `channels`: 'channels' is not an embedded resource in this request. Hint: add channels(...) to the select."
     }
+    // `.order()` columns are planned as orders, apart from filter operands
+    'order|r|public|messages|id, channels(id)|channels(id)': { ok: true }
+    'order|r|public|messages|id, channels(id)|channels.id': {
+      error: 'PGRST100: "failed to parse order (channels.id.asc)" (line 1, column 10)'
+    }
+    'order|r|public|messages|id|channels(id)': {
+      error: "PGRST108: 'channels' is not an embedded resource in this request Hint: Verify that 'channels' is included in the 'select' query parameter."
+    }
+    'order|r|public|messages|id|channels.id': {
+      error: 'PGRST100: "failed to parse order (channels.id.asc)" (line 1, column 10)'
+    }
+    'order|r|public|users|username, messages(id, channels(id))|messages(id)': {
+      error: "PGRST118: A related order on 'messages' is not possible. Hint: 'users' and 'messages' do not form a many-to-one or one-to-one relationship."
+    }
     // same JSON path operand on a root column
     'r|public|users|username, data|data->theme': { type: string }
   }

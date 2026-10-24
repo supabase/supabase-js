@@ -23,7 +23,7 @@ export {
   MUTATION_METHODS,
   REFERENCED_TABLE_METHODS,
 } from './methods'
-export { operandKey, relationKey, requestKeys, selectKey } from './keys'
+export { operandKey, orderKey, relationKey, requestKeys, selectKey } from './keys'
 export { jsonSchemaToTs } from './jsonschema'
 export type { JsonSchemaToTsOptions } from './jsonschema'
 export {

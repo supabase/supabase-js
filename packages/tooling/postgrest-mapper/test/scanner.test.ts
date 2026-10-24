@@ -297,6 +297,14 @@ describe('operands', () => {
     expect(operands(r)).toEqual(['r|*|t|a|f', 'r|*|t|a|n', 'r|*|t|a|o'])
   })
 
+  it('records an order column apart from a filter on the same column', () => {
+    const r = scan(`supabase.from('t').select('a, e(id)').order('e(id)').eq('e(id)', 1)`)
+    expect(r.operands.map((o) => [o.operand, o.via])).toEqual([
+      ['e(id)', 'column'],
+      ['e(id)', 'order'],
+    ])
+  })
+
   it('records the keys of match', () => {
     const r = scan(`supabase.from('t').select('a').match({ x: 1, 'y z': 2, ['w']: 3 })`)
     expect(operands(r)).toEqual(['r|*|t|a|w', 'r|*|t|a|x', 'r|*|t|a|y z'])

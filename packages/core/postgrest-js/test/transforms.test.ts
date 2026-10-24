@@ -59,6 +59,24 @@ test('order', async () => {
   `)
 })
 
+test('order by a column of a to-one embed', async () => {
+  const res = await postgrest
+    .from('messages')
+    .select('id, channels(id)')
+    .order('channels(id)', { ascending: false })
+    .order('id')
+  expect(res.error).toBeNull()
+  expect(res.data).toEqual([
+    { id: 3, channels: { id: 3 } },
+    { id: 4, channels: { id: 3 } },
+    { id: 2, channels: { id: 2 } },
+    { id: 1, channels: { id: 1 } },
+  ])
+  // the order does not change the result type
+  const rows: { id: number; channels: { id: number } }[] | null = res.data
+  expect(rows).toHaveLength(4)
+})
+
 test('order on multiple columns', async () => {
   const res = await postgrest
     .from('messages')

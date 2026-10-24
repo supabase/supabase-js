@@ -67,6 +67,8 @@ export type SetM<M extends MState, P> = {
 // ---------------------------------------------------------------- §4.3 lookup
 export type Key<B extends BState, Q extends string> = `${B['k']}|${B['s']}|${B['r']}|${Q}`
 export type OKey<B extends BState, Q extends string, C extends string> = `${Key<B, Q>}|${C}`
+// the key of an `.order()` column: it starts with `order|`, a select key with its kind, so the two never meet
+export type OrdKey<B extends BState, Q extends string, C extends string> = `order|${OKey<B, Q, C>}`
 export type Unplanned = { unplanned: true }
 // an rpc whose key set can't be enumerated: nothing to look up, rows unknown
 export type Dynamic = { dynamic: true }
@@ -300,6 +302,40 @@ export type ColArg<B extends BState, C extends string> =
       : [OperandReject<B, C>] extends [never]
         ? C
         : OperandReject<B, C>
+
+// ---------------------------------------------------------------- order columns
+// an `.order()` column has the grammar of an order (`channels(id)` is a to-one embed's column, not a filter), so it is
+// planned as an order and read from its own entries; an entry only says whether the planner accepts the column
+export type OrderEntry<B extends BState, C extends string> =
+  IsUntyped<B> extends true
+    ? { ok: true }
+    : true extends IsDynamic<B['q']>
+      ? { ok: true }
+      : B['q'] extends infer Q extends string
+        ? Q extends unknown
+          ? Resolve<B, StoredOp<OrdKey<B, Q, C>>>
+          : never
+        : never
+
+export type OrderReject<B extends BState, C extends string> =
+  OrderEntry<B, C> extends infer En
+    ? En extends { error: infer E extends string }
+      ? E
+      : En extends Unplanned
+        ? Strict extends true
+          ? UnplannedOperandMessage
+          : never
+        : never
+    : never
+
+export type OrderArg<B extends BState, C extends string> =
+  true extends IsDynamic<C>
+    ? C
+    : C extends keyof B['row']
+      ? C
+      : [OrderReject<B, C>] extends [never]
+        ? C
+        : OrderReject<B, C>
 
 // `.match({ ... })`: each key is checked like the column of `.eq(key, value)`. A known key takes its value type (or
 // `undefined`, which the runtime drops); one the operand lookup rejects takes the rejection message as its type, so the

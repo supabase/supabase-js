@@ -465,7 +465,8 @@ export class FileScanner {
     if (COLUMN_METHOD_SET.has(name) && columnIsRoot && args[0]) {
       const columns = resolveStrings(args[0], scope)
       const at = this.locateNode(args[0])
-      for (const c of columns ?? []) candidates.push({ operand: c, via: 'column', at })
+      const via = name === 'order' ? 'order' : 'column'
+      for (const c of columns ?? []) candidates.push({ operand: c, via, at })
     } else if (MATCH_METHOD_SET.has(name) && args[0]) {
       const at = this.locateNode(args[0])
       for (const c of objectKeys(args[0], scope) ?? []) {

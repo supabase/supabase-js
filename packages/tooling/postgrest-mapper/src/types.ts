@@ -76,8 +76,11 @@ export interface SelectRequest {
 /**
  * A filter or modifier call on a chain whose select is `select` at that point of the chain (`'*'` before any
  * `.select()`, as the builder's state says).
- * - `via: 'column'`: `operand` is the cooked column (`channels.id`, `metadata->theme`, a plain column too: the scanner
- *   doesn't know the relation's columns, planning skips plain ones);
+ * - `via: 'column'`: `operand` is the cooked column of a filter (`channels.id`, `metadata->theme`, a plain column too:
+ *   the scanner doesn't know the relation's columns, planning skips plain ones);
+ * - `via: 'order'`: `operand` is the cooked column of an `.order()` (`channels(id)`, `metadata->theme`, a plain column
+ *   too). It is a request of its own: an order column has another grammar than a filter column and is planned as an
+ *   `order` parameter;
  * - `via: 'referencedTable'`: the call carried `{ referencedTable: t }` and `operand` is `@t`. The column of such an
  *   `.order()` / `.filter()` belongs to the embed `t`, so it isn't recorded.
  */
@@ -85,7 +88,7 @@ export interface OperandRequest {
   target: PlanTarget
   select: string
   operand: string
-  via: 'column' | 'referencedTable'
+  via: 'column' | 'order' | 'referencedTable'
   locations: SourceLocation[]
 }
 

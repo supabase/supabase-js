@@ -64,7 +64,7 @@ import {
  * Bump when what the cache stores, or what the printer prints from it, changes. It is part of the identity and of
  * the cache validity, so the TypeScript server and the disk cache both see a new generator as a new input.
  */
-export const GENERATOR_REVISION = 11
+export const GENERATOR_REVISION = 12
 
 export interface GeneratorLogger {
   debug(message: string): void
@@ -805,7 +805,12 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
     }
 
     const operands: OperandInput[] = []
-    const rpcOperands = new Map<string, { operand: string; calls: RpcCall[]; plain: boolean }>()
+    const orderOf = (k: { via: 'column' | 'order' }): { order?: true } =>
+      k.via === 'order' ? { order: true } : {}
+    const rpcOperands = new Map<
+      string,
+      { operand: string; calls: RpcCall[]; plain: boolean; order: { order?: true } }
+    >()
     for (const k of operandKeys) {
       const outcome = outcomeOf(k.id)
       if (!outcome) continue
@@ -816,21 +821,26 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
           if (k.select !== '*' && 'error' in (outcomeOf(k.selectEntry) ?? {})) continue // the select reports it
           if (codeOf(k.id) === 'PGRST205' && k.schemaCount > 1) continue
         }
-        operands.push({ key: k.entry, operand: k.operand, outcome })
+        operands.push({ key: k.entry, operand: k.operand, outcome, ...orderOf(k) })
         continue
       }
       if ('error' in outcome) {
         if (dropped(k.id, k.exact, k.schemaCount)) continue
         if (k.select !== '*' && 'error' in (outcomeOf(callIdOf(k, k.select)) ?? {})) continue
       }
-      const group = rpcOperands.get(k.entry) ?? { operand: k.operand, calls: [], plain: true }
+      const group = rpcOperands.get(k.entry) ?? {
+        operand: k.operand,
+        calls: [],
+        plain: true,
+        order: orderOf(k),
+      }
       rpcOperands.set(k.entry, group)
       group.calls.push({ keys: k.keys, method: k.method, outcome })
       if (!rootFieldsOf(callIdOf(k, '*'))?.has(k.operand)) group.plain = false
     }
     for (const [key, group] of rpcOperands) {
       if (group.plain) continue // a column of every call's row: the consumer reads the row
-      operands.push({ key, operand: group.operand, calls: group.calls })
+      operands.push({ key, operand: group.operand, calls: group.calls, ...group.order })
     }
 
     const selects = printSelects(context, entries)

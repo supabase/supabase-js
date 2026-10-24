@@ -2,7 +2,7 @@ import fs = require('node:fs')
 import path = require('node:path')
 import ts = require('typescript')
 import { normalizeSelect, planKeysOf, planRequestOf, scanSource } from '../src'
-import { planRpcOf } from '../src/generate/requests'
+import { operandRequestOf, planOperandsOf, planRpcOf } from '../src/generate/requests'
 
 const keysOf = (source: string, exposedSchemas?: string[]) =>
   planKeysOf(scanSource('a.ts', source, exposedSchemas ? { exposedSchemas } : {})).map((k) => k.key)
@@ -142,5 +142,47 @@ describe('rpc plan keys of a select that no chain reaches', () => {
       ['f|public|f|x', ['a', 'b'], 'POST'],
       ['f|public|f|x', ['a'], 'POST'],
     ])
+  })
+})
+
+describe('order requests', () => {
+  const requestsOf = (source: string) =>
+    planOperandsOf(scanSource('a.ts', source, { exposedSchemas: ['public'] }), new Map()).map(
+      (k) => [k.entry, operandRequestOf(k).url] as const
+    )
+
+  it('plans an order column as an order parameter and a filter operand as a filter', () => {
+    expect(
+      requestsOf(
+        `supabase.from('messages').select('id, channels(id)').order('channels(id)').eq('channels.id', 1)`
+      )
+    ).toEqual([
+      [
+        'order|r|public|messages|id, channels(id)|channels(id)',
+        '/messages?select=id%2Cchannels(id)&order=channels(id).asc&channels(id)=is.null',
+      ],
+      [
+        'r|public|messages|id, channels(id)|channels.id',
+        '/messages?select=id%2Cchannels(id)&channels.id=is.null',
+      ],
+    ])
+  })
+
+  it('keeps an order column and a filter on the same name apart', () => {
+    const keys = requestsOf(
+      `supabase.from('messages').select('id, channels(id)').order('channels.id').eq('channels.id', 1)`
+    ).map(([key]) => key)
+    expect(keys).toEqual([
+      'order|r|public|messages|id, channels(id)|channels.id',
+      'r|public|messages|id, channels(id)|channels.id',
+    ])
+  })
+
+  it('does not plan the order column of a referencedTable', () => {
+    expect(
+      requestsOf(
+        `supabase.from('messages').select('id, channels(id)').order('id', { referencedTable: 'channels' })`
+      )
+    ).toEqual([])
   })
 })

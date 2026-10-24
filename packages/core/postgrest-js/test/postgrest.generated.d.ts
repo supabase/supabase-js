@@ -3028,6 +3028,7 @@ declare global {
   }
 
   interface SupabaseOperands {
+    'order|r|public|messages|id, channels(id)|channels(id)': { ok: true }
     'r|public|messages|id, channels(id)|channels.id': { type: SupabaseColumnType<'public.channels.id', number>; embed: ['channels'] }
     'r|public|users|username, ...messages(channels(channel_details(channels(id))))|messages.channels.channel_details.channels.id': { type: SupabaseColumnType<'public.channels.id', number>; embed: ['messages', 'channels', 'channel_details', 'channels'] }
     'r|public|users|username, ...messages(channels(id))|messages.channels.id': { type: SupabaseColumnType<'public.channels.id', number>; embed: ['messages', 'channels'] }
