@@ -342,14 +342,22 @@ project works this way.
   snapshot that is a file read. With a live source, Docker and the database must be up. A long-running process (`--watch`,
   the content mapper) reads a live schema once and keeps it in memory. It also keeps the planner loaded with that schema,
   so a regeneration only plans the new keys.
-- `postgrest-mapper refresh` clears the cache and reads the schema again.
+- `postgrest-mapper refresh` clears the cache and reads the schema again. It is rarely needed: use it to force a reload,
+  when polling is turned off, or in a one-shot run.
 
-**When the database changes.** Nothing listens to the database. `--watch` regenerates when a source file, the tsconfig
-chain or the snapshot file changes. After a migration:
+**When the database changes.** With a live source, `--watch` and the content mapper check the database for schema
+changes every 2 seconds (`pollIntervalMs` on the source, `0` or `false` to turn it off). The check is one read-only query
+over a connection they keep open. It hashes the catalog rows PostgREST's schema cache is built from, so `CREATE`, `ALTER`,
+`DROP` and `GRANT` change the hash while `ANALYZE`, `VACUUM`, `TRUNCATE` and `REFRESH MATERIALIZED VIEW` don't. When the
+hash moves, the poller writes it to a stamp file in the cache directory. The watcher sees the stamp change and reads the
+schema again, and so does the content mapper, which asks `tsc` to watch the same stamp. A migration therefore
+regenerates the types within a couple of seconds, with no command to run. The hash covers the whole database, so DDL in a
+schema PostgREST doesn't expose also triggers a regeneration, which re-reads the schema but leaves the output unchanged.
+A failed check keeps the last state, warns once and is retried at the next interval. One-shot commands (`generate`,
+`--check`, `snapshot`, `refresh`) never poll.
 
-- with a snapshot: run `postgrest-mapper snapshot` again. The watcher sees the new file and regenerates.
-- with a live source: run `postgrest-mapper refresh`. It touches a stamp file in the cache directory. A running watcher
-  sees the stamp change and reads the schema again. The content mapper asks `tsc` to watch the same stamp.
+With a snapshot, nothing polls: run `postgrest-mapper snapshot` again after a migration and commit the file. The watcher
+sees the new file and regenerates.
 
 ## What the mapper adds on top of the planner
 
@@ -552,7 +560,7 @@ responses).
 | -------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- | ---------------------------------------- |
 | Setup                      | `supabase gen types`, `createClient<Database>()` | `postgrest-mapper init` once, no type argument                        | Same, plus `--runExternalCode`           |
 | A new or edited select     | Typed as you type                                | Loose until you save, then typed a moment later by `generate --watch` | Typed by the compiler itself, no watcher |
-| Schema change              | Run `supabase gen types` again                   | `snapshot` (or `refresh` for a live source); the watcher regenerates  | Same                                     |
+| Schema change              | Run `supabase gen types` again                   | Automatic with a live source; `snapshot` again for a snapshot         | Same                                     |
 | Generated file in the repo | `database.types.ts`                              | `supabase.types.d.ts`                                                 | None, only the `.pgrst-index` stub       |
 | CI                         | `tsc`                                            | `generate --check`, then `tsc` with `unplanned: 'error'`              | `tsc --runExternalCode`                  |
 | Errors                     | Parser error types                               | PostgREST's messages at the call                                      | Same                                     |
