@@ -405,7 +405,7 @@ class ShapePrinter {
         if (path !== undefined) return path
       }
     }
-    // cast, count, sum, avg, computed, representation: the value is computed, nothing of the column's type is left
+    // cast, count, sum, avg, computed, representation, constant: the value is computed, nothing of the column's type is left
     const ty = field.pgType === null ? 'unknown' : tsTypeOf(field.pgType, this.context.types)
     return field.nullable ? orNull(ty) : ty
   }

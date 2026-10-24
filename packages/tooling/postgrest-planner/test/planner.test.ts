@@ -756,7 +756,7 @@ describe('postgrest-planner', () => {
         ['DELETE', '/empty_select_nopk?a=eq.1&select='],
       ] as const) {
         expect(summary(fieldsOf(run(method, url)))).toEqual([
-          ['?column?', 'int4', false, 'unresolved'],
+          ['?column?', 'int4', false, 'constant'],
         ])
       }
       // a select that names a column keeps what it names; an embed next to nothing is not an empty select

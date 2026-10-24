@@ -262,7 +262,7 @@ returnedKey :: Ctx -> QualifiedIdentifier -> [Field]
 returnedKey ctx@Ctx{cxTables} rel = case HM.lookup rel cxTables of
   Nothing -> [mkField "*" (unresolvedExpr ("unknown relation " <> qualified rel))]
   Just table -> case sort (nub (tablePKCols table)) of
-    [] -> [mkField "?column?" (Expr (Just "int4") Nothing False (unresolved "RETURNING 1: the table has no primary key") False)]
+    [] -> [mkField "?column?" (Expr (Just "int4") Nothing False (object ["kind" .= str "constant", "value" .= str "1"]) False)]
     keys -> [columnField ctx rel col | k <- keys, Just col <- [HMI.lookup k (tableColumns table)]]
 
 -- | The fields of a node that is not a to-one spread, and the notes they raise.

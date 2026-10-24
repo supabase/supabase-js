@@ -233,6 +233,8 @@ export type FieldProvenance =
   | { kind: 'outColumn'; function: QualifiedName; column: string }
   /** An attribute of the named composite type an RPC returns. */
   | { kind: 'compositeAttribute'; type: QualifiedName; attribute: string }
+  /** A literal the statement itself produces: the `1` of the `RETURNING 1` of an empty select on a table without a primary key. */
+  | { kind: 'constant'; value: string }
   | { kind: 'unresolved'; reason: string }
 
 export interface ShapeField {
