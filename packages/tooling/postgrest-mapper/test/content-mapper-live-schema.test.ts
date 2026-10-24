@@ -219,4 +219,36 @@ describe('content mapper server over a live schema', () => {
       )
     }
   }, 180_000)
+
+  it('transforms to the schema of the moment a project is reopened, whatever changed while it was closed', async () => {
+    const s = start()
+    try {
+      await s.client.request('initialize', INITIALIZE)
+      await withCatalogLock(dbUrl, () =>
+        admin.query(`ALTER TABLE ${scratch}.items ADD COLUMN reopen_column int NOT NULL DEFAULT 0`)
+      )
+      await s.open('a')
+      await until(() => s.polls.fingerprints > 0, 'the baseline')
+      const before = await s.transform('a')
+      const column = `reopen_column: SupabaseColumnType<'${scratch}.items.reopen_column', number>`
+      expect(before).toContain(`${column}\n`)
+
+      await s.client.request('closeProject', { projectHandle: 'a' })
+      await until(
+        () => [...s.polls.polling].every((id) => !s.polls.open.has(id)),
+        'the poller to close its connection'
+      )
+      await withCatalogLock(dbUrl, () =>
+        admin.query(`ALTER TABLE ${scratch}.items ALTER COLUMN reopen_column DROP NOT NULL`)
+      )
+      await s.open('a')
+      const after = await s.transform('a')
+      expect(after).toContain(`${column} | null\n`)
+    } finally {
+      await s.stop()
+      await withCatalogLock(dbUrl, () =>
+        admin.query(`ALTER TABLE ${scratch}.items DROP COLUMN IF EXISTS reopen_column`)
+      )
+    }
+  }, 180_000)
 })

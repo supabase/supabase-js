@@ -363,6 +363,8 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
     if (entry.holders.size > 0) return
     pollers.delete(key)
     void entry.poller.stop()
+    // nothing watches the database any more, so the schema read from it can no longer be trusted: the next open reads it again
+    schemas.delete(key)
   }
   const release = (holder: string): void => {
     for (const key of [...pollers.keys()]) leave(key, holder)
