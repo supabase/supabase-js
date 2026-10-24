@@ -54,13 +54,17 @@ const postgrest = new PostgrestClient(REST_URL)
 
 #### Typing
 
-Query results are typed by a planner: a separate tool scans your queries and emits global interfaces (`SupabaseSelects`, `SupabaseOperands`, `SupabaseDatabase`, `SupabasePgrstStatus`, `SupabaseColumnTypes`) that the builders look up, so `select('id, channels(id)')` returns the row that query produces and filters take the column's type. The client no longer parses select strings at the type level and takes no `Database` type for inference; `new PostgrestClient<Database>()` still accepts a `supabase gen types typescript` database.
+Query results are typed by a planner: the real PostgREST planner (upstream PostgREST compiled to wasm) answers for every query in your project, and the `@supabase/postgrest-mapper` generator writes the answers as global interfaces (`SupabaseSelects`, `SupabaseOperands`, `SupabaseDatabase`, `SupabasePgrstStatus`, `SupabaseColumnTypes`) that the builders look up. `select('id, channels(id)')` returns the row that query produces, and filters take the column's type. The client no longer parses select strings at the type level.
 
-Without the generated interfaces every query is accepted and its rows are `Record<string, unknown>`; with `SupabasePgrstStatus['unplanned']` set to `'error'`, a query the planner didn't index is a type error. When you need to state a result yourself, use `.cast<T>()`, which replaces the builder's `.returns<T>()` and `.overrideTypes<T>()` and does nothing at runtime:
+A chain the generated declarations don't cover is typed from the `Database` you pass (`new PostgrestClient<Database>()` with a `supabase gen types typescript` database): the relation's `Row` with its own keys typed and any other key `any`, and an rpc answers with the function's `Returns`. A Database without named columns, or no Database, gives `Record<string, unknown>` rows. With `SupabasePgrstStatus['unplanned']` set to `'error'`, a chain the generator didn't cover is a type error and the fallback is off.
+
+When you need to state a result yourself, use `.cast<T>()`, which takes the type of one row and does nothing at runtime. `.returns<T>()`, `.overrideTypes<T>()` and the `foreignTable` option still work but are deprecated:
 
 ```ts
 const { data } = await postgrest.from('users').select(columns).cast<{ id: number }>()
 ```
+
+To set up generation, and for the v2 to v3 changes, see the [migration guide](./migrations/v3-planner-types.md).
 
 To type a column yourself everywhere it appears (selects, filters, mutation payloads), declare it in `SupabaseColumnTypes`, keyed by `schema.table.column`; the column's own nullability stays outside. Postgres arrays are typed with non-null, one-dimensional elements (`int4[]` is `number[]`), because Postgres doesn't enforce element nullability or dimensions; override a column that holds `NULL` elements or nested arrays:
 
