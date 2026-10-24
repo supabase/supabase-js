@@ -292,6 +292,7 @@ postgrest-mapper snapshot --out supabase/postgrest-schema.json [--check] [--work
 
 - `refresh` removes `node_modules/.cache/postgrest-mapper` of the project, touches `refresh.stamp` there and regenerates. A live schema is acquired once per process, but the stamp is one of the generated module's dependencies: a watch or a content mapper server running elsewhere sees it change and acquires the schema again. After a migration `refresh` is no longer needed while one of them runs (they poll the database and write the stamp themselves); it stays for the plan cache, for a poll that is turned off, and for one-shot use.
 - The CLI threads no schema options of its own, so there is no `--timeout` flag; `deps.schema.timeoutMs` reaches `generate`, `write`, `check`, `watch`, `refresh` and `snapshot` through the operations' `deps`.
+- Limits of `init`: it reads the `include` and `files` a tsconfig inherits, not an inherited `exclude`, so a base `exclude` that covers the index or the generated file still hides it (remove the file from that `exclude`). The scripts put a path with other characters than letters, digits and `@%+=:,./-` in double quotes, where a `$` or a backtick is still expanded by the shell: edit those scripts by hand. In content-mapper mode there is no `postgrest:check`: CI runs `tsc --runExternalCode`, which reads the schema the entry names, so a `supabase-local` entry needs the stack in CI.
 
 ## Node
 
