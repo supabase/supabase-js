@@ -1,9 +1,11 @@
-import { dirname, posix as posixPath, relative, resolve, sep } from 'node:path'
+import { dirname, join, posix as posixPath, relative, resolve, sep } from 'node:path'
 import { createPlannerHost } from '../host'
 import { findSupabaseConfigDir, loadFileSets, stripJsonc } from '../generate'
 import { INDEX_EXTENSION, display, isIndexEntry, messageOf } from './config'
-import { addToArray, addToStringArray, parseJsonc } from './jsonc'
-import { OperationError, resolveDeps, type OperationDeps } from './types'
+import { write } from './generate'
+import { addToArray, addToObject, addToStringArray, parseJsonc } from './jsonc'
+import { snapshot } from './snapshot'
+import { OperationError, resolveDeps, type OperationDeps, type ResolvedDeps } from './types'
 
 /** Where `init` points the project when `out` is not given, as in the design's examples. */
 export const DEFAULT_OUT = 'src/supabase.types.d.ts'
@@ -21,6 +23,12 @@ export interface InitInput {
   project?: string
   /** The declaration file `generate` writes. Defaults to `src/supabase.types.d.ts` next to the tsconfig */
   out?: string
+  /** Take a snapshot of the live schema into `supabase/postgrest-schema.json` when the source is `supabase-local`. Defaults to true */
+  snapshot?: boolean
+  /** Write the declaration file once the project is configured. Defaults to true */
+  generate?: boolean
+  /** Add the `postgrest:*` scripts to the nearest package.json. Defaults to true */
+  scripts?: boolean
 }
 
 export interface InitChange {
@@ -40,6 +48,27 @@ export interface InitResult {
   index: string
   /** The schema source of the entry `init` added; undefined when the tsconfig already had one */
   schemaSource?: 'supabase-local' | 'snapshot'
+  /** The snapshot step; undefined when it did not apply (no live source) or was switched off. `skipped`: the stack could not be read */
+  snapshot?: {
+    /** Absolute path */
+    file: string
+    status: 'written' | 'unchanged' | 'skipped'
+    reason?: string
+  }
+  /** The generate step; undefined when switched off. `skipped`: no schema could be acquired, or the project reported diagnostics */
+  generate?: { status: 'written' | 'unchanged' | 'skipped'; reason?: string }
+  /** The scripts step; undefined when switched off. Without a package.json `packageJson` is unset and `reason` says why */
+  scripts?: {
+    /** Script names `init` inserted */
+    added: string[]
+    /** Script names that were there already, and were left as they are */
+    existing: string[]
+    /** Absolute path of the package.json the scripts live in */
+    packageJson?: string
+    /** Whether that package.json lists `@supabase/postgrest-mapper`, which the scripts' `postgrest-mapper` binary comes from */
+    installed?: boolean
+    reason?: string
+  }
   /** Empty when the project was already set up */
   changes: InitChange[]
 }
@@ -104,6 +133,7 @@ export function entryCovers(entry: string, file: string): boolean {
  */
 export async function init(deps: OperationDeps, input: InitInput = {}): Promise<InitResult> {
   const { fs, cwd, ...rest } = resolveDeps(deps)
+  const base: ResolvedDeps = { ...rest, fs, cwd }
   const configFileName = resolve(cwd, input.project ?? 'tsconfig.json')
   const projectDir = dirname(configFileName)
   const shown = (path: string): string => display(cwd, path)
@@ -154,7 +184,10 @@ export async function init(deps: OperationDeps, input: InitInput = {}): Promise<
 
   // the planner is asked before anything is written, and only when an entry has to be added
   const { contentMappers } = JSON.parse(stripJsonc(text)) as { contentMappers?: unknown }
-  const hasEntry = Array.isArray(contentMappers) && contentMappers.some(isIndexEntry)
+  const existingEntry = Array.isArray(contentMappers)
+    ? contentMappers.find(isIndexEntry)
+    : undefined
+  const hasEntry = existingEntry !== undefined
   let schemaSource: InitResult['schemaSource']
   let entry: unknown
   if (!hasEntry) {
@@ -239,7 +272,192 @@ export async function init(deps: OperationDeps, input: InitInput = {}): Promise<
     break
   }
 
-  return { configFileName, out, index, ...(schemaSource ? { schemaSource } : {}), changes }
+  // the declarations are generated from the schema the entry names; a live source is also saved as a snapshot, which
+  // is what CI reads
+  const source =
+    schemaSource ??
+    (existingEntry as { options?: { schema?: { source?: unknown } } } | undefined)?.options?.schema
+      ?.source
+  const live = source === 'supabase-local'
+  const workdir = live ? ((await findSupabaseConfigDir(fs, projectDir)) ?? projectDir) : undefined
+  const snapshotFile = resolve(projectDir, DEFAULT_SNAPSHOT)
+  const exists = (file: string): Promise<boolean> =>
+    fs.readFile(file).then(
+      () => true,
+      () => false
+    )
+
+  let snapshotStep: InitResult['snapshot']
+  if (workdir !== undefined && input.snapshot !== false) {
+    const existed = await exists(snapshotFile)
+    try {
+      const result = await snapshot(base, { out: snapshotFile, workdir })
+      const status = result.status === 'written' ? 'written' : 'unchanged'
+      if (status === 'written') {
+        const action = existed ? 'edited' : 'created'
+        changes.push({ file: snapshotFile, action, message: 'wrote the schema snapshot' })
+      }
+      snapshotStep = { file: snapshotFile, status }
+    } catch (error) {
+      snapshotStep = { file: snapshotFile, status: 'skipped', reason: firstLine(messageOf(error)) }
+    }
+  }
+
+  let generateStep: InitResult['generate']
+  if (input.generate !== false) {
+    const existed = await exists(out)
+    try {
+      const result = await write(base, { project: configFileName, out })
+      if (!result.ok) {
+        generateStep = { status: 'skipped', reason: diagnosticsReason(result.diagnostics) }
+      } else {
+        if (result.changed) {
+          const action = existed ? 'edited' : 'created'
+          changes.push({ file: out, action, message: 'generated the declarations' })
+        }
+        generateStep = { status: result.changed ? 'written' : 'unchanged' }
+      }
+    } catch (error) {
+      generateStep = { status: 'skipped', reason: firstLine(messageOf(error)) }
+    }
+  }
+
+  const scriptsStep =
+    input.scripts === false
+      ? undefined
+      : await addScripts(fs, changes, {
+          configFileName,
+          out,
+          snapshotFile,
+          workdir,
+          shown,
+        })
+
+  return {
+    configFileName,
+    out,
+    index,
+    ...(schemaSource ? { schemaSource } : {}),
+    ...(snapshotStep ? { snapshot: snapshotStep } : {}),
+    ...(generateStep ? { generate: generateStep } : {}),
+    ...(scriptsStep ? { scripts: scriptsStep } : {}),
+    changes,
+  }
+}
+
+const firstLine = (message: string): string => message.trim().split('\n')[0]!.trim()
+
+function diagnosticsReason(diagnostics: { message: string }[]): string {
+  const [first, ...more] = diagnostics
+  if (!first) return 'the project reported a problem'
+  return `${firstLine(first.message)}${more.length > 0 ? ` (and ${more.length} more)` : ''}`
+}
+
+/** A path as a shell word: left alone unless it holds a character the shell would read. */
+const word = (path: string): string => (/^[\w@%+=:,./-]+$/.test(path) ? path : JSON.stringify(path))
+
+/** The nearest package.json at or above `startDir`, with its text. */
+async function findPackageJson(
+  fs: ResolvedDeps['fs'],
+  startDir: string
+): Promise<{ file: string; text: string } | undefined> {
+  for (let dir = startDir; ; dir = dirname(dir)) {
+    const file = join(dir, 'package.json')
+    try {
+      return { file, text: await fs.readFile(file) }
+    } catch {
+      // keep climbing
+    }
+    if (dirname(dir) === dir) return undefined
+  }
+}
+
+/**
+ * Adds the `postgrest:*` scripts that are missing to the nearest package.json (existing ones stay as they are), with
+ * paths relative to that package.json. The check script of a live source reads the snapshot, so CI needs no database.
+ */
+async function addScripts(
+  fs: ResolvedDeps['fs'],
+  changes: InitChange[],
+  project: {
+    configFileName: string
+    out: string
+    snapshotFile: string
+    workdir: string | undefined
+    shown: (path: string) => string
+  }
+): Promise<NonNullable<InitResult['scripts']>> {
+  const found = await findPackageJson(fs, dirname(project.configFileName))
+  if (!found) {
+    return {
+      added: [],
+      existing: [],
+      reason: 'no package.json found at or above the project',
+    }
+  }
+  const packageDir = dirname(found.file)
+  const rel = (path: string): string => word(posix(relative(packageDir, path)) || '.')
+  const generateCommand = `postgrest-mapper generate${
+    resolve(packageDir, 'tsconfig.json') === project.configFileName
+      ? ''
+      : ` --project ${rel(project.configFileName)}`
+  } --out ${rel(project.out)}`
+  const scripts: [string, string][] = [
+    ['postgrest:watch', `${generateCommand} --watch`],
+    [
+      'postgrest:check',
+      `${generateCommand} --check${
+        project.workdir !== undefined ? ` --snapshot ${rel(project.snapshotFile)}` : ''
+      }`,
+    ],
+  ]
+  if (project.workdir !== undefined) {
+    scripts.push([
+      'postgrest:snapshot',
+      `postgrest-mapper snapshot --out ${rel(project.snapshotFile)}${
+        project.workdir === packageDir ? '' : ` --workdir ${rel(project.workdir)}`
+      }`,
+    ])
+  }
+  const added: string[] = []
+  const existing: string[] = []
+  let text = found.text
+  try {
+    for (const [name, command] of scripts) {
+      const next = addToObject(text, 'scripts', name, command)
+      if (next === undefined) existing.push(name)
+      else {
+        text = next
+        added.push(name)
+      }
+    }
+    const manifest = JSON.parse(stripJsonc(text)) as Record<string, unknown>
+    const installed = [
+      'dependencies',
+      'devDependencies',
+      'peerDependencies',
+      'optionalDependencies',
+    ]
+      .map((field) => manifest[field])
+      .some(
+        (deps) => typeof deps === 'object' && deps !== null && '@supabase/postgrest-mapper' in deps
+      )
+    if (text !== found.text) {
+      await fs.writeFile(found.file, text)
+      changes.push({
+        file: found.file,
+        action: 'edited',
+        message: `added the ${added.join(', ')} script${added.length > 1 ? 's' : ''}`,
+      })
+    }
+    return { added, existing, packageJson: found.file, installed }
+  } catch (error) {
+    return {
+      added: [],
+      existing: [],
+      reason: `cannot edit ${project.shown(found.file)}: ${messageOf(error)}`,
+    }
+  }
 }
 
 /** `16.4` for a planner that models PostgREST 16.4.x: the `postgrest` option names a line. */

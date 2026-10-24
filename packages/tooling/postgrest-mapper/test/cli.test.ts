@@ -257,6 +257,8 @@ describe('postgrest-mapper init', () => {
       'tsconfig.json',
       '--out',
       'src/gen/supabase.d.ts',
+      '--skip-generate',
+      '--skip-scripts',
     ])
     expect(result.stdout).toContain('already set up')
     expect(readFileSync(join(p.dir, 'tsconfig.json'), 'utf8')).toBe(config)

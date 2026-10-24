@@ -44,7 +44,7 @@ const COMMANDS = {
   generate: ['project', 'out', 'check', 'watch', 'schema-source', 'snapshot', 'db-url-env'],
   print: ['project', 'schema-source', 'snapshot', 'db-url-env'],
   refresh: ['project', 'out', 'schema-source', 'snapshot', 'db-url-env'],
-  init: ['project', 'out'],
+  init: ['project', 'out', 'skip-snapshot', 'skip-generate', 'skip-scripts'],
   snapshot: [
     'out',
     'check',
@@ -88,6 +88,9 @@ function parseFlags(argv: string[]): {
         'supabase-command': { type: 'string' },
         image: { type: 'string' },
         network: { type: 'string' },
+        'skip-snapshot': { type: 'boolean' },
+        'skip-generate': { type: 'boolean' },
+        'skip-scripts': { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
         version: { type: 'boolean', short: 'v' },
       },
@@ -129,6 +132,9 @@ function parseFlags(argv: string[]): {
   set('supabaseCommand', values['supabase-command'])
   set('image', values.image)
   set('network', values.network)
+  set('skipSnapshot', values['skip-snapshot'])
+  set('skipGenerate', values['skip-generate'])
+  set('skipScripts', values['skip-scripts'])
   if ((command === 'generate' || command === 'snapshot') && flags.out === undefined) {
     throw new UsageError(`'${command}' needs --out`)
   }
@@ -237,17 +243,55 @@ async function runInit(ctx: Context, flags: Flags): Promise<number> {
   const result = await init(ctx.deps, {
     ...(flags.project !== undefined ? { project: flags.project } : {}),
     ...(flags.out !== undefined ? { out: flags.out } : {}),
+    ...(flags.skipSnapshot ? { snapshot: false } : {}),
+    ...(flags.skipGenerate ? { generate: false } : {}),
+    ...(flags.skipScripts ? { scripts: false } : {}),
   })
   for (const change of result.changes) {
     ctx.stdout.write(`${display(ctx.cwd, change.file)}: ${change.message}\n`)
   }
   if (result.changes.length === 0) {
     ctx.stdout.write(`${display(ctx.cwd, result.out)} is already set up\n`)
-  } else if (result.schemaSource === 'snapshot') {
+    return 0
+  }
+  const { snapshot: snap, generate: gen, scripts } = result
+  if (snap?.status === 'skipped') {
+    ctx.stdout.write(`${display(ctx.cwd, snap.file)}: snapshot skipped: ${snap.reason}\n`)
+  }
+  if (gen?.status === 'skipped') {
+    ctx.stdout.write(`${display(ctx.cwd, result.out)}: generate skipped: ${gen.reason}\n`)
+  }
+  if (scripts?.reason !== undefined) ctx.stdout.write(`scripts skipped: ${scripts.reason}\n`)
+  const named = [...(scripts?.added ?? []), ...(scripts?.existing ?? [])]
+  const live = named.includes('postgrest:snapshot')
+  ctx.stdout.write('next steps:\n')
+  if (scripts?.installed === false) {
     ctx.stdout.write(
-      "no supabase/config.toml found: write the schema with 'postgrest-mapper snapshot --out supabase/postgrest-schema.json'\n"
+      '  add @supabase/postgrest-mapper to devDependencies: the scripts run its binary\n'
     )
   }
+  if (result.schemaSource === 'snapshot' && gen?.status !== 'written') {
+    ctx.stdout.write(
+      "  no supabase/config.toml found: write the schema with 'postgrest-mapper snapshot --out supabase/postgrest-schema.json'\n"
+    )
+  } else if (snap?.status === 'skipped') {
+    ctx.stdout.write(
+      "  start the local stack, then write the snapshot with 'postgrest-mapper snapshot --out supabase/postgrest-schema.json'\n"
+    )
+  }
+  if (named.includes('postgrest:watch'))
+    ctx.stdout.write('  postgrest:watch regenerates the declarations while you develop\n')
+  if (named.includes('postgrest:check')) {
+    ctx.stdout.write(
+      `  postgrest:check fails CI when they are stale${live ? ', from the committed snapshot: no database needed' : ''}\n`
+    )
+  }
+  if (live) {
+    ctx.stdout.write(
+      '  postgrest:snapshot after each migration, then commit supabase/postgrest-schema.json\n'
+    )
+  }
+  ctx.stdout.write('  on TypeScript 7.1 the content mapper in the tsconfig replaces the watcher\n')
   return 0
 }
 

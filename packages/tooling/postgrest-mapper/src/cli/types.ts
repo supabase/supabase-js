@@ -47,4 +47,7 @@ export interface Flags {
   supabaseCommand?: string
   image?: string
   network?: string
+  skipSnapshot?: boolean
+  skipGenerate?: boolean
+  skipScripts?: boolean
 }

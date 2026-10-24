@@ -4,7 +4,7 @@ Usage:
   postgrest-mapper generate --project <tsconfig> --out <file.d.ts> [--check | --watch]
   postgrest-mapper print    --project <tsconfig>
   postgrest-mapper refresh  --project <tsconfig> [--out <file.d.ts>]
-  postgrest-mapper init     --project <tsconfig> [--out <file.d.ts>]
+  postgrest-mapper init     --project <tsconfig> [--out <file.d.ts>] [--skip-snapshot] [--skip-generate] [--skip-scripts]
   postgrest-mapper snapshot --out <file.json> [--check]
 
 Commands:
@@ -15,10 +15,14 @@ Commands:
              that makes a running watch or content mapper server acquire the live schema again, and
              regenerates. A watch or server already polls the database for migrations (pollIntervalMs),
              so refresh is for a forced reload.
-  init       Sets a project up: adds the .pgrst-index contentMappers entry to the tsconfig (schema source
-             supabase-local next to a supabase/config.toml, a snapshot otherwise), creates the index file,
-             adds it and the generated file to "include" (or "files") and, next to a deno.json, to
-             "compilerOptions.types". Comments are kept; running it again changes nothing.
+  init       Sets a project up so that it works in one command: adds the .pgrst-index contentMappers entry
+             to the tsconfig (schema source supabase-local next to a supabase/config.toml, a snapshot
+             otherwise), creates the index file, adds it and the generated file to "include" (or "files")
+             and, next to a deno.json, to "compilerOptions.types". With supabase-local it then writes
+             supabase/postgrest-schema.json from the running stack, generates the declarations once and adds
+             postgrest:watch, postgrest:check (reads the snapshot: no database in CI) and postgrest:snapshot to
+             the nearest package.json (scripts that exist stay as they are). A step that cannot run (stack
+             down, no schema yet) is reported, not fatal. Comments are kept; running it again changes nothing.
   snapshot   Acquires the schema and writes a snapshot file; --check compares instead of writing.
 
 Options:
@@ -35,6 +39,9 @@ Options:
   --network <name>           snapshot: docker network (postgrest source)
   --check                    Compare instead of writing (generate, snapshot)
   --watch                    Regenerate on changes (generate)
+  --skip-snapshot            init: do not write the schema snapshot
+  --skip-generate            init: do not generate the declarations
+  --skip-scripts             init: do not add the postgrest:* scripts to package.json
   --help, --version
 
 Exit codes: 0 success, 1 failure (diagnostics, drift, acquisition errors), 2 usage error.

@@ -239,3 +239,29 @@ export function addToStringArray(
     )
   )
 }
+
+/**
+ * Adds `key: value` to the object at the top-level property `parent` (created when missing), in the indentation the
+ * file already uses, leaving every other byte of `text` as it was. Returns `undefined` when the object has the key.
+ */
+export function addToObject(
+  text: string,
+  parent: string,
+  key: string,
+  value: string
+): string | undefined {
+  const root = parseJsonc(text)
+  if (root.kind !== 'object') throw new Error('the top-level value must be an object')
+  const container = root.properties.find((p) => p.key === parent)?.value
+  if (!container) {
+    const first = root.properties[0]
+    const indent = first ? lineIndent(text, first.keyStart) : ''
+    const literal = JSON.stringify({ [key]: value }, null, indent || '  ')
+      .split('\n')
+      .join(`\n${indent}`)
+    return insertIntoObject(text, root, parent, literal)
+  }
+  if (container.kind !== 'object') throw new Error(`'${parent}' must be an object`)
+  if (container.properties.some((p) => p.key === key)) return undefined
+  return insertIntoObject(text, container, key, JSON.stringify(value))
+}

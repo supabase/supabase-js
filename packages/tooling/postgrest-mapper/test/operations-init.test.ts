@@ -52,6 +52,9 @@ const deps = (extra: OperationDeps = {}): OperationDeps => ({
   ...extra,
 })
 
+/** Only the config edits: the tests of those do not need a schema, a generated file or a package.json */
+const BARE = { snapshot: false, generate: false, scripts: false }
+
 const SOURCE =
   "declare const supabase: any\nexport const q = supabase.from('users').select('username')\n"
 
@@ -103,7 +106,7 @@ describe('init sets a fresh project up so that generate succeeds', () => {
     put('tsconfig.json', '{ "include": ["src"] }')
     put('src/app.ts', SOURCE)
 
-    const result = await init(deps())
+    const result = await init(deps(), BARE)
     expect(result.schemaSource).toBe('supabase-local')
     expect(JSON.parse(read('tsconfig.json')).contentMappers[0].options.schema).toEqual({
       source: 'supabase-local',
@@ -116,12 +119,12 @@ describe('init sets a fresh project up so that generate succeeds', () => {
 
   it('is idempotent: a project that is set up gets no change, and the index file is not overwritten', async () => {
     put('tsconfig.json', '{ "include": ["src"] }')
-    const first = await init(deps())
+    const first = await init(deps(), BARE)
     expect(first.changes.length).toBeGreaterThan(0)
     const tsconfig = read('tsconfig.json')
     put('src/supabase.pgrst-index', '// edited by the user\n')
 
-    const second = await init(deps())
+    const second = await init(deps(), BARE)
     expect(second.changes).toEqual([])
     expect(second.schemaSource).toBeUndefined()
     expect(read('tsconfig.json')).toBe(tsconfig)
@@ -131,7 +134,7 @@ describe('init sets a fresh project up so that generate succeeds', () => {
   describe('adds a file to include unless a pattern of include matches it as TypeScript does', () => {
     const included = async (include: string[]): Promise<string[]> => {
       put('tsconfig.json', JSON.stringify({ include }))
-      await init(deps())
+      await init(deps(), BARE)
       return JSON.parse(read('tsconfig.json')).include
     }
 
@@ -226,7 +229,7 @@ describe('init sets a fresh project up so that generate succeeds', () => {
 
   describe('respects the include an extends chain provides', () => {
     const run = async (): Promise<string[]> => {
-      await init(deps(), { out: 'src/supabase.types.d.ts' })
+      await init(deps(), { out: 'src/supabase.types.d.ts', ...BARE })
       return JSON.parse(read('tsconfig.json')).include
     }
     const projectFiles = async (): Promise<string[]> =>
@@ -260,7 +263,7 @@ describe('init sets a fresh project up so that generate succeeds', () => {
       put('base.json', '{ "include": ["src"] }')
       put('tsconfig.json', '{ "extends": "./base.json" }')
 
-      const result = await init(deps(), { out: 'src/supabase.types.d.ts' })
+      const result = await init(deps(), { out: 'src/supabase.types.d.ts', ...BARE })
       expect(JSON.parse(read('tsconfig.json'))).not.toHaveProperty('include')
       expect(result.changes.map((c) => c.message)).toEqual([
         'added the .pgrst-index entry to contentMappers',
@@ -284,7 +287,8 @@ describe('init sets a fresh project up so that generate succeeds', () => {
         createHost: () => {
           throw new Error('the planner must not start')
         },
-      })
+      }),
+      BARE
     )
     expect(result.changes).toEqual([])
   })
@@ -303,4 +307,307 @@ describe('init sets a fresh project up so that generate succeeds', () => {
     expect(code).toBe(1)
     expect(stderr).toContain('cannot read missing.json')
   })
+})
+
+describe('init leaves a working setup in one command', () => {
+  const SCRIPT_NAMES = ['postgrest:watch', 'postgrest:check', 'postgrest:snapshot']
+  const downExec: ExecFn = async () => {
+    throw new Error('the stack is down')
+  }
+  const scriptsOf = (name = 'package.json'): Record<string, string> =>
+    JSON.parse(read(name)).scripts
+  /** The CLI arguments of a script (`postgrest-mapper <args>`), run against the project like a package script would */
+  const runScript = async (
+    script: string,
+    extra: Partial<Parameters<typeof runCli>[1]> = {}
+  ): Promise<{ code: number; stdout: string; stderr: string }> => {
+    const [bin, ...args] = script.split(' ')
+    expect(bin).toBe('postgrest-mapper')
+    let stdout = ''
+    let stderr = ''
+    const code = await runCli(args, {
+      stdout: { write: (chunk) => (stdout += chunk) },
+      stderr: { write: (chunk) => (stderr += chunk) },
+      cwd: dir,
+      env: { ...process.env },
+      ...(wasm ? { deps: { wasmPath: wasm } } : {}),
+      ...extra,
+    })
+    return { code, stdout, stderr }
+  }
+
+  it('without a supabase/config.toml: snapshot source, no snapshot attempt, generated file, watch and check scripts', async () => {
+    put('tsconfig.json', '{ "include": ["src"] }')
+    put(
+      'package.json',
+      '{\n    "name": "app",\n    "scripts": {\n        "test": "jest"\n    }\n}\n'
+    )
+    put('src/app.ts', SOURCE)
+    await writeSnapshot(join(dir, 'supabase', 'postgrest-schema.json'), acquired)
+
+    const result = await init(
+      deps({
+        schema: {
+          exec: () => {
+            throw new Error('no snapshot may be taken')
+          },
+        },
+      })
+    )
+    expect(result.schemaSource).toBe('snapshot')
+    expect(result.snapshot).toBeUndefined()
+    expect(result.generate).toEqual({ status: 'written' })
+    expect(read('src/supabase.types.d.ts')).toContain('r|public|users|username')
+    expect(result.scripts).toEqual({
+      added: ['postgrest:watch', 'postgrest:check'],
+      existing: [],
+      packageJson: join(dir, 'package.json'),
+      installed: false,
+    })
+    // inserted in the style of the file: four spaces, the existing script untouched
+    expect(read('package.json')).toBe(
+      '{\n    "name": "app",\n    "scripts": {\n        "test": "jest",\n' +
+        '        "postgrest:watch": "postgrest-mapper generate --out src/supabase.types.d.ts --watch",\n' +
+        '        "postgrest:check": "postgrest-mapper generate --out src/supabase.types.d.ts --check"\n    }\n}\n'
+    )
+    expect(result.changes.map((c) => [c.file, c.action])).toEqual([
+      [join(dir, 'tsconfig.json'), 'edited'],
+      [join(dir, 'src', 'supabase.pgrst-index'), 'created'],
+      [join(dir, 'src', 'supabase.types.d.ts'), 'created'],
+      [join(dir, 'package.json'), 'edited'],
+    ])
+    // the scripts work as written
+    expect(await runScript(scriptsOf()['postgrest:check']!)).toMatchObject({
+      code: 0,
+      stdout: 'src/supabase.types.d.ts is up to date\n',
+    })
+  }, 120_000)
+
+  it('without a snapshot file and a stack, generate is skipped with its reason and init still succeeds', async () => {
+    put('tsconfig.json', '{ "include": ["src"] }')
+    put('src/app.ts', SOURCE)
+    const result = await init(deps())
+    expect(result.generate).toMatchObject({ status: 'skipped', reason: expect.any(String) })
+    expect(result.generate?.reason).toBeTruthy()
+    // no package.json at or above the project: no scripts, and the note says so
+    expect(result.scripts).toMatchObject({ added: [], existing: [] })
+    expect(result.scripts?.packageJson).toBeUndefined()
+    expect(result.scripts?.reason).toMatch(/package\.json/)
+    expect(result.changes.map((c) => c.file)).toEqual([
+      join(dir, 'tsconfig.json'),
+      join(dir, 'src', 'supabase.pgrst-index'),
+    ])
+  }, 120_000)
+
+  it('with a supabase/config.toml but no running stack: the source stays supabase-local, the snapshot and generate are skipped', async () => {
+    put('supabase/config.toml', 'project_id = "not-running"\n')
+    put('tsconfig.json', '{ "include": ["src"] }')
+    put('package.json', '{ "name": "app" }\n')
+    put('src/app.ts', SOURCE)
+
+    const result = await init(deps({ schema: { exec: downExec } }))
+    expect(result.schemaSource).toBe('supabase-local')
+    expect(result.snapshot).toMatchObject({
+      file: join(dir, 'supabase', 'postgrest-schema.json'),
+      status: 'skipped',
+      reason: expect.stringContaining('the stack is down'),
+    })
+    expect(result.generate).toMatchObject({ status: 'skipped' })
+    expect(JSON.parse(read('tsconfig.json')).contentMappers[0].options.schema).toEqual({
+      source: 'supabase-local',
+    })
+    expect(() => read('supabase/postgrest-schema.json')).toThrow()
+    // the scripts are there for when the stack is up
+    expect(result.scripts?.added).toEqual(SCRIPT_NAMES)
+    expect(scriptsOf()).toEqual({
+      'postgrest:watch': 'postgrest-mapper generate --out src/supabase.types.d.ts --watch',
+      'postgrest:check':
+        'postgrest-mapper generate --out src/supabase.types.d.ts --check --snapshot supabase/postgrest-schema.json',
+      'postgrest:snapshot': 'postgrest-mapper snapshot --out supabase/postgrest-schema.json',
+    })
+  }, 120_000)
+
+  it('against the running stack: writes the snapshot, keeps the live source, generates, and the CI script passes from the snapshot alone', async () => {
+    put('supabase/config.toml', 'project_id = "test"\n')
+    put('tsconfig.json', '{ "include": ["src"] }')
+    put('package.json', '{\n  "name": "app"\n}\n')
+    put('src/app.ts', SOURCE)
+
+    const result = await init(deps({ schema: { exec: stackExec } }))
+    expect(result.schemaSource).toBe('supabase-local')
+    expect(result.snapshot).toEqual({
+      file: join(dir, 'supabase', 'postgrest-schema.json'),
+      status: 'written',
+    })
+    expect(JSON.parse(read('supabase/postgrest-schema.json')).dump).toBeDefined()
+    expect(JSON.parse(read('tsconfig.json')).contentMappers[0].options.schema).toEqual({
+      source: 'supabase-local',
+    })
+    expect(result.generate).toEqual({ status: 'written' })
+    expect(read('src/supabase.types.d.ts')).toContain('r|public|users|username')
+    expect(result.scripts?.added).toEqual(SCRIPT_NAMES)
+    expect(result.changes.map((c) => c.file)).toContain(
+      join(dir, 'supabase', 'postgrest-schema.json')
+    )
+
+    // CI: no stack, no exec: the check reads the committed snapshot
+    const scripts = scriptsOf()
+    const check = await runScript(scripts['postgrest:check']!, {
+      deps: { ...(wasm ? { wasmPath: wasm } : {}), schema: { exec: downExec } },
+    })
+    expect(check).toMatchObject({ code: 0, stdout: 'src/supabase.types.d.ts is up to date\n' })
+    // dev: the snapshot script reads the stack and finds it unchanged
+    expect(
+      await runScript(scripts['postgrest:snapshot']!, { deps: { schema: { exec: stackExec } } })
+    ).toMatchObject({ code: 0, stdout: 'supabase/postgrest-schema.json is up to date\n' })
+  }, 240_000)
+
+  it('names the project and the workdir in the scripts when the tsconfig and the config.toml are elsewhere', async () => {
+    put('supabase/config.toml', 'project_id = "not-running"\n')
+    put('web/package.json', '{ "name": "web" }\n')
+    put('web/tsconfig.app.json', '{ "include": ["src"] }')
+    put('web/src/app.ts', SOURCE)
+
+    const result = await init(deps({ schema: { exec: downExec } }), {
+      project: 'web/tsconfig.app.json',
+    })
+    expect(result.scripts?.packageJson).toBe(join(dir, 'web', 'package.json'))
+    expect(scriptsOf('web/package.json')).toEqual({
+      'postgrest:watch':
+        'postgrest-mapper generate --project tsconfig.app.json --out src/supabase.types.d.ts --watch',
+      'postgrest:check':
+        'postgrest-mapper generate --project tsconfig.app.json --out src/supabase.types.d.ts --check --snapshot supabase/postgrest-schema.json',
+      'postgrest:snapshot':
+        'postgrest-mapper snapshot --out supabase/postgrest-schema.json --workdir ..',
+    })
+  }, 120_000)
+
+  it('never rewrites a script that exists, and a second run changes nothing', async () => {
+    put('tsconfig.json', '{ "include": ["src"] }')
+    put(
+      'package.json',
+      '{\n  "scripts": {\n    "postgrest:watch": "my-own-watch",\n    "build": "tsc"\n  },\n  "devDependencies": { "@supabase/postgrest-mapper": "^1.0.0" }\n}\n'
+    )
+    put('src/app.ts', SOURCE)
+    await writeSnapshot(join(dir, 'supabase', 'postgrest-schema.json'), acquired)
+
+    const first = await init(deps())
+    expect(first.scripts).toMatchObject({
+      added: ['postgrest:check'],
+      existing: ['postgrest:watch'],
+      installed: true,
+    })
+    expect(scriptsOf()['postgrest:watch']).toBe('my-own-watch')
+    expect(scriptsOf()['build']).toBe('tsc')
+
+    const before = [read('tsconfig.json'), read('package.json'), read('src/supabase.types.d.ts')]
+    const second = await init(deps())
+    expect(second.changes).toEqual([])
+    expect(second.generate).toEqual({ status: 'unchanged' })
+    expect(second.scripts).toMatchObject({
+      added: [],
+      existing: ['postgrest:watch', 'postgrest:check'],
+    })
+    expect([read('tsconfig.json'), read('package.json'), read('src/supabase.types.d.ts')]).toEqual(
+      before
+    )
+  }, 120_000)
+
+  it('creates the scripts object when package.json has none', async () => {
+    put('tsconfig.json', '{ "include": ["src"] }')
+    put('package.json', '{\n\t"name": "app"\n}\n')
+    await init(deps(), { generate: false })
+    expect(read('package.json')).toBe(
+      '{\n\t"name": "app",\n\t"scripts": {\n\t\t"postgrest:watch": "postgrest-mapper generate --out src/supabase.types.d.ts --watch",\n' +
+        '\t\t"postgrest:check": "postgrest-mapper generate --out src/supabase.types.d.ts --check"\n\t}\n}\n'
+    )
+  }, 60_000)
+
+  describe('each step has a switch', () => {
+    const setUp = async (): Promise<void> => {
+      put('supabase/config.toml', 'project_id = "test"\n')
+      put('tsconfig.json', '{ "include": ["src"] }')
+      put('package.json', '{ "name": "app" }\n')
+      put('src/app.ts', SOURCE)
+    }
+    const stack = { schema: { exec: stackExec } }
+
+    it('snapshot: false takes no snapshot', async () => {
+      await setUp()
+      const result = await init(deps(stack), { snapshot: false })
+      expect(result.snapshot).toBeUndefined()
+      expect(() => read('supabase/postgrest-schema.json')).toThrow()
+      expect(result.generate).toEqual({ status: 'written' }) // the live source still serves generate
+      expect(result.scripts?.added).toEqual(SCRIPT_NAMES)
+    }, 240_000)
+
+    it('generate: false writes no declaration file', async () => {
+      await setUp()
+      const result = await init(deps(stack), { generate: false })
+      expect(result.generate).toBeUndefined()
+      expect(() => read('src/supabase.types.d.ts')).toThrow()
+      expect(result.snapshot?.status).toBe('written')
+    }, 240_000)
+
+    it('scripts: false leaves package.json alone', async () => {
+      await setUp()
+      const result = await init(deps(stack), { scripts: false })
+      expect(result.scripts).toBeUndefined()
+      expect(read('package.json')).toBe('{ "name": "app" }\n')
+      expect(result.snapshot?.status).toBe('written')
+      expect(result.generate?.status).toBe('written')
+    }, 240_000)
+  })
+
+  it('the CLI prints what it skipped and the next steps, and takes --skip-snapshot, --skip-generate and --skip-scripts', async () => {
+    put('supabase/config.toml', 'project_id = "not-running"\n')
+    put('tsconfig.json', '{ "include": ["src"] }')
+    put('package.json', '{ "name": "app" }\n')
+    put('src/app.ts', SOURCE)
+    const cli = async (
+      args: string[]
+    ): Promise<{ code: number; stdout: string; stderr: string }> => {
+      let stdout = ''
+      let stderr = ''
+      const code = await runCli(['init', ...args], {
+        stdout: { write: (chunk) => (stdout += chunk) },
+        stderr: { write: (chunk) => (stderr += chunk) },
+        cwd: dir,
+        env: { ...process.env },
+        deps: { ...(wasm ? { wasmPath: wasm } : {}), schema: { exec: downExec } },
+      })
+      return { code, stdout, stderr }
+    }
+
+    const full = await cli([])
+    expect(full.code).toBe(0)
+    expect(full.stdout).toContain('supabase/postgrest-schema.json: snapshot skipped')
+    expect(full.stdout).toContain('the stack is down')
+    expect(full.stdout).toContain('src/supabase.types.d.ts: generate skipped')
+    expect(full.stdout).toContain('package.json: added the postgrest:watch')
+    expect(full.stdout).toMatch(/postgrest:check.*CI/)
+    expect(full.stdout).toMatch(/postgrest:snapshot.*migration/)
+    expect(full.stdout).toContain('TypeScript 7.1')
+
+    // `generate` and `scripts` have nothing left to do; `snapshot` reports no skip
+    const second = await cli(['--skip-snapshot', '--skip-generate', '--skip-scripts'])
+    expect(second.stdout).toBe('src/supabase.types.d.ts is already set up\n')
+
+    rmSync(join(dir, 'package.json'))
+    rmSync(join(dir, 'tsconfig.json'))
+    put('tsconfig.json', '{ "include": ["src"] }')
+    put('package.json', '{ "name": "app" }\n')
+    const skipped = await cli(['--skip-snapshot', '--skip-generate', '--skip-scripts'])
+    expect(skipped.code).toBe(0)
+    expect(skipped.stdout).not.toMatch(/skipped|postgrest:/)
+    expect(read('package.json')).toBe('{ "name": "app" }\n')
+
+    const unknown = await runCli(['generate', '--skip-scripts'], {
+      stdout: { write: () => undefined },
+      stderr: { write: () => undefined },
+      cwd: dir,
+      env: {},
+    })
+    expect(unknown).toBe(2)
+  }, 120_000)
 })
