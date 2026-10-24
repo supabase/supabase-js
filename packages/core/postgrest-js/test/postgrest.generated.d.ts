@@ -413,6 +413,22 @@ declare global {
             }
           ]
         }
+        builtin_named_enum_cases: {
+          Row: {
+            id: SupabaseColumnType<'public.builtin_named_enum_cases.id', number>
+            greeting: SupabaseColumnType<'public.builtin_named_enum_cases.greeting', unknown>
+          }
+          Insert: {
+            id: SupabaseColumnType<'public.builtin_named_enum_cases.id', number>
+            greeting: SupabaseColumnType<'public.builtin_named_enum_cases.greeting', unknown>
+          }
+          Update: {
+            id?: SupabaseColumnType<'public.builtin_named_enum_cases.id', number>
+            greeting?: SupabaseColumnType<'public.builtin_named_enum_cases.greeting', unknown>
+          }
+          FactColumns: 'greeting' | 'id'
+          Relationships: []
+        }
         cast_cases: {
           Row: {
             id: SupabaseColumnType<'public.cast_cases.id', number>
@@ -422,7 +438,7 @@ declare global {
             b: SupabaseColumnType<'public.cast_cases.b', number>
             c: SupabaseColumnType<'public.cast_cases.c', string>
             mood: SupabaseColumnType<'public.cast_cases.mood', SupabaseDatabase['public']['Enums']['cast_mood']>
-            mood_dom: SupabaseColumnType<'public.cast_cases.mood_dom', unknown>
+            mood_dom: SupabaseColumnType<'public.cast_cases.mood_dom', SupabaseDatabase['public']['Enums']['cast_mood']>
             status: SupabaseColumnType<'public.cast_cases.status', SupabaseDatabase['public']['Enums']['user_status']>
           }
           Insert: {
@@ -433,7 +449,7 @@ declare global {
             b: SupabaseColumnType<'public.cast_cases.b', number>
             c: SupabaseColumnType<'public.cast_cases.c', string>
             mood: SupabaseColumnType<'public.cast_cases.mood', SupabaseDatabase['public']['Enums']['cast_mood']>
-            mood_dom: SupabaseColumnType<'public.cast_cases.mood_dom', unknown>
+            mood_dom: SupabaseColumnType<'public.cast_cases.mood_dom', SupabaseDatabase['public']['Enums']['cast_mood']>
             status: SupabaseColumnType<'public.cast_cases.status', SupabaseDatabase['public']['Enums']['user_status']>
           }
           Update: {
@@ -444,7 +460,7 @@ declare global {
             b?: SupabaseColumnType<'public.cast_cases.b', number>
             c?: SupabaseColumnType<'public.cast_cases.c', string>
             mood?: SupabaseColumnType<'public.cast_cases.mood', SupabaseDatabase['public']['Enums']['cast_mood']>
-            mood_dom?: SupabaseColumnType<'public.cast_cases.mood_dom', unknown>
+            mood_dom?: SupabaseColumnType<'public.cast_cases.mood_dom', SupabaseDatabase['public']['Enums']['cast_mood']>
             status?: SupabaseColumnType<'public.cast_cases.status', SupabaseDatabase['public']['Enums']['user_status']>
           }
           FactColumns: 'b' | 'c' | 'id' | 'mood' | 'mood_dom' | 'n' | 'status' | 'ts' | 'tstz'
@@ -1474,7 +1490,7 @@ declare global {
         }
         out_domain: {
           Args: Record<string, never>
-          Returns: Record<string, unknown>
+          Returns: { id: number | null; name: string | null }
         }
         out_inout: {
           Args: {
@@ -1646,7 +1662,15 @@ declare global {
           Args: {
             item: { id: number | null; qty: number | null }
           }
-          Returns: unknown | null
+          Returns: number | null
+        }
+        return_only_amount_of_one: {
+          Args: Record<string, never>
+          Returns: number | null
+        }
+        return_only_amounts: {
+          Args: Record<string, never>
+          Returns: number[] | null
         }
         set_users_offline: {
           Args: {
@@ -1675,6 +1699,14 @@ declare global {
             column1: number | null
             column2: string | null
           }
+        }
+        user_statuses_online: {
+          Args: Record<string, never>
+          Returns: SupabaseDatabase['public']['Enums']['user_status'][] | null
+        }
+        user_statuses_online_set: {
+          Args: Record<string, never>
+          Returns: (SupabaseDatabase['public']['Enums']['user_status'][] | null)[]
         }
         users_payload_and_name: {
           Args: Record<string, never>

@@ -5,6 +5,7 @@ import { columnKey, columnTypeKey, relationKey, type ColumnRef } from '../keys'
 import { memberName as key, quote } from './literal'
 import {
   canonicalType,
+  catalogTypeFacts,
   classifyType,
   rememberDomain,
   rowTypeOf,
@@ -259,7 +260,7 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
     })
   }
 
-  const domains = new Map<string, string>()
+  const { domains, arrays } = catalogTypeFacts(supplementary.types)
   for (const fields of input.plans.values()) {
     for (const f of fields) {
       if (f.pgType && f.baseType && f.baseType !== f.pgType)
@@ -276,6 +277,7 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
       ])
     ),
     domains,
+    arrays,
   }
   const argCtx: TypeContext = { ...ctx, jsonType: 'JsonIn' }
 

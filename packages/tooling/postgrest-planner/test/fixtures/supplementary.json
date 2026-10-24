@@ -203,6 +203,13 @@
         {
             "base": null,
             "kind": "b",
+            "name": "_int4",
+            "schema": "extensions",
+            "element": "extensions.int4"
+        },
+        {
+            "base": null,
+            "kind": "b",
             "name": "_pg_stat_statements",
             "schema": "extensions",
             "element": "extensions.pg_stat_statements"
@@ -295,6 +302,13 @@
             "base": null,
             "kind": "b",
             "name": "gidx",
+            "schema": "extensions",
+            "element": null
+        },
+        {
+            "base": null,
+            "kind": "e",
+            "name": "int4",
             "schema": "extensions",
             "element": null
         },
@@ -444,6 +458,13 @@
             "name": "_booking",
             "schema": "public",
             "element": "public.booking"
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "_builtin_named_enum_cases",
+            "schema": "public",
+            "element": "public.builtin_named_enum_cases"
         },
         {
             "base": null,
@@ -792,6 +813,13 @@
             "base": null,
             "kind": "c",
             "name": "booking",
+            "schema": "public",
+            "element": null
+        },
+        {
+            "base": null,
+            "kind": "c",
+            "name": "builtin_named_enum_cases",
             "schema": "public",
             "element": null
         },
@@ -2557,6 +2585,34 @@
             "volatility": "s"
         },
         {
+            "name": "return_only_amount_of_one",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.return_only_amount",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "return_only_amounts",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.return_only_amount[]",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
             "name": "set_users_offline",
             "schema": "public",
             "returns": {
@@ -2629,6 +2685,34 @@
                 }
             ],
             "volatility": "i"
+        },
+        {
+            "name": "user_statuses_online",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.user_status[]",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "s"
+        },
+        {
+            "name": "user_statuses_online_set",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "public.user_status[]",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "s"
         },
         {
             "name": "users_payload_and_name",
@@ -2875,6 +2959,20 @@
                 },
                 {
                     "name": "hotel_id",
+                    "attnum": 2
+                }
+            ]
+        },
+        {
+            "name": "builtin_named_enum_cases",
+            "schema": "public",
+            "columns": [
+                {
+                    "name": "id",
+                    "attnum": 1
+                },
+                {
+                    "name": "greeting",
                     "attnum": 2
                 }
             ]

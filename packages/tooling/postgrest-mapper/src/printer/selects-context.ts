@@ -2,7 +2,7 @@ import type { ShapeField } from '@supabase/postgrest-planner'
 import { relationKey } from '../keys'
 import type { Supplementary } from '../schema'
 import type { TracedColumn, TracedFunction } from '../tracer'
-import { rememberDomain, rowTypeOf, type TypeContext } from './pg-types'
+import { catalogTypeFacts, rememberDomain, rowTypeOf, type TypeContext } from './pg-types'
 
 /** What the selects printer reads about the database: the same inputs `printDatabase` is fed. */
 export interface SelectsContextInput {
@@ -34,7 +34,7 @@ export interface SelectsContext {
 }
 
 /**
- * Mirrors the context `printDatabase` builds (`enums`, `composites`, `relations`, `domains`): a column's type must be
+ * Mirrors the context `printDatabase` builds (`enums`, `composites`, `relations`, `domains`, `arrays`): a column's type must be
  * spelled the same in `SupabaseDatabase` and in a select entry. `domains` also grows while entries print, for a
  * domain that only a select item (a cast) mentions.
  */
@@ -46,7 +46,7 @@ export function createSelectsContext(input: SelectsContextInput): SelectsContext
     if (!input.plans.has(key)) continue
     relations.set(key, rowTypeOf(r.columns))
   }
-  const domains = new Map<string, string>()
+  const { domains, arrays } = catalogTypeFacts(supplementary.types)
   for (const fields of input.plans.values()) {
     for (const f of fields) {
       if (f.pgType && f.baseType && f.baseType !== f.pgType)
@@ -59,6 +59,7 @@ export function createSelectsContext(input: SelectsContextInput): SelectsContext
       composites: new Set(supplementary.composites.map((c) => relationKey(c.schema, c.name))),
       relations,
       domains,
+      arrays,
     },
     domains,
     plans: input.plans,

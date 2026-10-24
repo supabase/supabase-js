@@ -105,11 +105,55 @@ const inlineObject = (members: Member[]): string =>
     ? '{}'
     : `{ ${members.map((m) => `${memberName(m.name)}: ${m.type}`).join('; ')} }`
 
-/** The same name twice keeps the later value in the earlier position, as a JSON object would. */
-function uniqueMembers(members: Member[]): Member[] {
+/**
+ * The same name twice keeps the later value in the earlier position, as a JSON object would. `depth` is the number
+ * of embeds the object is nested in: the outputs of an embed are paths from the root row, so `o[depth]` of an output
+ * is the key of the member of this object it belongs to. An embed lists no output of a member the row replaced.
+ */
+function uniqueMembers(members: Member[], depth: number): Member[] {
   const byName = new Map<string, Member>()
   for (const m of members) byName.set(m.name, m)
-  return [...byName.values()]
+  const survivors = [...byName.values()]
+  const holders = new Map<EmbedInfo, Set<string>>()
+  for (const m of survivors) {
+    for (const info of m.embeds) {
+      const names = holders.get(info) ?? new Set<string>()
+      holders.set(info, names.add(m.name))
+    }
+  }
+  const kept = new Map<EmbedInfo, EmbedInfo>()
+  for (const [info, names] of holders) {
+    const outputs = info.outputs.filter((o) => o[depth] === undefined || names.has(o[depth]!))
+    kept.set(info, outputs.length === info.outputs.length ? info : { ...info, outputs })
+  }
+  return survivors.map((m) => ({ ...m, embeds: m.embeds.map((info) => kept.get(info)!) }))
+}
+
+/** The key an embed is printed under in `embeds`. */
+const embedKey = (embed: EmbedInfo): string => embed.path.join('.')
+
+/**
+ * One entry per printed key: embeds that share one (the same relation spread twice, a spread and an embed of the
+ * relation) merge into an entry that lists the outputs of both. The merged join and cardinality are the widest of the
+ * two (`left`, `one`): a fact the consumer applies to a `left` / `one` entry only widens the type.
+ */
+function mergeEmbeds(embeds: readonly EmbedInfo[]): EmbedInfo[] {
+  const byKey = new Map<string, EmbedInfo>()
+  for (const embed of embeds) {
+    const earlier = byKey.get(embedKey(embed))
+    if (!earlier) {
+      byKey.set(embedKey(embed), embed)
+      continue
+    }
+    const seen = new Set(earlier.outputs.map((o) => JSON.stringify(o)))
+    byKey.set(embedKey(embed), {
+      path: embed.path,
+      outputs: [...earlier.outputs, ...embed.outputs.filter((o) => !seen.has(JSON.stringify(o)))],
+      join: earlier.join === 'inner' && embed.join === 'inner' ? 'inner' : 'left',
+      cardinality: earlier.cardinality === 'many' && embed.cardinality === 'many' ? 'many' : 'one',
+    })
+  }
+  return [...byKey.values()]
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -169,17 +213,22 @@ class ShapePrinter {
 
   print(shape: ResultShape): PrintedShape {
     // collisions first: provenance belongs to the member that wins the name, not to one it replaced
-    const members = uniqueMembers(this.members(shape, [], true))
+    const members = uniqueMembers(this.members(shape, [], true, 0), 0)
     const sources = members.flatMap((m) =>
       m.column === undefined ? [] : [{ name: m.name, type: quote(m.column) }]
     )
     // the embed of a member a later one replaced is not in the row, so it is not in the metadata either
-    const embeds = [...new Set(members.flatMap((m) => m.embeds))]
+    const embeds = mergeEmbeds([...new Set(members.flatMap((m) => m.embeds))])
     return { row: inlineObject(members), sources, embeds }
   }
 
   /** The members a shape adds to the object it is part of; `ops` are the spreads between it and that object. */
-  private members(shape: ResultShape, ops: readonly SpreadOp[], root: boolean): Member[] {
+  private members(
+    shape: ResultShape,
+    ops: readonly SpreadOp[],
+    root: boolean,
+    depth: number
+  ): Member[] {
     const members: Member[] = []
     for (const field of shape.fields) {
       const member: Member = {
@@ -203,12 +252,12 @@ class ShapePrinter {
       if (embed.spread) {
         const op: SpreadOp | undefined =
           embed.cardinality === 'many' ? 'array' : nullable ? 'null' : undefined
-        for (const member of this.members(embed.shape, op ? [...ops, op] : ops, false)) {
+        for (const member of this.members(embed.shape, op ? [...ops, op] : ops, false, depth)) {
           members.push({ ...member, embeds: [info, ...member.embeds] })
         }
         continue
       }
-      const value = this.embed(embed, nullable)
+      const value = this.embed(embed, nullable, depth + 1)
       members.push({
         name: embed.key ?? embed.alias ?? embed.name,
         type: applyOps(value.type, ops),
@@ -219,8 +268,12 @@ class ShapePrinter {
   }
 
   /** The value of a plain embed: an object, an array of them, nullable per the planner; and the embeds inside it. */
-  private embed(embed: ShapeEmbed, nullable: boolean): { type: string; embeds: EmbedInfo[] } {
-    const members = uniqueMembers(this.members(embed.shape, [], false))
+  private embed(
+    embed: ShapeEmbed,
+    nullable: boolean,
+    depth: number
+  ): { type: string; embeds: EmbedInfo[] } {
+    const members = uniqueMembers(this.members(embed.shape, [], false, depth), depth)
     const object = inlineObject(members)
     const embeds = members.flatMap((m) => m.embeds)
     if (embed.cardinality === 'many')
@@ -461,7 +514,7 @@ export function printEmbeds(embeds: readonly EmbedInfo[], indent: string): strin
   if (embeds.length === 0) return '{}'
   const lines = embeds.map(
     (e) =>
-      `${indent}  ${memberName(e.path.join('.'))}: { path: ${tuple(e.path)}; outputs: [${e.outputs.map(tuple).join(', ')}]; join: ${quote(e.join)}; cardinality: ${quote(e.cardinality)} }`
+      `${indent}  ${memberName(embedKey(e))}: { path: ${tuple(e.path)}; outputs: [${e.outputs.map(tuple).join(', ')}]; join: ${quote(e.join)}; cardinality: ${quote(e.cardinality)} }`
   )
   return `{\n${lines.join('\n')}\n${indent}}`
 }

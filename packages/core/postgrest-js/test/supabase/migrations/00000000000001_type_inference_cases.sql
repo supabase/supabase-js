@@ -397,3 +397,28 @@ RETURNS TABLE(id bigint) LANGUAGE sql STABLE AS $$ SELECT id FROM messages; $$;
 
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA personal TO anon, authenticated;
+
+-- Scalar functions that return a user array type, and a domain that only a function returns. The array of an enum is
+-- `public._user_status`, whose element is `public.user_status`.
+CREATE FUNCTION public.user_statuses_online()
+RETURNS public.user_status[] LANGUAGE sql STABLE AS $$ SELECT ARRAY['ONLINE']::public.user_status[]; $$;
+
+CREATE FUNCTION public.user_statuses_online_set()
+RETURNS SETOF public.user_status[] LANGUAGE sql STABLE AS $$ SELECT ARRAY['ONLINE']::public.user_status[]; $$;
+
+CREATE FUNCTION public.return_only_amount_of_one()
+RETURNS public.return_only_amount LANGUAGE sql STABLE AS $$ SELECT 1::public.return_only_amount; $$;
+
+CREATE FUNCTION public.return_only_amounts()
+RETURNS public.return_only_amount[] LANGUAGE sql STABLE AS $$ SELECT ARRAY[1]::public.return_only_amount[]; $$;
+
+-- A type of a schema outside db-schemas that is named like a builtin: it is an enum, whatever its name reads like.
+CREATE TYPE extensions.int4 AS ENUM ('hello');
+
+CREATE TABLE public.builtin_named_enum_cases (
+  id integer PRIMARY KEY,
+  greeting extensions.int4 NOT NULL
+);
+
+GRANT ALL ON public.builtin_named_enum_cases TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;

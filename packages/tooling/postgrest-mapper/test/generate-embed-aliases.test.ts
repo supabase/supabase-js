@@ -69,3 +69,42 @@ describe('embeds that share an alias', () => {
     )
   }, 180_000)
 })
+
+describe('embeds that share a key without an alias', () => {
+  it('prints one entry for the same relation spread twice, listing the outputs of both', async () => {
+    const text = await declarationsOf(
+      `supabase.from('messages').select('...channels(id), ...channels(slug)')`
+    )
+    const entry = onlyEntry(text)
+    expect(entry.match(/^\s+channels: \{ path:/gm)).toHaveLength(1)
+    expect(entry).toContain("outputs: [['id'], ['slug']]")
+    expect(typecheckConsumer({ files: { 'db.d.ts': text } }).byFile.get('db.d.ts') ?? []).toEqual(
+      []
+    )
+  }, 180_000)
+
+  it('prints one entry for a spread and an embed of the same relation', async () => {
+    const text = await declarationsOf(
+      `supabase.from('messages').select('...channels(id), channels(slug)')`
+    )
+    const entry = onlyEntry(text)
+    expect(entry.match(/^\s+channels: \{ path:/gm)).toHaveLength(1)
+    expect(entry).toContain("outputs: [['id'], ['channels']]")
+    expect(typecheckConsumer({ files: { 'db.d.ts': text } }).byFile.get('db.d.ts') ?? []).toEqual(
+      []
+    )
+  }, 180_000)
+
+  it('lists as outputs of a spread only the members the row holds', async () => {
+    const text = await declarationsOf(
+      `supabase.from('messages').select('...users(username, data), ...channels(data)')`
+    )
+    const entry = onlyEntry(text)
+    // the key `data` is the value of the later spread
+    expect(entry).toContain("path: ['users']; outputs: [['username']]")
+    expect(entry).toContain("path: ['channels']; outputs: [['data']]")
+    expect(typecheckConsumer({ files: { 'db.d.ts': text } }).byFile.get('db.d.ts') ?? []).toEqual(
+      []
+    )
+  }, 180_000)
+})

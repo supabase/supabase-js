@@ -2240,6 +2240,40 @@
         "volatility": "s"
       },
       {
+        "argNames": null,
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "return_only_amount_of_one",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "public.return_only_amount"
+        },
+        "schema": "public",
+        "searchPath": null,
+        "source": " SELECT 1::public.return_only_amount; ",
+        "volatility": "s"
+      },
+      {
+        "argNames": null,
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "return_only_amounts",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "public.return_only_amount[]"
+        },
+        "schema": "public",
+        "searchPath": null,
+        "source": " SELECT ARRAY[1]::public.return_only_amount[]; ",
+        "volatility": "s"
+      },
+      {
         "argNames": [
           "name_param"
         ],
@@ -2334,6 +2368,40 @@
         "searchPath": null,
         "source": " SELECT a, 'x'::text; ",
         "volatility": "i"
+      },
+      {
+        "argNames": null,
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "user_statuses_online",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "public.user_status[]"
+        },
+        "schema": "public",
+        "searchPath": null,
+        "source": " SELECT ARRAY['ONLINE']::public.user_status[]; ",
+        "volatility": "s"
+      },
+      {
+        "argNames": null,
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "user_statuses_online_set",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": true,
+          "type": "public.user_status[]"
+        },
+        "schema": "public",
+        "searchPath": null,
+        "source": " SELECT ARRAY['ONLINE']::public.user_status[]; ",
+        "volatility": "s"
       },
       {
         "argNames": [],
@@ -2828,6 +2896,37 @@
         ],
         "kind": "r",
         "name": "booking",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "greeting",
+            "notNull": true,
+            "type": "extensions.int4"
+          }
+        ],
+        "kind": "r",
+        "name": "builtin_named_enum_cases",
         "schema": "public",
         "updatable": {
           "delete": true,
@@ -4931,6 +5030,13 @@
       },
       {
         "base": null,
+        "element": "extensions.int4",
+        "kind": "b",
+        "name": "_int4",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
         "element": "extensions.pg_stat_statements",
         "kind": "b",
         "name": "_pg_stat_statements",
@@ -5025,6 +5131,13 @@
         "element": null,
         "kind": "b",
         "name": "gidx",
+        "schema": "extensions"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "e",
+        "name": "int4",
         "schema": "extensions"
       },
       {
@@ -5172,6 +5285,13 @@
         "element": "public.booking",
         "kind": "b",
         "name": "_booking",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.builtin_named_enum_cases",
+        "kind": "b",
+        "name": "_builtin_named_enum_cases",
         "schema": "public"
       },
       {
@@ -5522,6 +5642,13 @@
         "element": null,
         "kind": "c",
         "name": "booking",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "builtin_named_enum_cases",
         "schema": "public"
       },
       {
@@ -9813,6 +9940,34 @@
       ],
       [
         {
+          "qiName": "return_only_amounts",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "return_only_amounts",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "_return_only_amount",
+                  "qiSchema": "public"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "out_single",
           "qiSchema": "public"
         },
@@ -9946,6 +10101,34 @@
                 "contents": {
                   "qiName": "text",
                   "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "user_statuses_online",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "user_statuses_online",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "_user_status",
+                  "qiSchema": "public"
                 },
                 "tag": "Scalar"
               },
@@ -10494,6 +10677,34 @@
                 "tag": "Composite"
               },
               "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "user_statuses_online_set",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "user_statuses_online_set",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "_user_status",
+                  "qiSchema": "public"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "SetOf"
             },
             "pdSchema": "public",
             "pdVolatility": "Stable"
@@ -11253,6 +11464,34 @@
               "contents": {
                 "contents": {
                   "qiName": "text",
+                  "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "return_only_amount_of_one",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "return_only_amount_of_one",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "int4",
                   "qiSchema": "pg_catalog"
                 },
                 "tag": "Scalar"
@@ -12081,6 +12320,48 @@
           "tableIsView": false,
           "tableName": "remote_users",
           "tablePKCols": [],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "builtin_named_enum_cases",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "greeting": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [
+                "hello"
+              ],
+              "colMaxLen": null,
+              "colName": "greeting",
+              "colNominalType": "extensions.int4",
+              "colNullable": false,
+              "colType": "extensions.int4"
+            },
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "integer",
+              "colNullable": false,
+              "colType": "integer"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "builtin_named_enum_cases",
+          "tablePKCols": [
+            "id"
+          ],
           "tableSchema": "public",
           "tableUpdatable": true
         }

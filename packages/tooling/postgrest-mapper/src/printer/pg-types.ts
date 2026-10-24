@@ -7,6 +7,7 @@
  */
 
 import { relationKey } from '../keys'
+import type { SupplementaryType } from '../schema'
 import { memberName, quote } from './literal'
 
 /** Builtin name (internal spelling) to the TypeScript type `gen types` prints for it. Everything else is `unknown`. */
@@ -152,6 +153,11 @@ export interface TypeContext {
   relations: ReadonlyMap<string, readonly CompositeAttribute[]>
   /** Domain to the type it is defined over (`relationKey('public', 'positive_int')` to `int4`) */
   domains: ReadonlyMap<string, string>
+  /**
+   * Array type of a user type to the element type (`relationKey('public', '_user_status')` to `public.user_status`):
+   * the planner reports such an array by its own identifier. Default: none
+   */
+  arrays?: ReadonlyMap<string, NormalizedType>
   /** Schema an unqualified non-builtin name belongs to. Default `public` */
   defaultSchema?: string
   /** Name of the type of the generated global. Default `SupabaseDatabase` */
@@ -200,6 +206,28 @@ export function rememberDomain(
   if (schema !== undefined && dims === 0) domains.set(relationKey(schema, name), baseType)
 }
 
+/**
+ * The domains and the array types of the user types the catalog lists (the `types` of the supplementary catalog), in
+ * the shapes `TypeContext` holds them. An element spelled without a schema is of the schema of its array type, which
+ * always lives next to its element.
+ */
+export function catalogTypeFacts(types: readonly SupplementaryType[]): {
+  domains: Map<string, string>
+  arrays: Map<string, NormalizedType>
+} {
+  const domains = new Map<string, string>()
+  const arrays = new Map<string, NormalizedType>()
+  for (const t of types) {
+    const key = relationKey(t.schema, t.name)
+    if (t.kind === 'd' && typeof t.base === 'string') domains.set(key, t.base)
+    if (typeof t.element === 'string') {
+      const element = normalizeType(t.element)
+      arrays.set(key, { ...element, schema: element.schema ?? t.schema })
+    }
+  }
+  return { domains, arrays }
+}
+
 /** Follows a domain to the type it is defined over (and the array dimensions it adds). Guards against a cycle. */
 function resolveDomain(type: NormalizedType, ctx: TypeContext): NormalizedType {
   let current = type
@@ -212,6 +240,21 @@ function resolveDomain(type: NormalizedType, ctx: TypeContext): NormalizedType {
   }
   return { ...current, dims }
 }
+
+/** The extension types the mapping knows, by the schema Supabase installs the extension in */
+const EXTENSION_TYPES: Readonly<Record<string, readonly string[]>> = {
+  extensions: ['citext', 'vector'],
+}
+
+/**
+ * Whether a type is one the mapping knows: a `pg_catalog` type, which is spelled without a schema, or an extension
+ * type of its schema. A name that only reads like one in another schema (an enum `extensions.int4`) is a user type.
+ */
+const isBuiltin = (schema: string | undefined, name: string): boolean =>
+  Object.hasOwn(BUILTIN_TS, name) &&
+  (schema === undefined ||
+    schema === 'pg_catalog' ||
+    (Object.hasOwn(EXTENSION_TYPES, schema) && EXTENSION_TYPES[schema]!.includes(name)))
 
 const defaultSchemaOf = (ctx: TypeContext): string => ctx.defaultSchema ?? 'public'
 
@@ -230,7 +273,10 @@ export interface ClassifiedType {
 
 /** The type of a spelling (`format_type`, the planner's) or one a caller already normalised. */
 export function classifyType(type: string | NormalizedType, ctx: TypeContext): ClassifiedType {
-  const normalized = typeof type === 'string' ? normalizeType(type) : type
+  const named = typeof type === 'string' ? normalizeType(type) : type
+  // the planner names the array of a user type by its own identifier (`public._user_status`)
+  const element = ctx.arrays?.get(relationKey(named.schema ?? defaultSchemaOf(ctx), named.name))
+  const normalized = element ? { ...element, dims: named.dims + 1 } : named
   const resolved = resolveDomain(normalized, ctx)
   const dims = normalized.dims + resolved.dims
   const { name } = resolved
@@ -239,10 +285,7 @@ export function classifyType(type: string | NormalizedType, ctx: TypeContext): C
   if (ctx.enums.has(key)) return { kind: 'enum', schema, name, dims }
   if (ctx.composites.has(key)) return { kind: 'composite', schema, name, dims }
   if (ctx.relations.has(key)) return { kind: 'relation', schema, name, dims }
-  // pg_catalog types are unqualified; extension types (`extensions.citext`, `extensions.vector`) map by name
-  if (Object.hasOwn(BUILTIN_TS, name) && resolved.schema !== 'public') {
-    return { kind: 'builtin', name, dims }
-  }
+  if (isBuiltin(resolved.schema, name)) return { kind: 'builtin', name, dims }
   return { kind: 'unknown', ...(resolved.schema === undefined ? {} : { schema }), name, dims }
 }
 
