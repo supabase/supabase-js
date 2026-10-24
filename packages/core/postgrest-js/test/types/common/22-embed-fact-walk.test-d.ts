@@ -75,3 +75,36 @@ const spreadManyNn = supabase
 type _22g = Expect<
   Equal<Data<typeof spreadManyNn>, { username: string; channels: { id: number }[] }[]>
 >
+
+// an ordinary embed below an embed in a to-many spread: the spread's array is already entered by the time the walk
+// reaches it, so the filtered to-one at the bottom is null inside its parent, not wrapped in a second array
+const spreadManyNested = supabase
+  .from('users')
+  .select('username, ...messages(channels(channel_details(channels(id))))')
+  .eq('messages.channels.channel_details.channels.id', -1)
+type _22h = Expect<
+  Equal<
+    Data<typeof spreadManyNested>,
+    {
+      username: string
+      channels: { channel_details: { channels: { id: number } | null } | null }[]
+    }[]
+  >
+>
+
+// one relationship as an ordinary and as a spread occurrence: the ordinary elements and the spread elements each
+// turn null at their own depth
+const spreadManyMixed = supabase
+  .from('users')
+  .select('username, messages(channels(id)), ...messages(channels(id))')
+  .eq('messages.channels.id', -1)
+type _22i = Expect<
+  Equal<
+    Data<typeof spreadManyMixed>,
+    {
+      username: string
+      messages: { channels: { id: number } | null }[]
+      channels: ({ id: number } | null)[]
+    }[]
+  >
+>

@@ -159,17 +159,24 @@ export type NeedsWalk<F> = F extends { embeds: unknown }
     ? true
     : false
 
-// How many arrays an embed's value sits in beyond the ones the walk descends into: a to-many *spread* ancestor flattens
-// its children into the parent as arrays (an ordinary to-many ancestor keeps them in its own elements, which the walk
-// enters), one layer per such ancestor.
-export type SpreadLift<E, P extends readonly string[], D extends unknown[] = []> = [
+// How many arrays the value at output path `O` sits in beyond the ones the walk has already descended into. A to-many
+// *spread* ancestor flattens its children into the parent as arrays, so its array sits at the very output path its
+// children claim (an ordinary to-many ancestor keeps them in its own elements, at a shorter path the walk has entered).
+// That is read per output occurrence: one embed can be both an ordinary and a spread occurrence, and an ancestor that
+// lists `O` among its outputs introduces one layer there.
+export type SpreadLift<E, P extends readonly string[], O, D extends unknown[] = []> = [
   Init<P>,
 ] extends [never]
   ? D
   : Init<P> extends infer Q extends string
     ? Q extends keyof E
       ? E[Q] extends { path: infer Pa extends readonly string[]; cardinality: infer C }
-        ? SpreadLift<E, Pa, C extends 'many' ? ([Q] extends [Outs<E[Q]>] ? D : [...D, unknown]) : D>
+        ? SpreadLift<
+            E,
+            Pa,
+            O,
+            C extends 'many' ? ([O] extends [Outs<E[Q]>] ? [...D, unknown] : D) : D
+          >
         : D
       : D
     : D
@@ -191,7 +198,7 @@ type NonMany<E, EK> = EK extends keyof E
 type Claim<V, E, F, Path, EK> = EK extends keyof E
   ? AtDepth<
       V,
-      E[EK] extends { path: infer Pa extends readonly string[] } ? SpreadLift<E, Pa> : [],
+      E[EK] extends { path: infer Pa extends readonly string[] } ? SpreadLift<E, Pa, Path> : [],
       E[EK],
       EmbedFactsOf<F, EK>,
       F,

@@ -297,6 +297,58 @@ declare global {
         }
       }
     }
+    // an embed nested below the embed a spread to-many flattens: the walk has already entered the spread's array
+    'r|public|users|username, ...messages(channels(channel_details(channels(id))))': {
+      row: {
+        username: string
+        channels: { channel_details: { channels: { id: number } } | null }[]
+      }
+      sources: { username: 'username' }
+      embeds: {
+        messages: { path: ['messages']; outputs: [['channels']]; join: 'left'; cardinality: 'many' }
+        'messages.channels': {
+          path: ['messages', 'channels']
+          outputs: [['channels']]
+          join: 'left'
+          cardinality: 'one'
+        }
+        'messages.channels.channel_details': {
+          path: ['messages', 'channels', 'channel_details']
+          outputs: [['channels', 'channel_details']]
+          join: 'left'
+          cardinality: 'one'
+        }
+        'messages.channels.channel_details.channels': {
+          path: ['messages', 'channels', 'channel_details', 'channels']
+          outputs: [['channels', 'channel_details', 'channels']]
+          join: 'left'
+          cardinality: 'one'
+        }
+      }
+    }
+    // the same relationship as an ordinary and as a spread occurrence: the embeds merge, each with two outputs
+    'r|public|users|username, messages(channels(id)), ...messages(channels(id))': {
+      row: {
+        username: string
+        messages: { channels: { id: number } }[]
+        channels: { id: number }[]
+      }
+      sources: { username: 'username' }
+      embeds: {
+        messages: {
+          path: ['messages']
+          outputs: [['messages'], ['channels']]
+          join: 'left'
+          cardinality: 'many'
+        }
+        'messages.channels': {
+          path: ['messages', 'channels']
+          outputs: [['messages', 'channels'], ['channels']]
+          join: 'left'
+          cardinality: 'one'
+        }
+      }
+    }
     'r|public|channels|id, messages(id)': {
       row: { id: number; messages: { id: number }[] }
       sources: { id: 'id' }
@@ -692,6 +744,14 @@ declare global {
       embed: ['messages']
     }
     'r|public|users|username, ...messages(channels(id))|messages.channels.id': {
+      type: number
+      embed: ['messages', 'channels']
+    }
+    'r|public|users|username, ...messages(channels(channel_details(channels(id))))|messages.channels.channel_details.channels.id': {
+      type: number
+      embed: ['messages', 'channels', 'channel_details', 'channels']
+    }
+    'r|public|users|username, messages(channels(id)), ...messages(channels(id))|messages.channels.id': {
       type: number
       embed: ['messages', 'channels']
     }

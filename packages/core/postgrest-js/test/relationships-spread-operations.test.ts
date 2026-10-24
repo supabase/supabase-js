@@ -418,3 +418,31 @@ test('filter on a to-one embed beneath a spread to-many nulls the element, not t
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
+
+test('filter on a to-one embed nested below an embed in a spread to-many nulls the innermost embed', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username, ...messages(channels(channel_details(channels(id))))')
+    .eq('messages.channels.channel_details.channels.id', -1)
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    channels: z.array(
+      z.object({
+        channel_details: z.object({ channels: z.object({ id: z.number() }).nullable() }).nullable(),
+      })
+    ),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+  expect(res.data?.channels.map((c) => c.channel_details?.channels ?? null)).toEqual([
+    null,
+    null,
+    null,
+    null,
+  ])
+})

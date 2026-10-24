@@ -2770,6 +2770,16 @@ declare global {
       sources: { username: 'username' }
       embeds: {}
     }
+    'r|public|users|username, ...messages(channels(channel_details(channels(id))))': {
+      row: { username: SupabaseColumnType<'public.users.username', string>; channels: { channel_details: { channels: { id: SupabaseColumnType<'public.channels.id', number> } } | null }[] }
+      sources: { username: 'username' }
+      embeds: {
+        messages: { path: ['messages']; outputs: [['channels']]; join: 'left'; cardinality: 'many' }
+        'messages.channels': { path: ['messages', 'channels']; outputs: [['channels']]; join: 'left'; cardinality: 'one' }
+        'messages.channels.channel_details': { path: ['messages', 'channels', 'channel_details']; outputs: [['channels', 'channel_details']]; join: 'left'; cardinality: 'one' }
+        'messages.channels.channel_details.channels': { path: ['messages', 'channels', 'channel_details', 'channels']; outputs: [['channels', 'channel_details', 'channels']]; join: 'left'; cardinality: 'one' }
+      }
+    }
     'r|public|users|username, ...messages(channels(id))': {
       row: { username: SupabaseColumnType<'public.users.username', string>; channels: { id: SupabaseColumnType<'public.channels.id', number> }[] }
       sources: { username: 'username' }
@@ -3006,6 +3016,7 @@ declare global {
   }
 
   interface SupabaseOperands {
+    'r|public|users|username, ...messages(channels(channel_details(channels(id))))|messages.channels.channel_details.channels.id': { type: SupabaseColumnType<'public.channels.id', number>; embed: ['messages', 'channels', 'channel_details', 'channels'] }
     'r|public|users|username, ...messages(channels(id))|messages.channels.id': { type: SupabaseColumnType<'public.channels.id', number>; embed: ['messages', 'channels'] }
   }
 
