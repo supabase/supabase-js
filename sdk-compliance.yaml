@@ -1001,6 +1001,8 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.send
+    supporting_symbols:
+      - RealtimeBroadcastPersist
   realtime.channel.subscribe:
     status: implemented
     symbols:
