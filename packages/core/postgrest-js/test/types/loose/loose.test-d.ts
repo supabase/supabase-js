@@ -15,6 +15,8 @@ const r: unknown = un.then((x) => (x.error ? undefined : x.data[0]?.whatever))
 // 6. missing operand entry: value unknown (anything goes)
 supabase.from('messages').select('id, channels(id)').eq('channels.slug', 'x')
 supabase.from('messages').select('id, channels(id)').eq('channels.slug', 5)
+// `.match` takes the same unindexed operand, any value
+supabase.from('messages').select('id, channels(id)').match({ 'channels.slug': 5 })
 // ... and a filter the planner can't place widens every left-joined to-one embed (7)
 const mo = supabase.from('messages').select('id, channels(id)').eq('channels.slug', 'x')
 type _6l = Expect<Equal<Data<typeof mo>, { id: number; channels: { id: number } | null }[]>>

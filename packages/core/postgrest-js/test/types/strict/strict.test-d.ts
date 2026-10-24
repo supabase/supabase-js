@@ -22,6 +22,9 @@ supabase.from('users').select(cols)
 // 6. missing operand entry rejected
 // @ts-expect-error not indexed by @supabase/postgrest-mapper: no operand entry for this column in this select. Check the scanner resolved t
 supabase.from('messages').select('id, channels(id)').eq('channels.slug', 'x')
+// `.match` rejects the same unindexed operand on its key
+// @ts-expect-error not indexed by @supabase/postgrest-mapper: no operand entry for this column in this select. Check the scanner resolved t
+supabase.from('messages').select('id, channels(id)').match({ 'channels.slug': 'x' })
 // plain columns, dynamic columns and indexed operands are fine
 supabase.from('messages').select('id, channels(id)').eq('channel_id', 1).eq('channels.id', 1)
 supabase.from('messages').select('id, channels(id)').eq('channels.id', 1).eq(cols, 1)

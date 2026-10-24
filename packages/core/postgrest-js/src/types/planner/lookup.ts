@@ -301,6 +301,19 @@ export type ColArg<B extends BState, C extends string> =
         ? C
         : OperandReject<B, C>
 
+// `.match({ ... })`: each key is checked like the column of `.eq(key, value)`. A known key takes its value type (or
+// `undefined`, which the runtime drops); one the operand lookup rejects takes the rejection message as its type, so the
+// error names the key and says why. A dynamic key (`string`) takes any value.
+export type MatchArg<B extends BState, Q> = {
+  [K in keyof Q]: K extends string
+    ? ColArg<B, K> extends infer R
+      ? [R] extends [K]
+        ? NonNullable<ValueOf<B, K>> | undefined
+        : R
+      : never
+    : unknown
+}
+
 // ---------------------------------------------------------------- builder state of the entry points
 export type Q0 = '*'
 // the relation of a chain, derived from the client's Database so that the builder carries only names. `any` as the

@@ -10,7 +10,7 @@ import type {
   HasRef,
   HitsRoot,
 } from './types/planner/facts'
-import type { BState, ColArg, MState, ValueOf } from './types/planner/lookup'
+import type { BState, ColArg, MatchArg, MState, ValueOf } from './types/planner/lookup'
 import type { RefOpts } from './types/planner/options'
 
 export type FilterOperator =
@@ -1676,7 +1676,7 @@ export default class PostgrestFilterBuilder<
    * ```
    */
   match<const Q extends Record<string, unknown>>(
-    query: Q
+    query: MatchArg<B, Q>
   ): PostgrestFilterBuilder<B, E, F & Gate<B, MultiOpFacts<B, keyof Q & string>>, M>
   match(query: Record<string, unknown>): any {
     Object.entries(query)
