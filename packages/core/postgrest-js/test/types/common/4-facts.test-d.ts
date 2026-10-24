@@ -91,3 +91,18 @@ type _4k3 = Expect<Equal<Data<typeof m3>, { status: Status | null }[]>>
 supabase.from('users').select('status').eq('status', 'AWAY')
 // @ts-expect-error Argument of type 'string' is not assignable to parameter of type
 supabase.from('users').select('status').eq('status', text)
+
+// a filter written while the select is dynamic can't be placed: the facts it records survive a later known select
+declare const dynamicCols: string
+const d1 = supabase
+  .from('messages')
+  .select(dynamicCols)
+  .eq('channels.id', -1)
+  .select('id, channels(id)')
+type _4l = Expect<Equal<Data<typeof d1>, { id: number; channels: { id: number } | null }[]>>
+// ... a column of the root relation is placed, so it widens nothing
+const d2 = supabase.from('messages').select(dynamicCols).eq('id', 1).select('id, channels(id)')
+type _4m = Expect<Equal<Data<typeof d2>, { id: number; channels: { id: number } }[]>>
+// without a filter in between nothing widens
+const d3 = supabase.from('messages').select(dynamicCols).select('id, channels(id)')
+type _4n = Expect<Equal<Data<typeof d3>, { id: number; channels: { id: number } }[]>>

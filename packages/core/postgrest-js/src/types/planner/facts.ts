@@ -66,19 +66,22 @@ export type EqFact<B extends BState, C extends string, V> = C extends keyof B['r
     : {}
   : {}
 
-// widening from embedded operands, or from a column the planner can't place (dynamic, or no operand entry)
+// widening from embedded operands, or from a column the planner can't place (dynamic, no operand entry, or a dynamic
+// select that leaves the row unknown: a later known select keeps the fact, so the filter can't be dropped as plain)
 export type OpFacts<B extends BState, C extends string> =
   true extends IsDynamic<C>
     ? { wide: true }
     : C extends keyof B['row']
       ? {}
-      : Unplanned extends OperandEntry<B, C>
+      : true extends IsDynamic<B['q']>
         ? { wide: true }
-        : Dynamic extends OperandEntry<B, C>
+        : Unplanned extends OperandEntry<B, C>
           ? { wide: true }
-          : {
-              embeds: { [P in EmbedPathOf<B, C> | EnclosingOf<B, C>]: { widen: true } }
-            }
+          : Dynamic extends OperandEntry<B, C>
+            ? { wide: true }
+            : {
+                embeds: { [P in EmbedPathOf<B, C> | EnclosingOf<B, C>]: { widen: true } }
+              }
 
 type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (
   x: infer I
