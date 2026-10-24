@@ -113,6 +113,12 @@ export interface GenerateOutput extends GenerateProjectResult {
    */
   scannedDirectories: string[]
   /**
+   * The directories and script files the scan met in those directories, left out ones included (absolute paths): an
+   * entry of a scanned directory that is not among them appeared after the scan. Empty when the run stopped before
+   * scanning
+   */
+  scannedEntries: string[]
+  /**
    * Problems that do not stop the module: a configured or server release of another patch than the planner's
    * (another line is a `PlannerIncompatible` diagnostic and an empty module)
    */
@@ -462,6 +468,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
     const projectDir = configFileName ? dirname(configFileName) : cwd
     const diagnostics: MapperDiagnostic[] = []
     let scannedDirectories: string[] = []
+    let scannedEntries: string[] = []
     const report = (code: number, messageText: string): void => {
       diagnostics.push({ code, messageText, start: 0, length: 0 })
     }
@@ -478,6 +485,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       keys: [],
       cache: 'disabled',
       scannedDirectories,
+      scannedEntries,
       warnings: [],
     })
 
@@ -509,6 +517,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       ...(options.scan ? { scan: options.scan } : {}),
     })
     scannedDirectories = resolved.directories
+    scannedEntries = resolved.entries
     for (const warning of resolved.warnings) logger.warn(warning)
     const sources = await Promise.all(
       resolved.files.map(async (fileName) => {
@@ -725,6 +734,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       keys: ids,
       cache: planned.cache,
       scannedDirectories,
+      scannedEntries,
       warnings: [
         ...planned.warnings,
         ...planned.contextDiagnostics.filter((d) => d.severity !== 'info').map((d) => d.message),
@@ -815,6 +825,7 @@ export async function generateFrom(
       keys: [],
       cache: 'disabled',
       scannedDirectories: [],
+      scannedEntries: [],
       warnings: [],
     }
   }

@@ -47,7 +47,7 @@ function harness(
     ignore: OUT,
     run: async () => {
       await onRun(++log.runs, edit, () => controller.abort())
-      return { files: [FILE], directories: [] }
+      return { files: [FILE], directories: [], entries: [] }
     },
   })
   return { controller, mtimes, events, log, finished, idle: idle.promise }

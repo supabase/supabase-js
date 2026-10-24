@@ -1,4 +1,4 @@
-import { mkdirSync, utimesSync, writeFileSync } from 'node:fs'
+import { mkdirSync, renameSync, utimesSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { nodeOperationFs, watch, type AcquiredSchema, type WatchEvent } from '../src'
 import { acquireFromStack, plannerWasmPath } from './support/acquired'
@@ -16,11 +16,14 @@ const QUERY = (columns: string) =>
 /**
  * Starts a watch whose first generation creates `created` right after it has read the sources, which is after the
  * scan listed the directories and before any directory is watched. Resolves with the events up to the first run that
- * declares `key`, or rejects when none does.
+ * declares `key`, or rejects when none does. `moved` files (from a path outside the scanned roots to a path in
+ * them, the text of each) are written before the watch with a modification time long ago and renamed at the same
+ * moment: a rename keeps the stamp, so only the membership of the directory can tell they are new.
  */
 async function watchWhileCreating(
   created: Record<string, string>,
-  key: string
+  key: string,
+  moved: { from: string; to: string; text: string }[] = []
 ): Promise<WatchEvent[]> {
   const project = await createTempProject(acquired, { 'src/app.ts': QUERY('username') })
   project.write(
@@ -40,6 +43,10 @@ async function watchWhileCreating(
   const longAgo = new Date(Date.now() - 60_000)
   for (const name of ['tsconfig.json', 'schema.snapshot.json', 'src/app.ts']) {
     utimesSync(join(project.dir, name), longAgo, longAgo)
+  }
+  for (const { from, text } of moved) {
+    project.write(from, text)
+    utimesSync(join(project.dir, from), longAgo, longAgo)
   }
   let creating = false
   const events: WatchEvent[] = []
@@ -63,6 +70,8 @@ async function watchWhileCreating(
               mkdirSync(dirname(join(project.dir, name)), { recursive: true })
               writeFileSync(join(project.dir, name), content)
             }
+            for (const { from, to } of moved)
+              renameSync(join(project.dir, from), join(project.dir, to))
           }
           return text
         },
@@ -115,5 +124,13 @@ describe('watch sees what is created while the first generation runs', () => {
     )
     const first = events[0]
     expect(first?.kind === 'run' && first.result.text).not.toContain('r|public|users|catchphrase')
+  }, 180_000)
+
+  it('runs again for an old file moved into a scanned directory after it was listed', async () => {
+    const events = await watchWhileCreating({}, 'r|public|users|status', [
+      { from: 'staging/moved.ts', to: 'src/moved.ts', text: QUERY('status') },
+    ])
+    const first = events[0]
+    expect(first?.kind === 'run' && first.result.text).not.toContain('r|public|users|status')
   }, 180_000)
 })

@@ -99,6 +99,8 @@ export interface GenerateResult {
   watchedFiles: string[]
   /** Absolute paths of the directories the scan listed: what a new file or directory under them can change */
   scannedDirectories: string[]
+  /** The directories and script files the scan met in them, left out ones included: what a later listing is compared with */
+  scannedEntries: string[]
   cache: CacheOutcome
   /** Fingerprint of everything that can change `text` */
   identity: string

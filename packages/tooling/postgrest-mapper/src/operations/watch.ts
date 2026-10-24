@@ -51,9 +51,14 @@ export interface WatchLoopOptions {
   signal?: AbortSignal
   /**
    * Runs one generation and returns what it depends on (absolute paths): the files, and the directories it scanned
-   * for sources, where a created file or directory changes the result
+   * for sources, where a created file or directory changes the result, and the entries the scan met in them (the
+   * ones it left out too): what a source file or directory is compared with to tell that it appeared after the scan
    */
-  run(): Promise<{ files: readonly string[]; directories: readonly string[] }>
+  run(): Promise<{
+    files: readonly string[]
+    directories: readonly string[]
+    entries: readonly string[]
+  }>
   /** A file the loop itself writes: its events never retrigger */
   ignore: string
 }
@@ -67,7 +72,8 @@ export interface WatchLoopOptions {
  * ancestor: the ancestor's first event on the way to it runs again, and that run watches the directory itself once
  * it exists. A file edited while a run was in flight, before its directory was watched, is detected by its
  * modification time when the directory starts being watched, and runs again; so is a source file or directory that
- * appeared in a scanned directory after the run listed it. Resolves when `signal` aborts, after
+ * appeared in a scanned directory after the run listed it, whatever its modification time (a file moved in keeps
+ * the old one): it is told by being absent from what the run met. Resolves when `signal` aborts, after
  * the run in flight has finished.
  */
 export async function watchLoop(options: WatchLoopOptions): Promise<void> {
@@ -160,6 +166,7 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
   const sync = async (
     files: readonly string[],
     scannedDirectories: readonly string[],
+    scannedEntries: readonly string[],
     startedAt: number
   ): Promise<void> => {
     if (stopped) return // a run that outlives the abort must not leave handles behind
@@ -193,22 +200,21 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
       dirty = true
     }
     // The same goes for what appeared in a scanned directory after the scan listed it: no event told, and neither
-    // is in `files`. A source file or a directory stamped since the run began is new (or replaced).
+    // is in `files`. A source file or a directory the run did not meet is new, by membership: its modification
+    // time says nothing (a file renamed into place keeps the old one).
     if (
       !dirty &&
-      (await createdSince(
-        startedAt,
+      (await appeared(
         [...added].filter((d) => scanned.has(d)),
-        watched
+        new Set([...watched, ...scannedEntries])
       ))
     ) {
       dirty = true
     }
   }
 
-  /** Whether an entry of `directories` that the run did not depend on was written since `startedAt` */
-  const createdSince = async (
-    startedAt: number,
+  /** Whether `directories` hold a source file or directory that the run neither depended on nor met */
+  const appeared = async (
     directories: readonly string[],
     known: ReadonlySet<string>
   ): Promise<boolean> => {
@@ -221,7 +227,7 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
         }
       })
     )
-    const candidates = listed.flat().filter(
+    return listed.flat().some(
       (e) =>
         !known.has(e.path) &&
         e.name !== 'node_modules' &&
@@ -230,8 +236,6 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
         !ignore.startsWith(e.path + sep) &&
         (e.isDirectory || SOURCE.test(e.name))
     )
-    const stamps = await Promise.all(candidates.map((e) => mtime(e.path)))
-    return stamps.some((stamp) => stamp !== undefined && stamp >= startedAt - MTIME_MARGIN_MS)
   }
 
   const cycle = async (): Promise<void> => {
@@ -239,7 +243,7 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
       dirty = false
       const startedAt = clock.now()
       const ran = await options.run()
-      await sync(ran.files, ran.directories, startedAt)
+      await sync(ran.files, ran.directories, ran.entries, startedAt)
     } while (dirty && !stopped)
   }
   const trigger = (): void => {
@@ -324,11 +328,15 @@ export async function watch(
         try {
           const result = await writeWith(resolved, input, generator)
           options.onEvent({ kind: 'run', result })
-          return { files: result.watchedFiles, directories: result.scannedDirectories }
+          return {
+            files: result.watchedFiles,
+            directories: result.scannedDirectories,
+            entries: result.scannedEntries,
+          }
         } catch (error) {
           // a broken tsconfig must not end the watch: report it and wait for the fix
           options.onEvent({ kind: 'error', configFileName, message: messageOf(error) })
-          return { files: [configFileName], directories: [] }
+          return { files: [configFileName], directories: [], entries: [] }
         }
       },
     })

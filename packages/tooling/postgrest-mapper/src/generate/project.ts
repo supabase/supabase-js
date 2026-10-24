@@ -30,12 +30,20 @@ export interface ProjectFiles {
    * included). A file created in one of them, or a directory created below one, can change `files`
    */
   directories: string[]
+  /**
+   * Absolute paths, sorted: every directory and every script file (a file of a source or JavaScript extension, a
+   * declaration included) the scan met in those directories, whether the `include` and `exclude` took it or not
+   * (what is below an excluded directory was not listed). What a later listing is compared with to tell an entry
+   * that appeared from one the scan already saw and left out
+   */
+  entries: string[]
   /** Problems met while resolving (an unreadable tsconfig, an `extends` that cannot be resolved) */
   warnings: string[]
 }
 
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts']
 const JS_EXTENSIONS = ['.js', '.jsx', '.mjs', '.cjs']
+const SCRIPT_EXTENSIONS = [...SOURCE_EXTENSIONS, ...JS_EXTENSIONS]
 
 // ---------------------------------------------------------------------------------------------------------------
 // tsconfig.json (JSON with comments and trailing commas)
@@ -255,22 +263,25 @@ async function walk(
   isExcluded: (absolute: string) => boolean,
   visit: (file: string) => void,
   warnings: string[],
-  directories: Set<string>
+  directories: Set<string>,
+  entries: Set<string>
 ): Promise<void> {
   directories.add(dir)
-  let entries: { name: string; isDirectory: boolean }[]
+  let listing: { name: string; isDirectory: boolean }[]
   try {
-    entries = await fs.readdir(dir)
+    listing = await fs.readdir(dir)
   } catch (error) {
     warnings.push(
       `could not list ${dir}: ${error instanceof Error ? error.message : String(error)}`
     )
     return
   }
-  for (const entry of entries) {
+  for (const entry of listing) {
     const path = join(dir, entry.name)
+    if (entry.isDirectory || SCRIPT_EXTENSIONS.some((ext) => entry.name.endsWith(ext)))
+      entries.add(path)
     if (isExcluded(path)) continue
-    if (entry.isDirectory) await walk(fs, path, isExcluded, visit, warnings, directories)
+    if (entry.isDirectory) await walk(fs, path, isExcluded, visit, warnings, directories, entries)
     else visit(path)
   }
 }
@@ -334,6 +345,7 @@ export async function resolveProjectFiles(
 
   const found = new Set<string>(explicit)
   const directories = new Set<string>()
+  const entries = new Set<string>()
   if (includes.length > 0) {
     // walk from the directories the patterns can reach: the bases, pruned by the excludes
     const bases = new Set(patterns.map((p) => staticRoot(p.pattern, p.base)))
@@ -346,7 +358,8 @@ export async function resolveProjectFiles(
           if (isSource(file) && includes.some((m) => m(file))) found.add(file)
         },
         warnings,
-        directories
+        directories,
+        entries
       )
     }
   }
@@ -354,6 +367,7 @@ export async function resolveProjectFiles(
     files: [...found].sort(),
     configFiles: [...configs].sort(),
     directories: [...directories].sort(),
+    entries: [...entries].sort(),
     warnings,
   }
 }

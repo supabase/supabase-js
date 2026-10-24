@@ -40,6 +40,7 @@ export async function generateWith(
     warnings: output.warnings,
     watchedFiles: [...output.watchedFiles, config.configFileName],
     scannedDirectories: output.scannedDirectories,
+    scannedEntries: output.scannedEntries,
     cache: output.cache,
     identity: output.identity,
   }
