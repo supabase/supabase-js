@@ -42,14 +42,29 @@ export async function mutations() {
     .select('title, author:authors!author_id(name)')
     .single()
 
-  // HOVER `counted`. `{ count: 'exact', head: true }` sends a HEAD request: `data` is `null`, `count` is the number.
-  const counted = await supabase.from('posts').select('id', { count: 'exact', head: true })
+  // HOVER `counted`. `{ count: 'exact' }` still returns the rows; `count` is the number.
+  const { data: counted, count } = await supabase
+    .from('posts')
+    .select('id, title', { count: 'exact' })
+    .limit(3)
+
+  // HOVER `head`. `{ count: 'exact', head: true }` sends a HEAD request: `data` is `null`, `count` is the number.
+  const { data: head, count: total } = await supabase
+    .from('posts')
+    .select('id', { count: 'exact', head: true })
 
   // HOVER `csv`. `.csv()` turns the result into a `string`.
   const { data: csv } = await supabase.from('authors').select('name, email').csv()
 
-  // Clean up the demo row.
-  await supabase.from('posts').delete().eq('slug', slug)
+  // HOVER `deleted`. A write without `.select()` returns no rows: `data` is `null`. It also cleans up the demo row.
+  const { data: deleted } = await supabase.from('posts').delete().eq('slug', slug)
 
-  return { inserted, updated, upserted, count: counted.count, countData: counted.data, csv }
+  // HOVER `removed`. With `.select()` the deleted rows come back.
+  const { data: removed } = await supabase
+    .from('posts')
+    .delete()
+    .eq('slug', `${slug}-gone`)
+    .select('id, slug')
+
+  return { inserted, updated, upserted, counted, count, head, total, csv, deleted, removed }
 }

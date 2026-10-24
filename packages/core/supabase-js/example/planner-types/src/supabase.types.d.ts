@@ -412,6 +412,11 @@ declare global {
       sources: { title: 'title' }
       embeds: {}
     }
+    'w|public|posts|id, slug': {
+      row: { id: SupabaseColumnType<'public.posts.id', number>; slug: SupabaseColumnType<'public.posts.slug', string> }
+      sources: { id: 'id'; slug: 'slug' }
+      embeds: {}
+    }
     'w|public|posts|id, title, status': {
       row: { id: SupabaseColumnType<'public.posts.id', number>; title: SupabaseColumnType<'public.posts.title', string>; status: SupabaseColumnType<'public.posts.status', SupabaseDatabase['public']['Enums']['post_status']> }
       sources: { id: 'id'; title: 'title'; status: 'status' }
