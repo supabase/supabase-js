@@ -19,8 +19,21 @@ describe('count in a function body, through the generator', () => {
     for (const p of projects.splice(0)) p.remove()
   })
 
-  async function rowOf(name: string): Promise<string> {
-    const p = await createTempProject(acquired, { 'src/app.ts': `supabase.rpc('${name}')` })
+  /** The schema with one function's body and search path replaced in the catalog */
+  function withBody(name: string, source: string, searchPath: string): AcquiredSchema {
+    return {
+      ...acquired,
+      supplementary: {
+        ...acquired.supplementary,
+        functions: acquired.supplementary.functions.map((f) =>
+          f.name === name ? { ...f, source, searchPath } : f
+        ),
+      },
+    }
+  }
+
+  async function rowOf(name: string, schema: AcquiredSchema = acquired): Promise<string> {
+    const p = await createTempProject(schema, { 'src/app.ts': `supabase.rpc('${name}')` })
     projects.push(p)
     const result = await generateDeclarations({
       configFileName: p.configFileName,
@@ -42,5 +55,15 @@ describe('count in a function body, through the generator', () => {
   test('may be a function of the path that takes the operand, which can return NULL', async () => {
     // arr_a is outside the schemas the catalog lists: the call stays nullable and the type it has is not claimed
     expect(await rowOf('count_mood_shadowed')).toBe('{ n: string | null }')
+  }, 180_000)
+
+  test('count(*) is the builtin even along a schema the catalog does not list', async () => {
+    // count(*) takes no argument: no function of the path can be preferred to the aggregate
+    const schema = withBody(
+      'count_mood_plain',
+      'SELECT count(*) FROM public.cast_cases',
+      'arr_a, public'
+    )
+    expect(await rowOf('count_mood_plain', schema)).toBe('{ n: number }')
   }, 180_000)
 })

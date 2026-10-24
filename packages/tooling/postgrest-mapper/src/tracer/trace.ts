@@ -739,9 +739,10 @@ class Run {
     ctx: Ctx,
     groupingSets: boolean
   ): Promise<boolean> {
+    // count(*) reads no argument, and no function of any schema takes none
+    if (call.agg_star) return false
     if (overloads.unknownSchema) return true
-    // count(*) reads no argument, and no candidate takes none
-    if (call.agg_star || overloads.candidates.length === 0) return false
+    if (overloads.candidates.length === 0) return false
     const args: Node[] = call.args ?? []
     if (args.length !== 1) return true
     const operand = await this.expr(args[0], scope, ctx, groupingSets)
