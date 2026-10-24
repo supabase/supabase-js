@@ -1,3 +1,5 @@
-dist/
+!dist/
+dist/*
+!dist/postgrest-planner.wasm
 test-dist/
 haskell/src/Planner/BuildInfo.hs

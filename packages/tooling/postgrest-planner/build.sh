@@ -8,7 +8,8 @@
 set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
-SUPA_WASM=${SUPA_WASM:-/Users/jgoux/Code/supabase/supa-wasm}
+# SUPA_WASM: local checkout of https://github.com/supabase/supa-wasm with its toolchain built.
+: "${SUPA_WASM:?SUPA_WASM is not set: point it at a local checkout of https://github.com/supabase/supa-wasm with its wasm toolchain built}"
 PGRST_WASM=$SUPA_WASM/postgrest
 
 POSTGREST_COMMIT=0d97c05d8d23bd8a83c867abc45ef481a6d5d2c7 # v16.4

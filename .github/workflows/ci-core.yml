@@ -62,7 +62,7 @@ jobs:
           echo "Affected projects: $AFFECTED"
           echo "auth=$(echo "$AFFECTED"   | grep -q 'auth-js'      && echo 1 || echo 0)" >> $GITHUB_OUTPUT
           echo "storage=$(echo "$AFFECTED" | grep -q 'storage-js'   && echo 1 || echo 0)" >> $GITHUB_OUTPUT
-          echo "postgrest=$(echo "$AFFECTED" | grep -q 'postgrest-js' && echo 1 || echo 0)" >> $GITHUB_OUTPUT
+          echo "postgrest=$(echo "$AFFECTED" | grep -qE 'postgrest-(js|mapper|planner)' && echo 1 || echo 0)" >> $GITHUB_OUTPUT
           echo "functions=$(echo "$AFFECTED" | grep -q 'functions-js' && echo 1 || echo 0)" >> $GITHUB_OUTPUT
           echo "realtime=$(echo "$AFFECTED"  | grep -q 'realtime-js'  && echo 1 || echo 0)" >> $GITHUB_OUTPUT
 
@@ -446,6 +446,9 @@ jobs:
       - name: Run postgrest-js type tests
         run: pnpm nx test:types:ci postgrest-js
         timeout-minutes: 15
+      - name: Run postgrest-planner tests (committed wasm, no toolchain needed)
+        run: pnpm nx test postgrest-planner
+        timeout-minutes: 10
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
         run: |
