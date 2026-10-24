@@ -399,3 +399,22 @@ test('select spread on many relation', async () => {
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
+
+test('filter on a to-one embed beneath a spread to-many nulls the element, not the array', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username, ...messages(channels(id))')
+    .eq('messages.channels.id', -1)
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
+  expect(res.data).toEqual({ username: 'supabot', channels: [null, null, null, null] })
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    channels: z.array(z.object({ id: z.number() }).nullable()),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})

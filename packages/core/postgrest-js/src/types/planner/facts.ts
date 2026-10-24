@@ -159,17 +159,52 @@ export type NeedsWalk<F> = F extends { embeds: unknown }
     ? true
     : false
 
+// How many arrays an embed's value sits in beyond the ones the walk descends into: a to-many *spread* ancestor flattens
+// its children into the parent as arrays (an ordinary to-many ancestor keeps them in its own elements, which the walk
+// enters), one layer per such ancestor.
+export type SpreadLift<E, P extends readonly string[], D extends unknown[] = []> = [
+  Init<P>,
+] extends [never]
+  ? D
+  : Init<P> extends infer Q extends string
+    ? Q extends keyof E
+      ? E[Q] extends { path: infer Pa extends readonly string[]; cardinality: infer C }
+        ? SpreadLift<E, Pa, C extends 'many' ? ([Q] extends [Outs<E[Q]>] ? D : [...D, unknown]) : D>
+        : D
+      : D
+    : D
+
+// the embed fact lands on the elements of the arrays a spread ancestor introduces
+export type AtDepth<V, D extends unknown[], Info, Em, F, Spread> = D extends [unknown, ...infer R]
+  ? V extends readonly (infer U)[]
+    ? AtDepth<U, R, Info, Em, F, Spread>[]
+    : V
+  : EmbedFact<V, Info, Em, F, Spread>
+
+// One output path can be claimed by several embeds (a spread and the embeds it flattens). A to-many embed never turns
+// null, so when another claimant exists the to-many one is left out rather than unioned in as the unchanged value.
+type NonMany<E, EK> = EK extends keyof E
+  ? E[EK] extends { cardinality: 'many' }
+    ? never
+    : EK
+  : never
+type Claim<V, E, F, Path, EK> = EK extends keyof E
+  ? AtDepth<
+      V,
+      E[EK] extends { path: infer Pa extends readonly string[] } ? SpreadLift<E, Pa> : [],
+      E[EK],
+      EmbedFactsOf<F, EK>,
+      F,
+      Path extends EK ? false : true
+    >
+  : never
+type Claims<V, E, F, Path, EK> = [NonMany<E, EK>] extends [never]
+  ? Claim<V, E, F, Path, EK>
+  : Claim<V, E, F, Path, NonMany<E, EK>>
+
 export type EmbedField<V, E, OM, F, Path, W> = W extends true
   ? Path extends keyof OM
-    ? OM[Path] extends infer EK
-      ? EmbedFact<
-          Walk<V, E, OM, F, Path & string>,
-          EK extends keyof E ? E[EK] : never,
-          EmbedFactsOf<F, EK>,
-          F,
-          Path extends EK ? false : true
-        >
-      : V
+    ? Claims<Walk<V, E, OM, F, Path & string>, E, F, Path, OM[Path]>
     : V
   : V
 

@@ -2766,6 +2766,14 @@ declare global {
       sources: { username: 'username' }
       embeds: {}
     }
+    'r|public|users|username, ...messages(channels(id))': {
+      row: { username: SupabaseColumnType<'public.users.username', string>; channels: { id: SupabaseColumnType<'public.channels.id', number> }[] }
+      sources: { username: 'username' }
+      embeds: {
+        messages: { path: ['messages']; outputs: [['channels']]; join: 'left'; cardinality: 'many' }
+        'messages.channels': { path: ['messages', 'channels']; outputs: [['channels']]; join: 'left'; cardinality: 'one' }
+      }
+    }
     'r|public|users|username, all_user_messages:get_messages(*)': {
       row: { username: SupabaseColumnType<'public.users.username', string>; all_user_messages: { id: SupabaseColumnType<'public.messages.id', number> | null; data: SupabaseColumnType<'public.messages.data', Json> | null; message: SupabaseColumnType<'public.messages.message', string> | null; username: SupabaseColumnType<'public.messages.username', string> | null; channel_id: SupabaseColumnType<'public.messages.channel_id', number> | null }[] }
       sources: { username: 'username' }
@@ -2991,6 +2999,10 @@ declare global {
       sources: { username: 'username' }
       embeds: {}
     }
+  }
+
+  interface SupabaseOperands {
+    'r|public|users|username, ...messages(channels(id))|messages.channels.id': { type: SupabaseColumnType<'public.channels.id', number>; embed: ['messages', 'channels'] }
   }
 
   interface SupabasePgrstStatus {

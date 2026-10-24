@@ -283,6 +283,20 @@ declare global {
         }
       }
     }
+    // a spread to-many: its children are lifted to the root as arrays, both embeds claim the output `channels`
+    'r|public|users|username, ...messages(channels(id))': {
+      row: { username: string; channels: { id: number }[] }
+      sources: { username: 'username' }
+      embeds: {
+        messages: { path: ['messages']; outputs: [['channels']]; join: 'left'; cardinality: 'many' }
+        'messages.channels': {
+          path: ['messages', 'channels']
+          outputs: [['channels']]
+          join: 'left'
+          cardinality: 'one'
+        }
+      }
+    }
     'r|public|channels|id, messages(id)': {
       row: { id: number; messages: { id: number }[] }
       sources: { id: 'id' }
@@ -676,6 +690,14 @@ declare global {
     'r|public|users|username, messages(id, channels(id))|messages.id': {
       type: number
       embed: ['messages']
+    }
+    'r|public|users|username, ...messages(channels(id))|messages.channels.id': {
+      type: number
+      embed: ['messages', 'channels']
+    }
+    'r|public|users|username, ...messages(channels(id))|messages.channels': {
+      type: unknown
+      embed: ['messages', 'channels']
     }
     'r|public|messages|id, channels(id, channel_details(id))|channels.channel_details.id': {
       type: number

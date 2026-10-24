@@ -52,3 +52,26 @@ type _22d = Expect<
     { username: string; messages: { id: number; channels: { id: number } }[] }[]
   >
 >
+
+// a spread to-many lifts its children into arrays: the filtered to-one beneath it is null inside the array, not the array
+const spreadMany = supabase
+  .from('users')
+  .select('username, ...messages(channels(id))')
+  .eq('messages.channels.id', -1)
+type _22e = Expect<
+  Equal<Data<typeof spreadMany>, { username: string; channels: ({ id: number } | null)[] }[]>
+>
+// nothing filtered: the array holds the plain value
+const spreadManyPlain = supabase.from('users').select('username, ...messages(channels(id))')
+type _22f = Expect<
+  Equal<Data<typeof spreadManyPlain>, { username: string; channels: { id: number }[] }[]>
+>
+// ... and `.not(embed, 'is', null)` on the embed beneath removes the null from the elements
+const spreadManyNn = supabase
+  .from('users')
+  .select('username, ...messages(channels(id))')
+  .eq('messages.channels.id', -1)
+  .not('messages.channels', 'is', null)
+type _22g = Expect<
+  Equal<Data<typeof spreadManyNn>, { username: string; channels: { id: number }[] }[]>
+>
