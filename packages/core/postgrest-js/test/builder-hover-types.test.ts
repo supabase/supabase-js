@@ -86,11 +86,66 @@ const cases: { name: string; expression: string; member: string; builder: string
   },
 ]
 
+// `const { data } = await <expression>`, hovered at `data`. `text` is the exact plain type the editor prints.
+const dataCases: { name: string; expression: string; text: string }[] = [
+  {
+    name: 'scalarRpc',
+    expression: `postgrest.rpc('get_status', { name_param: 'supabot' })`,
+    text: 'const data: "ONLINE" | "OFFLINE" | null',
+  },
+  {
+    name: 'insertBare',
+    expression: `postgrest.from('users').insert({ username: 'x' })`,
+    text: 'const data: null',
+  },
+  {
+    name: 'insertSelect',
+    expression: `postgrest.from('users').insert({ username: 'x' }).select('username')`,
+    text: 'const data: { username: string; }[] | null',
+  },
+  {
+    name: 'updateSelect',
+    expression: `postgrest.from('users').update({ username: 'y' }).eq('username', 'x').select('username')`,
+    text: 'const data: { username: string; }[] | null',
+  },
+  {
+    name: 'deleteSelect',
+    expression: `postgrest.from('users').delete().eq('username', 'x').select('username')`,
+    text: 'const data: { username: string; }[] | null',
+  },
+  {
+    name: 'single',
+    expression: `postgrest.from('users').select('username, status').single()`,
+    text: 'const data: { username: string; status: "ONLINE" | "OFFLINE" | null; } | null',
+  },
+  {
+    name: 'maybeSingle',
+    expression: `postgrest.from('users').select('username, status').maybeSingle()`,
+    text: 'const data: { username: string; status: "ONLINE" | "OFFLINE" | null; } | null',
+  },
+  {
+    name: 'count',
+    expression: `postgrest.from('users').select('username', { count: 'exact' })`,
+    text: 'const data: { username: string; }[] | null',
+  },
+  {
+    name: 'head',
+    expression: `postgrest.from('users').select('username', { count: 'exact', head: true })`,
+    text: 'const data: null',
+  },
+  {
+    name: 'csv',
+    expression: `postgrest.from('users').select('username, status').csv()`,
+    text: 'const data: string | null',
+  },
+]
+
 const source = `
 import { PostgrestClient } from '../src/index'
 declare const postgrest: PostgrestClient
 
 ${cases.map((c) => `export const ${c.name}Q = ${c.expression}`).join('\n')}
+${dataCases.map((c) => `export async function ${c.name}D() { const { data } = await ${c.expression}; return data }`).join('\n')}
 `
 
 function languageService(): ts.LanguageService {
@@ -145,6 +200,15 @@ function variableHoverOf(c: (typeof cases)[number]): string {
   return ts.displayPartsToString(info!.displayParts)
 }
 
+// the hover of `data` in `const { data } = await <expression>`
+function dataHoverOf(c: (typeof dataCases)[number]): string {
+  const start = source.indexOf(`export async function ${c.name}D()`)
+  const info = ls.getQuickInfoAtPosition(virtualFile, source.indexOf('{ data }', start) + 2)
+  expect(info).toBeDefined()
+  // quick info breaks object types over lines
+  return ts.displayPartsToString(info!.displayParts).replace(/\s+/g, ' ')
+}
+
 describe('builder hovers are compact', () => {
   test('the virtual file type-checks', () => {
     const diagnostics = ls
@@ -188,5 +252,15 @@ describe('builder hovers are compact', () => {
   test('filter operands read as plain types', () => {
     const text = hoverOf(cases.find((x) => x.name === 'eq')!)
     expect(text).toContain('eq<"status", "ONLINE">(column: "status", value: "ONLINE")')
+  })
+
+  test.each(dataCases)('$name data has no internal alias names', (c) => {
+    const text = dataHoverOf(c)
+    expect(text).not.toMatch(/\b(Out|Desc|RB|WB|RpcB)</)
+    expect(text).not.toMatch(/SupabaseColumnType|PgrstJson|PgrstJsonText/)
+  })
+
+  test.each(dataCases)('$name data prints the plain type', (c) => {
+    expect(dataHoverOf(c)).toBe(c.text)
   })
 })

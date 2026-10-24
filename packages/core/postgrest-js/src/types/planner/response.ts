@@ -39,10 +39,14 @@ export type OutGroup<E, F, M extends MState, Bs> = [E] extends [never]
   : M['fmt'] extends 'csv'
     ? string
     : Card<M, Rows<E, F, M>, Bs>
-export type Out<E, F, M extends MState> =
-  | OutGroup<Extract<E, { base: 'many' }>, F, M, 'many'>
-  | OutGroup<Extract<E, { base: 'one' }>, F, M, 'one'>
-  | OutGroup<Extract<E, { base: 'inherit' }>, F, M, M['base']>
+// the always-true conditional makes a hover print the union's members, not `Out<…>`: a union takes the name of the
+// alias that first builds it
+export type Out<E, F, M extends MState> = [E] extends [unknown]
+  ?
+      | OutGroup<Extract<E, { base: 'many' }>, F, M, 'many'>
+      | OutGroup<Extract<E, { base: 'one' }>, F, M, 'one'>
+      | OutGroup<Extract<E, { base: 'inherit' }>, F, M, M['base']>
+  : never
 // distributes over the possible methods: `{ head: boolean }` gives rows or null
 export type DataOf<E, F, M extends MState> = M['op'] extends infer Op
   ? Op extends 'HEAD'
