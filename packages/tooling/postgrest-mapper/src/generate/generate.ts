@@ -58,7 +58,7 @@ import {
  * Bump when what the cache stores, or what the printer prints from it, changes. It is part of the identity and of
  * the cache validity, so the TypeScript server and the disk cache both see a new generator as a new input.
  */
-export const GENERATOR_REVISION = 8
+export const GENERATOR_REVISION = 9
 
 export interface GeneratorLogger {
   debug(message: string): void
