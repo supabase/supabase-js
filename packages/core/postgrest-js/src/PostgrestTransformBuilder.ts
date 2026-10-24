@@ -5,7 +5,23 @@ import type { InvalidMethodError } from './PostgrestFilterBuilder'
 import type { ColumnsArg, Selected } from './types/planner/distribute'
 import type { Gate, HasRef, RefFacts } from './types/planner/facts'
 import type { PgrstFeature } from './types/planner/globals'
-import type { BState, Desc, Descs, MState, OrderArg, Reselect, SetM } from './types/planner/lookup'
+import type {
+  BState,
+  Desc,
+  Descs,
+  IsAny,
+  MState,
+  OrderArg,
+  Reselect,
+  SetM,
+} from './types/planner/lookup'
+import type {
+  OverrideData,
+  OverrideMismatch,
+  OverrideRow,
+  OverrideValid,
+} from './types/planner/override'
+import type { Out } from './types/planner/response'
 import type {
   KeepHead,
   OrCount,
@@ -45,6 +61,16 @@ type ExplainBody<O, M extends MState> =
         ? Record<string, unknown>
         : Record<string, unknown>[]
       : string
+    : never
+
+// the builder `overrideTypes` returns: the override over the result, or the mismatch as the type to hit
+type Overridden<B extends BState, E, F, M extends MState, New, Options> =
+  Out<E, F, M> extends infer R
+    ? IsAny<New> extends true
+      ? PostgrestFilterBuilder<B, Desc<any>, F, M>
+      : OverrideValid<R, New> extends true
+        ? PostgrestFilterBuilder<B, Desc<OverrideRow<OverrideData<R, New, Options>>>, F, M>
+        : OverrideMismatch<R>
     : never
 
 export default class PostgrestTransformBuilder<
@@ -136,6 +162,7 @@ export default class PostgrestTransformBuilder<
    * `null`s appear last.
    * @param options.referencedTable - Set this to order a referenced table by
    * its columns
+   * @param options.foreignTable - Deprecated, use `options.referencedTable`
    *
    * @category Database
    * @subcategory Using modifiers
@@ -318,10 +345,12 @@ export default class PostgrestTransformBuilder<
     {
       ascending = true,
       nullsFirst,
-      referencedTable,
+      foreignTable,
+      referencedTable = foreignTable,
     }: {
       ascending?: boolean
       nullsFirst?: boolean
+      foreignTable?: string
       referencedTable?: string
     } = {}
   ): any {
@@ -344,6 +373,7 @@ export default class PostgrestTransformBuilder<
    * @param options - Named parameters
    * @param options.referencedTable - Set this to limit rows of referenced
    * tables instead of the parent table
+   * @param options.foreignTable - Deprecated, use `options.referencedTable`
    *
    * @category Database
    * @subcategory Using modifiers
@@ -439,7 +469,7 @@ export default class PostgrestTransformBuilder<
     rows: number,
     options?: O
   ): PostgrestFilterBuilder<B, E, F & Gate<B, RefFacts<O>>, M>
-  limit(rows: number, { referencedTable }: { referencedTable?: string } = {}): any {
+  limit(rows: number, { foreignTable, referencedTable = foreignTable }: RefOpts = {}): any {
     const key = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
     this.url.searchParams.set(key, `${rows}`)
     return this
@@ -457,6 +487,7 @@ export default class PostgrestTransformBuilder<
    * @param options - Named parameters
    * @param options.referencedTable - Set this to limit rows of referenced
    * tables instead of the parent table
+   * @param options.foreignTable - Deprecated, use `options.referencedTable`
    *
    * @category Database
    * @subcategory Using modifiers
@@ -503,7 +534,11 @@ export default class PostgrestTransformBuilder<
     to: number,
     options?: O
   ): PostgrestFilterBuilder<B, E, F & Gate<B, RefFacts<O>>, M>
-  range(from: number, to: number, { referencedTable }: { referencedTable?: string } = {}): any {
+  range(
+    from: number,
+    to: number,
+    { foreignTable, referencedTable = foreignTable }: RefOpts = {}
+  ): any {
     const keyOffset =
       typeof referencedTable === 'undefined' ? 'offset' : `${referencedTable}.offset`
     const keyLimit = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
@@ -942,6 +977,65 @@ export default class PostgrestTransformBuilder<
    * ```
    */
   cast<T>(): PostgrestFilterBuilder<B, Desc<T>, F, M> {
+    return this as any
+  }
+
+  /**
+   * Replace the type of the returned `data` with `NewResult`: an array for rows, one object after `.single()`.
+   *
+   * @typeParam NewResult - The type of the whole `data`
+   * @deprecated Use `cast<T>()`, which takes the type of one row
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   */
+  returns<NewResult>(): Overridden<B, E, F, M, NewResult, { merge: false }> {
+    return this as any
+  }
+
+  /**
+   * Override the type of the returned `data` field in the response.
+   *
+   * By default the new type is merged into the result: the keys it names replace the result's, the others stay.
+   * An array result takes an array override (merged element by element), and a single row, after `.single()` or
+   * `.maybeSingle()`, an object. A mismatch is a type error. With `{ merge: false }` the new type replaces the
+   * result.
+   *
+   * @typeParam NewResult - The new type to cast the response data to
+   * @typeParam Options - Optional type configuration (defaults to `{ merge: true }`)
+   * @typeParam Options.merge - When true, merges the new type with the existing result. When false, replaces it
+   * @deprecated Use `cast<T>()`, which takes the type of one row
+   *
+   * @category Database
+   * @subcategory Using modifiers
+   *
+   * @example Merge with the existing types
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .overrideTypes<Array<{ status: 'A' | 'B' }>>()
+   * // data: Array<CountryRow with status: 'A' | 'B'>
+   * ```
+   *
+   * @example Replace the existing types
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries')
+   *   .select()
+   *   .maybeSingle()
+   *   .overrideTypes<MyType, { merge: false }>()
+   * // data: MyType | null
+   * ```
+   */
+  overrideTypes<NewResult, Options extends { merge?: boolean } = { merge: true }>(): Overridden<
+    B,
+    E,
+    F,
+    M,
+    NewResult,
+    Options
+  > {
     return this as any
   }
 

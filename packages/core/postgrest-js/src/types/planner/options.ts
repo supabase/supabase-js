@@ -8,7 +8,11 @@ export type RpcOptions = {
   head?: boolean
   count?: 'exact' | 'planned' | 'estimated'
 }
-export type RefOpts = { referencedTable?: string }
+export type RefOpts = {
+  referencedTable?: string
+  /** @deprecated Use `referencedTable` instead */
+  foreignTable?: string
+}
 
 // what `head` asks of a read: HEAD, GET, or either when the value doesn't say (a weak-type `O extends { head?: false }`
 // check would reject `{ count: 'exact' }`, which has no `head` at all). Every one takes one member's value.
