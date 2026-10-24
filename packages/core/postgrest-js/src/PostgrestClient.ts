@@ -578,15 +578,21 @@ export default class PostgrestClient<
       body = args
     } else {
       clientError = rpcReadRefusal(args) ?? undefined
-      Object.entries(args)
-        // params with undefined value needs to be filtered out, otherwise it'll
-        // show up as `?param=undefined`
-        .filter(([_, value]) => value !== undefined)
-        // array values need special syntax
-        .map(([name, value]) => [name, Array.isArray(value) ? `{${value.join(',')}}` : `${value}`])
-        .forEach(([name, value]) => {
-          url.searchParams.append(name, value)
-        })
+      // a refused request is never sent, and its arguments may not even be coercible to a string
+      if (!clientError) {
+        Object.entries(args)
+          // params with undefined value needs to be filtered out, otherwise it'll
+          // show up as `?param=undefined`
+          .filter(([_, value]) => value !== undefined)
+          // array values need special syntax
+          .map(([name, value]) => [
+            name,
+            Array.isArray(value) ? `{${value.join(',')}}` : `${value}`,
+          ])
+          .forEach(([name, value]) => {
+            url.searchParams.append(name, value)
+          })
+      }
     }
 
     const headers = new Headers(this.headers)

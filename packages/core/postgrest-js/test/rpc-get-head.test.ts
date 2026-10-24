@@ -127,6 +127,28 @@ describe('rpc GET and HEAD refusals', () => {
       expect(fetchMock).not.toHaveBeenCalled()
     })
 
+    // an object the refusal names can't be coerced to a string: the refusal is returned, never a synchronous TypeError
+    describe.each([
+      ['a toString that is not callable', () => ({ toString: 'value' })],
+      ['a null prototype', () => Object.create(null)],
+    ])('an object with %s', (_name, make) => {
+      test('is refused, not thrown while building the request', async () => {
+        const { fetchMock, call } = setup()
+        const res = await call({ payload: make() }, options)
+        expect(fetchMock).not.toHaveBeenCalled()
+        expect(res.error).toBeInstanceOf(PostgrestError)
+        expect(res.error.code).toBe(RPC_READ_REFUSAL_CODE)
+        expect(res.error.message).toBe("GET and HEAD refuse an object value for 'payload'")
+      })
+
+      test('rejects with throwOnError()', async () => {
+        const { fetchMock, call } = setup()
+        const promise = call({ payload: make() }, options).throwOnError()
+        await expect(promise).rejects.toMatchObject({ code: RPC_READ_REFUSAL_CODE })
+        expect(fetchMock).not.toHaveBeenCalled()
+      })
+    })
+
     test('names every offending key', async () => {
       const { call } = setup()
       const res = await call({ select: 'x', v: { x: 1 }, w: 'eq.1', ok: 1 }, options)
