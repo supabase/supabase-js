@@ -74,6 +74,14 @@ declare global {
 
 Typing requires TypeScript 5.1 or later (the builders use `const` type parameters, and the argument checks rely on template literal inference that TypeScript 5.0 doesn't do).
 
+A filter on an embedded column makes that embed nullable in the result, because the filtered-out rows come back as `null`. Three rare forms don't widen the embed, so it stays non-null in the type:
+
+- a union-typed column that mixes root and embedded columns (`.eq(col, v)` where `col` is `'id' | 'channels.id'`)
+- `.match()` given a union of object types
+- `.filter()` with a nested column relative to `referencedTable` (`.filter('channels.id', 'eq', 1, { referencedTable: 'messages' })`)
+
+Write those filters with a literal column, or with `.eq()` on the full path (`.eq('messages.channels.id', 1)`).
+
 #### Custom `fetch` implementation
 
 `postgrest-js` uses the runtime's global `fetch` to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is useful in environments where the global `fetch` is unavailable or where you want to customize request behavior:
