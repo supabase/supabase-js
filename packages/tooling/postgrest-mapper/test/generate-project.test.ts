@@ -1,5 +1,8 @@
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { resolveProjectFiles, stripJsonc, type ProjectFs } from '../src'
+import { nodeProjectFs } from '../src/generate/project'
 
 /** A file system of `files` (absolute path to text) with directories implied by the paths. */
 function memoryFs(files: Record<string, string>): ProjectFs {
@@ -172,6 +175,110 @@ describe('resolveProjectFiles', () => {
       const { configFiles, warnings } = await resolveWith(`{ "extends": "./later.json" }`)
       expect(configFiles).toEqual([at('later.json'), at('tsconfig.json')])
       expect(warnings).toHaveLength(1)
+    })
+  })
+})
+
+describe('resolveProjectFiles on a real project tree', () => {
+  let dir: string
+  const write = (name: string, text = ''): void => {
+    mkdirSync(dirname(join(dir, name)), { recursive: true })
+    writeFileSync(join(dir, name), text)
+  }
+  const resolveTree = (configName = 'tsconfig.json') =>
+    resolveProjectFiles(nodeProjectFs, {
+      configFileName: join(dir, configName),
+      projectDir: dir,
+    })
+  const rel = (files: string[]): string[] => files.map((f) => f.slice(dir.length + 1))
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(realpathSync(tmpdir()), 'postgrest-mapper-tsconfig-'))
+  })
+  afterEach(() => rmSync(dir, { recursive: true, force: true }))
+
+  describe('${configDir}', () => {
+    it('stands for the directory of the config in include, exclude and files', async () => {
+      write('src/a.ts')
+      write('src/skip/b.ts')
+      write('tools/c.ts')
+      write(
+        'tsconfig.json',
+        JSON.stringify({
+          files: ['${configDir}/tools/c.ts'],
+          include: ['${configDir}/src/**/*.ts'],
+          exclude: ['${configDir}/src/skip'],
+        })
+      )
+      const { files, warnings } = await resolveTree()
+      expect(rel(files)).toEqual(['src/a.ts', 'tools/c.ts'])
+      expect(warnings).toEqual([])
+    })
+
+    it('stands for the directory of the config being loaded, not of the one that inherits it', async () => {
+      write('app/src/a.ts')
+      write('app/dist/gen.ts')
+      write('shared/configs/src/wrong.ts')
+      write(
+        'shared/configs/base.json',
+        JSON.stringify({
+          include: ['${configDir}/src'],
+          compilerOptions: { outDir: '${configDir}/dist' },
+        })
+      )
+      write('app/tsconfig.json', JSON.stringify({ extends: '../shared/configs/base.json' }))
+      const { files } = await resolveProjectFiles(nodeProjectFs, {
+        configFileName: join(dir, 'app/tsconfig.json'),
+        projectDir: join(dir, 'app'),
+      })
+      expect(rel(files)).toEqual(['app/src/a.ts'])
+      // the inherited outDir is the leaf's too: a pattern reaching into it finds nothing
+      write(
+        'shared/configs/out.json',
+        JSON.stringify({
+          include: ['${configDir}'],
+          compilerOptions: { outDir: '${configDir}/dist' },
+        })
+      )
+      write('app/out.json', JSON.stringify({ extends: '../shared/configs/out.json' }))
+      const out = await resolveProjectFiles(nodeProjectFs, {
+        configFileName: join(dir, 'app/out.json'),
+        projectDir: join(dir, 'app'),
+      })
+      expect(rel(out.files)).toEqual(['app/src/a.ts'])
+    })
+  })
+
+  describe('extends', () => {
+    it('resolves an ancestor reached through two branches the same way each time', async () => {
+      write('src/a.ts')
+      write('src/legacy.js')
+      write('tests/t.ts')
+      write('base.json', JSON.stringify({ include: ['src'], compilerOptions: { allowJs: true } }))
+      write('strict.json', JSON.stringify({ extends: './base.json', include: ['tests'] }))
+      write('tsconfig.json', JSON.stringify({ extends: ['./strict.json', './base.json'] }))
+      const { files, warnings } = await resolveTree()
+      // TypeScript: the later base.json wins, so `src` is included and JavaScript is allowed
+      expect(rel(files)).toEqual(['src/a.ts', 'src/legacy.js'])
+      expect(warnings).toEqual([])
+    })
+
+    it('keeps allowJs from an earlier parent when a later one says nothing about it', async () => {
+      write('src/legacy.js')
+      write('js.json', JSON.stringify({ compilerOptions: { allowJs: true }, include: ['src'] }))
+      write('quiet.json', JSON.stringify({ compilerOptions: { strict: true } }))
+      write('tsconfig.json', JSON.stringify({ extends: ['./js.json', './quiet.json'] }))
+      expect(rel((await resolveTree()).files)).toEqual(['src/legacy.js'])
+    })
+
+    it('warns about a cycle and still resolves the rest', async () => {
+      write('src/a.ts')
+      write('a.json', JSON.stringify({ extends: './b.json', include: ['src'] }))
+      write('b.json', JSON.stringify({ extends: './a.json' }))
+      const { files, warnings } = await resolveTree('a.json')
+      expect(rel(files)).toEqual(['src/a.ts'])
+      expect(warnings).toHaveLength(1)
+      expect(warnings[0]).toMatch(/cycle|circular/i)
     })
   })
 })

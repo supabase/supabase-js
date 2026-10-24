@@ -78,7 +78,22 @@ interface ResolvedConfig {
   include?: { value: string[]; base: string }
   exclude?: { value: string[]; base: string }
   outDir?: string
-  allowJs: boolean
+  /** Absent until a config of the chain sets it, so a parent that says nothing never overrides an earlier one */
+  allowJs?: boolean
+}
+
+/** TypeScript's template for the directory of the config being loaded; always the leaf of an `extends` chain. */
+const CONFIG_DIR = '${configDir}'
+
+/**
+ * Substitutes `${configDir}` the way TypeScript 5.5+ does: a value that starts with it (any case) becomes a path
+ * below `configDir`, the directory of the config being loaded (the leaf), never that of the inherited config that
+ * wrote it. Any other value is returned as is.
+ */
+function substituteConfigDir(value: string, configDir: string): string {
+  return value.slice(0, CONFIG_DIR.length).toLowerCase() === CONFIG_DIR.toLowerCase()
+    ? resolve(configDir, `./${value.slice(CONFIG_DIR.length)}`)
+    : value
 }
 
 const isStringArray = (v: unknown): v is string[] =>
@@ -103,12 +118,34 @@ async function loadConfig(
   configFileName: string,
   warnings: string[],
   configs: Set<string>,
-  seen = new Set<string>()
+  /** The directory `${configDir}` stands for: the one of the config the chain started from */
+  configDir: string,
+  /** The configs being resolved right now (the recursion stack, not every config met): a repeat is a cycle */
+  active = new Set<string>()
 ): Promise<ResolvedConfig> {
-  const merged: ResolvedConfig = { allowJs: false }
+  const merged: ResolvedConfig = {}
   configs.add(configFileName)
-  if (seen.has(configFileName)) return merged
-  seen.add(configFileName)
+  if (active.has(configFileName)) {
+    warnings.push(`extends cycle: ${configFileName} extends itself: ignored`)
+    return merged
+  }
+  active.add(configFileName)
+  try {
+    return await loadConfigBody(fs, configFileName, warnings, configs, configDir, active, merged)
+  } finally {
+    active.delete(configFileName)
+  }
+}
+
+async function loadConfigBody(
+  fs: ProjectFs,
+  configFileName: string,
+  warnings: string[],
+  configs: Set<string>,
+  configDir: string,
+  active: Set<string>,
+  merged: ResolvedConfig
+): Promise<ResolvedConfig> {
   let config: TsConfig
   try {
     config = JSON.parse(stripJsonc(await fs.readFile(configFileName))) as TsConfig
@@ -141,13 +178,16 @@ async function loadConfig(
         }
       }
     }
-    Object.assign(merged, await loadConfig(fs, target, warnings, configs, seen))
+    Object.assign(merged, await loadConfig(fs, target, warnings, configs, configDir, active))
   }
-  if (isStringArray(config.files)) merged.files = { value: config.files, base }
-  if (isStringArray(config.include)) merged.include = { value: config.include, base }
-  if (isStringArray(config.exclude)) merged.exclude = { value: config.exclude, base }
+  const substituted = (values: string[]): string[] =>
+    values.map((value) => substituteConfigDir(value, configDir))
+  if (isStringArray(config.files)) merged.files = { value: substituted(config.files), base }
+  if (isStringArray(config.include)) merged.include = { value: substituted(config.include), base }
+  if (isStringArray(config.exclude)) merged.exclude = { value: substituted(config.exclude), base }
   const options = config.compilerOptions
-  if (options && typeof options.outDir === 'string') merged.outDir = resolve(base, options.outDir)
+  if (options && typeof options.outDir === 'string')
+    merged.outDir = resolve(base, substituteConfigDir(options.outDir, configDir))
   if (options && typeof options.allowJs === 'boolean') merged.allowJs = options.allowJs
   return merged
 }
@@ -257,8 +297,14 @@ export async function resolveProjectFiles(
   const warnings: string[] = []
   const configs = new Set<string>()
   const config: ResolvedConfig = options.configFileName
-    ? await loadConfig(fs, options.configFileName, warnings, configs)
-    : { allowJs: false }
+    ? await loadConfig(
+        fs,
+        options.configFileName,
+        warnings,
+        configs,
+        dirname(options.configFileName)
+      )
+    : {}
   const root = options.projectDir
 
   const patterns: { pattern: string; base: string }[] = []
@@ -281,7 +327,7 @@ export async function resolveProjectFiles(
 
   const allowed = [
     ...SOURCE_EXTENSIONS,
-    ...(config.allowJs || options.scan !== undefined ? JS_EXTENSIONS : []),
+    ...(config.allowJs === true || options.scan !== undefined ? JS_EXTENSIONS : []),
   ]
   const isSource = (file: string): boolean =>
     allowed.some((ext) => file.endsWith(ext)) && !/\.d\.[cm]?ts$/.test(file)
