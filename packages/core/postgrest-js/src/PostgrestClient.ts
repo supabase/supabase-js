@@ -9,7 +9,6 @@ import type {
   ArgsMismatch,
   BaseOfCalls,
   CallReject,
-  CallRow,
   CallsOf,
   FnDefs,
   ReadRefusal,
@@ -231,7 +230,7 @@ export default class PostgrestClient<
    */
   from<const R extends string & keyof RelDefs<Database, SchemaName>>(
     relation: R
-  ): PostgrestQueryBuilder<SchemaOf<Database, SchemaName>, R, RelDefs<Database, SchemaName>[R]>
+  ): PostgrestQueryBuilder<Database, SchemaName, R>
   from(relation: string): PostgrestQueryBuilder<any, any, any> {
     if (!relation || typeof relation !== 'string' || relation.trim() === '') {
       throw new Error('Invalid relation name: relation must be a non-empty string.')
@@ -541,13 +540,7 @@ export default class PostgrestClient<
       | [args: RpcArgs<Database, SchemaName, F, A, O>]
       | [args: RpcArgs<Database, SchemaName, F, A, O>, options: O]
   ): PostgrestFilterBuilder<
-    RpcB<
-      SchemaOf<Database, SchemaName>,
-      F,
-      A,
-      O,
-      CallRow<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>
-    >,
+    RpcB<SchemaOf<Database, SchemaName>, F, A, O>,
     RpcDesc<RowCalls<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>, O>, true>,
     {},
     MS<

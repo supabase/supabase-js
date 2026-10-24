@@ -209,17 +209,29 @@ export type ArgsMismatch<A, Defs> = A extends unknown
       : ArgsFor<A, Defs>
     : SetMismatch<A, Defs, KeySetsOf<A>>
   : never
-export type RpcB<S extends string, F extends string, A, O, Row = {}> = BS<
+// the keys of a chain before its calls are known: what `CallsOf` looks them up with
+type RpcKeys<S extends string, F extends string, A, O> = BS<
   'f',
   S,
   F,
-  Row,
+  {},
   never,
   Q0,
   KeyMethods<A, O>
 >
 // every call the runtime could dispatch to: one per possible (key set, method) of each member of A
-export type CallsOf<S extends string, F extends string, A, O> = Entry<RpcB<S, F, A, O>, Q0>
+export type CallsOf<S extends string, F extends string, A, O> = Entry<RpcKeys<S, F, A, O>, Q0>
+// the chain of an rpc call, whose row is the matched calls' unprojected `source` row (derived, not carried, so the
+// builder prints only the call)
+export type RpcB<S extends string, F extends string, A, O> = BS<
+  'f',
+  S,
+  F,
+  CallRow<CallsOf<S, F, A, O>>,
+  never,
+  Q0,
+  KeyMethods<A, O>
+>
 // with `{ head: boolean }` the HEAD calls give no rows: their branch of the data is null, the rows are the other calls'
 export type RowCalls<Calls, O> =
   'HEAD' extends RequestedOf<O>

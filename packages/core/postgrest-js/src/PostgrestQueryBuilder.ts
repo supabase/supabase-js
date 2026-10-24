@@ -2,7 +2,7 @@ import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import type { Fetch } from './types/common/common'
 import { normalizeSelect } from './normalizeSelect'
 import type { ColumnsArg, Selected } from './types/planner/distribute'
-import type { Descs, MS, Q0, RB, WB } from './types/planner/lookup'
+import type { Descs, InsertOf, MS, Q0, RB, UpdateOf, WB } from './types/planner/lookup'
 import type { MutM, MutOptions, ReadMethod, SelCount, SelectOptions } from './types/planner/options'
 import type { RejectExcessProperties } from './types/types'
 
@@ -11,7 +11,7 @@ export type InsertOptions = MutOptions & { defaultToNull?: boolean }
 /** Options of `upsert()`. */
 export type UpsertOptions = InsertOptions & { onConflict?: string; ignoreDuplicates?: boolean }
 
-export default class PostgrestQueryBuilder<S extends string, R extends string, Rel> {
+export default class PostgrestQueryBuilder<DB, S extends string, R extends string> {
   url: URL
   headers: Headers
   schema?: string
@@ -903,11 +903,11 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
     // an option bag that may be absent is one more possible request
     ...args:
       | []
-      | [columns: ColumnsArg<RB<S, R, Rel, Q0>, Q>]
-      | [columns: ColumnsArg<RB<S, R, Rel, Q0>, Q>, options: O]
+      | [columns: ColumnsArg<RB<DB, S, R, Q0>, Q>]
+      | [columns: ColumnsArg<RB<DB, S, R, Q0>, Q>, options: O]
   ): PostgrestFilterBuilder<
-    RB<S, R, Rel, Selected<Q>>,
-    Descs<RB<S, R, Rel, Q0>, Selected<Q>>,
+    RB<DB, S, R, Selected<Q>>,
+    Descs<RB<DB, S, R, Q0>, Selected<Q>>,
     {},
     MS<ReadMethod<O>, true, 'many', 'default', 'json', false, SelCount<O>>
   >
@@ -1055,15 +1055,12 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
    * }
    * ```
    */
-  insert<
-    const O extends InsertOptions | undefined = {},
-    Row extends Rel extends { Insert: unknown } ? Rel['Insert'] : never = never,
-  >(
+  insert<const O extends InsertOptions | undefined = {}, Row extends InsertOf<DB, S, R> = never>(
     values:
-      | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>
-      | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>[],
+      | RejectExcessProperties<InsertOf<DB, S, R>, Row>
+      | RejectExcessProperties<InsertOf<DB, S, R>, Row>[],
     ...rest: [] | [options: O]
-  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, false>>
+  ): PostgrestFilterBuilder<WB<DB, S, R>, never, {}, MutM<O, false>>
   insert(values: unknown, options?: InsertOptions): any {
     const { count, defaultToNull = true } = (options ?? {}) as InsertOptions
     const method = 'POST'
@@ -1314,15 +1311,12 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
    * ```
    */
 
-  upsert<
-    const O extends UpsertOptions | undefined = {},
-    Row extends Rel extends { Insert: unknown } ? Rel['Insert'] : never = never,
-  >(
+  upsert<const O extends UpsertOptions | undefined = {}, Row extends InsertOf<DB, S, R> = never>(
     values:
-      | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>
-      | RejectExcessProperties<Rel extends { Insert: unknown } ? Rel['Insert'] : never, Row>[],
+      | RejectExcessProperties<InsertOf<DB, S, R>, Row>
+      | RejectExcessProperties<InsertOf<DB, S, R>, Row>[],
     ...rest: [] | [options: O]
-  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, false>>
+  ): PostgrestFilterBuilder<WB<DB, S, R>, never, {}, MutM<O, false>>
   upsert(values: unknown, options?: UpsertOptions): any {
     const {
       onConflict,
@@ -1511,13 +1505,10 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
    * }
    * ```
    */
-  update<
-    const O extends MutOptions | undefined = {},
-    Row extends Rel extends { Update: unknown } ? Rel['Update'] : never = never,
-  >(
-    values: RejectExcessProperties<Rel extends { Update: unknown } ? Rel['Update'] : never, Row>,
+  update<const O extends MutOptions | undefined = {}, Row extends UpdateOf<DB, S, R> = never>(
+    values: RejectExcessProperties<UpdateOf<DB, S, R>, Row>,
     ...rest: [] | [options: O]
-  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, true>>
+  ): PostgrestFilterBuilder<WB<DB, S, R>, never, {}, MutM<O, true>>
   update(values: unknown, options?: MutOptions): any {
     const { count } = (options ?? {}) as MutOptions
     const method = 'PATCH'
@@ -1668,7 +1659,7 @@ export default class PostgrestQueryBuilder<S extends string, R extends string, R
    */
   delete<const O extends MutOptions | undefined = {}>(
     ...rest: [] | [options: O]
-  ): PostgrestFilterBuilder<WB<S, R, Rel>, never, {}, MutM<O, true>>
+  ): PostgrestFilterBuilder<WB<DB, S, R>, never, {}, MutM<O, true>>
   delete(options?: MutOptions): any {
     const { count } = (options ?? {}) as MutOptions
     const method = 'DELETE'

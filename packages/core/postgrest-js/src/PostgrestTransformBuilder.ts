@@ -5,7 +5,7 @@ import type { InvalidMethodError } from './PostgrestFilterBuilder'
 import type { ColumnsArg, Selected } from './types/planner/distribute'
 import type { Gate, HasRef, RefFacts } from './types/planner/facts'
 import type { PgrstFeature } from './types/planner/globals'
-import type { BS, BState, ColArg, Desc, Descs, MState, SetM } from './types/planner/lookup'
+import type { BState, ColArg, Desc, Descs, MState, Reselect, SetM } from './types/planner/lookup'
 import type {
   KeepHead,
   OrCount,
@@ -103,7 +103,7 @@ export default class PostgrestTransformBuilder<
     // an option bag that may be absent is one more possible request
     ...args: [] | [columns: ColumnsArg<B, Q>] | [columns: ColumnsArg<B, Q>, options: O]
   ): PostgrestFilterBuilder<
-    BS<B['k'], B['s'], B['r'], B['row'], B['st'], Selected<Q>, B['km']>,
+    Reselect<B, Selected<Q>>,
     Descs<B, Selected<Q>>,
     F,
     SetM<M, { op: SelOp<B, M, O>; ret: true; count: OrCount<M['count'], SelCount<O>> }>

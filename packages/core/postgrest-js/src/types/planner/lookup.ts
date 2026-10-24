@@ -1,4 +1,6 @@
 import type { Strict, UnplannedOperandMessage, UnplannedSelectMessage } from './globals'
+import type { OutMap } from './facts'
+import type { RelDefs, SchemaOf } from './rpc'
 
 // ---------------------------------------------------------------- state
 export type Kind = 'r' | 'w' | 'f'
@@ -159,18 +161,45 @@ export type Desc<R, S = {}, E = {}, Bs extends 'many' | 'one' | 'inherit' = 'inh
   embeds: E
   base: Bs
 }
+// A planned row as the plain object: the row, and the embedded rows below it (an embed key is its own output, a
+// spread's output is a field of its parent), with every property remapped (see `Plain`). The walk only enters a
+// value whose path is an embed's own, so column values (a `Json`) pass through as written.
+type PlainAt<V, OM, P extends string> = V extends readonly (infer U)[]
+  ? PlainAt<U, OM, P>[]
+  : V extends object
+    ? {
+        [K in keyof V as K extends string ? `${K}` : K]: K extends string
+          ? (P extends '' ? K : `${P}.${K}`) extends infer Q extends string
+            ? Q extends keyof OM
+              ? OM[Q] extends Q
+                ? PlainAt<V[K], OM, Q>
+                : V[K]
+              : V[K]
+            : never
+          : V[K]
+      }
+    : V
+export type PlainRow<R, E> = IsAny<R> extends true ? any : PlainAt<R, OutMap<E>, ''>
+
 export type DescOf<En> = En extends { error: string }
   ? never
   : En extends Unplanned
     ? Desc<Record<string, unknown>>
     : En extends { row: infer R }
-      ? Desc<R, En extends { sources: infer S } ? S : {}, En extends { embeds: infer E } ? E : {}>
+      ? Desc<
+          PlainRow<R, En extends { embeds: infer E } ? E : {}>,
+          En extends { sources: infer S } ? S : {},
+          En extends { embeds: infer E } ? E : {}
+        >
       : never
 
 // a bare `*`: provenance is synthesised, identity sources over the relation's FactColumns (the columns whose
 // returned value is the stored value) and no embeds. Per member of a relation union, so each keeps its own columns.
 export type StarOf<Rel> = Rel extends { Row: infer R }
-  ? Desc<R, Rel extends { FactColumns: infer F extends string } ? { [K in keyof R & F]: K } : {}>
+  ? Desc<
+      PlainRow<R, {}>,
+      Rel extends { FactColumns: infer F extends string } ? { [K in keyof R & F]: K } : {}
+    >
   : Desc<{}>
 
 // an rpc call: the form decides cardinality; `*` carries the `source`'s sources (identity over its FactColumns)
@@ -186,6 +215,13 @@ export type CallSources<Call, Star extends boolean> = Call extends { sources: in
           : {}
       : {}
     : {}
+// a call that reads a relation's columns returns rows of the wrapped column types; a scalar, or a function over no
+// relation, returns its own types as written
+type CallRowOf<Call, R> = Call extends { source: infer Src }
+  ? [Src] extends [never]
+    ? R
+    : PlainRow<R, Call extends { embeds: infer E } ? E : {}>
+  : R
 export type RpcDesc<En, Star extends boolean = false> = En extends { error: string }
   ? never
   : En extends Untyped
@@ -195,7 +231,12 @@ export type RpcDesc<En, Star extends boolean = false> = En extends { error: stri
       : En extends Dynamic
         ? Desc<unknown>
         : En extends { row: infer R }
-          ? Desc<R, CallSources<En, Star>, En extends { embeds: infer E } ? E : {}, CallBase<En>>
+          ? Desc<
+              CallRowOf<En, R>,
+              CallSources<En, Star>,
+              En extends { embeds: infer E } ? E : {},
+              CallBase<En>
+            >
           : never
 
 export type Descs<B extends BState, Q extends string> =
@@ -262,21 +303,60 @@ export type ColArg<B extends BState, C extends string> =
 
 // ---------------------------------------------------------------- builder state of the entry points
 export type Q0 = '*'
-export type RB<S extends string, R extends string, Rel, Q extends string> = BS<
+// the relation of a chain, derived from the client's Database so that the builder carries only names. `any` as the
+// Database is an untyped client (`RelDefs`)
+export type RelOf<DB, S extends string, R extends string> = RelDefs<DB, S>[R & keyof RelDefs<DB, S>]
+// the chain of a select: the same relation, another select (a type of its own so the builder prints the chain it
+// came from and not the expanded state)
+export type Reselect<B extends BState, Q extends string> = BS<
+  B['k'],
+  B['s'],
+  B['r'],
+  B['row'],
+  B['st'],
+  Q,
+  B['km']
+>
+// A hover prints a property as the annotation the generated declaration wrote (`SupabaseColumnType<…>`) whenever the
+// type is that declaration's own. A remapped key is a fresh property with no declaration, so the hover prints its
+// type. Keys, modifiers and value types are unchanged.
+type Plain<T> =
+  IsAny<T> extends true
+    ? any
+    : T extends readonly unknown[]
+      ? T
+      : T extends object
+        ? { [K in keyof T as K extends string ? `${K}` : K]: T[K] }
+        : T
+export type InsertOf<DB, S extends string, R extends string> = Plain<
+  RelOf<DB, S, R> extends infer Rel
+    ? Rel extends { Insert: unknown }
+      ? Rel['Insert']
+      : never
+    : never
+>
+export type UpdateOf<DB, S extends string, R extends string> = Plain<
+  RelOf<DB, S, R> extends infer Rel
+    ? Rel extends { Update: unknown }
+      ? Rel['Update']
+      : never
+    : never
+>
+export type RB<DB, S extends string, R extends string, Q extends string> = BS<
   'r',
-  S,
+  SchemaOf<DB, S>,
   R,
-  RowOf<Rel>,
-  StarOf<Rel>,
+  RowOf<RelOf<DB, S, R>>,
+  StarOf<RelOf<DB, S, R>>,
   Q,
   never
 >
-export type WB<S extends string, R extends string, Rel> = BS<
+export type WB<DB, S extends string, R extends string> = BS<
   'w',
-  S,
+  SchemaOf<DB, S>,
   R,
-  RowOf<Rel>,
-  StarOf<Rel>,
+  RowOf<RelOf<DB, S, R>>,
+  StarOf<RelOf<DB, S, R>>,
   Q0,
   never
 >
