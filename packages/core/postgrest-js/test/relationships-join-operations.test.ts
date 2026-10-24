@@ -1144,3 +1144,22 @@ test('inner join on many relation', async () => {
   expectType<TypeEqual<typeof result, typeof expected>>(true)
   ExpectedSchema.parse(res.data)
 })
+
+test('filter on an embed column with an empty referencedTable is an unprefixed filter that nulls the embed', async () => {
+  const res = await postgrest
+    .from('messages')
+    .select('id, channels(id)')
+    .filter('channels.id', 'eq', -1, { referencedTable: '' })
+    .order('id')
+    .limit(1)
+    .single()
+  expect(res.data).toEqual({ id: expect.any(Number), channels: null })
+  let result: Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    id: z.number(),
+    channels: z.object({ id: z.number() }).nullable(),
+  })
+  let expected: z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  ExpectedSchema.parse(res.data)
+})

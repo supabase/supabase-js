@@ -130,3 +130,18 @@ const mut = supabase
   .select('id, channels(id)')
   .limit(1, { referencedTable: table })
 type _17t = Expect<Equal<Data<typeof mut>, Plain>>
+
+// an empty referencedTable is falsy at runtime: `.filter`, `.or` and `.order` send an unprefixed key, so the column
+// belongs to the root again and its operand facts apply
+const fe = supabase
+  .from('messages')
+  .select('id, channels(id)')
+  .filter('channels.id', 'eq', -1, { referencedTable: '' })
+type _17u = Expect<Equal<Data<typeof fe>, Wide>>
+const oe = supabase
+  .from('messages')
+  .select('id, channels(id)')
+  .or('id.eq.1', { referencedTable: '' })
+type _17v = Expect<Equal<Data<typeof oe>, Plain>>
+// @ts-expect-error PGRST108 at `channels`: 'channels' is not an embedded resource in this request. Hint: add channels(...) to the select.
+supabase.from('messages').select('id').order('channels.id', { referencedTable: '' })

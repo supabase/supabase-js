@@ -100,18 +100,32 @@ export type NotNullFact<B extends BState, C extends string> =
       ? { cols: { [P in C]: {} } }
       : { embeds: { [P in EmbedPathOf<B, C> & C]: { nn: true } } }
 
-// the tables an option may name, over every member of the bag: `never` when none ever has one (or only `undefined`),
-// like the runtime's truthiness check. A member without it still contributes the others' tables.
+// the tables an option may name, over every member of the bag: `never` when none ever has one (or only `undefined` or
+// an empty string), like the runtime's truthiness check. A member without it still contributes the others' tables.
 export type RefTables<O> =
   Bag<O, 'referencedTable'> extends infer M
     ? M extends { referencedTable: infer T }
-      ? Exclude<T, undefined> extends infer S extends string
+      ? Exclude<T, undefined | ''> extends infer S extends string
         ? S
         : never
       : never
     : never
 // the option may name an embed: its column belongs to that embed, not to the root
 export type HasRef<O> = [RefTables<O>] extends [never] ? false : true
+// some member of the bag filters the root: no table, or one that is `undefined` or empty (sent unprefixed)
+export type HitsRoot<O> = true extends (
+  Bag<O, 'referencedTable'> extends infer M
+    ? M extends { referencedTable: infer T }
+      ? undefined extends T
+        ? true
+        : '' extends T
+          ? true
+          : false
+      : never
+    : never
+)
+  ? true
+  : false
 
 // a literal widens that embed, a non-literal one (or a possibly-present one) can be any: widen them all
 export type RefFacts<O> =

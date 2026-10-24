@@ -8,6 +8,7 @@ import type {
   EqFact,
   RefFacts,
   HasRef,
+  HitsRoot,
 } from './types/planner/facts'
 import type { BState, ColArg, MState, ValueOf } from './types/planner/lookup'
 import type { RefOpts } from './types/planner/options'
@@ -2044,7 +2045,7 @@ export default class PostgrestFilterBuilder<
   ): PostgrestFilterBuilder<
     B,
     E,
-    F & Gate<B, (O extends { referencedTable: string } ? {} : OpFacts<B, C>) & RefFacts<O>>,
+    F & Gate<B, (HitsRoot<O> extends true ? OpFacts<B, C> : {}) & RefFacts<O>>,
     M
   >
   filter(
