@@ -352,6 +352,16 @@ describe('operands', () => {
     expect(operands(r)).toEqual(['r|*|t|a|x', 'r|*|t|a|y'])
   })
 
+  it('treats an empty referencedTable as a root filter, like the runtime', () => {
+    const r = scan(`
+      supabase.from('t').select('a, e(id)')
+        .filter('e.id', 'eq', 1, { referencedTable: '' })
+        .order('x', { referencedTable: c ? '' : 'e' })
+    `)
+    expect(operands(r)).toEqual(['r|*|t|a, e(id)|e.id', 'r|*|t|a, e(id)|x', 'r|*|t|a, e(id)|@e'])
+    expect(r.operands.find((o) => o.operand === 'e.id')?.via).toBe('column')
+  })
+
   it('records nothing for an unresolved referencedTable but keeps the select', () => {
     const r = scan(`supabase.from('t').select('a').order('x', { referencedTable: dyn })`)
     expect(r.operands).toEqual([])

@@ -152,7 +152,11 @@ function rpcMethods(options: Node | undefined, scope: Scope): RpcMethod[] {
   return [...methods].sort()
 }
 
-type RefTable = { none: true } | { unknown: true } | { unresolved: true } | { tables: string[] }
+type RefTable =
+  | { none: true }
+  | { unknown: true }
+  | { unresolved: true }
+  | { tables: string[]; root: boolean }
 
 /** The `referencedTable` (or deprecated `foreignTable`) option of a call. */
 function refTableOf(options: Node | undefined, scope: Scope): RefTable {
@@ -161,8 +165,12 @@ function refTableOf(options: Node | undefined, scope: Scope): RefTable {
     const p = objectProperty(options, scope, name)
     if (p === 'unknown') return { unknown: true }
     if (p === 'absent' || isUndefinedLiteral(p.value)) continue
-    const tables = resolveStrings(p.value, p.scope)
-    return tables ? { tables } : { unresolved: true }
+    const values = resolveStrings(p.value, p.scope)
+    if (!values) return { unresolved: true }
+    // the runtime prefixes only a truthy table: '' sends the filter unprefixed, to the root
+    const tables = values.filter((t) => t !== '')
+    if (tables.length === 0) return { none: true }
+    return { tables, root: tables.length < values.length }
   }
   return { none: true }
 }
@@ -453,7 +461,7 @@ export class FileScanner {
       }
     }
     // with a referencedTable the column belongs to the embed; unknown options might hold one, so the column stays
-    const columnIsRoot = !('tables' in ref) && !('unresolved' in ref)
+    const columnIsRoot = 'tables' in ref ? ref.root : !('unresolved' in ref)
     if (COLUMN_METHOD_SET.has(name) && columnIsRoot && args[0]) {
       const columns = resolveStrings(args[0], scope)
       const at = this.locateNode(args[0])
