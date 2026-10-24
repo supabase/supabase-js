@@ -49,4 +49,4 @@ supabase.rpc('get_status', { name_param: 1, whatever: undefined })
 
 // the method follows the options and the GET / HEAD refusals follow the values: see 18-rpc-get-head.ts
 // unused values
-;(void num, maybeNum, str, obj, objs, strs, nums, anyJson, flag)
+void [num, maybeNum, str, obj, objs, strs, nums, anyJson, flag]

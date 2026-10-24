@@ -209,7 +209,7 @@ describe('Automatic Retries', () => {
 
   describe('exponential backoff', () => {
     it('should use exponential backoff delays', async () => {
-      let delaysSeen: number[] = []
+      const delaysSeen: number[] = []
       const originalSleep = globalThis.setTimeout
       jest.spyOn(globalThis, 'setTimeout').mockImplementation((fn, delay) => {
         delaysSeen.push(delay as number)

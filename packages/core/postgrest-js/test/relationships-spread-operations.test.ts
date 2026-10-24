@@ -50,7 +50,7 @@ test('select with aggregate count and spread', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -62,8 +62,8 @@ test('select with aggregate count and spread', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -112,7 +112,7 @@ test('spread resource with single column in select query', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -124,8 +124,8 @@ test('spread resource with single column in select query', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -178,7 +178,7 @@ test('spread resource with all columns in select query', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -191,8 +191,8 @@ test('spread resource with all columns in select query', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -241,7 +241,7 @@ test('select with aggregate sum and spread', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -253,8 +253,8 @@ test('select with aggregate sum and spread', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -309,7 +309,7 @@ test('select with aggregate sum and spread on nested relation', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -322,8 +322,8 @@ test('select with aggregate sum and spread on nested relation', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -351,7 +351,7 @@ test('select with spread on nested relation', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     id: z.number(),
     channels: z.object({
@@ -360,8 +360,8 @@ test('select with spread on nested relation', async () => {
       details: z.string().nullable(),
     }),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -389,14 +389,14 @@ test('select spread on many relation', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     channel_id: z.number(),
     id: z.array(z.number()),
     message: z.array(z.string().nullable()),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -409,13 +409,13 @@ test('filter on a to-one embed beneath a spread to-many nulls the element, not t
     .limit(1)
     .single()
   expect(res.data).toEqual({ username: 'supabot', channels: [null, null, null, null] })
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     channels: z.array(z.object({ id: z.number() }).nullable()),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -427,7 +427,7 @@ test('filter on a to-one embed nested below an embed in a spread to-many nulls t
     .order('username', { ascending: false })
     .limit(1)
     .single()
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     channels: z.array(
@@ -436,8 +436,8 @@ test('filter on a to-one embed nested below an embed in a spread to-many nulls t
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
   expect(res.data?.channels.map((c) => c.channel_details?.channels ?? null)).toEqual([
     null,

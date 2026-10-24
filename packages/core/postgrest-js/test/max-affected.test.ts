@@ -93,10 +93,10 @@ describe('maxAffected', () => {
       .maxAffected(2)
       .select()
 
-    let result: Exclude<typeof data, null>
+    type Result = Exclude<typeof data, null>
     const ExpectedSchema = z.array(MessageRowSchema)
-    let expected: SupabaseDatabase['public']['Tables']['messages']['Row'][]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = SupabaseDatabase['public']['Tables']['messages']['Row'][]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(data)
 
     expect(error).toBeNull()

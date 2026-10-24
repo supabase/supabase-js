@@ -80,10 +80,10 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('get_messages', {
       channel_row: { id: 1, data: null, slug: null },
     })
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: MessagesRow[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = MessagesRow[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -115,10 +115,10 @@ describe('advanced rpc', () => {
         status: 'ONLINE',
       },
     })
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: MessagesRow[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = MessagesRow[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -171,9 +171,9 @@ describe('advanced rpc', () => {
         status: 'ONLINE',
       },
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: z.infer<typeof UserProfileSchema>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = z.infer<typeof UserProfileSchema>
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -195,10 +195,10 @@ describe('advanced rpc', () => {
       search_username: 'supabot',
     })
     // Type assertion
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: MessagesRow[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = MessagesRow[]
+    expectType<TypeEqual<Result, Expected>>(true)
     // Runtime result
     expect(res).toMatchInlineSnapshot(`
       {
@@ -252,10 +252,10 @@ describe('advanced rpc', () => {
         status: 'ONLINE',
       },
     })
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: MessagesRow[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = MessagesRow[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -308,10 +308,10 @@ describe('advanced rpc', () => {
         status: 'ONLINE',
       },
     })
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: MessagesRow[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = MessagesRow[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -364,9 +364,9 @@ describe('advanced rpc', () => {
         status: 'ONLINE',
       },
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: MessagesRow[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = MessagesRow[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -413,9 +413,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('get_recent_messages_by_username', {
       search_username: 'supabot',
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: MessagesRow[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = MessagesRow[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -464,9 +464,9 @@ describe('advanced rpc', () => {
         search_username: 'supabot',
       })
       .select('channel_id, message, users(username, catchphrase)')
-    let result: Exclude<typeof res.data, null>
-    let expected: RequiredDeep<z.infer<typeof SelectWithUsersSchema>>[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = RequiredDeep<z.infer<typeof SelectWithUsersSchema>>[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -525,9 +525,9 @@ describe('advanced rpc', () => {
         },
       })
       .select('id, username, users(username, catchphrase)')
-    let result: Exclude<typeof res.data, null>
-    let expected: RequiredDeep<z.infer<typeof SelectWithUsersProfileSchema>>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = RequiredDeep<z.infer<typeof SelectWithUsersProfileSchema>>
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -628,9 +628,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('postgrest_resolvable_with_override_function', {
       a: 'test',
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: number
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = number
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -647,9 +647,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('postgrest_resolvable_with_override_function', {
       b: 1,
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: string
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = string
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -666,9 +666,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('postgrest_resolvable_with_override_function', {
       profile_id: 1,
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: z.infer<typeof UserProfileRowSchema>[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = z.infer<typeof UserProfileRowSchema>[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -692,10 +692,10 @@ describe('advanced rpc', () => {
       cid: 1,
       search: 'Hello World 👋',
     })
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: MessagesRow[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = MessagesRow[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -727,10 +727,10 @@ describe('advanced rpc', () => {
         status: 'ONLINE',
       },
     })
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(MessagesWithoutBlurbSchema)
-    let expected: MessagesRow[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = MessagesRow[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -777,9 +777,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_different_return', {
       '': 'test',
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: string
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = string
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -838,9 +838,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_json', {
       '': { test: 'value' },
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: number
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = number
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -857,9 +857,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_jsonb', {
       '': { test: 'value' },
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: number
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = number
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -876,9 +876,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_text', {
       '': 'test',
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: number
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = number
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -893,9 +893,9 @@ describe('advanced rpc', () => {
 
   test('polymorphic function with no params and unnamed params definition call with no params', async () => {
     const res = await postgrest.rpc('polymorphic_function_with_no_params_or_unnamed')
-    let result: Exclude<typeof res.data, null>
-    let expected: number
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = number
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -912,9 +912,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_no_params_or_unnamed', {
       '': '',
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: string
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = string
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -931,9 +931,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_no_params_or_unnamed', {
       '': 'test',
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: string
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = string
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -990,9 +990,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default', {
       '': 'custom text',
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: string
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = string
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1049,9 +1049,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default_overload', {
       '': 'custom text',
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: string
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = string
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1069,9 +1069,9 @@ describe('advanced rpc', () => {
     const res = await postgrest.rpc('polymorphic_function_with_unnamed_default_overload', {
       '': true,
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: string
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = string
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1136,9 +1136,9 @@ describe('advanced rpc', () => {
 
   test('function returning row', async () => {
     const res = await postgrest.rpc('function_returning_row')
-    let result: Exclude<typeof res.data, null>
-    let expected: FunctionRow<UsersRow>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = FunctionRow<UsersRow>
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1160,10 +1160,10 @@ describe('advanced rpc', () => {
 
   test('function returning set of rows', async () => {
     const res = await postgrest.rpc('function_returning_set_of_rows')
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(FunctionReturningSetOfRowsSchema)
-    let expected: FunctionSetOfUsersRow[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = FunctionSetOfUsersRow[]
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1230,10 +1230,10 @@ describe('advanced rpc', () => {
         status: 'ONLINE',
       },
     })
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(UserProfileRowSchema)
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1262,9 +1262,9 @@ describe('advanced rpc', () => {
         status: 'ONLINE',
       },
     })
-    let result: Exclude<typeof res.data, null>
-    let expected: z.infer<typeof UserProfileSchema>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = z.infer<typeof UserProfileSchema>
+    expectType<TypeEqual<Result, Expected>>(true)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1380,14 +1380,14 @@ test('RPC call with subselect and computed field', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
       message: z.string().nullable(),
       blurb_message: z.string().nullable(),
     })
   )
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })

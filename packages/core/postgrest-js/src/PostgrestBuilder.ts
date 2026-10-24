@@ -25,7 +25,7 @@ export default abstract class PostgrestBuilder<
   protected clientError?: PostgrestError
 
   // Retry configuration - enabled by default
-  protected retryEnabled: boolean = true
+  protected retryEnabled = true
 
   /**
    * Creates a builder configured for a specific PostgREST request.
@@ -293,7 +293,7 @@ export default abstract class PostgrestBuilder<
         // Build detailed error information including cause if available
         // Note: We don't populate code/hint for client-side network errors since those
         // fields are meant for upstream service errors (PostgREST/PostgreSQL)
-        let errorDetails = ''
+        let errorDetails: string
         let hint = ''
         let code = ''
 

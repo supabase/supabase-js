@@ -152,7 +152,7 @@ function languageService(): ts.LanguageService {
   const config = ts.getParsedCommandLineOfConfigFile(
     path.join(root, 'tsconfig.test.json'),
     { noEmit: true },
-    { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} }
+    { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => undefined }
   )!
   const files = [virtualFile, path.join(root, 'test', 'postgrest.generated.d.ts')]
   return ts.createLanguageService({

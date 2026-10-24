@@ -192,4 +192,4 @@ const k5 = supabase.rpc('sorted', { sort_order: 1 }, { get: true })
 type _18ae = Expect<Equal<Data<typeof k5>, 'get'>>
 
 // unused values
-;(void num, maybeNum, obj, objs, strs, nums, anyJson, maybeObj, members, str)
+void [num, maybeNum, obj, objs, strs, nums, anyJson, maybeObj, members, str]

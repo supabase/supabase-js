@@ -65,7 +65,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
@@ -81,11 +81,11 @@ describe('embeded functions select', () => {
       })
     )
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
-    let expected: { id: number; all_channels_messages: NullableFields<MessagesRow>[] }[]
+    type Expected = { id: number; all_channels_messages: NullableFields<MessagesRow>[] }[]
     // Assert over the keys of the expected and result objects to ensure consistency between versions of types
     // should always fallback to a SelectQueryError if the relation cannot be found
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -135,7 +135,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
@@ -148,9 +148,9 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -219,7 +219,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -235,9 +235,9 @@ describe('embeded functions select', () => {
       })
     )
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
-    let expected: { username: string; all_user_messages: NullableFields<MessagesRow>[] }[]
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { username: string; all_user_messages: NullableFields<MessagesRow>[] }[]
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -294,7 +294,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
@@ -307,9 +307,9 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -370,7 +370,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
@@ -384,9 +384,9 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -429,7 +429,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
@@ -442,9 +442,9 @@ describe('embeded functions select', () => {
           .nullable(),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -499,7 +499,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -509,9 +509,9 @@ describe('embeded functions select', () => {
         }),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -539,7 +539,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
@@ -550,9 +550,9 @@ describe('embeded functions select', () => {
         }),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     // Can parse the data because the !inner ensure the join result from function is not nullable
     ExpectedSchema.parse(res.data)
   })
@@ -603,7 +603,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -613,9 +613,9 @@ describe('embeded functions select', () => {
         }),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -681,7 +681,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
@@ -700,9 +700,9 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -771,7 +771,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -787,9 +787,9 @@ describe('embeded functions select', () => {
       })
     )
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
-    let expected: { username: string; user_messages: NullableFields<MessagesRow>[] }[]
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { username: string; user_messages: NullableFields<MessagesRow>[] }[]
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -854,7 +854,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -870,9 +870,9 @@ describe('embeded functions select', () => {
       })
     )
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
-    let expected: { username: string; active_user_messages: NullableFields<MessagesRow>[] }[]
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { username: string; active_user_messages: NullableFields<MessagesRow>[] }[]
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -941,7 +941,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -957,9 +957,9 @@ describe('embeded functions select', () => {
       })
     )
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
-    let expected: { username: string; recent_messages: NullableFields<MessagesRow>[] }[]
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { username: string; recent_messages: NullableFields<MessagesRow>[] }[]
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -1024,7 +1024,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -1040,9 +1040,9 @@ describe('embeded functions select', () => {
       })
     )
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
-    let expected: { username: string; recent_messages: NullableFields<MessagesRow>[] }[]
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { username: string; recent_messages: NullableFields<MessagesRow>[] }[]
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -1103,7 +1103,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
@@ -1117,9 +1117,9 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -1141,9 +1141,9 @@ describe('embeded functions select', () => {
         "success": false,
       }
     `)
-    let result: Exclude<typeof res.data, null>
-    let expected: never
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = never
+    expectType<TypeEqual<Result, Expected>>(true)
   })
 
   test('embeded_function_returning_single_row - can embed single row returns function with row single param', async () => {
@@ -1190,7 +1190,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
@@ -1201,9 +1201,9 @@ describe('embeded functions select', () => {
         }),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -1227,9 +1227,9 @@ describe('embeded functions select', () => {
         "success": false,
       }
     `)
-    let result: Exclude<typeof res.data, null>
-    let expected: never
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = never
+    expectType<TypeEqual<Result, Expected>>(true)
   })
 
   test('function_using_setof_rows_one', async () => {
@@ -1283,7 +1283,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -1293,9 +1293,9 @@ describe('embeded functions select', () => {
         }),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -1338,7 +1338,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
@@ -1351,9 +1351,9 @@ describe('embeded functions select', () => {
           .nullable(),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -1373,16 +1373,16 @@ describe('embeded functions select', () => {
     })
     // Verify time-based value is reasonable
     expect(res.data?.[0].created_ago).toBeGreaterThanOrEqual(0)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
         created_ago: z.number().nullable(),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
     // @ts-expect-error PGRST202
     const use_rpc_call = await postgrest.rpc('created_ago', {
@@ -1403,9 +1403,9 @@ describe('embeded functions select', () => {
         "success": false,
       }
     `)
-    let result_rpc: Exclude<typeof use_rpc_call.data, null>
+    type Result_rpc = Exclude<typeof use_rpc_call.data, null>
     // Computed-field functions are not RPC-callable: the call is rejected and its data is untyped
-    expectType<TypeEqual<typeof result_rpc, unknown>>(true)
+    expectType<TypeEqual<Result_rpc, unknown>>(true)
   })
   // Test the days_since_event embeded function over partitioned table
   test('select the days_since_event embeded function over partitioned table', async () => {
@@ -1423,16 +1423,16 @@ describe('embeded functions select', () => {
     })
     // Verify time-based value is reasonable
     expect(res.data?.[0].days_since_event).toBeGreaterThanOrEqual(0)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
         days_since_event: z.number().nullable(),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
     // @ts-expect-error PGRST202
     const use_rpc_call = await postgrest.rpc('days_since_event', {
@@ -1453,8 +1453,8 @@ describe('embeded functions select', () => {
         "success": false,
       }
     `)
-    let result_rpc: Exclude<typeof use_rpc_call.data, null>
+    type Result_rpc = Exclude<typeof use_rpc_call.data, null>
     // Computed-field functions are not RPC-callable: the call is rejected and its data is untyped
-    expectType<TypeEqual<typeof result_rpc, unknown>>(true)
+    expectType<TypeEqual<Result_rpc, unknown>>(true)
   })
 })

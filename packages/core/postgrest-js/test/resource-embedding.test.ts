@@ -65,7 +65,7 @@ test('embedded select', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
       messages: z.array(
@@ -79,8 +79,8 @@ test('embedded select', async () => {
       ),
     })
   )
-  let expected: { messages: MessageRow[] }[]
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = { messages: MessageRow[] }[]
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -146,7 +146,7 @@ test('embedded select with computed field explicit selection', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
       messages: z.array(
@@ -161,7 +161,7 @@ test('embedded select with computed field explicit selection', async () => {
       ),
     })
   )
-  let expected: {
+  type Expected = {
     messages: {
       id: number
       data: Json
@@ -171,7 +171,7 @@ test('embedded select with computed field explicit selection', async () => {
       blurb_message: string | null
     }[]
   }[]
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -217,7 +217,7 @@ describe('embedded filters', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -231,8 +231,8 @@ describe('embedded filters', () => {
         ),
       })
     )
-    let expected: { messages: MessageRow[] }[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
   test('embedded or', async () => {
@@ -282,7 +282,7 @@ describe('embedded filters', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -296,8 +296,8 @@ describe('embedded filters', () => {
         ),
       })
     )
-    let expected: { messages: MessageRow[] }[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
   test('embedded or with and', async () => {
@@ -349,7 +349,7 @@ describe('embedded filters', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -363,8 +363,8 @@ describe('embedded filters', () => {
         ),
       })
     )
-    let expected: { messages: MessageRow[] }[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 })
@@ -431,7 +431,7 @@ describe('embedded transforms', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -445,8 +445,8 @@ describe('embedded transforms', () => {
         ),
       })
     )
-    let expected: { messages: MessageRow[] }[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -512,7 +512,7 @@ describe('embedded transforms', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -526,8 +526,8 @@ describe('embedded transforms', () => {
         ),
       })
     )
-    let expected: { messages: MessageRow[] }[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -571,7 +571,7 @@ describe('embedded transforms', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -585,8 +585,8 @@ describe('embedded transforms', () => {
         ),
       })
     )
-    let expected: { messages: MessageRow[] }[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -630,7 +630,7 @@ describe('embedded transforms', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -644,8 +644,8 @@ describe('embedded transforms', () => {
         ),
       })
     )
-    let expected: { messages: MessageRow[] }[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 })

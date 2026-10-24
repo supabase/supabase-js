@@ -730,7 +730,7 @@ describe('basic insert, update, delete', () => {
   })
 
   test('insert quoted column', async () => {
-    let res = await postgrest
+    const res = await postgrest
       .from('cornercase')
       .insert([{ 'column whitespace': 'foo', id: 1 }])
       .select('"column whitespace", id ')
@@ -1350,7 +1350,7 @@ describe("insert, update, delete with count: 'exact'", () => {
   const generated: number[] = []
 
   test("insert with count: 'exact'", async () => {
-    let res = await postgrest
+    const res = await postgrest
       .from('messages')
       .insert({ message: 'foo', username: 'supabot', channel_id: 1 }, { count: 'exact' })
       .select()
@@ -1424,7 +1424,7 @@ describe("insert, update, delete with count: 'exact'", () => {
   })
 
   test("upsert with count: 'exact'", async () => {
-    let res = await postgrest
+    const res = await postgrest
       .from('messages')
       .upsert({ id: 3, message: 'foo', username: 'supabot', channel_id: 2 }, { count: 'exact' })
       .select()
@@ -1497,7 +1497,7 @@ describe("insert, update, delete with count: 'exact'", () => {
   })
 
   test("bulk insert with count: 'exact'", async () => {
-    let res = await postgrest
+    const res = await postgrest
       .from('messages')
       .insert(
         [
@@ -1598,7 +1598,7 @@ describe("insert, update, delete with count: 'exact'", () => {
   })
 
   test('bulk insert with column defaults', async () => {
-    let res = await postgrest
+    const res = await postgrest
       .from('channels')
       .insert([{ id: 100 }, { slug: 'test-slug' }], { defaultToNull: false })
       .select()
@@ -1630,7 +1630,7 @@ describe("insert, update, delete with count: 'exact'", () => {
   })
 
   test('bulk upsert with column defaults', async () => {
-    let res = await postgrest
+    const res = await postgrest
       .from('channels')
       .upsert([{ id: 1 }, { slug: 'test-slug' }], { defaultToNull: false })
       .select()
@@ -1662,7 +1662,7 @@ describe("insert, update, delete with count: 'exact'", () => {
   })
 
   test("update with count: 'exact'", async () => {
-    let res = await postgrest
+    const res = await postgrest
       .from('messages')
       .update({ channel_id: 2 }, { count: 'exact' })
       .eq('message', 'foo')
@@ -1771,7 +1771,7 @@ describe("insert, update, delete with count: 'exact'", () => {
   })
 
   test("basic delete count: 'exact'", async () => {
-    let res = await postgrest
+    const res = await postgrest
       .from('messages')
       .delete({ count: 'exact' })
       .eq('message', 'foo')

@@ -466,7 +466,7 @@ test('explain with json/text format', async () => {
   )
 
   const res2 = await postgrest.from('users').select().explain()
-  expect(res2.data).toMatch(/Aggregate  \(cost=.*/)
+  expect(res2.data).toMatch(/Aggregate {2}\(cost=.*/)
 })
 
 test('explain with options', async () => {

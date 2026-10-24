@@ -22,7 +22,7 @@ function hoverOf(name: string): { checker: ts.TypeChecker; text: string; row: ts
   const config = ts.getParsedCommandLineOfConfigFile(
     configPath,
     { noEmit: true },
-    { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} }
+    { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => undefined }
   )!
   const host = ts.createCompilerHost(config.options)
   const readFile = host.readFile.bind(host)
