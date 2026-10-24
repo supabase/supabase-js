@@ -74,11 +74,35 @@ export interface CatalogRelation {
   traced?: TracedColumn[] | TraceResult
 }
 
+/**
+ * What an unqualified `count(x)` may call instead of the builtin aggregate along the search path the body runs with:
+ * `aggregateOverloaded` (`Planner/Supplementary.hs`) applied to these facts.
+ */
+export interface AggregateOverloads {
+  /**
+   * A schema of that path is not one the catalog lists the functions of (or the path cannot be named): it may hold
+   * a function or aggregate named `count` that takes the operand, so nothing is known about the call.
+   */
+  unknownSchema: boolean
+  /** The first argument type of each function or aggregate named `count` of the path's schemas that a call with one argument may reach */
+  candidates: string[]
+  /** The implicit casts into the types of those candidates (and their element and base types) */
+  implicitCasts: { source: string; target: string }[]
+  /** The domains of the covered schemas with their base type, to read a domain as its base */
+  domains: { schema: string; name: string; base: string }[]
+}
+
 /** Plain, JSON-serialisable facts about the database. */
 export interface TraceCatalog {
   relations: CatalogRelation[]
   /** Schemas searched, in order, for an unqualified relation name. Defaults to `['public']`. */
   searchPath?: string[]
+  /**
+   * What `count(x)` may resolve to besides the builtin aggregate. Absent: nothing else is known to exist, so the
+   * builtin is assumed (a catalog written by hand). A call of `count` is proven non-null only without an applicable
+   * overload.
+   */
+  aggregateOverloads?: AggregateOverloads
 }
 
 export interface TraceInput {

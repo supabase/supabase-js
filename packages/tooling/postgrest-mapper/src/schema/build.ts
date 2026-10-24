@@ -1,7 +1,7 @@
 import { PgParser } from '@supabase/pg-parser'
 import { relationKey } from '../keys'
 import { normalizeType } from '../printer/pg-types'
-import type { CatalogRelation, TraceCatalog, TraceInput } from '../tracer/types'
+import type { AggregateOverloads, CatalogRelation, TraceCatalog, TraceInput } from '../tracer/types'
 import type { Supplementary, SupplementaryFunction, SupplementaryRelation } from './types'
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -30,6 +30,51 @@ export interface BuildTraceCatalogOptions {
    * `buildFunctionTraceInputs` to cut the search path of a function body. Defaults to the schemas of `relations`.
    */
   exposedSchemas?: string[]
+  /**
+   * The schemas the body resolves an unqualified function name in, in order (what `count(x)` may be called instead
+   * of the builtin aggregate): the request path, or the function's own `search_path` as written, not cut to the
+   * exposed schemas. `null` when it cannot be named statically. Defaults to `searchPath`.
+   */
+  functionPath?: string[] | null
+}
+
+/**
+ * The facts `aggregateOverloaded` reads for an unqualified `count(x)` in a body that resolves function names along
+ * `path`: the functions and aggregates named `count` of those schemas, the implicit casts and the domains. A schema
+ * of the path that is neither covered by the catalog nor `pg_catalog` may hold such a function, which the catalog
+ * cannot tell (`unknownSchema`).
+ */
+function aggregateOverloadsOf(
+  supplementary: Supplementary,
+  path: readonly string[] | null,
+  covered: ReadonlySet<string>
+): AggregateOverloads {
+  const domains = supplementary.types
+    .filter((t) => t.base != null && t.element == null)
+    .map((t) => ({ schema: t.schema, name: t.name, base: t.base! }))
+  const implicitCasts = supplementary.implicitCasts.map((c) => ({
+    source: c.source,
+    target: c.target,
+  }))
+  if (path === null) return { unknownSchema: true, candidates: [], implicitCasts, domains }
+  const reached = new Set(path)
+  const candidates = [
+    ...supplementary.functions.filter((f) => f.name === 'count'),
+    ...supplementary.searchPathFunctions.filter((f) => f.name === 'count'),
+    ...supplementary.aggregates.filter((a) => a.name === 'count'),
+  ]
+    .filter((f) => reached.has(f.schema))
+    // a call with one argument leaves out only trailing arguments that have a default
+    .flatMap((f) => {
+      const [first, ...rest] = f.argTypes ?? []
+      return first !== undefined && rest.length <= (f.defaults ?? 0) ? [first] : []
+    })
+  return {
+    unknownSchema: path.some((s) => s !== 'pg_catalog' && !covered.has(s)),
+    candidates,
+    implicitCasts,
+    domains,
+  }
 }
 
 /**
@@ -44,16 +89,33 @@ export function buildTraceCatalog(
   const relations = [...supplementary.relations, ...supplementary.referencedRelations].map(
     toCatalogRelation
   )
-  return options.searchPath ? { relations, searchPath: options.searchPath } : { relations }
+  const searchPath = options.searchPath ?? ['public']
+  const covered = new Set([
+    ...supplementary.schemas,
+    ...(options.exposedSchemas ?? exposedSchemasOf(supplementary)),
+  ])
+  const aggregateOverloads = aggregateOverloadsOf(
+    supplementary,
+    options.functionPath === undefined ? searchPath : options.functionPath,
+    covered
+  )
+  return options.searchPath
+    ? { relations, searchPath: options.searchPath, aggregateOverloads }
+    : { relations, aggregateOverloads }
+}
+
+/** The schemas of the relations the catalog lists, the exposed schemas when nothing says better. */
+function exposedSchemasOf(supplementary: Supplementary): string[] {
+  return [...supplementary.relations, ...supplementary.referencedRelations].map((r) => r.schema)
 }
 
 /**
- * The schemas a body can resolve a relation name in, in order, for a function that sets its own `search_path`:
- * `value` is split the way PostgreSQL splits it (comma separated identifiers, a quoted one kept as written with
- * `""` for a quote, an unquoted one folded to lower case) and cut by `completePrefix`. `undefined` when the path cannot be
- * resolved statically (`$user`, a temporary schema) or does not parse: the function is not traced then.
+ * The schemas a function that sets its own `search_path` resolves names in, in order: `value` is split the way
+ * PostgreSQL splits it (comma separated identifiers, a quoted one kept as written with `""` for a quote, an
+ * unquoted one folded to lower case). `undefined` when the path cannot be resolved statically (`$user`, a temporary
+ * schema) or does not parse: the function is not traced then.
  */
-function ownSearchPath(value: string, exposed: ReadonlySet<string>): string[] | undefined {
+function parseSearchPath(value: string): string[] | undefined {
   const names: string[] = []
   let i = 0
   const n = value.length
@@ -87,7 +149,7 @@ function ownSearchPath(value: string, exposed: ReadonlySet<string>): string[] | 
   }
   if (names.some((x) => x === '$user' || x === 'pg_temp' || /^pg_temp_\d+$/.test(x)))
     return undefined
-  return completePrefix(names, exposed)
+  return names
 }
 
 /**
@@ -152,16 +214,24 @@ export function buildFunctionTraceInputs(
       (returnedKey !== undefined ? rowTypes.get(returnedKey) : undefined) ?? [
         { name: fn.name, type: fn.returns.type },
       ]
-    let searchPath = completePrefix([fn.schema, ...base], exposed)
+    // the schemas the body resolves a function name in, whole: any of them may hold an overload of `count`
+    let functionPath = [fn.schema, ...base]
     if (fn.searchPath != null) {
-      const own = ownSearchPath(fn.searchPath, exposed)
+      const own = parseSearchPath(fn.searchPath)
       if (!own) continue
-      searchPath = own
+      // `SET search_path = ''` is stored as `""`: an empty identifier names no schema
+      functionPath = own.filter((name) => name !== '')
     }
-    const catalogKey = JSON.stringify(searchPath)
+    // the schemas it resolves a relation name in: the path up to the first one the catalog does not list completely
+    const searchPath = completePrefix(functionPath, exposed)
+    const catalogKey = JSON.stringify([searchPath, functionPath])
     let catalog = catalogs.get(catalogKey)
     if (!catalog) {
-      catalog = buildTraceCatalog(supplementary, { searchPath })
+      catalog = buildTraceCatalog(supplementary, {
+        searchPath,
+        exposedSchemas: [...exposed],
+        functionPath,
+      })
       catalogs.set(catalogKey, catalog)
     }
     out.push({

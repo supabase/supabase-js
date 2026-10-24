@@ -4,6 +4,7 @@ import type { ParseSql } from './trace'
 import type { Tracer, TracerOptions } from './types'
 
 export type {
+  AggregateOverloads,
   CatalogColumn,
   CatalogRelation,
   ColumnSource,

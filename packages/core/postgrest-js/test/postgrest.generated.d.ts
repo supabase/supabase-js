@@ -1274,6 +1274,18 @@ declare global {
           }
           Returns: { id: number | null; parent_id: number | null }
         }
+        count_mood_plain: {
+          Args: Record<string, never>
+          Returns: {
+            n: number | null
+          }[]
+        }
+        count_mood_shadowed: {
+          Args: Record<string, never>
+          Returns: {
+            n: string | null
+          }[]
+        }
         da_default_first: {
           Args: {
             '': { id: number | null }

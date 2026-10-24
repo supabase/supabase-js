@@ -49,6 +49,8 @@ function supplementary(overrides: Partial<Supplementary> = {}): Supplementary {
     functions: [],
     schemas: [],
     searchPathFunctions: [],
+    aggregates: [],
+    implicitCasts: [],
     types: [],
     casts: [],
     referencedRelations: [],

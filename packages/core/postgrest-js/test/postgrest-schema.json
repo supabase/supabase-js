@@ -689,6 +689,50 @@
         "volatility": "s"
       },
       {
+        "argNames": [],
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "count_mood_plain",
+        "outColumns": [
+          {
+            "name": "n",
+            "type": "bigint"
+          }
+        ],
+        "returns": {
+          "kind": "scalar",
+          "setof": true,
+          "type": "bigint"
+        },
+        "schema": "public",
+        "searchPath": "public",
+        "source": " SELECT count(mood) FROM public.cast_cases; ",
+        "volatility": "s"
+      },
+      {
+        "argNames": [],
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "count_mood_shadowed",
+        "outColumns": [
+          {
+            "name": "n",
+            "type": "text"
+          }
+        ],
+        "returns": {
+          "kind": "scalar",
+          "setof": true,
+          "type": "text"
+        },
+        "schema": "public",
+        "searchPath": "arr_a, public",
+        "source": " SELECT count(mood) FROM public.cast_cases; ",
+        "volatility": "s"
+      },
+      {
         "argNames": null,
         "argTypes": [
           "public.users_audit"
@@ -9628,6 +9672,37 @@
       ],
       [
         {
+          "qiName": "count_mood_shadowed",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "count_mood_shadowed",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "text",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "get_personal_users",
           "qiSchema": "public"
         },
@@ -10614,6 +10689,37 @@
             },
             "pdSchema": "public",
             "pdVolatility": "Volatile"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "count_mood_plain",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "count_mood_plain",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "int8",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
           }
         ]
       ],

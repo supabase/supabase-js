@@ -168,6 +168,8 @@ describe('catalog builders', () => {
     ],
     schemas: [],
     searchPathFunctions: [],
+    aggregates: [],
+    implicitCasts: [],
     types: [],
     casts: [],
     referencedRelations: [relation('private', 'x', 'r', ['id'])],

@@ -27,6 +27,8 @@ const supplementary = (over: Partial<Supplementary>): Supplementary => ({
   functions: [],
   schemas: [],
   searchPathFunctions: [],
+  aggregates: [],
+  implicitCasts: [],
   types: [],
   casts: [],
   referencedRelations: [],

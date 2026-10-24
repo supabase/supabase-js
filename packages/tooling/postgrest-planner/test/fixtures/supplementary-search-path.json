@@ -1541,6 +1541,44 @@
             "volatility": "s"
         },
         {
+            "name": "count_mood_plain",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "bigint",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": [
+                {
+                    "name": "n",
+                    "type": "bigint"
+                }
+            ],
+            "volatility": "s"
+        },
+        {
+            "name": "count_mood_shadowed",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": [
+                {
+                    "name": "n",
+                    "type": "text"
+                }
+            ],
+            "volatility": "s"
+        },
+        {
             "name": "created_ago",
             "schema": "public",
             "returns": {

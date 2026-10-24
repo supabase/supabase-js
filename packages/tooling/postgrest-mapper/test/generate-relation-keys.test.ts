@@ -40,6 +40,8 @@ const supplementary: Supplementary = {
   functions: [],
   schemas: [],
   searchPathFunctions: [],
+  aggregates: [],
+  implicitCasts: [],
   types: [],
   casts: [],
   referencedRelations: [],

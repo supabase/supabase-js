@@ -92,6 +92,8 @@ describe('the search path a body is traced along', () => {
     foreignKeys: [],
     schemas: [],
     searchPathFunctions: [],
+    aggregates: [],
+    implicitCasts: [],
     types: [],
     casts: [],
     enums: [],

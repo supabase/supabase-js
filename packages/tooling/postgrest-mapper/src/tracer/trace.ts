@@ -1,6 +1,8 @@
 import { relationKey } from '../keys'
 import { normalizeType } from '../printer/pg-types'
+import { aggregateOverloaded } from './overloads'
 import type {
+  AggregateOverloads,
   CatalogRelation,
   ColumnSource,
   TraceCatalog,
@@ -241,6 +243,7 @@ function figureColname(node: Node): string {
 export interface CatalogIndex {
   lookup(schema: string, name: string): CatalogRelation | undefined
   searchPath: string[]
+  aggregateOverloads: AggregateOverloads | undefined
 }
 
 const indexCache = new WeakMap<TraceCatalog, CatalogIndex>()
@@ -254,6 +257,7 @@ export function indexCatalog(catalog: TraceCatalog): CatalogIndex {
     index = {
       lookup: (schema, name) => map.get(`${schema}\u0000${name}`),
       searchPath: catalog.searchPath ?? ['public'],
+      aggregateOverloads: catalog.aggregateOverloads,
     }
     indexCache.set(catalog, index)
   }
@@ -701,6 +705,14 @@ class Run {
           name === 'count' &&
           (names.length === 1 || (names.length === 2 && names[0] === 'pg_catalog'))
         ) {
+          // Only the unqualified name looks further than the builtin: PostgreSQL prefers a function or aggregate of
+          // the search path whose argument fits the operand better than `count("any")`, and that one may return NULL.
+          const overloads = names.length === 1 ? this.catalog.aggregateOverloads : undefined
+          if (overloads && (await this.countOverloaded(n, overloads, scope, ctx, groupingSets))) {
+            return nullable(
+              'a function named count of the search path may be called instead of the builtin aggregate'
+            )
+          }
           return { nullable: false, type: 'int8' }
         }
         if (n.over) return nullable(`window function ${name}()`)
@@ -717,6 +729,26 @@ class Run {
       default:
         return nullable(`${kind ?? 'unknown'} expression is not proven non-null`)
     }
+  }
+
+  /** Whether the call `count(...)` may be a function other than the builtin aggregate (see `aggregateOverloaded`). */
+  private async countOverloaded(
+    call: Node,
+    overloads: AggregateOverloads,
+    scope: Scope,
+    ctx: Ctx,
+    groupingSets: boolean
+  ): Promise<boolean> {
+    if (overloads.unknownSchema) return true
+    // count(*) reads no argument, and no candidate takes none
+    if (call.agg_star || overloads.candidates.length === 0) return false
+    const args: Node[] = call.args ?? []
+    if (args.length !== 1) return true
+    const operand = await this.expr(args[0], scope, ctx, groupingSets)
+    // an operand of unknown type (a bare NULL, an expression the tracer does not type) may be anything
+    const type =
+      operand.source || operand.type !== UNKNOWN ? valueType(operand, this.catalog) : undefined
+    return aggregateOverloaded(overloads, type)
   }
 
   private columnRef(ref: Node, scope: Scope, ctx: Ctx): Verdict {
@@ -845,7 +877,7 @@ function coerceToOutput(col: Col, declared: string | undefined, catalog: Catalog
  * a pass-through column comes from (a user type included), else the built-in type the tracer inferred. `undefined`
  * when neither is known.
  */
-function valueType(col: Col, catalog: CatalogIndex): string | undefined {
+function valueType(col: Pick<Col, 'source' | 'type'>, catalog: CatalogIndex): string | undefined {
   if (col.source) {
     const relation = catalog.lookup(col.source.schema, col.source.relation)
     return relation?.columns.find((c) => c.name === col.source!.column)?.type

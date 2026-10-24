@@ -489,3 +489,14 @@ GRANT EXECUTE ON FUNCTION personal.underscore_mood() TO anon, authenticated;
 CREATE SCHEMA agg_c;
 GRANT USAGE ON SCHEMA agg_c TO anon, authenticated, service_role;
 CREATE FUNCTION agg_c.count(bigint) RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;
+
+-- A function body that runs along a search_path of its own. `count(mood)` in the
+-- body is `arr_a.count(public.cast_mood)` (text, NULL) on the path arr_a,public, and the builtin `count("any")`
+-- (bigint, never NULL) on the path public alone.
+CREATE FUNCTION public.count_mood_shadowed()
+RETURNS TABLE(n text) LANGUAGE sql STABLE SET search_path = arr_a, public
+AS $$ SELECT count(mood) FROM public.cast_cases; $$;
+
+CREATE FUNCTION public.count_mood_plain()
+RETURNS TABLE(n bigint) LANGUAGE sql STABLE SET search_path = public
+AS $$ SELECT count(mood) FROM public.cast_cases; $$;
