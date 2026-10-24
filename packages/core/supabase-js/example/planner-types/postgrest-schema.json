@@ -49,6 +49,7 @@
   },
   "supplementaryFormat": 1,
   "supplementary": {
+    "aggregates": [],
     "casts": [],
     "composites": [],
     "enums": [
@@ -91,6 +92,7 @@
         "argTypes": [
           "bigint"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "author_post_count",
         "outColumns": null,
@@ -100,6 +102,7 @@
           "type": "integer"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " select count(*)::integer from public.posts p where p.author_id = author_post_count.author_id ",
         "volatility": "s"
       },
@@ -110,6 +113,7 @@
         "argTypes": [
           "public.posts"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "excerpt",
         "outColumns": null,
@@ -119,6 +123,7 @@
           "type": "text"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " select left(p.body, 40) ",
         "volatility": "s"
       },
@@ -129,6 +134,7 @@
         "argTypes": [
           "text"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "find_posts",
         "outColumns": null,
@@ -138,6 +144,7 @@
           "type": "public.posts"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " select * from public.posts p where p.title ilike '%' || term || '%' ",
         "volatility": "s"
       },
@@ -150,6 +157,7 @@
           "bigint",
           "public.post_status"
         ],
+        "defaults": 1,
         "language": "sql",
         "name": "find_posts",
         "outColumns": [
@@ -172,6 +180,7 @@
           "type": "record"
         },
         "schema": "public",
+        "searchPath": null,
         "source": "\n  select p.id, p.title, p.views\n  from public.posts p\n  where p.author_id = find_posts.author_id and (find_posts.status is null or p.status = find_posts.status)\n",
         "volatility": "s"
       },
@@ -182,6 +191,7 @@
         "argTypes": [
           "jsonb"
         ],
+        "defaults": 0,
         "language": "sql",
         "name": "posts_matching",
         "outColumns": null,
@@ -191,6 +201,7 @@
           "type": "public.posts"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " select * from public.posts p where p.metadata @> criteria ",
         "volatility": "s"
       },
@@ -201,6 +212,7 @@
         "argTypes": [
           "integer"
         ],
+        "defaults": 1,
         "language": "sql",
         "name": "recent_posts",
         "outColumns": null,
@@ -210,10 +222,12 @@
           "type": "public.posts"
         },
         "schema": "public",
+        "searchPath": null,
         "source": " select * from public.posts order by created_at desc, id desc limit max_rows ",
         "volatility": "s"
       }
     ],
+    "implicitCasts": [],
     "jsonSchemaChecks": [
       {
         "columns": [
