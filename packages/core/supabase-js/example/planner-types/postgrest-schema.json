@@ -1,0 +1,1579 @@
+{
+  "format": 1,
+  "postgrest": {
+    "release": "16.4"
+  },
+  "pgVersionNum": 170011,
+  "config": {
+    "admin-server-host": "!4",
+    "admin-server-port": "",
+    "admin-server-unix-socket": "",
+    "admin-server-unix-socket-mode": "660",
+    "client-error-verbosity": "verbose",
+    "db-aggregates-enabled": true,
+    "db-anon-role": "anon",
+    "db-channel": "pgrst",
+    "db-channel-enabled": true,
+    "db-config": true,
+    "db-extra-search-path": "public",
+    "db-hoisted-tx-settings": "statement_timeout,plan_filter.statement_cost_limit,default_transaction_isolation",
+    "db-max-rows": "",
+    "db-plan-enabled": false,
+    "db-pool": 10,
+    "db-pool-acquisition-timeout": 10,
+    "db-pool-automatic-recovery": true,
+    "db-pool-max-idletime": 30,
+    "db-pool-max-lifetime": 1800,
+    "db-pre-config": "",
+    "db-pre-request": "",
+    "db-prepared-statements": true,
+    "db-root-spec": "",
+    "db-schemas": "public",
+    "db-tx-end": "commit",
+    "jwt-aud": "",
+    "jwt-cache-max-entries": 1000,
+    "jwt-role-claim-key": "$$.role",
+    "log-level": "error",
+    "log-query": false,
+    "openapi-mode": "follow-privileges",
+    "openapi-security-active": false,
+    "server-cors-allowed-origins": "",
+    "server-host": "!4",
+    "server-port": 3000,
+    "server-reuseport": false,
+    "server-timing-enabled": false,
+    "server-trace-header": "",
+    "server-unix-socket": "",
+    "server-unix-socket-mode": "660",
+    "url-use-legacy-target-names": true
+  },
+  "supplementaryFormat": 1,
+  "supplementary": {
+    "casts": [],
+    "composites": [],
+    "enums": [
+      {
+        "labels": [
+          "draft",
+          "published",
+          "archived"
+        ],
+        "name": "post_status",
+        "schema": "public"
+      }
+    ],
+    "foreignKeys": [
+      {
+        "constraint": "comments_post_id_fkey",
+        "schema": "public",
+        "table": "comments",
+        "validated": true
+      },
+      {
+        "constraint": "posts_author_id_fkey",
+        "schema": "public",
+        "table": "posts",
+        "validated": true
+      },
+      {
+        "constraint": "posts_editor_id_fkey",
+        "schema": "public",
+        "table": "posts",
+        "validated": false
+      }
+    ],
+    "format": 1,
+    "functions": [
+      {
+        "argNames": [
+          "author_id"
+        ],
+        "argTypes": [
+          "bigint"
+        ],
+        "language": "sql",
+        "name": "author_post_count",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "public",
+        "source": " select count(*)::integer from public.posts p where p.author_id = author_post_count.author_id ",
+        "volatility": "s"
+      },
+      {
+        "argNames": [
+          "p"
+        ],
+        "argTypes": [
+          "public.posts"
+        ],
+        "language": "sql",
+        "name": "excerpt",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "text"
+        },
+        "schema": "public",
+        "source": " select left(p.body, 40) ",
+        "volatility": "s"
+      },
+      {
+        "argNames": [
+          "term"
+        ],
+        "argTypes": [
+          "text"
+        ],
+        "language": "sql",
+        "name": "find_posts",
+        "outColumns": null,
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "public.posts"
+        },
+        "schema": "public",
+        "source": " select * from public.posts p where p.title ilike '%' || term || '%' ",
+        "volatility": "s"
+      },
+      {
+        "argNames": [
+          "author_id",
+          "status"
+        ],
+        "argTypes": [
+          "bigint",
+          "public.post_status"
+        ],
+        "language": "sql",
+        "name": "find_posts",
+        "outColumns": [
+          {
+            "name": "id",
+            "type": "bigint"
+          },
+          {
+            "name": "title",
+            "type": "text"
+          },
+          {
+            "name": "views",
+            "type": "integer"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "record"
+        },
+        "schema": "public",
+        "source": "\n  select p.id, p.title, p.views\n  from public.posts p\n  where p.author_id = find_posts.author_id and (find_posts.status is null or p.status = find_posts.status)\n",
+        "volatility": "s"
+      },
+      {
+        "argNames": [
+          "criteria"
+        ],
+        "argTypes": [
+          "jsonb"
+        ],
+        "language": "sql",
+        "name": "posts_matching",
+        "outColumns": null,
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "public.posts"
+        },
+        "schema": "public",
+        "source": " select * from public.posts p where p.metadata @> criteria ",
+        "volatility": "s"
+      },
+      {
+        "argNames": [
+          "max_rows"
+        ],
+        "argTypes": [
+          "integer"
+        ],
+        "language": "sql",
+        "name": "recent_posts",
+        "outColumns": null,
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "public.posts"
+        },
+        "schema": "public",
+        "source": " select * from public.posts order by created_at desc, id desc limit max_rows ",
+        "volatility": "s"
+      }
+    ],
+    "jsonSchemaChecks": [
+      {
+        "columns": [
+          "metadata"
+        ],
+        "constraint": "posts_metadata_check",
+        "definition": "CHECK (((metadata IS NULL) OR extensions.jsonb_matches_schema('{\n        \"type\": \"object\",\n        \"additionalProperties\": false,\n        \"required\": [\"tags\"],\n        \"properties\": {\n          \"tags\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n          \"featured\": { \"type\": \"boolean\" },\n          \"theme\": { \"enum\": [\"light\", \"dark\"] },\n          \"seo\": {\n            \"type\": \"object\",\n            \"additionalProperties\": false,\n            \"required\": [\"title\"],\n            \"properties\": {\n              \"title\": { \"type\": \"string\" },\n              \"description\": { \"type\": \"string\" }\n            }\n          }\n        }\n      }'::json, metadata)))",
+        "schema": "public",
+        "table": "posts",
+        "validated": true
+      }
+    ],
+    "referencedRelations": [],
+    "relations": [
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": "always",
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "name",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "attnum": 3,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "email",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "attnum": 4,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "bio",
+            "notNull": false,
+            "type": "text"
+          },
+          {
+            "attnum": 5,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "socials",
+            "notNull": false,
+            "type": "jsonb"
+          }
+        ],
+        "kind": "r",
+        "name": "authors",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": "always",
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "post_id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 3,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "commenter",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "attnum": 4,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "body",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "attnum": 5,
+            "generated": null,
+            "hasDefault": true,
+            "identity": null,
+            "name": "likes",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "attnum": 6,
+            "generated": null,
+            "hasDefault": true,
+            "identity": null,
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp with time zone"
+          }
+        ],
+        "kind": "r",
+        "name": "comments",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "id",
+            "notNull": false,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "title",
+            "notNull": false,
+            "type": "text"
+          },
+          {
+            "attnum": 3,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "slug",
+            "notNull": false,
+            "type": "public.slug"
+          },
+          {
+            "attnum": 4,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "status",
+            "notNull": false,
+            "type": "public.post_status"
+          },
+          {
+            "attnum": 5,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "views",
+            "notNull": false,
+            "type": "integer"
+          },
+          {
+            "attnum": 6,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "author_name",
+            "notNull": false,
+            "type": "text"
+          },
+          {
+            "attnum": 7,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "editor_name",
+            "notNull": false,
+            "type": "text"
+          }
+        ],
+        "kind": "v",
+        "name": "post_summaries",
+        "schema": "public",
+        "updatable": {
+          "delete": false,
+          "insert": false,
+          "update": false
+        },
+        "viewDefinition": " SELECT p.id,\n    p.title,\n    p.slug,\n    p.status,\n    p.views,\n    a.name AS author_name,\n    e.name AS editor_name\n   FROM ((public.posts p\n     JOIN public.authors a ON ((a.id = p.author_id)))\n     LEFT JOIN public.authors e ON ((e.id = p.editor_id)));"
+      },
+      {
+        "columns": [
+          {
+            "attnum": 1,
+            "generated": null,
+            "hasDefault": false,
+            "identity": "always",
+            "name": "id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 2,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "author_id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 3,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "editor_id",
+            "notNull": true,
+            "type": "bigint"
+          },
+          {
+            "attnum": 4,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "title",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "attnum": 5,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "slug",
+            "notNull": true,
+            "type": "public.slug"
+          },
+          {
+            "attnum": 6,
+            "generated": null,
+            "hasDefault": true,
+            "identity": null,
+            "name": "body",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "attnum": 7,
+            "generated": null,
+            "hasDefault": true,
+            "identity": null,
+            "name": "status",
+            "notNull": true,
+            "type": "public.post_status"
+          },
+          {
+            "attnum": 8,
+            "generated": null,
+            "hasDefault": true,
+            "identity": null,
+            "name": "views",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "attnum": 9,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "rating",
+            "notNull": false,
+            "type": "numeric(3,1)"
+          },
+          {
+            "attnum": 10,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "metadata",
+            "notNull": false,
+            "type": "jsonb"
+          },
+          {
+            "attnum": 11,
+            "generated": null,
+            "hasDefault": false,
+            "identity": null,
+            "name": "published_at",
+            "notNull": false,
+            "type": "timestamp with time zone"
+          },
+          {
+            "attnum": 12,
+            "generated": null,
+            "hasDefault": true,
+            "identity": null,
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp with time zone"
+          }
+        ],
+        "kind": "r",
+        "name": "posts",
+        "schema": "public",
+        "updatable": {
+          "delete": true,
+          "insert": true,
+          "update": true
+        },
+        "viewDefinition": null
+      }
+    ],
+    "schemas": [
+      "public"
+    ],
+    "searchPathFunctions": [],
+    "types": [
+      {
+        "base": null,
+        "element": "public.authors",
+        "kind": "b",
+        "name": "_authors",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.comments",
+        "kind": "b",
+        "name": "_comments",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.post_status",
+        "kind": "b",
+        "name": "_post_status",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.post_summaries",
+        "kind": "b",
+        "name": "_post_summaries",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.posts",
+        "kind": "b",
+        "name": "_posts",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": "public.slug",
+        "kind": "b",
+        "name": "_slug",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "authors",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "comments",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "e",
+        "name": "post_status",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "post_summaries",
+        "schema": "public"
+      },
+      {
+        "base": null,
+        "element": null,
+        "kind": "c",
+        "name": "posts",
+        "schema": "public"
+      },
+      {
+        "base": "text",
+        "element": null,
+        "kind": "d",
+        "name": "slug",
+        "schema": "public"
+      }
+    ]
+  },
+  "dump": {
+    "dbMediaHandlers": [
+      [
+        [
+          {
+            "tag": "RelAnyElement"
+          },
+          {
+            "tag": "MTTextCSV"
+          }
+        ],
+        [
+          {
+            "tag": "BuiltinOvAggCsv"
+          },
+          {
+            "tag": "MTTextCSV"
+          }
+        ]
+      ],
+      [
+        [
+          {
+            "tag": "RelAnyElement"
+          },
+          {
+            "tag": "MTGeoJSON"
+          }
+        ],
+        [
+          {
+            "tag": "BuiltinOvAggGeoJson"
+          },
+          {
+            "tag": "MTGeoJSON"
+          }
+        ]
+      ],
+      [
+        [
+          {
+            "tag": "RelAnyElement"
+          },
+          {
+            "tag": "MTApplicationJSON"
+          }
+        ],
+        [
+          {
+            "tag": "BuiltinOvAggJson"
+          },
+          {
+            "tag": "MTApplicationJSON"
+          }
+        ]
+      ],
+      [
+        [
+          {
+            "tag": "RelAnyElement"
+          },
+          {
+            "tag": "MTAny"
+          }
+        ],
+        [
+          {
+            "tag": "BuiltinOvAggJson"
+          },
+          {
+            "tag": "MTApplicationJSON"
+          }
+        ]
+      ]
+    ],
+    "dbRelationships": [
+      [
+        [
+          {
+            "qiName": "posts",
+            "qiSchema": "public"
+          },
+          "public"
+        ],
+        [
+          {
+            "relCardinality": {
+              "relColumns": [
+                [
+                  "author_id",
+                  "id"
+                ]
+              ],
+              "relCons": "posts_author_id_fkey",
+              "tag": "M2O"
+            },
+            "relFTableIsView": false,
+            "relForeignTable": {
+              "qiName": "authors",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "posts",
+              "qiSchema": "public"
+            },
+            "relTableIsView": false,
+            "tag": "Relationship"
+          },
+          {
+            "relCardinality": {
+              "relColumns": [
+                [
+                  "editor_id",
+                  "id"
+                ]
+              ],
+              "relCons": "posts_editor_id_fkey",
+              "tag": "M2O"
+            },
+            "relFTableIsView": false,
+            "relForeignTable": {
+              "qiName": "authors",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "posts",
+              "qiSchema": "public"
+            },
+            "relTableIsView": false,
+            "tag": "Relationship"
+          },
+          {
+            "relCardinality": {
+              "relColumns": [
+                [
+                  "id",
+                  "post_id"
+                ]
+              ],
+              "relCons": "comments_post_id_fkey",
+              "tag": "O2M"
+            },
+            "relFTableIsView": false,
+            "relForeignTable": {
+              "qiName": "comments",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "posts",
+              "qiSchema": "public"
+            },
+            "relTableIsView": false,
+            "tag": "Relationship"
+          }
+        ]
+      ],
+      [
+        [
+          {
+            "qiName": "post_summaries",
+            "qiSchema": "public"
+          },
+          "public"
+        ],
+        [
+          {
+            "relCardinality": {
+              "relColumns": [
+                [
+                  "id",
+                  "post_id"
+                ]
+              ],
+              "relCons": "comments_post_id_fkey",
+              "tag": "O2M"
+            },
+            "relFTableIsView": false,
+            "relForeignTable": {
+              "qiName": "comments",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "post_summaries",
+              "qiSchema": "public"
+            },
+            "relTableIsView": true,
+            "tag": "Relationship"
+          }
+        ]
+      ],
+      [
+        [
+          {
+            "qiName": "comments",
+            "qiSchema": "public"
+          },
+          "public"
+        ],
+        [
+          {
+            "relCardinality": {
+              "relColumns": [
+                [
+                  "post_id",
+                  "id"
+                ]
+              ],
+              "relCons": "comments_post_id_fkey",
+              "tag": "M2O"
+            },
+            "relFTableIsView": true,
+            "relForeignTable": {
+              "qiName": "post_summaries",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "comments",
+              "qiSchema": "public"
+            },
+            "relTableIsView": false,
+            "tag": "Relationship"
+          },
+          {
+            "relCardinality": {
+              "relColumns": [
+                [
+                  "post_id",
+                  "id"
+                ]
+              ],
+              "relCons": "comments_post_id_fkey",
+              "tag": "M2O"
+            },
+            "relFTableIsView": false,
+            "relForeignTable": {
+              "qiName": "posts",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "comments",
+              "qiSchema": "public"
+            },
+            "relTableIsView": false,
+            "tag": "Relationship"
+          }
+        ]
+      ],
+      [
+        [
+          {
+            "qiName": "authors",
+            "qiSchema": "public"
+          },
+          "public"
+        ],
+        [
+          {
+            "relCardinality": {
+              "relColumns": [
+                [
+                  "id",
+                  "author_id"
+                ]
+              ],
+              "relCons": "posts_author_id_fkey",
+              "tag": "O2M"
+            },
+            "relFTableIsView": false,
+            "relForeignTable": {
+              "qiName": "posts",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "authors",
+              "qiSchema": "public"
+            },
+            "relTableIsView": false,
+            "tag": "Relationship"
+          },
+          {
+            "relCardinality": {
+              "relColumns": [
+                [
+                  "id",
+                  "editor_id"
+                ]
+              ],
+              "relCons": "posts_editor_id_fkey",
+              "tag": "O2M"
+            },
+            "relFTableIsView": false,
+            "relForeignTable": {
+              "qiName": "posts",
+              "qiSchema": "public"
+            },
+            "relIsSelf": false,
+            "relTable": {
+              "qiName": "authors",
+              "qiSchema": "public"
+            },
+            "relTableIsView": false,
+            "tag": "Relationship"
+          }
+        ]
+      ]
+    ],
+    "dbRepresentations": [],
+    "dbRoutines": [
+      [
+        {
+          "qiName": "author_post_count",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "author_post_count",
+            "pdParams": [
+              {
+                "ppName": "author_id",
+                "ppReq": true,
+                "ppType": "bigint",
+                "ppTypeMaxLength": "bigint",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "int4",
+                  "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "posts_matching",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "posts_matching",
+            "pdParams": [
+              {
+                "ppName": "criteria",
+                "ppReq": true,
+                "ppType": "jsonb",
+                "ppTypeMaxLength": "jsonb",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "posts",
+                    "qiSchema": "public"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "find_posts",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "find_posts",
+            "pdParams": [
+              {
+                "ppName": "term",
+                "ppReq": true,
+                "ppType": "text",
+                "ppTypeMaxLength": "text",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "posts",
+                    "qiSchema": "public"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          },
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "find_posts",
+            "pdParams": [
+              {
+                "ppName": "author_id",
+                "ppReq": true,
+                "ppType": "bigint",
+                "ppTypeMaxLength": "bigint",
+                "ppVar": false
+              },
+              {
+                "ppName": "status",
+                "ppReq": false,
+                "ppType": "public.post_status",
+                "ppTypeMaxLength": "public.post_status",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "record",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "recent_posts",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "recent_posts",
+            "pdParams": [
+              {
+                "ppName": "max_rows",
+                "ppReq": false,
+                "ppType": "integer",
+                "ppTypeMaxLength": "integer",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "posts",
+                    "qiSchema": "public"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "excerpt",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "excerpt",
+            "pdParams": [
+              {
+                "ppName": "p",
+                "ppReq": true,
+                "ppType": "public.posts",
+                "ppTypeMaxLength": "public.posts",
+                "ppVar": false
+              }
+            ],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "text",
+                  "qiSchema": "pg_catalog"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ]
+    ],
+    "dbTables": [
+      [
+        {
+          "qiName": "authors",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "bio": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "bio",
+              "colNominalType": "text",
+              "colNullable": true,
+              "colType": "text"
+            },
+            "email": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "email",
+              "colNominalType": "text",
+              "colNullable": false,
+              "colType": "text"
+            },
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "name": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "name",
+              "colNominalType": "text",
+              "colNullable": false,
+              "colType": "text"
+            },
+            "socials": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "socials",
+              "colNominalType": "jsonb",
+              "colNullable": true,
+              "colType": "jsonb"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "authors",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "post_summaries",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "author_name": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "author_name",
+              "colNominalType": "text",
+              "colNullable": true,
+              "colType": "text"
+            },
+            "editor_name": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "editor_name",
+              "colNominalType": "text",
+              "colNullable": true,
+              "colType": "text"
+            },
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": true,
+              "colType": "bigint"
+            },
+            "slug": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "slug",
+              "colNominalType": "public.slug",
+              "colNullable": true,
+              "colType": "text"
+            },
+            "status": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [
+                "draft",
+                "published",
+                "archived"
+              ],
+              "colMaxLen": null,
+              "colName": "status",
+              "colNominalType": "public.post_status",
+              "colNullable": true,
+              "colType": "public.post_status"
+            },
+            "title": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "title",
+              "colNominalType": "text",
+              "colNullable": true,
+              "colType": "text"
+            },
+            "views": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "views",
+              "colNominalType": "integer",
+              "colNullable": true,
+              "colType": "integer"
+            }
+          },
+          "tableDeletable": false,
+          "tableDescription": null,
+          "tableInsertable": false,
+          "tableIsView": true,
+          "tableName": "post_summaries",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": false
+        }
+      ],
+      [
+        {
+          "qiName": "comments",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "body": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "body",
+              "colNominalType": "text",
+              "colNullable": false,
+              "colType": "text"
+            },
+            "commenter": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "commenter",
+              "colNominalType": "text",
+              "colNullable": false,
+              "colType": "text"
+            },
+            "created_at": {
+              "colDefault": "now()",
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "created_at",
+              "colNominalType": "timestamp with time zone",
+              "colNullable": false,
+              "colType": "timestamp with time zone"
+            },
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "likes": {
+              "colDefault": "0",
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "likes",
+              "colNominalType": "integer",
+              "colNullable": false,
+              "colType": "integer"
+            },
+            "post_id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "post_id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "comments",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ],
+      [
+        {
+          "qiName": "posts",
+          "qiSchema": "public"
+        },
+        {
+          "tableColumns": {
+            "author_id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "author_id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "body": {
+              "colDefault": "''::text",
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "body",
+              "colNominalType": "text",
+              "colNullable": false,
+              "colType": "text"
+            },
+            "created_at": {
+              "colDefault": "now()",
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "created_at",
+              "colNominalType": "timestamp with time zone",
+              "colNullable": false,
+              "colType": "timestamp with time zone"
+            },
+            "editor_id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "editor_id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "id": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "id",
+              "colNominalType": "bigint",
+              "colNullable": false,
+              "colType": "bigint"
+            },
+            "metadata": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "metadata",
+              "colNominalType": "jsonb",
+              "colNullable": true,
+              "colType": "jsonb"
+            },
+            "published_at": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "published_at",
+              "colNominalType": "timestamp with time zone",
+              "colNullable": true,
+              "colType": "timestamp with time zone"
+            },
+            "rating": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "rating",
+              "colNominalType": "numeric(3,1)",
+              "colNullable": true,
+              "colType": "numeric"
+            },
+            "slug": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "slug",
+              "colNominalType": "public.slug",
+              "colNullable": false,
+              "colType": "text"
+            },
+            "status": {
+              "colDefault": "'draft'::public.post_status",
+              "colDescription": null,
+              "colEnum": [
+                "draft",
+                "published",
+                "archived"
+              ],
+              "colMaxLen": null,
+              "colName": "status",
+              "colNominalType": "public.post_status",
+              "colNullable": false,
+              "colType": "public.post_status"
+            },
+            "title": {
+              "colDefault": null,
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "title",
+              "colNominalType": "text",
+              "colNullable": false,
+              "colType": "text"
+            },
+            "views": {
+              "colDefault": "0",
+              "colDescription": null,
+              "colEnum": [],
+              "colMaxLen": null,
+              "colName": "views",
+              "colNominalType": "integer",
+              "colNullable": false,
+              "colType": "integer"
+            }
+          },
+          "tableDeletable": true,
+          "tableDescription": null,
+          "tableInsertable": true,
+          "tableIsView": false,
+          "tableName": "posts",
+          "tablePKCols": [
+            "id"
+          ],
+          "tableSchema": "public",
+          "tableUpdatable": true
+        }
+      ]
+    ]
+  }
+}

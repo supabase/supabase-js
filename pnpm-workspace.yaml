@@ -4,6 +4,7 @@ packages:
   - 'packages/tooling/*'
   - 'packages/core/auth-js/example/react'
   - 'packages/core/realtime-js/example'
+  - 'packages/core/supabase-js/example/planner-types'
 
 # Shared tooling versions referenced as `catalog:` in per-package devDependencies.
 # Keep aligned with the root devDependencies entries.

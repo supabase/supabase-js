@@ -580,6 +580,34 @@ importers:
         specifier: 'catalog:'
         version: 5.8.3
 
+  packages/core/supabase-js/example/planner-types:
+    dependencies:
+      '@supabase/postgrest-js':
+        specifier: workspace:*
+        version: link:../../../postgrest-js
+      '@supabase/supabase-js':
+        specifier: workspace:*
+        version: link:../..
+    devDependencies:
+      '@supabase/postgrest-mapper':
+        specifier: workspace:*
+        version: link:../../../../tooling/postgrest-mapper
+      '@supabase/postgrest-planner':
+        specifier: workspace:*
+        version: link:../../../../tooling/postgrest-planner
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.9
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
+      typescript-7.1:
+        specifier: npm:typescript@7.1.0-beta
+        version: typescript@7.1.0-beta
+
   packages/shared/tracing:
     dependencies:
       tslib:

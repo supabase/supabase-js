@@ -1,0 +1,7 @@
+{
+  // TypeScript 7.1 only (see README.md, "Content mapper"): types come from src/supabase.pgrst-index, produced in
+  // memory by the content mapper, instead of from the generated src/supabase.types.d.ts.
+  "extends": "./tsconfig.json",
+  "include": ["src", "src/supabase.pgrst-index"],
+  "exclude": ["src/supabase.types.d.ts"]
+}

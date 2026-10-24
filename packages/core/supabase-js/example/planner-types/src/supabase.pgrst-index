@@ -1,0 +1,2 @@
+// postgrest-mapper index file: its content is ignored. Its extension (.pgrst-index) makes TypeScript run the
+// content mapper configured in tsconfig.json, which scans this project and types its PostgREST calls.
