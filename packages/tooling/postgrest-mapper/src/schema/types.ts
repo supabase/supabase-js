@@ -9,7 +9,9 @@ import type {
   SupplementaryComposite,
   SupplementaryForeignKey,
   SupplementaryFunction as PlannerSupplementaryFunction,
+  SupplementaryAggregate,
   SupplementaryCast,
+  SupplementaryImplicitCast,
   SupplementaryType,
 } from '@supabase/postgrest-planner'
 
@@ -76,7 +78,12 @@ export interface SupplementaryFunction {
 /** The planner's view of a function (a computed-field candidate): the mapper-only keys are not read for these. */
 export type SupplementarySearchPathFunction = PlannerSupplementaryFunction
 
-export type { SupplementaryCast, SupplementaryType }
+export type {
+  SupplementaryAggregate,
+  SupplementaryCast,
+  SupplementaryImplicitCast,
+  SupplementaryType,
+}
 
 export interface SupplementaryEnum {
   schema: string
@@ -109,7 +116,9 @@ export interface SupplementaryJsonSchemaCheck {
  * extension of any covered schema that take one row type or have OUT columns (`functions` leaves extension members
  * out); `types`, every user type (domain, enum, composite, range...) and array type of the covered schemas, used
  * or not, so a cast name resolves against the whole path; `casts`, every `pg_cast` row with a side outside `pg_catalog`, which tells the planner whether
- * a cast from a user type runs a function.
+ * a cast from a user type runs a function; `aggregates`, the aggregates named like a builtin one (`count`, `sum`, `avg`,
+ * `min`, `max`) and `implicitCasts`, the implicit casts into the argument types of those and of the same-named
+ * functions, which tell the planner whether a builtin aggregate is still the one PostgreSQL calls.
  *
  * Scope: `relations`, `composites`, `foreignKeys`, `functions` and `enums` cover exactly the exposed schemas
  * (`db-schemas`). `referencedRelations` adds the relations OUTSIDE them that an exposed view (transitively) selects
@@ -127,6 +136,8 @@ export interface Supplementary {
   searchPathFunctions: SupplementarySearchPathFunction[]
   types: SupplementaryType[]
   casts: SupplementaryCast[]
+  aggregates: SupplementaryAggregate[]
+  implicitCasts: SupplementaryImplicitCast[]
   referencedRelations: SupplementaryRelation[]
   enums: SupplementaryEnum[]
   jsonSchemaChecks: SupplementaryJsonSchemaCheck[]

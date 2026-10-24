@@ -42,6 +42,8 @@ const acquired = (dump: string): AcquiredSchema => ({
     searchPathFunctions: [],
     types: [],
     casts: [],
+    aggregates: [],
+    implicitCasts: [],
     referencedRelations: [],
     enums: [],
     jsonSchemaChecks: [],

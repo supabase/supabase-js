@@ -58,7 +58,8 @@ export interface Supplementary {
    * Functions of the schemas of `db-extra-search-path` that are not exposed: a computed field is found
    * through the whole search path of the request, so they take part in resolving it. Members of an extension
    * (which `functions` leaves out) are listed here for every covered schema, exposed or not, when a lookup can
-   * reach them: they take one row type as their only argument, or have OUT columns.
+   * reach them: they take one row type (or an array of one, a possible `VARIADIC`) as their first argument and
+   * nothing else without a default, or have OUT columns.
    */
   searchPathFunctions?: SupplementaryFunction[]
   /**
@@ -79,6 +80,35 @@ export interface Supplementary {
    * such a cast is nullable.
    */
   casts?: SupplementaryCast[]
+  /**
+   * The aggregates (`prokind = 'a'`) named `count`, `sum`, `avg`, `min` or `max` of every covered schema, extension
+   * members included: with the same-named functions of `functions` and `searchPathFunctions`, they are what
+   * decides whether PostgreSQL still calls the builtin aggregate. They are never computed fields.
+   */
+  aggregates?: SupplementaryAggregate[]
+  /**
+   * The implicit casts (`pg_cast.castcontext = 'i'`) into the first argument type of those functions and aggregates
+   * (and into the element or base type of such an argument), from any type. Without this section every
+   * same-named candidate of the search path is taken to apply to any operand.
+   */
+  implicitCasts?: SupplementaryImplicitCast[]
+  [k: string]: unknown
+}
+
+export interface SupplementaryAggregate {
+  schema: string
+  name: string
+  /** `format_type` of each argument, under an empty `search_path` (schema-qualified outside `pg_catalog`). */
+  argTypes: string[]
+  /** `pg_proc.pronargdefaults`. */
+  defaults: number
+  [k: string]: unknown
+}
+
+export interface SupplementaryImplicitCast {
+  /** Same spelling as `SupplementaryCast.source`. */
+  source: string
+  target: string
   [k: string]: unknown
 }
 

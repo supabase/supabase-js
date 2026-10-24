@@ -49,6 +49,7 @@
   },
   "supplementaryFormat": 1,
   "supplementary": {
+    "aggregates": [],
     "casts": [
       {
         "method": "f",
@@ -390,6 +391,25 @@
         "volatility": "i"
       },
       {
+        "argNames": null,
+        "argTypes": [
+          "public.ext_label_cases"
+        ],
+        "defaults": 0,
+        "language": "sql",
+        "name": "ext_va_label",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "integer"
+        },
+        "schema": "personal",
+        "searchPath": null,
+        "source": " SELECT 1; ",
+        "volatility": "i"
+      },
+      {
         "argNames": [
           "name_param"
         ],
@@ -449,6 +469,23 @@
         "schema": "personal",
         "searchPath": null,
         "source": " SELECT id FROM messages; ",
+        "volatility": "s"
+      },
+      {
+        "argNames": null,
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "underscore_mood",
+        "outColumns": null,
+        "returns": {
+          "kind": "scalar",
+          "setof": false,
+          "type": "und_a._mood"
+        },
+        "schema": "personal",
+        "searchPath": null,
+        "source": " SELECT 'ok'::und_a._mood; ",
         "volatility": "s"
       },
       {
@@ -2464,6 +2501,7 @@
         "volatility": "v"
       }
     ],
+    "implicitCasts": [],
     "jsonSchemaChecks": [],
     "referencedRelations": [],
     "relations": [
@@ -11166,6 +11204,34 @@
               "tag": "SetOf"
             },
             "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "underscore_mood",
+          "qiSchema": "personal"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "underscore_mood",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": {
+                  "qiName": "_mood",
+                  "qiSchema": "und_a"
+                },
+                "tag": "Scalar"
+              },
+              "tag": "Single"
+            },
+            "pdSchema": "personal",
             "pdVolatility": "Stable"
           }
         ]

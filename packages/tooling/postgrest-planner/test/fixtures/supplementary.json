@@ -1189,6 +1189,21 @@
             "volatility": "i"
         },
         {
+            "name": "ext_va_label",
+            "schema": "personal",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.ext_label_cases"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
             "name": "get_status",
             "schema": "personal",
             "returns": {
@@ -1235,6 +1250,20 @@
                     "type": "bigint"
                 }
             ],
+            "volatility": "s"
+        },
+        {
+            "name": "underscore_mood",
+            "schema": "personal",
+            "returns": {
+                "kind": "scalar",
+                "type": "und_a._mood",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": null,
             "volatility": "s"
         },
         {
@@ -3656,6 +3685,8 @@
             ]
         }
     ],
+    "aggregates": [
+    ],
     "composites": [
         {
             "name": "address",
@@ -3765,6 +3796,8 @@
             "validated": true,
             "constraint": "user_profiles_username_fkey"
         }
+    ],
+    "implicitCasts": [
     ],
     "searchPathFunctions": [
         {

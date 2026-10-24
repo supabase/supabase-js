@@ -129,6 +129,11 @@ describe('schema acquisition from the supabase-local stack', () => {
           'arr_a',
           'arr_b',
           'ext_owned',
+          'agg_a',
+          'agg_b',
+          'agg_c',
+          'und_a',
+          'und_b',
         ])
       )
       const expected = JSON.parse(readFileSync(PLANNER_FIXTURE_SEARCH_PATH, 'utf8'))

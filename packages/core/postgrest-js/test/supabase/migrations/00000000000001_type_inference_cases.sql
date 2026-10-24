@@ -439,3 +439,53 @@ RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
 -- `cast_cases?select=mood.count()` calls this function when arr_a is on the search path, and it returns NULL.
 CREATE FUNCTION arr_a.count(public.cast_mood)
 RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;
+
+-- User aggregates named like the builtin `count`, each in a schema of its own so that they only matter on a search
+-- path that lists them. Their state functions return NULL, and PostgreSQL prefers an exact signature to the builtin
+-- `count(any)`: `status.count()` is a nullable text on a path with agg_a, and a spread `...users(count())` counts the
+-- row of `users` (`COUNT(users_1)`), which is a nullable text on a path with agg_b.
+CREATE SCHEMA agg_a;
+CREATE SCHEMA agg_b;
+GRANT USAGE ON SCHEMA agg_a, agg_b TO anon, authenticated, service_role;
+
+CREATE FUNCTION agg_a.count_status_step(text, public.user_status)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;
+CREATE AGGREGATE agg_a.count(public.user_status) (SFUNC = agg_a.count_status_step, STYPE = text);
+
+CREATE FUNCTION agg_b.count_users_step(text, public.users)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;
+CREATE AGGREGATE agg_b.count(public.users) (SFUNC = agg_b.count_users_step, STYPE = text);
+
+-- A variadic computed field of an extension: PostgreSQL expands `VARIADIC public.ext_label_cases[]` to the row type of
+-- `ext_label_cases.ext_va_label`, so on the path ext_owned,personal it calls ext_owned.ext_va_label (text), not
+-- personal.ext_va_label (integer).
+CREATE FUNCTION ext_owned.ext_va_label(VARIADIC public.ext_label_cases[])
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'label'::text; $$;
+ALTER EXTENSION lo ADD FUNCTION ext_owned.ext_va_label(public.ext_label_cases[]);
+
+CREATE FUNCTION personal.ext_va_label(public.ext_label_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+GRANT EXECUTE ON FUNCTION ext_owned.ext_va_label(public.ext_label_cases[]) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION personal.ext_va_label(public.ext_label_cases) TO anon, authenticated;
+
+-- An enum named like the array type of another type: `und_a._mood` is an enum and `und_b.mood` an integer domain. A
+-- function returning the enum must not make the planner believe in a type `und_a.mood`: on the path und_a,und_b
+-- PostgreSQL reads `::mood` as `und_b.mood`.
+CREATE SCHEMA und_a;
+CREATE SCHEMA und_b;
+GRANT USAGE ON SCHEMA und_a, und_b TO anon, authenticated, service_role;
+CREATE TYPE und_a._mood AS ENUM ('ok');
+CREATE DOMAIN und_b.mood AS integer;
+
+CREATE FUNCTION personal.underscore_mood()
+RETURNS und_a._mood LANGUAGE sql STABLE AS $$ SELECT 'ok'::und_a._mood; $$;
+
+GRANT EXECUTE ON FUNCTION personal.underscore_mood() TO anon, authenticated;
+
+-- A function named like an aggregate whose argument is not the operand but an implicit cast target of it. With
+-- agg_c on the search path, `cast_cases?select=n.count()` (n is an integer) finds count(bigint) as well as the builtin
+-- count("any") and PostgreSQL cannot choose between them, while a text operand matches only the builtin.
+CREATE SCHEMA agg_c;
+GRANT USAGE ON SCHEMA agg_c TO anon, authenticated, service_role;
+CREATE FUNCTION agg_c.count(bigint) RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;

@@ -92,6 +92,8 @@ const SUPPLEMENTARY_ARRAYS = [
   'searchPathFunctions',
   'types',
   'casts',
+  'aggregates',
+  'implicitCasts',
   'enums',
   'jsonSchemaChecks',
 ] as const

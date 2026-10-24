@@ -38,7 +38,7 @@ import Data.Either (isRight)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.HashMap.Strict.InsOrd as HMI
 import Data.List (find, nub, sort)
-import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, maybeToList)
 import Control.Applicative ((<|>))
 import Control.Monad (guard, join)
 import Data.Text (Text)
@@ -62,7 +62,7 @@ import PostgREST.SchemaCache.Relationship (Cardinality (..), Junction (..), Rela
 import PostgREST.SchemaCache.Routine (FuncVolatility (..), MediaHandler (..), PgType (..), RetType (..), Routine (..), RoutineParam (..), RoutineMap, funcReturnsSingleComposite)
 import PostgREST.SchemaCache.Table (Column (..), Table (..))
 
-import Planner.PgType (aggregateType, hasBuiltinArray, isBuiltinType, isSqlTypeAlias, normalizeType, parseTypeName, qualifiedTypeName, sameTypeRef, typeSpelling)
+import Planner.PgType (aggregateType, hasBuiltinArray, isBuiltinType, isSqlTypeAlias, normalizeType, parseTypeName, sameTypeRef, typeSpelling)
 import Planner.Supplementary (Lookup (..), SuppFunction (..), SuppReturn (..), Supplementary (..), aggregateOverloaded, covers, findComputedField, findFunction, findRoutine, foreignKeyValidated, orderColumns)
 
 -- | @form@, @shape@, @rpc@, @filters@ and @degraded@ for a plan. Plans that return no rows of a relation
@@ -537,9 +537,15 @@ resolveOne ctx rel csf@CoercibleSelectField{csField = cf, csAggFunction = agg, c
         <> ["aggregate:" <> aggName fn | Just fn <- [agg], overloaded fn]
         <> ["cast-type:" <> c | Just c <- [cast, aggCast'], not (isCastFound (resolveCastType ctx c))]
 
-    -- Upstream emits the aggregate unqualified (@COUNT(v)@), so a function of the path that shares its name and
-    -- takes the argument can win over the builtin. @count(*)@ reads no argument.
-    overloaded fn = not isStar && maybe False (\supp -> aggregateOverloaded supp (cxSearchPath ctx) (aggName fn)) (cxSupp ctx)
+    -- Upstream emits the aggregate unqualified (@COUNT(v)@), so a function or aggregate of the path that shares its
+    -- name and takes the operand can win over the builtin. @count(*)@ reads no argument; the count of a spread
+    -- (@...parent(count())@) is over the whole row of the parent, which is the operand.
+    overloaded fn =
+      (not isStar || cfFullRow cf)
+        && maybe False (\supp -> aggregateOverloaded supp (cxSearchPath ctx) (aggName fn) operand) (cxSupp ctx)
+    operand
+      | cfFullRow cf = Just [typeSpelling rel]
+      | otherwise = (\t -> t : maybeToList (eBase inner)) <$> eType inner
     aggregate fn e
       | overloaded fn = unresolvedExpr ("a function named " <> aggName fn <> " of the search path may be called instead of the builtin aggregate")
       | otherwise = applyAggregate fn e
@@ -547,13 +553,13 @@ resolveOne ctx rel csf@CoercibleSelectField{csField = cf, csAggFunction = agg, c
     -- Upstream's @pgFmtApplyAggregate Nothing _@ drops the second cast: it only applies after an aggregate.
     aggCast' = if isJust agg then aggCast else Nothing
 
-    final =
-      applyCast ctx aggCast'
-        . maybe id aggregate agg
-        . applyCast ctx cast
+    -- what the aggregate is applied to
+    inner =
+      applyCast ctx cast
         . maybe id applyRepresentation (cfTransform cf)
         . applyJsonPath (cfToJson cf) (cfJsonPath cf)
         $ start
+    final = applyCast ctx aggCast' (maybe inner (`aggregate` inner) agg)
 
 -- | The name a select item has in the response, as PostgreSQL labels it: the alias, else the aggregate's name
 -- (@sum@, @count@), else the field name (upstream @addAliases@ has already put the last JSON key in the alias).
@@ -855,11 +861,19 @@ knownTypes sc supp = HM.map (fmap chase) known
     routineTypes r =
       (normalizeType . ppType <$> pdParams r)
         <> case pdReturnType r of
-          Single t -> [pgTypeName t]
-          SetOf t -> [pgTypeName t]
+          Single t -> pgTypeName t
+          SetOf t -> pgTypeName t
+    -- The dump names a return type as @pg_type@ does, so an array is the type @_name@: whether it is an array is
+    -- the catalog's to say (it holds the array types by their own name), not the underscore's: an enum can be
+    -- named @_mood@. Without the catalog a name starting with an underscore is not known to be either.
     pgTypeName = \case
-      Scalar qi -> qualifiedTypeName qi
-      Composite qi _ -> typeSpelling qi
+      Composite qi _ -> [typeSpelling qi]
+      Scalar qi@(QualifiedIdentifier schema name)
+        | schema == "pg_catalog" || T.null schema -> []
+        | Just element <- supp >>= HM.lookup qi . suppArrays -> [element <> "[]"]
+        | Just _ <- supp >>= HM.lookup qi . suppTypes -> [typeSpelling qi]
+        | "_" `T.isPrefixOf` name -> []
+        | otherwise -> [typeSpelling qi]
 
 -- | What 'knownTypes' holds for a type spelling: 'Nothing' for a type it does not know, else the base type of
 -- the domain (none for any other type).

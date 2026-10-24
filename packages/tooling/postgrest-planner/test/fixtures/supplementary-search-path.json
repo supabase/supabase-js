@@ -1214,10 +1214,41 @@
             "name": "users_audit",
             "schema": "public",
             "element": null
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "__mood",
+            "schema": "und_a",
+            "element": "und_a._mood"
+        },
+        {
+            "base": null,
+            "kind": "e",
+            "name": "_mood",
+            "schema": "und_a",
+            "element": null
+        },
+        {
+            "base": null,
+            "kind": "b",
+            "name": "_mood",
+            "schema": "und_b",
+            "element": "und_b.mood"
+        },
+        {
+            "base": "integer",
+            "kind": "d",
+            "name": "mood",
+            "schema": "und_b",
+            "element": null
         }
     ],
     "format": 1,
     "schemas": [
+        "agg_a",
+        "agg_b",
+        "agg_c",
         "arr_a",
         "arr_b",
         "cast_a",
@@ -1227,7 +1258,9 @@
         "extensions",
         "graphql_public",
         "personal",
-        "public"
+        "public",
+        "und_a",
+        "und_b"
     ],
     "functions": [
         {
@@ -1265,6 +1298,21 @@
         },
         {
             "name": "ext_label",
+            "schema": "personal",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.ext_label_cases"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "ext_va_label",
             "schema": "personal",
             "returns": {
                 "kind": "scalar",
@@ -1325,6 +1373,20 @@
                     "type": "bigint"
                 }
             ],
+            "volatility": "s"
+        },
+        {
+            "name": "underscore_mood",
+            "schema": "personal",
+            "returns": {
+                "kind": "scalar",
+                "type": "und_a._mood",
+                "setof": false
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": null,
             "volatility": "s"
         },
         {
@@ -3746,6 +3808,24 @@
             ]
         }
     ],
+    "aggregates": [
+        {
+            "name": "count",
+            "schema": "agg_a",
+            "argTypes": [
+                "public.user_status"
+            ],
+            "defaults": 0
+        },
+        {
+            "name": "count",
+            "schema": "agg_b",
+            "argTypes": [
+                "public.users"
+            ],
+            "defaults": 0
+        }
+    ],
     "composites": [
         {
             "name": "address",
@@ -3856,7 +3936,64 @@
             "constraint": "user_profiles_username_fkey"
         }
     ],
+    "implicitCasts": [
+        {
+            "source": "integer",
+            "target": "bigint"
+        },
+        {
+            "source": "smallint",
+            "target": "bigint"
+        }
+    ],
     "searchPathFunctions": [
+        {
+            "name": "count_status_step",
+            "schema": "agg_a",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "text",
+                "public.user_status"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "count_users_step",
+            "schema": "agg_b",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "text",
+                "public.users"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "count",
+            "schema": "agg_c",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "bigint"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
         {
             "name": "count",
             "schema": "arr_a",
@@ -3928,6 +4065,21 @@
             },
             "argTypes": [
                 "public.ext_label_cases"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "ext_va_label",
+            "schema": "ext_owned",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.ext_label_cases[]"
             ],
             "defaults": 0,
             "outColumns": null,

@@ -7,7 +7,6 @@
 -- modifiers, @schema.name@ only outside @pg_catalog@, and @[]@ for arrays.
 module Planner.PgType
   ( normalizeType
-  , qualifiedTypeName
   , parseTypeName
   , typeSpelling
   , sameTypeRef
@@ -103,17 +102,6 @@ isSqlTypeAlias t = t `elem` aliases || "interval " `T.isPrefixOf` t
       , "timestamp without time zone", "interval"
       ]
 
--- | A @pg_type@-sourced name (routine return types in the schema dump): a leading underscore is an
--- array type, @pg_catalog@ is dropped, everything else is @schema.name@ spelled like @format_type@ does.
-qualifiedTypeName :: QualifiedIdentifier -> Text
-qualifiedTypeName (QualifiedIdentifier schema name) = case T.stripPrefix "_" name of
-  Just element | not (T.null element) -> qualify element <> "[]"
-  _ -> qualify name
-  where
-    qualify n
-      | T.null schema || schema == "pg_catalog" = n
-      | otherwise = typeSpelling (QualifiedIdentifier schema n)
-
 -- | The one identity of a user type: its @(schema, name)@ as @pg_type@ and @pg_namespace@ hold them, raw. A
 -- catalog entry is keyed by it directly and a @format_type@ spelling is read back into it, so @public."Amount"@
 -- and the pair (@public@, @Amount@) are the same type. 'Nothing' for a spelling that is not a plain
@@ -159,26 +147,32 @@ sameTypeRef a b = case (parseTypeName a, parseTypeName b) of
   _ -> normalizeType a == normalizeType b
 
 -- | Result type of an aggregate over an input type (already 'normalizeType'd); 'Nothing' when Postgres has no such
--- aggregate for it (the request fails there with @42883@). @count@ is always @int8@, @sum@/@avg@ widen per the
--- Postgres catalog, @min@/@max@ follow 'minMaxType'.
+-- aggregate for it (the request fails there with @42883@). @count@ is always @int8@, @min@/@max@ follow
+-- 'minMaxType', and @sum@/@avg@ are the aggregates of @pg_aggregate@ listed in 'sumTypes' and 'avgTypes': any other
+-- input has none (@sum@ of a @text@, @avg@ of a @money@ or a @timetz@).
 aggregateType :: AggregateFunction -> Text -> Maybe Text
 aggregateType fn input = case fn of
   Count -> Just "int8"
   Min -> minMaxType input
   Max -> minMaxType input
-  Sum -> Just $ case input of
-    "int2" -> "int8"
-    "int4" -> "int8"
-    "int8" -> "numeric"
-    _ -> input -- float4, float8, numeric, money, interval keep their type
-  Avg -> Just $ case input of
-    "int2" -> "numeric"
-    "int4" -> "numeric"
-    "int8" -> "numeric"
-    "numeric" -> "numeric"
-    "float4" -> "float8"
-    "float8" -> "float8"
-    _ -> input -- interval
+  Sum -> lookup input sumTypes
+  Avg -> lookup input avgTypes
+
+-- | @sum@ of an input type, as @pg_aggregate@ of PostgreSQL 17 has it. @time@ has no @sum@ of its own and is
+-- coerced to @interval@, the only implicit cast into an input of @sum@ from outside the numeric types.
+sumTypes :: [(Text, Text)]
+sumTypes =
+  [ ("int2", "int8"), ("int4", "int8"), ("int8", "numeric"), ("float4", "float4"), ("float8", "float8")
+  , ("numeric", "numeric"), ("money", "money"), ("interval", "interval"), ("time", "interval")
+  ]
+
+-- | @avg@ of an input type, as @pg_aggregate@ of PostgreSQL 17 has it (@money@ has none, and @time@ is
+-- coerced to @interval@ like for 'sumTypes').
+avgTypes :: [(Text, Text)]
+avgTypes =
+  [ ("int2", "numeric"), ("int4", "numeric"), ("int8", "numeric"), ("numeric", "numeric"), ("float4", "float8")
+  , ("float8", "float8"), ("interval", "interval"), ("time", "interval")
+  ]
 
 -- | @min@ and @max@ of an input type, as Postgres resolves the call. @pg_proc.dat@ has one variant per type of
 -- 'minMaxKept' (plus @anyarray@ and @anyenum@: an array or an enum keeps its type), and an input without its own

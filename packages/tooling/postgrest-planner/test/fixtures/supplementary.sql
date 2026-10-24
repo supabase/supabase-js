@@ -16,6 +16,27 @@ composite_types(oid) as (
   select t.oid from pg_type t where t.typtype = 'c' or t.oid = 'pg_catalog.record'::regtype
   union
   select t.oid from pg_type t join composite_types c on t.typtype = 'd' and t.typbasetype = c.oid
+),
+-- the functions and aggregates of the covered schemas named like a builtin aggregate that a call with one argument may
+-- reach: count(x) prefers one whose argument fits x to the builtin count(any)
+overloads as (
+  select p.oid, p.proargtypes
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where p.proname in ('count', 'sum', 'avg', 'min', 'max')
+    and p.prokind in ('f', 'a')
+    and p.pronargs >= 1 and p.pronargs - p.pronargdefaults <= 1
+    and n.nspname = any ((select covered from s)::text[])
+),
+-- the types an implicit cast matters for: the first argument of those, the element type of an array (the argument
+-- may be VARIADIC) and the base type of a domain (a domain is resolved as its base), transitively
+overload_targets(oid) as (
+  select o.proargtypes[0] from overloads o
+  union
+  select case when t.typtype = 'd' then t.typbasetype else t.typelem end
+  from overload_targets ot
+  join pg_type t on t.oid = ot.oid
+  where t.typtype = 'd' or (t.typcategory = 'A' and t.typelem <> 0)
 )
 select jsonb_pretty(jsonb_build_object(
   'format', 1,
@@ -101,9 +122,13 @@ select jsonb_pretty(jsonb_build_object(
       and case when exists (select 1 from pg_depend d where d.classid = 'pg_proc'::regclass and d.objid = p.oid and d.deptype = 'e')
                -- a member of an extension (postgis alone has hundreds): listed, in any covered schema, only where a
                -- lookup can reach it: the first argument of a computed field or relationship is the row type of a
-               -- relation and the others, if any, have defaults, and a function with OUT columns describes the rows
-               -- of an RPC
-               then (p.pronargs >= 1 and p.pronargs - p.pronargdefaults <= 1 and exists (select 1 from pg_class c where c.reltype = p.proargtypes[0]))
+               -- relation (or an array of one: VARIADIC) and the others, if any, have defaults, and a function with
+               -- OUT columns describes the rows of an RPC
+               then (p.pronargs >= 1 and p.pronargs - p.pronargdefaults <= 1
+                    and (exists (select 1 from pg_class c where c.reltype = p.proargtypes[0])
+                         -- or an array of one, which is a candidate when its argument is VARIADIC
+                         or exists (select 1 from pg_type at join pg_class c on c.reltype = at.typelem
+                                    where at.oid = p.proargtypes[0] and at.typcategory = 'A')))
                     or exists (select 1 from unnest(p.proargmodes) m where m in ('t', 'b', 'o'))
                else n.nspname <> all ((select exposed from s)::text[])
           end
@@ -128,5 +153,23 @@ select jsonb_pretty(jsonb_build_object(
     join pg_type st on st.oid = c.castsource
     join pg_type tt on tt.oid = c.casttarget
     where st.typnamespace <> 'pg_catalog'::regnamespace or tt.typnamespace <> 'pg_catalog'::regnamespace
+  ), '[]'),
+  'aggregates', coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'schema', n.nspname, 'name', p.proname,
+      'argTypes', (select coalesce(jsonb_agg(format_type(t, null) order by o), '[]')
+                   from unnest(coalesce(p.proargtypes::oid[], '{}')) with ordinality as u(t, o)),
+      'defaults', p.pronargdefaults
+    ) order by n.nspname, p.proname, p.oid)
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where p.oid in (select oid from overloads) and p.prokind = 'a'
+  ), '[]'),
+  'implicitCasts', coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'source', format_type(c.castsource, null), 'target', format_type(c.casttarget, null)
+    ) order by format_type(c.castsource, null), format_type(c.casttarget, null), c.oid)
+    from pg_cast c
+    where c.castcontext = 'i' and c.casttarget in (select oid from overload_targets)
   ), '[]')
 ));

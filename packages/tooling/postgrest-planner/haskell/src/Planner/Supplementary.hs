@@ -11,6 +11,7 @@
 module Planner.Supplementary
   ( Supplementary (..)
   , SuppFunction (..)
+  , Overload (..)
   , SuppReturn (..)
   , decodeSupplementary
   , orderColumns
@@ -60,6 +61,13 @@ data Supplementary = Supplementary
   , suppArrays :: HM.HashMap QualifiedIdentifier Text
   -- ^ The array types of those schemas, by their own @pg_type@ name (@_name@, or what Postgres made of it when
   -- that name was taken): the 'normalizeType'd element type. A name is never read as an array by its spelling.
+  , suppAggregates :: [Overload]
+  -- ^ The user aggregates named @count@, @sum@, @avg@, @min@ or @max@ of the schemas the catalog covers, extension
+  -- members included. They are no computed fields and no RPCs: only 'aggregateOverloaded' reads them.
+  , suppImplicitCasts :: Maybe [(Text, Text)]
+  -- ^ The implicit casts (@castcontext = 'i'@) into the argument types of those aggregates and of the functions of
+  -- the same names, and into the element and base types of those: source and target ('normalizeType'd). 'Nothing'
+  -- when the document has no @implicitCasts@ section: which types convert is then unknown.
   , suppCasts :: Maybe [(Text, Text, Text)]
   -- ^ Every @pg_cast@ row with a side outside @pg_catalog@: source, target (both 'normalizeType'd) and
   -- @castmethod@ (@f@ function, @i@ I/O, @b@ binary). 'Nothing' when the document has no @casts@ section: which
@@ -67,6 +75,15 @@ data Supplementary = Supplementary
   }
 
 data Composite = Composite QualifiedIdentifier [(Text, Text)]
+
+-- | A function or aggregate a call of an aggregate's name may reach: the schema, the input argument types as
+-- @format_type@ spells them and how many trailing arguments have a default.
+data Overload = Overload
+  { ovSchema :: Text
+  , ovName :: Text
+  , ovArgTypes :: [Text]
+  , ovDefaults :: Int
+  }
 
 data SuppFunction = SuppFunction
   { sfSchema :: Text
@@ -101,6 +118,8 @@ instance FromJSON Supplementary where
     schemas <- o .:? "schemas" .!= []
     types <- o .:? "types" .!= []
     casts <- o .:? "casts" :: Parser (Maybe [CastItem])
+    aggregates <- o .:? "aggregates" .!= []
+    implicitCasts <- o .:? "implicitCasts" :: Parser (Maybe [ImplicitCastItem])
     pure
       Supplementary
         { suppRelations = HM.fromList [(QualifiedIdentifier s n, sortOn snd cols) | RelItem s n cols <- rels]
@@ -110,6 +129,8 @@ instance FromJSON Supplementary where
         , suppSchemas = schemas
         , suppTypes = HM.fromList [(QualifiedIdentifier s n, normalizeType <$> base) | TypeItem s n base Nothing <- types]
         , suppArrays = HM.fromList [(QualifiedIdentifier s n, normalizeType el) | TypeItem s n _ (Just el) <- types]
+        , suppAggregates = [Overload s n as d | AggregateItem s n as d <- aggregates]
+        , suppImplicitCasts = fmap (\items -> [(normalizeType src, normalizeType tgt) | ImplicitCastItem src tgt <- items]) implicitCasts
         , suppCasts = fmap (\items -> [(normalizeType src, normalizeType tgt, m) | CastItem src tgt m <- items]) casts
         }
 
@@ -138,6 +159,16 @@ data CastItem = CastItem Text Text Text
 
 instance FromJSON CastItem where
   parseJSON = withObject "cast" $ \o -> CastItem <$> o .: "source" <*> o .: "target" <*> o .: "method"
+
+data ImplicitCastItem = ImplicitCastItem Text Text
+
+instance FromJSON ImplicitCastItem where
+  parseJSON = withObject "implicit cast" $ \o -> ImplicitCastItem <$> o .: "source" <*> o .: "target"
+
+data AggregateItem = AggregateItem Text Text [Text] Int
+
+instance FromJSON AggregateItem where
+  parseJSON = withObject "aggregate" $ \o -> AggregateItem <$> o .: "schema" <*> o .: "name" <*> o .:? "argTypes" .!= [] <*> o .:? "defaults" .!= 0
 
 data FkItem = FkItem Text Text Text Bool
 
@@ -242,18 +273,43 @@ findComputedField supp searchPath (QualifiedIdentifier schema rel) name = go sea
         | otherwise -> Uncovered
     inSchema s = [f | f <- suppFunctions supp, sfSchema f == s, sfName f == name]
 
--- | Whether a function of a schema of the search path shares its name with an aggregate and can be called with one
--- argument (one parameter, or more with defaults for the rest): for @count(x)@ PostgreSQL prefers such a function
--- to the builtin @count(any)@ when its argument type fits better (an exact match, an enum), and which of them
--- applies depends on implicit casts the catalog does not model, so the aggregate's type cannot be claimed. Only the
--- schemas the catalog covers are seen.
-aggregateOverloaded :: Supplementary -> [Text] -> Text -> Bool
-aggregateOverloaded supp searchPath name =
-  or [True | f <- suppFunctions supp, sfName f == name, sfSchema f `elem` searchPath, oneArgument f]
+-- | Whether a function or aggregate of a schema of the search path shares its name with the aggregate being called
+-- and can take its operand: for @count(x)@ PostgreSQL prefers such a candidate to the builtin @count(any)@ when its
+-- argument type fits better (an exact match, an enum), so the aggregate's type cannot be claimed. Only the schemas
+-- the catalog covers are seen.
+--
+-- A candidate takes one argument (one parameter, or more with defaults for the rest). It applies to an operand of
+-- type @t@ when its argument is @t@, the base type of @t@ (a domain is its base for resolution, in both
+-- directions), a polymorphic or pseudo type, or a type @t@ converts to implicitly; an array argument may also be
+-- @VARIADIC@, which the catalog does not say, so it applies when its element does. The operand is the list of its
+-- type and its base type, 'Nothing' when it is not known: every candidate then applies, as it does when the
+-- catalog does not list the implicit casts.
+aggregateOverloaded :: Supplementary -> [Text] -> Text -> Maybe [Text] -> Bool
+aggregateOverloaded supp searchPath name operand =
+  or [True | (schema, arg : extra, defaults) <- candidates, schema `elem` searchPath, length extra <= defaults, applies arg]
   where
-    oneArgument f = case length (sfArgTypes f) of
-      0 -> False
-      n -> n - 1 <= sfDefaults f
+    candidates =
+      [(sfSchema f, sfArgTypes f, sfDefaults f) | f <- suppFunctions supp, sfName f == name]
+        <> [(ovSchema a, ovArgTypes a, ovDefaults a) | a <- suppAggregates supp, ovName a == name]
+    applies arg = case operand of
+      Nothing -> True
+      Just ops -> let ops' = concatMap (baseChain supp) ops in accepts ops' arg || maybe False (accepts ops') (T.stripSuffix "[]" arg)
+    accepts ops arg =
+      polymorphic arg
+        || or [sameTypeRef o t || implicit o t | o <- ops, t <- baseChain supp arg]
+    implicit o t = case suppImplicitCasts supp of
+      Nothing -> True
+      Just casts -> or [True | (s, c) <- casts, sameTypeRef s o, sameTypeRef c t]
+    polymorphic t = let u = T.filter (/= '"') t in not (T.any (== '.') u) && ("any" `T.isPrefixOf` u || u == "record")
+
+-- | A type and the base types of the domains it is a domain over, nearest first.
+baseChain :: Supplementary -> Text -> [Text]
+baseChain supp = go (8 :: Int)
+  where
+    go 0 t = [t]
+    go n t = t : case parseTypeName t >>= (`HM.lookup` suppTypes supp) of
+      Just (Just base) -> go (n - 1) base
+      _ -> []
 
 -- | The catalog entry of a routine of the schema cache: the overload of the same schema and name whose input
 -- argument types are the routine's. A name the catalog lists once matches whatever the spelling of its types.

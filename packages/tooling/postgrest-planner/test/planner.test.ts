@@ -556,6 +556,27 @@ describe('postgrest-planner', () => {
         })
       })
 
+      it('types sum and avg as pg_aggregate has them: widened per input, time as interval, else unresolved', () => {
+        const p = plan(
+          catalog,
+          '/aggregate_types?select=a:ts::time.sum(),b:ts::time.avg(),c:nu.sum(),d:ar.avg(),e:v.sum(),f:ts.avg(),g:st.sum(),h:id.avg()'
+        )
+        expect(summary(fieldsOf(p))).toEqual([
+          ['a', 'interval', true, 'aggregate'],
+          ['b', 'interval', true, 'aggregate'],
+          ['c', 'numeric', true, 'aggregate'],
+          ['d', null, true, 'unresolved'],
+          ['e', null, true, 'unresolved'],
+          ['f', null, true, 'unresolved'],
+          ['g', null, true, 'unresolved'],
+          ['h', 'numeric', true, 'aggregate'],
+        ])
+        expect(fieldsOf(p)[4].provenance).toMatchObject({
+          kind: 'unresolved',
+          reason: expect.stringContaining('varchar'),
+        })
+      })
+
       it('types an aggregate over a computed field of a domain on the base type of the domain', () => {
         // domain_items.qty is a column of the domain, which is how the catalog learns its base type
         const p = plan(catalog, '/domain_items?select=amount.sum(),a:amount.avg(),amount.min()')
@@ -2297,6 +2318,122 @@ describe('postgrest-planner', () => {
       })
     })
 
+    it('types an aggregate whose same-named functions of the search path cannot take its operand', () => {
+      // arr_a.count(public.cast_mood) is no candidate for `n.count()` (n is an int4 and there is no implicit cast
+      // to the enum): PostgreSQL calls the builtin count(any), a non-null int8
+      expect(typed('arr_a', '/cast_cases?select=n.count()')).toEqual({
+        types: [['int8', null, false]],
+        degraded: [],
+      })
+      // the operand of the candidate, and a domain over it, still make the aggregate unresolved
+      expect(typed('arr_a', '/cast_cases?select=mood_dom.count()')).toEqual({
+        types: [[null, null, true]],
+        degraded: ['aggregate:count'],
+      })
+    })
+
+    it('lets an implicit cast of the operand to the argument of a same-named function make the aggregate unresolved', () => {
+      // agg_c.count(bigint) takes an integer through an implicit cast: PostgreSQL finds it as well as the builtin
+      // count(any) and cannot choose (42725). A text operand has no cast to bigint and matches the builtin alone.
+      expect(typed('agg_c', '/cast_cases?select=n.count()')).toEqual({
+        types: [[null, null, true]],
+        degraded: ['aggregate:count'],
+      })
+      expect(typed('agg_c', '/cast_cases?select=x:status::text.count()')).toEqual({
+        types: [['int8', null, false]],
+        degraded: [],
+      })
+    })
+
+    it('does not type an aggregate that a user aggregate of the search path shares its name with', () => {
+      // agg_a.count(public.user_status) is an aggregate, which the functions of the catalog leave out: PostgreSQL
+      // prefers it to the builtin count(any) for `status.count()`, and its result is a nullable text
+      expect(typed('agg_a', '/cast_cases?select=status.count()')).toEqual({
+        types: [[null, null, true]],
+        degraded: ['aggregate:count'],
+      })
+      // another operand still has the builtin, and so does a path without the aggregate
+      expect(typed('agg_a', '/cast_cases?select=n.count(),count()')).toEqual({
+        types: [
+          ['int8', null, false],
+          ['int8', null, false],
+        ],
+        degraded: [],
+      })
+      expect(typed('public,extensions', '/cast_cases?select=status.count()')).toEqual({
+        types: [['int8', null, false]],
+        degraded: [],
+      })
+      // a bare `count` is count(*), which reads no argument: the user aggregate does not apply
+      expect(typed('agg_a', '/cast_cases?select=count')).toEqual({
+        types: [['int8', null, false]],
+        degraded: [],
+      })
+    })
+
+    it('checks the count of a spread over the whole row of its parent against the aggregates taking that row', () => {
+      // `...users(count())` is COUNT(users_1): an aggregate over the row of public.users, and agg_b.count(public.users)
+      // is a user aggregate for it. count(*) of the rows reads no argument, and it stays the builtin.
+      const spread = '/messages?select=...users(count())'
+      const spreadOf = (extraSearchPath: string, url: string) => {
+        const h = loaded(
+          planner.load({
+            ...baseInput(),
+            config: { ...baseInput().config, 'db-extra-search-path': extraSearchPath },
+            supplementary: wideCatalog(),
+          })
+        ).handle
+        try {
+          const p = ok(planner.plan(h, { method: 'GET', url }))
+          return {
+            types: (p.shape?.embeds[0]?.shape.fields ?? []).map((f) => [
+              f.pgType,
+              f.baseType ?? null,
+              f.nullable,
+            ]),
+            degraded: p.degraded,
+          }
+        } finally {
+          planner.freeCache(h)
+        }
+      }
+      expect(spreadOf('agg_b', spread)).toEqual({
+        types: [[null, null, true]],
+        degraded: ['aggregate:count'],
+      })
+      expect(spreadOf('public,extensions', spread)).toEqual({
+        types: [['int8', null, false]],
+        degraded: [],
+      })
+      // agg_a.count takes a user_status, not the row of users
+      expect(spreadOf('agg_a', spread)).toEqual({ types: [['int8', null, false]], degraded: [] })
+      // count() of the rows of the request itself is count(*), whatever the search path holds
+      expect(typed('agg_b', '/messages?select=count()')).toEqual({
+        types: [['int8', null, false]],
+        degraded: [],
+      })
+    })
+
+    it('does not type sum and avg of an input they have no aggregate for, and types time as interval', () => {
+      // sum and avg of a time are the interval aggregates (implicit time to interval cast), those of a text, a
+      // timestamptz or a uuid do not exist
+      expect(
+        typed(
+          'public,extensions',
+          '/cast_cases?select=s:tstz::time.sum(),a:tstz::time.avg(),t:tstz::text.sum(),u:tstz.avg(),n.sum()'
+        )
+      ).toEqual({
+        types: [
+          ['interval', null, true],
+          ['interval', null, true],
+          [null, null, true],
+          [null, null, true],
+          ['int8', null, true],
+        ],
+        degraded: [],
+      })
+    })
+
     it('resolves _name to the array type of the first schema of the path that has it', () => {
       // arr_a.d is a text domain, arr_b._d an integer domain named like the array type of arr_a.d: on the path
       // arr_a,arr_b PostgreSQL reads `_d` as arr_a._d, the array of arr_a.d
@@ -2325,6 +2462,49 @@ describe('postgrest-planner', () => {
       })
     })
 
+    it('does not read an enum named _name as the array of name when a routine returns it', () => {
+      // und_a._mood is an enum and und_b.mood an integer domain: the dump names the return type of
+      // personal.underscore_mood by its pg_type name, `_mood`. On the path und_a,und_b PostgreSQL reads `::mood`
+      // as und_b.mood, and a routine returning und_a._mood must not register a type und_a.mood before it.
+      const dump = JSON.parse(readFileSync(join(fixtures, 'dump-schema.json'), 'utf8'))
+      dump.dbRoutines.push([
+        { qiName: 'underscore_mood', qiSchema: 'personal' },
+        [
+          {
+            pdDescription: null,
+            pdFuncSettings: [],
+            pdHasVariadic: false,
+            pdIsoLvl: null,
+            pdName: 'underscore_mood',
+            pdParams: [],
+            pdReturnType: {
+              tag: 'Single',
+              contents: { tag: 'Scalar', contents: { qiName: '_mood', qiSchema: 'und_a' } },
+            },
+            pdSchema: 'personal',
+            pdVolatility: 'Stable',
+          },
+        ],
+      ])
+      const h = loaded(
+        planner.load({
+          ...baseInput(),
+          schema: JSON.stringify(dump),
+          config: { ...baseInput().config, 'db-extra-search-path': 'und_a,und_b' },
+          supplementary: wideCatalog(),
+        })
+      ).handle
+      try {
+        const p = ok(planner.plan(h, { method: 'GET', url: '/cast_cases?select=x:id::mood' }))
+        expect(p.shape?.fields.map((f) => [f.pgType, f.baseType ?? null])).toEqual([
+          ['und_b.mood', 'int4'],
+        ])
+        expect(p.degraded).toEqual([])
+      } finally {
+        planner.freeCache(h)
+      }
+    })
+
     it('resolves a computed field to a function that belongs to an extension', () => {
       // ext_owned.ext_label (text) is a member of the lo extension, personal.ext_label (integer) is not: the
       // catalog does not leave the first out, PostgreSQL calls the first of the path
@@ -2350,6 +2530,24 @@ describe('postgrest-planner', () => {
         shapeOf(extraSearchPath, '/ext_label_cases?select=ext_defaulted').fields[0].pgType
       expect(field('ext_owned,personal')).toBe('text')
       expect(field('personal,ext_owned')).toBe('int4')
+    })
+
+    it('leaves a computed field open when a function of an extension may be variadic', () => {
+      // ext_owned.ext_va_label(VARIADIC public.ext_label_cases[]) is a member of the lo extension and personal's is a
+      // plain function of the row type: on the path ext_owned,personal PostgreSQL calls the first, so the catalog
+      // must list it for the field to be open rather than personal's integer
+      const field = (extraSearchPath: string) => {
+        const { fields, degraded } = shapeOf(
+          extraSearchPath,
+          '/ext_label_cases?select=ext_va_label'
+        )
+        return [fields[0].pgType, degraded]
+      }
+      expect(field('ext_owned,personal')).toEqual([
+        null,
+        ['computed-field:public.ext_label_cases.ext_va_label'],
+      ])
+      expect(field('personal,ext_owned')).toEqual(['int4', []])
     })
 
     it('knows the base of a domain whose name needs quotes', () => {

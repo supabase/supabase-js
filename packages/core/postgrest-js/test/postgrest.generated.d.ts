@@ -142,6 +142,10 @@ declare global {
             id: number | null
           }[]
         }
+        underscore_mood: {
+          Args: Record<string, never>
+          Returns: unknown | null
+        }
         username_label: {
           Args: {
             user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }
