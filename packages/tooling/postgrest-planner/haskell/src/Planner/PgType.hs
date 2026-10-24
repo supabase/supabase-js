@@ -12,6 +12,7 @@ module Planner.PgType
   , typeSpelling
   , sameTypeRef
   , isBuiltinType
+  , hasBuiltinArray
   , isSqlTypeAlias
   , aggregateType
   ) where
@@ -210,19 +211,37 @@ minMaxCoerced =
 -- @pg_catalog@ ships rather than against the absence of a schema. Being builtin does not make a cast keep
 -- non-NULL (@timestamptz::time@ returns NULL for infinity): that is an explicit allowlist in "Planner.ResultShape".
 isBuiltinType :: Text -> Bool
-isBuiltinType t = stripArrays t `elem` builtinTypes
+isBuiltinType t = stripArrays t `elem` builtinTypes || stripArrays t `elem` arraylessBuiltinTypes
   where
     stripArrays n = maybe n stripArrays (T.stripSuffix "[]" n)
 
+-- | Whether a type of @pg_catalog@ has an array type of its own (@_int4@ for @int4@): the @typarray@ of its
+-- @pg_type@ row is set. @_void@ is no builtin type, so a name like it is looked up in the search path like any
+-- user type.
+hasBuiltinArray :: Text -> Bool
+hasBuiltinArray t = t `elem` builtinTypes
+
+-- | The base, range and multirange types of @pg_catalog@ that have an array type, taken from @pg_type@ of
+-- PostgreSQL 17 (@typtype@ @b@, @m@ and @r@ with a @typarray@, plus @record@). The pseudo-types are left out
+-- but @record@ and @void@: no value is cast to one of them.
 builtinTypes :: [Text]
 builtinTypes =
-  [ "bool", "bytea", "char", "name", "int8", "int2", "int4", "text", "oid", "tid", "xid", "cid"
+  [ "bool", "bytea", "char", "name", "int8", "int2", "int4", "text", "oid", "tid", "xid", "cid", "xid8"
   , "json", "xml", "jsonb", "jsonpath", "float4", "float8", "money", "macaddr", "macaddr8", "inet", "cidr"
+  , "aclitem", "refcursor"
   , "bpchar", "varchar", "date", "time", "timestamp", "timestamptz", "interval", "timetz", "bit", "varbit"
   , "numeric", "uuid", "pg_lsn", "tsvector", "tsquery", "gtsvector", "txid_snapshot", "pg_snapshot"
   , "point", "lseg", "path", "box", "polygon", "line", "circle"
-  , "int2vector", "oidvector", "record", "void", "regproc", "regprocedure", "regoper", "regoperator"
+  , "int2vector", "oidvector", "record", "regproc", "regprocedure", "regoper", "regoperator"
   , "regclass", "regtype", "regrole", "regnamespace", "regconfig", "regdictionary", "regcollation"
   , "int4range", "numrange", "tsrange", "tstzrange", "daterange", "int8range"
   , "int4multirange", "nummultirange", "tsmultirange", "tstzmultirange", "datemultirange", "int8multirange"
+  ]
+
+-- | The types of @pg_catalog@ (@typtype@ @b@) and @void@ that have no array type: the statistics and parse-tree
+-- types, and @void@.
+arraylessBuiltinTypes :: [Text]
+arraylessBuiltinTypes =
+  [ "void", "pg_node_tree", "pg_ndistinct", "pg_dependencies", "pg_mcv_list"
+  , "pg_brin_bloom_summary", "pg_brin_minmax_multi_summary"
   ]

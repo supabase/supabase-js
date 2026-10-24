@@ -422,3 +422,20 @@ CREATE TABLE public.builtin_named_enum_cases (
 
 GRANT ALL ON public.builtin_named_enum_cases TO anon, authenticated, service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+
+-- A user type named like the array of a builtin type that has none: `void` has no array type, so there is no
+-- builtin `_void` and `::_void` is this domain.
+CREATE DOMAIN public._void AS text;
+
+-- A variadic computed field. PostgreSQL expands `VARIADIC public.cast_cases[]` to the row type of the call
+-- `cast_cases.va_label`, so on the path arr_a,arr_b it calls arr_a.va_label (text), not arr_b.va_label (integer).
+CREATE FUNCTION arr_a.va_label(VARIADIC public.cast_cases[])
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'label'::text; $$;
+
+CREATE FUNCTION arr_b.va_label(public.cast_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+-- A function named like an aggregate. PostgreSQL prefers the exact signature to the builtin `count(any)`, so
+-- `cast_cases?select=mood.count()` calls this function when arr_a is on the search path, and it returns NULL.
+CREATE FUNCTION arr_a.count(public.cast_mood)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;

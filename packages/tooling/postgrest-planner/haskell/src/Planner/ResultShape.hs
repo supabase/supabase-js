@@ -62,8 +62,8 @@ import PostgREST.SchemaCache.Relationship (Cardinality (..), Junction (..), Rela
 import PostgREST.SchemaCache.Routine (FuncVolatility (..), MediaHandler (..), PgType (..), RetType (..), Routine (..), RoutineParam (..), RoutineMap, funcReturnsSingleComposite)
 import PostgREST.SchemaCache.Table (Column (..), Table (..))
 
-import Planner.PgType (aggregateType, isBuiltinType, isSqlTypeAlias, normalizeType, parseTypeName, qualifiedTypeName, sameTypeRef, typeSpelling)
-import Planner.Supplementary (Lookup (..), SuppFunction (..), SuppReturn (..), Supplementary (..), covers, findComputedField, findFunction, findRoutine, foreignKeyValidated, orderColumns)
+import Planner.PgType (aggregateType, hasBuiltinArray, isBuiltinType, isSqlTypeAlias, normalizeType, parseTypeName, qualifiedTypeName, sameTypeRef, typeSpelling)
+import Planner.Supplementary (Lookup (..), SuppFunction (..), SuppReturn (..), Supplementary (..), aggregateOverloaded, covers, findComputedField, findFunction, findRoutine, foreignKeyValidated, orderColumns)
 
 -- | @form@, @shape@, @rpc@, @filters@ and @degraded@ for a plan. Plans that return no rows of a relation
 -- (inspection, relation/routine info, mutations without a representation, scalar RPCs) have @shape: null@.
@@ -532,14 +532,24 @@ resolveOne ctx rel csf@CoercibleSelectField{csField = cf, csAggFunction = agg, c
       | isNothing agg, legacyCount ctx rel cf = (applyAggregate Count (Expr Nothing Nothing False Null False), [])
       | otherwise = baseExpr ctx rel cf
 
-    notes = startNotes <> ["cast-type:" <> c | Just c <- [cast, aggCast'], not (isCastFound (resolveCastType ctx c))]
+    notes =
+      startNotes
+        <> ["aggregate:" <> aggName fn | Just fn <- [agg], overloaded fn]
+        <> ["cast-type:" <> c | Just c <- [cast, aggCast'], not (isCastFound (resolveCastType ctx c))]
+
+    -- Upstream emits the aggregate unqualified (@COUNT(v)@), so a function of the path that shares its name and
+    -- takes the argument can win over the builtin. @count(*)@ reads no argument.
+    overloaded fn = not isStar && maybe False (\supp -> aggregateOverloaded supp (cxSearchPath ctx) (aggName fn)) (cxSupp ctx)
+    aggregate fn e
+      | overloaded fn = unresolvedExpr ("a function named " <> aggName fn <> " of the search path may be called instead of the builtin aggregate")
+      | otherwise = applyAggregate fn e
 
     -- Upstream's @pgFmtApplyAggregate Nothing _@ drops the second cast: it only applies after an aggregate.
     aggCast' = if isJust agg then aggCast else Nothing
 
     final =
       applyCast ctx aggCast'
-        . maybe id applyAggregate agg
+        . maybe id aggregate agg
         . applyCast ctx cast
         . maybe id applyRepresentation (cfTransform cf)
         . applyJsonPath (cfToJson cf) (cfJsonPath cf)
@@ -637,6 +647,10 @@ baseExpr ctx@Ctx{cxTables, cxSupp, cxRows, cxSearchPath, cxTypes} rel CoercibleF
           Ambiguous ->
             bad
               (noField <> " (several functions of that name take the row type, with defaults for their other arguments: PostgreSQL cannot choose)")
+              ["computed-field:" <> qualified rel <> "." <> name]
+          MaybeVariadic ->
+            bad
+              (noField <> " (a function of the search path takes an array of the row type, which is a candidate when its argument is VARIADIC)")
               ["computed-field:" <> qualified rel <> "." <> name]
           Found SuppFunction{sfSchema, sfName, sfReturns = SuppReturn{srSetof, srType}}
             | srSetof -> bad ("function " <> sfSchema <> "." <> sfName <> " returns a set") []
@@ -786,8 +800,9 @@ resolveCastType Ctx{cxTypes, cxSupp, cxSearchPath} raw = go (T.toLower (T.unword
       where
         builtin = normalizeType name
         -- the array of a builtin has the @pg_type@ name of its element behind an underscore (@_int4@, @_text@): the
-        -- element is named as @pg_catalog@ names it, so @_integer@ is not the array of @int4@
-        builtinElement = T.stripPrefix "_" name >>= \e -> if isBuiltinType e then Just e else Nothing
+        -- element is named as @pg_catalog@ names it, so @_integer@ is not the array of @int4@, and it is a type that
+        -- has an array type, so @_void@ is not the array of @void@
+        builtinElement = T.stripPrefix "_" name >>= \e -> if hasBuiltinArray e then Just e else Nothing
         walk [] = CastUnknown
         walk (s : rest)
           | s == "pg_catalog" = case builtinElement of

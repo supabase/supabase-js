@@ -497,6 +497,13 @@
         {
             "base": null,
             "kind": "b",
+            "name": "__void",
+            "schema": "public",
+            "element": "public._void"
+        },
+        {
+            "base": null,
+            "kind": "b",
             "name": "_active_users",
             "schema": "public",
             "element": "public.active_users"
@@ -850,6 +857,13 @@
             "name": "_users_audit",
             "schema": "public",
             "element": "public.users_audit"
+        },
+        {
+            "base": "text",
+            "kind": "d",
+            "name": "_void",
+            "schema": "public",
+            "element": null
         },
         {
             "base": null,
@@ -3843,6 +3857,51 @@
         }
     ],
     "searchPathFunctions": [
+        {
+            "name": "count",
+            "schema": "arr_a",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.cast_mood"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "va_label",
+            "schema": "arr_a",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": false
+            },
+            "argTypes": [
+                "public.cast_cases[]"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
+        {
+            "name": "va_label",
+            "schema": "arr_b",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": false
+            },
+            "argTypes": [
+                "public.cast_cases"
+            ],
+            "defaults": 0,
+            "outColumns": null,
+            "volatility": "i"
+        },
         {
             "name": "ext_defaulted",
             "schema": "ext_owned",

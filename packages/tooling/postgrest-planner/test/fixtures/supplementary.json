@@ -413,6 +413,13 @@
         {
             "base": null,
             "kind": "b",
+            "name": "__void",
+            "schema": "public",
+            "element": "public._void"
+        },
+        {
+            "base": null,
+            "kind": "b",
             "name": "_active_users",
             "schema": "public",
             "element": "public.active_users"
@@ -766,6 +773,13 @@
             "name": "_users_audit",
             "schema": "public",
             "element": "public.users_audit"
+        },
+        {
+            "base": "text",
+            "kind": "d",
+            "name": "_void",
+            "schema": "public",
+            "element": null
         },
         {
             "base": null,

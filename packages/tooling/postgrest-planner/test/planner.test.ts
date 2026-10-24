@@ -2224,6 +2224,79 @@ describe('postgrest-planner', () => {
       ])
     })
 
+    it('finds no builtin array where the element type has none, and resolves the name through the catalog', () => {
+      // `void` has no array type: public._void is a text domain, which is what `::_void` means
+      expect(typed('public,extensions', '/cast_cases?select=x:id::_void')).toEqual({
+        types: [['public._void', 'text', true]],
+        degraded: [],
+      })
+      // pg_node_tree is a builtin type without an array type: `_pg_node_tree` names nothing
+      expect(typed('public,extensions', '/cast_cases?select=x:id::_pg_node_tree')).toEqual({
+        types: [[null, null, true]],
+        degraded: ['cast-type:_pg_node_tree'],
+      })
+    })
+
+    it('knows every non-pseudo builtin type of pg_catalog and the array type of those that have one', () => {
+      const { types, degraded } = typed(
+        'public,extensions',
+        '/cast_cases?select=a:id::xid8,b:id::_xid8,c:id::aclitem,d:id::_aclitem,e:id::refcursor,f:id::pg_node_tree'
+      )
+      expect(types).toEqual([
+        ['xid8', null, true],
+        ['xid8[]', null, true],
+        ['aclitem', null, true],
+        ['aclitem[]', null, true],
+        ['refcursor', null, true],
+        ['pg_node_tree', null, true],
+      ])
+      expect(degraded).toEqual([])
+    })
+
+    it('leaves a computed field open when a function of the path may be variadic', () => {
+      // arr_a.va_label(VARIADIC public.cast_cases[]) is text and arr_b.va_label(public.cast_cases) integer.
+      // PostgreSQL expands the variadic argument to the row type, so `cast_cases.va_label` calls arr_a's on the
+      // path arr_a,arr_b. The catalog does not say which function takes VARIADIC, so a function of one argument
+      // that is an array of the row type decides nothing: the field is unresolved, never arr_b's integer.
+      const unresolved = {
+        types: [[null, null, true]],
+        degraded: ['computed-field:public.cast_cases.va_label'],
+      }
+      expect(typed('arr_a,arr_b', '/cast_cases?select=va_label')).toEqual(unresolved)
+      expect(typed('arr_a', '/cast_cases?select=va_label')).toEqual(unresolved)
+      // arr_b comes first: its function is the only candidate that decides
+      expect(typed('arr_b,arr_a', '/cast_cases?select=va_label')).toEqual({
+        types: [['int4', null, true]],
+        degraded: [],
+      })
+    })
+
+    it('does not type an aggregate that a function of the search path shares its name with', () => {
+      // arr_a.count(public.cast_mood) RETURNS text returns NULL: for `mood.count()` PostgreSQL prefers its exact
+      // signature to the builtin count(any), so the output is not the non-null int8 of the builtin
+      expect(typed('arr_a', '/cast_cases?select=mood.count()')).toEqual({
+        types: [[null, null, true]],
+        degraded: ['aggregate:count'],
+      })
+      expect(typed('arr_a', '/cast_cases?select=x:mood.count()::text')).toEqual({
+        types: [['text', null, true]],
+        degraded: ['aggregate:count'],
+      })
+      // the other aggregates and count() of the rows are not affected, and neither is a path without the function
+      expect(typed('arr_a', '/cast_cases?select=count(),n.sum(),n.max()')).toEqual({
+        types: [
+          ['int8', null, false],
+          ['int8', null, true],
+          ['int4', null, true],
+        ],
+        degraded: [],
+      })
+      expect(typed('public,extensions', '/cast_cases?select=mood.count()')).toEqual({
+        types: [['int8', null, false]],
+        degraded: [],
+      })
+    })
+
     it('resolves _name to the array type of the first schema of the path that has it', () => {
       // arr_a.d is a text domain, arr_b._d an integer domain named like the array type of arr_a.d: on the path
       // arr_a,arr_b PostgreSQL reads `_d` as arr_a._d, the array of arr_a.d

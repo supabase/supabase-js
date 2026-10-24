@@ -19,6 +19,7 @@ module Planner.Supplementary
   , Lookup (..)
   , covers
   , findComputedField
+  , aggregateOverloaded
   , findRoutine
   , findFunction
   ) where
@@ -32,6 +33,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.HashMap.Strict.InsOrd as HMI
 import Data.List (sortOn)
 import Data.Text (Text)
+import qualified Data.Text as T
 
 import PostgREST.SchemaCache (SchemaCache (..))
 import PostgREST.SchemaCache.Identifiers (QualifiedIdentifier (..))
@@ -197,6 +199,9 @@ data Lookup a
   -- ^ Not found before a schema of the path the catalog does not cover: it may be there.
   | Ambiguous
   -- ^ The first schema of the path with a candidate has several: Postgres cannot choose between them.
+  | MaybeVariadic
+  -- ^ No plain candidate decides, but a function of the path takes one array of the row type, which is a candidate
+  -- when its argument is @VARIADIC@ (the catalog does not say): the answer is open.
 
 -- | Whether the catalog enumerates the functions and types of a schema. @pg_catalog@ is always the builtins.
 covers :: Supplementary -> Text -> Bool
@@ -211,6 +216,11 @@ covers supp schema = schema == "pg_catalog" || schema `elem` suppSchemas supp
 -- visible at all: a lone candidate is called, several (@f(t)@ with @f(t, n int default 0)@ of one schema) are
 -- ambiguous and Postgres finds no column. The path is the first argument. A schema of the path the catalog does
 -- not cover, reached before any candidate, leaves the answer open ('Uncovered').
+--
+-- Attribute notation expands a @VARIADIC@ argument, so @f(VARIADIC rows t[])@ is a candidate for @t.f@ as well, and
+-- a candidate of an earlier schema beats a plain one of a later schema. The catalog does not carry which argument
+-- is variadic, so a function of one argument that is an array of the row type ('MaybeVariadic') leaves the answer
+-- open when no plain candidate of its schema decides (in one schema a plain candidate beats a variadic one).
 findComputedField :: Supplementary -> [Text] -> QualifiedIdentifier -> Text -> Lookup SuppFunction
 findComputedField supp searchPath (QualifiedIdentifier schema rel) name = go searchPath
   where
@@ -218,12 +228,32 @@ findComputedField supp searchPath (QualifiedIdentifier schema rel) name = go sea
     candidate f = case sfArgTypes f of
       a : extra -> length extra <= sfDefaults f && parseTypeName a == Just relationType
       [] -> False
+    -- one argument, an array of the row type: a candidate when that argument is VARIADIC
+    arrayOfRelation f = case sfArgTypes f of
+      [a] -> maybe False ((== Just relationType) . parseTypeName) (T.stripSuffix "[]" a)
+      _ -> False
     go [] = Absent
-    go (s : rest) = case [f | f <- suppFunctions supp, sfSchema f == s, sfName f == name, candidate f] of
+    go (s : rest) = case [f | f <- inSchema s, candidate f] of
       [f] -> Found f
       _ : _ -> Ambiguous
-      [] | covers supp s -> go rest
-         | otherwise -> Uncovered
+      []
+        | any arrayOfRelation (inSchema s) -> MaybeVariadic
+        | covers supp s -> go rest
+        | otherwise -> Uncovered
+    inSchema s = [f | f <- suppFunctions supp, sfSchema f == s, sfName f == name]
+
+-- | Whether a function of a schema of the search path shares its name with an aggregate and can be called with one
+-- argument (one parameter, or more with defaults for the rest): for @count(x)@ PostgreSQL prefers such a function
+-- to the builtin @count(any)@ when its argument type fits better (an exact match, an enum), and which of them
+-- applies depends on implicit casts the catalog does not model, so the aggregate's type cannot be claimed. Only the
+-- schemas the catalog covers are seen.
+aggregateOverloaded :: Supplementary -> [Text] -> Text -> Bool
+aggregateOverloaded supp searchPath name =
+  or [True | f <- suppFunctions supp, sfName f == name, sfSchema f `elem` searchPath, oneArgument f]
+  where
+    oneArgument f = case length (sfArgTypes f) of
+      0 -> False
+      n -> n - 1 <= sfDefaults f
 
 -- | The catalog entry of a routine of the schema cache: the overload of the same schema and name whose input
 -- argument types are the routine's. A name the catalog lists once matches whatever the spelling of its types.

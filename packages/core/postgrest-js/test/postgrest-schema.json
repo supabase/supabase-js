@@ -5240,6 +5240,13 @@
       },
       {
         "base": null,
+        "element": "public._void",
+        "kind": "b",
+        "name": "__void",
+        "schema": "public"
+      },
+      {
+        "base": null,
         "element": "public.active_users",
         "kind": "b",
         "name": "_active_users",
@@ -5593,6 +5600,13 @@
         "element": "public.users_audit",
         "kind": "b",
         "name": "_users_audit",
+        "schema": "public"
+      },
+      {
+        "base": "text",
+        "element": null,
+        "kind": "d",
+        "name": "_void",
         "schema": "public"
       },
       {
