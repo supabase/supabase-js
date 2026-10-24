@@ -92,20 +92,48 @@ type RpcArgs<
     : ReadRefusal<A, O>
 
 /**
+ * The v2 options object, the second type argument of the client in place of a schema name. PostgREST features are
+ * resolved by the generator now, so it carries nothing the client reads.
+ *
+ * @deprecated Pass the schema name, or only the database.
+ */
+export type PostgrestClientOptions = {
+  PostgrestVersion?: string
+}
+
+/**
+ * The schema names of a database. `__InternalSupabase`, which the type generator emits next to the schemas, is not one.
+ */
+export type SchemaNameOf<Database> = Exclude<string & keyof Database, '__InternalSupabase'>
+
+/** The schema a client reads when none is given: `"public"` when the database has it, else any of its schemas. */
+export type DefaultSchemaNameOf<Database> =
+  'public' extends SchemaNameOf<Database> ? 'public' : SchemaNameOf<Database>
+
+/**
  * PostgREST client.
  *
  * @typeParam Database - Types for the schema from the [type
  * generator](https://supabase.com/docs/reference/javascript/next/typescript-support)
  *
- * @typeParam SchemaName - Postgres schema to switch to. Must be a string
+ * @typeParam SchemaNameOrClientOptions - Postgres schema to switch to, or the
+ * v2 options object (`{ PostgrestVersion: string }`, ignored). Must be a string
  * literal, the same one passed to the constructor. If the schema is not
  * `"public"`, this must be supplied manually.
+ *
+ * @typeParam SchemaName - The Postgres schema, when `SchemaNameOrClientOptions`
+ * is the options object. Defaults to `"public"`, else the first schema.
+ * `__InternalSupabase`, which the type generator emits next to the schemas, is
+ * never a schema.
  */
 export default class PostgrestClient<
   Database = DefaultDatabase,
-  SchemaName extends string & keyof Database = 'public' extends keyof Database
-    ? 'public'
-    : string & keyof Database,
+  SchemaNameOrClientOptions extends SchemaNameOf<Database> | PostgrestClientOptions =
+    DefaultSchemaNameOf<Database>,
+  SchemaName extends SchemaNameOf<Database> =
+    SchemaNameOrClientOptions extends SchemaNameOf<Database>
+      ? SchemaNameOrClientOptions
+      : DefaultSchemaNameOf<Database>,
 > {
   url: string
   headers: Headers
@@ -256,7 +284,7 @@ export default class PostgrestClient<
    *
    * @category Database
    */
-  schema<const S2 extends string & keyof Database>(schema: S2): PostgrestClient<Database, S2> {
+  schema<const S2 extends SchemaNameOf<Database>>(schema: S2): PostgrestClient<Database, S2, S2> {
     return new PostgrestClient(this.url, {
       headers: this.headers,
       schema,

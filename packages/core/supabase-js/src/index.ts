@@ -1,5 +1,10 @@
 import SupabaseClient from './SupabaseClient'
-import type { DefaultDatabase } from '@supabase/postgrest-js'
+import type {
+  DefaultDatabase,
+  DefaultSchemaNameOf,
+  PostgrestClientOptions,
+  SchemaNameOf,
+} from '@supabase/postgrest-js'
 import type { SupabaseClientOptions } from './lib/types'
 
 export * from '@supabase/auth-js'
@@ -13,6 +18,7 @@ export type {
   PostgrestFilterBuilder,
   PostgrestTransformBuilder,
   PostgrestQueryBuilder,
+  PostgrestClientOptions,
   PgrstJson,
   PgrstJsonText,
   DefaultDatabase,
@@ -62,15 +68,22 @@ export type {
  */
 export const createClient = <
   Database = DefaultDatabase,
-  SchemaName extends string & keyof Database = 'public' extends keyof Database
-    ? 'public'
-    : string & keyof Database,
+  SchemaNameOrClientOptions extends SchemaNameOf<Database> | PostgrestClientOptions =
+    DefaultSchemaNameOf<Database>,
+  SchemaName extends SchemaNameOf<Database> =
+    SchemaNameOrClientOptions extends SchemaNameOf<Database>
+      ? SchemaNameOrClientOptions
+      : DefaultSchemaNameOf<Database>,
 >(
   supabaseUrl: string,
   supabaseKey: string,
   options?: SupabaseClientOptions<SchemaName>
-): SupabaseClient<Database, SchemaName> => {
-  return new SupabaseClient<Database, SchemaName>(supabaseUrl, supabaseKey, options)
+): SupabaseClient<Database, SchemaNameOrClientOptions, SchemaName> => {
+  return new SupabaseClient<Database, SchemaNameOrClientOptions, SchemaName>(
+    supabaseUrl,
+    supabaseKey,
+    options
+  )
 }
 
 // Check for Node.js <= 20 deprecation

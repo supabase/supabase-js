@@ -60,12 +60,6 @@ const supabase = createClient<Database>(URL, KEY)
   createClient<Database, 'unknown_schema'>(URL, KEY)
 }
 
-// the removed second generic (a PostgrestVersion options object) is gone: the second generic is the schema name
-{
-  // @ts-expect-error
-  createClient<Database, { PostgrestVersion: '13' }>(URL, KEY)
-}
-
 // without a Database generic the client reads the default database: the global `SupabaseDatabase` when the postgrest
 // mapper declares it, the untyped `GenericDatabase` otherwise (nothing declares it in this package's tests)
 {
@@ -112,12 +106,31 @@ type GenTypes = {
         Relationships: []
       }
     }
-    Views: { [_ in never]: never }
+    Views: {
+      open_todos: {
+        Row: { id: number | null; title: string | null }
+        Relationships: []
+      }
+    }
     Functions: {
       count_todos: { Args: { done_only: boolean }; Returns: number }
       list_todos: { Args: { owner: string }; Returns: { id: number; title: string }[] }
       no_args: { Args: Record<PropertyKey, never>; Returns: undefined }
     }
+    Enums: { priority: 'low' | 'high' }
+    CompositeTypes: { pair: { a: number; b: string } }
+  }
+  audit: {
+    Tables: {
+      events: {
+        Row: { id: number; kind: string }
+        Insert: { id?: number; kind: string }
+        Update: { id?: number; kind?: string }
+        Relationships: []
+      }
+    }
+    Views: { [_ in never]: never }
+    Functions: { [_ in never]: never }
     Enums: { [_ in never]: never }
     CompositeTypes: { [_ in never]: never }
   }
@@ -154,4 +167,62 @@ type GenTypes = {
   expectType<undefined | null>(nothing)
   expectError(typed.rpc('count_todos', { done_only: 'yes' }))
   expectError(typed.rpc('no_such_function'))
+}
+
+// the v2 generic forms compile unchanged: `<Database>`, `<Database, SchemaName>`, `<Database, Options>` and
+// `<Database, Options, SchemaName>`, on `createClient`, `new SupabaseClient` and the `SupabaseClient` type. The options
+// object (`PostgrestVersion`) is ignored; `__InternalSupabase` is never a schema.
+{
+  const bare = createClient<GenTypes>(URL, KEY)
+  const named = createClient<GenTypes, 'audit'>(URL, KEY, { db: { schema: 'audit' } })
+  const options = createClient<GenTypes, { PostgrestVersion: '12' }>(URL, KEY)
+  const optionsAndSchema = createClient<GenTypes, { PostgrestVersion: '12' }, 'audit'>(URL, KEY, {
+    db: { schema: 'audit' },
+  })
+  const constructed = new SupabaseClient<GenTypes, { PostgrestVersion: '12' }, 'audit'>(URL, KEY, {
+    db: { schema: 'audit' },
+  })
+
+  // the options form reads the `public` schema, the schema name or the third argument picks another
+  expectType<SupabaseClient<GenTypes, 'public', 'public'>>(bare)
+  expectType<SupabaseClient<GenTypes, 'audit', 'audit'>>(named)
+  expectType<SupabaseClient<GenTypes, { PostgrestVersion: '12' }, 'public'>>(options)
+  expectType<SupabaseClient<GenTypes, { PostgrestVersion: '12' }, 'audit'>>(optionsAndSchema)
+  expectType<SupabaseClient<GenTypes, { PostgrestVersion: '12' }, 'audit'>>(constructed)
+
+  // results still read the database through the generated types
+  const { data: todos } = await options.from('todos').select('id, title')
+  expectType<number>(todos![0].id)
+  expectType<string>(todos![0].title)
+  const { data: open } = await options.from('open_todos').select('id')
+  expectType<number | null>(open![0].id)
+  const { data: events } = await optionsAndSchema.from('events').select('kind')
+  expectType<string>(events![0].kind)
+  const { data: count } = await options.rpc('count_todos', { done_only: true })
+  expectType<number | null>(count)
+  const { data: list } = await options.rpc('list_todos', { owner: 'me' })
+  expectType<{ id: number; title: string }[] | null>(list)
+  expectError(options.from('events'))
+  expectError(optionsAndSchema.from('todos'))
+  expectError(options.rpc('no_such_function'))
+
+  // a schema switch carries the database
+  const { data: switched } = await options.schema('audit').from('events').select('id')
+  expectType<number>(switched![0].id)
+
+  // a database without a `public` schema defaults to its first schema, never to `__InternalSupabase`
+  type OnlyAudit = { __InternalSupabase: { PostgrestVersion: '12' }; audit: GenTypes['audit'] }
+  const noPublic = createClient<OnlyAudit, { PostgrestVersion: '12' }>(URL, KEY)
+  noPublic.from('events')
+  expectError(noPublic.from('todos'))
+
+  // `__InternalSupabase` is not a schema name, in any position
+  // @ts-expect-error not a schema of the database
+  createClient<GenTypes, '__InternalSupabase'>(URL, KEY)
+  // @ts-expect-error not a schema of the database
+  createClient<GenTypes, { PostgrestVersion: '12' }, '__InternalSupabase'>(URL, KEY)
+  // @ts-expect-error not a schema of the database
+  new SupabaseClient<GenTypes, { PostgrestVersion: '12' }, '__InternalSupabase'>(URL, KEY)
+  // @ts-expect-error not a schema of the database
+  options.schema('__InternalSupabase')
 }

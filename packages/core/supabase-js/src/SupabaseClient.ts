@@ -3,6 +3,9 @@ import { FunctionsClient } from '@supabase/functions-js'
 import {
   type DefaultDatabase,
   PostgrestClient,
+  type DefaultSchemaNameOf,
+  type PostgrestClientOptions,
+  type SchemaNameOf,
   type PostgrestOpenApiSpec,
   type PostgrestSingleResponse,
 } from '@supabase/postgrest-js'
@@ -40,9 +43,13 @@ export default class SupabaseClient<
   // The database types the client reads: the global `SupabaseDatabase` when the postgrest mapper is set up,
   // `GenericDatabase` (untyped) otherwise. Mirrors `PostgrestClient`.
   Database = DefaultDatabase,
-  SchemaName extends string & keyof Database = 'public' extends keyof Database
-    ? 'public'
-    : string & keyof Database,
+  // A schema name, or the v2 options object (`{ PostgrestVersion: string }`, ignored)
+  SchemaNameOrClientOptions extends SchemaNameOf<Database> | PostgrestClientOptions =
+    DefaultSchemaNameOf<Database>,
+  SchemaName extends SchemaNameOf<Database> =
+    SchemaNameOrClientOptions extends SchemaNameOf<Database>
+      ? SchemaNameOrClientOptions
+      : DefaultSchemaNameOf<Database>,
 > {
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
@@ -58,7 +65,7 @@ export default class SupabaseClient<
   protected authUrl: URL
   protected storageUrl: URL
   protected functionsUrl: URL
-  protected rest: PostgrestClient<Database, SchemaName>
+  protected rest: PostgrestClient<Database, SchemaName, SchemaName>
   protected storageKey: string
   protected fetch?: Fetch
   protected functionsFetch?: Fetch
@@ -406,7 +413,7 @@ export default class SupabaseClient<
    *
    * @param relation - The table or view name to query
    */
-  from: PostgrestClient<Database, SchemaName>['from'] = (relation) =>
+  from: PostgrestClient<Database, SchemaName, SchemaName>['from'] = (relation) =>
     this.rest.from(relation as any)
 
   /**
@@ -416,7 +423,8 @@ export default class SupabaseClient<
    *
    * @param schema - The schema to query
    */
-  schema: PostgrestClient<Database, SchemaName>['schema'] = (schema) => this.rest.schema(schema)
+  schema: PostgrestClient<Database, SchemaName, SchemaName>['schema'] = (schema) =>
+    this.rest.schema(schema)
 
   // NOTE: signatures must be kept in sync with PostgrestClient.getOpenApiSpec
   /**
@@ -465,7 +473,7 @@ export default class SupabaseClient<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  rpc: PostgrestClient<Database, SchemaName>['rpc'] = ((...args: [any, any?, any?]) =>
+  rpc: PostgrestClient<Database, SchemaName, SchemaName>['rpc'] = ((...args: [any, any?, any?]) =>
     this.rest.rpc(...args)) as any
 
   /**

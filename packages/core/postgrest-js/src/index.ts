@@ -1,4 +1,5 @@
 import PostgrestClient from './PostgrestClient'
+import type { DefaultSchemaNameOf, PostgrestClientOptions, SchemaNameOf } from './PostgrestClient'
 import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
@@ -23,6 +24,7 @@ export default {
   PostgrestBuilder,
   PostgrestError,
 }
+export type { DefaultSchemaNameOf, PostgrestClientOptions, SchemaNameOf }
 export type {
   PostgrestResponse,
   PostgrestResponseFailure,
