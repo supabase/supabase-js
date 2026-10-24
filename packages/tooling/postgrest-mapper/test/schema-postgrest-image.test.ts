@@ -45,6 +45,10 @@ const DDL = [
   `alter table public.docs add constraint docs_strict_nv check (extensions.jsonb_matches_schema(
      '{"type":"string"}', strict)) not valid`,
   'alter table public.docs add constraint docs_dynamic check (extensions.jsonb_matches_schema(note::json, data))',
+  'create table public.docs_parent (id int primary key, data jsonb)',
+  `alter table public.docs_parent add constraint docs_parent_own_rows_only check (extensions.jsonb_matches_schema(
+     '{"type":"string"}', data)) no inherit`,
+  'create table public.docs_child () inherits (public.docs_parent)',
   'create view public.docs_view as select id, note, data from public.docs',
   'create view public.private_view as select id, payload, note from private.base',
   'create function public.doc_note(d public.docs) returns text language sql stable as $$ select d.note $$',
@@ -139,6 +143,7 @@ describe('schema acquisition from a pinned PostgREST image', () => {
     expect(input.ignored.map((i) => [i.constraint, i.reason])).toEqual([
       ['docs_dynamic', expect.stringMatching(/not a plain conjunction.*not a constant/)],
       ['docs_strict_nv', expect.stringMatching(/NOT VALID/)],
+      ['docs_parent_own_rows_only', expect.stringMatching(/NO INHERIT/)],
     ])
   })
 })

@@ -286,12 +286,12 @@ function conjunctionTerms(node: Node): Node[] {
   return [node]
 }
 
-/** `CHECK ((expr)) NOT VALID NO INHERIT` -> `expr` */
-function checkExpression(definition: string): string | undefined {
-  const match = /^CHECK \((.*)\)(?: NO INHERIT)?(?: NOT VALID)?(?: NO INHERIT)?$/s.exec(
-    definition.trim()
-  )
-  return match?.[1]
+/** `CHECK ((expr)) NO INHERIT NOT VALID` -> `expr`, and whether the constraint is `NO INHERIT` */
+function checkExpression(
+  definition: string
+): { expression: string; noInherit: boolean } | undefined {
+  const match = /^CHECK \((.*?)\)((?: NO INHERIT| NOT VALID)*)$/s.exec(definition.trim())
+  return match ? { expression: match[1]!, noInherit: match[2]!.includes(' NO INHERIT') } : undefined
 }
 
 export interface BuildJsonSchemaOptions {
@@ -302,8 +302,8 @@ export interface BuildJsonSchemaOptions {
 /**
  * The JSON Schema input: for every validated CHECK constraint that is a plain conjunction of
  * `jsonb_matches_schema('<constant>', col)` / `json_matches_schema(...)` terms (each optionally guarded by
- * `col IS NULL OR`), the schema of the column. Several constraints on a column become an `allOf`. A `NOT VALID`
- * constraint, a non-constant schema or any other shape lands in `ignored` with the reason, never in `columns`.
+ * `col IS NULL OR`), the schema of the column. Several constraints on a column become an `allOf`. A `NOT VALID` or
+ * `NO INHERIT` constraint (a query of the table also returns the rows of its descendants), a non-constant schema or any other shape lands in `ignored` with the reason, never in `columns`.
  *
  * Constraint definitions are parsed with libpg_query, hence asynchronous. Only columns of type `json` / `jsonb` are
  * reported.
@@ -335,11 +335,18 @@ export async function buildJsonSchemaInput(
       skip('NOT VALID: the constraint says nothing about rows already stored')
       continue
     }
-    const expression = checkExpression(check.definition)
-    if (expression === undefined) {
+    const definition = checkExpression(check.definition)
+    if (definition === undefined) {
       skip('not a CHECK constraint definition')
       continue
     }
+    if (definition.noInherit) {
+      skip(
+        'NO INHERIT: the constraint says nothing about the rows of the tables inheriting from this one'
+      )
+      continue
+    }
+    const { expression } = definition
     const parsed = await parser.parse(`select ${expression}`)
     const stmt: Node = parsed.error
       ? undefined
