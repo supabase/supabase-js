@@ -75,12 +75,12 @@ flowchart LR
 
 Four packages take part:
 
-| Package                       | Role                                                                                                                   |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@supabase/postgrest-planner` | The PostgREST planner compiled to wasm, with a small JS API: `load` a schema, `plan` a request.                        |
-| `@supabase/postgrest-mapper`  | Everything else: scanner, schema acquisition, tracer, printers, the `postgrest-mapper` CLI, the TS 7.1 content mapper. |
-| `@supabase/postgrest-js`      | The query builders. Their types read the generated globals; there is no select parser left.                            |
-| `@supabase/supabase-js`       | `createClient()`, with no type argument needed. It forwards to postgrest-js.                                           |
+| Package                       | Role                                                                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `@supabase/postgrest-planner` | The PostgREST planner compiled to wasm, with a small JS API: `load` a schema, `plan` a request.                            |
+| `@supabase/postgrest-mapper`  | Everything else: scanner, schema acquisition, tracer, printers, the `postgrest-mapper` CLI, the TS 7.1 content mapper.     |
+| `@supabase/postgrest-js`      | The query builders. Their types read the generated globals; there is no select parser left.                                |
+| `@supabase/supabase-js`       | `createClient()`, with no type argument needed (v2's `createClient<Database>()` still works). It forwards to postgrest-js. |
 
 The mapper is a library first. The CLI and the content mapper are thin wrappers around the same functions
 (`generate`, `check`, `watch`, `refresh`, `snapshot`, `init`), so other tools, such as the Supabase CLI, can call them
@@ -166,7 +166,7 @@ flowchart LR
   d --> e{"key in<br/>SupabaseSelects?"}
   e -- yes --> f["row type from the entry,<br/>then filters, .single(), count…"]
   e -- "no: unplanned" --> g{"SupabasePgrstStatus<br/>unplanned"}
-  g -- loose --> h["loose rows<br/>(unknown)"]
+  g -- loose --> h["the relation's Row<br/>(other keys any)"]
   g -- error --> i["type error:<br/>run postgrest-mapper"]
 ```
 
@@ -220,7 +220,11 @@ Both use the same options, read from the `contentMappers` entry in `tsconfig.jso
 }
 ```
 
-`postgrest-mapper init` writes this entry, the `src/supabase.pgrst-index` stub and the `include` changes for you.
+`postgrest-mapper init` sets up a project in one command. It writes this entry, saves a schema snapshot from the running
+local stack, and picks one producer of the declarations from the TypeScript the project resolves: the content mapper on
+7.1 and later (it adds the `src/supabase.pgrst-index` stub to `include`), otherwise a generated file, which it writes
+once. It also adds `postgrest:watch`, `postgrest:check` and `postgrest:snapshot` package scripts (only `postgrest:snapshot`
+for the content mapper). A step that cannot run, for example because the stack is down, is reported as skipped.
 
 ### A. Generated file (TypeScript 5.1 and later, Deno)
 
@@ -241,7 +245,7 @@ sequenceDiagram
   participant Planner as Planner (wasm worker)
 
   Dev->>Editor: types .select('title, excerpt') and saves
-  Editor-->>Dev: hover: loose (key not generated yet)
+  Editor-->>Dev: hover: the table Row (key not generated yet)
   Watch->>Watch: file changed: scan, derive keys
   Watch->>Watch: cache lookup (node_modules/.cache/postgrest-mapper)
   Watch->>Planner: plan the new keys only
@@ -470,8 +474,12 @@ A chain is **unplanned** when the generated file has no entry for its key. That 
 
 Unplanned chains follow the `unplanned` option:
 
-- `'loose'` (default): rows are loosely typed (`unknown` / `Record<string, unknown>`), and the code still compiles.
-- `'error'`: an unplanned chain is a type error. Use this in CI together with `generate --check`.
+- `'loose'` (default): rows come from the relation's `Row` in the client's `Database` (the generated `SupabaseDatabase`,
+  or a v2 `Database` passed as `createClient<Database>()`). Its columns keep their types and any other key is `any`,
+  because the select may alias or embed. An unplanned rpc gets the function's `Returns`. With no `Database` the rows are
+  `Record<string, unknown>`. The code still compiles either way.
+- `'error'`: an unplanned chain is a type error, and the fallback is off. Use this in CI together with
+  `generate --check`.
 
 A select the planner **rejects** (an unknown column, an ambiguous relationship) gets an `{ error }` entry. The builder
 shows the PostgREST error message, for example `PGRST200: Could not find a relationship …`, as a type error at the call.
@@ -491,8 +499,9 @@ declare global {
 // select('name, socials') → { name: string; socials: { github?: string; mastodon?: string } | null }[]
 ```
 
-**`.cast<T>()`** replaces the row type of one call and keeps the response shape (array, single row, count). It replaces
-v2's `.returns<T>()` and `.overrideTypes<T>()`.
+**`.cast<T>()`** replaces the row type of one call and keeps the response shape (array, single row, count). v2's
+`.returns<T>()` and `.overrideTypes<T>()` still work with their v2 meaning, applied on top of the planned result, and are
+deprecated in favour of `.cast<T>()` and `SupabaseColumnTypes`.
 
 ```ts
 const { data } = await supabase
@@ -520,11 +529,19 @@ know:
 | `.not('editor', 'is', null)` on an embed                | Root columns only                                                                 | Narrows the embed to non-null                                                         |
 | rpc `{ get: true }` with an object argument             | Not checked                                                                       | Type error naming the key                                                             |
 | Unknown column or relationship                          | A parser error type                                                               | PostgREST's own error, e.g. `PGRST200: Could not find a relationship …`               |
-| Select string that is not a literal                     | Error type                                                                        | Loose rows, or an error with `unplanned: 'error'`                                     |
+| Select string that is not a literal                     | Error type                                                                        | The relation's `Row`, other keys `any`; an error with `unplanned: 'error'`            |
 | Column type the database does not describe              | `.returns<T>()` / `.overrideTypes<T>()` per call                                  | `SupabaseColumnTypes` once per column, or `.cast<T>()` per call                       |
 
 More generally, any PostgREST behaviour the parser did not reimplement was wrong or missing in v2. In v3 it is right by
 construction, and a new PostgREST release is a rebuild of the wasm, not new type-level code.
+
+### Upgrading
+
+v2 code compiles on v3 in the common case. Until the declarations are generated, chains are typed from the v2
+`Database` passed to `createClient<Database>()` (see [When there is no plan](#when-there-is-no-plan)). `.returns<T>()`,
+`.overrideTypes<T>()`, the `foreignTable` option and v2's `createClient` type arguments are kept as deprecated forms. The
+[migration guide](../packages/core/postgrest-js/migrations/v3-planner-types.md) lists the steps (`postgrest-mapper
+init`, then `unplanned: 'error'`) and the few remaining breaking changes.
 
 ### Performance
 
@@ -559,7 +576,7 @@ responses).
 |                            | v2                                               | v3, TypeScript 5.1 to 7.0, Deno                                       | v3, TypeScript 7.1                       |
 | -------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- | ---------------------------------------- |
 | Setup                      | `supabase gen types`, `createClient<Database>()` | `postgrest-mapper init` once, no type argument                        | Same, plus `--runExternalCode`           |
-| A new or edited select     | Typed as you type                                | Loose until you save, then typed a moment later by `generate --watch` | Typed by the compiler itself, no watcher |
+| A new or edited select     | Typed as you type                                | The table's `Row` until you save, then exact after `generate --watch` | Typed by the compiler itself, no watcher |
 | Schema change              | Run `supabase gen types` again                   | Automatic with a live source; `snapshot` again for a snapshot         | Same                                     |
 | Generated file in the repo | `database.types.ts`                              | `supabase.types.d.ts`                                                 | None, only the `.pgrst-index` stub       |
 | CI                         | `tsc`                                            | `generate --check`, then `tsc` with `unplanned: 'error'`              | `tsc --runExternalCode`                  |
@@ -567,9 +584,9 @@ responses).
 
 The main cost is the watcher. Below TypeScript 7.1, the generated file only knows the queries that existed at the last
 generation, so `generate --watch` has to run during development (the example's `pnpm types:watch`). Between a keystroke
-and the next save, a new select is loosely typed rather than wrong, and `--check` with `unplanned: 'error'` keeps a stale
-file out of CI. TypeScript 7.1 removes the watcher and the generated file. Its editor support is still being verified,
-which is why the generated file is the default for now.
+and the next save, a new select reads the table's `Row` (other keys `any`) rather than its exact type, and `--check` with
+`unplanned: 'error'` keeps a stale file out of CI. TypeScript 7.1 removes the watcher and the generated file, and `init`
+picks the content mapper when the project resolves 7.1 or later.
 
 ## Known limits
 
