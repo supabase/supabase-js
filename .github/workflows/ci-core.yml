@@ -19,6 +19,7 @@ jobs:
       auth: ${{ steps.affected.outputs.auth }}
       storage: ${{ steps.affected.outputs.storage }}
       postgrest: ${{ steps.affected.outputs.postgrest }}
+      mapper: ${{ steps.affected.outputs.mapper }}
       functions: ${{ steps.affected.outputs.functions }}
       realtime: ${{ steps.affected.outputs.realtime }}
     steps:
@@ -63,6 +64,7 @@ jobs:
           echo "auth=$(echo "$AFFECTED"   | grep -q 'auth-js'      && echo 1 || echo 0)" >> $GITHUB_OUTPUT
           echo "storage=$(echo "$AFFECTED" | grep -q 'storage-js'   && echo 1 || echo 0)" >> $GITHUB_OUTPUT
           echo "postgrest=$(echo "$AFFECTED" | grep -qE 'postgrest-(js|mapper|planner)' && echo 1 || echo 0)" >> $GITHUB_OUTPUT
+          echo "mapper=$(echo "$AFFECTED" | grep -qE 'postgrest-(mapper|planner)' && echo 1 || echo 0)" >> $GITHUB_OUTPUT
           echo "functions=$(echo "$AFFECTED" | grep -q 'functions-js' && echo 1 || echo 0)" >> $GITHUB_OUTPUT
           echo "realtime=$(echo "$AFFECTED"  | grep -q 'realtime-js'  && echo 1 || echo 0)" >> $GITHUB_OUTPUT
 
@@ -449,6 +451,17 @@ jobs:
       - name: Run postgrest-planner tests (committed wasm, no toolchain needed)
         run: pnpm nx test postgrest-planner
         timeout-minutes: 10
+      # The mapper suite reads the live postgrest-js test stack (supabase_db_test, supabase_rest_test) and runs the
+      # pinned PostgREST image, but test:ci:postgrest stops the stack when it finishes. Start it again; the codegen
+      # check below reuses a running stack and leaves it running.
+      - name: Start the postgrest-js test stack for the mapper tests
+        if: needs.check-affected.outputs.mapper != '0'
+        run: pnpm exec supabase start --workdir packages/core/postgrest-js/test
+        timeout-minutes: 10
+      - name: Run postgrest-mapper tests
+        if: needs.check-affected.outputs.mapper != '0'
+        run: pnpm nx test postgrest-mapper
+        timeout-minutes: 20
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
         run: |
