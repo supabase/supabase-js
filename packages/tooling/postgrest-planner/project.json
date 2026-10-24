@@ -1,6 +1,9 @@
 {
   "name": "postgrest-planner",
   "targets": {
+    "build": {
+      "outputs": ["{projectRoot}/dist/main", "{projectRoot}/dist/tsconfig.tsbuildinfo"]
+    },
     "build:wasm": {
       "executor": "nx:run-commands",
       "options": {
