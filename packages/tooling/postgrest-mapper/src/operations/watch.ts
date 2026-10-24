@@ -66,7 +66,8 @@ export interface WatchLoopOptions {
  * cache directory of a project that never ran, the folder of a snapshot) is waited for through its nearest existing
  * ancestor: the ancestor's first event on the way to it runs again, and that run watches the directory itself once
  * it exists. A file edited while a run was in flight, before its directory was watched, is detected by its
- * modification time when the directory starts being watched, and runs again. Resolves when `signal` aborts, after
+ * modification time when the directory starts being watched, and runs again; so is a source file or directory that
+ * appeared in a scanned directory after the run listed it. Resolves when `signal` aborts, after
  * the run in flight has finished.
  */
 export async function watchLoop(options: WatchLoopOptions): Promise<void> {
@@ -191,6 +192,46 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
     if (stamps.some((stamp) => stamp !== undefined && stamp >= startedAt - MTIME_MARGIN_MS)) {
       dirty = true
     }
+    // The same goes for what appeared in a scanned directory after the scan listed it: no event told, and neither
+    // is in `files`. A source file or a directory stamped since the run began is new (or replaced).
+    if (
+      !dirty &&
+      (await createdSince(
+        startedAt,
+        [...added].filter((d) => scanned.has(d)),
+        watched
+      ))
+    ) {
+      dirty = true
+    }
+  }
+
+  /** Whether an entry of `directories` that the run did not depend on was written since `startedAt` */
+  const createdSince = async (
+    startedAt: number,
+    directories: readonly string[],
+    known: ReadonlySet<string>
+  ): Promise<boolean> => {
+    const listed = await Promise.all(
+      directories.map(async (directory) => {
+        try {
+          return (await readdir(directory)).map((e) => ({ path: join(directory, e.name), ...e }))
+        } catch {
+          return [] // gone again
+        }
+      })
+    )
+    const candidates = listed.flat().filter(
+      (e) =>
+        !known.has(e.path) &&
+        e.name !== 'node_modules' &&
+        // the output of the run lives in the directory the loop itself writes to
+        e.path !== ignore &&
+        !ignore.startsWith(e.path + sep) &&
+        (e.isDirectory || SOURCE.test(e.name))
+    )
+    const stamps = await Promise.all(candidates.map((e) => mtime(e.path)))
+    return stamps.some((stamp) => stamp !== undefined && stamp >= startedAt - MTIME_MARGIN_MS)
   }
 
   const cycle = async (): Promise<void> => {
