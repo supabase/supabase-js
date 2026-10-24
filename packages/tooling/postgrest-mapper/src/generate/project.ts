@@ -200,6 +200,21 @@ async function loadConfigBody(
   return merged
 }
 
+/** The `include` / `files` a tsconfig ends up with once its `extends` chain is merged, each with the directory its entries are relative to. */
+export async function loadFileSets(
+  fs: ProjectFs,
+  configFileName: string
+): Promise<Pick<ResolvedConfig, 'include' | 'files'>> {
+  const { include, files } = await loadConfig(
+    fs,
+    configFileName,
+    [],
+    new Set(),
+    dirname(configFileName)
+  )
+  return { ...(include ? { include } : {}), ...(files ? { files } : {}) }
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Globs: `**`, `*`, `?` and a directory name standing for everything below it (what tsconfig `include` means)
 // ---------------------------------------------------------------------------------------------------------------

@@ -41,6 +41,7 @@ export type { CacheFile, PlanCache, StoredPlan } from './cache'
 export {
   displayPath,
   findSupabaseConfigDir,
+  loadFileSets,
   nodeProjectFs,
   resolveProjectFiles,
   stripJsonc,

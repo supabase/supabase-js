@@ -13,6 +13,7 @@ import {
   type ExecFn,
   type OperationDeps,
 } from '../src'
+import { nodeProjectFs, resolveProjectFiles } from '../src/generate'
 import { entryCovers } from '../src/operations'
 import { STACK_WORKDIR, acquireFromStack, plannerWasmPath } from './support/acquired'
 
@@ -221,6 +222,51 @@ describe('init sets a fresh project up so that generate succeeds', () => {
       }
     }
     expect(disagreements).toEqual([])
+  })
+
+  describe('respects the include an extends chain provides', () => {
+    const run = async (): Promise<string[]> => {
+      await init(deps(), { out: 'src/supabase.types.d.ts' })
+      return JSON.parse(read('tsconfig.json')).include
+    }
+    const projectFiles = async (): Promise<string[]> =>
+      (
+        await resolveProjectFiles(nodeProjectFs, {
+          projectDir: dir,
+          configFileName: join(dir, 'tsconfig.json'),
+        })
+      ).files
+
+    it('carries the inherited include over to the local tsconfig, so the project keeps its files and the new ones are listed', async () => {
+      put('base.json', '{ "include": ["app"] }')
+      put('tsconfig.json', '{ "extends": "./base.json" }')
+      put('app/main.ts', SOURCE)
+      put('src/supabase.types.d.ts', 'export {}\n')
+
+      expect(await run()).toEqual(['app', 'src/supabase.pgrst-index', 'src/supabase.types.d.ts'])
+      // a `.d.ts` is never scanned: the resolved program keeps the inherited `app` and no more
+      expect(await projectFiles()).toEqual([join(dir, 'app', 'main.ts')])
+    }, 60_000)
+
+    it('rebases the inherited entries from the directory of the config that wrote them', async () => {
+      put('configs/base.json', '{ "include": ["../app"] }')
+      put('tsconfig.json', '{ "extends": "./configs/base.json" }')
+      put('app/main.ts', SOURCE)
+
+      expect(await run()).toEqual(['app', 'src/supabase.pgrst-index', 'src/supabase.types.d.ts'])
+    }, 60_000)
+
+    it('writes nothing when the inherited include already covers the new files', async () => {
+      put('base.json', '{ "include": ["src"] }')
+      put('tsconfig.json', '{ "extends": "./base.json" }')
+
+      const result = await init(deps(), { out: 'src/supabase.types.d.ts' })
+      expect(JSON.parse(read('tsconfig.json'))).not.toHaveProperty('include')
+      expect(result.changes.map((c) => c.message)).toEqual([
+        'added the .pgrst-index entry to contentMappers',
+        'created the index file',
+      ])
+    }, 60_000)
   })
 
   it('does not start the planner when the tsconfig already has the entry', async () => {

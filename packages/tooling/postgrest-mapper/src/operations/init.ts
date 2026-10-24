@@ -1,6 +1,6 @@
 import { dirname, posix as posixPath, relative, resolve, sep } from 'node:path'
 import { createPlannerHost } from '../host'
-import { findSupabaseConfigDir, stripJsonc } from '../generate'
+import { findSupabaseConfigDir, loadFileSets, stripJsonc } from '../generate'
 import { INDEX_EXTENSION, display, isIndexEntry, messageOf } from './config'
 import { addToArray, addToStringArray, parseJsonc } from './jsonc'
 import { OperationError, resolveDeps, type OperationDeps } from './types'
@@ -173,19 +173,39 @@ export async function init(deps: OperationDeps, input: InitInput = {}): Promise<
     }
   }
 
-  // without `include` and `files` the tsconfig already takes every file below it
-  const key = root.properties.some((p) => p.key === 'include')
+  // without `include` and `files` the tsconfig already takes every file below it, unless it inherits some: a local
+  // `include` (or `files`) replaces the inherited one, so the inherited entries are carried over, rebased to this tsconfig
+  const own = root.properties.some((p) => p.key === 'include')
     ? 'include'
     : root.properties.some((p) => p.key === 'files')
       ? 'files'
       : undefined
+  let key: 'include' | 'files' | undefined = own
+  let inherited: string[] = []
+  let inheritedAll: string[] = []
+  if (own === undefined) {
+    const sets = await loadFileSets(fs, configFileName)
+    const rebase = (set?: { value: string[]; base: string }): string[] =>
+      (set?.value ?? []).map(
+        (entry) => posix(relative(projectDir, resolve(set!.base, entry))) || '.'
+      )
+    inheritedAll = [...rebase(sets.include), ...rebase(sets.files)]
+    key = sets.include ? 'include' : sets.files ? 'files' : undefined
+    inherited = rebase(key === 'files' ? sets.files : sets.include)
+  }
   const include = async (rel: string): Promise<void> => {
     if (key === undefined || rel.startsWith('..')) return
-    await edit(configFileName, `added ${rel} to ${key}`, (current) =>
-      addToStringArray(current, [key], rel, (existing) =>
-        existing.some((item) => entryCovers(item, rel))
-      )
-    )
+    if (inheritedAll.some((item) => entryCovers(item, rel))) return
+    await edit(configFileName, `added ${rel} to ${key}`, (current) => {
+      let next = current
+      for (const value of [...inherited, rel]) {
+        next =
+          addToStringArray(next, [key!], value, (existing) =>
+            existing.some((item) => item === value || entryCovers(item, value))
+          ) ?? next
+      }
+      return next
+    })
   }
 
   if (entry !== undefined) {
