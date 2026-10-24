@@ -275,6 +275,20 @@ This runs external code, so the compiler requires opt-in: `tsc --runExternalCode
 `initializationOptions.runExternalCode` for the language server. The command line and the 7.1 language server work in the
 example project. Editor extension support is still being verified, so path A is the default for now.
 
+#### Why an index file?
+
+A content mapper can only supply the contents of a file that is already in the program. The compiler finds files
+through `include`, and asks the mapper for the TypeScript of each file whose extension is registered. It has no hook for
+adding a module out of nothing. Our declarations do not belong to any one source file: they are globals built from every
+query in the project. So the project needs one placeholder file whose only job is to be included with the registered
+extension. Its content is ignored.
+
+- **Its own extension**, so that only this file triggers the mapper. TypeScript 5.x and Deno (path A) skip it because
+  `.pgrst-index` is not a TypeScript extension. The CLI reads only the options of the `contentMappers` entry.
+- **One per project**, because the globals must be declared exactly once. Any other `.pgrst-index` file gets diagnostic
+  2001 and an empty module.
+- **Where errors show up**: the compiler reports problems in the generated declarations at the top of this file.
+
 ## Where the schema comes from
 
 The planner needs the same inputs PostgREST loads at startup, plus facts PostgREST's schema dump does not keep.
