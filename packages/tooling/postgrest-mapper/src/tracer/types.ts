@@ -86,6 +86,14 @@ export interface TraceInput {
   sql: string
   /** Output column names in order. Only their count matters; results are positional. */
   columns: string[]
+  /**
+   * The declared type of each output column, as `format_type` prints it (types outside `pg_catalog` schema qualified),
+   * for a function body: PostgreSQL coerces each selected value to it, and a coercion can yield NULL for a non-NULL
+   * value or change what the value is. A column whose value is not provably of that very type is nullable and has no
+   * `source`, except where the coercion is one the planner proves never yields NULL, which stays as traced without a
+   * `source`. Absent for a view, whose column types are the types of its expressions.
+   */
+  outputTypes?: string[]
   catalog: TraceCatalog
   /**
    * Parameter names of a function body (`''` for an unnamed one). A name that is not a column of the query

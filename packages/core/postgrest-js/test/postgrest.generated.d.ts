@@ -136,6 +136,12 @@ declare global {
           }
           Returns: SupabaseDatabase['public']['Enums']['user_status'] | null
         }
+        message_ids: {
+          Args: Record<string, never>
+          Returns: {
+            id: number | null
+          }[]
+        }
         username_label: {
           Args: {
             user_row: { username: string | null; data: JsonIn | null; age_range: unknown | null; status: SupabaseDatabase['public']['Enums']['user_status'] | null }
@@ -1492,6 +1498,38 @@ declare global {
           }
           Returns: {
             doubled: number | null
+          }[]
+        }
+        output_base_type_of_domain: {
+          Args: Record<string, never>
+          Returns: {
+            b: number | null
+          }[]
+        }
+        output_same_domain: {
+          Args: Record<string, never>
+          Returns: {
+            b: number | null
+          }[]
+        }
+        output_text_and_bigint_from_varchar_and_integer: {
+          Args: Record<string, never>
+          Returns: {
+            label: string | null
+            total: number | null
+          }[]
+        }
+        output_text_from_jsonb: {
+          Args: Record<string, never>
+          Returns: {
+            payload: string | null
+          }[]
+        }
+        output_time_from_timestamptz: {
+          Args: Record<string, never>
+          Returns: {
+            t: string | null
+            n: number | null
           }[]
         }
         polymorphic_function_with_different_return: {

@@ -371,3 +371,29 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_
 GRANT EXECUTE ON FUNCTION extensions.da_default_first(public.default_arg_cases), extensions.da_exact_first(public.default_arg_cases, integer), extensions.da_required(public.default_arg_cases), extensions.da_partial(public.default_arg_cases) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION ext_owned.ext_defaulted(public.ext_label_cases, integer) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION personal.ext_defaulted(public.ext_label_cases) TO anon, authenticated;
+
+-- SQL functions whose declared output types differ from the types their body selects: the declared type is what the
+-- caller reads, through an assignment coercion that can turn a non-null value into NULL (`timestamptz` infinity
+-- cast to `time`) or into another representation.
+CREATE FUNCTION public.output_time_from_timestamptz()
+RETURNS TABLE(t time, n integer) LANGUAGE sql STABLE AS $$ SELECT tstz, 1 FROM public.cast_cases; $$;
+
+CREATE FUNCTION public.output_text_and_bigint_from_varchar_and_integer()
+RETURNS TABLE(label text, total bigint) LANGUAGE sql STABLE AS $$ SELECT n::varchar(10), n FROM public.cast_cases; $$;
+
+CREATE FUNCTION public.output_text_from_jsonb()
+RETURNS TABLE(payload text) LANGUAGE sql STABLE AS $$ SELECT data FROM public.messages; $$;
+
+CREATE FUNCTION public.output_base_type_of_domain()
+RETURNS TABLE(b integer) LANGUAGE sql STABLE AS $$ SELECT b FROM public.cast_cases; $$;
+
+CREATE FUNCTION public.output_same_domain()
+RETURNS TABLE(b cast_b.d) LANGUAGE sql STABLE AS $$ SELECT b FROM public.cast_cases; $$;
+
+-- A SQL function of an exposed schema that reads a table of public by its bare name: it runs along its own schema,
+-- then db-extra-search-path.
+CREATE FUNCTION personal.message_ids()
+RETURNS TABLE(id bigint) LANGUAGE sql STABLE AS $$ SELECT id FROM messages; $$;
+
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA personal TO anon, authenticated;

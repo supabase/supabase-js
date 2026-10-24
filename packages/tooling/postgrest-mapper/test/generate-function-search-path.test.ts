@@ -114,7 +114,18 @@ describe('the search path a body is traced along', () => {
   }
 
   test('follows the request path unless the function sets its own', () => {
-    expect(pathsOf({ plain: null })).toEqual({ plain: ['public', 'extensions'] })
+    expect(pathsOf({ plain: null })).toEqual({ plain: ['public'] })
+  })
+
+  test('ends the request path at the first schema that is not exposed, as a path of its own does', () => {
+    const inherited = (searchPath: string[]): string[] | null =>
+      buildFunctionTraceInputs(supplementary({ plain: null }), {
+        searchPath,
+        exposedSchemas: ['public', 'api'],
+      })[0]?.input.catalog.searchPath ?? null
+    expect(inherited(['private', 'public'])).toEqual(['public'])
+    expect(inherited(['api', 'private', 'public'])).toEqual(['public', 'api'])
+    expect(inherited(['pg_catalog', 'api', 'extensions'])).toEqual(['public', 'api'])
   })
 
   test('is the function path: identifiers split, unquoted ones folded to lower case, quoted ones kept', () => {
@@ -211,5 +222,52 @@ describe('a function body that sets its own search_path, through the generator',
     for (const path of ['private', 'private, public', '""', '"$user", public']) {
       expect(await rowWith(path)).toMatch(/^\{ username: string \| null; /)
     }
+  }, 180_000)
+})
+
+describe('a function body that sets no search_path, through the generator', () => {
+  let acquired: AcquiredSchema
+  beforeAll(async () => {
+    acquired = await acquireFromStack()
+  }, 120_000)
+
+  const projects: TempProject[] = []
+  afterEach(() => {
+    for (const p of projects.splice(0)) p.remove()
+  })
+
+  /** `personal.message_ids` selects from the bare `messages`, a table of `public` whose `id` is NOT NULL */
+  async function rowWith(extraSearchPath: string): Promise<string> {
+    const schema: AcquiredSchema = {
+      ...acquired,
+      config: { ...acquired.config, 'db-extra-search-path': extraSearchPath },
+    }
+    const p = await createTempProject(schema, {
+      'src/app.ts': `supabase.schema('personal').rpc('message_ids')`,
+    })
+    projects.push(p)
+    const result = await generateDeclarations({
+      configFileName: p.configFileName,
+      options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
+      deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
+    })
+    expect(result.diagnostics).toEqual([])
+    const row = /f\|personal\|message_ids\|\*'[\s\S]*?row: (.*)\n/.exec(result.text)?.[1]
+    expect(row).toBeDefined()
+    return row!
+  }
+
+  test('keeps what the table proves when the request path reaches it before any schema it knows nothing about', async () => {
+    expect(await rowWith('public,extensions')).toBe(
+      "{ id: SupabaseColumnType<'public.messages.id', number> }"
+    )
+    expect(await rowWith('public,private')).toBe(
+      "{ id: SupabaseColumnType<'public.messages.id', number> }"
+    )
+  }, 180_000)
+
+  test('proves nothing from a table a schema of the request path that is not exposed may shadow', async () => {
+    // `private.messages` may exist with a nullable id: the body does not read `public.messages`
+    expect(await rowWith('private,public')).toBe('{ id: number | null }')
   }, 180_000)
 })

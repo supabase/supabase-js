@@ -27,7 +27,7 @@ export interface BuildTraceCatalogOptions {
   searchPath?: string[]
   /**
    * The exposed schemas (`db-schemas`), the ones whose relations the catalog lists completely. Read by
-   * `buildFunctionTraceInputs` for a function that sets its own `search_path`. Defaults to the schemas of `relations`.
+   * `buildFunctionTraceInputs` to cut the search path of a function body. Defaults to the schemas of `relations`.
    */
   exposedSchemas?: string[]
 }
@@ -50,9 +50,7 @@ export function buildTraceCatalog(
 /**
  * The schemas a body can resolve a relation name in, in order, for a function that sets its own `search_path`:
  * `value` is split the way PostgreSQL splits it (comma separated identifiers, a quoted one kept as written with
- * `""` for a quote, an unquoted one folded to lower case). `pg_catalog` is dropped: it holds no relation the tracer
- * reads. The list ends before the first schema the catalog does not list completely (one that is not `exposed`):
- * a relation of that schema could take the name, so nothing after it is sound. `undefined` when the path cannot be
+ * `""` for a quote, an unquoted one folded to lower case) and cut by `completePrefix`. `undefined` when the path cannot be
  * resolved statically (`$user`, a temporary schema) or does not parse: the function is not traced then.
  */
 function ownSearchPath(value: string, exposed: ReadonlySet<string>): string[] | undefined {
@@ -89,6 +87,15 @@ function ownSearchPath(value: string, exposed: ReadonlySet<string>): string[] | 
   }
   if (names.some((x) => x === '$user' || x === 'pg_temp' || /^pg_temp_\d+$/.test(x)))
     return undefined
+  return completePrefix(names, exposed)
+}
+
+/**
+ * The schemas of a search path that can be read for a relation name: `pg_catalog` is dropped (it holds no relation the
+ * tracer reads) and the list ends before the first schema the catalog does not list completely (one that is not
+ * `exposed`), because a relation of that schema could take the name and nothing after it is sound.
+ */
+function completePrefix(names: readonly string[], exposed: ReadonlySet<string>): string[] {
   const path: string[] = []
   for (const name of names) {
     if (name === 'pg_catalog') continue
@@ -119,18 +126,18 @@ export function buildFunctionTraceInputs(
     options.exposedSchemas ??
       [...supplementary.relations, ...supplementary.referencedRelations].map((r) => r.schema)
   )
-  const composites = new Map(
-    supplementary.composites.map((c) => [
-      relationKey(c.schema, c.name),
-      c.attributes.map((a) => a.name),
-    ])
-  )
-  const relations = new Map(
-    [...supplementary.relations, ...supplementary.referencedRelations].map((r) => [
+  // the columns of each row type: name and declared type
+  const rowTypes = new Map<string, { name: string; type: string }[]>()
+  for (const r of [...supplementary.relations, ...supplementary.referencedRelations])
+    rowTypes.set(
       relationKey(r.schema, r.name),
-      r.columns.map((c) => c.name),
-    ])
-  )
+      r.columns.map((c) => ({ name: c.name, type: c.type }))
+    )
+  for (const c of supplementary.composites)
+    rowTypes.set(
+      relationKey(c.schema, c.name),
+      c.attributes.map((a) => ({ name: a.name, type: a.type }))
+    )
   // one catalog per search path: the functions of a schema share it
   const catalogs = new Map<string, TraceCatalog>()
   const out: ReturnType<typeof buildFunctionTraceInputs> = []
@@ -141,11 +148,11 @@ export function buildFunctionTraceInputs(
       fn.returns.kind === 'composite' && returned.schema !== undefined && returned.dims === 0
         ? relationKey(returned.schema, returned.name)
         : undefined
-    const columns = fn.outColumns?.map((c) => c.name) ??
-      (returnedKey !== undefined
-        ? (composites.get(returnedKey) ?? relations.get(returnedKey))
-        : undefined) ?? [fn.name]
-    let searchPath = [fn.schema, ...base.filter((s) => s !== fn.schema)]
+    const outputs = fn.outColumns ??
+      (returnedKey !== undefined ? rowTypes.get(returnedKey) : undefined) ?? [
+        { name: fn.name, type: fn.returns.type },
+      ]
+    let searchPath = completePrefix([fn.schema, ...base], exposed)
     if (fn.searchPath != null) {
       const own = ownSearchPath(fn.searchPath, exposed)
       if (!own) continue
@@ -164,7 +171,8 @@ export function buildFunctionTraceInputs(
       function: fn,
       input: {
         sql: fn.source,
-        columns,
+        columns: outputs.map((c) => c.name),
+        outputTypes: outputs.map((c) => c.type),
         catalog,
         parameters: fn.argNames ?? fn.argTypes.map(() => ''),
         functionName: fn.name,

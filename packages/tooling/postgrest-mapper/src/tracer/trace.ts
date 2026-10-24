@@ -266,7 +266,7 @@ class Run {
 
   constructor(
     private readonly parse: ParseSql,
-    private readonly catalog: CatalogIndex
+    readonly catalog: CatalogIndex
   ) {}
 
   async statement(sql: string, ctx: Ctx): Promise<Col[]> {
@@ -794,13 +794,63 @@ export async function runTrace(parse: ParseSql, input: TraceInput): Promise<Trac
         `the query returns ${cols.length} columns, expected ${input.columns.length}`
       )
     }
-    return { columns: cols.map(toTraced) }
+    const outputTypes = input.outputTypes
+    const declared = outputTypes
+      ? cols.map((c, i) => coerceToOutput(c, outputTypes[i], run.catalog))
+      : cols
+    return { columns: declared.map(toTraced) }
   } catch (e) {
     return fallback(
       input,
       e instanceof Unsupported ? e.message : `internal error: ${(e as Error).message}`
     )
   }
+}
+
+/** Whether two spellings of a type name the same type (modifiers and `format_type` spellings aside). */
+function sameType(a: string, b: string): boolean {
+  const x = normalizeType(a)
+  const y = normalizeType(b)
+  return x.schema === y.schema && x.name === y.name && x.dims === y.dims
+}
+
+/**
+ * The column as the caller reads it, once PostgreSQL has coerced the selected value to the output's declared type
+ * (an assignment coercion). A value of that very type arrives unchanged. Any other value is no longer the one the
+ * tracer followed: it loses its `source`, and it stays non-null only where `castKeepsNonNull` proves the coercion never
+ * yields NULL. A domain is another type than its base type, so a domain output over the selected type is such a
+ * coercion too.
+ */
+function coerceToOutput(col: Col, declared: string | undefined, catalog: CatalogIndex): Col {
+  if (declared === undefined) return col
+  const from = valueType(col, catalog)
+  if (from !== undefined && sameType(from, declared)) return col
+  const { source: _source, ...rest } = col
+  const target = builtinType(declared)
+  const origin = builtinType(from)
+  if (target !== undefined && origin !== undefined && castKeepsNonNull(origin, target)) return rest
+  if (col.nullable) return rest
+  return {
+    ...rest,
+    nullable: true,
+    reason:
+      from === undefined
+        ? `the type of the value is not known to be the declared output type ${declared}`
+        : `coerced from ${from} to the declared output type ${declared}, which can return NULL`,
+  }
+}
+
+/**
+ * The type of the value of a column as the catalog or the tracer spells it: the declared type of the table column
+ * a pass-through column comes from (a user type included), else the built-in type the tracer inferred. `undefined`
+ * when neither is known.
+ */
+function valueType(col: Col, catalog: CatalogIndex): string | undefined {
+  if (col.source) {
+    const relation = catalog.lookup(col.source.schema, col.source.relation)
+    return relation?.columns.find((c) => c.name === col.source!.column)?.type
+  }
+  return col.type === undefined ? undefined : settle(col.type)
 }
 
 function toTraced(c: Col): TracedColumn {

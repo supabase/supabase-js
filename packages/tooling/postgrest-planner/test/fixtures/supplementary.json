@@ -1177,6 +1177,25 @@
             "volatility": "i"
         },
         {
+            "name": "message_ids",
+            "schema": "personal",
+            "returns": {
+                "kind": "scalar",
+                "type": "bigint",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": [
+                {
+                    "name": "id",
+                    "type": "bigint"
+                }
+            ],
+            "volatility": "s"
+        },
+        {
             "name": "username_label",
             "schema": "personal",
             "returns": {
@@ -2032,6 +2051,109 @@
                 }
             ],
             "volatility": "i"
+        },
+        {
+            "name": "output_base_type_of_domain",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "integer",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": [
+                {
+                    "name": "b",
+                    "type": "integer"
+                }
+            ],
+            "volatility": "s"
+        },
+        {
+            "name": "output_same_domain",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "cast_b.d",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": [
+                {
+                    "name": "b",
+                    "type": "cast_b.d"
+                }
+            ],
+            "volatility": "s"
+        },
+        {
+            "name": "output_text_and_bigint_from_varchar_and_integer",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "record",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": [
+                {
+                    "name": "label",
+                    "type": "text"
+                },
+                {
+                    "name": "total",
+                    "type": "bigint"
+                }
+            ],
+            "volatility": "s"
+        },
+        {
+            "name": "output_text_from_jsonb",
+            "schema": "public",
+            "returns": {
+                "kind": "scalar",
+                "type": "text",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": [
+                {
+                    "name": "payload",
+                    "type": "text"
+                }
+            ],
+            "volatility": "s"
+        },
+        {
+            "name": "output_time_from_timestamptz",
+            "schema": "public",
+            "returns": {
+                "kind": "composite",
+                "type": "record",
+                "setof": true
+            },
+            "argTypes": [
+            ],
+            "defaults": 0,
+            "outColumns": [
+                {
+                    "name": "t",
+                    "type": "time without time zone"
+                },
+                {
+                    "name": "n",
+                    "type": "integer"
+                }
+            ],
+            "volatility": "s"
         },
         {
             "name": "polymorphic_function_with_different_return",

@@ -430,6 +430,28 @@
         "volatility": "i"
       },
       {
+        "argNames": [],
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "message_ids",
+        "outColumns": [
+          {
+            "name": "id",
+            "type": "bigint"
+          }
+        ],
+        "returns": {
+          "kind": "scalar",
+          "setof": true,
+          "type": "bigint"
+        },
+        "schema": "personal",
+        "searchPath": null,
+        "source": " SELECT id FROM messages; ",
+        "volatility": "s"
+      },
+      {
         "argNames": [
           "user_row"
         ],
@@ -1577,6 +1599,124 @@
         "searchPath": null,
         "source": "\n  SELECT a * 2::bigint;\n",
         "volatility": "i"
+      },
+      {
+        "argNames": [],
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "output_base_type_of_domain",
+        "outColumns": [
+          {
+            "name": "b",
+            "type": "integer"
+          }
+        ],
+        "returns": {
+          "kind": "scalar",
+          "setof": true,
+          "type": "integer"
+        },
+        "schema": "public",
+        "searchPath": null,
+        "source": " SELECT b FROM public.cast_cases; ",
+        "volatility": "s"
+      },
+      {
+        "argNames": [],
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "output_same_domain",
+        "outColumns": [
+          {
+            "name": "b",
+            "type": "cast_b.d"
+          }
+        ],
+        "returns": {
+          "kind": "scalar",
+          "setof": true,
+          "type": "cast_b.d"
+        },
+        "schema": "public",
+        "searchPath": null,
+        "source": " SELECT b FROM public.cast_cases; ",
+        "volatility": "s"
+      },
+      {
+        "argNames": [],
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "output_text_and_bigint_from_varchar_and_integer",
+        "outColumns": [
+          {
+            "name": "label",
+            "type": "text"
+          },
+          {
+            "name": "total",
+            "type": "bigint"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "record"
+        },
+        "schema": "public",
+        "searchPath": null,
+        "source": " SELECT n::varchar(10), n FROM public.cast_cases; ",
+        "volatility": "s"
+      },
+      {
+        "argNames": [],
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "output_text_from_jsonb",
+        "outColumns": [
+          {
+            "name": "payload",
+            "type": "text"
+          }
+        ],
+        "returns": {
+          "kind": "scalar",
+          "setof": true,
+          "type": "text"
+        },
+        "schema": "public",
+        "searchPath": null,
+        "source": " SELECT data FROM public.messages; ",
+        "volatility": "s"
+      },
+      {
+        "argNames": [],
+        "argTypes": [],
+        "defaults": 0,
+        "language": "sql",
+        "name": "output_time_from_timestamptz",
+        "outColumns": [
+          {
+            "name": "t",
+            "type": "time without time zone"
+          },
+          {
+            "name": "n",
+            "type": "integer"
+          }
+        ],
+        "returns": {
+          "kind": "composite",
+          "setof": true,
+          "type": "record"
+        },
+        "schema": "public",
+        "searchPath": null,
+        "source": " SELECT tstz, 1 FROM public.cast_cases; ",
+        "volatility": "s"
       },
       {
         "argNames": null,
@@ -9178,6 +9318,37 @@
       ],
       [
         {
+          "qiName": "message_ids",
+          "qiSchema": "personal"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "message_ids",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "int8",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "personal",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "amount",
           "qiSchema": "public"
         },
@@ -10090,6 +10261,37 @@
             },
             "pdSchema": "public",
             "pdVolatility": "Immutable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "output_text_and_bigint_from_varchar_and_integer",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "output_text_and_bigint_from_varchar_and_integer",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "record",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
           }
         ]
       ],
@@ -11107,6 +11309,37 @@
       ],
       [
         {
+          "qiName": "output_same_domain",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "output_same_domain",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "int4",
+                    "qiSchema": "pg_catalog"
+                  },
+                  true
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "note",
           "qiSchema": "public"
         },
@@ -11173,6 +11406,37 @@
             },
             "pdSchema": "public",
             "pdVolatility": "Immutable"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "output_text_from_jsonb",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "output_text_from_jsonb",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "text",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
           }
         ]
       ],
@@ -11465,6 +11729,37 @@
       ],
       [
         {
+          "qiName": "output_base_type_of_domain",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "output_base_type_of_domain",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "int4",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
+          }
+        ]
+      ],
+      [
+        {
           "qiName": "postgrest_unresolvable_function",
           "qiSchema": "public"
         },
@@ -11544,6 +11839,37 @@
             },
             "pdSchema": "public",
             "pdVolatility": "Volatile"
+          }
+        ]
+      ],
+      [
+        {
+          "qiName": "output_time_from_timestamptz",
+          "qiSchema": "public"
+        },
+        [
+          {
+            "pdDescription": null,
+            "pdFuncSettings": [],
+            "pdHasVariadic": false,
+            "pdIsoLvl": null,
+            "pdName": "output_time_from_timestamptz",
+            "pdParams": [],
+            "pdReturnType": {
+              "contents": {
+                "contents": [
+                  {
+                    "qiName": "record",
+                    "qiSchema": "pg_catalog"
+                  },
+                  false
+                ],
+                "tag": "Composite"
+              },
+              "tag": "SetOf"
+            },
+            "pdSchema": "public",
+            "pdVolatility": "Stable"
           }
         ]
       ],
