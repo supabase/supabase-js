@@ -1,0 +1,8 @@
+-- Project template for the wasm32-wasi build; build.sh appends the package directories.
+index-state: hackage.haskell.org 2026-08-10T16:58:32Z
+
+tests: False
+benchmarks: False
+documentation: False
+
+allow-newer: hasql:postgresql-libpq

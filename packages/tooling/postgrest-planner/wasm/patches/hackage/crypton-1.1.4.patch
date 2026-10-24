@@ -1,0 +1,12 @@
+--- a/crypton.cabal	2026-10-12 19:22:15
++++ b/crypton.cabal	2026-10-12 19:22:15
+@@ -431,6 +431,9 @@
+     if flag(check_alignment)
+         cc-options: -DWITH_ASSERT_ALIGNMENT
+ 
++    if os(wasi)
++        cc-options: -DARGON2_NO_THREADS
++
+     if flag(use_target_attributes)
+         cc-options: -DWITH_TARGET_ATTRIBUTES
+ 

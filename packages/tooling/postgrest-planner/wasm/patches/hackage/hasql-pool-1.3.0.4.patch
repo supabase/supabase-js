@@ -1,0 +1,36 @@
+--- a/src/library/exposed/Hasql/Pool.hs	2026-10-12 20:39:43
++++ b/src/library/exposed/Hasql/Pool.hs	2026-10-12 20:39:43
+@@ -104,8 +104,9 @@
+ 
+   return $ Pool (Config.size config) (Config.connectionSettingsProvider config) acqTimeoutMicros agingTimeoutNanos maxIdletimeNanos connectionQueue capVar reuseVar reaperRef (Config.observationHandler config) (Config.initSession config)
+   where
++    -- Int is 32 bits on wasm32, so the conversion happens in Integer and saturates.
+     acqTimeoutMicros =
+-      div (fromIntegral (diffTimeToPicoseconds (Config.acquisitionTimeout config))) 1_000_000
++      fromInteger (min (toInteger (maxBound :: Int)) (div (diffTimeToPicoseconds (Config.acquisitionTimeout config)) 1_000_000))
+     agingTimeoutNanos =
+       div (fromIntegral (diffTimeToPicoseconds (Config.agingTimeout config))) 1_000
+     maxIdletimeNanos =
+@@ -131,6 +132,13 @@
+       atomically $ modifyTVar' poolCapacity succ
+       poolObserver (ConnectionObservation (entryId entry) (TerminatedConnectionStatus ReleaseConnectionTerminationReason))
+ 
++-- | 'registerDelay' needs the threaded RTS, which the wasm32-wasi backend does not have.
++registerDelayUnthreaded :: Int -> IO (TVar Bool)
++registerDelayUnthreaded n = do
++  var <- newTVarIO False
++  _ <- forkIO (threadDelay n >> atomically (writeTVar var True))
++  return var
++
+ -- | Use a connection from the pool to run a session and return the connection
+ -- to the pool, when finished.
+ --
+@@ -143,7 +151,7 @@
+ use :: Pool -> Session.Session a -> IO (Either UsageError a)
+ use Pool {..} sess = do
+   timeout <- do
+-    delay <- registerDelay poolAcquisitionTimeout
++    delay <- registerDelayUnthreaded poolAcquisitionTimeout
+     return $ readTVar delay
+   join . atomically $ do
+     reuseVar <- readTVar poolReuseVar

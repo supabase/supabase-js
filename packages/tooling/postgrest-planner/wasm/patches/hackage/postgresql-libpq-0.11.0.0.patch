@@ -1,0 +1,288 @@
+--- a/src/Database/PostgreSQL/LibPQ.hs
++++ b/src/Database/PostgreSQL/LibPQ.hs
+@@ -222,15 +222,17 @@ module Database.PostgreSQL.LibPQ
+     )
+ where
+ 
+-import Control.Concurrent.MVar (MVar, newMVar, swapMVar, tryTakeMVar, withMVar)
+-import Control.Exception       (mask_)
++import Control.Concurrent      (forkIO, killThread, threadDelay)
++import Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, swapMVar, takeMVar, tryPutMVar, tryTakeMVar, withMVar)
++import Control.Exception       (finally, mask, mask_, onException, uninterruptibleMask_)
++import Control.Monad           (when)
+ import Foreign.C.String        (CString, CStringLen, withCString)
+ import Foreign.C.Types         (CInt (..))
+ import Foreign.ForeignPtr      (ForeignPtr, finalizeForeignPtr, newForeignPtr, newForeignPtr_, touchForeignPtr, withForeignPtr)
+ import Foreign.Marshal         (alloca, allocaBytes, finalizerFree, free, mallocBytes, maybeWith, reallocBytes, withArrayLen, withMany)
+ import Foreign.Ptr             (Ptr, castPtr, nullPtr)
+ import Foreign.Storable        (Storable (peek))
+-import GHC.Conc                (closeFdWith)
++import GHC.Conc                (closeFdWith, threadWaitRead, threadWaitWrite)
+ import System.IO               (IOMode (..), SeekMode (..))
+ import System.Posix.Types      (CPid, Fd (..))
+ 
+@@ -274,15 +276,50 @@ import Database.PostgreSQL.LibPQ.Ptr
+ -- value must be escaped with a backslash, i.e., \' and \\.
+ connectdb :: B.ByteString -- ^ Connection Info
+           -> IO Connection
+-connectdb conninfo =
+-    mask_ $ do
+-       connPtr <- B.useAsCString conninfo c_PQconnectdb
+-       if connPtr == nullPtr
+-           then fail "libpq failed to allocate a PGconn structure"
+-           else do
+-             noticeBuffer <- newMVar nullPtr
+-             connection <- newForeignPtrOnce connPtr (pqfinish connPtr noticeBuffer)
+-             return $! Conn connection noticeBuffer
++connectdb conninfo = do
++    connection <- connectStart conninfo
++    ok <- pollUntilDone connectPoll connection `onException` finish connection
++    when ok (setNonblockingAfterConnect connection)
++    return connection
++
++-- The runtime has a single OS thread, so a blocking PQconnectdb would stall
++-- every other Haskell thread for the whole handshake. The socket is waited on
++-- in Haskell instead, and the connection is left nonblocking so that later
++-- sends cannot block in C either.
++pollUntilDone :: (Connection -> IO PollingStatus) -> Connection -> IO Bool
++pollUntilDone poll connection = wait PollingWriting
++  where
++    wait st = case st of
++        PollingOk      -> return True
++        PollingFailed  -> return False
++        PollingReading -> socket connection >>= maybe (return False) (\fd -> waitConnect (threadWaitRead fd) >> step)
++        PollingWriting -> socket connection >>= maybe (return False) (\fd -> waitConnect (threadWaitWrite fd) >> step)
++    step = poll connection >>= wait
++
++    -- libpq owns the connect_timeout deadline of the address it is handshaking
++    -- with. On expiry it is told, as PQconnectdb would, and polling goes on to
++    -- the next address or host.
++    waitConnect ready = do
++        ms <- withConn connection c_pg_wasi_connect_remaining_ms
++        if ms < 0
++            then ready
++            else if ms == 0
++                then withConn connection c_pg_wasi_connect_expire
++                else waitFor ms ready >>= \done -> when (not done) (waitConnect ready)
++
++-- Waits for an action for at most the given milliseconds; 'False' means the
++-- time ran out. Each side runs in its own thread, with the same uninterruptible
++-- cleanup as 'waitReadOrWrite'. The delay is capped because the wasm runtime's
++-- Int is 32 bits wide; the caller asks again for what is left.
++waitFor :: CInt -> IO () -> IO Bool
++waitFor ms ready = mask $ \restore -> do
++    done <- newEmptyMVar
++    r <- forkIO (ready >> () <$ tryPutMVar done True)
++    t <- forkIO (threadDelay (fromIntegral (min ms 1000000) * 1000) >> () <$ tryPutMVar done False)
++    restore (takeMVar done) `finally` uninterruptibleMask_ (killThread r >> killThread t)
++
++setNonblockingAfterConnect :: Connection -> IO ()
++setNonblockingAfterConnect connection = () <$ setnonblocking connection True
+ 
+ -- | Make a connection to the database server in a nonblocking manner.
+ connectStart :: B.ByteString -- ^ Connection Info
+@@ -401,7 +438,10 @@ connectPoll = pollHelper c_PQconnectPoll
+ -- recovery if a working connection is lost.
+ reset :: Connection
+       -> IO ()
+-reset connection = withConn connection c_PQreset
++reset connection = do
++    started <- resetStart connection
++    ok <- if started then pollUntilDone resetPoll connection else return False
++    when ok (setNonblockingAfterConnect connection)
+ 
+ 
+ -- | Reset the communication channel to the server, in a nonblocking manner.
+@@ -755,9 +795,21 @@ data AccumPrepParams = AccumPrepParams !Int ![Maybe (B.ByteString, Format)] ![CI
+ exec :: Connection        -- ^ connection
+      -> B.ByteString      -- ^ statement
+      -> IO (Maybe Result) -- ^ result
+-exec connection query =
+-    resultFromConn connection $ \p ->
+-        B.useAsCString query $ c_PQexec p
++exec connection query = do
++    discardPending
++    sent <- sendQuery connection query
++    if sent then collect Nothing else return Nothing
++  where
++    -- PQexec drops results the caller never fetched; a COPY in progress is not
++    -- recovered here, sendQuery then fails with libpq's "command already in progress".
++    discardPending = getResult connection >>= maybe (return ()) (\r -> do
++        st <- resultStatus r
++        if isCopy st then return () else discardPending)
++    -- Like PQexec, the last result wins and a COPY result ends the collection.
++    collect lastResult = getResult connection >>= maybe (return lastResult) (\r -> do
++        st <- resultStatus r
++        if isCopy st then return (Just r) else collect (Just r))
++    isCopy st = st == CopyIn || st == CopyOut || st == CopyBoth
+ 
+ 
+ -- | Submits a command to the server and waits for the result, with
+@@ -1388,8 +1440,7 @@ putCopyData conn bs =
+ 
+ putCopyCString :: Connection -> CStringLen -> IO CopyInResult
+ putCopyCString conn (str, len) =
+-    toCopyInResult =<<
+-        (withConn conn $ \ptr -> c_PQputCopyData ptr str (fromIntegral len))
++    flushCopyIn conn $ withConn conn $ \ptr -> c_PQputCopyData ptr str (fromIntegral len)
+ 
+ 
+ -- | Send end-of-data indication to the server during the 'CopyIn' state.
+@@ -1403,12 +1454,19 @@ putCopyCString conn (str, len) =
+ -- result status of the @COPY@ command.  Then return to normal operation.
+ putCopyEnd :: Connection -> Maybe B.ByteString -> IO CopyInResult
+ putCopyEnd conn Nothing =
+-    toCopyInResult =<<
+-        (withConn conn $ \ptr -> c_PQputCopyEnd ptr nullPtr)
++    flushCopyIn conn $ withConn conn $ \ptr -> c_PQputCopyEnd ptr nullPtr
+ putCopyEnd conn (Just errormsg) =
+-    toCopyInResult =<<
+-        (B.useAsCString errormsg $ \errormsg_cstr ->
+-            withConn conn $ \ptr -> c_PQputCopyEnd ptr errormsg_cstr)
++    flushCopyIn conn $ B.useAsCString errormsg $ \errormsg_cstr ->
++        withConn conn $ \ptr -> c_PQputCopyEnd ptr errormsg_cstr
++
++-- Runs a putCopy* call on a nonblocking connection with blocking semantics:
++-- a full output buffer is drained and the call retried, and the data is
++-- flushed before returning.
++flushCopyIn :: Connection -> IO CInt -> IO CopyInResult
++flushCopyIn conn act = act >>= toCopyInResult >>= \r -> case r of
++    CopyInError      -> return r
++    CopyInWouldBlock -> flushAll conn >>= \ok -> if ok then flushCopyIn conn act else return CopyInError
++    CopyInOk         -> flushAll conn >>= \ok -> return (if ok then CopyInOk else CopyInError)
+ 
+ 
+ data CopyOutResult
+@@ -1475,7 +1533,7 @@ sendQuery :: Connection
+           -> B.ByteString
+           -> IO Bool
+ sendQuery connection query =
+-    enumFromConn connection $ \p ->
++    sendFlushed connection $ \p ->
+         B.useAsCString query $ c_PQsendQuery p
+ 
+ 
+@@ -1487,7 +1545,7 @@ sendQueryParams :: Connection
+                 -> Format
+                 -> IO Bool
+ sendQueryParams connection statement params rFmt =
+-    enumFromConn connection $ \c ->
++    sendFlushed connection $ \c ->
+         B.useAsCString statement $ \s ->
+             withParams params $ \n ts vs ls fs ->
+                 c_PQsendQueryParams c s n ts vs ls fs f
+@@ -1504,7 +1562,7 @@ sendPrepare :: Connection
+             -> Maybe [Oid]
+             -> IO Bool
+ sendPrepare connection stmtName query mParamTypes =
+-    enumFromConn connection $ \c ->
++    sendFlushed connection $ \c ->
+         B.useAsCString stmtName $ \s ->
+             B.useAsCString query $ \q ->
+                 maybeWithInt withArrayLen mParamTypes $ \l o ->
+@@ -1519,7 +1577,7 @@ sendQueryPrepared :: Connection
+                   -> Format
+                   -> IO Bool
+ sendQueryPrepared connection stmtName params rFmt =
+-    enumFromConn connection $ \c ->
++    sendFlushed connection $ \c ->
+         B.useAsCString stmtName $ \s ->
+             withParamsPrepared params $ \n vs ls fs ->
+                 c_PQsendQueryPrepared c s n vs ls fs f
+@@ -1541,7 +1599,7 @@ sendDescribePrepared :: Connection
+                      -> B.ByteString -- ^ stmtName
+                      -> IO Bool
+ sendDescribePrepared connection stmtName =
+-    enumFromConn connection $ \c ->
++    sendFlushed connection $ \c ->
+         B.useAsCString stmtName $ \s ->
+             c_PQsendDescribePrepared c s
+ 
+@@ -1559,7 +1617,7 @@ sendDescribePortal :: Connection
+                      -> B.ByteString -- ^ portalName
+                      -> IO Bool
+ sendDescribePortal connection portalName =
+-    enumFromConn connection $ \c ->
++    sendFlushed connection $ \c ->
+         B.useAsCString portalName $ \p ->
+             c_PQsendDescribePortal c p
+ 
+@@ -1571,11 +1629,62 @@ sendDescribePortal connection portalName =
+ getResult :: Connection
+           -> IO (Maybe Result)
+ getResult connection =
+-    do resPtr <- withConn connection c_PQgetResult
++    do waitResultReady connection
++       resPtr <- withConn connection c_PQgetResult
+        if resPtr == nullPtr
+            then return Nothing
+            else (Just . Result) `fmap` newForeignPtr p_PQclear resPtr
+ 
++-- Waits for the server in Haskell, so that PQgetResult never blocks the
++-- whole (single-threaded) runtime while a query is running.
++waitResultReady :: Connection -> IO ()
++waitResultReady connection = flushAll connection >>= \flushed ->
++    if flushed then consumeInput connection >>= \ok -> if ok then loop else return () else return ()
++  where
++    loop = do
++        busy <- isBusy connection
++        if not busy
++            then return ()
++            else do
++                mfd <- socket connection
++                case mfd of
++                    Nothing -> return ()
++                    Just fd -> do
++                        threadWaitRead fd
++                        ok <- consumeInput connection
++                        if ok then loop else return ()
++
++
++-- Runs a PQsend* call and, on a nonblocking connection, waits in Haskell until
++-- the queued output has left, so the call still reports a send failure.
++sendFlushed :: Connection -> (Ptr PGconn -> IO CInt) -> IO Bool
++sendFlushed connection send = do
++    sent <- enumFromConn connection send
++    if sent then flushAll connection else return False
++
++-- Flushes queued output. While the kernel buffer is full the socket is waited
++-- on for read or write readiness and incoming data is consumed, as PQflush
++-- documents: a server blocked sending notices or results does not read the
++-- rest of the output until the client reads. 'False' means the flush or the
++-- read failed.
++flushAll :: Connection -> IO Bool
++flushAll connection = flush connection >>= \st -> case st of
++    FlushOk      -> return True
++    FlushFailed  -> return False
++    FlushWriting -> socket connection >>= maybe (return False) (\fd -> do
++        waitReadOrWrite fd
++        ok <- consumeInput connection
++        if ok then flushAll connection else return False)
++
++-- Each readiness is awaited by its own thread. Cleanup is uninterruptible
++-- because killThread is interruptible even under mask, and a cancellation
++-- between the two kills would orphan a waiter on the socket.
++waitReadOrWrite :: Fd -> IO ()
++waitReadOrWrite fd = mask $ \restore -> do
++    ready <- newEmptyMVar
++    r <- forkIO (threadWaitRead fd >> () <$ tryPutMVar ready ())
++    w <- forkIO (threadWaitWrite fd >> () <$ tryPutMVar ready ())
++    restore (takeMVar ready) `finally` uninterruptibleMask_ (killThread r >> killThread w)
+ 
+ -- | If input is available from the server, consume it.
+ --
+--- a/src/Database/PostgreSQL/LibPQ/FFI.hs
++++ b/src/Database/PostgreSQL/LibPQ/FFI.hs
+@@ -35,6 +35,12 @@ foreign import capi        "hs-libpq.h PQconnectStart"
+ foreign import capi        "hs-libpq.h PQconnectPoll"
+     c_PQconnectPoll :: Ptr PGconn -> IO CInt
+ 
++foreign import ccall unsafe "pg_wasi_connect_remaining_ms"
++    c_pg_wasi_connect_remaining_ms :: Ptr PGconn -> IO CInt
++
++foreign import ccall unsafe "pg_wasi_connect_expire"
++    c_pg_wasi_connect_expire :: Ptr PGconn -> IO ()
++
+ foreign import capi        "hs-libpq.h PQdb"
+     c_PQdb :: Ptr PGconn -> IO CString
+ 

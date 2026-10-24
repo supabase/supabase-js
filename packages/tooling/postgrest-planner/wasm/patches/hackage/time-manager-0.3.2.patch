@@ -1,0 +1,79 @@
+--- a/System/TimeManager/Internal.hs	2026-10-12 20:35:44
++++ b/System/TimeManager/Internal.hs	2026-10-12 20:35:54
+@@ -9,6 +9,12 @@
+ 
+ #if defined(mingw32_HOST_OS)
+ import qualified GHC.Event.Windows as EV
++#elif defined(wasi_HOST_OS)
++import Control.Concurrent (ThreadId, forkIO, killThread, threadDelay)
++import Control.Monad (when)
++import Data.IORef (atomicWriteIORef, newIORef, readIORef)
++import Data.Word (Word64)
++import GHC.Clock (getMonotonicTimeNSec)
+ #else
+ import qualified GHC.Event as EV
+ #endif
+@@ -31,7 +37,7 @@
+ data Handle = Handle
+     { handleTimeout :: Int
+     , handleAction :: TimeoutAction
+-    , handleKeyRef :: ~(IORef EV.TimeoutKey)
++    , handleKeyRef :: ~(IORef TimeoutKey)
+     , handleState :: ~(IORef HandleState)
+     }
+ 
+@@ -47,9 +53,43 @@
+     if isEmptyHandle h then pure () else act
+ 
+ #if defined(mingw32_HOST_OS)
++type TimeoutKey = EV.TimeoutKey
++
+ getTimerManager :: IO EV.Manager
+ getTimerManager = EV.getSystemManager
++#elif defined(wasi_HOST_OS)
++-- The wasm RTS has no event manager (it requires the threaded RTS), so each
++-- timeout is a green thread sleeping until a deadline that 'updateTimeout' can move.
++data TimerManager = TimerManager
++
++data TimeoutKey = TimeoutKey ThreadId (IORef Word64)
++
++getTimerManager :: IO TimerManager
++getTimerManager = pure TimerManager
++
++registerTimeout :: TimerManager -> Int -> IO () -> IO TimeoutKey
++registerTimeout _ us action = do
++    now <- getMonotonicTimeNSec
++    deadline <- newIORef (now + fromIntegral us * 1000)
++    let loop = do
++            dl <- readIORef deadline
++            t <- getMonotonicTimeNSec
++            if t >= dl
++                then action
++                else threadDelay (fromIntegral ((dl - t) `div` 1000) + 1) >> loop
++    tid <- forkIO loop
++    pure (TimeoutKey tid deadline)
++
++unregisterTimeout :: TimerManager -> TimeoutKey -> IO ()
++unregisterTimeout _ (TimeoutKey tid _) = killThread tid
++
++updateTimeout :: TimerManager -> TimeoutKey -> Int -> IO ()
++updateTimeout _ (TimeoutKey _ deadline) us = do
++    now <- getMonotonicTimeNSec
++    when (us >= 0) $ atomicWriteIORef deadline (now + fromIntegral us * 1000)
+ #else
++type TimeoutKey = EV.TimeoutKey
++
+ getTimerManager :: IO EV.TimerManager
+ getTimerManager = EV.getSystemTimerManager
+ #endif
+--- a/System/TimeManager.hs	2026-10-12 20:35:44
++++ b/System/TimeManager.hs	2026-10-12 20:35:54
+@@ -55,6 +55,8 @@
+ 
+ #if defined(mingw32_HOST_OS)
+ import qualified GHC.Event.Windows as EV
++#elif defined(wasi_HOST_OS)
++import qualified System.TimeManager.Internal as EV
+ #else
+ import qualified GHC.Event as EV
+ #endif

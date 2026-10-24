@@ -13,6 +13,7 @@
       "inputs": [
         "{projectRoot}/haskell/**/*",
         "{projectRoot}/patches/**/*",
+        "{projectRoot}/wasm/**/*",
         "{projectRoot}/build.sh"
       ],
       "outputs": ["{projectRoot}/dist/postgrest-planner.wasm"],

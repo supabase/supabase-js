@@ -1,0 +1,35 @@
+--- a/entropy.cabal	2026-10-12 19:18:58
++++ b/entropy.cabal	2026-10-12 19:18:58
+@@ -16,7 +16,7 @@
+ bug-reports:    https://github.com/TomMD/entropy/issues
+ stability:      stable
+ 
+-build-type:     Custom
++build-type:     Simple
+ 
+ tested-with:
+   GHC == 9.12.1
+@@ -45,13 +45,6 @@
+   Default: False
+   Manual: True
+ 
+-custom-setup
+-  setup-depends: Cabal >= 1.10 && < 3.15
+-               , base < 5
+-               , filepath < 1.6
+-               , directory < 1.4
+-               , process < 1.7
+-
+ library
+   ghc-options:  -O2
+   exposed-modules: System.Entropy
+@@ -92,6 +85,9 @@
+     else
+       Build-Depends: unix
+       c-sources: cbits/getrandom.c cbits/random_initialized.c
++      if os(wasi)
++        cpp-options: -DHAVE_GETRANDOM
++        cc-options:  -DHAVE_GETRANDOM -DHAVE_LIBC_GETRANDOM -DHAVE_GETENTROPY
+   }
+   if flag(DoNotGetEntropy) {
+     cc-options: -DDO_NOT_USE_GET_ENTROPY

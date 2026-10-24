@@ -1,95 +1,127 @@
 #!/usr/bin/env bash
 # Builds postgrest-planner.wasm: a WASI reactor over the upstream PostgREST v16.4 library.
 #
-# Reuses supa-wasm's toolchain, cabal store, wasm libpq, Hackage patches and tarballs by path
-# (read-only; nothing under $SUPA_WASM is modified). Output: dist/postgrest-planner.wasm
+# Self-contained: the small inputs are vendored under wasm/ (see the README), the large ones are downloaded at pinned
+# versions and verified (PostgREST by git commit, Hackage tarballs and the PostgreSQL source by sha256), and the
+# toolchain comes from a pinned ghc-wasm-meta flake (needs nix). Output: dist/postgrest-planner.wasm
 #
 #   ./build.sh [-j N] [cabal build args...]
+#
+# Overrides: GHC_WASM (a built toolchain, skips nix), CABAL_DIR (cabal store), PLANNER_WORK (work tree).
+# REBUILD_SRC=1 re-extracts PostgREST, REBUILD_LIBPQ=1 rebuilds libpq.
 set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
-# SUPA_WASM: local checkout of https://github.com/supabase/supa-wasm with its toolchain built.
-: "${SUPA_WASM:?SUPA_WASM is not set: point it at a local checkout of https://github.com/supabase/supa-wasm with its wasm toolchain built}"
-PGRST_WASM=$SUPA_WASM/postgrest
+VENDORED=$HERE/wasm
 
-POSTGREST_COMMIT=0d97c05d8d23bd8a83c867abc45ef481a6d5d2c7 # v16.4
+POSTGREST_TAG=v16.4
+POSTGREST_COMMIT=0d97c05d8d23bd8a83c867abc45ef481a6d5d2c7
+POSTGREST_URL=https://github.com/PostgREST/postgrest.git
+GHC_WASM_FLAKE='gitlab:haskell-wasm/ghc-wasm-meta/8079eb96bbc63823d99ad8acaff0765532625474?host=gitlab.haskell.org#all_9_10'
 
-export GHC_WASM=${GHC_WASM:-$SUPA_WASM/.tools/ghc-wasm-9_10}
-export CABAL_DIR=${CABAL_DIR:-$SUPA_WASM/.tools/cabal-wasm}
-VENDOR=$SUPA_WASM/vendor/postgrest
-LIBPQ=$PGRST_WASM/dist/libpq
+export GHC_WASM=${GHC_WASM:-$HERE/.tools/ghc-wasm-9_10}
+export CABAL_DIR=${CABAL_DIR:-$HERE/.tools/cabal-wasm}
 DIST=$HERE/dist
 WORK=${PLANNER_WORK:-$DIST/work}
+LIBPQ=$WORK/libpq
+mkdir -p "$WORK"
 
-[ -x "$GHC_WASM/bin/wasm32-wasi-ghc" ] || { echo "missing wasm GHC at $GHC_WASM" >&2; exit 1; }
-[ -f "$LIBPQ/lib/libpq.a" ] || { echo "missing wasm libpq at $LIBPQ (run $PGRST_WASM/libpq/build.sh)" >&2; exit 1; }
+sha256() { shasum -a 256 "$@" | cut -d' ' -f1; }
+
+# 0. Toolchain: wasm GHC, cabal, wasi-sdk clang and binaryen, from the pinned flake.
+if [ ! -x "$GHC_WASM/bin/wasm32-wasi-ghc" ]; then
+	command -v nix > /dev/null || { echo "no wasm toolchain at $GHC_WASM and no nix to build it" >&2; exit 1; }
+	mkdir -p "$(dirname "$GHC_WASM")"
+	nix --extra-experimental-features 'nix-command flakes' build "$GHC_WASM_FLAKE" -o "$GHC_WASM"
+fi
 export PATH="$GHC_WASM/bin:$LIBPQ/bin:$PATH"
 # A macOS dev shell exports SDKROOT/CPATH/LIBRARY_PATH for the host SDK, which breaks every wasm C compile.
 unset SDKROOT C_INCLUDE_PATH CPLUS_INCLUDE_PATH OBJC_INCLUDE_PATH
+# GHC resolves a package's extra-libraries for Template Haskell through LIBRARY_PATH; lib-th holds the empty libpq.so
+# the loader needs, while linking keeps picking libpq.a from the package library-dir.
 export LIBRARY_PATH="$LIBPQ/lib-th"
-export CPATH="$PGRST_WASM/shim/include"
+# wasi-libc hides the BSD socket, netdb and getrandom surface; the shim headers restore the declarations.
+export CPATH="$VENDORED/shim/include"
 
-[ "$(git -C "$VENDOR" rev-parse "v16.4^{commit}")" = "$POSTGREST_COMMIT" ] || {
-	echo "vendor/postgrest is not at v16.4" >&2
-	exit 1
-}
+# 1. Client-only libpq; a no-op while its input stamp is unchanged.
+GHC_WASM=$GHC_WASM PGSRC_ROOT=$WORK/pgsrc LIBPQ_OUT=$LIBPQ "$VENDORED/libpq/build.sh"
 
-# 1. PostgREST v16.4 sources: supa-wasm's wasi patch (needed so the library compiles for wasi at all),
-#    then our export-list patches (patches/*.patch, empty set if none).
-# Only re-extracted when missing or REBUILD_SRC=1, so unchanged modules are not recompiled.
+# 2. PostgREST v16.4 sources: the wasi patch (needed so the library compiles for wasi at all), then our export-list
+#    patches (patches/*.patch, empty set if none). Git checks the commit hash, so the fetch is verified by its pin.
+#    Re-extracted only when the commit or a patch changes (or REBUILD_SRC=1), so unchanged modules are not recompiled.
+REPO=$WORK/postgrest.git
+if ! git -C "$REPO" cat-file -e "$POSTGREST_COMMIT^{commit}" 2> /dev/null; then
+	rm -rf "$REPO"
+	git init --quiet --bare "$REPO"
+	git -C "$REPO" fetch --quiet --depth 1 "$POSTGREST_URL" "$POSTGREST_COMMIT"
+fi
 SRC=$WORK/postgrest-src
-if [ ! -f "$SRC/.ready" ] || [ -n "${REBUILD_SRC:-}" ]; then
+SRC_STAMP=$({
+	echo "$POSTGREST_COMMIT"
+	for p in "$VENDORED"/patches/*.patch "$HERE"/patches/*.patch; do
+		if [ -e "$p" ]; then sha256 "$p"; fi
+	done
+} | sha256)
+if [ "$(cat "$SRC/.ready" 2> /dev/null)" != "$SRC_STAMP" ] || [ -n "${REBUILD_SRC:-}" ]; then
 	rm -rf "$SRC"
 	mkdir -p "$SRC"
-	git -C "$VENDOR" archive "$POSTGREST_COMMIT" | tar -x -C "$SRC"
-	for p in "$PGRST_WASM"/patches/*.patch "$HERE"/patches/*.patch; do
+	git -C "$REPO" archive "$POSTGREST_COMMIT" | tar -x -C "$SRC"
+	for p in "$VENDORED"/patches/*.patch "$HERE"/patches/*.patch; do
 		[ -e "$p" ] || continue
 		patch -d "$SRC" -p1 -s < "$p"
 	done
-	touch "$SRC/.ready"
+	echo "$SRC_STAMP" > "$SRC/.ready"
 fi
 
-# 2. Patched Hackage dependencies (same tarballs and patches as supa-wasm).
+# 3. Patched Hackage dependencies, downloaded and checked against SHA256SUMS.
 FORKS=$WORK/forks
-mkdir -p "$FORKS"
+TARBALLS=$WORK/tarballs
+mkdir -p "$FORKS" "$TARBALLS"
 {
-	cat "$PGRST_WASM/cabal.project.wasi"
+	cat "$VENDORED/cabal.project.wasi"
 	echo "packages: postgrest-src/postgrest.cabal"
 	echo "packages: $HERE/haskell"
+	# Cabal does not track libpq.a; a changed flag is what makes it relink the reactor against a rebuilt one.
+	echo "package postgrest-planner"
+	echo "  ghc-options: -optl-Wl,--build-id=0x$(cut -c1-32 "$LIBPQ/.stamp")"
 } > "$WORK/cabal.project"
-for p in "$PGRST_WASM"/patches/hackage/*.patch; do
+for p in "$VENDORED"/patches/hackage/*.patch; do
 	name=$(basename "$p" .patch)
-	if [ ! -d "$FORKS/$name" ] || [ "$p" -nt "$FORKS/$name/.patched" ]; then
+	tarball=$TARBALLS/$name.tar.gz
+	sums=$(grep " $name.tar.gz\$" "$VENDORED/patches/hackage/SHA256SUMS")
+	stamp=$(printf '%s\n%s\n' "$sums" "$(sha256 "$p")" | sha256)
+	if [ "$(cat "$FORKS/$name/.patched" 2> /dev/null)" != "$stamp" ]; then
 		rm -rf "${FORKS:?}/$name"
-		tarball=$PGRST_WASM/dist/tarballs/$name.tar.gz
-		(cd "$(dirname "$tarball")" && grep " $name.tar.gz\$" "$PGRST_WASM/patches/hackage/SHA256SUMS" | shasum -a 256 -c -)
+		[ -f "$tarball" ] || curl -fsSL -o "$tarball" "https://hackage.haskell.org/package/$name/$name.tar.gz"
+		(cd "$TARBALLS" && echo "$sums" | shasum -a 256 -c -)
 		tar -x -C "$FORKS" -f "$tarball"
 		patch -d "$FORKS/$name" -p1 -s < "$p"
-		touch "$FORKS/$name/.patched"
+		echo "$stamp" > "$FORKS/$name/.patched"
 	fi
 	echo "packages: forks/$name" >> "$WORK/cabal.project"
 done
 
-# 3. Build info (upstream tag + commit) compiled into the module, rewritten only when it changes.
+# 4. Build info (upstream tag + commit) compiled into the module, rewritten only when it changes.
 BI=$HERE/haskell/src/Planner/BuildInfo.hs
 BI_TMP=$(mktemp)
-cat > "$BI_TMP" <<BUILDINFO
+cat > "$BI_TMP" << BUILDINFO
 -- Generated by build.sh, do not edit.
 module Planner.BuildInfo (pgrstTag, pgrstCommit) where
 
 pgrstTag, pgrstCommit :: String
-pgrstTag = "v16.4"
+pgrstTag = "$POSTGREST_TAG"
 pgrstCommit = "$POSTGREST_COMMIT"
 BUILDINFO
 if cmp -s "$BI_TMP" "$BI"; then rm -f "$BI_TMP"; else mv "$BI_TMP" "$BI"; fi
 
-# 4. Build the reactor.
+# 5. Build the reactor.
 cd "$WORK"
 wasm32-wasi-cabal build exe:postgrest-planner --keep-going "$@"
 BIN=$(wasm32-wasi-cabal list-bin exe:postgrest-planner)
 mkdir -p "$DIST"
 cp "$BIN" "$DIST/postgrest-planner.raw.wasm"
-# Same feature list as supa-wasm's build (all-features would write compact imports).
+# -Os roughly halves the module; the feature list is the one wasm32-wasi-ghc emits (all-features would write the
+# compact-imports encoding, which wasmtime rejects).
 wasm-opt -Os --strip-debug \
 	--enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong --enable-extended-const \
 	--enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int \
