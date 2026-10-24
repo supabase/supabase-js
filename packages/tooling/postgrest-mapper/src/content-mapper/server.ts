@@ -161,6 +161,8 @@ export function createContentMapperServer(
       })
     } catch (error) {
       logger.error(`generator failed for ${p.configFileName || '(no config file)'}`, error)
+      // it may have taken the live-schema hold before failing, and no project is left to close it
+      generator.closeProject?.(p.projectHandle)
       throw new RpcError(
         ErrorCode.InternalError,
         `generator failed: ${error instanceof Error ? error.message : String(error)}`

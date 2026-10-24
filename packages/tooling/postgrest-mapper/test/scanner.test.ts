@@ -121,6 +121,20 @@ describe('relations and selects', () => {
     expect(selects(r)).toEqual(['r|*|t|outer'])
   })
 
+  it('scans past cyclic aliases, which are not builders', () => {
+    const r = scan(`
+      const a = b; const b = a
+      a.select('two')
+      const s = s
+      s.select('self')
+      const x = y; const y = z; const z = x
+      x.select('three')
+      const q = supabase.from('t'); const alias = q
+      alias.select('ok')
+    `)
+    expect(selects(r)).toEqual(['r|*|t|ok'])
+  })
+
   it('handles the optional-chain, await, as and non-null wrappers', () => {
     const r = scan(`
       async function f() {

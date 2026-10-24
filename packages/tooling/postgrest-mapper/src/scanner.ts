@@ -179,6 +179,8 @@ function refTableOf(options: Node | undefined, scope: Scope): RefTable {
 export class FileScanner {
   private readonly lines: LineIndex
   private readonly memo = new WeakMap<Node, Chain | 'pending'>()
+  /** Initializers being followed through identifiers: an alias cycle (`const a = b; const b = a`) is not a builder */
+  private readonly aliasing = new Set<Node>()
   private readonly relations = new Map<string, NameUse>()
   private readonly functions = new Map<string, NameUse>()
   private readonly unconnected: Unconnected[] = []
@@ -248,7 +250,13 @@ export class FileScanner {
     const e = unwrapReceiver(expr)
     if (e.type === 'Identifier') {
       const b = scope.lookup(e.name)
-      return b?.init && !b.annotated ? this.chainOf(b.init, b.scope) : EMPTY
+      if (!b?.init || b.annotated || this.aliasing.has(b.init)) return EMPTY
+      this.aliasing.add(b.init)
+      try {
+        return this.chainOf(b.init, b.scope)
+      } finally {
+        this.aliasing.delete(b.init)
+      }
     }
     if (e.type !== 'CallExpression') return EMPTY
     const cached = this.memo.get(e)

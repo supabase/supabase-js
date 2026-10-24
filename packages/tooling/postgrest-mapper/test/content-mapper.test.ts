@@ -287,6 +287,21 @@ describe('content mapper protocol (in memory)', () => {
       expect((await open(client)).result.configIdentity).toBe(hashOptions(STUB_OPTIONS))
     })
 
+    it('releases what a failed open acquired', async () => {
+      const held = new Set<string>()
+      const generator: ProjectGenerator = Object.assign(
+        async ({ projectHandle }: { projectHandle: string }) => {
+          held.add(projectHandle) // the live-schema poller is held before the open fails
+          throw new Error('scan failed')
+        },
+        { closeProject: (projectHandle: string) => void held.delete(projectHandle) }
+      )
+      const { client } = start(generator)
+      await client.request('initialize', INITIALIZE)
+      expect((await open(client)).error?.code).toBe(-32603)
+      expect([...held]).toEqual([])
+    })
+
     it('turns a throwing generator into an error response', async () => {
       let fail = true
       const generator: ProjectGenerator = async (params) => {
