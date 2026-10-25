@@ -24,14 +24,17 @@ export interface SchemaPollerOptions {
   busy(): boolean
   /** Bound of one probe. Defaults to `DEFAULT_POLL_TIMEOUT_MS` */
   timeoutMs?: number
-  /** The fingerprint taken before the schema was acquired: the baseline, so a change since is seen by the first probe */
+  /**
+   * The fingerprint taken before the schema was acquired: the baseline, so a change since is seen by the first probe.
+   * Without one, the first fingerprint counts as a change: nothing tells whether the acquired schema is still current
+   */
   baseline?: string
 }
 
 export interface SchemaPoller {
   /**
-   * The database to probe from now on (a later acquisition resolved another one): reconnects, and takes `baseline`, else
-   * the first probe's fingerprint, as the new baseline
+   * The database to probe from now on (a later acquisition resolved another one): reconnects, and takes `baseline` as
+   * the new one (none: the first probe's fingerprint counts as a change)
    */
   setUrl(url: string, baseline?: string): void
   setInterval(intervalMs: number): void
@@ -41,12 +44,13 @@ export interface SchemaPoller {
 
 /**
  * Watches the database a live schema came from for DDL. Every interval it takes `schemaFingerprint` over a connection
- * it keeps open; the baseline is the fingerprint taken before the schema was acquired, else the first probe's. When it
- * differs from the baseline, the fingerprint becomes the content of the refresh stamp (written only when the file holds
- * something else, so two processes polling one project leave it alone once either has written it) and the new
- * baseline: every generator of the project that lists the stamp acquires the schema again. Probes never overlap (each
- * one schedules the next), and a probe that fails or runs out of time closes the connection, keeps the baseline, warns
- * once until a probe succeeds, and is retried at the next interval. It never rejects and never keeps the process alive.
+ * it keeps open; the baseline is the fingerprint taken before the schema was acquired. When it differs from the
+ * baseline, or there is no baseline (it could not be taken, so the acquired schema may already be stale), the
+ * fingerprint becomes the content of the refresh stamp (written only when the file holds something else, so two
+ * processes polling one project leave it alone once either has written it) and the new baseline: every generator of
+ * the project that lists the stamp acquires the schema again. Probes never overlap (each one schedules the next), and a
+ * probe that fails or runs out of time closes the connection, keeps the baseline, warns once until a probe succeeds,
+ * and is retried at the next interval. It never rejects and never keeps the process alive.
  */
 export function createSchemaPoller(options: SchemaPollerOptions): SchemaPoller {
   const { connect, fs, logger, stampPath } = options
@@ -118,9 +122,7 @@ export function createSchemaPoller(options: SchemaPollerOptions): SchemaPoller {
       deadline.stop()
     }
     if (stopped || mine !== epoch) return
-    if (baseline === undefined) {
-      baseline = fingerprint
-    } else if (fingerprint !== baseline) {
+    if (fingerprint !== baseline) {
       try {
         const write = writeStamp(fingerprint, () => !stopped && mine === epoch)
         writing = write.catch(() => undefined)
@@ -148,8 +150,8 @@ export function createSchemaPoller(options: SchemaPollerOptions): SchemaPoller {
     timer = undefined
     if (stopped) return
     probing = true
-    // a generation of the schema is running: nothing is written under it (the first probe only reads)
-    const run = baseline === undefined || !options.busy() ? probe() : Promise.resolve()
+    // a generation of the schema is running: nothing is written under it
+    const run = options.busy() ? Promise.resolve() : probe()
     void run
       .catch(() => undefined)
       .finally(() => {

@@ -87,8 +87,14 @@ function writeProject(pollIntervalMs: number | undefined): void {
   )
 }
 
-/** Runs `watch` on the project; `fingerprints` counts the polls that completed, to tell when a baseline exists */
-async function watching(afterAcquisition?: () => Promise<void>): Promise<{
+/**
+ * Runs `watch` on the project; `fingerprints` counts the polls that completed, to tell when a baseline exists. The
+ * first `failedFingerprints` fingerprint reads fail, as when the database is briefly unreachable
+ */
+async function watching(
+  afterAcquisition?: () => Promise<void>,
+  failedFingerprints = 0
+): Promise<{
   events: WatchEvent[]
   fingerprints: () => number
   output: () => string
@@ -108,6 +114,10 @@ async function watching(afterAcquisition?: () => Promise<void>): Promise<{
           let acquiring = false
           return {
             query: async (sql, params) => {
+              if (sql.includes('bit_xor') && failedFingerprints > 0) {
+                failedFingerprints--
+                throw new Error('the database is unreachable')
+              }
               const rows = await connection.query(sql, params)
               if (sql.includes('bit_xor')) fingerprints++
               if (sql.includes('server_version_num')) acquiring = true
@@ -200,6 +210,33 @@ describe('watch of a live schema', () => {
       await w.stop()
       await withCatalogLock(dbUrl, () =>
         admin.query(`ALTER TABLE ${scratch}.items DROP COLUMN IF EXISTS raced_column`)
+      )
+    }
+  }, 180_000)
+
+  it('regenerates after a migration that lands while the database could not be fingerprinted', async () => {
+    writeProject(200)
+    let raced = false
+    // the fingerprint taken for the acquisition fails: the poller starts with no baseline
+    const w = await watching(async () => {
+      if (raced) return
+      raced = true
+      await withCatalogLock(dbUrl, () =>
+        admin.query(`ALTER TABLE ${scratch}.items ADD COLUMN unfingerprinted_column int`)
+      )
+    }, 1)
+    try {
+      await w.until(() => raced && hasRun(w.events), 'the first run')
+      // with no baseline, the first fingerprint the poller takes cannot tell whether the schema it acquired is current
+      await w.until(
+        () => w.output().includes('unfingerprinted_column'),
+        'a run that generated the column'
+      )
+      expect(existsSync(stampOf())).toBe(true)
+    } finally {
+      await w.stop()
+      await withCatalogLock(dbUrl, () =>
+        admin.query(`ALTER TABLE ${scratch}.items DROP COLUMN IF EXISTS unfingerprinted_column`)
       )
     }
   }, 180_000)

@@ -50,6 +50,7 @@ function setup(overrides: { busy?: () => boolean; reading?: () => Promise<void> 
     logger: { debug: () => undefined, warn: (message) => warnings.push(message) },
     busy: overrides.busy ?? (() => false),
     timeoutMs: 2_000,
+    baseline: 'aaa',
   })
   return { poller, files, writes, warnings, state }
 }
@@ -63,7 +64,7 @@ const until = async (predicate: () => boolean, what: string): Promise<void> => {
 }
 
 describe('schema poller', () => {
-  it('takes the first fingerprint as the baseline and writes the stamp when it moves', async () => {
+  it('writes the stamp when the fingerprint moves from the baseline', async () => {
     const { poller, files, writes, state } = setup()
     try {
       await until(() => state.open === 1, 'the connection')
