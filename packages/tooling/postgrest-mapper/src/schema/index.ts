@@ -29,7 +29,6 @@ export type { Snapshot, SnapshotCheck, SnapshotDifference, WriteSnapshotResult }
 export {
   SUPPLEMENTARY_SQL,
   acquireSupplementary,
-  plannerSupplementary,
   querySupplementary,
   readPgVersionNum,
 } from './supplementary'
@@ -50,7 +49,6 @@ export type {
   ExecFn,
   ExecOptions,
   ExecResult,
-  PlannerSupplementary,
   RelationKind,
   SchemaDeps,
   SchemaFs,

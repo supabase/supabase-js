@@ -13,7 +13,6 @@ import {
   exposedSchemas,
   jsonSchemaToTs,
   nodeExec,
-  plannerSupplementary,
   querySupplementary,
   readSnapshot,
   serializeSnapshot,
@@ -113,7 +112,7 @@ describe('schema acquisition from the supabase-local stack', () => {
 
   test('the planner part equals the planner fixture', () => {
     const expected = JSON.parse(readFileSync(PLANNER_FIXTURE, 'utf8'))
-    expect(plannerSupplementary(schema.supplementary)).toEqual(expected)
+    expect(schema.supplementary).toMatchObject(expected)
   })
 
   test('the planner part follows the extra search path: the catalog covers every path schema', async () => {
@@ -137,7 +136,7 @@ describe('schema acquisition from the supabase-local stack', () => {
         ])
       )
       const expected = JSON.parse(readFileSync(PLANNER_FIXTURE_SEARCH_PATH, 'utf8'))
-      expect(plannerSupplementary(supplementary)).toEqual(expected)
+      expect(supplementary).toMatchObject(expected)
       // a path schema outside `db-schemas` brings its functions and its types, not its relations
       expect(supplementary.schemas).toEqual(expect.arrayContaining(['cast_a', 'extensions']))
       expect(

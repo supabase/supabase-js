@@ -1,7 +1,7 @@
 import { SchemaAcquisitionError } from './errors'
 import { withReadOnlyTransaction } from './db'
 import { SUPPLEMENTARY_FORMAT } from './types'
-import type { DbClient, PlannerSupplementary, Supplementary } from './types'
+import type { DbClient, Supplementary } from './types'
 
 /**
  * The supplementary catalog query. `$1` is the exposed schema list (`text[]`), `$2` the `db-extra-search-path` list
@@ -281,33 +281,4 @@ export async function readPgVersionNum(db: DbClient): Promise<number> {
     throw new SchemaAcquisitionError('database', 'could not read server_version_num')
   }
   return value
-}
-
-/** The planner's format-1 document: the supplementary catalog without the mapper-only keys. */
-export function plannerSupplementary(supplementary: Supplementary): PlannerSupplementary {
-  return {
-    format: supplementary.format,
-    schemas: supplementary.schemas,
-    relations: supplementary.relations.map((r) => ({
-      schema: r.schema,
-      name: r.name,
-      columns: r.columns.map((c) => ({ name: c.name, attnum: c.attnum })),
-    })),
-    composites: supplementary.composites,
-    foreignKeys: supplementary.foreignKeys,
-    functions: supplementary.functions.map((f) => ({
-      schema: f.schema,
-      name: f.name,
-      argTypes: f.argTypes,
-      volatility: f.volatility,
-      defaults: f.defaults,
-      returns: f.returns,
-      outColumns: f.outColumns,
-    })),
-    searchPathFunctions: supplementary.searchPathFunctions,
-    types: supplementary.types,
-    casts: supplementary.casts,
-    aggregates: supplementary.aggregates,
-    implicitCasts: supplementary.implicitCasts,
-  }
 }

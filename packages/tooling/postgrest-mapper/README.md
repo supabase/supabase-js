@@ -147,7 +147,7 @@ For the first two the supplementary catalog and `server_version_num` are read ov
 
 **Snapshot** (`writeSnapshot`, `readSnapshot`, `checkSnapshot`): `{ format: 1, postgrest: { release, commit? }, pgVersionNum, config, supplementaryFormat: 1, supplementary, dump }`. Key order is fixed at the top level and sorted below it, so the same data is the same bytes. `checkSnapshot` returns `{ ok }` or `{ reason: 'missing' | 'invalid' | 'drift', differences }` and never writes. The config is redacted (`db-uri`, `jwt-secret` and any key naming a secret or `app.settings.*` are dropped; the planner ignores them), and every error and log line is scrubbed of connection-string passwords, `PGPASSWORD`, `PGRST_*` values and the password of the given URL. Errors are `SchemaAcquisitionError` with a `code`.
 
-**Supplementary catalog** (`Supplementary`): the planner's format-1 document (`relations` with column ordinals, `composites`, `foreignKeys`, `functions`, plus `schemas`, `searchPathFunctions`, `types` and `casts`; `plannerSupplementary` projects exactly that part, and a test keeps it equal to the planner's fixture) plus mapper-only keys the planner ignores:
+**Supplementary catalog** (`Supplementary`): the planner's format-1 document (`relations` with column ordinals, `composites`, `foreignKeys`, `functions`, plus `schemas`, `searchPathFunctions`, `types` and `casts`; a test keeps that part equal to the planner's fixture) plus mapper-only keys the planner ignores:
 
 - per relation: `kind`, `viewDefinition` (`pg_get_viewdef`), `updatable` (`pg_relation_is_updatable`), and per column `type`, `notNull`, `hasDefault`, `identity`, `generated`;
 - per function: `language`, `source` (`prosrc` of a `LANGUAGE sql` function) and `argNames`;

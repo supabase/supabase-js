@@ -5,7 +5,6 @@
  */
 
 import type {
-  Supplementary as PlannerSupplementaryDocument,
   SupplementaryComposite,
   SupplementaryForeignKey,
   SupplementaryFunction as PlannerSupplementaryFunction,
@@ -21,9 +20,6 @@ import type {
 
 /** `supplementary.format` and the snapshot's `supplementaryFormat`. */
 export const SUPPLEMENTARY_FORMAT = 1
-
-/** The planner's format-1 document (`@supabase/postgrest-planner`); `Supplementary` below adds the mapper-only keys. */
-export type PlannerSupplementary = PlannerSupplementaryDocument
 
 /** `pg_class.relkind` of the relations the catalog describes. */
 export type RelationKind = 'r' | 'v' | 'm' | 'p' | 'f'
@@ -107,8 +103,7 @@ export interface SupplementaryJsonSchemaCheck {
 
 /**
  * The supplementary catalog: the planner's format-1 document plus keys only the mapper reads. The planner ignores
- * unknown keys at every level, so the whole document is passed to it unchanged (`plannerSupplementary` projects
- * the planner part when a minimal document is wanted).
+ * unknown keys at every level, so the whole document is passed to it unchanged.
  *
  * Planner-only sections (the printers do not read them): `schemas`, the schemas the catalog covers (the exposed ones
  * plus `db-extra-search-path`, `pg_catalog` excluded); `searchPathFunctions`, the functions of the covered schemas
