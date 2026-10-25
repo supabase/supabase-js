@@ -158,10 +158,6 @@ export interface TypeContext {
    * the planner reports such an array by its own identifier. Default: none
    */
   arrays?: ReadonlyMap<string, NormalizedType>
-  /** Schema an unqualified non-builtin name belongs to. Default `public` */
-  defaultSchema?: string
-  /** Name of the type of the generated global. Default `SupabaseDatabase` */
-  databaseType?: string
   /** Type printed for `json`/`jsonb`: `Json` (values read) or `JsonIn` (function arguments). Default `Json` */
   jsonType?: string
 }
@@ -182,13 +178,8 @@ export function rowTypeOf(
 }
 
 /** `SupabaseDatabase['public']['Enums']['user_status']` */
-export function databaseRef(
-  ctx: TypeContext,
-  schema: string,
-  section: string,
-  name: string
-): string {
-  return `${ctx.databaseType ?? 'SupabaseDatabase'}[${quote(schema)}][${quote(section)}][${quote(name)}]`
+export function databaseRef(schema: string, section: string, name: string): string {
+  return `SupabaseDatabase[${quote(schema)}][${quote(section)}][${quote(name)}]`
 }
 
 /**
@@ -233,7 +224,7 @@ function resolveDomain(type: NormalizedType, ctx: TypeContext): NormalizedType {
   let current = type
   let dims = 0
   for (let i = 0; i < 8; i++) {
-    const next = ctx.domains.get(relationKey(current.schema ?? defaultSchemaOf(ctx), current.name))
+    const next = ctx.domains.get(relationKey(current.schema ?? DEFAULT_SCHEMA, current.name))
     if (next === undefined) break
     current = normalizeType(next)
     dims += current.dims
@@ -256,7 +247,8 @@ const isBuiltin = (schema: string | undefined, name: string): boolean =>
     schema === 'pg_catalog' ||
     (Object.hasOwn(EXTENSION_TYPES, schema) && EXTENSION_TYPES[schema]!.includes(name)))
 
-const defaultSchemaOf = (ctx: TypeContext): string => ctx.defaultSchema ?? 'public'
+/** The schema of a non-builtin name spelled without one */
+const DEFAULT_SCHEMA = 'public'
 
 /** Kind of a normalised, non-array name: builtin, enum, composite, relation row, or unknown. */
 export type TypeKind = 'builtin' | 'enum' | 'composite' | 'relation' | 'unknown'
@@ -275,12 +267,12 @@ export interface ClassifiedType {
 export function classifyType(type: string | NormalizedType, ctx: TypeContext): ClassifiedType {
   const named = typeof type === 'string' ? normalizeType(type) : type
   // the planner names the array of a user type by its own identifier (`public._user_status`)
-  const element = ctx.arrays?.get(relationKey(named.schema ?? defaultSchemaOf(ctx), named.name))
+  const element = ctx.arrays?.get(relationKey(named.schema ?? DEFAULT_SCHEMA, named.name))
   const normalized = element ? { ...element, dims: named.dims + 1 } : named
   const resolved = resolveDomain(normalized, ctx)
   const dims = normalized.dims + resolved.dims
   const { name } = resolved
-  const schema = resolved.schema ?? defaultSchemaOf(ctx)
+  const schema = resolved.schema ?? DEFAULT_SCHEMA
   const key = relationKey(schema, name)
   if (ctx.enums.has(key)) return { kind: 'enum', schema, name, dims }
   if (ctx.composites.has(key)) return { kind: 'composite', schema, name, dims }
@@ -312,11 +304,11 @@ export function tsTypeOf(type: string | NormalizedType, ctx: TypeContext): strin
       break
     }
     case 'enum': {
-      ts = databaseRef(ctx, c.schema!, 'Enums', c.name)
+      ts = databaseRef(c.schema!, 'Enums', c.name)
       break
     }
     case 'composite': {
-      ts = databaseRef(ctx, c.schema!, 'CompositeTypes', c.name)
+      ts = databaseRef(c.schema!, 'CompositeTypes', c.name)
       break
     }
     case 'relation': {
