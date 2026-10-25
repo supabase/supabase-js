@@ -559,7 +559,7 @@ describe('postgrest-planner', () => {
       it('types sum and avg as pg_aggregate has them: widened per input, time as interval, else unresolved', () => {
         const p = plan(
           catalog,
-          '/aggregate_types?select=a:ts::time.sum(),b:ts::time.avg(),c:nu.sum(),d:ar.avg(),e:v.sum(),f:ts.avg(),g:st.sum(),h:id.avg()'
+          '/aggregate_types?select=a:ts::time.sum(),b:ts::time.avg(),c:nu.sum(),d:ar.avg(),e:v.sum(),f:ts.avg(),g:st.sum(),h:id.avg(),i:ts::text.sum()'
         )
         expect(summary(fieldsOf(p))).toEqual([
           ['a', 'interval', true, 'aggregate'],
@@ -570,6 +570,7 @@ describe('postgrest-planner', () => {
           ['f', null, true, 'unresolved'],
           ['g', null, true, 'unresolved'],
           ['h', 'numeric', true, 'aggregate'],
+          ['i', null, true, 'unresolved'],
         ])
         expect(fieldsOf(p)[4].provenance).toMatchObject({
           kind: 'unresolved',
@@ -1987,66 +1988,6 @@ describe('postgrest-planner', () => {
     })
   })
 
-  describe('computed field resolution', () => {
-    // `"public"."users"."label"` is read by Postgres as the function `label(users)`, found through the search
-    // path of the request: its schema, then db-extra-search-path (PreQuery.hs).
-    let supp: ReturnType<typeof JSON.parse>
-    beforeAll(() => {
-      supp = JSON.parse(supplementaryText())
-      for (const [schema, type] of [
-        ['a', 'text'],
-        ['b', 'integer'],
-      ]) {
-        supp.functions.push({
-          schema,
-          name: 'label',
-          argTypes: ['public.users'],
-          volatility: 's',
-          returns: { kind: 'scalar', type },
-        })
-      }
-    })
-    const typeOf = (extraSearchPath: string, url = '/users?select=label') => {
-      const h = loaded(
-        planner.load({
-          ...baseInput(),
-          config: { ...baseInput().config, 'db-extra-search-path': extraSearchPath },
-          supplementary: supp,
-        })
-      ).handle
-      try {
-        const p = ok(planner.plan(h, { method: 'GET', url }))
-        return [p.shape?.fields[0].pgType ?? null, p.shape?.fields[0].provenance, p.filters]
-      } finally {
-        planner.freeCache(h)
-      }
-    }
-
-    it('picks the function of the first schema of the search path', () => {
-      expect(typeOf('b,a')[0]).toBe('int4')
-      expect(typeOf('a,b')[0]).toBe('text')
-      expect(typeOf('b,a')[1]).toMatchObject({
-        kind: 'computed',
-        function: { schema: 'b', name: 'label' },
-      })
-    })
-
-    it('does not see a function of a schema outside the search path', () => {
-      const [type, provenance] = typeOf('b')
-      expect(type).toBe('int4')
-      expect(provenance).toMatchObject({ function: { schema: 'b' } })
-      const [none, unresolved] = typeOf('extensions')
-      expect(none).toBeNull()
-      expect(unresolved).toMatchObject({ kind: 'unresolved' })
-    })
-
-    it('resolves a filter on a computed field the same way', () => {
-      expect(typeOf('b,a', '/users?select=username&label=eq.1')[2]).toMatchObject([
-        { kind: 'column', column: 'label', pgType: 'int4' },
-      ])
-    })
-  })
-
   describe('cast types and computed fields along the search path', () => {
     // The request searches its own schema (public), then db-extra-search-path. The fixture database has `cast_a.d`
     // (text, used by no column), `cast_b.d` (integer, used by cast_cases.b), `cast_c.int4` (a domain named like a
@@ -2188,6 +2129,31 @@ describe('postgrest-planner', () => {
       // only the schemas of the path are searched
       expect(field('personal')[0]).toBe('int4')
       expect(field('public')[0]).toBeNull()
+      expect(field('public')[1]).toMatchObject({ kind: 'unresolved' })
+    })
+
+    it('resolves a filter on a computed field the same way', () => {
+      const filters = (extraSearchPath: string) => {
+        const h = loaded(
+          planner.load({
+            ...baseInput(),
+            config: { ...baseInput().config, 'db-extra-search-path': extraSearchPath },
+            supplementary: wideCatalog(),
+          })
+        ).handle
+        try {
+          return ok(planner.plan(h, { method: 'GET', url: '/cast_cases?select=id&label=eq.1' }))
+            .filters
+        } finally {
+          planner.freeCache(h)
+        }
+      }
+      expect(filters('personal,extensions')).toMatchObject([
+        { kind: 'column', column: 'label', pgType: 'int4' },
+      ])
+      expect(filters('extensions,personal')).toMatchObject([
+        { kind: 'column', column: 'label', pgType: 'text' },
+      ])
     })
 
     it('degrades a computed field when a schema of the path is not covered by the catalog', () => {
@@ -2410,26 +2376,6 @@ describe('postgrest-planner', () => {
       // count() of the rows of the request itself is count(*), whatever the search path holds
       expect(typed('agg_b', '/messages?select=count()')).toEqual({
         types: [['int8', null, false]],
-        degraded: [],
-      })
-    })
-
-    it('does not type sum and avg of an input they have no aggregate for, and types time as interval', () => {
-      // sum and avg of a time are the interval aggregates (implicit time to interval cast), those of a text, a
-      // timestamptz or a uuid do not exist
-      expect(
-        typed(
-          'public,extensions',
-          '/cast_cases?select=s:tstz::time.sum(),a:tstz::time.avg(),t:tstz::text.sum(),u:tstz.avg(),n.sum()'
-        )
-      ).toEqual({
-        types: [
-          ['interval', null, true],
-          ['interval', null, true],
-          [null, null, true],
-          [null, null, true],
-          ['int8', null, true],
-        ],
         degraded: [],
       })
     })

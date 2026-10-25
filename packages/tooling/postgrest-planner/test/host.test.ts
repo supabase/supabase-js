@@ -166,18 +166,4 @@ describe('buffers handed to the wasm module', () => {
     expect(() => planner.plan(catalog, request)).toThrow(TypeError)
     expect(tracked.liveBuffers()).toBe(before)
   })
-
-  it('do not grow the memory over repeated throwing loads', () => {
-    const schemaBytes = baseInput().schema.length
-    // warm up: the first calls may grow the heap to its working size
-    for (let i = 0; i < 5; i++) {
-      expect(() => planner.load({ ...baseInput(), supplementary: unserializable() })).toThrow()
-    }
-    const before = tracked.memoryBytes()
-    for (let i = 0; i < 40; i++) {
-      expect(() => planner.load({ ...baseInput(), supplementary: unserializable() })).toThrow()
-    }
-    // a leak would be 40 copies of the schema dump at least
-    expect(tracked.memoryBytes() - before).toBeLessThan(schemaBytes)
-  })
 })

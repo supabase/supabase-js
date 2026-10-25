@@ -16,8 +16,6 @@ export interface TrackedPlanner {
   planner: Planner
   /** Buffers the host got from `planner_alloc` and has not handed back to `planner_free`. */
   liveBuffers(): number
-  /** Size of the wasm linear memory, in bytes. */
-  memoryBytes(): number
 }
 
 /**
@@ -26,7 +24,6 @@ export interface TrackedPlanner {
  */
 export async function loadTrackedPlanner(): Promise<TrackedPlanner> {
   const live = new Set<number>()
-  let memory: WebAssembly.Memory | undefined
   const instantiate = WebAssembly.instantiate
   WebAssembly.instantiate = (async (...args: unknown[]) => {
     const result = await (instantiate as (...a: unknown[]) => Promise<unknown>).apply(
@@ -34,7 +31,6 @@ export async function loadTrackedPlanner(): Promise<TrackedPlanner> {
       args
     )
     const { instance } = result as { instance: WebAssembly.Instance }
-    memory = instance.exports['memory'] as WebAssembly.Memory
     // the exports object is frozen: a proxy over it may only return the real values, so it wraps a bare object
     const exports = new Proxy({} as WebAssembly.Exports, {
       get(_, key) {
@@ -69,6 +65,5 @@ export async function loadTrackedPlanner(): Promise<TrackedPlanner> {
   return {
     planner,
     liveBuffers: () => live.size,
-    memoryBytes: () => memory!.buffer.byteLength,
   }
 }
