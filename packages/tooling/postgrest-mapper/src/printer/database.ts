@@ -3,15 +3,8 @@ import type { Supplementary, SupplementaryFunction, SupplementaryRelation } from
 import type { TracedColumn } from '../tracer'
 import { columnKey, columnTypeKey, relationKey, type ColumnRef } from '../keys'
 import { memberName as key, quote } from './literal'
-import {
-  canonicalType,
-  catalogTypeFacts,
-  classifyType,
-  rememberDomain,
-  rowTypeOf,
-  tsTypeOf,
-  type TypeContext,
-} from './pg-types'
+import { canonicalType, classifyType, tsTypeOf, type TypeContext } from './pg-types'
+import { createSelectsContext } from './selects-context'
 import type { PrintDatabaseInput, PrintDatabaseResult, PrintDiagnostic } from './types'
 
 const EMPTY_OBJECT = '{ [_ in never]: never }'
@@ -260,25 +253,8 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
     })
   }
 
-  const { domains, arrays } = catalogTypeFacts(supplementary.types)
-  for (const fields of input.plans.values()) {
-    for (const f of fields) {
-      if (f.pgType && f.baseType && f.baseType !== f.pgType)
-        rememberDomain(domains, f.pgType, f.baseType)
-    }
-  }
-  const ctx: TypeContext = {
-    enums: new Set(supplementary.enums.map((e) => relationKey(e.schema, e.name))),
-    composites: new Set(supplementary.composites.map((c) => relationKey(c.schema, c.name))),
-    relations: new Map(
-      [...printed.values()].map((p) => [
-        relationKey(p.relation.schema, p.relation.name),
-        rowTypeOf(p.relation.columns),
-      ])
-    ),
-    domains,
-    arrays,
-  }
+  // Its own instance: the domains that select entries learn while they print stay out of `SupabaseDatabase`
+  const ctx = createSelectsContext(input).types
   const argCtx: TypeContext = { ...ctx, jsonType: 'JsonIn' }
 
   const schemaNames = new Set<string>(input.schemas ?? [])
