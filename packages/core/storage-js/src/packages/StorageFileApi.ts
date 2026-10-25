@@ -35,6 +35,20 @@ const DEFAULT_FILE_OPTIONS: FileOptions = {
   upsert: false,
 }
 
+/**
+ * Merges upload options over the defaults. Keys present with an `undefined` value are skipped,
+ * so `{ cacheControl: undefined }` falls back to the default instead of sending "undefined".
+ */
+const withDefaultFileOptions = (fileOptions?: FileOptions): FileOptions => {
+  const options: FileOptions = { ...DEFAULT_FILE_OPTIONS }
+  for (const [key, value] of Object.entries(fileOptions ?? {})) {
+    if (value !== undefined) {
+      ;(options as Record<string, unknown>)[key] = value
+    }
+  }
+  return options
+}
+
 type FileBody =
   | ArrayBuffer
   | ArrayBufferView
@@ -84,7 +98,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   > {
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      const options = withDefaultFileOptions(fileOptions)
       let headers: Record<string, string> = {
         ...this.headers,
         ...(method === 'POST' && { 'x-upsert': String(options.upsert as boolean) }),
@@ -276,7 +290,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      const options = withDefaultFileOptions(fileOptions)
       let headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
