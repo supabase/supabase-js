@@ -139,65 +139,53 @@ async function loadConfig(
   }
   active.add(configFileName)
   try {
-    return await loadConfigBody(fs, configFileName, warnings, configs, configDir, active, merged)
+    let config: TsConfig
+    try {
+      config = JSON.parse(stripJsonc(await fs.readFile(configFileName))) as TsConfig
+    } catch (error) {
+      warnings.push(
+        `could not read ${configFileName}: ${error instanceof Error ? error.message : String(error)}`
+      )
+      return merged
+    }
+    const base = dirname(configFileName)
+    const parents = typeof config.extends === 'string' ? [config.extends] : (config.extends ?? [])
+    for (const parent of Array.isArray(parents) ? parents : []) {
+      if (typeof parent !== 'string') {
+        warnings.push(`extends '${String(parent)}' of ${configFileName} is not a path: ignored`)
+        continue
+      }
+      const candidates = extendsCandidates(base, parent)
+      let target = candidates[0]!
+      if (candidates.length > 1) {
+        // a package: the first candidate that exists, else the nearest one (its absence is reported by loadConfig)
+        for (const candidate of candidates) {
+          if (
+            await fs.readFile(candidate).then(
+              () => true,
+              () => false
+            )
+          ) {
+            target = candidate
+            break
+          }
+        }
+      }
+      Object.assign(merged, await loadConfig(fs, target, warnings, configs, configDir, active))
+    }
+    const substituted = (values: string[]): string[] =>
+      values.map((value) => substituteConfigDir(value, configDir))
+    if (isStringArray(config.files)) merged.files = { value: substituted(config.files), base }
+    if (isStringArray(config.include)) merged.include = { value: substituted(config.include), base }
+    if (isStringArray(config.exclude)) merged.exclude = { value: substituted(config.exclude), base }
+    const options = config.compilerOptions
+    if (options && typeof options.outDir === 'string')
+      merged.outDir = resolve(base, substituteConfigDir(options.outDir, configDir))
+    if (options && typeof options.allowJs === 'boolean') merged.allowJs = options.allowJs
+    return merged
   } finally {
     active.delete(configFileName)
   }
-}
-
-async function loadConfigBody(
-  fs: ProjectFs,
-  configFileName: string,
-  warnings: string[],
-  configs: Set<string>,
-  configDir: string,
-  active: Set<string>,
-  merged: ResolvedConfig
-): Promise<ResolvedConfig> {
-  let config: TsConfig
-  try {
-    config = JSON.parse(stripJsonc(await fs.readFile(configFileName))) as TsConfig
-  } catch (error) {
-    warnings.push(
-      `could not read ${configFileName}: ${error instanceof Error ? error.message : String(error)}`
-    )
-    return merged
-  }
-  const base = dirname(configFileName)
-  const parents = typeof config.extends === 'string' ? [config.extends] : (config.extends ?? [])
-  for (const parent of Array.isArray(parents) ? parents : []) {
-    if (typeof parent !== 'string') {
-      warnings.push(`extends '${String(parent)}' of ${configFileName} is not a path: ignored`)
-      continue
-    }
-    const candidates = extendsCandidates(base, parent)
-    let target = candidates[0]!
-    if (candidates.length > 1) {
-      // a package: the first candidate that exists, else the nearest one (its absence is reported by loadConfig)
-      for (const candidate of candidates) {
-        if (
-          await fs.readFile(candidate).then(
-            () => true,
-            () => false
-          )
-        ) {
-          target = candidate
-          break
-        }
-      }
-    }
-    Object.assign(merged, await loadConfig(fs, target, warnings, configs, configDir, active))
-  }
-  const substituted = (values: string[]): string[] =>
-    values.map((value) => substituteConfigDir(value, configDir))
-  if (isStringArray(config.files)) merged.files = { value: substituted(config.files), base }
-  if (isStringArray(config.include)) merged.include = { value: substituted(config.include), base }
-  if (isStringArray(config.exclude)) merged.exclude = { value: substituted(config.exclude), base }
-  const options = config.compilerOptions
-  if (options && typeof options.outDir === 'string')
-    merged.outDir = resolve(base, substituteConfigDir(options.outDir, configDir))
-  if (options && typeof options.allowJs === 'boolean') merged.allowJs = options.allowJs
-  return merged
 }
 
 /** The `include` / `files` a tsconfig ends up with once its `extends` chain is merged, each with the directory its entries are relative to. */
