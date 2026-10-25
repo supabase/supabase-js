@@ -183,7 +183,7 @@ describe('select entries over a relation whose name has a dot', () => {
   })
 
   it("reads the view's trace and its select=* plan", () => {
-    const { text } = printSelects(context, [
+    const text = printSelects(context, [
       {
         key: 'r|public|v.w|id,doc:id->a',
         shape: { relation: { schema: 'public', name: 'v.w' }, fields, embeds: [] } as never,

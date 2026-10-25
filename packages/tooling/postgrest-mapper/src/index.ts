@@ -182,7 +182,6 @@ export type {
   ClassifiedType,
   NormalizedType,
   PrintDatabaseInput,
-  PrintDatabaseResult,
   PrintDiagnostic,
   PrintModuleInput,
   TypeContext,

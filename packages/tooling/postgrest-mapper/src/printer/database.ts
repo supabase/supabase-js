@@ -5,7 +5,7 @@ import { columnKey, columnTypeKey, relationKey, type ColumnRef } from '../keys'
 import { memberName as key, quote } from './literal'
 import { canonicalType, classifyType, tsTypeOf, type TypeContext } from './pg-types'
 import { createSelectsContext } from './selects-context'
-import type { PrintDatabaseInput, PrintDatabaseResult, PrintDiagnostic } from './types'
+import type { PrintDatabaseInput } from './types'
 
 const EMPTY_OBJECT = '{ [_ in never]: never }'
 
@@ -234,8 +234,8 @@ interface PrintedRelation {
   traces: ReadonlyMap<string, TracedColumn> | undefined
 }
 
-export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
-  const diagnostics: PrintDiagnostic[] = []
+/** The members of `interface SupabaseDatabase { ... }`, indented for `declare global { ... }` (4 spaces). */
+export function printDatabase(input: PrintDatabaseInput): string {
   const supplementary: Supplementary = input.supplementary
   const dump = readDump(input.dump)
 
@@ -485,5 +485,5 @@ export function printDatabase(input: PrintDatabaseInput): PrintDatabaseResult {
         `    }`
     )
   }
-  return { text: out.join('\n'), diagnostics }
+  return out.join('\n')
 }

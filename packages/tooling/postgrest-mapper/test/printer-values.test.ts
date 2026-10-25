@@ -228,7 +228,7 @@ export type Col = Expect<Equal<P['Tables']['tab\\rle\\u2028']['Row']['co\\nl'], 
       traces: new Map(),
       jsonSchemas: new Map(),
     })
-    const { text } = printSelects(context, [
+    const text = printSelects(context, [
       { key: 'r|public|a\rb\u2028|*', error: 'no \u2028 relation "x\r"' },
     ])
     expect(text).not.toMatch(/[\r\u2028\u2029]/)
@@ -286,7 +286,7 @@ describe('F16: an aggregate that keeps the value keeps the column override', () 
   }
 
   test('min and max wrap the source column, count, sum and avg replace it', () => {
-    const { text } = printSelects(context, [{ key: 'r|public|pets|aggs', shape }])
+    const text = printSelects(context, [{ key: 'r|public|pets|aggs', shape }])
     expect(text).toContain(
       "row: { latest: SupabaseColumnType<'public.pets.kind', string> | null; first: SupabaseColumnType<'public.pets.kind', string> | null; c: number; s: number | null; a: number | null }"
     )

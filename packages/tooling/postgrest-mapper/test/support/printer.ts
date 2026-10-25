@@ -48,7 +48,7 @@ export function printed(
   plans: [string, ShapeField[]][],
   schemas = ['public']
 ): string {
-  const result = printDatabase({
+  const database = printDatabase({
     supplementary: supplementary(input),
     dump: '{}',
     schemas,
@@ -56,7 +56,7 @@ export function printed(
     traces: new Map(),
     jsonSchemas: new Map(),
   })
-  return printModule({ database: result.text })
+  return printModule({ database })
 }
 
 /** Type-checks `consumer` against the printed module `db`: neither file has a diagnostic */

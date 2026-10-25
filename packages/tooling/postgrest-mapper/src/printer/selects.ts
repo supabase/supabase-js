@@ -38,13 +38,6 @@ export interface RawEntry {
 
 export type SelectsEntry = PlannedEntry | ErrorEntry | RawEntry
 
-export interface PrintSelectsResult {
-  /** Complete `interface SupabaseSelects { ... }`, indented for `declare global { ... }`. Empty without entries */
-  text: string
-  /** The entries as printed: a planned entry the printer could not type is an `ErrorEntry` here */
-  entries: (ErrorEntry | RawEntry | (PlannedEntry & { printed: true }))[]
-}
-
 /** `PGRST200: Could not find ...`, plus the planner's hint: what the consumer shows for a rejected select. */
 export function plannerErrorMessage(failure: PlannerError): string {
   const { code, message, hint } = failure.error
@@ -551,37 +544,31 @@ const isRaw = (e: SelectsEntry): e is RawEntry => 'body' in e
 /**
  * Prints `interface SupabaseSelects` (design v5 §5.2): a planned entry is `{ row, sources, embeds }`, a rejected one
  * `{ error }`, a raw one (RPC `calls`, printed by the RPC slice) its own body. Entries are sorted by key; the
- * same key twice keeps the first. Pure.
+ * same key twice keeps the first. Returns the complete `interface SupabaseSelects { ... }`, indented for
+ * `declare global { ... }`, or an empty string without entries. A planned entry the printer cannot type is printed as
+ * an error entry. Pure.
  */
-export function printSelects(
-  context: SelectsContext,
-  entries: readonly SelectsEntry[]
-): PrintSelectsResult {
+export function printSelects(context: SelectsContext, entries: readonly SelectsEntry[]): string {
   const sorted = [...entries].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
   const seen = new Set<string>()
   const blocks: string[] = []
-  const printed: PrintSelectsResult['entries'] = []
   for (const entry of sorted) {
     if (seen.has(entry.key)) continue
     seen.add(entry.key)
     if (isError(entry)) {
       blocks.push(printEntry(entry.key, `      error: ${quoteDouble(entry.error)}`))
-      printed.push(entry)
     } else if (isRaw(entry)) {
       blocks.push(printEntry(entry.key, entry.body))
-      printed.push(entry)
     } else {
       const text = printPlanned(context, entry)
       if (text instanceof EntryError) {
         const error = `unresolved select item ${text.message}`
         blocks.push(printEntry(entry.key, `      error: ${quoteDouble(error)}`))
-        printed.push({ key: entry.key, error })
       } else {
         blocks.push(text)
-        printed.push({ ...entry, printed: true })
       }
     }
   }
-  if (blocks.length === 0) return { text: '', entries: printed }
-  return { text: `  interface SupabaseSelects {\n${blocks.join('\n')}\n  }`, entries: printed }
+  if (blocks.length === 0) return ''
+  return `  interface SupabaseSelects {\n${blocks.join('\n')}\n  }`
 }

@@ -25,14 +25,8 @@ export interface PrintDatabaseInput {
   jsonSchemas: ReadonlyMap<string, string>
 }
 
-export interface PrintDatabaseResult {
-  /** The members of `interface SupabaseDatabase { ... }`, indented for `declare global { ... }` (4 spaces) */
-  text: string
-  diagnostics: PrintDiagnostic[]
-}
-
 export interface PrintModuleInput {
-  /** `PrintDatabaseResult.text` */
+  /** What `printDatabase` returns */
   database: string
   /**
    * Extension point of the next slice: complete `interface SupabaseSelects { ... }` text, indented for

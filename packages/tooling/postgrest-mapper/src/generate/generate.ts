@@ -742,7 +742,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       plans: planned.context.plans,
       traces: planned.context.traces,
       jsonSchemas: planned.context.jsonSchemas,
-    }).text
+    })
     const context = createSelectsContext({
       supplementary: acquired.supplementary,
       plans: planned.context.plans,
@@ -846,10 +846,9 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       operands.push({ key, operand: group.operand, calls: group.calls, ...group.order })
     }
 
-    const selects = printSelects(context, entries)
     const text = printModule({
       database,
-      selects: selects.text,
+      selects: printSelects(context, entries),
       operands: printOperands(context, operands),
       postgrestVersion: acquired.postgrestVersion,
       ...(options.unplanned ? { unplanned: options.unplanned } : {}),
