@@ -197,7 +197,6 @@ export interface RpcPlanKey {
   exact: boolean
   /** How many schemas the chain could be in */
   schemaCount: number
-  locations: SourceLocation[]
 }
 
 /** The id of an rpc call (`RpcPlanKey.id`); with select `*` it is the call whose `source` a projected call takes. */
@@ -222,7 +221,6 @@ export function planRpcOf(scan: ScanResult, signatures: Signatures): RpcPlanKey[
     target: Pick<FunctionTarget, 'function' | 'keys' | 'method'> & { schemas: string[] },
     schema: string,
     select: string,
-    locations: readonly SourceLocation[],
     guessed: boolean
   ): void => {
     const overloads = signatures.get(relationKey(schema, target.function))
@@ -235,7 +233,6 @@ export function planRpcOf(scan: ScanResult, signatures: Signatures): RpcPlanKey[
       const exact = variant.exact && !guessed
       const known = out.get(id)
       if (known) {
-        known.locations.push(...locations)
         known.exact ||= exact
         continue
       }
@@ -249,7 +246,6 @@ export function planRpcOf(scan: ScanResult, signatures: Signatures): RpcPlanKey[
         method: target.method,
         exact,
         schemaCount: target.schemas.length,
-        locations: [...locations],
       })
     }
   }
@@ -257,7 +253,7 @@ export function planRpcOf(scan: ScanResult, signatures: Signatures): RpcPlanKey[
     const { target, select } = request
     if (target.kind !== 'f' || target.schemas === 'exposed') continue
     for (const schema of target.schemas)
-      add({ ...target, schemas: target.schemas }, schema, select, request.locations, false)
+      add({ ...target, schemas: target.schemas }, schema, select, false)
   }
   for (const pair of scan.fallbacks) {
     if (pair.target.kind !== 'function' || pair.schemas === 'exposed' || pair.select === '*')
@@ -273,13 +269,7 @@ export function planRpcOf(scan: ScanResult, signatures: Signatures): RpcPlanKey[
       // none seen (the call is in another file than the helper): the function as any of its overloads takes it
       const calls = seen.size > 0 ? [...seen.values()] : [{ keys: null, method: 'POST' as const }]
       for (const { keys, method } of calls) {
-        add(
-          { function: name, keys, method, schemas: pair.schemas },
-          schema,
-          pair.select,
-          pair.locations,
-          true
-        )
+        add({ function: name, keys, method, schemas: pair.schemas }, schema, pair.select, true)
       }
     }
   }
@@ -304,7 +294,6 @@ export type OperandPlanKey = {
   select: string
   operand: string
   schemaCount: number
-  locations: SourceLocation[]
 } & (
   | { kind: 'r' | 'w'; relation: string }
   | { kind: 'f'; function: string; keys: string[]; method: RpcMethod; exact: boolean }
@@ -334,16 +323,8 @@ export function planOperandsOf(scan: ScanResult, signatures: Signatures): Operan
       }
       if (target.kind !== 'f') {
         const id = `op|${entry}`
-        const known = out.get(id)
-        if (known) known.locations.push(...request.locations)
-        else {
-          out.set(id, {
-            ...base,
-            id,
-            kind: target.kind,
-            relation: target.relation,
-            locations: [...request.locations],
-          })
+        if (!out.has(id)) {
+          out.set(id, { ...base, id, kind: target.kind, relation: target.relation })
         }
         continue
       }
@@ -353,7 +334,6 @@ export function planOperandsOf(scan: ScanResult, signatures: Signatures): Operan
         const id = `rpcop|${entry}|${JSON.stringify(variant.keys)}|${target.method}`
         const known = out.get(id)
         if (known) {
-          known.locations.push(...request.locations)
           if (known.kind === 'f') known.exact ||= variant.exact
           continue
         }
@@ -365,7 +345,6 @@ export function planOperandsOf(scan: ScanResult, signatures: Signatures): Operan
           keys: variant.keys,
           method: target.method,
           exact: variant.exact,
-          locations: [...request.locations],
         })
       }
     }
