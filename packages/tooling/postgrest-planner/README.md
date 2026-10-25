@@ -41,6 +41,8 @@ The [Build postgrest-planner wasm](../../../.github/workflows/build-postgrest-pl
 
 Tests use the committed wasm; run `nx build:wasm postgrest-planner` only to regenerate it.
 
+This package (and `@supabase/postgrest-mapper`, which loads its wasm) is private and not published yet. Once it is, the release and preview workflows must ship the wasm the workflow builds (call it through `workflow_call` and download its artifact into `dist/` before building), never the committed binary. The build is not byte-reproducible across hosts: the wasm embeds source paths of the wasi-sdk it links, and the committed one carries the macOS toolchain's, so a guard comparing the committed digest with the CI one becomes possible only once the build is path-independent.
+
 ## ABI (version 2)
 
 All payloads are UTF-8 JSON in linear memory; results are a pointer to `[u32 LE length][bytes]`.
