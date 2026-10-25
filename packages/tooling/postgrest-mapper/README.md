@@ -230,19 +230,17 @@ A rejected key is `{ error: "PGRST200: Could not find a relationship ..." }`, wh
 
 ## Planner host and database declarations
 
-The acquire, plan, print pipeline for the `SupabaseDatabase` global (design v5 §5.1). Pure and typed; I/O is injected.
+The acquire, plan, print pipeline for the `SupabaseDatabase` global (design v5 §5.1), run by `createGenerator` (see above). Pure and typed; I/O is injected.
 
 ```ts
-const acquired = await acquireSchema({ source: 'supabase-local', workdir: '.' })
 const host = createPlannerHost() // { wasmPath?, loadTimeoutMs = 20000, planTimeoutMs = 2000, logger? }
-const tracer = await createTracer()
-const { text, diagnostics } = await buildDatabaseDeclarations({ acquired, host, tracer, logger })
+await host.load(acquired)
 await host.close()
 ```
 
 **`createPlannerHost`** (`src/host/`) runs `@supabase/postgrest-planner` in a `worker_threads` worker, because the wasm runtime cannot be interrupted. Calls are serialised. A `load` over 20 s or a `plan` over 2 s terminates the worker; the next call starts a new one and reloads the cache from the inputs the host kept. `load(acquired)`, `plan(request)` and `planMany(requests)` never throw for planner failures: the result is the planner's own `PlannerError` value, or one with a `HOST_ERROR` code (`HOST_TIMEOUT`, `HOST_WORKER_FAILED` for a crash or a missing wasm, `HOST_NOT_LOADED`, `HOST_CLOSED`; `isHostFailure(result)` tells them from the planner's verdicts). `info()` returns the planner's build (`{ abi, ghc, postgrest: { version, tag, commit } }`) or a failure value. Every worker checks the wasm's ABI against `PLANNER_ABI` when it starts, so a wasm of another ABI fails `info`, `load` and `plan` with `HOST_WORKER_FAILED` and a message naming both ABIs. `wasmPath` defaults to the planner package's copy.
 
-**`buildDatabaseDeclarations`** (`src/generate/`) loads the schema into the host, plans `GET /<relation>?select=*` for every exposed relation (the printed `ResultShape` is `Row`), traces views for nullability, converts JSON Schema CHECKs, and calls the printer. Relations outside the PostgREST schema cache (partitions) are left out with an `info` diagnostic; a load failure is an `error` diagnostic with an empty `text`. `module: { selects, operands, unplanned, importFrom }` passes through to `printModule`.
+**The generator** (`src/generate/`) loads the schema into the host, plans `GET /<relation>?select=*` for every exposed relation (the printed `ResultShape` is `Row`), traces views for nullability, converts JSON Schema CHECKs, and calls the printer. Relations outside the PostgREST schema cache (partitions) are left out with an `info` note in the logger's debug trail; a planner that cannot start or load the schema is diagnostic 2003 with an empty module.
 
 **Printer** (`src/printer/`): `printDatabase` emits the members of `interface SupabaseDatabase` per exposed schema, `printModule` wraps them in the declaration file (`Json` / `JsonIn`, `declare global`, `SupabasePgrstStatus`). `selects` and `operands` are the extension point for the select index: complete `interface SupabaseSelects { ... }` / `interface SupabaseOperands { ... }` text spliced verbatim into the same `declare global`.
 

@@ -188,9 +188,6 @@ export type {
   TypeContext,
   TypeKind,
 } from './printer'
-export { buildDatabaseDeclarations } from './generate'
-export type { BuildDatabaseOptions, DatabaseDeclarations } from './generate'
-
 export {
   GENERATOR_REVISION,
   createGenerator,

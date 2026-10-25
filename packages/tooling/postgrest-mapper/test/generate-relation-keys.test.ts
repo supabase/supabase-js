@@ -1,15 +1,14 @@
 import {
-  buildDatabaseDeclarations,
   createSelectsContext,
   printSelects,
   relationKey,
-  createTracer,
   PLANNER_ABI,
   type AcquiredSchema,
   type PlannerHost,
   type Supplementary,
 } from '../src'
 import type { PlanRequest, PlanResult, ShapeField } from '@supabase/postgrest-planner'
+import { generateText } from './support/declarations'
 import { column, supplementary as catalog, table } from './support/printer'
 
 const supplementary: Supplementary = catalog({
@@ -58,11 +57,7 @@ const host = hostFor(supplementary)
  */
 describe('relations whose qualified names look alike', () => {
   it('prints both, each with its own columns', async () => {
-    const { text } = await buildDatabaseDeclarations({
-      acquired,
-      host,
-      tracer: await createTracer(),
-    })
+    const text = await generateText(acquired, 'export {}', { createHost: () => host })
     expect(text).toMatch(
       /'a\.b': \{\s+Row: \{\s+left_id: SupabaseColumnType<'public\.a\.b\.left_id', number>/
     )
@@ -127,18 +122,16 @@ describe('views and checked JSON columns whose qualified names look alike', () =
       jsonCheck('public.docs', 'left', 'doc', 'number'),
     ],
   }
-  const generate = async (): Promise<string> =>
-    (
-      await buildDatabaseDeclarations({
-        acquired: {
-          ...acquired,
-          config: { 'db-schemas': 'public,public.a,public.docs' },
-          supplementary: pair,
-        },
-        host: hostFor(pair),
-        tracer: await createTracer(),
-      })
-    ).text
+  const generate = (): Promise<string> =>
+    generateText(
+      {
+        ...acquired,
+        config: { 'db-schemas': 'public,public.a,public.docs' },
+        supplementary: pair,
+      },
+      'export {}',
+      { createHost: () => hostFor(pair) }
+    )
 
   it('traces each view from its own definition', async () => {
     const text = await generate()

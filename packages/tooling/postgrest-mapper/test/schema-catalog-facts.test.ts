@@ -1,13 +1,12 @@
 import {
-  buildDatabaseDeclarations,
   buildJsonSchemaInput,
   PLANNER_ABI,
-  createTracer,
   type AcquiredSchema,
   type PlannerHost,
   type SupplementaryRelation,
 } from '../src'
 import type { PlanRequest, PlanResult, ShapeField } from '@supabase/postgrest-planner'
+import { generateText } from './support/declarations'
 import { column, supplementary, table } from './support/printer'
 
 const relation = (
@@ -137,11 +136,7 @@ describe('materialized views (F5)', () => {
   }
 
   it('keeps every column nullable and takes no JSON Schema from the base table', async () => {
-    const { text } = await buildDatabaseDeclarations({
-      acquired,
-      host,
-      tracer: await createTracer(),
-    })
+    const text = await generateText(acquired, 'export {}', { createHost: () => host })
     const row = (name: string) => {
       const start = text.indexOf(`${name}: {`)
       return text.slice(start, text.indexOf('Insert:', start))

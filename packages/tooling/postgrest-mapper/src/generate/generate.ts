@@ -21,6 +21,7 @@ import {
   callRoutineOf,
   createSelectsContext,
   plannerErrorMessage,
+  printDatabase,
   printModule,
   printOperands,
   printRpcEntry,
@@ -44,7 +45,7 @@ import {
   serializeContext,
 } from './cache'
 import type { CacheFile, PlanCache, StoredPlan } from './cache'
-import { planDatabase, printDatabaseMembers } from './database'
+import { planDatabase } from './database'
 import type { DatabasePlanContext } from './database'
 import { createSchemaPoller, takeFingerprint } from './poll'
 import type { SchemaPoller } from './poll'
@@ -493,17 +494,10 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
           tracer: await getTracer(),
           // the non-info notes come back in `warnings`: the logger only keeps the debug trail
           logger: { ...logger, warn: (message) => logger.debug(message) },
-          loaded: true,
         })
-        if (!planned.ok) {
-          return {
-            failure: planned.diagnostics.map((d) => d.message).join('; '),
-            code: DiagnosticCode.PlannerUnavailable,
-          }
-        }
-        context = planned.inputs
+        context = planned
         // a relation the host could not plan is missing from the context: the output reports it and the run is not cached
-        for (const name of planned.inputs.failures) failures.push(`select=* of ${name}`)
+        for (const name of planned.failures) failures.push(`select=* of ${name}`)
       }
       if (missing.length > 0) {
         logger.debug(`planning ${missing.length} of ${keys.length} keys`)
@@ -741,7 +735,14 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
 
     // ---- print
     const importFrom = deps.importFrom
-    const members = printDatabaseMembers(acquired, planned.context)
+    const database = printDatabase({
+      supplementary: acquired.supplementary,
+      dump: acquired.dump,
+      schemas: exposedSchemas(acquired.config),
+      plans: planned.context.plans,
+      traces: planned.context.traces,
+      jsonSchemas: planned.context.jsonSchemas,
+    }).text
     const context = createSelectsContext({
       supplementary: acquired.supplementary,
       plans: planned.context.plans,
@@ -847,7 +848,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
 
     const selects = printSelects(context, entries)
     const text = printModule({
-      database: members.text,
+      database,
       selects: selects.text,
       operands: printOperands(context, operands),
       postgrestVersion: acquired.postgrestVersion,

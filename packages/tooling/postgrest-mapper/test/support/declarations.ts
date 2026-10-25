@@ -1,24 +1,44 @@
-import { generateDeclarations, type AcquiredSchema } from '../../src'
+import {
+  generateDeclarations,
+  type AcquiredSchema,
+  type GenerateDeclarationsResult,
+  type GeneratorDeps,
+} from '../../src'
 import { plannerWasmPath } from './acquired'
 import { createTempProject } from './project'
 
 /**
- * The declarations generated for a temp project holding `source` as `src/app.ts` and `acquired` as its snapshot,
- * with no diagnostics. The project is removed before returning: only the text outlives the call.
+ * What the generator makes of a temp project holding `source` as `src/app.ts` and `acquired` as its snapshot
+ * (`unplanned: 'error'`). `deps` replaces the planner host, tracer or logger. The project is removed before returning.
  */
-export async function generateText(acquired: AcquiredSchema, source: string): Promise<string> {
+export async function generateResult(
+  acquired: AcquiredSchema,
+  source: string,
+  deps: Pick<GeneratorDeps, 'createHost' | 'createTracer' | 'logger'> = {}
+): Promise<GenerateDeclarationsResult> {
   const p = await createTempProject(acquired, { 'src/app.ts': source })
   try {
-    const result = await generateDeclarations({
+    return await generateDeclarations({
       configFileName: p.configFileName,
       options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
-      deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
+      deps: { wasmPath: plannerWasmPath(), cacheDirectory: false, ...deps },
     })
-    expect(result.diagnostics).toEqual([])
-    return result.text
   } finally {
     p.remove()
   }
+}
+
+/**
+ * The declarations generated for `source` and `acquired`, with no diagnostics. Only the text outlives the call.
+ */
+export async function generateText(
+  acquired: AcquiredSchema,
+  source: string,
+  deps?: Pick<GeneratorDeps, 'createHost' | 'createTracer' | 'logger'>
+): Promise<string> {
+  const result = await generateResult(acquired, source, deps)
+  expect(result.diagnostics).toEqual([])
+  return result.text
 }
 
 /** `users.data` constrained to `{ theme: 'light' | 'dark' }`, as `jsonb_matches_schema` writes it */

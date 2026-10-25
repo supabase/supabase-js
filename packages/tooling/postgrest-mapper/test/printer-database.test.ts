@@ -1,32 +1,23 @@
-import {
-  buildDatabaseDeclarations,
-  createPlannerHost,
-  createTracer,
-  type AcquiredSchema,
-} from '../src'
-import type { PlannerHost, Tracer } from '../src'
-import { acquireFromStack, plannerWasmPath } from './support/acquired'
+import { createPlannerHost, DiagnosticCode, type AcquiredSchema } from '../src'
+import { acquireFromStack } from './support/acquired'
+import { generateResult, generateText, withThemeCheck } from './support/declarations'
 import { TYPE_HELPERS, typecheckConsumer, type ConsumerResult } from './support/consumer'
 
 /**
- * Acquire the postgrest-js test stack, plan and print the `SupabaseDatabase` declarations, then type-check them with
- * the workspace TypeScript against postgrest-js `src`: the consumer files assert what a user of the emitted module sees
- * (`Equal` is exact, `@ts-expect-error` marks what must be rejected; an unused one is itself an error).
+ * Acquire the postgrest-js test stack, generate the `SupabaseDatabase` declarations (a project with no queries), then
+ * type-check them with the workspace TypeScript against postgrest-js `src`: the consumer files assert what a user of
+ * the emitted module sees (`Equal` is exact, `@ts-expect-error` marks what must be rejected; an unused one is itself an
+ * error).
  */
 const HELPERS = `import type { Json } from './db'\n${TYPE_HELPERS}export type { Json }\n`
 
+const NO_QUERIES = 'export {}'
+
 let acquired: AcquiredSchema
-let host: PlannerHost
-let tracer: Tracer
 
 beforeAll(async () => {
   acquired = await acquireFromStack()
-  host = createPlannerHost({ wasmPath: plannerWasmPath() })
-  tracer = await createTracer()
 }, 120_000)
-afterAll(async () => {
-  await host?.close()
-})
 
 function expectClean(result: ConsumerResult, file: string): void {
   expect(result.byFile.get(file) ?? []).toEqual([])
@@ -34,7 +25,9 @@ function expectClean(result: ConsumerResult, file: string): void {
 
 describe('database declarations of the postgrest-js test stack', () => {
   let text: string
-  let diagnostics: { severity: string; message: string }[]
+  let warnings: string[]
+  let diagnostics: readonly unknown[]
+  let notes: string[]
   let result: ConsumerResult
 
   const consumers: Record<string, string> = {
@@ -186,8 +179,12 @@ export {}
   }
 
   beforeAll(async () => {
-    const built = await buildDatabaseDeclarations({ acquired, host, tracer })
+    notes = []
+    const built = await generateResult(acquired, NO_QUERIES, {
+      logger: { debug: (message) => notes.push(message), warn: (message) => notes.push(message) },
+    })
     text = built.text
+    warnings = built.warnings
     diagnostics = built.diagnostics
     result = typecheckConsumer({
       files: { 'db.d.ts': text, 'helpers.ts': HELPERS, ...consumers },
@@ -195,8 +192,9 @@ export {}
   }, 180_000)
 
   test('prints a complete module without errors, leaving partitions out with an info note', () => {
-    expect(diagnostics.filter((d) => d.severity !== 'info')).toEqual([])
-    expect(diagnostics.map((d) => d.message).join('\n')).toMatch(/events_2024/)
+    expect(diagnostics).toEqual([])
+    expect(warnings).toEqual([])
+    expect(notes.join('\n')).toMatch(/events_2024 is not in the PostgREST schema cache: left out/)
     expect(text).toContain('declare global {')
     expect(text).toContain("import type { SupabaseColumnType } from '@supabase/postgrest-js'")
     expect(text).toContain('export type Json =')
@@ -225,30 +223,27 @@ export {}
   })
 
   test('printing twice gives the same text', async () => {
-    const again = await buildDatabaseDeclarations({ acquired, host, tracer })
-    expect(again.text).toBe(text)
+    expect(await generateText(acquired, NO_QUERIES)).toBe(text)
   }, 60_000)
 })
 
 describe('declarations when the planner cannot load', () => {
-  test('a planner that fails to load is an error diagnostic and an empty module, not an exception', async () => {
-    const broken = createPlannerHost({ wasmPath: '/nonexistent/postgrest-planner.wasm' })
-    try {
-      const built = await buildDatabaseDeclarations({ acquired, host: broken, tracer })
-      expect(built.text).toBe('')
-      expect(built.diagnostics).toEqual([
-        { severity: 'error', message: expect.stringContaining('could not load the schema') },
-      ])
-    } finally {
-      await broken.close()
-    }
+  test('a planner that cannot start is a diagnostic and an empty module, not an exception', async () => {
+    const result = await generateResult(acquired, NO_QUERIES, {
+      createHost: () => createPlannerHost({ wasmPath: '/nonexistent/postgrest-planner.wasm' }),
+    })
+    expect(result.text).toBe('export {}\n')
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        code: DiagnosticCode.PlannerUnavailable,
+        messageText: expect.stringContaining('the planner could not start'),
+      }),
+    ])
   }, 60_000)
 })
 
 describe('JSON Schema CHECKs and column type overrides', () => {
   // A scratch database is not needed: the acquisition reads the CHECK definition as pg_get_constraintdef prints it
-  const SCHEMA =
-    '{"type":"object","properties":{"theme":{"enum":["light","dark"]}},"required":["theme"],"additionalProperties":false}'
   let result: ConsumerResult
 
   const consumers: Record<string, string> = {
@@ -295,24 +290,9 @@ export const alice: P['Tables']['users']['Insert'] = { username: 'alice' }
   }
 
   beforeAll(async () => {
-    const withCheck: AcquiredSchema = {
-      ...acquired,
-      supplementary: {
-        ...acquired.supplementary,
-        jsonSchemaChecks: [
-          {
-            schema: 'public',
-            table: 'users',
-            constraint: 'users_data_theme',
-            definition: `CHECK (((data IS NULL) OR extensions.jsonb_matches_schema('${SCHEMA}'::json, data)))`,
-            columns: ['data'],
-            validated: true,
-          },
-        ],
-      },
-    }
-    const built = await buildDatabaseDeclarations({ acquired: withCheck, host, tracer })
-    expect(built.diagnostics.filter((d) => d.severity !== 'info')).toEqual([])
+    const built = await generateResult(withThemeCheck(acquired), NO_QUERIES)
+    expect(built.diagnostics).toEqual([])
+    expect(built.warnings).toEqual([])
     result = typecheckConsumer({
       files: { 'db.d.ts': built.text, 'helpers.ts': HELPERS, ...consumers },
     })

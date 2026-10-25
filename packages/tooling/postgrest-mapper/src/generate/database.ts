@@ -3,8 +3,7 @@ import { isHostFailure } from '../host'
 import type { PlannerHost } from '../host'
 import { jsonSchemaToTs } from '../jsonschema'
 import { columnKey, relationKey } from '../keys'
-import { printDatabase, printModule } from '../printer'
-import type { PrintDiagnostic, PrintModuleInput } from '../printer'
+import type { PrintDiagnostic } from '../printer'
 import {
   buildFunctionTraceInputs,
   buildJsonSchemaInput,
@@ -15,15 +14,13 @@ import {
 import type { AcquiredSchema, SchemaLogger } from '../schema'
 import type { TracedColumn, TracedFunction, Tracer } from '../tracer'
 
-export interface BuildDatabaseOptions {
+export interface PlanDatabaseOptions {
   acquired: AcquiredSchema
-  /** Loads the schema cache itself: pass a host that has not loaded anything yet (or whose load may be replaced) */
+  /** Already holds `acquired` (the caller loaded it) */
   host: PlannerHost
   tracer: Tracer
   /** Defaults to silence */
   logger?: Pick<SchemaLogger, 'debug' | 'warn'>
-  /** Options of the emitted module (`importFrom`, `unplanned`); the release line comes from `acquired` */
-  module?: Pick<PrintModuleInput, 'importFrom' | 'unplanned' | 'selects' | 'operands'>
 }
 
 /**
@@ -54,23 +51,6 @@ export interface DatabaseInputs extends DatabasePlanContext {
   failures: string[]
 }
 
-/** The `SupabaseDatabase` members, without the module around them. */
-export interface DatabaseMembers extends DatabasePlanContext {
-  /** Only the members of `interface SupabaseDatabase`. Empty when the planner could not load the schema */
-  database: string
-  diagnostics: PrintDiagnostic[]
-  /** `false` when the planner could not load the schema */
-  loaded: boolean
-}
-
-export interface DatabaseDeclarations extends DatabasePlanContext {
-  /** The complete declaration file. Empty when the planner could not load the schema */
-  text: string
-  /** Only the members of `interface SupabaseDatabase`, for callers that assemble their own module */
-  database: string
-  diagnostics: PrintDiagnostic[]
-}
-
 /** Upstream's code for a relation outside the schema cache (a partition, or one the role cannot see). */
 const NOT_IN_SCHEMA_CACHE = 'PGRST205'
 
@@ -80,77 +60,11 @@ function grammarOf(pgVersionNum: number): 15 | 16 | 17 {
 }
 
 /**
- * The acquire, plan, print pipeline for the `SupabaseDatabase` global (design v5 §5.1): loads the schema into the
- * planner host, plans `select=*` of every exposed relation (Row is its output shape), traces the views, converts the
- * JSON Schema CHECKs and prints. Planner and tracer failures degrade to diagnostics, never exceptions.
+ * Plans `select=*` of every exposed relation on a host that already holds `acquired` (design v5 §5.1), traces the
+ * views and converts the JSON Schema CHECKs: the part of the pipeline that needs the planner. Planner and tracer
+ * failures degrade to diagnostics, never exceptions.
  */
-export async function buildDatabaseDeclarations(
-  options: BuildDatabaseOptions
-): Promise<DatabaseDeclarations> {
-  const built = await buildDatabaseMembers(options)
-  if (!built.loaded) return { ...built, text: '' }
-  const text = printModule({
-    ...options.module,
-    database: built.database,
-    postgrestVersion: options.acquired.postgrestVersion,
-  })
-  return { ...built, text }
-}
-
-/** The plan and print part of `buildDatabaseDeclarations`, for callers that splice the members into their own module. */
-export async function buildDatabaseMembers(
-  options: Pick<BuildDatabaseOptions, 'acquired' | 'host' | 'tracer' | 'logger'>
-): Promise<DatabaseMembers> {
-  const planned = await planDatabase(options)
-  if (!planned.ok) {
-    return {
-      database: '',
-      diagnostics: planned.diagnostics,
-      loaded: false,
-      plans: new Map(),
-      traces: new Map(),
-      functions: new Map(),
-      jsonSchemas: new Map(),
-    }
-  }
-  const printed = printDatabaseMembers(options.acquired, planned.inputs)
-  return {
-    ...planned.inputs,
-    database: printed.text,
-    diagnostics: printed.diagnostics,
-    loaded: true,
-  }
-}
-
-/** The members of `interface SupabaseDatabase` for inputs `planDatabase` computed (or the cache kept). Pure. */
-export function printDatabaseMembers(
-  acquired: AcquiredSchema,
-  inputs: DatabasePlanContext & { diagnostics?: PrintDiagnostic[] }
-): { text: string; diagnostics: PrintDiagnostic[] } {
-  const printed = printDatabase({
-    supplementary: acquired.supplementary,
-    dump: acquired.dump,
-    schemas: exposedSchemas(acquired.config),
-    plans: inputs.plans,
-    traces: inputs.traces,
-    jsonSchemas: inputs.jsonSchemas,
-  })
-  return {
-    text: printed.text,
-    diagnostics: [...(inputs.diagnostics ?? []), ...printed.diagnostics],
-  }
-}
-
-/**
- * Loads the schema into the host, plans `select=*` of every exposed relation, traces the views and converts the JSON
- * Schema CHECKs: the part of the pipeline that needs the planner. `ok: false` when the planner could not load.
- */
-export async function planDatabase(
-  options: Pick<BuildDatabaseOptions, 'acquired' | 'host' | 'tracer' | 'logger'> & {
-    /** The host already holds `acquired` (the caller loaded it): do not load it again */
-    loaded?: boolean
-  }
-): Promise<{ ok: true; inputs: DatabaseInputs } | { ok: false; diagnostics: PrintDiagnostic[] }> {
+export async function planDatabase(options: PlanDatabaseOptions): Promise<DatabaseInputs> {
   const { acquired, host, tracer, logger } = options
   const { supplementary } = acquired
   const diagnostics: PrintDiagnostic[] = []
@@ -158,20 +72,6 @@ export async function planDatabase(
     diagnostics.push({ severity, message })
     if (severity !== 'info') logger?.warn(message)
     else logger?.debug(message)
-  }
-
-  if (!options.loaded) {
-    const loaded = await host.load(acquired)
-    if (!loaded.ok) {
-      note(
-        'error',
-        `the planner could not load the schema: ${loaded.error.code ?? ''} ${loaded.error.message ?? ''}`.trim()
-      )
-      return { ok: false, diagnostics }
-    }
-    if (loaded.degraded.length > 0) {
-      note('info', `planner load is degraded: ${loaded.degraded.join(', ')}`)
-    }
   }
 
   // ---- Row: the output of `select=*`
@@ -279,5 +179,5 @@ export async function planDatabase(
     note('info', `${i.schema}.${i.table}: constraint ${i.constraint} ignored: ${i.reason}`)
   }
 
-  return { ok: true, inputs: { plans, traces, functions, jsonSchemas, diagnostics, failures } }
+  return { plans, traces, functions, jsonSchemas, diagnostics, failures }
 }
