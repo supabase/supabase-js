@@ -1,15 +1,7 @@
 import type { ResultShape, ShapeField } from '@supabase/postgrest-planner'
-import {
-  createSelectsContext,
-  printDatabase,
-  printModule,
-  printRpcEntry,
-  printSelects,
-  type CallPlan,
-  type Supplementary,
-} from '../src'
+import { createSelectsContext, printRpcEntry, printSelects, type CallPlan } from '../src'
 import { quote, quoteDouble } from '../src/printer/literal'
-import { TYPE_HELPERS, typecheckConsumer } from './support/consumer'
+import { column as columnOf, expectClean, printed, supplementary, table } from './support/printer'
 
 /**
  * What the printers say about values: composite values, the elements of a set of scalars, string literals and
@@ -18,44 +10,9 @@ import { TYPE_HELPERS, typecheckConsumer } from './support/consumer'
  * generation does; the module is type-checked as a consumer sees it.
  */
 
-const HELPERS = `import type { Json } from './db'\n${TYPE_HELPERS}export type { Json }\n`
-
-const supplementary = (over: Partial<Supplementary>): Supplementary => ({
-  format: 1,
-  composites: [],
-  foreignKeys: [],
-  relations: [],
-  functions: [],
-  schemas: [],
-  searchPathFunctions: [],
-  aggregates: [],
-  implicitCasts: [],
-  types: [],
-  casts: [],
-  referencedRelations: [],
-  enums: [],
-  jsonSchemaChecks: [],
-  ...over,
-})
-
-const column = (name: string, type: string, attnum: number, notNull = false) => ({
-  name,
-  attnum,
-  type,
-  notNull,
-  hasDefault: false,
-  identity: null,
-  generated: null,
-})
-
-const table = (schema: string, name: string, columns: ReturnType<typeof column>[]) => ({
-  schema,
-  name,
-  kind: 'r' as const,
-  columns,
-  viewDefinition: null,
-  updatable: { insert: true, update: true, delete: true },
-})
+/** The columns here are nullable unless a test says otherwise */
+const column = (name: string, type: string, attnum: number, notNull = false) =>
+  columnOf(name, type, attnum, notNull)
 
 /** The planner's output column of `select=*` */
 const plain = (
@@ -88,30 +45,6 @@ const fn = (
   defaults: 0,
   searchPath: null,
 })
-
-function printed(
-  input: Partial<Supplementary>,
-  plans: [string, ShapeField[]][],
-  schemas = ['public']
-): string {
-  const result = printDatabase({
-    supplementary: supplementary(input),
-    dump: '{}',
-    schemas,
-    plans: new Map(plans),
-    traces: new Map(),
-    jsonSchemas: new Map(),
-  })
-  return printModule({ database: result.text })
-}
-
-function expectClean(db: string, consumer: string): void {
-  const result = typecheckConsumer({
-    files: { 'db.d.ts': db, 'helpers.ts': HELPERS, 'consumer.ts': consumer },
-  })
-  expect(result.byFile.get('db.d.ts') ?? []).toEqual([])
-  expect(result.byFile.get('consumer.ts') ?? []).toEqual([])
-}
 
 describe('F6: a composite value is not a table row', () => {
   // `person(id integer PRIMARY KEY)` and `holder(p person)`: `ROW(NULL)::person` is a legal value of `holder.p`,

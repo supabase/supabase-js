@@ -2,14 +2,12 @@ import type { ShapeField } from '@supabase/postgrest-planner'
 import {
   buildJsonSchemaInput,
   createSelectsContext,
-  printDatabase,
-  printModule,
   printRpcEntry,
   type CallPlan,
   type Supplementary,
 } from '../src'
 import { callReturnsOf } from '../src/printer'
-import { TYPE_HELPERS, typecheckConsumer } from './support/consumer'
+import { column as columnOf, expectClean, printed, supplementary, table } from './support/printer'
 
 /**
  * A type is a schema and a name, never a dotted string: `a."b.mood"` and `"a.b".mood` are two types, a name can hold
@@ -17,44 +15,8 @@ import { TYPE_HELPERS, typecheckConsumer } from './support/consumer'
  * by hand, printed like a generation does, and the module is type-checked as a consumer sees it.
  */
 
-const HELPERS = `import type { Json } from './db'\n${TYPE_HELPERS}export type { Json }\n`
-
-const supplementary = (over: Partial<Supplementary>): Supplementary => ({
-  format: 1,
-  composites: [],
-  foreignKeys: [],
-  relations: [],
-  functions: [],
-  schemas: [],
-  searchPathFunctions: [],
-  aggregates: [],
-  implicitCasts: [],
-  types: [],
-  casts: [],
-  referencedRelations: [],
-  enums: [],
-  jsonSchemaChecks: [],
-  ...over,
-})
-
-const column = (name: string, type: string, attnum: number) => ({
-  name,
-  attnum,
-  type,
-  notNull: true,
-  hasDefault: false,
-  identity: null,
-  generated: null,
-})
-
-const table = (schema: string, name: string, columns: ReturnType<typeof column>[]) => ({
-  schema,
-  name,
-  kind: 'r' as const,
-  columns,
-  viewDefinition: null,
-  updatable: { insert: true, update: true, delete: true },
-})
+/** The columns here are NOT NULL unless a test says otherwise */
+const column = (name: string, type: string, attnum: number) => columnOf(name, type, attnum, true)
 
 const plain = (relation: string, name: string, pgType: string): ShapeField => ({
   name,
@@ -76,30 +38,6 @@ const fn = (name: string, type: string) => ({
   defaults: 0,
   searchPath: null,
 })
-
-function printed(
-  input: Partial<Supplementary>,
-  plans: [string, ShapeField[]][],
-  schemas: string[]
-): string {
-  const result = printDatabase({
-    supplementary: supplementary(input),
-    dump: '{}',
-    schemas,
-    plans: new Map(plans),
-    traces: new Map(),
-    jsonSchemas: new Map(),
-  })
-  return printModule({ database: result.text })
-}
-
-function expectClean(db: string, consumer: string): void {
-  const result = typecheckConsumer({
-    files: { 'db.d.ts': db, 'helpers.ts': HELPERS, 'consumer.ts': consumer },
-  })
-  expect(result.byFile.get('db.d.ts') ?? []).toEqual([])
-  expect(result.byFile.get('consumer.ts') ?? []).toEqual([])
-}
 
 describe('a type that a column, an argument and a return name with a quoted schema or name', () => {
   // `"a.b".mood` and `a."b.mood"` read alike once joined with a dot
