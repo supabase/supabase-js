@@ -69,7 +69,7 @@ type Overridden<B extends BState, E, F, M extends MState, New, Options> =
     ? IsAny<New> extends true
       ? PostgrestFilterBuilder<B, Desc<any>, F, M>
       : OverrideValid<R, New> extends true
-        ? PostgrestFilterBuilder<B, Desc<OverrideRow<OverrideData<R, New, Options>>>, F, M>
+        ? PostgrestFilterBuilder<B, Desc<OverrideRow<OverrideData<R, New, Options>, New, M>>, F, M>
         : OverrideMismatch<R>
     : never
 

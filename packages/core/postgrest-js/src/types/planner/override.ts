@@ -1,5 +1,5 @@
 import type { InvalidMethodError } from '../../PostgrestFilterBuilder'
-import type { IsAny } from './lookup'
+import type { IsAny, MState } from './lookup'
 
 // ---------------------------------------------------------------- overrideTypes
 // `overrideTypes` works on the result as the caller sees it: an array for rows, one object after `.single()`, and
@@ -64,6 +64,14 @@ export type OverrideData<Result, New, Options> =
       ? MergePartial<New, NonNullable<Result>, Options> | null
       : MergePartial<New, Result, Options>
 
-// the row the new descriptor carries: the data without its `null` and its array
-export type OverrideRow<Data> =
-  NonNullable<Data> extends infer D ? (D extends (infer U)[] ? U : D) : never
+// the row the new descriptor carries: the data without its array, which the response state supplies again, and without
+// its `null`, which `.maybeSingle()` supplies. A `null` the override itself puts on a scalar or single-row result
+// (`New` admits it) stays, since the response state never restores it.
+export type OverrideRow<Data, New, M extends MState> = [null] extends [New]
+  ? M['card'] extends 'maybe'
+    ? RowOf<NonNullable<Data>>
+    : Extract<Data, readonly unknown[]> extends never
+      ? Data
+      : RowOf<NonNullable<Data>>
+  : RowOf<NonNullable<Data>>
+type RowOf<D> = D extends (infer U)[] ? U : D
