@@ -48,3 +48,34 @@ const g3 = supabase.from('users').select('*').maybeSingle().returns<{ id: number
 type _9g3 = Expect<Equal<Data<typeof g3>, { id: number } | null>>
 const g4 = supabase.rpc('get_status', { name_param: 'x' }).returns<string>().throwOnError()
 type _9g4 = Expect<Equal<Data<typeof g4>, string>>
+
+// a whole-result override on a nullable scalar array replaces the data and keeps its null
+const h1 = supabase.rpc('int_array_upto', { n: 2 }).returns<number[] | null>().throwOnError()
+type _9h1 = Expect<Equal<Data<typeof h1>, number[] | null>>
+const h2 = supabase
+  .rpc('int_array_upto', { n: 2 })
+  .overrideTypes<number[] | null, { merge: false }>()
+  .throwOnError()
+type _9h2 = Expect<Equal<Data<typeof h2>, number[] | null>>
+const h3 = supabase.rpc('int_array_upto', { n: 2 }).returns<number[]>().throwOnError()
+type _9h3 = Expect<Equal<Data<typeof h3>, number[]>>
+
+// the array / object mismatch still errors when the override admits a null
+const h4 = supabase.rpc('int_array_upto', { n: 2 }).returns<{ id: number } | null>()
+type _9h4 = Expect<
+  Equal<
+    typeof h4,
+    {
+      Error: 'Type mismatch: Cannot cast array result to a single object. Use .overrideTypes<Array<YourType>> for array results or .single() to convert the result to a single object'
+    }
+  >
+>
+const h5 = supabase.rpc('get_status', { name_param: 'x' }).returns<string[] | null>()
+type _9h5 = Expect<
+  Equal<
+    typeof h5,
+    {
+      Error: 'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'
+    }
+  >
+>

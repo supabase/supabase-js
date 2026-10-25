@@ -3,16 +3,17 @@ import type { IsAny, MState } from './lookup'
 
 // ---------------------------------------------------------------- overrideTypes
 // `overrideTypes` works on the result as the caller sees it: an array for rows, one object after `.single()`, and
-// `| null` after `.maybeSingle()`. An array result takes an array override and a single row an object.
-export type OverrideValid<Result, New> = Result extends any[]
-  ? New extends any[]
+// `| null` after `.maybeSingle()`. An array result takes an array override and a single row an object. A `null` on
+// either side is set aside, and the check is not distributive: a nullable array stays one array.
+export type OverrideValid<Result, New> = [NonNullable<Result>] extends [any[]]
+  ? [NonNullable<New>] extends [any[]]
     ? true
     : false
-  : New extends any[]
+  : [NonNullable<New>] extends [any[]]
     ? false
     : true
 
-export type OverrideMismatch<Result> = [Result] extends [any[]]
+export type OverrideMismatch<Result> = [NonNullable<Result>] extends [any[]]
   ? InvalidMethodError<'Type mismatch: Cannot cast array result to a single object. Use .overrideTypes<Array<YourType>> for array results or .single() to convert the result to a single object'>
   : InvalidMethodError<'Type mismatch: Cannot cast single object to array type. Remove Array wrapper from return type or make sure you are not using .single() up in the calling chain'>
 
@@ -64,14 +65,20 @@ export type OverrideData<Result, New, Options> =
       ? MergePartial<New, NonNullable<Result>, Options> | null
       : MergePartial<New, Result, Options>
 
-// the row the new descriptor carries: the data without its array, which the response state supplies again, and without
-// its `null`, which `.maybeSingle()` supplies. A `null` the override itself puts on a scalar or single-row result
-// (`New` admits it) stays, since the response state never restores it.
-export type OverrideRow<Data, New, M extends MState> = [null] extends [New]
-  ? M['card'] extends 'maybe'
-    ? RowOf<NonNullable<Data>>
-    : Extract<Data, readonly unknown[]> extends never
-      ? Data
-      : RowOf<NonNullable<Data>>
+// the row the new descriptor carries. Where the response state supplies the array (rows, `.maybeSingle()`'s unwrap) the
+// row is the data without it, and without its `null`, which `.maybeSingle()` supplies. Where the state returns the row
+// as is (a one-cardinality call, `.single()`), the data stays whole, an array included (a scalar array); a `null` the
+// override itself admits stays, since the response state never restores it.
+export type OverrideRow<Data, New, M extends MState> = [KeepsWhole<M>] extends [true]
+  ? [null] extends [New]
+    ? Data
+    : NonNullable<Data>
   : RowOf<NonNullable<Data>>
+type KeepsWhole<M extends MState> = M['card'] extends 'maybe'
+  ? false
+  : M['card'] extends 'one'
+    ? true
+    : [M['base']] extends ['one']
+      ? true
+      : false
 type RowOf<D> = D extends (infer U)[] ? U : D
