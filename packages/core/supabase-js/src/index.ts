@@ -53,6 +53,7 @@ export type {
   QueryResult,
   QueryData,
   QueryError,
+  DatabaseWithoutInternals,
 } from './lib/types'
 
 /**

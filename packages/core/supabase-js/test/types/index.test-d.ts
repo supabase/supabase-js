@@ -1,6 +1,6 @@
 import { expectError, expectType } from 'tsd'
 import { SupabaseClient, createClient } from '../../src/index'
-import type { DefaultDatabase, GenericDatabase } from '../../src/index'
+import type { DatabaseWithoutInternals, DefaultDatabase, GenericDatabase } from '../../src/index'
 import { Database, Json } from '../types'
 
 const URL = 'http://localhost:3000'
@@ -225,4 +225,12 @@ type GenTypes = {
   new SupabaseClient<GenTypes, { PostgrestVersion: '12' }, '__InternalSupabase'>(URL, KEY)
   // @ts-expect-error not a schema of the database
   options.schema('__InternalSupabase')
+}
+
+// DatabaseWithoutInternals strips the internal metadata key
+{
+  type X = { Tables: { t: { Row: { id: number } } } }
+  type WithInternals = { public: X; __InternalSupabase: { PostgrestVersion: '12' } }
+  expectType<{ public: X }>({} as DatabaseWithoutInternals<WithInternals>)
+  expectType<DatabaseWithoutInternals<WithInternals>>({} as { public: X })
 }

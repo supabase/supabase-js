@@ -327,3 +327,10 @@ export type SupabaseClientOptions<SchemaName> = {
 export type QueryResult<T> = T extends PromiseLike<infer U> ? U : never
 export type QueryData<T> = T extends PromiseLike<{ data: infer U }> ? Exclude<U, null> : never
 export type QueryError = PostgrestError
+
+/**
+ * Strips internal Supabase metadata from Database types.
+ *
+ * @deprecated Use `Omit<Database, '__InternalSupabase'>` instead; the planner types no longer need it.
+ */
+export type DatabaseWithoutInternals<DB> = Omit<DB, '__InternalSupabase'>
