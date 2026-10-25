@@ -103,34 +103,22 @@ export type NotNullFact<B extends BState, C extends string> =
 // the table an option bag member names: `referencedTable`, and `foreignTable` (its deprecated alias) when that is
 // `undefined`, like the runtime's default
 type RefValue<T, U> = Exclude<T, undefined> | (undefined extends T ? U : never)
+// the effective table of every member of the option bag (`undefined` when it names none)
+type RefValues<O> =
+  Bag<O, 'referencedTable' | 'foreignTable'> extends infer M
+    ? M extends { referencedTable: infer T; foreignTable: infer U }
+      ? RefValue<T, U>
+      : never
+    : never
 // the tables an option may name, over every member of the bag: `never` when none ever has one (or only `undefined` or
 // an empty string), like the runtime's truthiness check. A member without it still contributes the others' tables.
 export type RefTables<O> =
-  Bag<O, 'referencedTable' | 'foreignTable'> extends infer M
-    ? M extends { referencedTable: infer T; foreignTable: infer U }
-      ? Exclude<RefValue<T, U>, undefined | ''> extends infer S extends string
-        ? S
-        : never
-      : never
-    : never
+  Exclude<RefValues<O>, undefined | ''> extends infer S extends string ? S : never
 // the option may name an embed: its column belongs to that embed, not to the root
 export type HasRef<O> = [RefTables<O>] extends [never] ? false : true
 // some member of the bag filters the root: no table, or one that is `undefined` or empty (sent unprefixed)
-export type HitsRoot<O> = true extends (
-  Bag<O, 'referencedTable' | 'foreignTable'> extends infer M
-    ? M extends { referencedTable: infer T; foreignTable: infer U }
-      ? RefValue<T, U> extends infer V
-        ? undefined extends V
-          ? true
-          : '' extends V
-            ? true
-            : false
-        : never
-      : never
-    : never
-)
-  ? true
-  : false
+export type HitsRoot<O> =
+  undefined extends RefValues<O> ? true : '' extends RefValues<O> ? true : false
 
 // a literal widens that embed, a non-literal one (or a possibly-present one) can be any: widen them all
 export type RefFacts<O> =
