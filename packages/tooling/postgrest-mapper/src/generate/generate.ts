@@ -46,7 +46,7 @@ import {
 import type { CacheFile, PlanCache, StoredPlan } from './cache'
 import { planDatabase, printDatabaseMembers } from './database'
 import type { DatabasePlanContext } from './database'
-import { createSchemaPoller } from './poll'
+import { createSchemaPoller, takeFingerprint } from './poll'
 import type { SchemaPoller } from './poll'
 import { displayPath, findSupabaseConfigDir, nodeProjectFs, resolveProjectFiles } from './project'
 import type { ProjectFs } from './project'
@@ -213,6 +213,8 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       pending: Promise<SchemaOk | SchemaFailure>
       /** Where the acquisition read the catalog: kept here for the poller, in no result, hash or message */
       dbUrl?: string
+      /** The database's fingerprint from before the schema was dumped: the poller's baseline */
+      baseline?: string
     }
   >()
   /** One poller per live schema, alive while a holder is on it */
@@ -289,7 +291,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
   const acquire = async (
     options: PostgrestMapperOptions,
     projectDir: string,
-    onDbUrl?: (url: string) => void
+    onDbUrl?: (url: string) => void | Promise<void>
   ): Promise<SchemaOk | SchemaFailure> => {
     const resolved = await sourceOf(options, projectDir)
     if ('ok' in resolved) return resolved
@@ -328,7 +330,8 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
     options: PostgrestMapperOptions,
     projectDir: string,
     stampPath: string | undefined,
-    key: string | undefined
+    key: string | undefined,
+    polled: boolean
   ): Promise<SchemaOk | SchemaFailure> => {
     if (key === undefined) return acquire(options, projectDir)
     const stamp = stampPath === undefined ? '' : await fs.readFile(stampPath).catch(() => '')
@@ -338,7 +341,11 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
         stamp,
         pending: undefined as unknown as Promise<SchemaOk | SchemaFailure>,
       }
-      created.pending = acquire(options, projectDir, (url) => (created.dbUrl = url))
+      created.pending = acquire(options, projectDir, async (url) => {
+        created.dbUrl = url
+        // before the dump: a change after this is seen by the poller even when its first probe fails
+        if (polled) created.baseline = await takeFingerprint(url, deps.schema?.connect ?? connectPg)
+      })
       entry = created
       schemas.set(key, entry)
     }
@@ -378,11 +385,11 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
     stampPath: string,
     schemaFs: GeneratorFs
   ): void => {
-    const url = schemas.get(key)?.dbUrl
+    const { dbUrl: url, baseline } = schemas.get(key) ?? {}
     if (url === undefined) return
     let entry = pollers.get(key)
     if (entry) {
-      entry.poller.setUrl(url)
+      entry.poller.setUrl(url, baseline)
       entry.poller.setInterval(intervalMs)
     } else {
       entry = {
@@ -390,6 +397,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
           url,
           intervalMs,
           stampPath,
+          ...(baseline === undefined ? {} : { baseline }),
           connect: deps.schema?.connect ?? connectPg,
           fs: schemaFs,
           logger,
@@ -636,7 +644,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
     if (holder !== undefined) {
       for (const k of [...pollers.keys()]) if (!polled || k !== key) leave(k, holder)
     }
-    const schema = await schemaFor(options, projectDir, stampPath, key)
+    const schema = await schemaFor(options, projectDir, stampPath, key, polled)
     if (schema.ok && polled) hold(key, holder, pollIntervalMs, stampPath, fs)
     const schemaWatched = [...schema.watched, ...(stampPath ? [stampPath] : [])]
     if (!schema.ok) {

@@ -256,8 +256,9 @@ export interface SchemaDeps {
   logger?: SchemaLogger
   /**
    * Called by a live acquisition with the database URL it reads the supplementary catalog from, once it has it (for
-   * `supabase-local` it comes from `supabase status`). The URL carries credentials: whoever receives it must keep it
-   * out of logs, hashes and messages. Never part of `AcquiredSchema`.
+   * `supabase-local` it comes from `supabase status`) and before the schema is dumped; the acquisition waits for it. The
+   * URL carries credentials: whoever receives it must keep it out of logs, hashes and messages. Never part of
+   * `AcquiredSchema`.
    */
-  onResolvedDbUrl?(url: string): void
+  onResolvedDbUrl?(url: string): void | Promise<void>
 }

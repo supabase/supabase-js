@@ -96,7 +96,7 @@ function writeProject(pollIntervalMs: number | undefined): void {
 }
 
 /** Runs `watch` on the project; `fingerprints` counts the polls that completed, to tell when a baseline exists */
-async function watching(): Promise<{
+async function watching(afterAcquisition?: () => Promise<void>): Promise<{
   events: WatchEvent[]
   fingerprints: () => number
   output: () => string
@@ -113,13 +113,19 @@ async function watching(): Promise<{
       schema: {
         connect: async (url, options) => {
           const connection = await connectPg(url, options)
+          let acquiring = false
           return {
             query: async (sql, params) => {
               const rows = await connection.query(sql, params)
               if (sql.includes('bit_xor')) fingerprints++
+              if (sql.includes('server_version_num')) acquiring = true
               return rows
             },
-            close: () => connection.close(),
+            close: async () => {
+              await connection.close()
+              // the acquisition connection closes once the catalog is read: the poller does not exist yet
+              if (acquiring) await afterAcquisition?.()
+            },
           }
         },
       },
@@ -179,6 +185,29 @@ describe('watch of a live schema', () => {
       await w.stop()
       await withCatalogLock(dbUrl, () =>
         admin.query(`ALTER TABLE ${scratch}.items DROP COLUMN IF EXISTS added_column`)
+      )
+    }
+  }, 180_000)
+
+  it('regenerates after a migration that lands between the acquisition and the first probe', async () => {
+    writeProject(200)
+    let raced = false
+    const w = await watching(async () => {
+      if (raced) return
+      raced = true
+      await withCatalogLock(dbUrl, () =>
+        admin.query(`ALTER TABLE ${scratch}.items ADD COLUMN raced_column int`)
+      )
+    })
+    try {
+      await w.until(() => raced && hasRun(w.events), 'the first run')
+      // the first run read the schema before the migration; the poller must not take the migrated one as its baseline
+      await w.until(() => w.output().includes('raced_column'), 'a run that generated the column')
+      expect(existsSync(stampOf())).toBe(true)
+    } finally {
+      await w.stop()
+      await withCatalogLock(dbUrl, () =>
+        admin.query(`ALTER TABLE ${scratch}.items DROP COLUMN IF EXISTS raced_column`)
       )
     }
   }, 180_000)

@@ -194,8 +194,11 @@ describe('content mapper server over a live schema', () => {
     try {
       await s.client.request('initialize', INITIALIZE)
       await s.open('a')
-      await until(() => s.polls.fingerprints > 0, 'the baseline')
-      expect([...s.polls.polling].some((id) => s.polls.open.has(id))).toBe(true)
+      // the first fingerprint is the acquisition's own, over a connection that closes: wait for the poller's
+      await until(
+        () => [...s.polls.polling].some((id) => s.polls.open.has(id)),
+        'the poller to hold a connection'
+      )
 
       expect((await s.client.request('closeProject', { projectHandle: 'a' })).result).toBeNull()
       await until(

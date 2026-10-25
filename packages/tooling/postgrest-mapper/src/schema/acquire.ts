@@ -79,9 +79,17 @@ async function acquireLive(
   const run = createRunner(deps.exec ?? nodeExec, scrub, logger, deadline)
   const fs = deps.fs ?? defaultFs
 
+  // before any dump: a listener that reads the database sees it as it was before the schema was dumped
+  const onDbUrl = async (url: string): Promise<void> => {
+    try {
+      await deps.onResolvedDbUrl?.(url)
+    } catch {
+      // a listener's failure is not the acquisition's
+    }
+  }
   let dumps: PostgrestDumps
   if (source.source === 'supabase-local') {
-    dumps = await dumpSupabaseLocal(source, fs, run)
+    dumps = await dumpSupabaseLocal(source, fs, run, onDbUrl)
   } else {
     dumps = await dumpPostgrestImage(
       {
@@ -90,7 +98,8 @@ async function acquireLive(
         config: source.config,
         network: source.network,
       },
-      run
+      run,
+      onDbUrl
     )
   }
 
@@ -109,11 +118,6 @@ async function acquireLive(
       'database',
       'no database URL to read the supplementary catalog from'
     )
-  try {
-    deps.onResolvedDbUrl?.(dumps.dbUrl)
-  } catch {
-    // a listener's failure is not the acquisition's
-  }
   const urlScrub = createScrubber([
     dumps.dbUrl,
     urlPassword(dumps.dbUrl),

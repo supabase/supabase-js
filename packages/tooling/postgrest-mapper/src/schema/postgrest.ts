@@ -192,7 +192,8 @@ async function findProjectId(
 export async function dumpSupabaseLocal(
   options: SupabaseLocalOptions,
   fs: SchemaFs,
-  run: Runner
+  run: Runner,
+  onDbUrl?: (dbUrl: string) => Promise<void>
 ): Promise<PostgrestDumps> {
   const [cli, ...cliArgs] = options.supabaseCommand ?? ['supabase']
   let dbUrl = options.dbUrl
@@ -214,6 +215,7 @@ export async function dumpSupabaseLocal(
     }
     dbUrl = status.DB_URL
   }
+  await onDbUrl?.(dbUrl)
   const container = `supabase_rest_${await findProjectId(options, fs, run)}`
   const inContainer = (what: string, flag: string) =>
     run(what, 'docker', ['exec', container, 'postgrest', flag])
@@ -257,8 +259,10 @@ export interface PostgrestImageOptions {
 
 export async function dumpPostgrestImage(
   options: PostgrestImageOptions,
-  run: Runner
+  run: Runner,
+  onDbUrl?: (dbUrl: string) => Promise<void>
 ): Promise<PostgrestDumps> {
+  await onDbUrl?.(options.dbUrl)
   const env: Record<string, string> = {
     PGRST_DB_URI: containerDbUrl(options.dbUrl, options.network),
   }
