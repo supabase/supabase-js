@@ -29,7 +29,7 @@ mkdir -p "$SRC_ROOT" "$OUT/lib/pkgconfig" "$OUT/include/libpq"
 
 # Everything that shapes libpq.a: this script (version and flags), the source patches, and the shim
 # sources and headers. A change to any of them rebuilds from a fresh extraction; REBUILD_LIBPQ=1 forces it.
-STAMP=$(cd "$POSTGREST_DIR" && find libpq/build.sh libpq/patches shim/include shim/src/supa_wasi_shim.c shim/src/supa_net_import.c -type f |
+STAMP=$(cd "$POSTGREST_DIR" && find libpq/build.sh libpq/patches shim/include shim/src/supa_wasi_shim.c -type f |
 	LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 | cut -d' ' -f1)
 if [ -z "${REBUILD_LIBPQ:-}" ] && [ -f "$OUT/lib/libpq.a" ] && [ "$(cat "$OUT/.stamp" 2>/dev/null)" = "$STAMP" ]; then
 	echo "libpq up to date: $OUT/lib/libpq.a"
@@ -75,10 +75,8 @@ for f in $COMMON_SRCS; do compile common "$f" ""; done
 for f in $PORT_SRCS; do compile port "$f" ""; done
 $CC $CFLAGS -I"$SHIM/include" -c "$SHIM/src/supa_wasi_shim.c" -o "$OUT/supa_wasi_shim.o"
 
-# Host import object for final links (see the file header) and an empty libpq.so that satisfies
-# the Template Haskell loader's lookup of the extra-library; it is kept out of lib/ so static
-# links pick libpq.a.
-$CC $CFLAGS -c "$SHIM/src/supa_net_import.c" -o "$OUT/supa_net_import.o"
+# An empty libpq.so that satisfies the Template Haskell loader's lookup of the extra-library; it is
+# kept out of lib/ so static links pick libpq.a.
 mkdir -p "$OUT/lib-th"
 echo 'void _initialize(void) {}' > "$OUT/lib-th/stub.c"
 $CC -fPIC -shared -nostdlib -Wl,--no-entry,--export=_initialize -o "$OUT/lib-th/libpq.so" "$OUT/lib-th/stub.c"

@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <wasi/api.h>
 
-/* Defined by supa_net_import.c, which owns the supa_net wasm imports. */
+/* Provided by the final link (the planner's cbits/supa_net_stub.c). */
 extern int supa_net_tcp_connect(const char *addr, size_t addr_len, int attempt_timeout_ms, int *fd_out);
 extern int supa_net_sock_error(int fd, int *err_out, int *elapsed_ms_out);
 

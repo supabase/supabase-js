@@ -10,11 +10,10 @@
 -- same way 'PostgREST.SchemaCache.querySchemaCache' builds it.
 module Planner.SchemaCacheJSON
   ( decodeSchemaCache
-  , encodeSchemaCache
   ) where
 
 import Control.Arrow ((&&&))
-import Data.Aeson (FromJSON (..), FromJSONKey (..), Value, (.:))
+import Data.Aeson (FromJSON (..), FromJSONKey (..), (.:))
 import qualified Data.Aeson as JSON
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.FuzzySet as Fuzzy
@@ -86,7 +85,3 @@ instance FromJSON SchemaCache where
 
 decodeSchemaCache :: LBS.ByteString -> Either String SchemaCache
 decodeSchemaCache = JSON.eitherDecode
-
--- | Re-encode with upstream's ToJSON (the --dump-schema path), as a 'Value' so key order is canonical.
-encodeSchemaCache :: SchemaCache -> Value
-encodeSchemaCache = JSON.toJSON

@@ -40,7 +40,7 @@ import PostgREST.Version (prettyVersion)
 import Planner.BuildInfo (pgrstCommit, pgrstTag)
 import Planner.Config (loadAppConfig)
 import Planner.Request (planRequest)
-import Planner.SchemaCacheJSON (decodeSchemaCache, encodeSchemaCache)
+import Planner.SchemaCacheJSON (decodeSchemaCache)
 import Planner.Supplementary (Supplementary, applyColumnOrder, decodeSupplementary, orderColumns)
 
 -- | Bumped whenever an export's signature or a JSON shape changes incompatibly.
@@ -57,7 +57,6 @@ foreign export ccall planner_alloc :: Word32 -> IO (Ptr Word8)
 foreign export ccall planner_free :: Ptr Word8 -> IO ()
 foreign export ccall planner_info :: IO (Ptr Word8)
 foreign export ccall planner_load :: Ptr Word8 -> Word32 -> Ptr Word8 -> Word32 -> Ptr Word8 -> Word32 -> IO (Ptr Word8)
-foreign export ccall planner_dump :: Int32 -> IO (Ptr Word8)
 foreign export ccall planner_free_cache :: Int32 -> IO ()
 foreign export ccall planner_plan :: Int32 -> Ptr Word8 -> Word32 -> IO (Ptr Word8)
 
@@ -133,10 +132,6 @@ loadDegradation sc supp = case supp of
         | (qi, table) <- HM.toList (dbTables sc)
         , not (snd (orderColumns supp qi (HMI.keys (tableColumns table))))
         ]
-
--- | Re-encode the loaded schema cache with upstream's own ToJSON (the @--dump-schema@ encoder).
-planner_dump :: Int32 -> IO (Ptr Word8)
-planner_dump h = withLoaded h $ \Loaded{ldCache} -> pure (encodeSchemaCache ldCache)
 
 planner_free_cache :: Int32 -> IO ()
 planner_free_cache h = atomicModifyIORef' registry $ \(n, m) -> ((n, IM.delete (fromIntegral h) m), ())

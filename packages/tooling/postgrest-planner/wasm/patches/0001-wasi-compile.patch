@@ -1,0 +1,35 @@
+diff --git a/postgrest.cabal b/postgrest.cabal
+index 99d234d..29a8ab5 100644
+--- a/postgrest.cabal
++++ b/postgrest.cabal
+@@ -169,7 +169,7 @@ library
+                       -- -optP-Wno-nonportable-include-path
+                       --   prevents build failures on case-insensitive filesystems (macos),
+                       --   see https://github.com/commercialhaskell/stack/issues/3918
+-  ghc-options:        -j -Werror -Wall -fwarn-identities
++  ghc-options:        -j -Wall -fwarn-identities
+                       -fno-spec-constr -optP-Wno-nonportable-include-path
+ 
+   if flag(dev)
+diff --git a/src/library/PostgREST/Unix.hs b/src/library/PostgREST/Unix.hs
+index da2c39a..db60b90 100644
+--- a/src/library/PostgREST/Unix.hs
++++ b/src/library/PostgREST/Unix.hs
+@@ -6,7 +6,7 @@ module PostgREST.Unix
+   )
+ where
+ 
+-#ifndef mingw32_HOST_OS
++#if !defined(mingw32_HOST_OS) && !defined(wasi_HOST_OS)
+ import qualified System.Posix.Signals as Signals
+ #endif
+ import Data.String (String)
+@@ -22,7 +22,7 @@ import PostgREST.Observation qualified as Observation
+ 
+ -- | Set signal handlers, only for systems with signals
+ installSignalHandlers :: Observation.ObservationHandler -> IO () -> IO () -> IO () -> IO ()
+-#ifndef mingw32_HOST_OS
++#if !defined(mingw32_HOST_OS) && !defined(wasi_HOST_OS)
+ installSignalHandlers observer interrupt usr1 usr2 = do
+   install Signals.sigINT  $ observer (Observation.TerminationUnixSignalObs "SIGINT") >> interrupt
+   install Signals.sigTERM $ observer (Observation.TerminationUnixSignalObs "SIGTERM") >> interrupt

@@ -36,4 +36,4 @@ executable postgrest-planner
                     , wai
   ghc-options:        -O1 -Wall -Wno-orphans
                       -no-hs-main -optl-mexec-model=reactor
-                      -optl-Wl,--export=hs_init,--export=planner_alloc,--export=planner_free,--export=planner_info,--export=planner_load,--export=planner_dump,--export=planner_free_cache,--export=planner_plan
+                      -optl-Wl,--export=hs_init,--export=planner_alloc,--export=planner_free,--export=planner_info,--export=planner_load,--export=planner_free_cache,--export=planner_plan

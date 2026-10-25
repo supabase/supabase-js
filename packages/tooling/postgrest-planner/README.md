@@ -50,7 +50,6 @@ All payloads are UTF-8 JSON in linear memory; results are a pointer to `[u32 LE 
 - `planner_alloc(n) -> ptr`, `planner_free(ptr)`: host-owned input buffers and results
 - `planner_info() -> res`: `{abi, postgrest:{version,tag,commit}, ghc}`
 - `planner_load(cfgP, cfgN, schP, schN, suppP, suppN) -> res`: config is a JSON object of PostgREST keys, schema is `--dump-schema` output, the last pair is the supplementary catalog (`0, 0` for none; the buffer is copied, the host keeps ownership). Returns `{handle, schemas, summary, ignoredConfigKeys, degraded, columnOrderKnown}`
-- `planner_dump(handle) -> res`: schema cache re-encoded with upstream `ToJSON`
 - `planner_free_cache(handle)`
 - `planner_plan(handle, reqP, reqN) -> res`: plan description or upstream error
 
