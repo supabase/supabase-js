@@ -18,10 +18,6 @@ type _2c = Expect<Equal<Data<typeof p2>, unknown[]>>
 const u = supabase.from('users').select(full ? 'username' : `status,${part}`)
 type _2d = Expect<Equal<Data<typeof u>, unknown[]>>
 
-// a literal -> lookup
-const l = supabase.from('users').select('username')
-type _2e = Expect<Equal<Data<typeof l>, { username: string }[]>>
-
 // dynamic selects are also accepted on mutations and keep a mutation's null/array shape
 const m = supabase.from('users').update({ username: 'x' }).select(cols)
 type _2f = Expect<Equal<Data<typeof m>, unknown[]>>

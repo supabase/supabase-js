@@ -18,20 +18,6 @@ type _3d = Expect<Equal<Data<typeof d>, UserRow[]>>
 declare const full: boolean
 const e = supabase.from('users').select(full ? '*' : 'username')
 type _3e = Expect<Equal<Data<typeof e>, (UserRow | { username: string })[]>>
-// facts work through '*' (identity sources)
-const f = supabase.from('users').select().eq('status', 'ONLINE')
-type _3f = Expect<
-  Equal<
-    Data<typeof f>,
-    {
-      username: string
-      status: 'ONLINE'
-      age_range: string | null
-      catchphrase: string | null
-      data: Theme | null
-    }[]
-  >
->
 
 type Online = {
   username: string

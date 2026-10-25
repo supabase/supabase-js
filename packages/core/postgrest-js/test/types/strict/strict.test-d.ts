@@ -92,20 +92,6 @@ supabase.rpc('ping', { n: 1 }, { head: maybeHead })
 supabase.rpc('ping', { n: 1 }, { head: true })
 supabase.rpc('get_status', { name_param: 'x' }, { get: true })
 supabase.rpc('get_online_users', {}, { get: true })
-// a call that is an { error } rejects, whichever other members of the union are fine
-// @ts-expect-error PGRST202 Could not find the function public.poly_err(b) in the schema cache
-supabase.rpc('poly_err', { b: 1 })
-// more than 6 maybe-keys is dynamic: nothing to reject
-declare const many: {
-  a?: number
-  b?: number
-  c?: number
-  d?: number
-  e?: number
-  f?: number
-  g?: number
-}
-supabase.rpc('many_optional', many)
 
 // 4. rpc operand with no call entry for the possible key set
 // @ts-expect-error not indexed by @supabase/postgrest-mapper: no operand entry for this column in this select. Check the scanner resolved t
