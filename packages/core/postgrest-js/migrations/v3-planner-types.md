@@ -66,7 +66,7 @@ export {}
 
 ## Step 3: replace deprecated forms
 
-These forms still work. Move to the new ones when convenient.
+These forms still work. Move to the new ones when convenient. One exception: `.returns<T>()` and `.overrideTypes<T>()` are no longer available after `.explain()` or `.geojson()`, and neither is `.cast<T>()`; assert the type on the awaited `data` instead (`const plan = data as MyPlan[]`).
 
 ### `.returns<T>()`
 
