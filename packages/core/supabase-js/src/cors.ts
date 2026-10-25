@@ -38,6 +38,7 @@
  * - traceparent: W3C trace context sent when `tracePropagation` is enabled
  * - tracestate: Vendor-specific trace data sent alongside traceparent
  * - baggage: W3C baggage sent alongside traceparent
+ * - x-supabase-namespace: Client namespace sent when the `namespace` option is set
  */
 const SUPABASE_HEADERS = [
   'authorization',
@@ -48,6 +49,7 @@ const SUPABASE_HEADERS = [
   'traceparent',
   'tracestate',
   'baggage',
+  'x-supabase-namespace',
 ].join(', ')
 
 /**

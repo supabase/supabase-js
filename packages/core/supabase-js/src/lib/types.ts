@@ -336,6 +336,51 @@ export type SupabaseClientOptions<SchemaName> = {
    * @see https://www.w3.org/TR/trace-context/
    */
   tracePropagation?: TracePropagationOptions | boolean
+  /**
+   * Keeps this client's Realtime channels, Storage objects and auth session apart from
+   * other clients of the same project, for example several development sessions sharing
+   * one branch, or tenants of a multi-tenant app.
+   *
+   * When set:
+   * - Realtime channel topics are prefixed: `channel('room')` joins `s07:room`. Realtime
+   *   Authorization policies and `realtime.send()` calls see the prefixed topic.
+   * - Storage object paths are prefixed: `upload('a.png')` stores `s07/a.png`. Paths
+   *   returned by Storage stay relative to the namespace, except `fullPath`.
+   * - Every request (Database, Auth, Storage, Edge Functions) sends an
+   *   `x-supabase-namespace` header. Postgres can read it with
+   *   `current_setting('request.headers', true)::json->>'x-supabase-namespace'`, and
+   *   server-side code can adopt it with `namespaceFrom(req)`. Edge Functions called from
+   *   a browser must allow the header in CORS; `corsHeaders` from
+   *   `@supabase/supabase-js/cors` does.
+   * - The default `auth.storageKey` includes the namespace, so sessions in the same browser
+   *   don't overwrite each other's tokens.
+   *
+   * Must be 1-63 letters, digits, `-` or `_`, starting with a letter or digit. When unset,
+   * the client behaves as before.
+   *
+   * The namespace is a convention, not an access boundary: RLS policies still decide what
+   * each user can read and write, and anything that doesn't go through a namespaced client
+   * (the SQL editor, cron jobs, triggers, other clients) ignores it.
+   *
+   * @example
+   * ```ts
+   * const supabase = createClient(url, key, { namespace: 's07' })
+   *
+   * supabase.channel('room') // joins `s07:room`
+   * await supabase.storage.from('photos').upload('a.png', file) // stores `s07/a.png`
+   * ```
+   *
+   * @example Adopt the caller's namespace in an Edge Function
+   * ```ts
+   * import { createClient, namespaceFrom } from '@supabase/supabase-js'
+   *
+   * Deno.serve(async (req) => {
+   *   const supabase = createClient(url, key, { namespace: namespaceFrom(req) })
+   *   // ...
+   * })
+   * ```
+   */
+  namespace?: string | undefined
 }
 
 /**
