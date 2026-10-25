@@ -103,3 +103,25 @@ type _da22 = Expect<Equal<Data<typeof bothOther>, Plain>>
 // foreignTable fills in when referencedTable is undefined
 const undef = embed().limit(1, { referencedTable: undefined, foreignTable: 'channels' })
 type _da23 = Expect<Equal<Data<typeof undef>, Wide>>
+
+// ---- the v2 type-argument forms of single / maybeSingle behave as cast<T>() before them
+const singleArg = supabase.from('users').select('username, status').single<{ id: number }>()
+type _da30 = Expect<Equal<Data<typeof singleArg>, { id: number }>>
+const castThenSingle = supabase
+  .from('users')
+  .select('username, status')
+  .cast<{ id: number }>()
+  .single()
+type _da31 = Expect<Equal<typeof singleArg, typeof castThenSingle>>
+const maybeSingleArg = supabase
+  .from('users')
+  .select('username, status')
+  .maybeSingle<{ id: number }>()
+type _da32 = Expect<Equal<Data<typeof maybeSingleArg>, { id: number } | null>>
+const singleArgRpc = supabase.rpc('get_status', { name_param: 'x' }).single<string>()
+type _da33 = Expect<Equal<Data<typeof singleArgRpc>, string>>
+const maybeSingleArgRpc = supabase.rpc('get_status', { name_param: 'x' }).maybeSingle<string>()
+type _da34 = Expect<Equal<Data<typeof maybeSingleArgRpc>, string | null>>
+// without a type argument the derived row is kept
+const singlePlain = supabase.from('users').select('username').single()
+type _da35 = Expect<Equal<Data<typeof singlePlain>, { username: string }>>

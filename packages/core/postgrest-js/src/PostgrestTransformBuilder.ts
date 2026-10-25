@@ -676,7 +676,10 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
-  single(): PostgrestFilterBuilder<B, E, F, SetM<M, { card: 'one'; fmt: 'json' }>> {
+  single(): PostgrestFilterBuilder<B, E, F, SetM<M, { card: 'one'; fmt: 'json' }>>
+  /** @deprecated Use `.cast<T>().single()` */
+  single<T>(): PostgrestFilterBuilder<B, Desc<T>, F, SetM<M, { card: 'one'; fmt: 'json' }>>
+  single(): PostgrestFilterBuilder<B, any, F, SetM<M, { card: 'one'; fmt: 'json' }>> {
     this.headers.set('Accept', 'application/vnd.pgrst.object+json')
     // the last of single() and maybeSingle() wins: the server answers with the object, nothing is left to unwrap
     this.isMaybeSingle = false
@@ -722,7 +725,10 @@ export default class PostgrestTransformBuilder<
    * }
    * ```
    */
-  maybeSingle(): PostgrestFilterBuilder<B, E, F, SetM<M, { card: 'maybe' }>> {
+  maybeSingle(): PostgrestFilterBuilder<B, E, F, SetM<M, { card: 'maybe' }>>
+  /** @deprecated Use `.cast<T>().maybeSingle()` */
+  maybeSingle<T>(): PostgrestFilterBuilder<B, Desc<T>, F, SetM<M, { card: 'maybe' }>>
+  maybeSingle(): PostgrestFilterBuilder<B, any, F, SetM<M, { card: 'maybe' }>> {
     // No Accept header override — we fetch as a list and enforce cardinality client-side.
     // Fixes https://github.com/supabase/postgrest-js/issues/361 for all request methods.
     // The last of single() and maybeSingle() wins: single()'s object header would make the server refuse zero rows.
