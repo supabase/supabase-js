@@ -1055,7 +1055,7 @@ export default class PostgrestQueryBuilder<DB, S extends string, R extends strin
    * }
    * ```
    */
-  insert<const O extends InsertOptions | undefined = {}, Row extends InsertOf<DB, S, R> = never>(
+  insert<Row extends InsertOf<DB, S, R> = never, const O extends InsertOptions | undefined = {}>(
     values:
       | RejectExcessProperties<InsertOf<DB, S, R>, Row>
       | RejectExcessProperties<InsertOf<DB, S, R>, Row>[],
@@ -1311,7 +1311,7 @@ export default class PostgrestQueryBuilder<DB, S extends string, R extends strin
    * ```
    */
 
-  upsert<const O extends UpsertOptions | undefined = {}, Row extends InsertOf<DB, S, R> = never>(
+  upsert<Row extends InsertOf<DB, S, R> = never, const O extends UpsertOptions | undefined = {}>(
     values:
       | RejectExcessProperties<InsertOf<DB, S, R>, Row>
       | RejectExcessProperties<InsertOf<DB, S, R>, Row>[],
@@ -1505,7 +1505,7 @@ export default class PostgrestQueryBuilder<DB, S extends string, R extends strin
    * }
    * ```
    */
-  update<const O extends MutOptions | undefined = {}, Row extends UpdateOf<DB, S, R> = never>(
+  update<Row extends UpdateOf<DB, S, R> = never, const O extends MutOptions | undefined = {}>(
     values: RejectExcessProperties<UpdateOf<DB, S, R>, Row>,
     ...rest: [] | [options: O]
   ): PostgrestFilterBuilder<WB<DB, S, R>, never, {}, MutM<O, true>>
