@@ -4,13 +4,14 @@ import type {
   BS,
   BState,
   CallBase,
+  EntryReject,
   IsAny,
   Q0,
   ReturnsBase,
   Unplanned,
   Untyped,
 } from './lookup'
-import type { Strict, UnplannedRpcMessage } from './globals'
+import type { UnplannedRpcMessage } from './globals'
 import type { RequestedOf } from './options'
 
 // ---------------------------------------------------------------- rpc key sets
@@ -267,13 +268,7 @@ export type RowCalls<Calls, O> =
         ? never
         : Calls
     : Calls
-export type CallReject<Call> = Call extends { error: infer E extends string }
-  ? E
-  : Call extends Unplanned
-    ? Strict extends true
-      ? UnplannedRpcMessage
-      : never
-    : never
+export type CallReject<Call> = EntryReject<Call, UnplannedRpcMessage>
 // no routine information to check the argument values against. A call with no entry is checked against the
 // function's `Args` in the Database.
 export type Unchecked<Calls> = Untyped extends Calls ? true : Dynamic extends Calls ? true : false

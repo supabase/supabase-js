@@ -71,6 +71,15 @@ export type OKey<B extends BState, Q extends string, C extends string> = `${Key<
 // the key of an `.order()` column: it starts with `order|`, a select key with its kind, so the two never meet
 export type OrdKey<B extends BState, Q extends string, C extends string> = `order|${OKey<B, Q, C>}`
 export type Unplanned = { unplanned: true }
+// the message that rejects one planned entry (distributes over a union): its own `error` wins, else an unplanned entry
+// is rejected with `Missing` in the strict policy only
+export type EntryReject<En, Missing extends string> = En extends { error: infer E extends string }
+  ? E
+  : En extends Unplanned
+    ? Strict extends true
+      ? Missing
+      : never
+    : never
 // an rpc whose key set can't be enumerated: nothing to look up, rows unknown
 export type Dynamic = { dynamic: true }
 // the entry of every lookup on an untyped client (`PostgrestClient<any>`): nothing is planned, nothing is rejected
@@ -141,15 +150,7 @@ export type Entry<B extends BState, Q extends string> = Q extends unknown
 // per member of Q: the message that rejects it, or never
 export type Reject<B extends BState, Q extends string> = Q extends '*'
   ? never
-  : Entry<B, Q> extends infer En
-    ? En extends { error: infer E extends string }
-      ? E
-      : En extends Unplanned
-        ? Strict extends true
-          ? UnplannedSelectMessage
-          : never
-        : never
-    : never
+  : EntryReject<Entry<B, Q>, UnplannedSelectMessage>
 
 // rejects the argument when any member of a literal union fails
 export type Validate<B extends BState, Q extends string> =
@@ -332,16 +333,10 @@ export type ValueOf<B extends BState, C extends string> = C extends keyof B['row
           : never
       : never
 
-export type OperandReject<B extends BState, C extends string> =
-  OperandEntry<B, C> extends infer En
-    ? En extends { error: infer E extends string }
-      ? E
-      : En extends Unplanned
-        ? Strict extends true
-          ? UnplannedOperandMessage
-          : never
-        : never
-    : never
+export type OperandReject<B extends BState, C extends string> = EntryReject<
+  OperandEntry<B, C>,
+  UnplannedOperandMessage
+>
 
 export type ColArg<B extends BState, C extends string> =
   true extends IsDynamic<C>
@@ -366,16 +361,10 @@ export type OrderEntry<B extends BState, C extends string> =
           : never
         : never
 
-export type OrderReject<B extends BState, C extends string> =
-  OrderEntry<B, C> extends infer En
-    ? En extends { error: infer E extends string }
-      ? E
-      : En extends Unplanned
-        ? Strict extends true
-          ? UnplannedOperandMessage
-          : never
-        : never
-    : never
+export type OrderReject<B extends BState, C extends string> = EntryReject<
+  OrderEntry<B, C>,
+  UnplannedOperandMessage
+>
 
 export type OrderArg<B extends BState, C extends string> =
   true extends IsDynamic<C>
