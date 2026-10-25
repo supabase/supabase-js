@@ -68,9 +68,24 @@ type Overridden<B extends BState, E, F, M extends MState, New, Options> =
   Out<E, F, M> extends infer R
     ? IsAny<New> extends true
       ? PostgrestFilterBuilder<B, Desc<any>, F, M>
-      : OverrideValid<R, New> extends true
-        ? PostgrestFilterBuilder<B, Desc<OverrideRow<OverrideData<R, New, Options>, New, M>>, F, M>
-        : OverrideMismatch<R>
+      : // an untyped result has no shape to validate: the override applies as is (an untyped rpc is a 'one' base: its array stays whole)
+        IsAny<R> extends true
+        ? PostgrestFilterBuilder<
+            B,
+            Desc<
+              [M['card'], M['base']] extends ['default', 'one'] ? New : OverrideRow<New, New, M>
+            >,
+            F,
+            M
+          >
+        : OverrideValid<R, New> extends true
+          ? PostgrestFilterBuilder<
+              B,
+              Desc<OverrideRow<OverrideData<R, New, Options>, New, M>>,
+              F,
+              M
+            >
+          : OverrideMismatch<R>
     : never
 
 export default class PostgrestTransformBuilder<

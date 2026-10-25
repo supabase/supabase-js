@@ -62,3 +62,29 @@ const o3 = untypedSchema.from('no_such_table').select('a')
 type _20n = Expect<Equal<Data<typeof o3>, any[]>>
 const o4 = untypedSchema.rpc('no_such_function', { a: 1 })
 type _20o = Expect<Equal<Data<typeof o4>, any>>
+
+// returns / overrideTypes on an `any` result apply the override and keep the builder
+const v1 = untyped.from('no_such_table').select().single().returns<{ id: number }>().throwOnError()
+type _20p = Expect<Equal<Data<typeof v1>, { id: number }>>
+const v2 = untyped
+  .from('no_such_table')
+  .select()
+  .single()
+  .overrideTypes<{ id: number }, { merge: false }>()
+  .throwOnError()
+type _20q = Expect<Equal<Data<typeof v2>, { id: number }>>
+const v3 = untyped.from('no_such_table').select().returns<{ id: number }[]>().throwOnError()
+type _20r = Expect<Equal<Data<typeof v3>, { id: number }[]>>
+const v4 = untyped
+  .from('no_such_table')
+  .select()
+  .overrideTypes<{ id: number }[], { merge: false }>()
+  .throwOnError()
+type _20s = Expect<Equal<Data<typeof v4>, { id: number }[]>>
+const v5 = untyped.rpc('no_such_function').returns<{ id: number }[]>().throwOnError()
+type _20t = Expect<Equal<Data<typeof v5>, { id: number }[]>>
+const v6 = untyped
+  .rpc('no_such_function')
+  .overrideTypes<{ id: number }[], { merge: false }>()
+  .throwOnError()
+type _20u = Expect<Equal<Data<typeof v6>, { id: number }[]>>
