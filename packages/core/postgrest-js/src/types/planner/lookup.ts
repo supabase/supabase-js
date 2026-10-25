@@ -291,7 +291,11 @@ export type Descs<B extends BState, Q extends string> =
       : Desc<any>
     : true extends IsDynamic<Q>
       ? B['k'] extends 'f'
-        ? Desc<unknown>
+        ? // a dynamic re-select of an rpc has no entry to look up: in loose mode it reads the carried `Returns` as an
+          // unplanned select that names columns does, in strict mode it is unknown
+          Strict extends true
+          ? Desc<unknown>
+          : ReturnsDesc<B['st'], false>
         : Desc<UnplannedRows<B['row'], unknown>>
       : Q extends unknown
         ? B['k'] extends 'f'

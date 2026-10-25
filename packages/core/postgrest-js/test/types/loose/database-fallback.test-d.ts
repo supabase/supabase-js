@@ -133,6 +133,25 @@ type _r1a = Expect<Equal<Data<typeof r1a>, number>>
 // ... and an entry still wins: the planned rows, projected
 const r6a = supabase.rpc('get_user_messages', { user_name: 'x' }).select('id')
 type _r6a = Expect<Equal<Data<typeof r6a>, { id: number }[]>>
+// ... a dynamic re-select reads the same fallback as a literal one that names columns (`select(cols)`: `cols` is a `string`)
+const r2d = supabase.rpc('db_only_rows', { owner: 'x' }).select(cols)
+type _r2d = Expect<Equal<Data<typeof r2d>, Fallback<{ id: number; title: string | null }>[]>>
+const r2ds = supabase.rpc('db_only_rows', { owner: 'x' }).select(cols).single()
+type _r2ds = Expect<Equal<Data<typeof r2ds>, Fallback<{ id: number; title: string | null }>>>
+const r2dm = supabase.rpc('db_only_rows', { owner: 'x' }).select(cols).maybeSingle()
+type _r2dm = Expect<Equal<Data<typeof r2dm>, Fallback<{ id: number; title: string | null }> | null>>
+// ... a scalar stays the scalar, a single-object `Returns` is the one row
+const r1d = supabase.rpc('db_only_count', { n: 1 }).select(cols)
+type _r1d = Expect<Equal<Data<typeof r1d>, number>>
+// (`get_address` is planned only for `*`, so a column select of it is unplanned)
+const r7 = supabase.rpc('get_address', { id: 1 }).select('street')
+type _r7 = Expect<Equal<Data<typeof r7>, Fallback<{ street: string | null; city: string | null }>>>
+const r7d = supabase.rpc('get_address', { id: 1 }).select(cols)
+type _r7d = Expect<Equal<Data<typeof r7d>, Data<typeof r7>>>
+// ... and a call with no known `Returns` stays unknown
+// @ts-expect-error Argument of type
+const r8d = supabase.rpc('no_such_function').select(cols)
+type _r8d = Expect<Equal<Data<typeof r8d>, unknown>>
 // arguments are checked against Args
 // @ts-expect-error Type 'string' is not assignable to type 'number'
 supabase.rpc('db_only_count', { n: 'x' })

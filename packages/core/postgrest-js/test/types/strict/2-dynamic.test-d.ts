@@ -25,3 +25,10 @@ type _2e = Expect<Equal<Data<typeof l>, { username: string }[]>>
 // dynamic selects are also accepted on mutations and keep a mutation's null/array shape
 const m = supabase.from('users').update({ username: 'x' }).select(cols)
 type _2f = Expect<Equal<Data<typeof m>, unknown[]>>
+
+// a dynamic re-select of an rpc keeps no fallback: the call has an entry, and the Database's `Returns` isn't read
+const r = supabase.rpc('get_address', { id: 1 }).select(cols)
+type _2g = Expect<Equal<Data<typeof r>, unknown>>
+// a dynamic select after a setof rpc keeps the array shape, rows unknown
+const rs = supabase.rpc('get_user_messages', { user_name: 'x' }).select(cols)
+type _2h = Expect<Equal<Data<typeof rs>, unknown[]>>

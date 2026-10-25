@@ -53,7 +53,4 @@ type _8f = Expect<Equal<Data<typeof sc>, Status | null>>
 // select() with no argument after rpc re-keys f|...|* (the call's own row)
 const rd = supabase.rpc('get_user_messages', { user_name: 'x' }).select()
 type _8g = Expect<Equal<Data<typeof rd>, MessageRow[]>>
-// a dynamic select after a setof rpc keeps the array shape, rows unknown
-declare const cols: string
-const rdyn = supabase.rpc('get_user_messages', { user_name: 'x' }).select(cols)
-type _8h = Expect<Equal<Data<typeof rdyn>, unknown[]>>
+// a dynamic select after a setof rpc keeps the array shape: see loose/2-dynamic and strict/2-dynamic for its rows
