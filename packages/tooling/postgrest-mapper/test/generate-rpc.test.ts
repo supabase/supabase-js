@@ -93,6 +93,18 @@ const u6 = supabase.rpc('polymorphic_function_with_no_params_or_unnamed', { '': 
 export type U6 = Expect<Equal<Data<typeof u6>, string | null>>
 `
 
+// the options object is a mutable const: TypeScript widens its `get` to boolean, so the call is a GET or a POST
+const APP_MUTABLE_OPTIONS = `
+import type { PostgrestClient } from '@supabase/postgrest-js'
+import type { Data, Equal, Expect } from './helpers'
+declare const supabase: PostgrestClient
+type Status = 'ONLINE' | 'OFFLINE'
+
+const options = { get: true }
+const m1 = supabase.rpc('get_status', { name_param: 'x' }, options)
+export type M1 = Expect<Equal<Data<typeof m1>, Status | null>>
+`
+
 let acquired: AcquiredSchema
 beforeAll(async () => {
   acquired = await acquireFromStack()
@@ -175,6 +187,26 @@ describe('rpc entries and operands of a project', () => {
 
     const checked = typecheckConsumer({
       files: { 'db.d.ts': text, 'helpers.ts': HELPERS, 'app.ts': APP },
+    })
+    expect(checked.byFile.get('db.d.ts') ?? []).toEqual([])
+    expect(checked.byFile.get('app.ts') ?? []).toEqual([])
+  }, 180_000)
+
+  it('plans both the GET and the POST call of an rpc whose options are a mutable const', async () => {
+    const p = await project({ 'src/app.ts': APP_MUTABLE_OPTIONS })
+    const result = await generateDeclarations({
+      configFileName: p.configFileName,
+      options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
+      deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
+    })
+    expect(result.diagnostics).toEqual([])
+    const { text } = result
+    const entry = text.slice(text.indexOf("'f|public|get_status|*'"))
+    expect(entry).toMatch(/keys: 'name_param'\n\s+method: 'GET'\n\s+form: 'single-scalar'/)
+    expect(entry).toMatch(/keys: 'name_param'\n\s+method: 'POST'\n\s+form: 'single-scalar'/)
+
+    const checked = typecheckConsumer({
+      files: { 'db.d.ts': text, 'helpers.ts': HELPERS, 'app.ts': APP_MUTABLE_OPTIONS },
     })
     expect(checked.byFile.get('db.d.ts') ?? []).toEqual([])
     expect(checked.byFile.get('app.ts') ?? []).toEqual([])

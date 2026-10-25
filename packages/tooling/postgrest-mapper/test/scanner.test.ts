@@ -259,6 +259,38 @@ describe('rpc', () => {
     ])
   })
 
+  it('widens the booleans of a mutable const object, keeps them for inline and as const objects', () => {
+    const r = scan(`
+      const mutable = { get: true }
+      const alias = mutable
+      const frozen = { get: true } as const
+      const frozenAlias = frozen
+      const flag = true
+      const viaFlag = { get: flag }
+      supabase.rpc('a', {}, mutable)
+      supabase.rpc('b', {}, alias)
+      supabase.rpc('c', {}, { get: true })
+      supabase.rpc('d', {}, frozen)
+      supabase.rpc('e', {}, frozenAlias)
+      supabase.rpc('g', {}, { get: flag })
+      supabase.rpc('h', {}, viaFlag)
+      supabase.rpc('i', {}, { head: false } satisfies Opts)
+    `)
+    expect(selects(r)).toEqual([
+      'f|*|a():GET|*',
+      'f|*|a():POST|*',
+      'f|*|b():GET|*',
+      'f|*|b():POST|*',
+      'f|*|c():GET|*',
+      'f|*|d():GET|*',
+      'f|*|e():GET|*',
+      'f|*|g():GET|*',
+      'f|*|h():GET|*',
+      'f|*|h():POST|*',
+      'f|*|i():POST|*',
+    ])
+  })
+
   it('records every possible method for non-literal options', () => {
     const r = scan(`
       supabase.rpc('a', {}, { get: flag })

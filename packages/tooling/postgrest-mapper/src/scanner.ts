@@ -134,15 +134,50 @@ function memberName(callee: Node): string | undefined {
   return p.type === 'Literal' && typeof p.value === 'string' ? p.value : undefined
 }
 
+/**
+ * Whether an object is reached through an unannotated `const` whose initializer is not `as const`: TypeScript widens
+ * its boolean properties to `boolean`, while an inline literal (contextually typed) or an `as const` object keeps them.
+ */
+function isWidenedConst(node: Node, scope: Scope): boolean {
+  const seen = new Set<Node>()
+  let followed = false
+  for (;;) {
+    if (seen.has(node)) return followed
+    seen.add(node)
+    if (
+      (node.type === 'TSAsExpression' || node.type === 'TSTypeAssertion') &&
+      node.typeAnnotation?.typeName?.name === 'const'
+    ) {
+      return false
+    }
+    if (
+      node.type === 'ParenthesizedExpression' ||
+      node.type === 'TSNonNullExpression' ||
+      node.type === 'TSSatisfiesExpression'
+    ) {
+      node = node.expression
+    } else if (node.type === 'Identifier') {
+      const b = scope.lookup(node.name)
+      if (!b?.init || b.annotated) return followed
+      followed = true
+      node = b.init
+      scope = b.scope
+    } else {
+      return followed
+    }
+  }
+}
+
 /** The methods an rpc call can send, over every value its `get` / `head` options can take (head wins over get). */
 function rpcMethods(options: Node | undefined, scope: Scope): RpcMethod[] {
   if (!options || isUndefinedLiteral(options)) return ['POST']
+  const widened = isWidenedConst(options, scope)
   const flag = (name: string): boolean[] => {
     const p = objectProperty(options, scope, name)
     if (p === 'absent') return [false]
     if (p === 'unknown') return [true, false]
     if (isUndefinedLiteral(p.value)) return [false]
-    const b = resolveBoolean(p.value, p.scope)
+    const b = widened ? undefined : resolveBoolean(p.value, p.scope)
     return b === undefined ? [true, false] : [b]
   }
   const methods = new Set<RpcMethod>()
