@@ -6,9 +6,25 @@ import { StorageVectorsClient } from './packages/StorageVectorsClient'
 
 export interface StorageClientOptions {
   useNewHostname?: boolean
+  /**
+   * Folder prepended to every object path, in every bucket. With `pathPrefix: 's07'`,
+   * `upload('a.png')` stores `s07/a.png`. Lets several clients share the same buckets
+   * without overwriting each other's files.
+   *
+   * Paths you pass in are relative to the prefix, and so are the paths and names the
+   * client returns, so they can be passed back as-is. `fullPath`, and the `path` returned
+   * by `copy`, keep the real `bucket/prefix/...` key.
+   *
+   * Bucket-level operations (`emptyBucket`, `deleteBucket`, `purgeBucketCache`) are not
+   * scoped to the prefix. The prefix is not an access boundary: use RLS policies on
+   * `storage.objects` to restrict access.
+   */
+  pathPrefix?: string
 }
 
 export class StorageClient extends StorageBucketApi {
+  protected pathPrefix: string | undefined
+
   /**
    * Creates a client for Storage buckets, files, analytics, and vectors.
    *
@@ -40,6 +56,7 @@ export class StorageClient extends StorageBucketApi {
     opts?: StorageClientOptions
   ) {
     super(url, headers, fetch, opts)
+    this.pathPrefix = opts?.pathPrefix
   }
 
   /**
@@ -56,7 +73,7 @@ export class StorageClient extends StorageBucketApi {
    * ```
    */
   from(id: string): StorageFileApi {
-    return new StorageFileApi(this.url, this.headers, id, this.fetch)
+    return new StorageFileApi(this.url, this.headers, id, this.fetch, this.pathPrefix)
   }
 
   /**
