@@ -416,14 +416,11 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
   // ---- planning
   interface Planned {
     entries: Map<string, StoredPlan>
-    context: DatabasePlanContext
-    contextDiagnostics: PrintDiagnostic[]
+    context: DatabasePlanContext & { diagnostics: PrintDiagnostic[] }
     cache: CacheOutcome
     failures: string[]
     /** Releases of another patch than the planner's */
     warnings: string[]
-    /** The release the planner models: what the cache file keeps for the next run */
-    plannerRelease: string
   }
 
   interface PlanFailure {
@@ -458,11 +455,9 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       return {
         entries,
         context,
-        contextDiagnostics: context.diagnostics,
         cache: 'hit',
         failures: [],
         warnings: verdict.warnings,
-        plannerRelease: cached.plannerRelease,
       }
     }
 
@@ -491,7 +486,6 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
         loadedSchema = schemaId
       }
       const failures: string[] = []
-      let diagnostics: PrintDiagnostic[] = context?.diagnostics ?? []
       if (!context) {
         const planned = await planDatabase({
           acquired,
@@ -507,8 +501,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
             code: DiagnosticCode.PlannerUnavailable,
           }
         }
-        context = { ...planned.inputs, diagnostics: planned.inputs.diagnostics }
-        diagnostics = planned.inputs.diagnostics
+        context = planned.inputs
         // a relation the host could not plan is missing from the context: the output reports it and the run is not cached
         for (const name of planned.inputs.failures) failures.push(`select=* of ${name}`)
       }
@@ -560,14 +553,13 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
         planner: await plannerStamp(),
         plannerRelease: info.postgrest.version,
         schema: schemaId,
-        context: serializeContext(context, diagnostics),
+        context: serializeContext(context, context.diagnostics),
         entries: Object.fromEntries([...entries].sort(([a], [b]) => (a < b ? -1 : 1))),
       }
       if (failures.length === 0) await cache?.write(file)
       return {
         entries,
         context,
-        contextDiagnostics: diagnostics,
         cache:
           cache === undefined
             ? ('disabled' as const)
@@ -576,7 +568,6 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
               : ('miss' as const),
         failures,
         warnings: verdict.warnings,
-        plannerRelease: info.postgrest.version,
       }
     })
   }
@@ -750,10 +741,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
 
     // ---- print
     const importFrom = deps.importFrom
-    const members = printDatabaseMembers(acquired, {
-      ...planned.context,
-      diagnostics: planned.contextDiagnostics,
-    })
+    const members = printDatabaseMembers(acquired, planned.context)
     const context = createSelectsContext({
       supplementary: acquired.supplementary,
       plans: planned.context.plans,
@@ -897,7 +885,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       scannedEntries,
       warnings: [
         ...planned.warnings,
-        ...planned.contextDiagnostics.filter((d) => d.severity !== 'info').map((d) => d.message),
+        ...planned.context.diagnostics.filter((d) => d.severity !== 'info').map((d) => d.message),
       ],
     }
   }
