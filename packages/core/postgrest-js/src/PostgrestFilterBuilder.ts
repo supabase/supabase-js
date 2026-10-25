@@ -1748,7 +1748,7 @@ export default class PostgrestFilterBuilder<
    *
    * ```
    */
-  not<const C extends string, const Op extends string, const V>(
+  not<const C extends string, const Op extends FilterOperator | (string & {}), const V>(
     column: ColArg<B, C>,
     operator: Op,
     value: V
@@ -2037,7 +2037,12 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  filter<const C extends string, const Op extends string, const V, const O extends RefOpts = {}>(
+  filter<
+    const C extends string,
+    const Op extends `${'' | 'not.'}${FilterOperator}` | (string & {}),
+    const V,
+    const O extends RefOpts = {},
+  >(
     // a referencedTable filter column belongs to the embed: not checked against the root
     column: HasRef<O> extends true ? C : ColArg<B, C>,
     operator: Op,
