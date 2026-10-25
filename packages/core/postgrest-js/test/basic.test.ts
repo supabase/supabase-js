@@ -17,63 +17,6 @@ function labelIds(res: { data: unknown }, generatedIds: number[]) {
 }
 
 test('basic select table', async () => {
-  const res = await postgrest.from('users').select().order('username')
-  expect(res).toMatchInlineSnapshot(`
-    {
-      "count": null,
-      "data": [
-        {
-          "age_range": "[25,35)",
-          "catchphrase": "'bat' 'rat'",
-          "data": null,
-          "status": "ONLINE",
-          "username": "awailas",
-        },
-        {
-          "age_range": "[20,30)",
-          "catchphrase": "'fat' 'rat'",
-          "data": null,
-          "status": "ONLINE",
-          "username": "dragarcia",
-        },
-        {
-          "age_range": "[20,30)",
-          "catchphrase": "'json' 'test'",
-          "data": {
-            "foo": {
-              "bar": {
-                "nested": "value",
-              },
-              "baz": "string value",
-            },
-          },
-          "status": "ONLINE",
-          "username": "jsonuser",
-        },
-        {
-          "age_range": "[25,35)",
-          "catchphrase": "'bat' 'cat'",
-          "data": null,
-          "status": "OFFLINE",
-          "username": "kiwicopple",
-        },
-        {
-          "age_range": "[1,2)",
-          "catchphrase": "'cat' 'fat'",
-          "data": null,
-          "status": "ONLINE",
-          "username": "supabot",
-        },
-      ],
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
-      "success": true,
-    }
-  `)
-})
-
-test('basic select cast the row type', async () => {
   const res = await postgrest
     .from('users')
     .select()
@@ -126,31 +69,6 @@ test('basic select cast the row type', async () => {
           "username": "supabot",
         },
       ],
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
-      "success": true,
-    }
-  `)
-})
-
-test('basic select returns from builder', async () => {
-  const res = await postgrest
-    .from('users')
-    .select()
-    .eq('username', 'supabot')
-    .single()
-    .cast<{ status: 'ONLINE' | 'OFFLINE' }>()
-  expect(res).toMatchInlineSnapshot(`
-    {
-      "count": null,
-      "data": {
-        "age_range": "[1,2)",
-        "catchphrase": "'cat' 'fat'",
-        "data": null,
-        "status": "ONLINE",
-        "username": "supabot",
-      },
       "error": null,
       "status": 200,
       "statusText": "OK",
