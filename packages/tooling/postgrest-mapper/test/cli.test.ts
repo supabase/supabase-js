@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { nodeExec, type AcquiredSchema } from '../src'
+import type { AcquiredSchema } from '../src'
 import { runCli, type CliOptions } from '../src/cli'
-import { STACK_WORKDIR, acquireFromStack, plannerWasmPath } from './support/acquired'
+import { STACK_WORKDIR, acquireFromStack, plannerWasmPath, stackDbUrl } from './support/acquired'
 import { withCatalogLock } from './support/catalog-lock'
 import { createTempProject, type TempProject } from './support/project'
 
@@ -293,15 +293,7 @@ describe('postgrest-mapper snapshot', () => {
         'npx supabase',
         ...extra,
       ])
-    const status = await nodeExec('npx', [
-      'supabase',
-      'status',
-      '-o',
-      'json',
-      '--workdir',
-      STACK_WORKDIR,
-    ])
-    const dbUrl = JSON.parse(status.stdout.slice(status.stdout.indexOf('{'))).DB_URL
+    const dbUrl = await stackDbUrl()
     // fresh means the catalog did not move in between: no other suite's DDL may land between the two
     await withCatalogLock(dbUrl, async () => {
       expect(await args()).toMatchObject({ code: 0, stdout: 'wrote out/schema.json\n' })

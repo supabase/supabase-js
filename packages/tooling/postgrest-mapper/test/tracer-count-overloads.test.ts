@@ -5,22 +5,13 @@ import {
   type SupplementaryFunction,
   type Tracer,
 } from '../src'
+import { column, supplementary as catalog, table } from './support/printer'
 
 /**
  * `count(x)` is the builtin (bigint, never NULL) unless a function or aggregate named `count` of the schemas the body
  * resolves function names in takes the operand: the rule of the planner's `aggregateOverloaded`, over the catalog the
  * tracer is given. The live case (a schema the catalog does not list) is `generate-count-overloads.test.ts`.
  */
-
-const column = (name: string, type: string, attnum: number) => ({
-  name,
-  attnum,
-  type,
-  notNull: true,
-  hasDefault: false,
-  identity: null,
-  generated: null,
-})
 
 const body = (sql: string, searchPath: string | null): SupplementaryFunction => ({
   schema: 'public',
@@ -36,40 +27,24 @@ const body = (sql: string, searchPath: string | null): SupplementaryFunction => 
   searchPath,
 })
 
-const supplementary = (extra: Partial<Supplementary>): Supplementary => ({
-  format: 1,
-  composites: [],
-  foreignKeys: [],
-  schemas: ['public', 'extra'],
-  searchPathFunctions: [],
-  types: [{ schema: 'public', name: 'amount', kind: 'd', base: 'integer' }],
-  casts: [],
-  aggregates: [],
-  implicitCasts: [
-    { source: 'integer', target: 'bigint' },
-    { source: 'smallint', target: 'integer' },
-  ],
-  enums: [],
-  jsonSchemaChecks: [],
-  referencedRelations: [],
-  relations: [
-    {
-      schema: 'public',
-      name: 't',
-      kind: 'r',
-      columns: [
+const supplementary = (extra: Partial<Supplementary>): Supplementary =>
+  catalog({
+    schemas: ['public', 'extra'],
+    types: [{ schema: 'public', name: 'amount', kind: 'd', base: 'integer' }],
+    implicitCasts: [
+      { source: 'integer', target: 'bigint' },
+      { source: 'smallint', target: 'integer' },
+    ],
+    relations: [
+      table('public', 't', [
         column('i', 'integer', 1),
         column('s', 'smallint', 2),
         column('a', 'public.amount', 3),
         column('x', 'text', 4),
-      ],
-      viewDefinition: null,
-      updatable: { insert: true, update: true, delete: true },
-    },
-  ],
-  functions: [],
-  ...extra,
-})
+      ]),
+    ],
+    ...extra,
+  })
 
 /** A function `count(arg)` of `schema`, as the catalog lists it */
 const countFn = (schema: string, argType: string, defaults = 0, extraArgs: string[] = []) => ({

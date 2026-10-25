@@ -10,8 +10,8 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { connectPg, nodeExec, watch, type DbConnection, type WatchEvent } from '../src'
-import { STACK_WORKDIR, plannerWasmPath } from './support/acquired'
+import { connectPg, watch, type DbConnection, type WatchEvent } from '../src'
+import { plannerWasmPath, stackDbUrl } from './support/acquired'
 import { withCatalogLock } from './support/catalog-lock'
 
 /**
@@ -28,15 +28,7 @@ let admin: DbConnection
 let dir: string
 
 beforeAll(async () => {
-  const status = await nodeExec('npx', [
-    'supabase',
-    'status',
-    '-o',
-    'json',
-    '--workdir',
-    STACK_WORKDIR,
-  ])
-  dbUrl = JSON.parse(status.stdout.slice(status.stdout.indexOf('{'))).DB_URL
+  dbUrl = await stackDbUrl()
   admin = await connectPg(dbUrl)
   await withCatalogLock(dbUrl, async () => {
     try {

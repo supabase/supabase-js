@@ -20,3 +20,25 @@ export async function generateText(acquired: AcquiredSchema, source: string): Pr
     p.remove()
   }
 }
+
+/** `users.data` constrained to `{ theme: 'light' | 'dark' }`, as `jsonb_matches_schema` writes it */
+export function withThemeCheck(acquired: AcquiredSchema): AcquiredSchema {
+  const schema =
+    '{"type":"object","properties":{"theme":{"enum":["light","dark"]}},"required":["theme"],"additionalProperties":false}'
+  return {
+    ...acquired,
+    supplementary: {
+      ...acquired.supplementary,
+      jsonSchemaChecks: [
+        {
+          schema: 'public',
+          table: 'users',
+          constraint: 'users_data_theme',
+          definition: `CHECK (((data IS NULL) OR extensions.jsonb_matches_schema('${schema}'::json, data)))`,
+          columns: ['data'],
+          validated: true,
+        },
+      ],
+    },
+  }
+}

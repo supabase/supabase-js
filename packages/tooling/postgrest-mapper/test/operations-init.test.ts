@@ -15,7 +15,6 @@ import { dirname, join, resolve } from 'node:path'
 import {
   generate,
   init,
-  nodeExec,
   runCli,
   write,
   writeSnapshot,
@@ -25,7 +24,7 @@ import {
 } from '../src'
 import { nodeProjectFs, resolveProjectFiles } from '../src/generate'
 import { entryCovers } from '../src/operations'
-import { STACK_WORKDIR, acquireFromStack, plannerWasmPath } from './support/acquired'
+import { acquireFromStack, plannerWasmPath, stackExec } from './support/acquired'
 
 let acquired: AcquiredSchema
 beforeAll(async () => {
@@ -43,16 +42,6 @@ const put = (name: string, text: string): void => {
   writeFileSync(join(dir, name), text)
 }
 const read = (name: string): string => readFileSync(join(dir, name), 'utf8')
-
-/** The real `supabase`/`docker` of the stack: the temp project only carries the project id */
-const stackExec: ExecFn = (command, args, options) =>
-  command === 'supabase'
-    ? nodeExec(
-        'npx',
-        ['supabase', ...args.map((a, i) => (args[i - 1] === '--workdir' ? STACK_WORKDIR : a))],
-        options
-      )
-    : nodeExec(command, args, options)
 
 const wasm = plannerWasmPath()
 const deps = (extra: OperationDeps = {}): OperationDeps => ({

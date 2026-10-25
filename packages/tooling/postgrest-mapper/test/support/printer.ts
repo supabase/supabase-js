@@ -23,7 +23,7 @@ export const supplementary = (over: Partial<Supplementary>): Supplementary => ({
   ...over,
 })
 
-export const column = (name: string, type: string, attnum: number, notNull: boolean) => ({
+export const column = (name: string, type: string, attnum: number, notNull = true) => ({
   name,
   attnum,
   type,

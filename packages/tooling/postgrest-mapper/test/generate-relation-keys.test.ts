@@ -10,48 +10,14 @@ import {
   type Supplementary,
 } from '../src'
 import type { PlanRequest, PlanResult, ShapeField } from '@supabase/postgrest-planner'
+import { column, supplementary as catalog, table } from './support/printer'
 
-/**
- * Two relations whose schema and name join to the same dotted string (`public."a.b"` and `"public.a".b`) are two
- * relations: both are planned, printed, and typed from their own columns.
- */
-const column = (name: string, type: string, attnum: number) => ({
-  name,
-  attnum,
-  type,
-  notNull: true,
-  hasDefault: false,
-  identity: null,
-  generated: null,
-})
-const table = (schema: string, name: string, columns: ReturnType<typeof column>[]) => ({
-  schema,
-  name,
-  kind: 'r' as const,
-  columns,
-  viewDefinition: null,
-  updatable: { insert: true, update: true, delete: true },
-})
-
-const supplementary: Supplementary = {
-  format: 1,
-  composites: [],
-  foreignKeys: [],
-  functions: [],
-  schemas: [],
-  searchPathFunctions: [],
-  aggregates: [],
-  implicitCasts: [],
-  types: [],
-  casts: [],
-  referencedRelations: [],
-  enums: [],
-  jsonSchemaChecks: [],
+const supplementary: Supplementary = catalog({
   relations: [
     table('public', 'a.b', [column('left_id', 'integer', 1)]),
     table('public.a', 'b', [column('right_name', 'text', 1)]),
   ],
-}
+})
 const acquired: AcquiredSchema = {
   dump: '{}',
   config: { 'db-schemas': 'public,public.a' },
@@ -86,6 +52,10 @@ const hostFor = (supplementary: Supplementary): PlannerHost => ({
 })
 const host = hostFor(supplementary)
 
+/**
+ * Two relations whose schema and name join to the same dotted string (`public."a.b"` and `"public.a".b`) are two
+ * relations: both are planned, printed, and typed from their own columns.
+ */
 describe('relations whose qualified names look alike', () => {
   it('prints both, each with its own columns', async () => {
     const { text } = await buildDatabaseDeclarations({
@@ -129,7 +99,7 @@ describe('views and checked JSON columns whose qualified names look alike', () =
     ...supplementary,
     relations: [
       table('public', 'base_required', [column('id', 'integer', 1)]),
-      table('public', 'base_optional', [{ ...column('id', 'integer', 1), notNull: false }]),
+      table('public', 'base_optional', [column('id', 'integer', 1, false)]),
       view(
         'public',
         'a.b',
@@ -139,7 +109,7 @@ describe('views and checked JSON columns whose qualified names look alike', () =
       view(
         'public.a',
         'b',
-        [{ ...column('id', 'integer', 1), notNull: false }],
+        [column('id', 'integer', 1, false)],
         ' SELECT base_optional.id\n   FROM public.base_optional;'
       ),
       view(

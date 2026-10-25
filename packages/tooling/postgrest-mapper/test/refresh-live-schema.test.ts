@@ -1,8 +1,8 @@
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { createGenerator, createProjectGenerator, nodeExec, runCli, type ExecFn } from '../src'
-import { STACK_WORKDIR, plannerWasmPath } from './support/acquired'
+import { createGenerator, createProjectGenerator, runCli, type ExecFn } from '../src'
+import { plannerWasmPath, stackExec } from './support/acquired'
 
 /**
  * A live schema is acquired once per process. `refresh` runs in another process: it must still make a long-lived
@@ -41,13 +41,8 @@ afterEach(() => rmSync(dir, { recursive: true, force: true }))
 function countingExec(): { exec: ExecFn; dumps: () => number } {
   let dumps = 0
   const exec: ExecFn = (command, args, options) => {
-    if (command === 'supabase') {
-      // the temp project only carries the project id; the stack's CLI project is the shared one
-      const rewritten = args.map((a, i) => (args[i - 1] === '--workdir' ? STACK_WORKDIR : a))
-      return nodeExec('npx', ['supabase', ...rewritten], options)
-    }
-    if (args.includes('--dump-schema')) dumps++
-    return nodeExec(command, args, options)
+    if (command !== 'supabase' && args.includes('--dump-schema')) dumps++
+    return stackExec(command, args, options)
   }
   return { exec, dumps: () => dumps }
 }

@@ -9,8 +9,8 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { nodeExec, refresh, watch, type ExecFn, type WatchEvent } from '../src'
-import { STACK_WORKDIR, plannerWasmPath } from './support/acquired'
+import { refresh, watch, type ExecFn, type WatchEvent } from '../src'
+import { plannerWasmPath, stackExec } from './support/acquired'
 
 /**
  * A watch that starts while the live schema cannot be acquired, in a project that has no cache directory yet (so no
@@ -53,16 +53,8 @@ const wasm = plannerWasmPath()
 describe('watch recovers a schema that could not be acquired', () => {
   it('regenerates when refresh creates the stamp in a directory that did not exist', async () => {
     let up = false
-    const exec: ExecFn = (command, args, options) => {
-      if (!up) return Promise.reject(new Error('the stack is down'))
-      return command === 'supabase'
-        ? nodeExec(
-            'npx',
-            ['supabase', ...args.map((a, i) => (args[i - 1] === '--workdir' ? STACK_WORKDIR : a))],
-            options
-          )
-        : nodeExec(command, args, options)
-    }
+    const exec: ExecFn = (command, args, options) =>
+      up ? stackExec(command, args, options) : Promise.reject(new Error('the stack is down'))
     const deps = {
       cwd: dir,
       env: { ...process.env },

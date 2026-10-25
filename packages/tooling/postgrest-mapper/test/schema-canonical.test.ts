@@ -8,6 +8,7 @@ import {
   type SchemaFs,
 } from '../src/schema'
 import { canonicalJson } from '../src/schema/canonical'
+import { supplementary } from './support/printer'
 
 /** A dump whose table has a real column named `__proto__` (JSON.parse creates it as an own property) */
 const DUMP =
@@ -32,22 +33,7 @@ const acquired = (dump: string): AcquiredSchema => ({
   config: { 'db-schemas': 'public' },
   pgVersionNum: 170000,
   postgrestVersion: '16.4',
-  supplementary: {
-    format: 1,
-    composites: [],
-    foreignKeys: [],
-    relations: [],
-    functions: [],
-    schemas: [],
-    searchPathFunctions: [],
-    types: [],
-    casts: [],
-    aggregates: [],
-    implicitCasts: [],
-    referencedRelations: [],
-    enums: [],
-    jsonSchemaChecks: [],
-  },
+  supplementary: supplementary({}),
 })
 
 const columnNames = (dump: string): string[] =>

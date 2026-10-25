@@ -1,7 +1,7 @@
 import type { AcquiredSchema } from '../src'
 import { acquireFromStack } from './support/acquired'
 import { typecheckConsumer } from './support/consumer'
-import { generateText } from './support/declarations'
+import { generateText, withThemeCheck } from './support/declarations'
 
 let acquired: AcquiredSchema
 beforeAll(async () => {
@@ -34,28 +34,6 @@ function withVolatility(name: string, volatility: string): AcquiredSchema {
       functions: acquired.supplementary.functions.map((f) =>
         f.name === name ? { ...f, volatility } : f
       ),
-    },
-  }
-}
-
-/** `users.data` constrained to `{ theme: 'light' | 'dark' }`, as `jsonb_matches_schema` writes it */
-function withThemeCheck(): AcquiredSchema {
-  const schema =
-    '{"type":"object","properties":{"theme":{"enum":["light","dark"]}},"required":["theme"],"additionalProperties":false}'
-  return {
-    ...acquired,
-    supplementary: {
-      ...acquired.supplementary,
-      jsonSchemaChecks: [
-        {
-          schema: 'public',
-          table: 'users',
-          constraint: 'users_data_theme',
-          definition: `CHECK (((data IS NULL) OR extensions.jsonb_matches_schema('${schema}'::json, data)))`,
-          columns: ['data'],
-          validated: true,
-        },
-      ],
     },
   }
 }
@@ -99,7 +77,7 @@ describe('the rows of a function the tracer proves', () => {
       supabase.rpc('function_returning_row').select('theme:data->>theme')
       supabase.rpc('set_users_offline', { name_param: 'x' }).select('theme:data->>theme')
     `,
-      withThemeCheck()
+      withThemeCheck(acquired)
     )
     const derived = (key: string): string =>
       /SupabaseColumnType<'public\.users\.data', (.*?)>, \[/.exec(entryOf(text, key))?.[1] ?? ''
@@ -157,7 +135,7 @@ describe('a JSON path or an aggregate over a column of the rows of a function', 
   const SOURCE = `supabase.rpc('users_payload_and_name').select('${SELECT}')`
 
   it('keeps the stored column the body passes through, so its JSON Schema and overrides apply', async () => {
-    const text = await declarationsOf(SOURCE, withThemeCheck())
+    const text = await declarationsOf(SOURCE, withThemeCheck(acquired))
     const row = rowOf(text, KEY)
     expect(row).toMatch(
       /PgrstJsonText<SupabaseColumnType<'public\.users\.data', [^>]*'light' \| 'dark'[^>]*>, \['kind'\]>/

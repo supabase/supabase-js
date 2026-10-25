@@ -1,16 +1,15 @@
-import { resolve } from 'node:path'
 import {
   buildFunctionTraceInputs,
   connectPg,
-  nodeExec,
   querySupplementary,
   type AcquiredSchema,
   type DbConnection,
   type Supplementary,
   type SupplementaryFunction,
 } from '../src'
-import { acquireFromStack } from './support/acquired'
+import { acquireFromStack, stackDbUrl } from './support/acquired'
 import { generateText } from './support/declarations'
+import { column, supplementary as catalog, table } from './support/printer'
 
 /**
  * A SQL function that sets its own `search_path` resolves the names of its body along that path, not along the
@@ -22,9 +21,7 @@ describe('the search_path a function sets (catalog)', () => {
   let db: DbConnection
 
   beforeAll(async () => {
-    const workdir = resolve(__dirname, '../../../core/postgrest-js/test')
-    const status = await nodeExec('npx', ['supabase', 'status', '-o', 'json', '--workdir', workdir])
-    db = await connectPg(JSON.parse(status.stdout.slice(status.stdout.indexOf('{'))).DB_URL)
+    db = await connectPg(await stackDbUrl())
   }, 120_000)
 
   afterAll(() => db.close())
@@ -55,23 +52,7 @@ describe('the search_path a function sets (catalog)', () => {
 })
 
 describe('the search path a body is traced along', () => {
-  const column = (name: string, attnum: number) => ({
-    name,
-    attnum,
-    type: 'integer',
-    notNull: true,
-    hasDefault: false,
-    identity: null,
-    generated: null,
-  })
-  const table = (schema: string) => ({
-    schema,
-    name: 'users',
-    kind: 'r' as const,
-    columns: [column('id', 1)],
-    viewDefinition: null,
-    updatable: { insert: true, update: true, delete: true },
-  })
+  const users = (schema: string) => table(schema, 'users', [column('id', 'integer', 1)])
   const fn = (name: string, searchPath: string | null): SupplementaryFunction => ({
     schema: 'public',
     name,
@@ -85,22 +66,11 @@ describe('the search path a body is traced along', () => {
     argNames: null,
     searchPath,
   })
-  const supplementary = (searchPaths: Record<string, string | null>): Supplementary => ({
-    format: 1,
-    composites: [],
-    foreignKeys: [],
-    schemas: [],
-    searchPathFunctions: [],
-    aggregates: [],
-    implicitCasts: [],
-    types: [],
-    casts: [],
-    enums: [],
-    jsonSchemaChecks: [],
-    relations: [table('public'), table('api')],
-    referencedRelations: [],
-    functions: Object.entries(searchPaths).map(([name, path]) => fn(name, path)),
-  })
+  const supplementary = (searchPaths: Record<string, string | null>): Supplementary =>
+    catalog({
+      relations: [users('public'), users('api')],
+      functions: Object.entries(searchPaths).map(([name, path]) => fn(name, path)),
+    })
   const pathsOf = (searchPaths: Record<string, string | null>): Record<string, string[] | null> => {
     const inputs = buildFunctionTraceInputs(supplementary(searchPaths), {
       searchPath: ['public', 'extensions'],

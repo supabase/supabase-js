@@ -13,6 +13,7 @@ import {
   type ExecFn,
   type Supplementary,
 } from '../src'
+import { supplementary as catalog } from './support/printer'
 
 describe('scrubber', () => {
   const scrub = createScrubber(['hunter2-literal'])
@@ -157,8 +158,7 @@ describe('catalog builders', () => {
     viewDefinition,
     updatable: { insert: false, update: false, delete: false },
   })
-  const supplementary: Supplementary = {
-    format: 1,
+  const supplementary: Supplementary = catalog({
     relations: [
       relation('public', 't', 'r', ['id', 'v']),
       relation('public', 'pt', 'p', ['id']),
@@ -166,12 +166,6 @@ describe('catalog builders', () => {
       relation('public', 'v', 'v', ['id'], 'SELECT t.id FROM public.t t'),
       relation('public', 'mv', 'm', ['id'], 'SELECT t.id FROM public.t t'),
     ],
-    schemas: [],
-    searchPathFunctions: [],
-    aggregates: [],
-    implicitCasts: [],
-    types: [],
-    casts: [],
     referencedRelations: [relation('private', 'x', 'r', ['id'])],
     composites: [
       {
@@ -183,16 +177,13 @@ describe('catalog builders', () => {
         ],
       },
     ],
-    foreignKeys: [],
-    enums: [],
-    jsonSchemaChecks: [],
     functions: [
       fn('scalar_fn', 'scalar', 'int', null, 'select $1 + 1', ['a']),
       fn('pair_fn', 'composite', 'public.pair', null, 'select 1, 2', null),
       fn('table_fn', 'composite', 'record', [{ name: 'o', type: 'int' }], 'select 1', [''], 1),
       fn('plpgsql_fn', 'scalar', 'int', null, null, null, 0, 'plpgsql'),
     ],
-  }
+  })
 
   function fn(
     name: string,

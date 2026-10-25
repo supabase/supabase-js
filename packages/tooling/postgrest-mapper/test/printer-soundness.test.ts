@@ -1,7 +1,7 @@
 import type { AcquiredSchema } from '../src'
 import { acquireFromStack } from './support/acquired'
 import { TYPE_HELPERS, typecheckConsumer } from './support/consumer'
-import { generateText } from './support/declarations'
+import { generateText, withThemeCheck } from './support/declarations'
 
 let acquired: AcquiredSchema
 beforeAll(async () => {
@@ -79,28 +79,6 @@ describe('quoted type names', () => {
 })
 
 describe('JSON Schema of a CHECK constraint', () => {
-  /** `users.data` constrained to `{ theme: 'light' | 'dark' }`, as `jsonb_matches_schema` writes it */
-  function withThemeCheck(): AcquiredSchema {
-    const schema =
-      '{"type":"object","properties":{"theme":{"enum":["light","dark"]}},"required":["theme"],"additionalProperties":false}'
-    return {
-      ...acquired,
-      supplementary: {
-        ...acquired.supplementary,
-        jsonSchemaChecks: [
-          {
-            schema: 'public',
-            table: 'users',
-            constraint: 'users_data_theme',
-            definition: `CHECK (((data IS NULL) OR extensions.jsonb_matches_schema('${schema}'::json, data)))`,
-            columns: ['data'],
-            validated: true,
-          },
-        ],
-      },
-    }
-  }
-
   // a function the tracer cannot read can return rows its table's CHECK would refuse, however the select reads them
   it('is not applied to a JSON path or an aggregate over the rows of a function', async () => {
     const text = await declarationsOf(
@@ -110,7 +88,7 @@ describe('JSON Schema of a CHECK constraint', () => {
       supabase.rpc('set_users_offline', { name_param: 'x' }).select('theme:data->theme')
       supabase.rpc('set_users_offline', { name_param: 'x' }).select('latest:data->>theme.max()')
     `,
-      withThemeCheck()
+      withThemeCheck(acquired)
     )
     const derived = (key: string): string =>
       /SupabaseColumnType<'public\.users\.data', (.*?)>, \[/.exec(entryOf(text, key))?.[1] ?? ''

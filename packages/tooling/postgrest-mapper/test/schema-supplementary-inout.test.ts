@@ -1,19 +1,16 @@
-import { resolve } from 'node:path'
-import { connectPg, nodeExec, querySupplementary, type DbConnection } from '../src'
+import { connectPg, querySupplementary, type DbConnection } from '../src'
+import { stackDbUrl } from './support/acquired'
 
 /**
  * Integration test against the running postgrest-js test stack (`nx test:infra postgrest-js`). The functions are
  * created inside a transaction that is always rolled back: nothing is committed to the shared database.
  */
-const WORKDIR = resolve(__dirname, '../../../core/postgrest-js/test')
 
 describe('supplementary catalog: INOUT parameters are result columns', () => {
   let db: DbConnection
 
   beforeAll(async () => {
-    const status = await nodeExec('npx', ['supabase', 'status', '-o', 'json', '--workdir', WORKDIR])
-    const url = JSON.parse(status.stdout.slice(status.stdout.indexOf('{'))).DB_URL
-    db = await connectPg(url)
+    db = await connectPg(await stackDbUrl())
   }, 120_000)
 
   afterAll(() => db.close())

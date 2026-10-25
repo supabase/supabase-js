@@ -1,4 +1,3 @@
-import { resolve } from 'node:path'
 import {
   acquireSchema,
   buildJsonSchemaInput,
@@ -6,10 +5,10 @@ import {
   connectPg,
   createTracer,
   jsonSchemaToTs,
-  nodeExec,
   type AcquiredSchema,
   type DbConnection,
 } from '../src'
+import { stackDbUrl } from './support/acquired'
 
 /**
  * The `postgrest` source (pinned image, `docker run`) against a scratch database created on the shared
@@ -17,7 +16,6 @@ import {
  * written. The scratch database has what the shared one lacks: pg_jsonschema CHECK constraints, identity and
  * generated columns, and a view over a table outside the exposed schemas.
  */
-const WORKDIR = resolve(__dirname, '../../../core/postgrest-js/test')
 const SCRATCH = `mapper_schema_it_${process.pid}_${Date.now()}`
 
 const DDL = [
@@ -60,8 +58,7 @@ describe('schema acquisition from a pinned PostgREST image', () => {
   let schema: AcquiredSchema
 
   beforeAll(async () => {
-    const status = await nodeExec('npx', ['supabase', 'status', '-o', 'json', '--workdir', WORKDIR])
-    const adminUrl: string = JSON.parse(status.stdout.slice(status.stdout.indexOf('{'))).DB_URL
+    const adminUrl = await stackDbUrl()
     admin = await connectPg(adminUrl)
     await admin.query(`create database ${SCRATCH}`)
     const scratch = new URL(adminUrl)

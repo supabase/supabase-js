@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
-import { connectPg, nodeExec, schemaFingerprint, type DbConnection } from '../src'
-import { STACK_WORKDIR } from './support/acquired'
+import { connectPg, schemaFingerprint, type DbConnection } from '../src'
+import { stackDbUrl } from './support/acquired'
 import { withCatalogLock } from './support/catalog-lock'
 
 /**
@@ -35,15 +35,7 @@ describe('schema fingerprint', () => {
   }
 
   beforeAll(async () => {
-    const status = await nodeExec('npx', [
-      'supabase',
-      'status',
-      '-o',
-      'json',
-      '--workdir',
-      STACK_WORKDIR,
-    ])
-    dbUrl = JSON.parse(status.stdout.slice(status.stdout.indexOf('{'))).DB_URL
+    dbUrl = await stackDbUrl()
     reader = await connectPg(dbUrl)
     admin = await connectPg(dbUrl)
     await withCatalogLock(dbUrl, async () => {

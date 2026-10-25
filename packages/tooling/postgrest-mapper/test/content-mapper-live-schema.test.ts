@@ -15,10 +15,9 @@ import {
   connectPg,
   createContentMapperServer,
   createProjectGenerator,
-  nodeExec,
   type DbConnection,
 } from '../src'
-import { STACK_WORKDIR, plannerWasmPath } from './support/acquired'
+import { plannerWasmPath, stackDbUrl } from './support/acquired'
 import { withCatalogLock } from './support/catalog-lock'
 import { INITIALIZE, RpcClient } from './support/rpc-client'
 
@@ -39,15 +38,7 @@ let dir: string
 let stamp: string
 
 beforeAll(async () => {
-  const status = await nodeExec('npx', [
-    'supabase',
-    'status',
-    '-o',
-    'json',
-    '--workdir',
-    STACK_WORKDIR,
-  ])
-  dbUrl = JSON.parse(status.stdout.slice(status.stdout.indexOf('{'))).DB_URL
+  dbUrl = await stackDbUrl()
   admin = await connectPg(dbUrl)
   await withCatalogLock(dbUrl, async () => {
     try {

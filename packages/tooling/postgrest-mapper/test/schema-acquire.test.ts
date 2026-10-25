@@ -24,6 +24,7 @@ import {
   type ExecFn,
   type SchemaSource,
 } from '../src'
+import { stackDbUrl } from './support/acquired'
 
 /**
  * Integration tests against the running postgrest-js test stack (`nx test:infra postgrest-js`): the Supabase CLI
@@ -52,8 +53,7 @@ describe('schema acquisition from the supabase-local stack', () => {
 
   beforeAll(async () => {
     schema = await acquireSchema(LOCAL)
-    const status = await nodeExec('npx', ['supabase', 'status', '-o', 'json', '--workdir', WORKDIR])
-    dbUrl = JSON.parse(status.stdout.slice(status.stdout.indexOf('{'))).DB_URL
+    dbUrl = await stackDbUrl()
   }, 120_000)
 
   test('the dump is the PostgREST schema cache', () => {

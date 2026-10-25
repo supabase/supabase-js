@@ -5,30 +5,19 @@ import {
   createTracer,
   type AcquiredSchema,
   type PlannerHost,
-  type Supplementary,
   type SupplementaryRelation,
 } from '../src'
 import type { PlanRequest, PlanResult, ShapeField } from '@supabase/postgrest-planner'
+import { column, supplementary, table } from './support/printer'
 
-const column = (name: string, type: string, notNull: boolean, attnum: number) => ({
-  name,
-  attnum,
-  type,
-  notNull,
-  hasDefault: false,
-  identity: null,
-  generated: null,
-})
 const relation = (
   name: string,
   kind: SupplementaryRelation['kind'],
   columns: ReturnType<typeof column>[],
   viewDefinition: string | null = null
 ): SupplementaryRelation => ({
-  schema: 'public',
-  name,
+  ...table('public', name, columns),
   kind,
-  columns,
   viewDefinition,
   updatable: { insert: false, update: false, delete: false },
 })
@@ -41,31 +30,11 @@ const check = (constraint: string, definition: string, columns = ['data']) => ({
   validated: true,
 })
 
-function supplementary(overrides: Partial<Supplementary> = {}): Supplementary {
-  return {
-    format: 1,
-    composites: [],
-    foreignKeys: [],
-    functions: [],
-    schemas: [],
-    searchPathFunctions: [],
-    aggregates: [],
-    implicitCasts: [],
-    types: [],
-    casts: [],
-    referencedRelations: [],
-    enums: [],
-    relations: [],
-    jsonSchemaChecks: [],
-    ...overrides,
-  }
-}
-
 describe('json(b)_matches_schema guards (F4)', () => {
   const docs = relation('docs', 'r', [
-    column('n', 'integer', false, 1),
-    column('m', 'integer', false, 2),
-    column('data', 'jsonb', false, 3),
+    column('n', 'integer', 1, false),
+    column('m', 'integer', 2, false),
+    column('data', 'jsonb', 3, false),
   ])
   const input = (definition: string) =>
     buildJsonSchemaInput(
@@ -106,19 +75,19 @@ describe('json(b)_matches_schema guards (F4)', () => {
 describe('materialized views (F5)', () => {
   // The stored rows of a materialized view can predate a NOT NULL or a CHECK added to its base table
   const docs = relation('docs', 'r', [
-    column('id', 'integer', true, 1),
-    column('data', 'jsonb', true, 2),
+    column('id', 'integer', 1, true),
+    column('data', 'jsonb', 2, true),
   ])
   const mv = relation(
     'docs_mv',
     'm',
-    [column('id', 'integer', false, 1), column('data', 'jsonb', false, 2)],
+    [column('id', 'integer', 1, false), column('data', 'jsonb', 2, false)],
     ' SELECT docs.id,\n    docs.data\n   FROM public.docs;'
   )
   const view = relation(
     'docs_over_mv',
     'v',
-    [column('id', 'integer', false, 1)],
+    [column('id', 'integer', 1, false)],
     ' SELECT m.id\n   FROM public.docs_mv m;'
   )
   const acquired: AcquiredSchema = {
