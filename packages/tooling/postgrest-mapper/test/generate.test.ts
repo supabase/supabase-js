@@ -1,16 +1,14 @@
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   createGenerator,
-  createPlannerHost,
   createProjectGenerator,
   generateDeclarations,
   writeSnapshot,
   type AcquiredSchema,
-  type GeneratorDeps,
-  type PlannerHost,
 } from '../src'
 import { acquireFromStack, plannerWasmPath } from './support/acquired'
+import { countingDeps } from './support/counting-deps'
 import { TYPE_HELPERS, typecheckConsumer, type ConsumerResult } from './support/consumer'
 import { createTempProject, type TempProject } from './support/project'
 
@@ -89,29 +87,6 @@ const optionsOf = (p: TempProject, extra: Record<string, unknown> = {}) => ({
   defaultSchema: 'public',
   ...extra,
 })
-
-/** What the planner was asked: hosts created and schemas loaded, to see what a cache hit saves. */
-function countingDeps(extra: GeneratorDeps = {}) {
-  const calls = { hosts: 0, loads: 0 }
-  const logs: string[] = []
-  const deps: GeneratorDeps = {
-    wasmPath: plannerWasmPath(),
-    logger: { debug: (m) => logs.push(m), warn: (m) => logs.push(`warn: ${m}`) },
-    createHost: () => {
-      calls.hosts++
-      const host: PlannerHost = createPlannerHost({ wasmPath: plannerWasmPath() })
-      return {
-        ...host,
-        load: (a) => (calls.loads++, host.load(a)),
-        close: () => host.close(),
-        plan: (r) => host.plan(r),
-        planMany: (r) => host.planMany(r),
-      }
-    },
-    ...extra,
-  }
-  return { deps, calls, logs }
-}
 
 describe('generated declarations of a project', () => {
   it('type-checks the builder chains of the project against the entries', async () => {
@@ -343,40 +318,6 @@ describe('caching and identity', () => {
     supabase.from('users').select('username, messages(id)')
     supabase.from('messages').select('id, channels(id)')
   `
-
-  it('serves a second run from the disk cache without starting the planner', async () => {
-    const p = await project({ 'src/app.ts': CHAINS })
-    const first = countingDeps()
-    const g1 = createGenerator(first.deps)
-    const miss = await g1.generate({
-      configFileName: p.configFileName,
-      options: optionsOf(p) as never,
-    })
-    await g1.close()
-    expect(miss.cache).toBe('miss')
-    expect(first.calls).toEqual({ hosts: 1, loads: 1 })
-
-    const cacheDirectory = join(p.dir, 'node_modules', '.cache', 'postgrest-mapper')
-    const files = readdirSync(cacheDirectory)
-    expect(files).toHaveLength(1)
-    expect(files[0]).toMatch(/^postgrest-mapper-[0-9a-f]{32}\.json$/)
-    const stored = JSON.parse(readFileSync(join(cacheDirectory, files[0]!), 'utf8'))
-    expect(Object.keys(stored.entries)).toEqual(miss.keys)
-
-    // a new generator is a new process as far as memory goes
-    const second = countingDeps()
-    const g2 = createGenerator(second.deps)
-    const hit = await g2.generate({
-      configFileName: p.configFileName,
-      options: optionsOf(p) as never,
-    })
-    await g2.close()
-    expect(hit.cache).toBe('hit')
-    expect(second.calls).toEqual({ hosts: 0, loads: 0 })
-    expect(second.logs.some((m) => m.startsWith('cache hit'))).toBe(true)
-    expect(hit.text).toBe(miss.text)
-    expect(hit.identity).toBe(miss.identity)
-  }, 120_000)
 
   it('plans only the keys the cache lacks, and changes identity with the key set', async () => {
     const p = await project({ 'src/app.ts': CHAINS })

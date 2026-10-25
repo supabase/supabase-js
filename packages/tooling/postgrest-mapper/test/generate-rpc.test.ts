@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createGenerator, generateDeclarations, type AcquiredSchema } from '../src'
 import { acquireFromStack, plannerWasmPath } from './support/acquired'
+import { countingDeps } from './support/counting-deps'
 import { TYPE_HELPERS, typecheckConsumer } from './support/consumer'
 import { createTempProject, type TempProject } from './support/project'
 
@@ -251,15 +252,11 @@ describe('rpc entries and operands of a project', () => {
     expect(checked.byFile.get('app.ts') ?? []).toEqual([])
   }, 180_000)
 
-  it('keeps rpc calls and operands in the same cache entries as the selects', async () => {
+  it('keeps rpc calls and operands in the same cache entries as the selects, and serves a second run from them', async () => {
     const p = await project({ 'src/app.ts': APP })
     const options = { ...p.options, defaultSchema: 'public' }
-    const hosts = { started: 0 }
-    const deps = {
-      wasmPath: plannerWasmPath(),
-      logger: { debug: () => undefined, warn: () => undefined },
-    }
-    const g1 = createGenerator(deps)
+    const first = countingDeps()
+    const g1 = createGenerator(first.deps)
     let miss
     try {
       miss = await g1.generate({ configFileName: p.configFileName, options: options as never })
@@ -267,9 +264,11 @@ describe('rpc entries and operands of a project', () => {
       await g1.close()
     }
     expect(miss.cache).toBe('miss')
+    expect(first.calls).toEqual({ hosts: 1, loads: 1 })
     const directory = join(p.dir, 'node_modules', '.cache', 'postgrest-mapper')
     const files = readdirSync(directory)
     expect(files).toHaveLength(1)
+    expect(files[0]).toMatch(/^postgrest-mapper-[0-9a-f]{32}\.json$/)
     const stored = JSON.parse(readFileSync(join(directory, files[0]!), 'utf8'))
     expect(Object.keys(stored.entries)).toEqual(miss.keys)
     const ids = miss.keys
@@ -283,20 +282,16 @@ describe('rpc entries and operands of a project', () => {
       true
     )
 
-    // nothing is planned again: a host that cannot start proves the second run is served from the file
-    const g2 = createGenerator({
-      ...deps,
-      createHost: () => {
-        hosts.started++
-        throw new Error('the planner must not start on a cache hit')
-      },
-    })
+    // nothing is planned again: a new generator is a new process as far as memory goes, and it starts no planner
+    const second = countingDeps()
+    const g2 = createGenerator(second.deps)
     try {
       const hit = await g2.generate({ configFileName: p.configFileName, options: options as never })
       expect(hit.cache).toBe('hit')
+      expect(second.calls).toEqual({ hosts: 0, loads: 0 })
+      expect(second.logs.some((m) => m.startsWith('cache hit'))).toBe(true)
       expect(hit.text).toBe(miss.text)
       expect(hit.identity).toBe(miss.identity)
-      expect(hosts.started).toBe(0)
     } finally {
       await g2.close()
     }

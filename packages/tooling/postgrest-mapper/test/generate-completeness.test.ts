@@ -85,8 +85,10 @@ describe('an incomplete generation', () => {
     await healthy.close()
     expect(fixed.diagnostics).toEqual([])
     expect(fixed.cache).toBe('miss')
+    expect(fixed.keys).toEqual(broken.keys)
     expect(fixed.text).toContain("username: SupabaseColumnType<'public.users.username', string>")
     expect(fixed.text).not.toBe(broken.text)
+    expect(fixed.identity).not.toBe(broken.identity)
     expect(cacheFiles(p)).toHaveLength(1)
     const stored = JSON.parse(
       readFileSync(
@@ -103,23 +105,6 @@ describe('an incomplete generation', () => {
     const broken = await flaky.generate({ configFileName: p.configFileName, options: optionsOf(p) })
     await flaky.close()
     expect(broken.diagnostics.map((d) => d.code)).toContain(2003)
-
-    const healthy = createGenerator({ wasmPath: plannerWasmPath(), cacheDirectory: false })
-    const fixed = await healthy.generate({
-      configFileName: p.configFileName,
-      options: optionsOf(p),
-    })
-    await healthy.close()
-    expect(fixed.keys).toEqual(broken.keys)
-    expect(fixed.text).not.toBe(broken.text)
-    expect(fixed.identity).not.toBe(broken.identity)
-  }, 120_000)
-
-  it('gives another identity once a timed-out relation-wide plan (database context, no key) recovers', async () => {
-    const p = await project({ 'src/app.ts': CHAINS })
-    const flaky = createGenerator(flakyDeps((r) => r.url === '/users?select=*'))
-    const broken = await flaky.generate({ configFileName: p.configFileName, options: optionsOf(p) })
-    await flaky.close()
 
     const healthy = createGenerator({ wasmPath: plannerWasmPath(), cacheDirectory: false })
     const fixed = await healthy.generate({
