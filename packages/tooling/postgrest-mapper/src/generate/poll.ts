@@ -35,7 +35,7 @@ export interface SchemaPoller {
    */
   setUrl(url: string, baseline?: string): void
   setInterval(intervalMs: number): void
-  /** No probe starts after it; the connection is closed. Never rejects */
+  /** No probe starts and no stamp is written after it; the connection is closed. Never rejects */
   stop(): Promise<void>
 }
 
@@ -76,11 +76,13 @@ export function createSchemaPoller(options: SchemaPollerOptions): SchemaPoller {
     logger.warn(`${what}: ${scrub(messageOf(error))}`)
   }
 
-  const writeStamp = async (fingerprint: string): Promise<void> => {
+  /** The stamp write under way: `stop` lets it settle, so nothing is written once it resolves */
+  let writing: Promise<unknown> = Promise.resolve()
+  const writeStamp = async (fingerprint: string, current: () => boolean): Promise<void> => {
     const content = `${fingerprint}\n`
     if ((await fs.readFile(stampPath).catch(() => undefined)) === content) return
     await fs.mkdir(dirname(stampPath))
-    await fs.writeFile(stampPath, content)
+    if (current()) await fs.writeFile(stampPath, content)
   }
 
   const probe = async (): Promise<void> => {
@@ -120,7 +122,9 @@ export function createSchemaPoller(options: SchemaPollerOptions): SchemaPoller {
       baseline = fingerprint
     } else if (fingerprint !== baseline) {
       try {
-        await writeStamp(fingerprint)
+        const write = writeStamp(fingerprint, () => !stopped && mine === epoch)
+        writing = write.catch(() => undefined)
+        await write
       } catch (error) {
         // the baseline stays: the next probe sees the change again
         warnOnce('could not write the refresh stamp', error)
@@ -176,6 +180,7 @@ export function createSchemaPoller(options: SchemaPollerOptions): SchemaPoller {
       stopped = true
       clearTimeout(timer)
       timer = undefined
+      await writing
       await dropConnection()
     },
   }

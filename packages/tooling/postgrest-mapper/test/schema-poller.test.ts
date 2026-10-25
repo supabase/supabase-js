@@ -8,7 +8,7 @@ import { createSchemaPoller } from '../src/generate/poll'
 const URL = 'postgresql://postgres:s3cr3t-pw@db.example.test:5432/postgres'
 const STAMP = '/project/node_modules/.cache/postgrest-mapper/refresh.stamp'
 
-function setup(overrides: { busy?: () => boolean } = {}) {
+function setup(overrides: { busy?: () => boolean; reading?: () => Promise<void> } = {}) {
   const files = new Map<string, string>()
   const writes: string[] = []
   const warnings: string[] = []
@@ -36,6 +36,7 @@ function setup(overrides: { busy?: () => boolean } = {}) {
     connect,
     fs: {
       readFile: async (path) => {
+        await overrides.reading?.()
         const text = files.get(path)
         if (text === undefined) throw new Error('ENOENT')
         return text
@@ -146,6 +147,28 @@ describe('schema poller', () => {
     const connects = state.connects
     await new Promise((resolve) => setTimeout(resolve, 60))
     expect(state.connects).toBe(connects)
+    expect(state.open).toBe(0)
+  })
+
+  it('writes nothing once stopped, even a stamp write that was under way', async () => {
+    let reads = 0
+    let release = (): void => undefined
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    const { poller, files, writes, state } = setup({
+      reading: () => {
+        reads++
+        return gate
+      },
+    })
+    await until(() => state.open === 1, 'the baseline connection')
+    state.fingerprint = 'bbb'
+    await until(() => reads === 1, 'the stamp write to start')
+    const stopping = poller.stop()
+    release()
+    await stopping
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    expect(writes).toEqual([])
+    expect(files.has(STAMP)).toBe(false)
     expect(state.open).toBe(0)
   })
 })
