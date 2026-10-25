@@ -114,8 +114,10 @@ pgrstCommit = "$POSTGREST_COMMIT"
 BUILDINFO
 if cmp -s "$BI_TMP" "$BI"; then rm -f "$BI_TMP"; else mv "$BI_TMP" "$BI"; fi
 
-# 5. Build the reactor.
+# 5. Build the reactor. A fresh CABAL_DIR has no package index; `update` fetches it (index-state in the project file
+#    pins what the build resolves against).
 cd "$WORK"
+wasm32-wasi-cabal update
 wasm32-wasi-cabal build exe:postgrest-planner --keep-going "$@"
 BIN=$(wasm32-wasi-cabal list-bin exe:postgrest-planner)
 mkdir -p "$DIST"
