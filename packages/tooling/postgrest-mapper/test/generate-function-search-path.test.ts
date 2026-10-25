@@ -2,7 +2,6 @@ import { resolve } from 'node:path'
 import {
   buildFunctionTraceInputs,
   connectPg,
-  generateDeclarations,
   nodeExec,
   querySupplementary,
   type AcquiredSchema,
@@ -10,8 +9,8 @@ import {
   type Supplementary,
   type SupplementaryFunction,
 } from '../src'
-import { acquireFromStack, plannerWasmPath } from './support/acquired'
-import { createTempProject, type TempProject } from './support/project'
+import { acquireFromStack } from './support/acquired'
+import { generateText } from './support/declarations'
 
 /**
  * A SQL function that sets its own `search_path` resolves the names of its body along that path, not along the
@@ -179,11 +178,6 @@ describe('a function body that sets its own search_path, through the generator',
     acquired = await acquireFromStack()
   }, 120_000)
 
-  const projects: TempProject[] = []
-  afterEach(() => {
-    for (const p of projects.splice(0)) p.remove()
-  })
-
   /** `get_username_and_status` selects from the unqualified `users`, whose `username` is NOT NULL in `public` */
   async function rowWith(searchPath: string | null): Promise<string> {
     const schema: AcquiredSchema = {
@@ -195,17 +189,11 @@ describe('a function body that sets its own search_path, through the generator',
         ),
       },
     }
-    const p = await createTempProject(schema, {
-      'src/app.ts': `supabase.rpc('get_username_and_status', { name_param: 'x' })`,
-    })
-    projects.push(p)
-    const result = await generateDeclarations({
-      configFileName: p.configFileName,
-      options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
-      deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
-    })
-    expect(result.diagnostics).toEqual([])
-    const row = /f\|public\|get_username_and_status\|\*'[\s\S]*?row: (.*)\n/.exec(result.text)?.[1]
+    const text = await generateText(
+      schema,
+      `supabase.rpc('get_username_and_status', { name_param: 'x' })`
+    )
+    const row = /f\|public\|get_username_and_status\|\*'[\s\S]*?row: (.*)\n/.exec(text)?.[1]
     expect(row).toBeDefined()
     return row!
   }
@@ -233,28 +221,14 @@ describe('a function body that sets no search_path, through the generator', () =
     acquired = await acquireFromStack()
   }, 120_000)
 
-  const projects: TempProject[] = []
-  afterEach(() => {
-    for (const p of projects.splice(0)) p.remove()
-  })
-
   /** `personal.message_ids` selects from the bare `messages`, a table of `public` whose `id` is NOT NULL */
   async function rowWith(extraSearchPath: string): Promise<string> {
     const schema: AcquiredSchema = {
       ...acquired,
       config: { ...acquired.config, 'db-extra-search-path': extraSearchPath },
     }
-    const p = await createTempProject(schema, {
-      'src/app.ts': `supabase.schema('personal').rpc('message_ids')`,
-    })
-    projects.push(p)
-    const result = await generateDeclarations({
-      configFileName: p.configFileName,
-      options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
-      deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
-    })
-    expect(result.diagnostics).toEqual([])
-    const row = /f\|personal\|message_ids\|\*'[\s\S]*?row: (.*)\n/.exec(result.text)?.[1]
+    const text = await generateText(schema, `supabase.schema('personal').rpc('message_ids')`)
+    const row = /f\|personal\|message_ids\|\*'[\s\S]*?row: (.*)\n/.exec(text)?.[1]
     expect(row).toBeDefined()
     return row!
   }

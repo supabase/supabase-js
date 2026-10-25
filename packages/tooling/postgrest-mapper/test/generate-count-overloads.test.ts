@@ -1,6 +1,6 @@
-import { generateDeclarations, type AcquiredSchema } from '../src'
-import { acquireFromStack, plannerWasmPath } from './support/acquired'
-import { createTempProject, type TempProject } from './support/project'
+import type { AcquiredSchema } from '../src'
+import { acquireFromStack } from './support/acquired'
+import { generateText } from './support/declarations'
 
 /**
  * `count(x)` in a function body is the builtin aggregate (bigint, never NULL) unless a function or aggregate named
@@ -13,11 +13,6 @@ describe('count in a function body, through the generator', () => {
   beforeAll(async () => {
     acquired = await acquireFromStack()
   }, 120_000)
-
-  const projects: TempProject[] = []
-  afterEach(() => {
-    for (const p of projects.splice(0)) p.remove()
-  })
 
   /** The schema with one function's body and search path replaced in the catalog */
   function withBody(name: string, source: string, searchPath: string): AcquiredSchema {
@@ -33,17 +28,8 @@ describe('count in a function body, through the generator', () => {
   }
 
   async function rowOf(name: string, schema: AcquiredSchema = acquired): Promise<string> {
-    const p = await createTempProject(schema, { 'src/app.ts': `supabase.rpc('${name}')` })
-    projects.push(p)
-    const result = await generateDeclarations({
-      configFileName: p.configFileName,
-      options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
-      deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
-    })
-    expect(result.diagnostics).toEqual([])
-    const row = new RegExp(`f\\|public\\|${name}\\|\\*'[\\s\\S]*?row: (.*)\\n`).exec(
-      result.text
-    )?.[1]
+    const text = await generateText(schema, `supabase.rpc('${name}')`)
+    const row = new RegExp(`f\\|public\\|${name}\\|\\*'[\\s\\S]*?row: (.*)\\n`).exec(text)?.[1]
     expect(row).toBeDefined()
     return row!
   }

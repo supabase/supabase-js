@@ -1,7 +1,7 @@
-import { generateDeclarations, type AcquiredSchema } from '../src'
-import { acquireFromStack, plannerWasmPath } from './support/acquired'
+import type { AcquiredSchema } from '../src'
+import { acquireFromStack } from './support/acquired'
 import { TYPE_HELPERS, typecheckConsumer } from './support/consumer'
-import { createTempProject, type TempProject } from './support/project'
+import { generateText } from './support/declarations'
 
 /**
  * A type is what the catalog says it is: an array type of a user type is an array of that type, a domain is its base
@@ -12,22 +12,7 @@ beforeAll(async () => {
   acquired = await acquireFromStack()
 }, 120_000)
 
-const projects: TempProject[] = []
-afterEach(() => {
-  for (const p of projects.splice(0)) p.remove()
-})
-
-async function generate(source: string): Promise<string> {
-  const p = await createTempProject(acquired, { 'src/app.ts': source })
-  projects.push(p)
-  const result = await generateDeclarations({
-    configFileName: p.configFileName,
-    options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
-    deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
-  })
-  expect(result.diagnostics).toEqual([])
-  return result.text
-}
+const generate = (source: string): Promise<string> => generateText(acquired, source)
 
 const HELPERS = `${TYPE_HELPERS}
 type Ok<P> = Awaited<P> extends infer R ? (R extends { error: null } ? R : never) : never

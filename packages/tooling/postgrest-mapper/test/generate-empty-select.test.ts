@@ -1,29 +1,14 @@
-import { generateDeclarations, type AcquiredSchema } from '../src'
-import { acquireFromStack, plannerWasmPath } from './support/acquired'
+import type { AcquiredSchema } from '../src'
+import { acquireFromStack } from './support/acquired'
 import { typecheckConsumer } from './support/consumer'
-import { createTempProject, type TempProject } from './support/project'
+import { generateText } from './support/declarations'
 
 let acquired: AcquiredSchema
 beforeAll(async () => {
   acquired = await acquireFromStack()
 }, 120_000)
 
-const projects: TempProject[] = []
-afterEach(() => {
-  for (const p of projects.splice(0)) p.remove()
-})
-
-async function declarationsOf(source: string): Promise<string> {
-  const p = await createTempProject(acquired, { 'src/app.ts': source })
-  projects.push(p)
-  const result = await generateDeclarations({
-    configFileName: p.configFileName,
-    options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
-    deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
-  })
-  expect(result.diagnostics).toEqual([])
-  return result.text
-}
+const declarationsOf = (source: string): Promise<string> => generateText(acquired, source)
 
 /** The only entry of `SupabaseSelects`, from its key to its closing brace. */
 function onlyEntry(text: string): string {

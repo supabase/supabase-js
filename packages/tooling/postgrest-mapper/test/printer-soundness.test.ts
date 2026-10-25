@@ -1,29 +1,15 @@
-import { generateDeclarations, type AcquiredSchema } from '../src'
-import { acquireFromStack, plannerWasmPath } from './support/acquired'
+import type { AcquiredSchema } from '../src'
+import { acquireFromStack } from './support/acquired'
 import { TYPE_HELPERS, typecheckConsumer } from './support/consumer'
-import { createTempProject, type TempProject } from './support/project'
+import { generateText } from './support/declarations'
 
 let acquired: AcquiredSchema
 beforeAll(async () => {
   acquired = await acquireFromStack()
 }, 120_000)
 
-const projects: TempProject[] = []
-afterEach(() => {
-  for (const p of projects.splice(0)) p.remove()
-})
-
-async function declarationsOf(source: string, schema: AcquiredSchema = acquired): Promise<string> {
-  const p = await createTempProject(schema, { 'src/app.ts': source })
-  projects.push(p)
-  const result = await generateDeclarations({
-    configFileName: p.configFileName,
-    options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
-    deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
-  })
-  expect(result.diagnostics).toEqual([])
-  return result.text
-}
+const declarationsOf = (source: string, schema: AcquiredSchema = acquired): Promise<string> =>
+  generateText(schema, source)
 
 /** The entry printed for `key`, from `'key': {` to its closing brace. */
 function entryOf(text: string, key: string): string {

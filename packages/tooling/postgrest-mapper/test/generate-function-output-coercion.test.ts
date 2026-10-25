@@ -1,6 +1,6 @@
-import { generateDeclarations, type AcquiredSchema } from '../src'
-import { acquireFromStack, plannerWasmPath } from './support/acquired'
-import { createTempProject, type TempProject } from './support/project'
+import type { AcquiredSchema } from '../src'
+import { acquireFromStack } from './support/acquired'
+import { generateText } from './support/declarations'
 
 /**
  * The caller reads a function's rows as its declared output types. PostgreSQL coerces the value the body selects to
@@ -13,21 +13,9 @@ beforeAll(async () => {
   acquired = await acquireFromStack()
 }, 120_000)
 
-const projects: TempProject[] = []
-afterEach(() => {
-  for (const p of projects.splice(0)) p.remove()
-})
-
 async function rowOf(name: string): Promise<string> {
-  const p = await createTempProject(acquired, { 'src/app.ts': `supabase.rpc('${name}')` })
-  projects.push(p)
-  const result = await generateDeclarations({
-    configFileName: p.configFileName,
-    options: { ...p.options, defaultSchema: 'public', unplanned: 'error' },
-    deps: { wasmPath: plannerWasmPath(), cacheDirectory: false },
-  })
-  expect(result.diagnostics).toEqual([])
-  const row = new RegExp(`f\\|public\\|${name}\\|\\*'[\\s\\S]*?row: (.*)\\n`).exec(result.text)?.[1]
+  const text = await generateText(acquired, `supabase.rpc('${name}')`)
+  const row = new RegExp(`f\\|public\\|${name}\\|\\*'[\\s\\S]*?row: (.*)\\n`).exec(text)?.[1]
   expect(row).toBeDefined()
   return row!
 }
