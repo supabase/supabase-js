@@ -173,9 +173,6 @@ const pollIntervalOf = (options: PostgrestMapperOptions): number => {
   return schema.pollIntervalMs === false ? 0 : (schema.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS)
 }
 
-const byKey = (a: { key: string }, b: { key: string }): number =>
-  a.key < b.key ? -1 : a.key > b.key ? 1 : 0
-
 /**
  * One request to plan. `select`: a relation's `SupabaseSelects` entry, stored with its shape; `call`: an rpc call, stored
  * with everything the printer reads of it; `operand`: an operand request, stored with its filters only.
@@ -765,7 +762,6 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
         entries.push({ key: k.key, error: stored.error })
       }
     }
-    entries.sort(byKey)
 
     // ---- rpc entries and operands
     const outcomeOf = (id: string): CallOutcome | undefined => {
