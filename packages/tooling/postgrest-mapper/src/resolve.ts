@@ -39,14 +39,22 @@ function constBinding(node: Node, scope: Scope): Binding | undefined {
   return b?.init && !b.annotated ? b : undefined
 }
 
-/** The initializer behind a chain of unannotated `const` identifiers, with the scope it is evaluated in. */
-export function followConst(node: Node, scope: Scope): { node: Node; scope: Scope } {
-  const seen = new Set<Binding>()
+/**
+ * The initializer behind a chain of unannotated `const` identifiers, with the scope it is evaluated in. A binding in
+ * `active` is being resolved up the stack, so it stops the chain; the bindings followed are added to it and returned.
+ */
+export function followConst(
+  node: Node,
+  scope: Scope,
+  active = new Set<Binding>()
+): { node: Node; scope: Scope; followed: Binding[] } {
+  const followed: Binding[] = []
   for (;;) {
     node = unwrapValue(node)
     const b = constBinding(node, scope)
-    if (!b || seen.has(b)) return { node, scope }
-    seen.add(b)
+    if (!b || active.has(b)) return { node, scope, followed }
+    active.add(b)
+    followed.push(b)
     node = b.init as Node
     scope = b.scope
   }
@@ -64,8 +72,21 @@ function union(parts: string[][]): string[] | undefined {
  * equals the literal type TypeScript infers), unannotated same-file `const` identifiers, conditionals whose branches
  * both resolve, and `as const` / `satisfies` / parenthesised forms of those.
  */
-export function resolveStrings(node: Node, scope: Scope): string[] | undefined {
-  const { node: n, scope: s } = followConst(node, scope)
+export function resolveStrings(
+  node: Node,
+  scope: Scope,
+  active = new Set<Binding>()
+): string[] | undefined {
+  const { node: n, scope: s, followed } = followConst(node, scope, active)
+  try {
+    return resolveFollowed(n, s, active)
+  } finally {
+    // a stack, not a visited set: `flag ? q : q` resolves `q` twice
+    for (const b of followed) active.delete(b)
+  }
+}
+
+function resolveFollowed(n: Node, s: Scope, active: Set<Binding>): string[] | undefined {
   switch (n.type) {
     case 'Literal':
       return typeof n.value === 'string' ? [n.value] : undefined
@@ -75,8 +96,8 @@ export function resolveStrings(node: Node, scope: Scope): string[] | undefined {
       return typeof cooked === 'string' ? [cooked] : undefined
     }
     case 'ConditionalExpression': {
-      const a = resolveStrings(n.consequent, s)
-      const b = a && resolveStrings(n.alternate, s)
+      const a = resolveStrings(n.consequent, s, active)
+      const b = a && resolveStrings(n.alternate, s, active)
       return a && b ? union([a, b]) : undefined
     }
     default:
