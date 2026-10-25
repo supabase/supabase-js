@@ -115,6 +115,24 @@ type _r4 = Expect<Equal<Data<typeof r4>, { a_id: number }[] | string>>
 // a call the planner has no entry for, on a function the Database has (`find_partial` is only planned without `search`)
 const r5 = supabase.rpc('find_partial', { cid: 1, search: 'x' })
 type _r5 = Expect<Equal<Data<typeof r5>[number]['channel_id'], number>>
+// a re-select keeps the fallback: a bare select() is the `Returns` rows as the call has them, single() one row
+const r2a = supabase.rpc('db_only_rows', { owner: 'x' }).select()
+type _r2a = Expect<Equal<Data<typeof r2a>, { id: number; title: string | null }[]>>
+const r2as = supabase.rpc('db_only_rows', { owner: 'x' }).select().single()
+type _r2as = Expect<Equal<Data<typeof r2as>, { id: number; title: string | null }>>
+const r2am = supabase.rpc('db_only_rows', { owner: 'x' }).select().maybeSingle()
+type _r2am = Expect<Equal<Data<typeof r2am>, { id: number; title: string | null } | null>>
+// ... a narrowing select reads the rows as a relation's are read: known keys keep their types, any other is `any`
+const r2n = supabase.rpc('db_only_rows', { owner: 'x' }).select('id, mine:title')
+type _r2n = Expect<Equal<Data<typeof r2n>, Fallback<{ id: number; title: string | null }>[]>>
+const r2ns = supabase.rpc('db_only_rows', { owner: 'x' }).select('id').single()
+type _r2ns = Expect<Equal<Data<typeof r2ns>, Fallback<{ id: number; title: string | null }>>>
+// ... a scalar stays the scalar
+const r1a = supabase.rpc('db_only_count', { n: 1 }).select()
+type _r1a = Expect<Equal<Data<typeof r1a>, number>>
+// ... and an entry still wins: the planned rows, projected
+const r6a = supabase.rpc('get_user_messages', { user_name: 'x' }).select('id')
+type _r6a = Expect<Equal<Data<typeof r6a>, { id: number }[]>>
 // arguments are checked against Args
 // @ts-expect-error Type 'string' is not assignable to type 'number'
 supabase.rpc('db_only_count', { n: 'x' })

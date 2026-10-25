@@ -569,7 +569,7 @@ export default class PostgrestClient<
       | [args: RpcArgs<Database, SchemaName, F, A, O>]
       | [args: RpcArgs<Database, SchemaName, F, A, O>, options: O]
   ): PostgrestFilterBuilder<
-    RpcB<SchemaOf<Database, SchemaName>, F, A, O>,
+    RpcB<SchemaOf<Database, SchemaName>, F, A, O, ReturnsOf<Database, SchemaName, F>>,
     RpcDesc<
       RowCalls<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>, O>,
       true,

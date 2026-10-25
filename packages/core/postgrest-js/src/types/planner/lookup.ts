@@ -5,9 +5,10 @@ import type { RelDefs, SchemaOf } from './rpc'
 // ---------------------------------------------------------------- state
 export type Kind = 'r' | 'w' | 'f'
 // static context of a chain: kind, schema, relation (or function), the relation's Row, the descriptor `*` selects
-// (the Row plus identity sources over the relation's FactColumns), current select, and for rpc the possible
-// (serialized key set, method) pairs: the key set is wrapped in a tuple so a union stays a set of sets, and the
-// method depends on the argument union member, so the two travel together
+// (the Row plus identity sources over the relation's FactColumns; for rpc, the function's `Returns` in the Database,
+// which a call with no entry answers with), current select, and for rpc the possible (serialized key set, method)
+// pairs: the key set is wrapped in a tuple so a union stays a set of sets, and the method depends on the argument
+// union member, so the two travel together
 export type BState = {
   k: Kind
   s: string
@@ -248,21 +249,30 @@ export type ReturnsBase<Ret> = Strict extends true
       : Ret extends readonly unknown[]
         ? 'many'
         : 'one'
-export type ReturnsDesc<Ret> = Strict extends true
+// a re-select that names columns reads the `Returns` rows as a relation's Row is read (`UnplannedRows`); a scalar, or a
+// call's own rows (`Star`), stay as written
+type ReturnsRow<R, Star extends boolean> = Star extends true
+  ? R
+  : R extends readonly unknown[]
+    ? R
+    : R extends object
+      ? UnplannedRows<R, R>
+      : R
+export type ReturnsDesc<Ret, Star extends boolean = true> = Strict extends true
   ? Desc<unknown, {}, {}, 'one'>
   : IsAny<Ret> extends true
     ? Desc<any, {}, {}, 'one'>
     : [unknown] extends [Ret]
       ? Desc<unknown, {}, {}, 'one'>
       : Ret extends readonly (infer U)[]
-        ? Desc<U, {}, {}, 'many'>
-        : Desc<Ret, {}, {}, 'one'>
+        ? Desc<ReturnsRow<U, Star>, {}, {}, 'many'>
+        : Desc<ReturnsRow<Ret, Star>, {}, {}, 'one'>
 export type RpcDesc<En, Star extends boolean = false, Ret = unknown> = En extends { error: string }
   ? never
   : En extends Untyped
     ? Desc<any, {}, {}, 'one'>
     : En extends Unplanned
-      ? ReturnsDesc<Ret>
+      ? ReturnsDesc<Ret, Star>
       : En extends Dynamic
         ? Desc<unknown>
         : En extends { row: infer R }
@@ -285,7 +295,7 @@ export type Descs<B extends BState, Q extends string> =
         : Desc<UnplannedRows<B['row'], unknown>>
       : Q extends unknown
         ? B['k'] extends 'f'
-          ? RpcDesc<Entry<B, Q>, Q extends '*' ? true : false>
+          ? RpcDesc<Entry<B, Q>, Q extends '*' ? true : false, B['st']>
           : Q extends '*'
             ? B['st']
             : DescOf<Entry<B, Q>, B['row']>

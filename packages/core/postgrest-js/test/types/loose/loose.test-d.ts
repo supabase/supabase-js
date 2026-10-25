@@ -38,9 +38,10 @@ type _3l1 = Expect<Equal<Data<typeof lp>[number]['channel_id'], number>>
 declare const optionalSearch: { cid: number; search?: string }
 const lq = supabase.rpc('find_partial', optionalSearch)
 type _3l2 = Expect<Equal<Data<typeof lq>[number]['id'], number>>
-// a re-select on an unplanned call is unknown too
+// a re-select on an unplanned call reads the Database's `Returns` rows like a relation's: known keys keep their types
 const lr = supabase.rpc('find_partial', { cid: 1, search: 'x' }).select('id')
-type _3l4 = Expect<Equal<Data<typeof lr>, unknown>>
+type _3l4 = Expect<Equal<Data<typeof lr>[number]['channel_id'], number>>
+type _3l4b = Expect<Equal<Data<typeof lr>[number]['nope'], any>>
 // a method with no planned call
 // the matched call's method is exact: a call planned only for POST is unplanned under `{ get: true }`
 const lg = supabase.rpc('post_only', { n: 1 }, { get: true })
