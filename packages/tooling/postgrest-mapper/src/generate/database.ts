@@ -39,11 +39,12 @@ export interface DatabasePlanContext {
   functions: Map<string, TracedFunction[]>
   /** `schema.table.column` to the TypeScript type of its `pg_jsonschema` CHECK constraints */
   jsonSchemas: Map<string, string>
+  /** What was noticed while computing it */
+  diagnostics: PrintDiagnostic[]
 }
 
-/** `DatabasePlanContext` plus what was noticed while computing it. */
+/** `DatabasePlanContext` plus the relations it could not plan. */
 export interface DatabaseInputs extends DatabasePlanContext {
-  diagnostics: PrintDiagnostic[]
   /**
    * The relations whose `select=*` the host could not plan (a timeout, a crashed worker). They are missing from
    * `plans` for that reason only, so the context is incomplete and a caller must not keep it

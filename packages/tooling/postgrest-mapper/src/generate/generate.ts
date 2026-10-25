@@ -29,7 +29,7 @@ import {
   routineSignatures,
 } from '../printer'
 import { relationKey } from '../keys'
-import type { CallOutcome, OperandInput, PrintDiagnostic, RpcCall, SelectsEntry } from '../printer'
+import type { CallOutcome, OperandInput, RpcCall, SelectsEntry } from '../printer'
 import { scanFiles } from '../scanner'
 import { SchemaAcquisitionError, acquireSchema, connectPg, exposedSchemas } from '../schema'
 import { defaultFs } from '../schema/snapshot'
@@ -414,7 +414,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
   // ---- planning
   interface Planned {
     entries: Map<string, StoredPlan>
-    context: DatabasePlanContext & { diagnostics: PrintDiagnostic[] }
+    context: DatabasePlanContext
     cache: CacheOutcome
     failures: string[]
     /** Releases of another patch than the planner's */
@@ -544,7 +544,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
         planner: await plannerStamp(),
         plannerRelease: info.postgrest.version,
         schema: schemaId,
-        context: serializeContext(context, context.diagnostics),
+        context: serializeContext(context),
         entries: Object.fromEntries([...entries].sort(([a], [b]) => (a < b ? -1 : 1))),
       }
       if (failures.length === 0) await cache?.write(file)

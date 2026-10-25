@@ -47,22 +47,17 @@ export interface CacheFile {
   entries: Record<string, StoredPlan>
 }
 
-export function serializeContext(
-  context: DatabasePlanContext,
-  diagnostics: StoredContext['diagnostics']
-): StoredContext {
+export function serializeContext(context: DatabasePlanContext): StoredContext {
   return {
     plans: [...context.plans].map(([k, v]) => [k, [...v]]),
     traces: [...context.traces].map(([k, v]) => [k, [...v]]),
     functions: [...context.functions],
     jsonSchemas: [...context.jsonSchemas],
-    diagnostics,
+    diagnostics: context.diagnostics,
   }
 }
 
-export function deserializeContext(
-  stored: StoredContext
-): DatabasePlanContext & { diagnostics: StoredContext['diagnostics'] } {
+export function deserializeContext(stored: StoredContext): DatabasePlanContext {
   return {
     plans: new Map(stored.plans),
     traces: new Map(stored.traces.map(([k, v]) => [k, new Map(v)])),
