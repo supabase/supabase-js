@@ -28,6 +28,8 @@ Every request carries `locations` (UTF-16 offsets, 1-based line and column). The
 
 Resolution is lexical: string literals, templates without substitutions, unannotated same-file `const`s, conditionals whose branches both resolve, `as const` and parentheses. Builders resolve through the same `const`s. `let`, parameters and annotated consts are not followed.
 
+- Limit: a chain of conditional `const`s that each reuse the previous one in both branches (`const qN = flag ? qM : qM`, dozens deep) is resolved once per path, so the work doubles with each link and the scan stalls.
+
 ## JSON Schema to TypeScript
 
 `jsonSchemaToTs(schema, { jsonType? })` turns a parsed `pg_jsonschema` schema (design v5 §6.1) into a one-line TypeScript type expression. Pure and deterministic: members keep the schema's order, duplicates are dropped, property names are quoted only when they are not identifiers. `jsonType` (default `Json`) names the "any JSON value" type.
