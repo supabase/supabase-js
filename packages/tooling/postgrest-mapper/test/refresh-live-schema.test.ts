@@ -98,6 +98,27 @@ describe('refresh invalidates the live schema of another instance', () => {
     }
   }, 180_000)
 
+  it('reacquires after close: a closed generator keeps no live schema', async () => {
+    const { exec, dumps } = countingExec()
+    const generator = createGenerator({
+      cwd: dir,
+      schema: { exec },
+      ...(wasm ? { wasmPath: wasm } : {}),
+    })
+    const params = { configFileName: join(dir, 'tsconfig.json'), options }
+    try {
+      await generator.generate(params)
+      expect(dumps()).toBe(1)
+      // nothing watches the database once closed: the schema read before may be stale
+      await generator.close()
+      const reopened = await generator.generate(params)
+      expect(reopened.diagnostics).toEqual([])
+      expect(dumps()).toBe(2)
+    } finally {
+      await generator.close()
+    }
+  }, 180_000)
+
   it('the content-mapper project generator lists the stamp too', async () => {
     const { exec } = countingExec()
     const run = createProjectGenerator({

@@ -149,7 +149,10 @@ export interface Generator {
   ): Promise<GenerateOutput>
   /** Takes the holder off every poller; a poller left without holders stops */
   release(holder: string): void
-  /** Stops the pollers and the planner host. The generator can be used again: the next miss starts a new host */
+  /**
+   * Stops the pollers and the planner host, and forgets the live schemas, which nothing watches any more. The generator
+   * can be used again: the next miss starts a new host and acquires the schema again
+   */
   close(): Promise<void>
 }
 
@@ -908,6 +911,7 @@ export function createGenerator(deps: GeneratorDeps = {}): Generator {
       loadedSchema = undefined
       const polling = [...pollers.values()].map((entry) => entry.poller.stop())
       pollers.clear()
+      schemas.clear()
       await Promise.all([closing?.close(), ...polling])
     },
   }
