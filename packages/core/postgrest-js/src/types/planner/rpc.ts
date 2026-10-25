@@ -247,14 +247,14 @@ type RpcKeys<S extends string, F extends string, A, O> = BS<
 // every call the runtime could dispatch to: one per possible (key set, method) of each member of A
 export type CallsOf<S extends string, F extends string, A, O> = Entry<RpcKeys<S, F, A, O>, Q0>
 // the chain of an rpc call, whose row is the matched calls' unprojected `source` row (derived, not carried, so the
-// builder prints only the call). `Ret` is the function's `Returns` in the Database: a re-select of a call with no
+// builder prints only the call). Its `st` is the function's `Returns` in the Database: a re-select of a call with no
 // entry falls back to it as the call itself does.
-export type RpcB<S extends string, F extends string, A, O, Ret = unknown> = BS<
+export type RpcB<DB, SN extends string, F extends string, A, O> = BS<
   'f',
-  S,
+  SchemaOf<DB, SN>,
   F,
-  CallRow<CallsOf<S, F, A, O>>,
-  Ret,
+  CallRow<CallsOf<SchemaOf<DB, SN>, F, A, O>>,
+  ReturnsOf<DB, SN, F>,
   Q0,
   KeyMethods<A, O>
 >

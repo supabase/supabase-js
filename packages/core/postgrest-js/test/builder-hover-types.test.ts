@@ -70,19 +70,21 @@ const cases: { name: string; expression: string; member: string; builder: string
     name: 'rpc',
     expression: `postgrest.rpc('function_returning_set_of_rows')`,
     member: 'rpc',
-    builder: 'PostgrestFilterBuilder<RpcB<"public", "function_returning_set_of_rows", {}, {}>',
+    builder:
+      'PostgrestFilterBuilder<RpcB<SupabaseDatabase, "public", "function_returning_set_of_rows", {}, {}>',
   },
   {
     name: 'rpcSelect',
     expression: `postgrest.rpc('function_returning_set_of_rows').select('username')`,
     member: 'select',
-    builder: 'RpcB<"public", "function_returning_set_of_rows", {}, {}>',
+    builder: 'RpcB<SupabaseDatabase, "public", "function_returning_set_of_rows", {}, {}>',
   },
   {
     name: 'rpcEq',
     expression: `postgrest.rpc('function_returning_set_of_rows').eq('username', 'x')`,
     member: 'eq',
-    builder: 'PostgrestFilterBuilder<RpcB<"public", "function_returning_set_of_rows", {}, {}>',
+    builder:
+      'PostgrestFilterBuilder<RpcB<SupabaseDatabase, "public", "function_returning_set_of_rows", {}, {}>',
   },
 ]
 
