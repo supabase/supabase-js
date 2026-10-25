@@ -1,4 +1,4 @@
-/* Minimal netdb.h for wasm32-wasi: resolution is delegated to the host via supa_net.tcp_connect. */
+/* Minimal netdb.h for wasm32-wasi: declarations only, the shim defines every function as a trap. */
 #ifndef SUPA_WASI_NETDB_H
 #define SUPA_WASI_NETDB_H
 

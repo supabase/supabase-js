@@ -18,7 +18,6 @@ executable postgrest-planner
                       Planner.Request
                       Planner.Summary
                       Planner.FFI
-  c-sources:          cbits/supa_net_stub.c
   build-depends:      base
                     , aeson
                     , bytestring

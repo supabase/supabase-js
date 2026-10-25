@@ -2,8 +2,9 @@
 # Builds a client-only static libpq for wasm32-wasi from the PostgreSQL source tarball.
 # Output: $OUT/{lib/libpq.a,include/*,lib/pkgconfig/libpq.pc}
 #
-# Vendored from supabase/supa-wasm postgrest/libpq/build.sh at a44d72062f00392fb79223fbbc272de4299c1c9d. The only
-# change: the toolchain, source and output directories come from the caller (../../build.sh) instead of supa-wasm's tree.
+# Vendored from supabase/supa-wasm postgrest/libpq/build.sh at a44d72062f00392fb79223fbbc272de4299c1c9d. Changes: the
+# toolchain, source and output directories come from the caller (../../build.sh) instead of supa-wasm's tree, and the
+# libpq source patch is gone: the planner never connects, so libpq builds unpatched against the trapping shim.
 set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -27,9 +28,9 @@ RANLIB=llvm-ranlib
 
 mkdir -p "$SRC_ROOT" "$OUT/lib/pkgconfig" "$OUT/include/libpq"
 
-# Everything that shapes libpq.a: this script (version and flags), the source patches, and the shim
-# sources and headers. A change to any of them rebuilds from a fresh extraction; REBUILD_LIBPQ=1 forces it.
-STAMP=$(cd "$POSTGREST_DIR" && find libpq/build.sh libpq/patches shim/include shim/src/supa_wasi_shim.c -type f |
+# Everything that shapes libpq.a: this script (version and flags) and the shim sources and headers. A change to
+# any of them rebuilds from a fresh extraction; REBUILD_LIBPQ=1 forces it.
+STAMP=$(cd "$POSTGREST_DIR" && find libpq/build.sh shim/include shim/src/supa_wasi_shim.c -type f |
 	LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 | cut -d' ' -f1)
 if [ -z "${REBUILD_LIBPQ:-}" ] && [ -f "$OUT/lib/libpq.a" ] && [ "$(cat "$OUT/.stamp" 2>/dev/null)" = "$STAMP" ]; then
 	echo "libpq up to date: $OUT/lib/libpq.a"
@@ -42,9 +43,6 @@ tarball=$SRC_ROOT/postgresql-$PG_VERSION.tar.bz2
 echo "$PG_SHA256  $tarball" | shasum -a 256 -c -
 rm -rf "$SRC" "$BUILD"
 tar -C "$SRC_ROOT" -xjf "$tarball"
-for p in "$HERE"/patches/*.patch; do
-	patch -d "$SRC" -p1 -s < "$p"
-done
 
 CFLAGS="-O2 -fPIC -mcpu=lime1 -mreference-types -msimd128 -fno-strict-aliasing -fwrapv -Wno-unused-command-line-argument -Wno-compound-token-split-by-macro"
 CFLAGS="$CFLAGS -D_GNU_SOURCE -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_GETPID"
