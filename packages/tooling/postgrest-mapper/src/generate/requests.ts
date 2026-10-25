@@ -1,7 +1,7 @@
 import type { PlanRequest } from '@supabase/postgrest-planner'
 import { operandKey, orderKey, relationKey, selectKey } from '../keys'
 import type { RoutineSignature } from '../printer'
-import type { FunctionTarget, RpcMethod, ScanResult, SourceLocation } from '../types'
+import type { FunctionTarget, RpcMethod, ScanResult } from '../types'
 
 /**
  * The `select` query parameter postgrest-js sends for a select string: whitespace is removed except inside double
@@ -35,7 +35,6 @@ export interface PlanKey {
    * failed plan of such a pair is dropped, not reported.
    */
   speculative: boolean
-  locations: SourceLocation[]
 }
 
 /**
@@ -51,7 +50,6 @@ export function planKeysOf(scan: ScanResult): PlanKey[] {
       keys.set(entry.key, entry)
       return
     }
-    known.locations.push(...entry.locations)
     known.schemaCount = Math.max(known.schemaCount, entry.schemaCount)
     known.speculative = known.speculative && entry.speculative
   }
@@ -67,7 +65,6 @@ export function planKeysOf(scan: ScanResult): PlanKey[] {
         select,
         schemaCount: target.schemas.length,
         speculative: false,
-        locations: [...request.locations],
       })
     }
   }
@@ -85,7 +82,6 @@ export function planKeysOf(scan: ScanResult): PlanKey[] {
           select: pair.select,
           schemaCount: pair.schemas.length,
           speculative: true,
-          locations: [...pair.locations],
         })
       }
     }
