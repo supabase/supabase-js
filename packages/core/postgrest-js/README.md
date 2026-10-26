@@ -58,7 +58,7 @@ Query results are typed by a planner: the real PostgREST planner (upstream Postg
 
 A chain the generated declarations don't cover is typed from the `Database` you pass (`new PostgrestClient<Database>()` with a `supabase gen types typescript` database): the relation's `Row` with its own keys typed and any other key `any`, and an rpc answers with the function's `Returns`. A Database without named columns, or no Database, gives `Record<string, unknown>` rows. With `SupabasePgrstStatus['unplanned']` set to `'error'`, a chain the generator didn't cover is a type error and the fallback is off. An rpc whose name is a union (`rpc(flag ? 'a' : 'b')`) gets no `Returns` fallback, so a call the generated declarations don't cover has `unknown` data; call each function by its literal name.
 
-When you need to state a result yourself, use `.cast<T>()`, which takes the type of one row and does nothing at runtime. `.returns<T>()`, `.overrideTypes<T>()` and the `foreignTable` option still work but are deprecated:
+When you need to state a result yourself, use `.cast<T>()`, which takes the type of one row and does nothing at runtime. `.returns<T>()`, `.overrideTypes<T>()`, `.single<T>()`, `.maybeSingle<T>()` and the `foreignTable` option still work but are deprecated:
 
 ```ts
 const { data } = await postgrest.from('users').select(columns).cast<{ id: number }>()
