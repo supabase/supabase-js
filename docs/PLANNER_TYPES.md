@@ -578,6 +578,111 @@ lookup does not depend on, so on a real project the gap is likely wider. 412 of 
 versions. The other 88 differ because v3 is more precise (the `NOT VALID` foreign key, view columns, filters, write
 responses).
 
+#### Full results
+
+**Method.** A generator writes deterministic query files (seed 20261024, 25 chains per file) at 1, 50, 200 and 500
+chains. The 500-chain corpus holds 132 selects with embeds, 126 flat selects, 74 writes, 58 filtered selects, 30 filtered
+`.single()` or `.maybeSingle()` calls, 71 rpc calls and 9 long nested selects, for 462 distinct select strings. Each
+configuration runs `tsc --noEmit --extendedDiagnostics` under `/usr/bin/time -l`. All configurations run round-robin, so
+machine drift hits them alike, after one discarded warm-up. Each number is the median of 7 runs. The machine is an Apple
+M3 (8 cores, 24 GB) on Node 24.22.1, with a load average between 8 and 18 during the run. TypeScript versions are 5.8.3,
+6.0.3, 7.0.2 and 7.1.0-beta. v3 uses the generated file unless a row says otherwise.
+
+Check time is the compiler's own `Check time`. Instantiations are `Instantiations`. Peak memory is the process's peak
+resident set size. The ratio columns are v2 divided by v3.
+
+TypeScript 5.8.3:
+
+| Chains | v2 check | v3 check | Ratio | v2 instantiations | v3 instantiations | Ratio | v2 peak memory | v3 peak memory |
+| ------ | -------- | -------- | ----- | ----------------- | ----------------- | ----- | -------------- | -------------- |
+| 1      | 0.09 s   | 0.03 s   | 3.0x  | 25 k              | 3 k               | 10.0x | 215 MB         | 176 MB         |
+| 50     | 0.56 s   | 0.15 s   | 3.7x  | 946 k             | 62 k              | 15.3x | 329 MB         | 251 MB         |
+| 200    | 2.72 s   | 0.31 s   | 8.8x  | 5.67 M            | 204 k             | 27.9x | 544 MB         | 316 MB         |
+| 500    | 6.44 s   | 0.58 s   | 11.1x | 14.58 M           | 480 k             | 30.4x | 900 MB         | 385 MB         |
+
+TypeScript 6.0.3:
+
+| Chains | v2 check | v3 check | Ratio | v2 instantiations | v3 instantiations | Ratio | v2 peak memory | v3 peak memory |
+| ------ | -------- | -------- | ----- | ----------------- | ----------------- | ----- | -------------- | -------------- |
+| 1      | 0.07 s   | 0.04 s   | 1.8x  | 14 k              | 2 k               | 6.6x  | 187 MB         | 180 MB         |
+| 50     | 0.44 s   | 0.15 s   | 2.9x  | 430 k             | 51 k              | 8.5x  | 326 MB         | 251 MB         |
+| 200    | 1.75 s   | 0.31 s   | 5.6x  | 2.23 M            | 164 k             | 13.5x | 603 MB         | 318 MB         |
+| 500    | 4.19 s   | 0.60 s   | 7.0x  | 5.46 M            | 386 k             | 14.1x | 1229 MB        | 384 MB         |
+
+TypeScript 7.0.2 (checks on several threads by default):
+
+| Chains | v2 check | v3 check | Ratio | v2 instantiations | v3 instantiations | Ratio | v2 peak memory | v3 peak memory |
+| ------ | -------- | -------- | ----- | ----------------- | ----------------- | ----- | -------------- | -------------- |
+| 1      | 0.009 s  | 0.002 s  | 4.5x  | 15 k              | 2 k               | 6.4x  | 64 MB          | 61 MB          |
+| 50     | 0.107 s  | 0.021 s  | 5.1x  | 446 k             | 60 k              | 7.4x  | 125 MB         | 78 MB          |
+| 200    | 0.377 s  | 0.053 s  | 7.1x  | 2.35 M            | 205 k             | 11.4x | 331 MB         | 118 MB         |
+| 500    | 0.896 s  | 0.101 s  | 8.9x  | 5.75 M            | 437 k             | 13.2x | 691 MB         | 184 MB         |
+
+TypeScript 7.0.2 with `--singleThreaded`:
+
+| Chains | v2 check | v3 check | Ratio | v2 instantiations | v3 instantiations | Ratio | v2 peak memory | v3 peak memory |
+| ------ | -------- | -------- | ----- | ----------------- | ----------------- | ----- | -------------- | -------------- |
+| 1      | 0.009 s  | 0.002 s  | 4.5x  | 14 k              | 2 k               | 6.5x  | 61 MB          | 57 MB          |
+| 50     | 0.164 s  | 0.030 s  | 5.5x  | 430 k             | 51 k              | 8.5x  | 115 MB         | 71 MB          |
+| 200    | 0.893 s  | 0.099 s  | 9.0x  | 2.23 M            | 166 k             | 13.4x | 305 MB         | 101 MB         |
+| 500    | 2.095 s  | 0.225 s  | 9.3x  | 5.46 M            | 389 k             | 14.0x | 603 MB         | 156 MB         |
+
+TypeScript 7.1.0-beta:
+
+| Chains | v2 check | v3 check | Ratio | v2 instantiations | v3 instantiations | Ratio | v2 peak memory | v3 peak memory |
+| ------ | -------- | -------- | ----- | ----------------- | ----------------- | ----- | -------------- | -------------- |
+| 1      | 0.007 s  | 0.002 s  | 3.5x  | 14 k              | 2 k               | 6.5x  | 56 MB          | 54 MB          |
+| 50     | 0.082 s  | 0.025 s  | 3.3x  | 445 k             | 51 k              | 8.7x  | 96 MB          | 64 MB          |
+| 200    | 0.288 s  | 0.050 s  | 5.8x  | 2.32 M            | 180 k             | 12.9x | 232 MB         | 90 MB          |
+| 500    | 0.726 s  | 0.093 s  | 7.8x  | 5.71 M            | 437 k             | 13.1x | 476 MB         | 141 MB         |
+
+v3 through the TypeScript 7.1 content mapper (`tsc --runExternalCode`, no generated file) checks as fast as with the
+generated file. Its wall time includes the planner, which runs inside the compiler:
+
+| Chains | Check   | Total wall time | Instantiations | Peak memory |
+| ------ | ------- | --------------- | -------------- | ----------- |
+| 1      | 0.002 s | 0.14 s          | 2 k            | 65 MB       |
+| 50     | 0.019 s | 0.17 s          | 60 k           | 71 MB       |
+| 200    | 0.057 s | 0.23 s          | 192 k          | 94 MB       |
+| 500    | 0.097 s | 0.34 s          | 436 k          | 147 MB      |
+
+**Cost of each extra query**, the difference between 500 and 1 chains divided by 499:
+
+| TypeScript                    | v2 check | v3 check | v2 instantiations | v3 instantiations |
+| ----------------------------- | -------- | -------- | ----------------- | ----------------- |
+| 5.8.3                         | 12.73 ms | 1.10 ms  | 29 k              | 957               |
+| 6.0.3                         | 8.26 ms  | 1.12 ms  | 11 k              | 769               |
+| 7.0.2                         | 1.78 ms  | 0.20 ms  | 12 k              | 871               |
+| 7.0.2 with `--singleThreaded` | 4.18 ms  | 0.45 ms  | 11 k              | 775               |
+| 7.1.0-beta                    | 1.44 ms  | 0.18 ms  | 11 k              | 871               |
+
+**Spread.** At 500 chains, the 7 v2 runs on TypeScript 5.8 ranged from 6.28 s to 6.86 s. The v3 runs were 0.57 s to
+0.59 s, plus two outliers (0.74 s and 1.33 s) while other work loaded the machine. On 7.1 beta, v2 ranged from 0.69 s to
+0.75 s and v3 from 0.09 s to 0.10 s.
+
+**Generating with the mapper** (`postgrest-mapper generate` from a snapshot, median of 7, including about 80 ms of
+process startup):
+
+| Chains | Planned entries | Empty cache | Warm cache, nothing changed | Warm cache, one select edited | Generated file     |
+| ------ | --------------- | ----------- | --------------------------- | ----------------------------- | ------------------ |
+| 1      | 1               | 0.33 s      | 0.07 s                      | 0.15 s                        | 11 KB, 227 lines   |
+| 50     | 52              | 0.31 s      | 0.07 s                      | 0.16 s                        | 51 KB, 602 lines   |
+| 200    | 194             | 0.45 s      | 0.10 s                      | 0.17 s                        | 161 KB, 1613 lines |
+| 500    | 467             | 0.77 s      | 0.14 s                      | 0.20 s                        | 365 KB, 3500 lines |
+
+**Hover** on a long select through the language service API, in the 200-chain project, median of 7:
+
+| Version | TypeScript | First hover, including startup | Second hover, another chain | After editing that file | In another file, after the edit |
+| ------- | ---------- | ------------------------------ | --------------------------- | ----------------------- | ------------------------------- |
+| v2      | 5.8.3      | 445 ms                         | 148 ms                      | 209 ms                  | 133 ms                          |
+| v2      | 6.0.3      | 382 ms                         | 71 ms                       | 128 ms                  | 70 ms                           |
+| v3      | 5.8.3      | 262 ms                         | 5 ms                        | 31 ms                   | 3 ms                            |
+| v3      | 6.0.3      | 330 ms                         | 6 ms                        | 38 ms                   | 5 ms                            |
+
+**Sanity checks.** Both versions compile every corpus with no diagnostics. A probe hovered all 500 result types in each
+version: none is `any`, `unknown`, `never`, an error type or a loose record. 412 are identical in both versions, and the
+other 88 are more precise in v3.
+
 ### Developer experience
 
 |                            | v2                                               | v3, TypeScript 5.1 to 7.0, Deno                                       | v3, TypeScript 7.1                       |
