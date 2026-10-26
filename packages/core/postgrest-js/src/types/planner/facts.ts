@@ -1,4 +1,3 @@
-import type { Bag } from './distribute'
 import type { BState, Dynamic, IsDynamic, OperandEntry, Unplanned } from './lookup'
 
 // ---------------------------------------------------------------- §6.3 facts
@@ -104,12 +103,12 @@ export type NotNullFact<B extends BState, C extends string> =
 // `undefined`, like the runtime's default
 type RefValue<T, U> = Exclude<T, undefined> | (undefined extends T ? U : never)
 // the effective table of every member of the option bag (`undefined` when it names none)
-type RefValues<O> =
-  Bag<O, 'referencedTable' | 'foreignTable'> extends infer M
-    ? M extends { referencedTable: infer T; foreignTable: infer U }
-      ? RefValue<T, U>
-      : never
-    : never
+type RefValues<O> = O extends unknown
+  ? RefValue<
+      'referencedTable' extends keyof O ? O['referencedTable'] : undefined,
+      'foreignTable' extends keyof O ? O['foreignTable'] : undefined
+    >
+  : never
 // the tables an option may name, over every member of the bag: `never` when none ever has one (or only `undefined` or
 // an empty string), like the runtime's truthiness check. A member without it still contributes the others' tables.
 export type RefTables<O> =

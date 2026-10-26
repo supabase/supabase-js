@@ -122,7 +122,11 @@ export type TooMany = [unknown, unknown, unknown, unknown, unknown, unknown, unk
 // the possible serialized key sets of one argument object; more than 6 maybe-keys (or an index signature) is dynamic
 export type KeySetsOf<A> = string extends keyof A
   ? [string]
-  : ToTuple<MaybeKeys<A>> extends infer T extends string[]
+  : undefined extends A[keyof A & string]
+    ? KeySetsSlow<A>
+    : [keyof A & string]
+type KeySetsSlow<A> =
+  ToTuple<MaybeKeys<A>> extends infer T extends string[]
     ? T extends TooMany
       ? [string]
       : PowerSet<T> extends infer P
@@ -250,15 +254,15 @@ export type CallsOf<S extends string, F extends string, A, O> = Entry<RpcKeys<S,
 // the chain of an rpc call, whose row is the matched calls' unprojected `source` row (derived, not carried, so the
 // builder prints only the call). Its `st` is the function's `Returns` in the Database: a re-select of a call with no
 // entry falls back to it as the call itself does.
-export type RpcB<DB, SN extends string, F extends string, A, O> = BS<
-  'f',
-  SchemaOf<DB, SN>,
-  F,
-  CallRow<CallsOf<SchemaOf<DB, SN>, F, A, O>>,
-  ReturnsOf<DB, SN, F>,
-  Q0,
-  KeyMethods<A, O>
->
+export type RpcB<DB, SN extends string, F extends string, A, O> = {
+  k: 'f'
+  s: SchemaOf<DB, SN>
+  r: F
+  row: CallRow<CallsOf<SchemaOf<DB, SN>, F, A, O>>
+  st: ReturnsOf<DB, SN, F>
+  q: Q0
+  km: KeyMethods<A, O>
+}
 // with `{ head: boolean }` the HEAD calls give no rows: their branch of the data is null, the rows are the other calls'
 export type RowCalls<Calls, O> =
   'HEAD' extends RequestedOf<O>

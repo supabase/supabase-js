@@ -93,10 +93,16 @@ interface Member {
   embeds: EmbedInfo[]
 }
 
+/**
+ * A row, or an object an embed nests, as `PgrstObject<{ ... }>` (declared once per module, `printModule`): the
+ * consumer reads a planned row as it is instead of re-mapping it.
+ */
 const inlineObject = (members: Member[]): string =>
-  members.length === 0
-    ? '{}'
-    : `{ ${members.map((m) => `${memberName(m.name)}: ${m.type}`).join('; ')} }`
+  `PgrstObject<${
+    members.length === 0
+      ? '{}'
+      : `{ ${members.map((m) => `${memberName(m.name)}: ${m.type}`).join('; ')} }`
+  }>`
 
 /**
  * The same name twice keeps the later value in the earlier position, as a JSON object would. `depth` is the number
@@ -532,6 +538,7 @@ function printPlanned(context: SelectsContext, entry: PlannedEntry): string | En
     entry.key,
     [
       `      row: ${printed.row}`,
+      `      base: 'inherit'`,
       `      sources: ${printSources(printed.sources)}`,
       `      embeds: ${printEmbeds(printed.embeds, '      ')}`,
     ].join('\n')
@@ -542,7 +549,7 @@ const isError = (e: SelectsEntry): e is ErrorEntry => 'error' in e
 const isRaw = (e: SelectsEntry): e is RawEntry => 'body' in e
 
 /**
- * Prints `interface SupabaseSelects` (design v5 §5.2): a planned entry is `{ row, sources, embeds }`, a rejected one
+ * Prints `interface SupabaseSelects` (design v5 §5.2): a planned entry is `{ row, base, sources, embeds }`, a rejected one
  * `{ error }`, a raw one (RPC `calls`, printed by the RPC slice) its own body. Entries are sorted by key; the
  * same key twice keeps the first. Returns the complete `interface SupabaseSelects { ... }`, indented for
  * `declare global { ... }`, or an empty string without entries. A planned entry the printer cannot type is printed as

@@ -67,6 +67,12 @@ const cases: { name: string; expression: string; member: string; builder: string
     builder: 'Reselect<WB<SupabaseDatabase, "public", "users">, "username">',
   },
   {
+    name: 'reselectRead',
+    expression: `postgrest.from('users').select('username').select('status')`,
+    member: 'select',
+    builder: 'Reselect<RB<SupabaseDatabase, "public", "users", "username">, "status">',
+  },
+  {
     name: 'rpc',
     expression: `postgrest.rpc('function_returning_set_of_rows')`,
     member: 'rpc',
@@ -239,6 +245,20 @@ describe('builder hovers are compact', () => {
   test.each(['insert', 'update', 'upsert'])('%s result is the compact write builder', (name) => {
     expect(variableHoverOf(cases.find((x) => x.name === name)!)).toContain(
       `const ${name}Q: PostgrestFilterBuilder<WB<SupabaseDatabase, "public", "users">`
+    )
+  })
+
+  test.each([
+    ['reselect', 'Reselect<WB<SupabaseDatabase, "public", "users">, "username">'],
+    ['reselectRead', 'Reselect<RB<SupabaseDatabase, "public", "users", "username">, "status">'],
+    ['rpc', 'RpcB<SupabaseDatabase, "public", "function_returning_set_of_rows", {}, {}>'],
+    [
+      'rpcSelect',
+      'Reselect<RpcB<SupabaseDatabase, "public", "function_returning_set_of_rows", {}, {}>, "username">',
+    ],
+  ])('%s result is the compact builder', (name, state) => {
+    expect(variableHoverOf(cases.find((x) => x.name === name)!)).toContain(
+      `const ${name}Q: PostgrestFilterBuilder<${state}`
     )
   })
 

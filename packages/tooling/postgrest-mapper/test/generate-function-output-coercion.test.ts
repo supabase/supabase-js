@@ -23,24 +23,26 @@ async function rowOf(name: string): Promise<string> {
 describe('the rows of a function whose output types differ from the selected ones', () => {
   it('is nullable where the coercion can return NULL, and keeps a column of the same type', async () => {
     // `timestamptz` to `time` is NULL for infinity; `n` selects an integer into an integer
-    expect(await rowOf('output_time_from_timestamptz')).toBe('{ t: string | null; n: number }')
+    expect(await rowOf('output_time_from_timestamptz')).toBe(
+      'PgrstObject<{ t: string | null; n: number }>'
+    )
   }, 180_000)
 
   it('keeps the nullability along coercions the planner proves non-null, without the source of the value', async () => {
     // `varchar` to `text` and `integer` to `bigint` never yield NULL, but the value is no longer the column's
     expect(await rowOf('output_text_and_bigint_from_varchar_and_integer')).toBe(
-      '{ label: string; total: number }'
+      'PgrstObject<{ label: string; total: number }>'
     )
   }, 180_000)
 
   it('drops the JSON Schema of a column coerced to text', async () => {
-    expect(await rowOf('output_text_from_jsonb')).toBe('{ payload: string | null }')
+    expect(await rowOf('output_text_from_jsonb')).toBe('PgrstObject<{ payload: string | null }>')
   }, 180_000)
 
   it('treats a domain over the selected type as another type, and the same domain as the same type', async () => {
-    expect(await rowOf('output_base_type_of_domain')).toBe('{ b: number | null }')
+    expect(await rowOf('output_base_type_of_domain')).toBe('PgrstObject<{ b: number | null }>')
     expect(await rowOf('output_same_domain')).toMatch(
-      /^\{ b: SupabaseColumnType<'public\.cast_cases\.b', /
+      /^PgrstObject<\{ b: SupabaseColumnType<'public\.cast_cases\.b', /
     )
   }, 180_000)
 })

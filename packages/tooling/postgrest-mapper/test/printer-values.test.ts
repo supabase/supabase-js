@@ -288,7 +288,7 @@ describe('F16: an aggregate that keeps the value keeps the column override', () 
   test('min and max wrap the source column, count, sum and avg replace it', () => {
     const text = printSelects(context, [{ key: 'r|public|pets|aggs', shape }])
     expect(text).toContain(
-      "row: { latest: SupabaseColumnType<'public.pets.kind', string> | null; first: SupabaseColumnType<'public.pets.kind', string> | null; c: number; s: number | null; a: number | null }"
+      "row: PgrstObject<{ latest: SupabaseColumnType<'public.pets.kind', string> | null; first: SupabaseColumnType<'public.pets.kind', string> | null; c: number; s: number | null; a: number | null }>"
     )
   })
 })

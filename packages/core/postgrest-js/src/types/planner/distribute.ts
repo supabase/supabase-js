@@ -6,13 +6,6 @@ import type { BState, Q0, Validate } from './lookup'
 // ones a member doesn't have, and combining two options after reading each over the whole union pairs values no
 // single member holds (`{ head: true; get: true } | { count: 'exact' }` has no member that sends HEAD and GET).
 
-// every member of an option bag as a record of the keys `K`: the value it gives each, `undefined` when it has none
-// (the member's own type decides, so a `boolean` or optional value stays what it is). The consumers destructure it
-// with `Bag<O, K> extends infer M ? M extends { k: infer V } ? ... : never : never`, which runs once per member.
-export type Bag<O, K extends string> = O extends unknown
-  ? { [P in K]: P extends keyof O ? O[P] : undefined }
-  : never
-
 // a select string that may be `undefined` is `select=*` for that member
 export type Selected<Q> = Q extends undefined ? Q0 : Q
 

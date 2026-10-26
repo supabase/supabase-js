@@ -66,7 +66,7 @@ describe('the rows of a function the tracer proves', () => {
       supabase.rpc('get_username_and_status', { name_param: 'x' })
     `)
     expect(rowOf(text, 'f|public|get_username_and_status|*')).toBe(
-      "{ username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }"
+      "PgrstObject<{ username: SupabaseColumnType<'public.users.username', string>; status: SupabaseColumnType<'public.users.status', SupabaseDatabase['public']['Enums']['user_status']> | null }>"
     )
   }, 180_000)
 
@@ -114,16 +114,16 @@ describe('the to-one embeds of the rows of a function', () => {
   it('are restored by a foreign key for a STABLE function', async () => {
     const text = await declarationsOf(SOURCE)
     const row = rowOf(text, KEY)
-    expect(row).toContain('users: { username: SupabaseColumnType<')
-    expect(row).not.toMatch(/users: \{[^}]*\} \| null/)
-    expect(row).not.toMatch(/channels: \{[^}]*\} \| null/)
+    expect(row).toContain('users: PgrstObject<{ username: SupabaseColumnType<')
+    expect(row).not.toMatch(/users: PgrstObject<\{[^}]*\}> \| null/)
+    expect(row).not.toMatch(/channels: PgrstObject<\{[^}]*\}> \| null/)
   }, 180_000)
 
   it('stay nullable for a VOLATILE function, which sees a newer snapshot for each query', async () => {
     const text = await declarationsOf(SOURCE, withVolatility('get_messages_by_username', 'v'))
     const row = rowOf(text, KEY)
-    expect(row).toMatch(/users: \{[^}]*\} \| null/)
-    expect(row).toMatch(/channels: \{[^}]*\} \| null/)
+    expect(row).toMatch(/users: PgrstObject<\{[^}]*\}> \| null/)
+    expect(row).toMatch(/channels: PgrstObject<\{[^}]*\}> \| null/)
     // the columns it passes through are still the table's
     expect(row).toContain("id: SupabaseColumnType<'public.messages.id', number>;")
   }, 180_000)

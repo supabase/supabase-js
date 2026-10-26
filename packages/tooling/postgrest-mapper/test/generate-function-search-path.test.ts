@@ -180,7 +180,7 @@ describe('a function body that sets its own search_path, through the generator',
   test('proves nothing from a table another schema of the path may shadow', async () => {
     // `private.users` may exist with a nullable username: the body does not read `public.users`
     for (const path of ['private', 'private, public', '""', '"$user", public']) {
-      expect(await rowWith(path)).toMatch(/^\{ username: string \| null; /)
+      expect(await rowWith(path)).toMatch(/^PgrstObject<\{ username: string \| null; /)
     }
   }, 180_000)
 })
@@ -205,15 +205,15 @@ describe('a function body that sets no search_path, through the generator', () =
 
   test('keeps what the table proves when the request path reaches it before any schema it knows nothing about', async () => {
     expect(await rowWith('public,extensions')).toBe(
-      "{ id: SupabaseColumnType<'public.messages.id', number> }"
+      "PgrstObject<{ id: SupabaseColumnType<'public.messages.id', number> }>"
     )
     expect(await rowWith('public,private')).toBe(
-      "{ id: SupabaseColumnType<'public.messages.id', number> }"
+      "PgrstObject<{ id: SupabaseColumnType<'public.messages.id', number> }>"
     )
   }, 180_000)
 
   test('proves nothing from a table a schema of the request path that is not exposed may shadow', async () => {
     // `private.messages` may exist with a nullable id: the body does not read `public.messages`
-    expect(await rowWith('private,public')).toBe('{ id: number | null }')
+    expect(await rowWith('private,public')).toBe('PgrstObject<{ id: number | null }>')
   }, 180_000)
 })

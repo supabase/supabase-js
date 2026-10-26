@@ -228,7 +228,7 @@ describe('schemas of a chain', () => {
     })
     expect(result.diagnostics).toEqual([])
     expect(result.keys).toContain('r|personal|user_notes|id')
-    expect(result.text).toMatch(/'r\|personal\|user_notes\|id': \{\n\s+row: \{ id: /)
+    expect(result.text).toMatch(/'r\|personal\|user_notes\|id': \{\n\s+row: PgrstObject<\{ id: /)
     expect(result.text).not.toContain("'r|public|user_notes|id'")
     // a chain with no .schema() is the default schema's alone
     expect(result.keys).toContain('r|public|users|username')

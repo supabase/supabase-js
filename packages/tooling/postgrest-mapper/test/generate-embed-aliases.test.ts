@@ -25,7 +25,7 @@ describe('embeds that share an alias', () => {
     )
     const entry = onlyEntry(text)
     // the later embed holds the key of the row, as it does in a JSON object
-    expect(entry).toMatch(/\bx: \{ id: SupabaseColumnType<'public\.channels\.id'/)
+    expect(entry).toMatch(/\bx: PgrstObject<\{ id: SupabaseColumnType<'public\.channels\.id'/)
     expect(entry.match(/^\s+x: \{ path:/gm)).toHaveLength(1)
     expect(typecheckConsumer({ files: { 'db.d.ts': text } }).byFile.get('db.d.ts') ?? []).toEqual(
       []
@@ -47,7 +47,7 @@ describe('embeds that share an alias', () => {
   it('keeps the entry of an embed that shares its alias with a plain field', async () => {
     const text = await declarationsOf(`supabase.from('messages').select('x:id, x:users(username)')`)
     const entry = onlyEntry(text)
-    expect(entry).toMatch(/\bx: \{ username: /)
+    expect(entry).toMatch(/\bx: PgrstObject<\{ username: /)
     expect(entry.match(/^\s+x: \{ path:/gm)).toHaveLength(1)
     expect(typecheckConsumer({ files: { 'db.d.ts': text } }).byFile.get('db.d.ts') ?? []).toEqual(
       []

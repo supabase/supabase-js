@@ -10,6 +10,10 @@ export type JsonIn =
   | null
   | { readonly [k: string]: JsonIn | undefined }
   | readonly JsonIn[]
+// what the mapper wraps a planned row (and the objects an embed nests) in: its members read back as written
+type PgrstObject<R> = [R] extends [unknown]
+  ? { [K in keyof R as K extends string ? `${K}` : K]: R[K] }
+  : never
 type Status = 'ONLINE' | 'OFFLINE'
 // a composite type: `address` columns return an object even when every attribute is NULL
 export type Address = { street: string | null; city: string | null }
@@ -153,39 +157,46 @@ declare global {
   interface SupabaseSelects {
     // ---- users, plain projections (every field has a source)
     'r|public|users|username': {
-      row: { username: string }
+      row: PgrstObject<{ username: string }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {}
     }
     'r|public|users|username, status': {
-      row: { username: string; status: Status | null }
+      row: PgrstObject<{ username: string; status: Status | null }>
+      base: 'inherit'
       sources: { username: 'username'; status: 'status' }
       embeds: {}
     }
     'r|public|users|status': {
-      row: { status: Status | null }
+      row: PgrstObject<{ status: Status | null }>
+      base: 'inherit'
       sources: { status: 'status' }
       embeds: {}
     }
+    // the one entry in the older form: no `base`, a plain object row (covers `DescOf` reading an entry without `base`)
     'r|public|users|username, age_range': {
       row: { username: string; age_range: string | null }
       sources: { username: 'username'; age_range: 'age_range' }
       embeds: {}
     }
     'r|public|users|username, catchphrase': {
-      row: { username: string; catchphrase: string | null }
+      row: PgrstObject<{ username: string; catchphrase: string | null }>
+      base: 'inherit'
       sources: { username: 'username'; catchphrase: 'catchphrase' }
       embeds: {}
     }
     // alias: the field is `s`, its source is `status`
     'r|public|users|s:status': {
-      row: { s: Status | null }
+      row: PgrstObject<{ s: Status | null }>
+      base: 'inherit'
       sources: { s: 'status' }
       embeds: {}
     }
     // aggregate: no source
     'r|public|users|username, status.max()': {
-      row: { username: string; max: Status | null }
+      row: PgrstObject<{ username: string; max: Status | null }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {}
     }
@@ -195,30 +206,41 @@ declare global {
     }
     // overrides (§5.3 ordering)
     'r|public|users|username, data': {
-      row: { username: string; data: SupabaseColumnType<'public.users.data', Json> | null }
+      row: PgrstObject<{
+        username: string
+        data: SupabaseColumnType<'public.users.data', Json> | null
+      }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {}
     }
     'r|public|users|username, data::text': {
-      row: { username: string; data: string | null }
+      row: PgrstObject<{ username: string; data: string | null }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {}
     }
     // spread through a left join: the null is outside the wrapper
     'r|public|messages|id, ...users(data)': {
-      row: { id: number; data: SupabaseColumnType<'public.users.data', Json> | null }
+      row: PgrstObject<{ id: number; data: SupabaseColumnType<'public.users.data', Json> | null }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {}
     }
 
     // ---- the same select string on two relations (union of relations)
     'r|public|messages|username, data': {
-      row: { username: string; data: SupabaseColumnType<'public.messages.data', Json> | null }
+      row: PgrstObject<{
+        username: string
+        data: SupabaseColumnType<'public.messages.data', Json> | null
+      }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {}
     }
     'r|public|messages|username': {
-      row: { username: string }
+      row: PgrstObject<{ username: string }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {}
     }
@@ -229,7 +251,8 @@ declare global {
 
     // ---- spreads: the embed's nullability lands on the flattened fields (`outputs`)
     'r|public|messages|id, ...channels(channel_key:id)': {
-      row: { id: number; channel_key: number }
+      row: PgrstObject<{ id: number; channel_key: number }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {
         channels: {
@@ -242,7 +265,8 @@ declare global {
     }
     // a spread field that is nullable on its own
     'r|public|messages|id, ...channels(slug)': {
-      row: { id: number; slug: string | null }
+      row: PgrstObject<{ id: number; slug: string | null }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {
         channels: { path: ['channels']; outputs: [['slug']]; join: 'left'; cardinality: 'one' }
@@ -251,19 +275,22 @@ declare global {
 
     // ---- messages with embeds
     'r|public|messages|id': {
-      row: { id: number }
+      row: PgrstObject<{ id: number }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {}
     }
     'r|public|messages|id, channels(id)': {
-      row: { id: number; channels: { id: number } }
+      row: PgrstObject<{ id: number; channels: PgrstObject<{ id: number }> }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {
         channels: { path: ['channels']; outputs: [['channels']]; join: 'left'; cardinality: 'one' }
       }
     }
     'r|public|messages|id, channels!inner(id)': {
-      row: { id: number; channels: { id: number } }
+      row: PgrstObject<{ id: number; channels: PgrstObject<{ id: number }> }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {
         channels: { path: ['channels']; outputs: [['channels']]; join: 'inner'; cardinality: 'one' }
@@ -271,7 +298,8 @@ declare global {
     }
     'r|public|messages|id, users(username)': {
       // nullable FK would be `| null` already; here a to-many embed for the cardinality check
-      row: { id: number; users: { username: string }[] }
+      row: PgrstObject<{ id: number; users: PgrstObject<{ username: string }>[] }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {
         users: { path: ['users']; outputs: [['users']]; join: 'left'; cardinality: 'many' }
@@ -279,13 +307,18 @@ declare global {
     }
     // alias on an embed: the result key (and the operand's embed path) is the alias
     'r|public|messages|id, chan:channels(id)': {
-      row: { id: number; chan: { id: number } }
+      row: PgrstObject<{ id: number; chan: PgrstObject<{ id: number }> }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: { chan: { path: ['chan']; outputs: [['chan']]; join: 'left'; cardinality: 'one' } }
     }
     // nested: to-many messages, each with a to-one channel; embeds keyed by the joined path
     'r|public|users|username, messages(id, channels(id))': {
-      row: { username: string; messages: { id: number; channels: { id: number } }[] }
+      row: PgrstObject<{
+        username: string
+        messages: PgrstObject<{ id: number; channels: PgrstObject<{ id: number }> }>[]
+      }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {
         messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
@@ -299,7 +332,8 @@ declare global {
     }
     // a spread to-many: its children are lifted to the root as arrays, both embeds claim the output `channels`
     'r|public|users|username, ...messages(channels(id))': {
-      row: { username: string; channels: { id: number }[] }
+      row: PgrstObject<{ username: string; channels: PgrstObject<{ id: number }>[] }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {
         messages: { path: ['messages']; outputs: [['channels']]; join: 'left'; cardinality: 'many' }
@@ -313,10 +347,13 @@ declare global {
     }
     // an embed nested below the embed a spread to-many flattens: the walk has already entered the spread's array
     'r|public|users|username, ...messages(channels(channel_details(channels(id))))': {
-      row: {
+      row: PgrstObject<{
         username: string
-        channels: { channel_details: { channels: { id: number } } | null }[]
-      }
+        channels: PgrstObject<{
+          channel_details: PgrstObject<{ channels: PgrstObject<{ id: number }> }> | null
+        }>[]
+      }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {
         messages: { path: ['messages']; outputs: [['channels']]; join: 'left'; cardinality: 'many' }
@@ -342,11 +379,12 @@ declare global {
     }
     // the same relationship as an ordinary and as a spread occurrence: the embeds merge, each with two outputs
     'r|public|users|username, messages(channels(id)), ...messages(channels(id))': {
-      row: {
+      row: PgrstObject<{
         username: string
-        messages: { channels: { id: number } }[]
-        channels: { id: number }[]
-      }
+        messages: PgrstObject<{ channels: PgrstObject<{ id: number }> }>[]
+        channels: PgrstObject<{ id: number }>[]
+      }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {
         messages: {
@@ -364,7 +402,8 @@ declare global {
       }
     }
     'r|public|channels|id, messages(id)': {
-      row: { id: number; messages: { id: number }[] }
+      row: PgrstObject<{ id: number; messages: PgrstObject<{ id: number }>[] }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {
         messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
@@ -373,7 +412,11 @@ declare global {
 
     // ---- three levels: the nullability walk goes through inner joins and stops at a to-many
     'r|public|messages|id, channels(id, channel_details(id))': {
-      row: { id: number; channels: { id: number; channel_details: { id: number } } }
+      row: PgrstObject<{
+        id: number
+        channels: PgrstObject<{ id: number; channel_details: PgrstObject<{ id: number }> }>
+      }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {
         channels: { path: ['channels']; outputs: [['channels']]; join: 'left'; cardinality: 'one' }
@@ -386,7 +429,11 @@ declare global {
       }
     }
     'r|public|messages|id, channels(id, channel_details!inner(id))': {
-      row: { id: number; channels: { id: number; channel_details: { id: number } } }
+      row: PgrstObject<{
+        id: number
+        channels: PgrstObject<{ id: number; channel_details: PgrstObject<{ id: number }> }>
+      }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {
         channels: { path: ['channels']; outputs: [['channels']]; join: 'left'; cardinality: 'one' }
@@ -399,7 +446,11 @@ declare global {
       }
     }
     'r|public|users|username, messages(id, channels!inner(id))': {
-      row: { username: string; messages: { id: number; channels: { id: number } }[] }
+      row: PgrstObject<{
+        username: string
+        messages: PgrstObject<{ id: number; channels: PgrstObject<{ id: number }> }>[]
+      }>
+      base: 'inherit'
       sources: { username: 'username' }
       embeds: {
         messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
@@ -414,17 +465,20 @@ declare global {
 
     // ---- mutation representations (`w` keys)
     'w|public|users|status': {
-      row: { status: Status | null }
+      row: PgrstObject<{ status: Status | null }>
+      base: 'inherit'
       sources: { status: 'status' }
       embeds: {}
     }
     'w|public|users|username, status': {
-      row: { username: string; status: Status | null }
+      row: PgrstObject<{ username: string; status: Status | null }>
+      base: 'inherit'
       sources: { username: 'username'; status: 'status' }
       embeds: {}
     }
     'w|public|messages|id, channels(id)': {
-      row: { id: number; channels: { id: number } }
+      row: PgrstObject<{ id: number; channels: PgrstObject<{ id: number }> }>
+      base: 'inherit'
       sources: { id: 'id' }
       embeds: {
         channels: { path: ['channels']; outputs: [['channels']]; join: 'left'; cardinality: 'one' }
@@ -466,8 +520,8 @@ declare global {
           keys: 'user_name'
           method: 'POST'
           form: 'rows'
-          row: MessageRow
-          source: { row: MessageRow; sources: Ident<MessageFacts> }
+          row: PgrstObject<MessageRow>
+          source: { row: PgrstObject<MessageRow>; sources: Ident<MessageFacts> }
         },
       ]
     }
@@ -477,8 +531,8 @@ declare global {
           keys: 'user_name'
           method: 'POST'
           form: 'rows'
-          row: { id: number }
-          source: { row: MessageRow; sources: Ident<MessageFacts> }
+          row: PgrstObject<{ id: number }>
+          source: { row: PgrstObject<MessageRow>; sources: Ident<MessageFacts> }
         },
       ]
     }
@@ -488,35 +542,59 @@ declare global {
           keys: never
           method: 'POST'
           form: 'rows'
-          row: UserRow
-          source: { row: UserRow; sources: Ident<UserFacts> }
+          row: PgrstObject<UserRow>
+          source: { row: PgrstObject<UserRow>; sources: Ident<UserFacts> }
         },
         // fixture-only: facts apply on every method
         {
           keys: never
           method: 'GET'
           form: 'rows'
-          row: UserRow
-          source: { row: UserRow; sources: Ident<UserFacts> }
+          row: PgrstObject<UserRow>
+          source: { row: PgrstObject<UserRow>; sources: Ident<UserFacts> }
         },
       ]
     }
     'f|public|poly|*': {
       calls: [
-        { keys: 'a'; method: 'POST'; form: 'rows'; row: { a_id: number }; source: never },
-        { keys: 'b'; method: 'POST'; form: 'rows'; row: { b_name: string }; source: never },
+        {
+          keys: 'a'
+          method: 'POST'
+          form: 'rows'
+          row: PgrstObject<{ a_id: number }>
+          source: never
+        },
+        {
+          keys: 'b'
+          method: 'POST'
+          form: 'rows'
+          row: PgrstObject<{ b_name: string }>
+          source: never
+        },
         { keys: never; method: 'POST'; form: 'single-scalar'; row: number; source: never },
       ]
     }
     'f|public|poly_mixed|*': {
       calls: [
-        { keys: 'a'; method: 'POST'; form: 'rows'; row: { a_id: number }; source: never },
+        {
+          keys: 'a'
+          method: 'POST'
+          form: 'rows'
+          row: PgrstObject<{ a_id: number }>
+          source: never
+        },
         { keys: 'b'; method: 'POST'; form: 'single-scalar'; row: string; source: never },
       ]
     }
     'f|public|poly_err|*': {
       calls: [
-        { keys: 'a'; method: 'POST'; form: 'rows'; row: { a_id: number }; source: never },
+        {
+          keys: 'a'
+          method: 'POST'
+          form: 'rows'
+          row: PgrstObject<{ a_id: number }>
+          source: never
+        },
         {
           keys: 'b'
           method: 'POST'
@@ -531,15 +609,15 @@ declare global {
           keys: 'cid'
           method: 'POST'
           form: 'rows'
-          row: { id: number }
-          source: { row: MessageRow; sources: Ident<MessageFacts> }
+          row: PgrstObject<{ id: number }>
+          source: { row: PgrstObject<MessageRow>; sources: Ident<MessageFacts> }
         },
         {
           keys: 'cid' | 'search'
           method: 'POST'
           form: 'rows'
-          row: { id: number; rank: number }
-          source: { row: MessageRow; sources: Ident<MessageFacts> }
+          row: PgrstObject<{ id: number; rank: number }>
+          source: { row: PgrstObject<MessageRow>; sources: Ident<MessageFacts> }
         },
       ]
     }
@@ -550,8 +628,8 @@ declare global {
           keys: 'cid'
           method: 'POST'
           form: 'rows'
-          row: { id: number }
-          source: { row: MessageRow; sources: Ident<MessageFacts> }
+          row: PgrstObject<{ id: number }>
+          source: { row: PgrstObject<MessageRow>; sources: Ident<MessageFacts> }
         },
       ]
     }
@@ -569,8 +647,8 @@ declare global {
           keys: 'id'
           method: 'POST'
           form: 'single-row'
-          row: Address
-          source: { row: Address; sources: Ident<'street' | 'city'> }
+          row: PgrstObject<Address>
+          source: { row: PgrstObject<Address>; sources: Ident<'street' | 'city'> }
         },
       ]
     }
@@ -581,9 +659,9 @@ declare global {
           keys: 'n'
           method: 'POST'
           form: 'rows'
-          row: { username: string; msg_count: number }
+          row: PgrstObject<{ username: string; msg_count: number }>
           source: {
-            row: { username: string; msg_count: number }
+            row: PgrstObject<{ username: string; msg_count: number }>
             sources: Ident<'username' | 'msg_count'>
           }
         },
@@ -596,15 +674,18 @@ declare global {
           keys: 'a'
           method: 'POST'
           form: 'rows'
-          row: { shared: number; only_a: string }
-          source: { row: { shared: number; only_a: string }; sources: Ident<'shared' | 'only_a'> }
+          row: PgrstObject<{ shared: number; only_a: string }>
+          source: {
+            row: PgrstObject<{ shared: number; only_a: string }>
+            sources: Ident<'shared' | 'only_a'>
+          }
         },
         {
           keys: 'b'
           method: 'POST'
           form: 'rows'
-          row: { shared: string }
-          source: { row: { shared: string }; sources: Ident<'shared'> }
+          row: PgrstObject<{ shared: string }>
+          source: { row: PgrstObject<{ shared: string }>; sources: Ident<'shared'> }
         },
       ]
     }

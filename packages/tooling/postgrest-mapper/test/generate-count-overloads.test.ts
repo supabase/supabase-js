@@ -35,12 +35,12 @@ describe('count in a function body, through the generator', () => {
   }
 
   test('is the builtin, never NULL, when the path has no function named count', async () => {
-    expect(await rowOf('count_mood_plain')).toBe('{ n: number }')
+    expect(await rowOf('count_mood_plain')).toBe('PgrstObject<{ n: number }>')
   }, 180_000)
 
   test('may be a function of the path that takes the operand, which can return NULL', async () => {
     // arr_a is outside the schemas the catalog lists: the call stays nullable and the type it has is not claimed
-    expect(await rowOf('count_mood_shadowed')).toBe('{ n: string | null }')
+    expect(await rowOf('count_mood_shadowed')).toBe('PgrstObject<{ n: string | null }>')
   }, 180_000)
 
   test('count(*) is the builtin even along a schema the catalog does not list', async () => {
@@ -50,6 +50,6 @@ describe('count in a function body, through the generator', () => {
       'SELECT count(*) FROM public.cast_cases',
       'arr_a, public'
     )
-    expect(await rowOf('count_mood_plain', schema)).toBe('{ n: number }')
+    expect(await rowOf('count_mood_plain', schema)).toBe('PgrstObject<{ n: number }>')
   }, 180_000)
 })

@@ -41,12 +41,19 @@ export type OutGroup<E, F, M extends MState, Bs> = [E] extends [never]
     : Card<M, Rows<E, F, M>, Bs>
 // the always-true conditional makes a hover print the union's members, not `Out<…>`: a union takes the name of the
 // alias that first builds it
-export type Out<E, F, M extends MState> = [E] extends [unknown]
-  ?
-      | OutGroup<Extract<E, { base: 'many' }>, F, M, 'many'>
-      | OutGroup<Extract<E, { base: 'one' }>, F, M, 'one'>
-      | OutGroup<Extract<E, { base: 'inherit' }>, F, M, M['base']>
-  : never
+//
+// The per-base grouping only matters where descriptors of different cardinality meet: `ma` is true only for
+// update/delete (`MutM<O, true>`) and rpc. For every other chain each descriptor has base 'inherit' or matches
+// `M['base']`, because a non-inherit descriptor only comes from an rpc or from `geojson()` / `explain()`, which set
+// `base: 'one'` themselves, so one group is enough.
+export type Out<E, F, M extends MState> = M['ma'] extends false
+  ? OutGroup<E, F, M, M['base']>
+  : [E] extends [unknown]
+    ?
+        | OutGroup<Extract<E, { base: 'many' }>, F, M, 'many'>
+        | OutGroup<Extract<E, { base: 'one' }>, F, M, 'one'>
+        | OutGroup<Extract<E, { base: 'inherit' }>, F, M, M['base']>
+    : never
 // distributes over the possible methods: `{ head: boolean }` gives rows or null
 export type DataOf<E, F, M extends MState> = M['op'] extends infer Op
   ? Op extends 'HEAD'

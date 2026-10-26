@@ -198,17 +198,25 @@ export type UnplannedRows<Row, Loose> = Strict extends true
         : Plain<Row> & { [k: string]: any }
       : never
 
+// a generated entry already is a Desc when it carries `base: 'inherit'`; one without `base` is read through its row,
+// sources and embeds. Rows come flattened (`PgrstObject`) from the generator, so they are used as written.
+type PlannedDesc = { row: unknown; sources: unknown; embeds: unknown; base: 'inherit' }
+type PlannedEntry = { row: unknown; sources: unknown; embeds: unknown }
 export type DescOf<En, Row = never> = En extends { error: string }
   ? never
   : En extends Unplanned
     ? Desc<UnplannedRows<Row, Record<string, unknown>>>
-    : En extends { row: infer R }
-      ? Desc<
-          PlainRow<R, En extends { embeds: infer E } ? E : {}>,
-          En extends { sources: infer S } ? S : {},
-          En extends { embeds: infer E } ? E : {}
-        >
-      : never
+    : En extends PlannedDesc
+      ? En
+      : En extends PlannedEntry
+        ? Desc<En['row'], En['sources'], En['embeds']>
+        : En extends { row: infer R }
+          ? Desc<
+              R,
+              En extends { sources: infer S } ? S : {},
+              En extends { embeds: infer E } ? E : {}
+            >
+          : never
 
 // a bare `*`: provenance is synthesised, identity sources over the relation's FactColumns (the columns whose
 // returned value is the stored value) and no embeds. Per member of a relation union, so each keeps its own columns.
@@ -232,13 +240,6 @@ export type CallSources<Call, Star extends boolean> = Call extends { sources: in
           : {}
       : {}
     : {}
-// a call that reads a relation's columns returns rows of the wrapped column types; a scalar, or a function over no
-// relation, returns its own types as written
-type CallRowOf<Call, R> = Call extends { source: infer Src }
-  ? [Src] extends [never]
-    ? R
-    : PlainRow<R, Call extends { embeds: infer E } ? E : {}>
-  : R
 // the data of an rpc no planned call matches: the function's `Returns` from the Database. An array is rows (the
 // setof / table form), anything else the one value; without a known `Returns` the call form is unknown, so is the data
 export type ReturnsBase<Ret> = Strict extends true
@@ -277,12 +278,7 @@ export type RpcDesc<En, Star extends boolean = false, Ret = unknown> = En extend
       : En extends Dynamic
         ? Desc<unknown>
         : En extends { row: infer R }
-          ? Desc<
-              CallRowOf<En, R>,
-              CallSources<En, Star>,
-              En extends { embeds: infer E } ? E : {},
-              CallBase<En>
-            >
+          ? Desc<R, CallSources<En, Star>, En extends { embeds: infer E } ? E : {}, CallBase<En>>
           : never
 
 export type Descs<B extends BState, Q extends string> =
@@ -395,15 +391,15 @@ export type Q0 = '*'
 export type RelOf<DB, S extends string, R extends string> = RelDefs<DB, S>[R & keyof RelDefs<DB, S>]
 // the chain of a select: the same relation, another select (a type of its own so the builder prints the chain it
 // came from and not the expanded state)
-export type Reselect<B extends BState, Q extends string> = BS<
-  B['k'],
-  B['s'],
-  B['r'],
-  B['row'],
-  B['st'],
-  Q,
-  B['km']
->
+export type Reselect<B extends BState, Q extends string> = {
+  k: B['k']
+  s: B['s']
+  r: B['r']
+  row: B['row']
+  st: B['st']
+  q: Q
+  km: B['km']
+}
 // A hover prints a property as the annotation the generated declaration wrote (`SupabaseColumnType<…>`) whenever the
 // type is that declaration's own. A remapped key is a fresh property with no declaration, so the hover prints its
 // type. Keys, modifiers and value types are unchanged.
@@ -429,21 +425,24 @@ export type UpdateOf<DB, S extends string, R extends string> = Plain<
       : never
     : never
 >
-export type RB<DB, S extends string, R extends string, Q extends string> = BS<
-  'r',
-  SchemaOf<DB, S>,
-  R,
-  RowOf<RelOf<DB, S, R>>,
-  StarOf<RelOf<DB, S, R>>,
-  Q,
-  never
->
-export type WB<DB, S extends string, R extends string> = BS<
-  'w',
-  SchemaOf<DB, S>,
-  R,
-  RowOf<RelOf<DB, S, R>>,
-  StarOf<RelOf<DB, S, R>>,
-  Q0,
-  never
->
+// The builder states are anonymous object literals on purpose: the property types of a literal are resolved on first
+// read, whereas the arguments of an alias are instantiated eagerly, so `row` and `st` are only computed when a select
+// or a filter reads them.
+export type RB<DB, S extends string, R extends string, Q extends string> = {
+  k: 'r'
+  s: SchemaOf<DB, S>
+  r: R
+  row: RowOf<RelOf<DB, S, R>>
+  st: StarOf<RelOf<DB, S, R>>
+  q: Q
+  km: never
+}
+export type WB<DB, S extends string, R extends string> = {
+  k: 'w'
+  s: SchemaOf<DB, S>
+  r: R
+  row: RowOf<RelOf<DB, S, R>>
+  st: StarOf<RelOf<DB, S, R>>
+  q: Q0
+  km: never
+}

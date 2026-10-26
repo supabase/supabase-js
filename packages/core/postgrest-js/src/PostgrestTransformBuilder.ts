@@ -793,7 +793,10 @@ export default class PostgrestTransformBuilder<
     B,
     Desc<Record<string, unknown>, {}, {}, 'one'>,
     F,
-    SetM<M, { op: KeepHead<M['op']>; ret: true; card: 'default'; fmt: 'json'; strip: false }>
+    SetM<
+      M,
+      { op: KeepHead<M['op']>; ret: true; base: 'one'; card: 'default'; fmt: 'json'; strip: false }
+    >
   > {
     this.headers.set('Accept', 'application/geo+json')
     return this as any
@@ -901,7 +904,10 @@ export default class PostgrestTransformBuilder<
     B,
     Desc<ExplainBody<O, M>, {}, {}, 'one'>,
     F,
-    SetM<M, { op: KeepHead<M['op']>; ret: true; card: 'default'; fmt: 'json'; strip: false }>
+    SetM<
+      M,
+      { op: KeepHead<M['op']>; ret: true; base: 'one'; card: 'default'; fmt: 'json'; strip: false }
+    >
   >
   explain({
     analyze = false,

@@ -161,7 +161,7 @@ describe('rpc entries and operands of a project', () => {
     // a projected call has the star row as its source, its own sources and embeds
     expect(text).toContain(`'f|public|function_returning_set_of_rows|username, messages(id)': {`)
     expect(text).toMatch(
-      /row: \{ username: SupabaseColumnType<'public\.users\.username', string>; messages: \{ id: SupabaseColumnType<'public\.messages\.id', number> \}\[\] \}\n\s+source: \{ row: \{ username: SupabaseColumnType<'public\.users\.username', string>; data:/
+      /row: PgrstObject<\{ username: SupabaseColumnType<'public\.users\.username', string>; messages: PgrstObject<\{ id: SupabaseColumnType<'public\.messages\.id', number> \}>\[\] \}>\n\s+source: \{ row: PgrstObject<\{ username: SupabaseColumnType<'public\.users\.username', string>; data:/
     )
     expect(text).toContain(
       "messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }"

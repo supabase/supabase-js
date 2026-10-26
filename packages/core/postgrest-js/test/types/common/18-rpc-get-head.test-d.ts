@@ -25,6 +25,10 @@ type _18c = Expect<Equal<Data<typeof g3>, 'post'>>
 // a non-literal flag gives both branches
 const g4 = supabase.rpc('probe', { v: 1 }, { get: flag })
 type _18d = Expect<Equal<Data<typeof g4>, 'get' | 'post'>>
+// an options union whose members name different flags: each one asks for its own method
+declare const mixedOpts: { get: true } | { head: false }
+const g4b = supabase.rpc('probe', { v: 1 }, mixedOpts)
+type _18d2 = Expect<Equal<Data<typeof g4b>, 'get' | 'post'>>
 // `{ head: boolean }` gives HEAD | POST: the HEAD part has no body
 const g5 = supabase.rpc('polymorphic_function_with_unnamed_jsonb', { '': 'x' }, { head: flag })
 type _18e = Expect<Equal<Data<typeof g5>, 'post' | null>>
