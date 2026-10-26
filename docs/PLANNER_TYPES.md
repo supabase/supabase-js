@@ -279,7 +279,7 @@ sequenceDiagram
   Watch->>Planner: plan the new keys only
   Planner-->>Watch: result shapes
   Watch->>Editor: rewrites src/supabase.types.d.ts
-  Editor-->>Dev: hover: { title: string; excerpt: string | null }[]
+  Editor-->>Dev: hover: { title: string, excerpt: string | null }[]
 ```
 
 Plans are cached per schema, so a regeneration only plans keys it has not seen (see
