@@ -8,7 +8,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build:packages": "pnpm nx run-many -t build -p @supabase/postgrest-js @supabase/supabase-js postgrest-mapper postgrest-planner",
+    "build:packages": "pnpm -w exec nx run-many -t build -p @supabase/postgrest-js @supabase/supabase-js postgrest-mapper postgrest-planner",
     "db:up": "docker-compose up -d --wait && node scripts/wait-for-rest.mjs",
     "db:down": "docker-compose down --volumes",
     "snapshot": "DATABASE_URL=postgres://authenticator:postgres@localhost:55432/postgres postgrest-mapper snapshot --out postgrest-schema.json --schema-source postgrest --db-url-env DATABASE_URL",
