@@ -84,6 +84,27 @@ describe('GoTrueClient signOut', () => {
       expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
     })
 
+    test('clears the session before the request resolves', async () => {
+      let release!: () => void
+      const mockFetch = jest.fn().mockReturnValue(
+        new Promise<Response>((resolve) => {
+          release = () => resolve(new Response(null, { status: 204 }))
+        })
+      )
+      const { client, storage, onAuthStateChange } = await setup(mockFetch)
+
+      const pending = client.signOut({ scope: 'local' })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer test-access-token')
+      expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
+
+      release()
+      expect((await pending).error).toBeNull()
+    })
+
     test('returns a retryable error when the auth server cannot be reached', async () => {
       const { client } = await setup(offline())
 

@@ -4032,15 +4032,16 @@ export default class GoTrueClient {
    *
    * For server-side management, you can revoke all refresh tokens for a user by passing a user's
    * JWT through to `auth.api.signOut(JWT: string)`.
+   *
    * There is no way to revoke a user's access token jwt until it expires. It is recommended to set
    * a shorter expiry on the jwt for this reason.
    *
-   * The behavior depends on the selected scope:
+   * `signOut` behavior depends on the selected scope:
    *
-   * - `local`: The local session is removed, and the client makes a best-effort request to revoke
-   *   the refresh token on the server. If the request fails, the client is still signed out
-   *   locally, but the server may retain the refresh token until it expires. A `SIGNED_OUT` event
-   *   is fired regardless of the server outcome.
+   * - `local`: The local session is removed first and a `SIGNED_OUT` event is fired, then the client
+   *   makes a best-effort request to revoke the refresh token on the server. If the request fails,
+   *   the client is still signed out locally and the error is returned, but the server may retain
+   *   the refresh token until it expires.
    *
    * - `global`: All of the user's sessions are first invalidated on the server. Once the server
    *   acknowledges the request, the local session is cleared. If server logout fails, the local
@@ -4067,6 +4068,9 @@ export default class GoTrueClient {
    *   usually what apps want on a "Sign out" button, especially when users
    *   sign in from multiple devices and do not expect signing out of one to
    *   terminate the others.
+   * - With the default `global` scope, `signOut()` while offline returns an error and keeps the user
+   *   signed in. To sign out regardless, fall back to `signOut({ scope: 'local' })` when the call
+   *   returns an error.
    * - Since Supabase Auth uses JWTs for authentication, the access token JWT will be valid until
    *   it's expired. When the user signs out, Supabase revokes the refresh token and deletes the
    *   JWT from the client-side. This does not revoke the JWT and it will still be valid until it
@@ -4112,28 +4116,44 @@ export default class GoTrueClient {
         return this._returnResult({ error: sessionError })
       }
       const accessToken = data.session?.access_token
+      if (scope === 'local') {
+        // The local session is removed before the request is sent, so signing out of this device
+        // never depends on the network. The request only revokes the refresh token on the server.
+        await removeCurrentSession()
+      }
       if (accessToken) {
         const { error } = await this.admin.signOut(accessToken, scope)
-        if (error) {
-          // ignore 404s since user might not exist anymore
-          // ignore 401s since an invalid or expired JWT should sign out the current session
-          if (
-            !(
-              (isAuthApiError(error) &&
-                (error.status === 404 || error.status === 401 || error.status === 403)) ||
-              isAuthSessionMissingError(error)
-            )
-          ) {
-            // When using `local` sign out, we always log the local user out, regardless of the
-            // server outcome. All other logout types depend on the server acknowleding it first.
-            if (scope === 'local') {
-              await removeCurrentSession()
-            }
-            return this._returnResult({ error })
-          }
+        // The current behavior is wrong for the current version of auth (v2.197.0). However,
+        // changing it could be considered a breaking change and must wait for v3. Before modifying
+        // this code we also need to consider which range of Auth versions we aim to support. Right
+        // now this is not defined and thus undefined.
+        //
+        // Some constraints to be aware of:
+        // - Since supabase/auth v2.145.0 a missing user answers 403 `user_not_found`.
+        // - Since supabase/auth v2.150.0 a missing session answers 403 `session_not_found`.
+        // - Before v2.145.0 an invalid JWT answered 401.
+        // - Before v2.145.0 a missing user answers 404., so those statuses are treated the same way.
+        //
+        // TODO(v3): if we only support auth v2.150.0 or later, change this to:
+        //  - Match on `error.code` instead of `error.status`, and treat only 403 `session_not_found`
+        //    and `user_not_found` as already signed out. Drop the 401 and 404 handling.
+        //  - Return every other error, e.g. 403 `bad_jwt` or `user_banned`, or a 401 or 404 from a
+        //    gateway, instead of treating it as signed out. Today nothing was revoked, yet the
+        //    session is cleared and `error` is null. With `global` the session is then kept.
+        //  - For `others`, return `session_not_found` as well. It describes the current session, not
+        //    the sessions being revoked.
+        if (
+          error &&
+          !(
+            (isAuthApiError(error) &&
+              (error.status === 404 || error.status === 401 || error.status === 403)) ||
+            isAuthSessionMissingError(error)
+          )
+        ) {
+          return this._returnResult({ error })
         }
       }
-      if (scope !== 'others') {
+      if (scope === 'global') {
         await removeCurrentSession()
       }
       return this._returnResult({ error: null })
