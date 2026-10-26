@@ -1,14 +1,41 @@
-# How planner types work
+# How supabase-js v3 types database queries
 
-This document explains how postgrest-js and supabase-js v3 type database queries. It is written for SDK maintainers. For a
-hands-on tour, open the example project at
+This document explains how supabase-js v3 (and postgrest-js, the package that builds its database queries) works out the
+TypeScript type of a query's result. It assumes you know TypeScript and have written a supabase-js query, and nothing about
+the internals. For a hands-on tour, open the example project at
 [`packages/core/supabase-js/example/planner-types`](../packages/core/supabase-js/example/planner-types/README.md) and hover the
-queries.
+queries. If you read one section, read [A query, step by step](#a-query-step-by-step).
 
 ## The idea in one sentence
 
 TypeScript no longer parses select strings. A tool finds every query in the project, asks the **real PostgREST planner**
 what each one returns, and writes the answers into a declaration file. The builders then look up their result type by key.
+
+## Words used here
+
+- **PostgREST**: the server behind a Supabase project's database API. It turns an HTTP request such as
+  `GET /posts?select=title,author(name)` into SQL. supabase-js builds those requests.
+- **Select string**: the argument of `.select()`, such as `'title, author(name)'`. It names columns, embeds (related rows,
+  like `author(name)`), aliases, casts and aggregates.
+- **Chain**: one query written with the builders, from `supabase.from('posts')` or `supabase.rpc('fn')` to the last call
+  before `await`. The client can have any name (`supa`, `this.db`, `getClient()`): the mapper reads every `.from()` and
+  `.rpc()` call, and keys do not include the client's name.
+- **Planner**: the part of PostgREST that reads a request and the database schema and decides what SQL to run and what
+  the response looks like. v3 runs PostgREST's own planner, compiled to WebAssembly (wasm), at development time. This is
+  where the name **planner types** comes from: folders and files called `planner` or `planner-types` in this repository
+  belong to this design.
+- **Result shape**: what the planner says a request returns: each field, its type, whether it can be null, and for each
+  embed whether it is one row or many.
+- **Mapper**: `@supabase/postgrest-mapper`, the tool that finds the chains in a project, asks the planner about each one
+  and writes the answers as TypeScript declarations.
+- **Key** and **entry**: each chain gets a key built from its kind, schema, table and select string. The generated
+  declarations hold one entry per key, and the builders read their result type from that entry.
+- **Schema snapshot**: `postgrest-schema.json`, a committed copy of what the planner needs to know about the database,
+  so that generating types needs no running database.
+- **Content mapper**: a TypeScript 7.1 feature that lets the compiler ask a tool for a file's contents. With it, the
+  mapper hands the declarations to the compiler directly, and there is no generated file.
+- **Unplanned**: a chain with no entry yet, for example because its select string is built at runtime. It gets a looser
+  type (see [When there is no plan](#when-there-is-no-plan)).
 
 ## Why change
 
@@ -101,7 +128,8 @@ The schema has `posts.author_id` and `posts.editor_id`, both `NOT NULL`. The `au
 
 ### 1. The scanner finds the chain
 
-The scanner parses every source file with oxc-parser. It only looks at syntax and never type-checks. It finds
+The scanner parses every source file with [oxc-parser](https://oxc.rs), a fast JavaScript and TypeScript parser. It only
+looks at syntax and never type-checks, which is why the client can have any name. It finds
 `from('posts').select('…')` and builds a **key**:
 
 ```
@@ -122,7 +150,7 @@ Accept-Profile: public
 ```
 
 The planner returns a **result shape**: every output field with its type and nullability, every embed with its
-cardinality and join type. In this case the planner says `author` is a to-one embed that is never null (validated FK on a
+cardinality (one row or many) and join type. In this case the planner says `author` is a to-one embed that is never null (validated FK on a
 `NOT NULL` column), while `editor` may be null (the FK is `NOT VALID`).
 
 ### 3. The printer writes an entry
@@ -382,13 +410,12 @@ create view post_summaries as
 ```
 
 ```ts
-// select('title, author_name, editor_name') on the view
-{
+// the rows of select('title, author_name, editor_name') on the view
+type Rows = {
   title: string
   author_name: string
   editor_name: string | null
-}
-;[]
+}[]
 ```
 
 A function body it cannot trace keeps every column nullable, which is what Postgres promises.

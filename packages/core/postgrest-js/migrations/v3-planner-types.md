@@ -24,7 +24,7 @@ const { data } = await supabase.from('notes').select('id, body, mine:owner')
 
 The real PostgREST planner (upstream PostgREST compiled to wasm) now types your queries. Results, filter operands, order columns, rpc arguments and results, and insert and update payloads all come from declarations that the `@supabase/postgrest-mapper` generator writes. A query PostgREST would reject becomes a type error in strict mode.
 
-See [How planner types work](../../../../docs/PLANNER_TYPES.md) for the details.
+See [How supabase-js v3 types database queries](../../../../docs/PLANNER_TYPES.md) for the details.
 
 ## Step 1: set up generation
 
