@@ -1,0 +1,186 @@
+name: Build postgrest-planner wasm
+# Builds packages/tooling/postgrest-planner/dist/postgrest-planner.wasm from source (vendored inputs under wasm/,
+# pinned downloads, the pinned ghc-wasm-meta toolchain), checks and tests it, and uploads it as an artifact.
+# Release workflows can call it (workflow_call) and download the artifact into the planner's dist/ before building.
+
+on:
+  pull_request:
+    paths:
+      - 'packages/tooling/postgrest-planner/haskell/**'
+      - 'packages/tooling/postgrest-planner/wasm/**'
+      - 'packages/tooling/postgrest-planner/patches/**'
+      - 'packages/tooling/postgrest-planner/build.sh'
+      - '.github/workflows/build-postgrest-planner.yml'
+  push:
+    branches: [master, v3]
+    paths:
+      - 'packages/tooling/postgrest-planner/haskell/**'
+      - 'packages/tooling/postgrest-planner/wasm/**'
+      - 'packages/tooling/postgrest-planner/patches/**'
+      - 'packages/tooling/postgrest-planner/build.sh'
+      - '.github/workflows/build-postgrest-planner.yml'
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      artifact-name:
+        description: Name of the uploaded artifact holding postgrest-planner.wasm
+        value: ${{ jobs.build.outputs.artifact-name }}
+      sha256:
+        description: sha256 of the built postgrest-planner.wasm
+        value: ${{ jobs.build.outputs.sha256 }}
+
+permissions:
+  contents: read
+
+# Under workflow_call github.workflow is the caller's name; the suffix keeps this group apart from the caller's own.
+concurrency:
+  group: ${{ github.workflow }}-planner-wasm-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PLANNER: packages/tooling/postgrest-planner
+  ARTIFACT_NAME: postgrest-planner-wasm
+
+jobs:
+  build:
+    name: Build and test the planner wasm
+    runs-on: ubuntu-latest
+    # A cold build (toolchain, cabal store, libpq, PostgREST) takes well over an hour; warm builds take minutes.
+    timeout-minutes: 240
+    outputs:
+      artifact-name: ${{ env.ARTIFACT_NAME }}
+      sha256: ${{ steps.digest.outputs.sha256 }}
+    env:
+      GHC_WASM: ${{ github.workspace }}/packages/tooling/postgrest-planner/.tools/ghc-wasm-9_10
+      CABAL_DIR: ${{ github.workspace }}/packages/tooling/postgrest-planner/.tools/cabal-wasm
+      PLANNER_WORK: ${{ github.workspace }}/packages/tooling/postgrest-planner/.tools/work
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The nix toolchain closure (~6 GB) plus the cabal store and work tree do not fit the default runner disk.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
+
+      # The nix store itself is not cached: the toolchain closure alone is ~6 GB, most of the repository's 10 GB cache.
+      # The cabal store and the work tree (libpq, PostgREST sources, patched forks, dist-newstyle) are, keyed on their
+      # inputs, with prefix fallbacks so a changed input still starts from the previous build.
+      - name: Restore cabal store
+        id: cabal-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.CABAL_DIR }}
+          key: planner-cabal-${{ runner.os }}-${{ hashFiles('packages/tooling/postgrest-planner/build.sh', 'packages/tooling/postgrest-planner/wasm/cabal.project.wasi', 'packages/tooling/postgrest-planner/wasm/patches/hackage/**', 'packages/tooling/postgrest-planner/haskell/*.cabal') }}
+          restore-keys: planner-cabal-${{ runner.os }}-
+      - name: Restore work tree
+        id: work-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.PLANNER_WORK }}
+          key: planner-work-${{ runner.os }}-${{ hashFiles('packages/tooling/postgrest-planner/build.sh', 'packages/tooling/postgrest-planner/wasm/**', 'packages/tooling/postgrest-planner/patches/**', 'packages/tooling/postgrest-planner/haskell/**') }}
+          restore-keys: planner-work-${{ runner.os }}-
+
+      - name: Build the wasm
+        run: ./build.sh -j
+        working-directory: ${{ env.PLANNER }}
+
+      # Saved even when the build fails or times out, so the next run resumes from the packages already compiled.
+      - name: Save cabal store
+        if: always() && steps.cabal-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.CABAL_DIR }}
+          key: ${{ steps.cabal-cache.outputs.cache-primary-key }}
+      - name: Save work tree
+        if: always() && steps.work-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.PLANNER_WORK }}
+          key: ${{ steps.work-cache.outputs.cache-primary-key }}
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Configure Dependency Firewall registry
+        shell: bash
+        env:
+          DF_FIREWALL_TOKEN: ${{ secrets.DF_FIREWALL_TOKEN }}
+        run: |
+          # The firewall token is withheld from fork-triggered PR runs, so only route
+          # through the firewall when the token is present. Forks fall back to the
+          # default public npm registry (install still uses --frozen-lockfile).
+          if [ -n "$DF_FIREWALL_TOKEN" ]; then
+            pnpm config set //firewall.depthfirst.com/npm/:_authToken "$DF_FIREWALL_TOKEN"
+            pnpm config set registry https://firewall.depthfirst.com/npm/
+          else
+            echo "No DF_FIREWALL_TOKEN (likely a fork PR); using the default public npm registry."
+          fi
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build the planner host
+        run: pnpm nx build postgrest-planner
+
+      - name: Check the wasm reports the expected ABI and PostgREST version
+        run: |
+          expected_abi=$(sed -n 's/^abiVersion = \([0-9][0-9]*\)$/\1/p' "$PLANNER/haskell/src/Planner/FFI.hs")
+          [ -n "$expected_abi" ] || { echo "abiVersion not found in FFI.hs" >&2; exit 1; }
+          EXPECTED_ABI=$expected_abi node - << 'JS'
+          const { loadPlanner } = require(`${process.cwd()}/${process.env.PLANNER}/dist/main`)
+          loadPlanner().then((planner) => {
+            const info = planner.info()
+            console.log(JSON.stringify(info))
+            if (info.abi !== Number(process.env.EXPECTED_ABI)) throw new Error(`abi ${info.abi}, expected ${process.env.EXPECTED_ABI}`)
+            if (info.postgrest.version !== '16.4') throw new Error(`postgrest ${info.postgrest.version}, expected 16.4`)
+          })
+          JS
+
+      # --skip-nx-cache: the wasm is not a task input, so a cached result would not have run against this build.
+      - name: Run postgrest-planner tests
+        run: pnpm nx test postgrest-planner --skip-nx-cache
+        timeout-minutes: 10
+      - name: Start the postgrest-js test stack for the mapper tests
+        run: pnpm exec supabase start --workdir packages/core/postgrest-js/test
+        timeout-minutes: 10
+      - name: Run postgrest-mapper tests
+        run: pnpm nx test postgrest-mapper --skip-nx-cache
+        env:
+          POSTGREST_PLANNER_WASM: ${{ github.workspace }}/packages/tooling/postgrest-planner/dist/postgrest-planner.wasm
+        timeout-minutes: 20
+
+      - name: Digest and compare with the committed wasm
+        id: digest
+        run: |
+          sha=$(sha256sum "$PLANNER/dist/postgrest-planner.wasm" | cut -d' ' -f1)
+          committed=$(git show "HEAD:$PLANNER/dist/postgrest-planner.wasm" 2> /dev/null | sha256sum | cut -d' ' -f1 || true)
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+          {
+            echo "### postgrest-planner.wasm"
+            echo
+            echo "| | sha256 |"
+            echo "| --- | --- |"
+            echo "| built | \`$sha\` |"
+            echo "| committed | \`$committed\` |"
+            echo
+            # Informational only: the build id embeds the libpq input stamp, so equal behaviour can differ in bytes.
+            if [ "$sha" = "$committed" ]; then
+              echo "The built wasm matches the committed one."
+            else
+              echo "The built wasm differs from the committed one (informational, not a failure)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the wasm
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.PLANNER }}/dist/postgrest-planner.wasm
+          if-no-files-found: error

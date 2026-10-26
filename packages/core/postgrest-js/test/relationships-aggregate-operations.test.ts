@@ -1,48 +1,15 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 test('select with aggregate count function', async () => {
-  const res = await postgrest.from('users').select('username, messages(count)').limit(1).single()
-  expect(res).toMatchInlineSnapshot(`
-    {
-      "count": null,
-      "data": {
-        "messages": [
-          {
-            "count": 4,
-          },
-        ],
-        "username": "supabot",
-      },
-      "error": null,
-      "status": 200,
-      "statusText": "OK",
-      "success": true,
-    }
-  `)
-  let result: Exclude<typeof res.data, null>
-  const ExpectedSchema = z.object({
-    username: z.string(),
-    messages: z.array(
-      z.object({
-        count: z.number(),
-      })
-    ),
-  })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
-  ExpectedSchema.parse(res.data)
-})
-
-test('select with aggregate count on a column function', async () => {
   const res = await postgrest
     .from('users')
-    .select('username, messages(id.count())')
+    .select('username, messages(count)')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -62,7 +29,7 @@ test('select with aggregate count on a column function', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -71,8 +38,46 @@ test('select with aggregate count on a column function', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('select with aggregate count on a column function', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username, messages(id.count())')
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
+  expect(res).toMatchInlineSnapshot(`
+    {
+      "count": null,
+      "data": {
+        "messages": [
+          {
+            "count": 4,
+          },
+        ],
+        "username": "supabot",
+      },
+      "error": null,
+      "status": 200,
+      "statusText": "OK",
+      "success": true,
+    }
+  `)
+  type Result = Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    messages: z.array(
+      z.object({
+        count: z.number(),
+      })
+    ),
+  })
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -80,6 +85,7 @@ test('select with aggregate count function and alias', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(message_count:count())')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -99,7 +105,7 @@ test('select with aggregate count function and alias', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -108,8 +114,8 @@ test('select with aggregate count function and alias', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -117,6 +123,7 @@ test('select with aggregate nested count function', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(count))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -153,7 +160,7 @@ test('select with aggregate nested count function', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -164,8 +171,8 @@ test('select with aggregate nested count function', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -173,6 +180,7 @@ test('select with aggregate nested count function and alias', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(channel_count:count()))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -209,7 +217,7 @@ test('select with aggregate nested count function and alias', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -220,13 +228,18 @@ test('select with aggregate nested count function and alias', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
 test('select with aggregate sum function', async () => {
-  const res = await postgrest.from('users').select('username, messages(id.sum())').limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select('username, messages(id.sum())')
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -244,17 +257,17 @@ test('select with aggregate sum function', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
       z.object({
-        sum: z.number(),
+        sum: z.number().nullable(),
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -262,6 +275,7 @@ test('select with aggregate aliased sum function', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(sum_id:id.sum())')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -281,17 +295,17 @@ test('select with aggregate aliased sum function', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
       z.object({
-        sum_id: z.number(),
+        sum_id: z.number().nullable(),
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -299,6 +313,7 @@ test('select with aggregate sum function on nested relation', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(id.sum()))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -335,18 +350,18 @@ test('select with aggregate sum function on nested relation', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
       z.object({
         channels: z.object({
-          sum: z.number(),
+          sum: z.number().nullable(),
         }),
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })

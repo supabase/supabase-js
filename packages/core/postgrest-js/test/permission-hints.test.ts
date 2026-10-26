@@ -1,5 +1,4 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 
 // Simulates the JSON body PostgREST returns when supautils injects a hint
 // for a 42501 (permission denied) error at the Postgres executor level.
@@ -25,7 +24,7 @@ function mockFetch(body: object, status: number) {
 
 describe('postgres hint passthrough', () => {
   test('hint from supautils is passed through to error', async () => {
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockFetch(SUPAUTILS_42501_BODY, 403) as any,
     })
 
@@ -42,7 +41,7 @@ describe('postgres hint passthrough', () => {
   })
 
   test('hint is included on thrown PostgrestError', async () => {
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockFetch(SUPAUTILS_42501_BODY, 403) as any,
     })
 
@@ -52,7 +51,7 @@ describe('postgres hint passthrough', () => {
   })
 
   test('null hint is passed through unchanged (supautils not active for this role)', async () => {
-    const postgrest = new PostgrestClient<Database>('https://example.com', {
+    const postgrest = new PostgrestClient('https://example.com', {
       fetch: mockFetch({ ...SUPAUTILS_42501_BODY, hint: null }, 403) as any,
     })
 

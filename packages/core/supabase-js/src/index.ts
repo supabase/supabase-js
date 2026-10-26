@@ -1,4 +1,10 @@
 import SupabaseClient from './SupabaseClient'
+import type {
+  DefaultDatabase,
+  DefaultSchemaNameOf,
+  PostgrestClientOptions,
+  SchemaNameOf,
+} from '@supabase/postgrest-js'
 import type { SupabaseClientOptions } from './lib/types'
 
 export * from '@supabase/auth-js'
@@ -12,6 +18,22 @@ export type {
   PostgrestFilterBuilder,
   PostgrestTransformBuilder,
   PostgrestQueryBuilder,
+  PostgrestClientOptions,
+  PgrstJson,
+  PgrstJsonText,
+  DefaultDatabase,
+  GenericDatabase,
+  PgrstFeature,
+  SupabaseColumnType,
+  RpcOptions,
+  SelectOptions,
+  MutOptions,
+  InsertOptions,
+  UpsertOptions,
+  ExplainOptions,
+  OrderOptions,
+  InvalidMethodError,
+  TextSearchOptions,
 } from '@supabase/postgrest-js'
 export { PostgrestError } from '@supabase/postgrest-js'
 export { StorageApiError } from '@supabase/storage-js'
@@ -46,18 +68,13 @@ export type {
  * ```
  */
 export const createClient = <
-  Database = any,
-  SchemaNameOrClientOptions extends
-    | (string & keyof Omit<Database, '__InternalSupabase'>)
-    | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
-    ? 'public'
-    : string & keyof Omit<Database, '__InternalSupabase'>,
-  SchemaName extends string & keyof Omit<Database, '__InternalSupabase'> =
-    SchemaNameOrClientOptions extends string & keyof Omit<Database, '__InternalSupabase'>
+  Database = DefaultDatabase,
+  SchemaNameOrClientOptions extends SchemaNameOf<Database> | PostgrestClientOptions =
+    DefaultSchemaNameOf<Database>,
+  SchemaName extends SchemaNameOf<Database> =
+    SchemaNameOrClientOptions extends SchemaNameOf<Database>
       ? SchemaNameOrClientOptions
-      : 'public' extends keyof Omit<Database, '__InternalSupabase'>
-        ? 'public'
-        : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
+      : DefaultSchemaNameOf<Database>,
 >(
   supabaseUrl: string,
   supabaseKey: string,

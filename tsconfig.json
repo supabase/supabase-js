@@ -17,6 +17,12 @@
     },
     {
       "path": "./packages/core/auth-js"
+    },
+    {
+      "path": "./packages/tooling/postgrest-mapper"
+    },
+    {
+      "path": "./packages/tooling/postgrest-planner"
     }
   ]
 }

@@ -1,81 +1,135 @@
 #!/usr/bin/env node
 
 /**
- * Generate TypeScript types for postgrest-js tests from the test database
+ * Generate the TypeScript declarations that type the postgrest-js tests.
  *
- * This script uses Supabase CLI to spin up the test infrastructure, generates types
- * from the database schema, and writes them to test/types.generated.ts
+ *   node scripts/generate-postgrest-types.js           snapshot the test stack, then generate
+ *   node scripts/generate-postgrest-types.js --check   verify both committed files, write nothing
+ *
+ * The schema is acquired from the postgrest-js test stack (Supabase CLI, workdir
+ * packages/core/postgrest-js/test) with `postgrest-mapper snapshot`, and the declarations are
+ * generated from that snapshot with `postgrest-mapper generate`, so `generate` needs no database.
+ * A stack that is already running is used as is and left running; one that is not running is
+ * started for the run and stopped afterwards.
  */
 
-const { execSync } = require('child_process')
+const { spawnSync } = require('child_process')
 const path = require('path')
 
-const POSTGREST_DIR = path.join(__dirname, '../packages/core/postgrest-js')
-const TEST_DIR_NAME = 'test'
-const TEST_DIR = path.join(POSTGREST_DIR, TEST_DIR_NAME)
-const OUTPUT_FILE = path.join(POSTGREST_DIR, TEST_DIR_NAME, 'types.generated.ts')
+const ROOT = path.join(__dirname, '..')
+const POSTGREST_DIR = path.join(ROOT, 'packages/core/postgrest-js')
+const TEST_DIR = path.join(POSTGREST_DIR, 'test')
+const TSCONFIG = path.join(POSTGREST_DIR, 'tsconfig.test.json')
+const SNAPSHOT_FILE = path.join(TEST_DIR, 'postgrest-schema.json')
+const OUTPUT_FILE = path.join(TEST_DIR, 'postgrest.generated.d.ts')
+const MAPPER_BIN = path.join(ROOT, 'packages/tooling/postgrest-mapper/bin/postgrest-mapper.cjs')
 
-function exec(command, options = {}) {
-  try {
-    return execSync(command, {
-      stdio: 'inherit',
-      ...options,
-    })
-  } catch (error) {
-    console.error(`❌ Command failed: ${command}`)
-    process.exit(1)
-  }
+const check = process.argv.includes('--check')
+
+// The first line of the mapper's messages that mean "the committed file is stale", as opposed to
+// "the generation itself failed".
+const DRIFT = /is out of date|does not exist|differs from the canonical form/
+
+function run(command, args, options = {}) {
+  return spawnSync(command, args, { cwd: ROOT, encoding: 'utf8', ...options })
 }
 
-function execAllowFail(command, options = {}) {
-  try {
-    return execSync(command, {
-      stdio: 'inherit',
-      ...options,
-    })
-  } catch (error) {
-    // Allow failure (e.g., when stopping containers that aren't running)
-  }
+function supabase(args, options = {}) {
+  // An absolute workdir: `pnpm exec` does not rewrite the cwd to the nearest package.json directory.
+  return run('pnpm', ['exec', 'supabase', '--workdir', TEST_DIR, ...args], options)
+}
+
+function mapper(args) {
+  const result = run(process.execPath, [MAPPER_BIN, ...args])
+  process.stdout.write(result.stdout ?? '')
+  process.stderr.write(
+    (result.stderr ?? '').replace(/^\(node:\d+\) ExperimentalWarning.*\n\(Use .*\n/gm, '')
+  )
+  return result
+}
+
+function fail(message) {
+  console.error(`\n❌ ${message}\n`)
+  process.exit(1)
 }
 
 function main() {
-  console.log('🔄 Generating postgrest-js test types...\n')
-
-  // Clean up any existing containers
-  console.log('🧹 Cleaning up existing containers...')
-  // Pass an absolute workdir to the supabase cli: `pnpm exec` no longer rewrites the cwd to the
-  // nearest package.json directory (it did before pnpm 11), so a relative `--workdir test` would
-  // resolve against whatever cwd we are handed and chdir into `test/test`.
-  execAllowFail(`pnpm exec supabase --workdir ${TEST_DIR} stop --no-backup`, { cwd: TEST_DIR })
-
-  // Start Supabase (blocks until ready)
-  console.log('📦 Starting Supabase...')
-  exec(`pnpm exec supabase --workdir ${TEST_DIR} start`, { cwd: TEST_DIR })
-
-  // Generate types from database using Supabase CLI
-  console.log('🔧 Generating types from database...')
-  exec(
-    `pnpm exec supabase --workdir ${TEST_DIR} gen types typescript --local --schema public,personal > ${OUTPUT_FILE}`,
-    {
-      cwd: TEST_DIR,
-      shell: true,
-    }
+  console.log(
+    check
+      ? '🔍 Checking postgrest-js test declarations...\n'
+      : '🔄 Generating postgrest-js test declarations...\n'
   )
 
-  // Run post-generation script to update JSON type
-  console.log('🔧 Post-processing generated types...')
-  exec('node scripts/update-json-type.js', { cwd: POSTGREST_DIR })
+  const build = run('pnpm', ['exec', 'nx', 'build', 'postgrest-mapper'], {
+    stdio: 'inherit',
+    encoding: undefined,
+  })
+  if (build.status !== 0)
+    fail('Building @supabase/postgrest-mapper failed. This is NOT a drift failure.')
 
-  // Format the generated file with Prettier
-  console.log('💅 Formatting generated types with Prettier...')
-  exec(`pnpm nx format`, { cwd: path.join(__dirname, '..') })
+  const wasRunning = supabase(['status'], { stdio: 'ignore', encoding: undefined }).status === 0
+  if (!wasRunning) {
+    console.log('📦 Starting Supabase...')
+    const start = supabase(['start'], { stdio: 'inherit', encoding: undefined })
+    if (start.status !== 0) fail('Starting the test stack failed. This is NOT a drift failure.')
+  }
 
-  // Clean up Supabase containers
-  console.log('🧹 Cleaning up Supabase...')
-  execAllowFail(`pnpm exec supabase --workdir ${TEST_DIR} stop --no-backup`, { cwd: TEST_DIR })
+  let failure
+  let drift = false
+  try {
+    const workdir = ['--workdir', TEST_DIR, '--supabase-command', 'pnpm exec supabase']
+    if (check) {
+      const snapshot = mapper(['snapshot', '--out', SNAPSHOT_FILE, '--check', ...workdir])
+      if (snapshot.status !== 0) {
+        failure = 'the schema snapshot'
+        drift = DRIFT.test(snapshot.stderr ?? '')
+      } else {
+        const generated = mapper([
+          'generate',
+          '--project',
+          TSCONFIG,
+          '--out',
+          OUTPUT_FILE,
+          '--check',
+        ])
+        if (generated.status !== 0) {
+          failure = 'the generated declarations'
+          drift = DRIFT.test(generated.stderr ?? '')
+        }
+      }
+    } else {
+      const snapshot = mapper(['snapshot', '--out', SNAPSHOT_FILE, ...workdir])
+      if (snapshot.status !== 0) failure = 'the schema snapshot'
+      else {
+        const generated = mapper(['generate', '--project', TSCONFIG, '--out', OUTPUT_FILE])
+        if (generated.status !== 0) failure = 'the generated declarations'
+      }
+    }
+  } finally {
+    if (!wasRunning) {
+      console.log('🧹 Cleaning up Supabase...')
+      supabase(['stop', '--no-backup'], { stdio: 'ignore', encoding: undefined })
+    }
+  }
 
-  console.log('\n✅ Type generation complete!')
-  console.log(`   Output: ${OUTPUT_FILE}`)
+  if (failure && check && drift) {
+    fail(
+      `Postgrest generated types are out of sync (${failure}).\n   Run: pnpm codegen:postgrest\n   Then commit the changes.`
+    )
+  }
+  if (failure) {
+    fail(
+      `Generating ${failure} itself failed — see the error above. This is NOT a drift failure; re-running codegen will not help.`
+    )
+  }
+
+  console.log(
+    check ? '\n✅ Postgrest generated types are in sync!' : '\n✅ Type generation complete!'
+  )
+  if (!check) {
+    console.log(`   Snapshot: ${SNAPSHOT_FILE}`)
+    console.log(`   Output:   ${OUTPUT_FILE}`)
+  }
 }
 
 main()

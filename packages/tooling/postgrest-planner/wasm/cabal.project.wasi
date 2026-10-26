@@ -1,0 +1,16 @@
+-- Project template for the wasm32-wasi build; build.sh appends the package directories.
+index-state: hackage.haskell.org 2026-08-10T16:58:32Z
+
+tests: False
+benchmarks: False
+documentation: False
+
+allow-newer: hasql:postgresql-libpq
+
+-- Unpatched Hackage packages (the patched ones are pinned by their forks).
+constraints: postgresql-libpq ==0.11.0.0, hasql-pool ==1.3.0.4, time-manager ==0.3.2, crypton ==1.1.4
+
+-- Argon2's threaded code path calls pthread_exit, which wasi-libc does not declare. A project file has no cc-options
+-- field, so the define goes to the C compiler through ghc-options.
+package crypton
+  ghc-options: -optc-DARGON2_NO_THREADS

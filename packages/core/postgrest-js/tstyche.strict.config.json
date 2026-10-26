@@ -1,0 +1,7 @@
+{
+  "$schema": "https://tstyche.org/schemas/config.json",
+  "tsconfig": "test/types/tsconfig.strict.json",
+  "testFileMatch": ["./test/types/common/*.test-d.ts", "./test/types/strict/*.test-d.ts"],
+  "checkSourceFiles": false,
+  "checkSuppressedErrors": true
+}

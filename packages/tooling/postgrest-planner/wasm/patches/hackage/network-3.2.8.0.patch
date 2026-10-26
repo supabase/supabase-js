@@ -1,0 +1,20 @@
+--- a/Network/Socket/Types.hsc	2026-10-12 19:40:00
++++ b/Network/Socket/Types.hsc	2026-10-12 19:40:00
+@@ -98,6 +98,7 @@
+ import qualified Text.Read as P
+ 
+ import Foreign.Marshal.Array
++import Foreign.Marshal.Utils (fillBytes)
+ 
+ import Network.Socket.Imports
+ 
+@@ -1440,8 +1441,6 @@
+ ------------------------------------------------------------------------
+ -- Helper functions
+ 
+-foreign import ccall unsafe "string.h" memset :: Ptr a -> CInt -> CSize -> IO ()
+-
+ -- | Zero a structure.
+ zeroMemory :: Ptr a -> CSize -> IO ()
+-zeroMemory dest nbytes = memset dest 0 (fromIntegral nbytes)
++zeroMemory dest nbytes = fillBytes dest 0 (fromIntegral nbytes)

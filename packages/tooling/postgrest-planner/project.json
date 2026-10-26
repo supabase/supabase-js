@@ -1,0 +1,23 @@
+{
+  "name": "postgrest-planner",
+  "targets": {
+    "build": {
+      "outputs": ["{projectRoot}/dist/main", "{projectRoot}/dist/tsconfig.tsbuildinfo"]
+    },
+    "build:wasm": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./build.sh",
+        "cwd": "{projectRoot}"
+      },
+      "inputs": [
+        "{projectRoot}/haskell/**/*",
+        "{projectRoot}/patches/**/*",
+        "{projectRoot}/wasm/**/*",
+        "{projectRoot}/build.sh"
+      ],
+      "outputs": ["{projectRoot}/dist/postgrest-planner.wasm"],
+      "cache": false
+    }
+  }
+}

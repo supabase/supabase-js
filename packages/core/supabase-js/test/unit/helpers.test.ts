@@ -20,19 +20,19 @@ test('override setting defaults', async () => {
     detectSessionInUrl: true,
   }
 
-  let defaults = {
+  const defaults = {
     db: DEFAULT_DB_OPTIONS,
     auth: DEFAULT_AUTH_OPTIONS,
     global: DEFAULT_GLOBAL_OPTIONS,
   }
 
-  let autoRefreshOption = false
-  let options = {
+  const autoRefreshOption = false
+  const options = {
     auth: {
       autoRefreshToken: autoRefreshOption,
     },
   }
-  let settings = helpers.applySettingDefaults(options, defaults)
+  const settings = helpers.applySettingDefaults(options, defaults)
   expect(settings.auth.autoRefreshToken).toBe(autoRefreshOption)
   // Existing default properties should not be overwritten
   expect(settings.auth.persistSession).not.toBeNull()

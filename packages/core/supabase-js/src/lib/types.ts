@@ -2,25 +2,8 @@ import { GoTrueClientOptions } from '@supabase/auth-js'
 import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { PostgrestError } from '@supabase/postgrest-js'
 import type { StorageClientOptions } from '@supabase/storage-js'
-import type {
-  GenericSchema,
-  GenericRelationship,
-  GenericTable,
-  GenericUpdatableView,
-  GenericNonUpdatableView,
-  GenericView,
-  GenericFunction,
-} from './rest/types/common/common'
-export type {
-  GenericSchema,
-  GenericRelationship,
-  GenericTable,
-  GenericUpdatableView,
-  GenericNonUpdatableView,
-  GenericView,
-  GenericFunction,
-}
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-empty-interface -- a public interface, so consumers can augment it
 export interface SupabaseAuthClientOptions extends GoTrueClientOptions {}
 
 export type Fetch = typeof fetch
@@ -347,11 +330,7 @@ export type QueryError = PostgrestError
 
 /**
  * Strips internal Supabase metadata from Database types.
- * Useful for libraries defining generic constraints on Database types.
  *
- * @example Stripping internal Supabase metadata
- * ```typescript
- * type CleanDB = DatabaseWithoutInternals<Database>
- * ```
+ * @deprecated Use `Omit<Database, '__InternalSupabase'>` instead; the planner types no longer need it.
  */
 export type DatabaseWithoutInternals<DB> = Omit<DB, '__InternalSupabase'>

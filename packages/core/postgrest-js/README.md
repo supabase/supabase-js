@@ -52,6 +52,40 @@ const postgrest = new PostgrestClient(REST_URL)
 - [update()](https://supabase.com/docs/reference/javascript/update)
 - [delete()](https://supabase.com/docs/reference/javascript/delete)
 
+#### Typing
+
+Query results are typed by a planner: the real PostgREST planner (upstream PostgREST compiled to wasm) answers for every query in your project, and the `@supabase/postgrest-mapper` generator writes the answers as global interfaces (`SupabaseSelects`, `SupabaseOperands`, `SupabaseDatabase`, `SupabasePgrstStatus`, `SupabaseColumnTypes`) that the builders look up. `select('id, channels(id)')` returns the row that query produces, and filters take the column's type. The client no longer parses select strings at the type level.
+
+A chain the generated declarations don't cover is typed from the `Database` you pass (`new PostgrestClient<Database>()` with a `supabase gen types typescript` database): the relation's `Row` with its own keys typed and any other key `any`, and an rpc answers with the function's `Returns`. A Database without named columns, or no Database, gives `Record<string, unknown>` rows. With `SupabasePgrstStatus['unplanned']` set to `'error'`, a chain the generator didn't cover is a type error and the fallback is off. An rpc whose name is a union (`rpc(flag ? 'a' : 'b')`) gets no `Returns` fallback, so a call the generated declarations don't cover has `unknown` data; call each function by its literal name.
+
+When you need to state a result yourself, use `.cast<T>()`, which takes the type of one row and does nothing at runtime. `.returns<T>()`, `.overrideTypes<T>()`, `.single<T>()`, `.maybeSingle<T>()` and the `foreignTable` option still work but are deprecated:
+
+```ts
+const { data } = await postgrest.from('users').select(columns).cast<{ id: number }>()
+```
+
+To set up generation, and for the v2 to v3 changes, see the [migration guide](./migrations/v3-planner-types.md).
+
+To type a column yourself everywhere it appears (selects, filters, mutation payloads), declare it in `SupabaseColumnTypes`, keyed by `schema.table.column`; the column's own nullability stays outside. Postgres arrays are typed with non-null, one-dimensional elements (`int4[]` is `number[]`), because Postgres doesn't enforce element nullability or dimensions; override a column that holds `NULL` elements or nested arrays:
+
+```ts
+declare global {
+  interface SupabaseColumnTypes {
+    'public.readings.samples': (number | null)[]
+  }
+}
+```
+
+Typing requires TypeScript 5.1 or later (the builders use `const` type parameters, and the argument checks rely on template literal inference that TypeScript 5.0 doesn't do).
+
+A filter on an embedded column makes that embed nullable in the result, because the filtered-out rows come back as `null`. Three rare forms don't widen the embed, so it stays non-null in the type:
+
+- a union-typed column that mixes root and embedded columns (`.eq(col, v)` where `col` is `'id' | 'channels.id'`)
+- `.match()` given a union of object types
+- `.filter()` with a nested column relative to `referencedTable` (`.filter('channels.id', 'eq', 1, { referencedTable: 'messages' })`)
+
+Write those filters with a literal column, or with `.eq()` on the full path (`.eq('messages.channels.id', 1)`).
+
 #### Custom `fetch` implementation
 
 `postgrest-js` uses the runtime's global `fetch` to make HTTP requests, but an alternative `fetch` implementation can be provided as an option. This is useful in environments where the global `fetch` is unavailable or where you want to customize request behavior:
@@ -147,28 +181,25 @@ npx supabase --workdir ./test stop         # Stop all services
 
 #### Regenerating TypeScript Types
 
-When the database schema changes, regenerate TypeScript types from the actual database:
+The tests are typed by declarations that `@supabase/postgrest-mapper` generates from the test schema and from the queries the tests make. After changing the schema or a query in a test, regenerate them:
 
 ```bash
 # From the monorepo root
 pnpm run codegen:postgrest
 ```
 
-This command automatically:
+This command:
 
-1. Cleans up any existing Supabase containers
-2. Starts Supabase (PostgreSQL, PostgREST, and all services)
-3. Generates TypeScript types from the database schema
-4. Post-processes the generated types (updates JSON type definitions)
-5. Formats the generated file with Prettier
-6. Cleans up Supabase containers
+1. Uses the running test stack, or starts one for the run and stops it afterwards
+2. Snapshots the schema into `test/postgrest-schema.json` (`postgrest-mapper snapshot`)
+3. Generates `test/postgrest.generated.d.ts` from that snapshot and the queries in `test/**/*.test.ts` (`postgrest-mapper generate`, options in `tsconfig.test.json`)
 
-The generated types are written to `test/types.generated.ts`.
+`pnpm run codegen:check:postgrest` verifies both files without writing them.
 
 #### Test Types Explained
 
 - **Unit Tests** - Jest tests covering all client functionality (`pnpm nx test:run postgrest-js`)
-- **Type Tests** - Validates TypeScript types using tstyche (`pnpm nx test:types postgrest-js`)
+- **Type Tests** - Validates the planner-typed builders using tstyche (`pnpm nx test:types postgrest-js`). The tests live in `test/types/` and run twice, against a loose and a strict `SupabasePgrstStatus` fixture (`tstyche.config.json` and `tstyche.strict.config.json`). `test/types/mutate.sh` is a negative control: it breaks one rule of the type machinery at a time and checks that the tests fail
 - **Smoke Tests** - Basic import/require tests for CommonJS and ESM (`pnpm nx test:smoke postgrest-js`)
 
 #### Prerequisites
@@ -193,12 +224,6 @@ This command:
 1. Starts PostgREST v12 + PostgreSQL in Docker (ports 3012/5433)
 2. Runs runtime tests that verify v12-specific behavior
 3. Cleans up containers
-
-**Type-only tests** for v12 compatibility also run as part of the regular type tests:
-
-```bash
-pnpm nx test:types postgrest-js  # Includes v12-compat.test-d.ts
-```
 
 **Note:** These v12 tests will be removed when v3 ships (sometime in 2026).
 

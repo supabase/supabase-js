@@ -1,10 +1,9 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-export const postgrest = new PostgrestClient<Database>(REST_URL)
+export const postgrest = new PostgrestClient(REST_URL)
 
 export const RPC_NAME = 'get_username_and_status'
 const BIGINT_PARAM = 9223372036854775807n
@@ -19,7 +18,7 @@ test('RPC call serializes bigint values in the request body', async () => {
     text: async () => '',
   })
 
-  const client = new PostgrestClient<Database>('https://example.com', {
+  const client = new PostgrestClient('https://example.com', {
     fetch: mockFetch as any,
   })
 
@@ -59,15 +58,15 @@ test('RPC call with no params', async () => {
     }
   `)
   // check our result types match the runtime result
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      status: z.enum(['ONLINE', 'OFFLINE'] as const),
+      status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
       username: z.string(),
     })
   )
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -89,15 +88,15 @@ test('RPC call with star select', async () => {
     }
   `)
   // check our result types match the runtime result
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      status: z.enum(['ONLINE', 'OFFLINE'] as const),
+      status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
       username: z.string(),
     })
   )
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -118,14 +117,14 @@ test('RPC call with single field select', async () => {
     }
   `)
   // check our result types match the runtime result
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
       username: z.string(),
     })
   )
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -147,15 +146,15 @@ test('RPC call with multiple fields select', async () => {
     }
   `)
   // check our result types match the runtime result
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      status: z.enum(['ONLINE', 'OFFLINE'] as const),
+      status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
       username: z.string(),
     })
   )
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -176,14 +175,14 @@ test('RPC call with field aliasing', async () => {
     }
   `)
   // check our result types match the runtime result
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
       name: z.string(),
     })
   )
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -204,14 +203,14 @@ test('RPC call with field casting', async () => {
     }
   `)
   // check our result types match the runtime result
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
-      status: z.string(),
+      status: z.string().nullable(),
     })
   )
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -235,15 +234,15 @@ test('RPC call with field aggregate', async () => {
     }
   `)
   // check our result types match the runtime result
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
       count: z.number(),
-      status: z.enum(['ONLINE', 'OFFLINE'] as const),
+      status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
     })
   )
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -265,8 +264,10 @@ test('RPC call with bigint param is accepted by a bigint Postgres argument', asy
 })
 
 test('RPC call with bigint nested in jsonb param is serialized as a JSON string', async () => {
+  // The payload cast is deliberate: the generated `JsonIn` argument type has no bigint, and this
+  // test exercises the client serializing a JS bigint inside jsonb.
   const res = await postgrest.rpc('extract_jsonb_bigint_as_text', {
-    payload: { id: BIGINT_PARAM },
+    payload: { id: BIGINT_PARAM } as any,
   })
 
   expect(res).toMatchInlineSnapshot(`

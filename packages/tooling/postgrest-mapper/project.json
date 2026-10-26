@@ -1,0 +1,8 @@
+{
+  "name": "postgrest-mapper",
+  "targets": {
+    "test": {
+      "dependsOn": ["^build", "build"]
+    }
+  }
+}

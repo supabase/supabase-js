@@ -1,15 +1,15 @@
 import { PostgrestClient } from '../src/index'
-import { Database as DatabaseWithOptions13 } from './types.override-with-options-postgrest14'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<DatabaseWithOptions13>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 test('select with aggregate count and spread', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(count(), ...channel_details(details)))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -50,7 +50,7 @@ test('select with aggregate count and spread', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -62,8 +62,8 @@ test('select with aggregate count and spread', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -71,6 +71,7 @@ test('spread resource with single column in select query', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(count(), ...channel_details(details)))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -111,7 +112,7 @@ test('spread resource with single column in select query', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -123,8 +124,8 @@ test('spread resource with single column in select query', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -132,6 +133,7 @@ test('spread resource with all columns in select query', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(count(), ...channel_details(*)))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -176,7 +178,7 @@ test('spread resource with all columns in select query', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -189,8 +191,8 @@ test('spread resource with all columns in select query', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -198,6 +200,7 @@ test('select with aggregate sum and spread', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(channels(id.sum(), ...channel_details(details)))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -238,20 +241,20 @@ test('select with aggregate sum and spread', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
       z.object({
         channels: z.object({
-          sum: z.number(),
+          sum: z.number().nullable(),
           details: z.string().nullable(),
         }),
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -261,6 +264,7 @@ test('select with aggregate sum and spread on nested relation', async () => {
     .select(
       'username, messages(channels(id.sum(), ...channel_details(details_sum:id.sum(), details)))'
     )
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -305,21 +309,21 @@ test('select with aggregate sum and spread on nested relation', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
       z.object({
         channels: z.object({
-          sum: z.number(),
+          sum: z.number().nullable(),
           details_sum: z.number().nullable(),
           details: z.string().nullable(),
         }),
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -327,6 +331,7 @@ test('select with spread on nested relation', async () => {
   const res = await postgrest
     .from('messages')
     .select('id, channels(id, ...channel_details(details_id:id, details))')
+    .order('id')
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -346,7 +351,7 @@ test('select with spread on nested relation', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     id: z.number(),
     channels: z.object({
@@ -355,8 +360,8 @@ test('select with spread on nested relation', async () => {
       details: z.string().nullable(),
     }),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -384,13 +389,60 @@ test('select spread on many relation', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     channel_id: z.number(),
     id: z.array(z.number()),
     message: z.array(z.string().nullable()),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
+})
+
+test('filter on a to-one embed beneath a spread to-many nulls the element, not the array', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username, ...messages(channels(id))')
+    .eq('messages.channels.id', -1)
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
+  expect(res.data).toEqual({ username: 'supabot', channels: [null, null, null, null] })
+  type Result = Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    channels: z.array(z.object({ id: z.number() }).nullable()),
+  })
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
+  ExpectedSchema.parse(res.data)
+})
+
+test('filter on a to-one embed nested below an embed in a spread to-many nulls the innermost embed', async () => {
+  const res = await postgrest
+    .from('users')
+    .select('username, ...messages(channels(channel_details(channels(id))))')
+    .eq('messages.channels.channel_details.channels.id', -1)
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
+  type Result = Exclude<typeof res.data, null>
+  const ExpectedSchema = z.object({
+    username: z.string(),
+    channels: z.array(
+      z.object({
+        channel_details: z.object({ channels: z.object({ id: z.number() }).nullable() }).nullable(),
+      })
+    ),
+  })
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
+  ExpectedSchema.parse(res.data)
+  expect(res.data?.channels.map((c) => c.channel_details?.channels ?? null)).toEqual([
+    null,
+    null,
+    null,
+    null,
+  ])
 })

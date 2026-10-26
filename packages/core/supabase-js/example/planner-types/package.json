@@ -1,0 +1,35 @@
+{
+  "name": "postgrest-planner-example",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Hover over a supabase-js query and see the types the PostgREST planner derives.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build:packages": "pnpm -w exec nx run-many -t build -p @supabase/postgrest-js @supabase/supabase-js postgrest-mapper postgrest-planner",
+    "db:up": "docker-compose up -d --wait && node scripts/wait-for-rest.mjs",
+    "db:down": "docker-compose down --volumes",
+    "snapshot": "DATABASE_URL=postgres://authenticator:postgres@localhost:55432/postgres postgrest-mapper snapshot --out postgrest-schema.json --schema-source postgrest --db-url-env DATABASE_URL",
+    "types": "postgrest-mapper generate --project tsconfig.json --out src/supabase.types.d.ts",
+    "types:watch": "postgrest-mapper generate --project tsconfig.json --out src/supabase.types.d.ts --watch",
+    "types:check": "postgrest-mapper generate --project tsconfig.json --out src/supabase.types.d.ts --check",
+    "check": "node node_modules/typescript/bin/tsc --noEmit",
+    "check:content-mapper": "node node_modules/typescript-7.1/bin/tsc --runExternalCode --noEmit -p tsconfig.content-mapper.json",
+    "hover": "node scripts/hover.mjs",
+    "demo": "tsx src/demo.ts"
+  },
+  "dependencies": {
+    "@supabase/postgrest-js": "workspace:*",
+    "@supabase/supabase-js": "workspace:*"
+  },
+  "devDependencies": {
+    "@supabase/postgrest-mapper": "workspace:*",
+    "@supabase/postgrest-planner": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "^4.21.0",
+    "typescript": "catalog:",
+    "typescript-7.1": "npm:typescript@7.1.0-beta"
+  }
+}

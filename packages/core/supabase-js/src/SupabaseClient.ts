@@ -1,10 +1,12 @@
 import type { AuthChangeEvent } from '@supabase/auth-js'
 import { FunctionsClient } from '@supabase/functions-js'
 import {
+  type DefaultDatabase,
   PostgrestClient,
-  type PostgrestFilterBuilder,
+  type DefaultSchemaNameOf,
+  type PostgrestClientOptions,
+  type SchemaNameOf,
   type PostgrestOpenApiSpec,
-  type PostgrestQueryBuilder,
   type PostgrestSingleResponse,
 } from '@supabase/postgrest-js'
 import {
@@ -30,13 +32,7 @@ import {
   type ResolvedSupabaseClientOptions,
 } from './lib/helpers'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
-import type {
-  Fetch,
-  GenericSchema,
-  SupabaseAuthClientOptions,
-  SupabaseClientOptions,
-} from './lib/types'
-import { GetRpcFunctionFilterBuilderByArgs } from './lib/rest/types/common/rpc'
+import type { Fetch, SupabaseAuthClientOptions, SupabaseClientOptions } from './lib/types'
 
 /**
  * Supabase Client.
@@ -44,36 +40,16 @@ import { GetRpcFunctionFilterBuilderByArgs } from './lib/rest/types/common/rpc'
  * An isomorphic Javascript client for interacting with Postgres.
  */
 export default class SupabaseClient<
-  Database = any,
-  // The second type parameter is also used for specifying db_schema, so we
-  // support both cases.
-  // TODO: Allow setting db_schema from ClientOptions.
-  SchemaNameOrClientOptions extends
-    | (string & keyof Omit<Database, '__InternalSupabase'>)
-    | { PostgrestVersion: string } = 'public' extends keyof Omit<Database, '__InternalSupabase'>
-    ? 'public'
-    : string & keyof Omit<Database, '__InternalSupabase'>,
-  SchemaName extends string & keyof Omit<Database, '__InternalSupabase'> =
-    SchemaNameOrClientOptions extends string & keyof Omit<Database, '__InternalSupabase'>
+  // The database types the client reads: the global `SupabaseDatabase` when the postgrest mapper is set up,
+  // `GenericDatabase` (untyped) otherwise. Mirrors `PostgrestClient`.
+  Database = DefaultDatabase,
+  // A schema name, or the v2 options object (`{ PostgrestVersion: string }`, ignored)
+  SchemaNameOrClientOptions extends SchemaNameOf<Database> | PostgrestClientOptions =
+    DefaultSchemaNameOf<Database>,
+  SchemaName extends SchemaNameOf<Database> =
+    SchemaNameOrClientOptions extends SchemaNameOf<Database>
       ? SchemaNameOrClientOptions
-      : 'public' extends keyof Omit<Database, '__InternalSupabase'>
-        ? 'public'
-        : string & keyof Omit<Omit<Database, '__InternalSupabase'>, '__InternalSupabase'>,
-  Schema extends Omit<Database, '__InternalSupabase'>[SchemaName] extends GenericSchema
-    ? Omit<Database, '__InternalSupabase'>[SchemaName]
-    : never = Omit<Database, '__InternalSupabase'>[SchemaName] extends GenericSchema
-    ? Omit<Database, '__InternalSupabase'>[SchemaName]
-    : never,
-  ClientOptions extends { PostgrestVersion: string } = SchemaNameOrClientOptions extends string &
-    keyof Omit<Database, '__InternalSupabase'>
-    ? // If the version isn't explicitly set, look for it in the __InternalSupabase object to infer the right version
-      Database extends { __InternalSupabase: { PostgrestVersion: string } }
-      ? Database['__InternalSupabase']
-      : // otherwise default to 12
-        { PostgrestVersion: '12' }
-    : SchemaNameOrClientOptions extends { PostgrestVersion: string }
-      ? SchemaNameOrClientOptions
-      : never,
+      : DefaultSchemaNameOf<Database>,
 > {
   /**
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
@@ -89,7 +65,7 @@ export default class SupabaseClient<
   protected authUrl: URL
   protected storageUrl: URL
   protected functionsUrl: URL
-  protected rest: PostgrestClient<Database, ClientOptions, SchemaName>
+  protected rest: PostgrestClient<Database, SchemaName, SchemaName>
   protected storageKey: string
   protected fetch?: Fetch
   protected functionsFetch?: Fetch
@@ -429,24 +405,17 @@ export default class SupabaseClient<
     })
   }
 
-  // NOTE: signatures must be kept in sync with PostgrestClient.from
-  from<
-    TableName extends string & keyof Schema['Tables'],
-    Table extends Schema['Tables'][TableName],
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
-  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
-  ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
+   * Typed exactly like `PostgrestClient.from`: the select, filters and mutations are planned from the generated
+   * declarations of `@supabase/postgrest-mapper`.
+   *
    * @param relation - The table or view name to query
    */
-  from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any> {
-    return this.rest.from(relation)
-  }
+  from: PostgrestClient<Database, SchemaName, SchemaName>['from'] = (relation) =>
+    this.rest.from(relation as any)
 
-  // NOTE: signatures must be kept in sync with PostgrestClient.schema
   /**
    * Select a schema to query or perform an function (rpc) call.
    *
@@ -454,16 +423,8 @@ export default class SupabaseClient<
    *
    * @param schema - The schema to query
    */
-  schema<DynamicSchema extends string & keyof Omit<Database, '__InternalSupabase'>>(
-    schema: DynamicSchema
-  ): PostgrestClient<
-    Database,
-    ClientOptions,
-    DynamicSchema,
-    Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
-  > {
-    return this.rest.schema<DynamicSchema>(schema)
-  }
+  schema: PostgrestClient<Database, SchemaName, SchemaName>['schema'] = (schema) =>
+    this.rest.schema(schema)
 
   // NOTE: signatures must be kept in sync with PostgrestClient.getOpenApiSpec
   /**
@@ -484,17 +445,21 @@ export default class SupabaseClient<
     return this.rest.getOpenApiSpec()
   }
 
-  // NOTE: signatures must be kept in sync with PostgrestClient.rpc
   /**
    * Perform a function call.
+   *
+   * Typed exactly like `PostgrestClient.rpc`. The request is a `POST` by default, a `GET` with `get: true` and a
+   * `HEAD` with `head: true`, and never switches method on its own. A `GET` or `HEAD` request the query string can't
+   * carry faithfully (a reserved key, an object value, a string value PostgREST would read as a filter) is refused
+   * client-side with a `PGRSTJS01` error.
    *
    * @param fn - The function name to call
    * @param args - The arguments to pass to the function call
    * @param options - Named parameters
-   * @param options.head - When set to `true`, `data` will not be returned.
+   * @param options.head - When set to `true`, the function is called with `HEAD`: `data` will not be returned.
    * Useful if you only need the count.
-   * @param options.get - When set to `true`, the function will be called with
-   * read-only access mode.
+   * @param options.get - When set to `true`, the function is called with `GET`, which gives it read-only access
+   * mode.
    * @param options.count - Count algorithm to use to count rows returned by the
    * function. Only applicable for [set-returning
    * functions](https://www.postgresql.org/docs/current/functions-srf.html).
@@ -508,42 +473,8 @@ export default class SupabaseClient<
    * `"estimated"`: Uses exact count for low numbers and planned count for high
    * numbers.
    */
-  rpc<
-    FnName extends string & keyof Schema['Functions'],
-    Args extends Schema['Functions'][FnName]['Args'] = never,
-    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args> =
-      GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
-  >(
-    fn: FnName,
-    args: Args = {} as Args,
-    options: {
-      head?: boolean
-      get?: boolean
-      count?: 'exact' | 'planned' | 'estimated'
-    } = {
-      head: false,
-      get: false,
-      count: undefined,
-    }
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    FilterBuilder['Row'],
-    FilterBuilder['Result'],
-    FilterBuilder['RelationName'],
-    FilterBuilder['Relationships'],
-    'RPC'
-  > {
-    return this.rest.rpc(fn, args, options) as unknown as PostgrestFilterBuilder<
-      ClientOptions,
-      Schema,
-      FilterBuilder['Row'],
-      FilterBuilder['Result'],
-      FilterBuilder['RelationName'],
-      FilterBuilder['Relationships'],
-      'RPC'
-    >
-  }
+  rpc: PostgrestClient<Database, SchemaName, SchemaName>['rpc'] = ((...args: [any, any?, any?]) =>
+    this.rest.rpc(...args)) as any
 
   /**
    * Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.

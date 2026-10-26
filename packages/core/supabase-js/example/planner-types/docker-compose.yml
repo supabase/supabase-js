@@ -1,0 +1,38 @@
+# A local Postgres (with pg_jsonschema) and the PostgREST release the planner models.
+# Ports are chosen not to clash with a `supabase start` stack (54321 and up): Postgres 55432, PostgREST 53000.
+name: postgrest-planner-example
+
+services:
+  db:
+    image: public.ecr.aws/supabase/postgres:17.11.0.004
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '55432:5432'
+    volumes:
+      # Runs once, after the image's own setup (roles, the `extensions` schema), on a fresh volume.
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/zz-1-schema.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/zz-2-seed.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -h localhost']
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  rest:
+    image: public.ecr.aws/supabase/postgrest:v16.4
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '53000:3000'
+    environment:
+      PGRST_DB_URI: postgres://authenticator:postgres@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      # The same demo secret and anon key the Supabase CLI uses locally: supabase-js always sends a key.
+      PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      # Aggregates (`count()`, `sum()`...) are an opt-in of PostgREST. The role setting in db/schema.sql
+      # (`alter role authenticator set pgrst.db_aggregates_enabled`) switches them on for every PostgREST that connects
+      # as `authenticator`, this one and the one `pnpm snapshot` starts, so both see the same configuration.
+      # (The image has no shell or curl, so `pnpm db:up` waits for the API with scripts/wait-for-rest.mjs.)

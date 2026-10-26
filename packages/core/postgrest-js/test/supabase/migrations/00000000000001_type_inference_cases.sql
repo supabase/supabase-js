@@ -123,3 +123,380 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA personal TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+
+-- Planner review round 2: computed relationships whose function has an unnamed argument (upstream leaves it out
+-- of its routines but keeps the relationship), single-column OUT results, domains behind computed fields and
+-- the aggregates of types that coerce or have no min/max.
+CREATE TABLE public.computed_parents (id bigint PRIMARY KEY);
+
+CREATE TABLE public.computed_children (id bigint PRIMARY KEY, parent_id bigint);
+
+CREATE FUNCTION public.computed_child(public.computed_parents)
+RETURNS SETOF public.computed_children ROWS 1 LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.computed_children WHERE false;
+$$;
+
+CREATE FUNCTION public.computed_child(n integer)
+RETURNS public.computed_children LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.computed_children WHERE id = n;
+$$;
+
+CREATE FUNCTION public.computed_only_child(public.computed_parents)
+RETURNS public.computed_children LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.computed_children WHERE false;
+$$;
+
+CREATE FUNCTION public.out_inout(INOUT n integer)
+LANGUAGE sql IMMUTABLE AS $$
+  SELECT n + 1;
+$$;
+
+CREATE FUNCTION public.out_single(a integer, OUT doubled bigint)
+LANGUAGE sql IMMUTABLE AS $$
+  SELECT a * 2::bigint;
+$$;
+
+CREATE FUNCTION public.out_table_one_column(a integer)
+RETURNS TABLE (doubled bigint) LANGUAGE sql IMMUTABLE AS $$
+  SELECT a * 2::bigint;
+$$;
+
+CREATE DOMAIN public.item_amount AS integer;
+
+CREATE TABLE public.domain_items (id bigint PRIMARY KEY, qty public.item_amount NOT NULL);
+
+CREATE FUNCTION public.amount(item public.domain_items)
+RETURNS public.item_amount LANGUAGE sql STABLE AS $$
+  SELECT item.qty;
+$$;
+
+CREATE TABLE public.aggregate_types (
+  id bigint PRIMARY KEY,
+  v varchar,
+  bp char(3),
+  nm name,
+  qc "char",
+  cd cidr,
+  ip inet,
+  rc regclass,
+  ts timestamptz,
+  nu numeric(10, 2),
+  ar integer[],
+  st public.user_status,
+  u uuid,
+  flag boolean,
+  doc jsonb
+);
+
+-- Cast and search path resolution (planner): the same domain name `d` in two schemas, a domain named like a
+-- builtin (`cast_c.int4`), and `label(public.cast_cases)` in two schemas, one of them outside the exposed ones.
+CREATE SCHEMA cast_a;
+CREATE SCHEMA cast_b;
+CREATE SCHEMA cast_c;
+GRANT USAGE ON SCHEMA cast_a, cast_b, cast_c TO anon, authenticated, service_role;
+
+-- cast_a.d is not used by any column: nothing but the schema itself mentions it
+CREATE DOMAIN cast_a.d AS text;
+CREATE DOMAIN cast_b.d AS integer;
+CREATE DOMAIN cast_c.int4 AS text;
+
+-- an enum with a user cast function to text that returns NULL, and a domain over it: PostgreSQL uses the cast
+-- function (of the base type for the domain) instead of the output function
+CREATE TYPE public.cast_mood AS ENUM ('ok', 'bad');
+CREATE DOMAIN public.cast_mood_dom AS public.cast_mood;
+CREATE FUNCTION public.cast_mood_text(public.cast_mood)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;
+CREATE CAST (public.cast_mood AS text) WITH FUNCTION public.cast_mood_text(public.cast_mood);
+
+CREATE TABLE public.cast_cases (
+  id bigint PRIMARY KEY,
+  tstz timestamptz NOT NULL,
+  ts timestamp NOT NULL,
+  n integer NOT NULL,
+  b cast_b.d NOT NULL,
+  c cast_c.int4 NOT NULL,
+  mood public.cast_mood NOT NULL,
+  mood_dom public.cast_mood_dom NOT NULL,
+  status public.user_status NOT NULL
+);
+
+CREATE FUNCTION extensions.label(public.cast_cases)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'label'::text; $$;
+
+CREATE FUNCTION personal.label(public.cast_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+-- a domain that only a computed field returns
+CREATE DOMAIN public.return_only_amount AS integer;
+
+CREATE FUNCTION public.return_only(item public.domain_items)
+RETURNS public.return_only_amount LANGUAGE sql STABLE AS $$
+  SELECT item.qty::public.return_only_amount;
+$$;
+
+-- Planner review round 3: a computed relationship takes exactly one argument (an overload with more is no
+-- relationship and does not decide the arity of the one that is), a function with a single OUT column of a
+-- composite type returns that row expanded, and an empty select is a *.
+CREATE TABLE public.arity_parents (id bigint PRIMARY KEY);
+
+CREATE TABLE public.arity_children (id bigint PRIMARY KEY, parent_id bigint);
+
+CREATE FUNCTION public.arity_child(public.arity_parents)
+RETURNS SETOF public.arity_children ROWS 1 LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.arity_children WHERE false;
+$$;
+
+CREATE FUNCTION public.arity_child(p public.arity_parents, n integer)
+RETURNS public.arity_children LANGUAGE sql STABLE AS $$
+  SELECT * FROM public.arity_children WHERE id = n;
+$$;
+
+CREATE FUNCTION public.out_composite(OUT u public.arity_children)
+LANGUAGE sql STABLE AS $$
+  SELECT ROW(1, 2)::public.arity_children;
+$$;
+
+-- Planner review round 3, catalog identity.
+-- A user array type owned by an earlier schema of the search path: `arr_b._d` is a domain named like the array
+-- type of `arr_a.d`, and PostgreSQL resolves `_d` to `arr_a._d` on the path arr_a,arr_b.
+CREATE SCHEMA arr_a;
+CREATE SCHEMA arr_b;
+GRANT USAGE ON SCHEMA arr_a, arr_b TO anon, authenticated, service_role;
+CREATE DOMAIN arr_a.d AS text;
+CREATE DOMAIN arr_b._d AS integer;
+
+-- A domain with a quoted identifier, as a column type and as the return type of a computed field
+CREATE DOMAIN public."Amount" AS integer;
+
+CREATE TABLE public.quoted_amounts (
+  id bigint PRIMARY KEY,
+  amt public."Amount" NOT NULL
+);
+
+CREATE FUNCTION public.amount(public.quoted_amounts)
+RETURNS public."Amount" LANGUAGE sql IMMUTABLE AS $$ SELECT 1::public."Amount"; $$;
+
+-- A function with unnamed OUT arguments: PostgreSQL names them column1, column2 by position among the outputs
+CREATE FUNCTION public.unnamed_out(a integer, OUT integer, OUT text)
+LANGUAGE sql IMMUTABLE AS $$ SELECT a, 'x'::text; $$;
+
+-- Functions that belong to an extension. `lo` is trusted and not privileged for supautils, so the migration role
+-- owns it and may add members to it.
+CREATE SCHEMA ext_owned;
+GRANT USAGE ON SCHEMA ext_owned TO anon, authenticated, service_role;
+CREATE EXTENSION lo WITH SCHEMA ext_owned;
+
+CREATE TABLE public.ext_label_cases (id bigint PRIMARY KEY);
+
+CREATE FUNCTION ext_owned.ext_label(public.ext_label_cases)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'label'::text; $$;
+ALTER EXTENSION lo ADD FUNCTION ext_owned.ext_label(public.ext_label_cases);
+
+CREATE FUNCTION personal.ext_label(public.ext_label_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION extensions.label(public.cast_cases) TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA personal TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION ext_owned.ext_label(public.ext_label_cases) TO anon, authenticated, service_role;
+
+-- Planner review round 4.
+-- A mutation with an empty select: RETURNING holds the primary key, or 1 when the table has none.
+CREATE TABLE public.empty_select_pk (id bigint PRIMARY KEY, name text);
+CREATE TABLE public.empty_select_nopk (a integer, b text);
+CREATE TABLE public.empty_select_cpk (z integer, a text, note text, PRIMARY KEY (z, a));
+
+-- A single OUT argument whose type is a domain over a composite: PostgreSQL expands it like a composite.
+CREATE TABLE public.out_domain_users (id integer, name text);
+CREATE DOMAIN public.out_domain_row AS public.out_domain_users;
+CREATE FUNCTION public.out_domain(OUT u public.out_domain_row)
+LANGUAGE sql STABLE AS $$ SELECT ROW(1, 'Ada')::public.out_domain_users; $$;
+
+-- A single unnamed scalar OUT argument is a scalar function
+CREATE FUNCTION public.single_unnamed_out(OUT integer)
+LANGUAGE sql IMMUTABLE AS $$ SELECT 7; $$;
+
+GRANT ALL ON public.empty_select_pk, public.empty_select_nopk, public.empty_select_cpk, public.out_domain_users TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.out_domain(), public.single_unnamed_out() TO anon, authenticated, service_role;
+
+-- Planner review round 4, computed fields whose extra arguments all have defaults. The request searches public,
+-- then db-extra-search-path (public,extensions); PostgreSQL calls the function of the first schema that has a
+-- candidate, a function whose extra arguments all have defaults being one, and finds none when that schema has two.
+CREATE TABLE public.default_arg_cases (id bigint PRIMARY KEY);
+
+CREATE FUNCTION public.da_default_first(public.default_arg_cases, n integer DEFAULT 0)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'default'::text; $$;
+CREATE FUNCTION extensions.da_default_first(public.default_arg_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+CREATE FUNCTION public.da_exact_first(public.default_arg_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+CREATE FUNCTION extensions.da_exact_first(public.default_arg_cases, n integer DEFAULT 0)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'default'::text; $$;
+
+CREATE FUNCTION public.da_same_schema(public.default_arg_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+CREATE FUNCTION public.da_same_schema(public.default_arg_cases, n integer DEFAULT 0)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'default'::text; $$;
+
+-- an extra argument without a default (or only some of them with one) is not a candidate
+CREATE FUNCTION public.da_required(public.default_arg_cases, n integer)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'required'::text; $$;
+CREATE FUNCTION extensions.da_required(public.default_arg_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+CREATE FUNCTION public.da_partial(public.default_arg_cases, n integer, m integer DEFAULT 0)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'partial'::text; $$;
+CREATE FUNCTION extensions.da_partial(public.default_arg_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+-- the same for a member of an extension: the catalog must not leave out a function a lookup can reach
+CREATE FUNCTION ext_owned.ext_defaulted(public.ext_label_cases, n integer DEFAULT 0)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'default'::text; $$;
+ALTER EXTENSION lo ADD FUNCTION ext_owned.ext_defaulted(public.ext_label_cases, integer);
+CREATE FUNCTION personal.ext_defaulted(public.ext_label_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+-- Planner review round 4, builtin array names. `_integer` is no builtin type (the array of int4 is `_int4`), so a
+-- domain of that name is what `::_integer` means.
+CREATE DOMAIN public._integer AS text;
+
+-- the traced columns of a SQL function read under a JSON path and an aggregate
+CREATE FUNCTION public.users_payload_and_name()
+RETURNS TABLE(payload jsonb, name text) LANGUAGE sql STABLE AS $$ SELECT data, username FROM public.users; $$;
+
+GRANT ALL ON public.default_arg_cases TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION extensions.da_default_first(public.default_arg_cases), extensions.da_exact_first(public.default_arg_cases, integer), extensions.da_required(public.default_arg_cases), extensions.da_partial(public.default_arg_cases) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION ext_owned.ext_defaulted(public.ext_label_cases, integer) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION personal.ext_defaulted(public.ext_label_cases) TO anon, authenticated;
+
+-- SQL functions whose declared output types differ from the types their body selects: the declared type is what the
+-- caller reads, through an assignment coercion that can turn a non-null value into NULL (`timestamptz` infinity
+-- cast to `time`) or into another representation.
+CREATE FUNCTION public.output_time_from_timestamptz()
+RETURNS TABLE(t time, n integer) LANGUAGE sql STABLE AS $$ SELECT tstz, 1 FROM public.cast_cases; $$;
+
+CREATE FUNCTION public.output_text_and_bigint_from_varchar_and_integer()
+RETURNS TABLE(label text, total bigint) LANGUAGE sql STABLE AS $$ SELECT n::varchar(10), n FROM public.cast_cases; $$;
+
+CREATE FUNCTION public.output_text_from_jsonb()
+RETURNS TABLE(payload text) LANGUAGE sql STABLE AS $$ SELECT data FROM public.messages; $$;
+
+CREATE FUNCTION public.output_base_type_of_domain()
+RETURNS TABLE(b integer) LANGUAGE sql STABLE AS $$ SELECT b FROM public.cast_cases; $$;
+
+CREATE FUNCTION public.output_same_domain()
+RETURNS TABLE(b cast_b.d) LANGUAGE sql STABLE AS $$ SELECT b FROM public.cast_cases; $$;
+
+-- A SQL function of an exposed schema that reads a table of public by its bare name: it runs along its own schema,
+-- then db-extra-search-path.
+CREATE FUNCTION personal.message_ids()
+RETURNS TABLE(id bigint) LANGUAGE sql STABLE AS $$ SELECT id FROM messages; $$;
+
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA personal TO anon, authenticated;
+
+-- Scalar functions that return a user array type, and a domain that only a function returns. The array of an enum is
+-- `public._user_status`, whose element is `public.user_status`.
+CREATE FUNCTION public.user_statuses_online()
+RETURNS public.user_status[] LANGUAGE sql STABLE AS $$ SELECT ARRAY['ONLINE']::public.user_status[]; $$;
+
+CREATE FUNCTION public.user_statuses_online_set()
+RETURNS SETOF public.user_status[] LANGUAGE sql STABLE AS $$ SELECT ARRAY['ONLINE']::public.user_status[]; $$;
+
+CREATE FUNCTION public.return_only_amount_of_one()
+RETURNS public.return_only_amount LANGUAGE sql STABLE AS $$ SELECT 1::public.return_only_amount; $$;
+
+CREATE FUNCTION public.return_only_amounts()
+RETURNS public.return_only_amount[] LANGUAGE sql STABLE AS $$ SELECT ARRAY[1]::public.return_only_amount[]; $$;
+
+-- A type of a schema outside db-schemas that is named like a builtin: it is an enum, whatever its name reads like.
+CREATE TYPE extensions.int4 AS ENUM ('hello');
+
+CREATE TABLE public.builtin_named_enum_cases (
+  id integer PRIMARY KEY,
+  greeting extensions.int4 NOT NULL
+);
+
+GRANT ALL ON public.builtin_named_enum_cases TO anon, authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+
+-- A user type named like the array of a builtin type that has none: `void` has no array type, so there is no
+-- builtin `_void` and `::_void` is this domain.
+CREATE DOMAIN public._void AS text;
+
+-- A variadic computed field. PostgreSQL expands `VARIADIC public.cast_cases[]` to the row type of the call
+-- `cast_cases.va_label`, so on the path arr_a,arr_b it calls arr_a.va_label (text), not arr_b.va_label (integer).
+CREATE FUNCTION arr_a.va_label(VARIADIC public.cast_cases[])
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'label'::text; $$;
+
+CREATE FUNCTION arr_b.va_label(public.cast_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+-- A function named like an aggregate. PostgreSQL prefers the exact signature to the builtin `count(any)`, so
+-- `cast_cases?select=mood.count()` calls this function when arr_a is on the search path, and it returns NULL.
+CREATE FUNCTION arr_a.count(public.cast_mood)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;
+
+-- User aggregates named like the builtin `count`, each in a schema of its own so that they only matter on a search
+-- path that lists them. Their state functions return NULL, and PostgreSQL prefers an exact signature to the builtin
+-- `count(any)`: `status.count()` is a nullable text on a path with agg_a, and a spread `...users(count())` counts the
+-- row of `users` (`COUNT(users_1)`), which is a nullable text on a path with agg_b.
+CREATE SCHEMA agg_a;
+CREATE SCHEMA agg_b;
+GRANT USAGE ON SCHEMA agg_a, agg_b TO anon, authenticated, service_role;
+
+CREATE FUNCTION agg_a.count_status_step(text, public.user_status)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;
+CREATE AGGREGATE agg_a.count(public.user_status) (SFUNC = agg_a.count_status_step, STYPE = text);
+
+CREATE FUNCTION agg_b.count_users_step(text, public.users)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;
+CREATE AGGREGATE agg_b.count(public.users) (SFUNC = agg_b.count_users_step, STYPE = text);
+
+-- A variadic computed field of an extension: PostgreSQL expands `VARIADIC public.ext_label_cases[]` to the row type of
+-- `ext_label_cases.ext_va_label`, so on the path ext_owned,personal it calls ext_owned.ext_va_label (text), not
+-- personal.ext_va_label (integer).
+CREATE FUNCTION ext_owned.ext_va_label(VARIADIC public.ext_label_cases[])
+RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT 'label'::text; $$;
+ALTER EXTENSION lo ADD FUNCTION ext_owned.ext_va_label(public.ext_label_cases[]);
+
+CREATE FUNCTION personal.ext_va_label(public.ext_label_cases)
+RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 1; $$;
+
+GRANT EXECUTE ON FUNCTION ext_owned.ext_va_label(public.ext_label_cases[]) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION personal.ext_va_label(public.ext_label_cases) TO anon, authenticated;
+
+-- An enum named like the array type of another type: `und_a._mood` is an enum and `und_b.mood` an integer domain. A
+-- function returning the enum must not make the planner believe in a type `und_a.mood`: on the path und_a,und_b
+-- PostgreSQL reads `::mood` as `und_b.mood`.
+CREATE SCHEMA und_a;
+CREATE SCHEMA und_b;
+GRANT USAGE ON SCHEMA und_a, und_b TO anon, authenticated, service_role;
+CREATE TYPE und_a._mood AS ENUM ('ok');
+CREATE DOMAIN und_b.mood AS integer;
+
+CREATE FUNCTION personal.underscore_mood()
+RETURNS und_a._mood LANGUAGE sql STABLE AS $$ SELECT 'ok'::und_a._mood; $$;
+
+GRANT EXECUTE ON FUNCTION personal.underscore_mood() TO anon, authenticated;
+
+-- A function named like an aggregate whose argument is not the operand but an implicit cast target of it. With
+-- agg_c on the search path, `cast_cases?select=n.count()` (n is an integer) finds count(bigint) as well as the builtin
+-- count("any") and PostgreSQL cannot choose between them, while a text operand matches only the builtin.
+CREATE SCHEMA agg_c;
+GRANT USAGE ON SCHEMA agg_c TO anon, authenticated, service_role;
+CREATE FUNCTION agg_c.count(bigint) RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT NULL::text; $$;
+
+-- A function body that runs along a search_path of its own. `count(mood)` in the
+-- body is `arr_a.count(public.cast_mood)` (text, NULL) on the path arr_a,public, and the builtin `count("any")`
+-- (bigint, never NULL) on the path public alone.
+CREATE FUNCTION public.count_mood_shadowed()
+RETURNS TABLE(n text) LANGUAGE sql STABLE SET search_path = arr_a, public
+AS $$ SELECT count(mood) FROM public.cast_cases; $$;
+
+CREATE FUNCTION public.count_mood_plain()
+RETURNS TABLE(n bigint) LANGUAGE sql STABLE SET search_path = public
+AS $$ SELECT count(mood) FROM public.cast_cases; $$;

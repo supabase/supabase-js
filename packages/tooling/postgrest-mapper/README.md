@@ -1,0 +1,308 @@
+# @supabase/postgrest-mapper
+
+Private for now. The scanner and TypeScript content mapper of the postgrest builder planner (design v5 §4.2, §4.3): a syntax-only pass over TS/TSX that finds supabase/postgrest builder chains and records what must be planned. A library with a typed API: all I/O is injected or explicit, nothing reads `process.cwd` or prints.
+
+## Usage
+
+```ts
+import { scanFiles, scanSource, selectKey } from '@supabase/postgrest-mapper'
+
+const result = scanSource('app.ts', `supabase.from('todos').select('id, title').eq('done', false)`)
+// result.selects  -> [{ target: { kind: 'r', schemas: 'exposed', relation: 'todos' }, select: 'id, title', locations }]
+// result.operands -> [{ target: ..., select: 'id, title', operand: 'done', via: 'column', locations }]
+
+scanFiles(files, { exposedSchemas: ['public'] }) // many files, one deduplicated result
+```
+
+`ScanResult` lists, deduplicated and sorted (the result does not depend on file order):
+
+- `selects`: one per relation or function target and select value. Kind `r` is a read (GET/HEAD), `w` a mutation's `.select()` representation, `f` an rpc (`keys` is its sorted argument key set or `null` when not a literal, `method` is `GET`, `HEAD` or `POST`).
+- `operands`: filter columns against a select (`via: 'column'`), `.order()` columns against a select (`via: 'order'`), or `@table` for a `referencedTable` / `foreignTable` option (`via: 'referencedTable'`).
+- `fallbacks`: per file, every select that is not connected to a chain (a helper taking a builder) paired with each relation and function the file names, at most 64 per file.
+- `unresolved`: selects, relations, functions and schemas that did not resolve to a finite string set.
+- `files`: per-file parse error count and whether the fallback was truncated.
+
+Every request carries `locations` (UTF-16 offsets, 1-based line and column). The select strings are raw cooked strings: no normalisation. `selectKey` / `operandKey` / `orderKey` / `requestKeys` build the keys of postgrest-js `src/types/planner/lookup.ts`.
+
+`ScanOptions`: `exposedSchemas` (what a chain with no `.schema()` or an unresolved one ranges over) and `defaultSchema`: a chain with no `.schema()` call is in `defaultSchema` when it is given, while an explicit `.schema(x)` whose argument does not resolve ranges over every exposed schema, so the default does not hide it. The package is loadable by name from CommonJS (`require`) and from ESM (`import`, through the `default` condition), with its types.
+
+Resolution is lexical: string literals, templates without substitutions, unannotated same-file `const`s, conditionals whose branches both resolve, `as const` and parentheses. Builders resolve through the same `const`s. `let`, parameters and annotated consts are not followed.
+
+- Limit: a chain of conditional `const`s that each reuse the previous one in both branches (`const qN = flag ? qM : qM`, dozens deep) is resolved once per path, so the work doubles with each link and the scan stalls.
+
+## JSON Schema to TypeScript
+
+`jsonSchemaToTs(schema, { jsonType? })` turns a parsed `pg_jsonschema` schema (design v5 §6.1) into a one-line TypeScript type expression. Pure and deterministic: members keep the schema's order, duplicates are dropped, property names are quoted only when they are not identifiers. `jsonType` (default `Json`) names the "any JSON value" type.
+
+The result is always a superset of what the schema accepts. Nothing is guessed narrower.
+
+- Converted: `type` (string or array), `enum`, `const`, `properties`, `required`, `additionalProperties`, `items` (schema or array form), `additionalItems`, `minItems` (tuples only), `anyOf` / `oneOf` (unions), `allOf` (intersections), `nullable: true`, local `$ref` (`#`, `#/$defs/...`, `#/definitions/...`, any JSON pointer), and the boolean schemas (`true` is `Json`, `false` is `never`).
+- Objects: `additionalProperties: false` closes the object. Otherwise (absent, `true` or a schema) an index signature `[k: string]: V` is added, where `V` is the additional type (`Json` by default), plus every named property type that is not already a `Json`, plus `undefined` when a named property is optional, because TypeScript requires named properties to fit the index signature. A required name without a `properties` entry takes the open type. A closed object with no properties is `{ [k: string]: never }`.
+- Widened to `unknown` at that position: `patternProperties` (the open positions of that object), a recursive, remote, malformed or unresolvable `$ref`, an unknown `type`, a non-schema value, nesting deeper than 64 levels.
+- Limit: a `$ref` fragment is split on `/` before it is percent-decoded, so `%2F` stays inside one key (`#/$defs/a%2Fb` reads the key `a/b`) where RFC 6901 would decode it into a separator.
+- Arrays: only the array form of `items` (with `additionalItems`) is a tuple. `prefixItems` is ignored, whatever `$schema` says: pg_jsonschema (checked against 0.3.3) does not implement it under any dialect, so it never constrains an element, and `{ prefixItems: [...], items: true }` is `Json[]`. For the same reason a 2020-12 document's array-form `items` still counts as a tuple.
+- Ignored (they only narrow): `pattern`, `format`, `minimum` and friends, `minLength`, `maxItems`, `uniqueItems`, `not`, `if` / `then` / `else`, `dependent*`, `contains`, titles and descriptions. Type-specific keywords without a `type` constrain nothing the converter can use, so the schema stays `Json`. A `$ref` ignores its siblings.
+
+## View and SQL function tracer
+
+```ts
+import { createTracer } from '@supabase/postgrest-mapper'
+
+const tracer = await createTracer() // loads libpg_query (wasm); options: { pgVersion: 15 | 16 | 17 }, default 17
+const result = await tracer.trace({
+  sql: `SELECT u.username, p.id AS pid FROM (users u LEFT JOIN user_profiles p ON ((p.username = u.username)))`,
+  columns: ['username', 'pid'],
+  catalog: {
+    searchPath: ['public'], // default
+    relations: [
+      {
+        schema: 'public',
+        name: 'users',
+        kind: 'table',
+        columns: [{ name: 'username', notNull: true }],
+      },
+      {
+        schema: 'public',
+        name: 'user_profiles',
+        kind: 'table',
+        columns: [
+          { name: 'id', notNull: true },
+          { name: 'username', notNull: false },
+        ],
+      },
+    ],
+  },
+})
+// result.columns -> [
+//   { nullable: false, source: { schema: 'public', relation: 'users', column: 'username' } },
+//   { nullable: true, source: { schema: 'public', relation: 'user_profiles', column: 'id' }, reason: 'nullable side of a LEFT JOIN' },
+// ]
+```
+
+Plain data in, plain data out: no database, file or console access. `trace` is async only because libpg_query's parse call is; it never rejects for SQL it cannot handle, it returns every column nullable with `error` set.
+
+Input (`TraceInput`):
+
+- `sql`: `pg_get_viewdef` text, or the `prosrc` of a single-query `LANGUAGE sql` function (SETOF / RETURNS TABLE). Exactly one `SELECT` (set operations, `VALUES` and `WITH` included).
+- `columns`: the output column names in order. Only their count matters; the result is positional.
+- `catalog.relations`: per base relation `{ schema, name, kind, columns: [{ name, notNull, type? }] }`, columns in attribute order. `kind: 'table'` (partitioned tables too) uses `notNull`; `'view'` is traced from `definition` (`pg_get_viewdef`) or taken from `traced` (a previous result), so views over views compose; `'other'` (foreign tables, composite types, materialized views) is all nullable: a materialized view is traced like a view only when it is a view (`relkind 'v'`), because its stored rows can lag its definition. Views are traced recursively on demand, once per `trace` call, with a cycle guard (a view that reaches itself is all nullable); a view that cannot be traced is all nullable and never fails the caller.
+- `catalog.searchPath`: schemas searched in order for an unqualified relation, default `['public']`. Use the search path the definitions were rendered under.
+- `parameters` / `functionName` (function bodies): a name that is not a column of the query, `function_name.param` and `$n` resolve to a parameter, an expression of unknown nullability.
+
+Output (`TraceResult`): `columns[i] = { nullable, source?, reason? }` and `error?`. `source` is `{ schema, relation, column }` and is set when the column is a plain pass-through of a base table column (through views, subqueries, CTEs, joins and set operations whose arms agree), whatever its nullability. `reason` is set when `nullable`. The tracer reports provenance and nullability only: the function's volatility and single-row composite returns (design v5 §4.3) are for the caller.
+
+Rules (design v5 §6.2, conservative: anything not proven non-null is nullable):
+
+- Set operations: `UNION` is non-null only when every arm is, `INTERSECT` when any arm is, `EXCEPT` follows the left arm. Each arm is judged by the rules below.
+- `GROUPING SETS`, `ROLLUP`, `CUBE`: column references are nullable.
+- Plain column: its base column's `NOT NULL`, unless its relation is the nullable side of a `LEFT` / `RIGHT` / `FULL` join. `INNER` and `CROSS` joins preserve it. `USING` / `NATURAL` merge columns (the left value, the right one for `RIGHT`, nullable for `FULL`).
+- `count(...)` (also with `FILTER` or `OVER`) and non-null constants are non-null. `COALESCE` is non-null when an argument is. `VALUES` needs every row to prove the column. Limit: a scalar `count` an extension installs is not in the catalog, so a call of it is read as the builtin aggregate.
+- Every other expression is nullable: other aggregates, window functions, scalar subqueries, `CASE`, operators, function calls, whole-row references, functions in `FROM`.
+- Beyond the flowchart: a cast of a non-null expression to a type in `pg_catalog` is non-null (`pg_get_viewdef` wraps many columns in one); a cast to any other type (a domain, whose constraint can reject, or a custom type) or of an expression whose own type is outside `pg_catalog` is nullable. This needs the column `type` (`format_type`, schema qualified outside `pg_catalog`); a column without one is treated as non-built-in, so a cast of it is nullable. A cast drops provenance.
+- Subqueries in `FROM`, `LATERAL`, and `WITH` (including recursive: the self reference is nullable) are traced with the same rules.
+
+## Content mapper (TypeScript 7.1)
+
+The package is a TypeScript 7.1 content mapper (microsoft/typescript-go#4712) for one `.pgrst-index` file per project (design v4 §4.1). The `typescript.contentMapper` field of `package.json` tells `tsc` to run `node bin/content-mapper.cjs` (`dynamicConfig: true`, so `openProject` returns the identity and the watch set).
+
+```jsonc
+// tsconfig.json; run `tsc --runExternalCode`
+{
+  "contentMappers": [
+    {
+      "package": "@supabase/postgrest-mapper",
+      "extensions": [".pgrst-index"],
+      "options": { "postgrest": "16.4", "schema": { "source": "supabase-local" } },
+    },
+  ],
+}
+```
+
+`createContentMapperServer({ input, output, logger, generator })` is the whole server: JSON-RPC 2.0 with `Content-Length` framing over any pair of streams (`bin/content-mapper.cjs` passes stdio). It answers `initialize`, `openProject`, `transform` and `closeProject` (and `shutdown` / `exit`), turns every bad request into a JSON-RPC error, and logs only through the injected logger (`createStreamLogger(process.stderr, process.env)`: verbose when `TS_CONTENT_MAPPER_DEBUG` is set, like `tsc`'s own tracing).
+
+- **Options** are shape-checked by `validateOptions` (`postgrest`, `schema`, optional `defaultSchema`, `scan`, `unplanned`); problems are returned as `optionDiagnostics` and `tsc` reports them at the value in `tsconfig.json`. With invalid options the generator is not called and the index file transforms to an empty module.
+- **The generator** (`ProjectGenerator`) does all the work of `openProject`: `({ configFileName, projectHandle, options, compilerOptions }) => { identity, watchedFiles, text, diagnostics, optionDiagnostics }`. `transform` returns the stored `text` for the project's index file, with no span mappings: `tsc` reports the virtual module's diagnostics at the top of the index file. A generator is shared by all projects and owns every cache that should outlive `closeProject`; the server only keeps the last result per project handle and drops it on `closeProject`.
+- **Index file**: the first file transformed in a project is its index file; any other file with the extension gets diagnostic 2001 and an empty module.
+- `bin/content-mapper.cjs` runs the real generator (`createProjectGenerator`, see "Project generator" below). `stubGenerator` stays exported as a protocol fixture: it declares one `SupabaseSelects` entry (`'r|public|stub|*'`). `POSTGREST_PLANNER_WASM` makes the process use another build of the planner wasm; it exists for this package's own tests, which pin the planner they were written against.
+
+## Schema acquisition
+
+`src/schema/` acquires everything the planner and the mapper need about a database (design v3 §4.2). It is a library: typed functions with every effect injected (`exec`, database `connect`, `fs`, `logger`), so a CLI, the content mapper or tests drive it the same way.
+
+```ts
+const schema = await acquireSchema({ source: 'supabase-local', workdir: '.' })
+// { dump, config, pgVersionNum, postgrestVersion, supplementary }
+planner.load({ config: schema.config, schema: schema.dump /* , supplementary */ })
+```
+
+| Source           | How                                                                                                                                                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `supabase-local` | `supabase status -o json` for the database URL (or `dbUrl`); `docker exec supabase_rest_<project_id> postgrest --dump-config / --dump-schema / --version`. `project_id` comes from `projectId`, `supabase/config.toml`, or the one running stack.      |
+| `postgrest`      | `docker run` of a pinned image (`DEFAULT_POSTGREST_IMAGE`, the planner's upstream release) with `PGRST_DB_URI` and `config` as `PGRST_*` variables, all in the child's environment. A loopback host in `dbUrl` is rewritten to `host.docker.internal`. |
+| `snapshot`       | A committed JSON file. Nothing is executed or connected.                                                                                                                                                                                               |
+
+The first two share one deadline (`timeoutMs` in the deps, `DEFAULT_ACQUIRE_TIMEOUT_MS` = 5 minutes, `Infinity` for none; a snapshot read is not bounded). Each child process gets what is left of it and is sent SIGTERM when it runs out (`docker run` forwards it to its container; `docker exec` does not stop the process it started inside the container), the `pg` connection gets the same budget as `statement_timeout` and `query_timeout`, and the call rejects with a `SchemaAcquisitionError` of code `'timeout'`. A custom `exec` receives `options.timeoutMs` and must reject with `ExecTimeoutError` after killing the child; one that ignores it is still abandoned when the deadline passes, and its connection is closed.
+
+**Schema changes** (`pollIntervalMs`, an option of `supabase-local` and `postgrest` in the tsconfig entry, default `2000`; `0` or `false` turns it off): while a watch (`generate --watch`) or a content mapper server has a project open on a live source, the generator checks the database every interval for DDL, over one connection it keeps open (the database URL that acquisition resolved, `supabase status` included). The check is `schemaFingerprint`, one read-only query hashing the identity of the catalog rows PostgREST's schema cache is built from: it moves on `CREATE`, `ALTER`, `DROP` and `GRANT` and stays put under `ANALYZE`, `VACUUM`, `TRUNCATE` and `REFRESH MATERIALIZED VIEW`. The baseline is the fingerprint taken just before the schema is read; when a later one differs, or the baseline could not be taken (the first fingerprint then counts as a change), the poller writes it to `refresh.stamp` (only when the file holds something else, so two processes polling one project do not trade writes), which is listed in `watchedFiles`: the watch regenerates and `tsc` reopens the project, which acquires the schema again. The plan cache is kept. The fingerprint covers the whole database, so DDL in a schema PostgREST does not expose, or an extension upgrade, also regenerates. A probe that fails or takes longer than 10 seconds closes the connection, keeps the baseline, logs one warning (no URL) until a probe succeeds, and is retried at the next interval. There is one poller per schema; it stops when the last project using it is closed (`closeProject`), or when the generator closes. One-shot commands (`generate`, `generate --check`, `refresh`, `snapshot`, `generateDeclarations`) and a snapshot source never poll, and neither does a generator with `cacheDirectory: false`, which has no stamp to write. `pollIntervalMs` is not part of the identity of the output.
+
+For the first two the supplementary catalog and `server_version_num` are read over `pg` (`connectPg`, or any `DbClient`) inside `BEGIN READ ONLY` ... `ROLLBACK` with an empty `search_path`; the connection must be a single session, not a pool.
+
+**Snapshot** (`writeSnapshot`, `readSnapshot`, `checkSnapshot`): `{ format: 1, postgrest: { release, commit? }, pgVersionNum, config, supplementaryFormat: 1, supplementary, dump }`. Key order is fixed at the top level and sorted below it, so the same data is the same bytes. `checkSnapshot` returns `{ ok }` or `{ reason: 'missing' | 'invalid' | 'drift', differences }` and never writes. The config is redacted (`db-uri`, `jwt-secret` and any key naming a secret or `app.settings.*` are dropped; the planner ignores them), and every error and log line is scrubbed of connection-string passwords, `PGPASSWORD`, `PGRST_*` values and the password of the given URL. Errors are `SchemaAcquisitionError` with a `code`.
+
+**Supplementary catalog** (`Supplementary`): the planner's format-1 document (`relations` with column ordinals, `composites`, `foreignKeys`, `functions`, plus `schemas`, `searchPathFunctions`, `types` and `casts`; a test keeps that part equal to the planner's fixture) plus mapper-only keys the planner ignores:
+
+- per relation: `kind`, `viewDefinition` (`pg_get_viewdef`), `updatable` (`pg_relation_is_updatable`), and per column `type`, `notNull`, `hasDefault`, `identity`, `generated`;
+- per function: `language`, `source` (`prosrc` of a `LANGUAGE sql` function) and `argNames`;
+- `enums`, and `jsonSchemaChecks` (every CHECK that mentions `json(b)_matches_schema`, with `convalidated`);
+- `referencedRelations`: relations outside the exposed schemas that an exposed view selects from, transitively (through `pg_rewrite` / `pg_depend`), so the tracer can follow a view into a private schema. A relation mentioned only inside a function body is not tracked (Postgres records no dependency for it), so the tracer sees it as unknown and its columns as nullable. `pg_catalog`, `information_schema` and `pg_toast` are never included.
+
+Planner-only sections: `schemas` (the schemas the catalog covers: `db-schemas` plus `db-extra-search-path`, both read from the config dump), `searchPathFunctions` (the functions of the covered schemas that are not exposed: a computed field is looked up along the request search path) and `types` (every user type of the covered schemas, used or not: a cast name resolves against them) and `casts` (every `pg_cast` row with a side outside `pg_catalog`: whether a cast from a user type runs a function, which decides if it can return NULL). Everything else covers exactly the exposed schemas (`db-schemas` of the config dump).
+
+Pure builders turn it into the other components' inputs: `buildTraceCatalog` and `buildFunctionTraceInputs` for the tracer (a body is read along the search path of the request, or along the function's own `SET search_path` (`searchPath` of the function) up to the first schema that is not exposed, whose relations are unknown; a path with `$user` or a temporary schema is not traced, so the rows of that function keep every column nullable), and `buildJsonSchemaInput` for `jsonSchemaToTs`. The last is asynchronous (it parses constraint definitions with libpg_query) and reports only validated constraints that are plain conjunctions of `json(b)_matches_schema('<constant>', col)` terms, each optionally guarded by `col IS NULL OR` where `col` is the same plain column the call validates (a guard on an expression or another column makes the constraint ignored); several constraints on a column become an `allOf`, and everything else lands in `ignored` with its reason.
+
+## Project generator
+
+The whole pipeline behind the content mapper, as a library (a CLI `generate` command will call the same functions):
+
+```ts
+const { text, identity, watchedFiles, diagnostics, warnings, optionDiagnostics, keys, cache } =
+  await generateDeclarations({
+    projectDir: '.', // or { configFileName: './tsconfig.json' }
+    options: { postgrest: '16.4', schema: { source: 'supabase-local' }, defaultSchema: 'public' },
+    deps: { logger }, // GeneratorDeps, all optional
+  })
+```
+
+`createGenerator(deps)` returns `{ generate({ configFileName, options, holder? }), release(holder), close() }` (a `holder` that generates from a live source keeps that schema's poller running until it is released or generates for another schema; `close()` stops them all; `createProjectGenerator` holds by project handle and exposes `closeProject(handle)`) and keeps the planner host and the acquired schemas for as long as it lives; `createProjectGenerator(deps)` is the same behind the content mapper's `ProjectGenerator` contract. `deps`: `fs`, `schema` (acquisition deps), `env`, `cwd`, `wasmPath`, `createHost`, `createTracer`, `plannerStamp`, `cacheDirectory` (a function, or `false` for no disk cache), `importFrom`, `logger`. Invalid options give `optionDiagnostics` and `export {}`; a missing snapshot or database URL is an option diagnostic at `schema.path` / `schema.dbUrlEnv`; other acquisition failures are diagnostic 2002, a planner that cannot start (a missing wasm, a wasm of another ABI than `PLANNER_ABI`) or a plan that did not come back (a timeout, a dead worker) 2003, a scan failure 2004, anything unexpected 2005, a planner that models another PostgREST line than `options.postgrest` or the server the schema came from 2006 (all with `start: 0, length: 0`, so `tsc` shows them at the top of the index file). `warnings` are the problems that do not stop the module: a configured or server release of another patch than the planner's, and the planner's own warnings about the schema (a relation left out of `Row` because its `select=*` has no result shape). A call the planner returned no result form for prints as an `error` entry that carries the planner's degraded notes (`media-handler:<schema>.<function>`).
+
+**Release policy** (design v3 §4.4, `compareReleases` / `judgeReleases`): `options.postgrest` and the release the schema was acquired from are each held against the release the planner reports (`info().postgrest.version`; a missing patch is `.0`). Another `<major>.<minor>` line is a 2006 diagnostic and an empty module, because the planner's answers say nothing about that server; another patch is a warning. A cache hit starts no planner, so the release the planner reported when it filled the cache (`plannerRelease`) is what it is held against.
+
+Steps of one `generate`:
+
+1. **Files**: `resolveProjectFiles` reads the tsconfig (`files`, `include`, `exclude`, `extends`, followed through relative paths and packages; JSONC) and keeps the TypeScript/JavaScript sources, or the files matching `options.scan`.
+2. **Scan** the files for builder chains (`scanFiles`) and **derive keys** (`planKeysOf`). A key is `${kind}|${schema}|${relation}|${select}` where `kind` is `r` for reads and `w` for mutations followed by `.select()`, and `select` is the string as written, not normalised, exactly what the consumer's lookup builds. The planner request carries `normalizeSelect(select)` (whitespace removed outside double quotes), which is what postgrest-js sends. A bare `*` select has no entry (the consumer derives it from `SupabaseDatabase`). A chain that may live in several schemas gets a key per candidate schema; a relation missing from one of them is not an error. Pairs the scanner could not connect to a chain are planned speculatively and printed only when they plan; a select a helper applies to an rpc builder is paired with each function the file names, with the call variants (method and key set) observed for that function or, when none was, a `POST` with no keys. An RPC chain's key is `f|${schema}|${function}|${select}` (a bare `*` too: it dispatches the call) and carries neither the key set nor the method: those are the `calls` of the entry. An operand's key is the select's key plus `|${operand}`; an `.order()` column's key is `order|${operand key}`, which starts with `order|` where every other key starts with its kind (`r|`, `w|`, `f|`), so an order column never collides with a filter operand, whatever the column is named. Both are planned too, with one id each in `keys` and in the cache: `call|${schema}|${function}|${select}|${JSON keys}|${method}` per call, `op|${operand key}` per relation operand and `rpcop|${operand key}|${JSON keys}|${method}` per call of an RPC operand.
+3. **Schema**: acquired per `options.schema` (a snapshot is re-read on every run and watched; live sources are memoised per process and acquired again when `refresh.stamp` of the project's cache directory changes, which `refresh` does and, while a watch or a content mapper server runs, the schema change poller does when the database moved (see "Schema changes" above); the stamp is listed in `watchedFiles`). The schema id is the hash of the acquired schema.
+4. **Plan** the keys the cache lacks with `planMany` (`GET` with `Accept-Profile` for `r`; `POST` with body `{}`, `Content-Profile` and `Prefer: return=representation` for `w`; an RPC call is `POST /rpc/fn` with the key set as a JSON body or, for `GET` and `HEAD`, as query parameters; an operand is the select plus `operand=is.null`; an order column is the select plus `order=<column>.asc` and `<column>=is.null`, so the planner checks the order's grammar and the column resolves). A planner failure becomes an `{ error }` entry (`CODE: message`, then `Hint: ...`), except a failure of a speculative pair, or a missing relation when the chain could be in several schemas, which are dropped. `HOST_*` failures are never cached, and neither is a run that has one, whether a key's plan or the `select=*` of a relation: the output reports it as 2003 and a later run plans it again.
+5. **Print** `printSelects` + `printDatabase`, spliced by `printModule`.
+
+`identity` is the hash of the schema id, the sorted `(key, entry digest)` pairs (what the planner answered, `null` for a plan that did not come back, not just the keys asked), `GENERATOR_REVISION`, the planner build, the options, `importFrom`, and the emitted `text` and `diagnostics` (the database context and the emission decisions change the output without changing a key's entry): it changes when anything the text depends on changes, and only then. `watchedFiles` are the scanned files, the snapshot, and every tsconfig of the project's `extends` chain (the entry one included).
+
+**Entries** (`printSelects`): a planned key is `{ row, sources, embeds }`: `row` has every source-backed leaf as `SupabaseColumnType<'schema.relation.column', T>` (nullability outside the wrapper, base-column key through views; `min` / `max` of a plain column keep the wrapper because they return a value of the column, while other aggregates, casts and JSON paths are plain types), to-many embeds are arrays, a nullable embed is `| null`, spreads are merged into the parent per `outputs`; `sources` maps each output name to its column fact; `embeds` maps the dotted embed path to `{ path, outputs, join, cardinality }`.
+
+```ts
+'r|public|users|username, messages(id, channels(id))': {
+  row: { username: SupabaseColumnType<'public.users.username', string>; messages: { id: SupabaseColumnType<'public.messages.id', number>; channels: { id: SupabaseColumnType<'public.channels.id', number> } }[] }
+  sources: { username: 'username' }
+  embeds: {
+    messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
+    'messages.channels': { path: ['messages', 'channels']; outputs: [['messages', 'channels']]; join: 'left'; cardinality: 'one' }
+  }
+}
+```
+
+A rejected key is `{ error: "PGRST200: Could not find a relationship ..." }`, which the consumer shows as the builder's error.
+
+**Cache**: `<projectDir>/node_modules/.cache/postgrest-mapper/postgrest-mapper-<first 32 hex of the schema id>.json`, one file per schema: `{ format, generator, planner, plannerRelease, schema, context: { plans, traces, jsonSchemas, diagnostics }, entries: { [id]: { shape, degraded } | { call: { form, shape, rpc, returns, filters, degraded } } | { error, code } } }`. A run whose keys are all cached (`cache: 'hit'`) starts no planner and loads no schema; with some keys cached the run is `'partial'` and plans the rest. A stale, unreadable or differently-versioned file is a miss.
+
+**RPC entries** (`printRpcEntry`): `{ calls: [...] }`, one call per (key set, method) the project sends, sorted. The key sets are the consumer's: the literal keys of the `args` object, plus (because the consumer also looks up the key sets of optional keys, or keys whose type includes `undefined`, left out) every strict subset that drops only keys some overload takes as optional; an `args` that is not an object literal is planned per overload (required keys plus every subset of up to 6 optional ones). Overloads are the planner's to resolve: an ambiguous key set (`PGRST203`) or one no function takes (`PGRST202`) is a call `{ keys, method, error }`; a failure of a subset the project does not send is dropped. A function no candidate schema defines gets no entry (the consumer reports it). A call is `{ keys, method, form, row, source }` plus, for a projected select, `sources` and `embeds`: `form` is `'rows'` (a table, a composite or a scalar returned as a set), `'single-row'` or `'single-scalar'`; `row` comes from the plan's `shape`, and for a scalar from the function's return type (`routine.returnType`, which the planner reports untyped): `T | null` for one value, `T | null` per element of a set (a scalar set can hold NULL, and no function body is traced to prove otherwise), `null` for `void`. The root fields of a function's rows are nullable (`reason: 'function-rows'`) and typed by the column's own type, not its JSON Schema. `source` is the select-`*` plan of the same call (`never` for a scalar).
+
+```ts
+'f|public|function_returning_set_of_rows|username, messages(id)': {
+  calls: [
+    {
+      keys: never
+      method: 'POST'
+      form: 'rows'
+      row: { username: SupabaseColumnType<'public.users.username', string> | null; messages: { id: SupabaseColumnType<'public.messages.id', number> }[] }
+      source: { row: { ... }; sources: { ... } }
+      sources: { username: 'username' }
+      embeds: {
+        messages: { path: ['messages']; outputs: [['messages']]; join: 'left'; cardinality: 'many' }
+      }
+    },
+  ]
+}
+```
+
+**Operands** (`printOperands`, `interface SupabaseOperands`): the key of every filter operand and every order column the scanner reports that is not a plain column of the row (the consumer reads those from the builder's row), planned as `select=<select>&<operand>=is.null` and typed from the planner's `filters`: `{ type, embed? }` (`type` is `SupabaseColumnType<key, T>` of the column the filter reaches, through views; `PgrstJson` / `PgrstJsonText` of it for a JSON path; `embed` is the embed path of the column), `{ type: unknown; embed: [...] }` for a tested embed (`.not('channels', 'is', null)`), `{ error }` when the planner rejects the request. An order column's entry only says whether the planner accepts it, as an order: `{ ok: true }` or `{ error }` (a dotted path, an embed absent from the select, a to-many embed). Its column is not typed, and a column of an embed is not checked for existence. An RPC's entry is `{ calls: [{ keys, method, type, embed? } | { keys, method, error }] }` (`ok: true` in place of `type` for an order column), one per call of the chain. An operand through a `referencedTable` option has no entry: its key is never looked up. A column the planner cannot resolve because the catalog does not describe it (a computed field, the columns of an RPC returning a table type) is `unknown`. Limit: an RPC operand's JSON path over an `OUT` column the tracer typed is `unknown` too (the same path in the select is typed).
+
+```ts
+'r|public|messages|id, channels(id, slug)|channels.slug': { type: SupabaseColumnType<'public.channels.slug', string>; embed: ['channels'] }
+```
+
+## Planner host and database declarations
+
+The acquire, plan, print pipeline for the `SupabaseDatabase` global (design v5 §5.1), run by `createGenerator` (see above). Pure and typed; I/O is injected.
+
+```ts
+const host = createPlannerHost() // { wasmPath?, loadTimeoutMs = 20000, planTimeoutMs = 2000, logger? }
+await host.load(acquired)
+await host.close()
+```
+
+**`createPlannerHost`** (`src/host/`) runs `@supabase/postgrest-planner` in a `worker_threads` worker, because the wasm runtime cannot be interrupted. Calls are serialised. A `load` over 20 s or a `plan` over 2 s terminates the worker; the next call starts a new one and reloads the cache from the inputs the host kept. `load(acquired)`, `plan(request)` and `planMany(requests)` never throw for planner failures: the result is the planner's own `PlannerError` value, or one with a `HOST_ERROR` code (`HOST_TIMEOUT`, `HOST_WORKER_FAILED` for a crash or a missing wasm, `HOST_NOT_LOADED`, `HOST_CLOSED`; `isHostFailure(result)` tells them from the planner's verdicts). `info()` returns the planner's build (`{ abi, ghc, postgrest: { version, tag, commit } }`) or a failure value. Every worker checks the wasm's ABI against `PLANNER_ABI` when it starts, so a wasm of another ABI fails `info`, `load` and `plan` with `HOST_WORKER_FAILED` and a message naming both ABIs. `wasmPath` defaults to the planner package's copy.
+
+**The generator** (`src/generate/`) loads the schema into the host, plans `GET /<relation>?select=*` for every exposed relation (the printed `ResultShape` is `Row`), traces views for nullability, converts JSON Schema CHECKs, and calls the printer. Relations outside the PostgREST schema cache (partitions) are left out with an `info` note in the logger's debug trail; a planner that cannot start or load the schema is diagnostic 2003 with an empty module.
+
+**Printer** (`src/printer/`): `printDatabase` returns the members of `interface SupabaseDatabase` per exposed schema, `printModule` wraps them in the declaration file (`Json` / `JsonIn`, `declare global`, `SupabasePgrstStatus`). `selects` and `operands` are the extension point for the select index: complete `interface SupabaseSelects { ... }` / `interface SupabaseOperands { ... }` text spliced verbatim into the same `declare global`.
+
+- Every source column value is `SupabaseColumnType<'schema.relation.column', Derived>`, the column's own nullability outside the wrapper. A view column traced to a base column uses the base column's key and the traced nullability. A validated JSON Schema CHECK is the `Derived` type of its column.
+- `Insert` requires a column only when it is `NOT NULL` with no default and no identity; generated columns and `GENERATED ALWAYS` identities are left out of `Insert` and `Update`. Views get `Insert` / `Update` only when `pg_relation_is_updatable` says so (every column optional).
+- `FactColumns`: plain columns that are not `json(b)`, composite or row types. `Relationships` come from the PostgREST schema dump (many-to-one and one-to-one children).
+- Functions: `Args` / `Returns` with overloads as a union; arguments with a default are optional; trigger functions are left out.
+- Type mapping (`tsTypeOf`, `src/printer/pg-types.ts`): `bool` is `boolean`; `int2` `int4` `int8` `float4` `float8` `numeric` are `number`; `text`, `varchar`, `bpchar`, `uuid`, `bytea`, the date and time types, `citext` and `vector` are `string`; `json` / `jsonb` are `Json` (`JsonIn` in function arguments); `void` is `undefined`; enums are label unions, composites objects with nullable attributes, a relation used as a type (a column, argument or return of a table's row type) a composite value with every attribute nullable (PostgreSQL enforces a table's constraints on its rows, not on standalone composite values, so it is not the table's `Row`), domains resolve to their base type; arrays append `[]` (non-null elements, one dimension: see Limits below); the elements of a set-returning scalar function are `T | null`; string literals (enum labels, names, planner messages) are escaped by one shared escaper (`src/printer/literal.ts`), so line breaks, U+2028 / U+2029, control characters and lone surrogates stay on one line and read back exact; anything else (ranges, `tsvector`, `inet`, ...) is `unknown`.
+
+**Limits.** Array elements are typed non-null and one-dimensional: an `int4[]` column is `number[]`. PostgreSQL has no element-level `NOT NULL` and doesn't enforce the declared dimensions, so the same column can hold `{1,NULL}` or `{{1,2},{3,4}}`, and the catalog can't prove either away. When a column does hold null elements or nested arrays, state its type per column with `SupabaseColumnTypes` (declared next to your code; it replaces the derived type in every select, filter and mutation payload that reaches the column, and the column's own nullability stays outside):
+
+```ts
+declare global {
+  interface SupabaseColumnTypes {
+    'public.readings.samples': (number | null)[]
+    'public.boards.cells': number[][]
+  }
+}
+```
+
+## CLI
+
+`postgrest-mapper` (`bin/postgrest-mapper.cjs`) is a thin front end: it parses arguments, builds the injected dependencies, calls a library operation and presents its structured result. `runCli(argv, { stdout, stderr, fs?, env?, cwd?, deps?, signal?, watch?, mtime?, debounceMs?, version? })` (`src/cli/`) is the whole program and resolves to the exit code (0 success, 1 failure, 2 usage error), so it runs in-process in tests.
+
+The operations are library functions (`src/operations/`, exported from the package) with injected I/O (`deps`: `fs`-like `OperationFs`, `exec`, `schema` options including `timeoutMs`, `createHost`, `logger`; `watch`, `mtime` and `clock` for the watch loop) and structured results; they throw `OperationError` (`code`: `config-unreadable`, `config-invalid`, `no-mapper-entry`, `edit-failed`, `planner-unavailable`, `invalid-input`) for what is not a diagnostic:
+
+- `generate(deps, input?) -> GenerateResult` (`text`, `diagnostics` with file, line and column, `warnings`, `watchedFiles`, `cache`, `identity`), `write(deps, { out, ...input }) -> WriteResult` (`+ out, changed`), `check(deps, { out, ...input }) -> CheckResult` (`status`: `up-to-date`, `missing`, `stale`, `failed`; `drift`).
+- `watch(deps, input, { debounceMs?, signal?, onEvent }) -> Promise<void>` runs `write` again when a dependency changes (`WatchEvent`: `run` with the `WriteResult`, or `error`), through `watchLoop`.
+- `refresh(deps, { out?, ...input }) -> RefreshResult` clears the cache and touches the refresh stamp, then regenerates.
+- `init(deps, { project?, out?, snapshot?, generate?, scripts? }) -> InitResult` (`changes`: the files created or edited; `producer`: which of the content mapper and the generated file supplies the declarations, and why; `snapshot`, `generate` and `scripts`: what each step did, or why it was skipped), `snapshot(deps, input) -> SnapshotResult`.
+
+```sh
+postgrest-mapper generate --project tsconfig.json --out src/supabase.types.d.ts [--check | --watch]
+postgrest-mapper print --project tsconfig.json
+postgrest-mapper refresh --project tsconfig.json [--out src/supabase.types.d.ts]
+postgrest-mapper init --project tsconfig.json [--out src/supabase.types.d.ts] [--skip-snapshot] [--skip-generate] [--skip-scripts]
+postgrest-mapper snapshot --out supabase/postgrest-schema.json [--check] [--workdir dir] [--schema-source postgrest --db-url-env NAME]
+```
+
+- The mapper options come from the tsconfig's `contentMappers` entry for `.pgrst-index`; `--schema-source`, `--snapshot` and `--db-url-env` replace the matching part of its `schema` option. Diagnostics print as `file:line:col code message` (option problems at the value in the tsconfig) and exit 1; nothing is written then.
+- `generate --check` never writes and prints the first differing lines when the file is stale. `--watch` regenerates (debounced) when a scanned file, the snapshot or the tsconfig changes, and stops on SIGINT. It watches the directories of those files without recursing, so a file in a new directory is picked up at the next run. A file edited while a generation was running, before its directory was watched, is caught by its modification time and regenerates.
+- `init` sets a project up: it adds the `contentMappers` entry for `.pgrst-index` (the PostgREST line is the planner's; `schema.source` is `supabase-local` when a `supabase/config.toml` is found upwards from the project, a snapshot at `supabase/postgrest-schema.json` otherwise: write it with `snapshot`) and creates the index stub `src/supabase.pgrst-index` and adds it to the tsconfig's `include` (or `files`). It edits the text in place, so comments and formatting stay (a new property is inserted in the style of the neighbouring ones); a second run changes nothing and never overwrites the index file. Exactly one producer of the global declarations is visible to the project, chosen from the `typescript` package that resolves from the project (through `node_modules` upwards):
+  - TypeScript 7.1 or later: the content mapper is the producer. No declaration file is included in the tsconfig or generated, because the index file and a generated file would declare the same globals and disagree after a schema change (TS2717). A declaration file that already exists (from an earlier `init`, or a project that moved to 7.1) is reported, with its `include` or `types` entry, as something to delete: `init` never deletes it. The only script it adds is `postgrest:snapshot`: there is no watch to run and no file to check, because every `tsc --runExternalCode` run reads the schema again.
+  - Older TypeScript, no TypeScript found, or a `deno.json(c)` beside the tsconfig (Deno has no content mappers): the generated file is the producer. It goes to `include` (or `files`) and, for Deno, to `compilerOptions.types` of the `deno.json(c)`, and the `contentMappers` entry only holds the options the CLI reads (older compilers ignore it). `init` then leaves a working setup: with `supabase-local` it writes `supabase/postgrest-schema.json` from the running stack (the tsconfig keeps the live source, so development polls the database), generates the declaration file once, and adds the scripts that are missing to the nearest `package.json` (existing ones are never rewritten, its indentation is kept, paths are relative to it, `--project` is added only for a tsconfig that is not `tsconfig.json` beside it): `postgrest:watch` (`generate --watch`), `postgrest:check` (`generate --check --snapshot supabase/postgrest-schema.json`: CI reads the committed snapshot and needs no database) and `postgrest:snapshot` (`snapshot --out supabase/postgrest-schema.json`, with `--workdir` when the `supabase/config.toml` is not beside the `package.json`; run it after each migration and commit the file). With a snapshot source only the first two exist, both `generate ... --check`/`--watch` on the configured snapshot.
+
+  `InitResult.producer` names the mode (`content-mapper` or `generated-file`), why, and the `stale` declaration file to delete. A step that cannot run (the stack is down, there is no snapshot yet, no `package.json`) is reported as skipped, never as a failure; `--skip-snapshot`, `--skip-generate` and `--skip-scripts` switch a step off. The scripts call the `postgrest-mapper` binary, so the package has to be a dependency of the project.
+
+- `refresh` removes `node_modules/.cache/postgrest-mapper` of the project, touches `refresh.stamp` there and regenerates. A live schema is acquired once per process, but the stamp is one of the generated module's dependencies: a watch or a content mapper server running elsewhere sees it change and acquires the schema again. After a migration `refresh` is no longer needed while one of them runs (they poll the database and write the stamp themselves); it stays for the plan cache, for a poll that is turned off, and for one-shot use.
+- The CLI threads no schema options of its own, so there is no `--timeout` flag; `deps.schema.timeoutMs` reaches `generate`, `write`, `check`, `watch`, `refresh` and `snapshot` through the operations' `deps`.
+- Limits of `init`: it reads the `include` and `files` a tsconfig inherits, not an inherited `exclude`, so a base `exclude` that covers the index or the generated file still hides it (remove the file from that `exclude`). The scripts put a path with other characters than letters, digits and `@%+=:,./-` in double quotes, where a `$` or a backtick is still expanded by the shell: edit those scripts by hand. In content-mapper mode there is no `postgrest:check`: CI runs `tsc --runExternalCode`, which reads the schema the entry names, so a `supabase-local` entry needs the stack in CI.
+
+## Node
+
+Compiled to CommonJS like the planner. `oxc-parser` and `@supabase/pg-parser` load ESM (the latter through its wasm loader), so the CJS build relies on `require(esm)` (Node `^20.19.0 || >=22.12.0`). Jest cannot do that itself: `test/support/oxc-parser.cjs` and `test/support/pg-parser.cjs` map the imports to Node's real `require`.
+
+## Development
+
+```sh
+pnpm nx build postgrest-mapper
+pnpm nx test postgrest-mapper
+```
+
+`test/method-drift.test.ts` reads the postgrest-js builder sources and fails when the scanner's method lists drift from the builders' column-taking methods.

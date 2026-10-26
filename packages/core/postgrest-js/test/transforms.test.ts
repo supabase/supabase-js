@@ -1,7 +1,6 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 
-const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')
+const postgrest = new PostgrestClient('http://localhost:54321/rest/v1')
 
 test('order', async () => {
   const res = await postgrest.from('users').select().order('username', { ascending: false })
@@ -60,6 +59,24 @@ test('order', async () => {
   `)
 })
 
+test('order by a column of a to-one embed', async () => {
+  const res = await postgrest
+    .from('messages')
+    .select('id, channels(id)')
+    .order('channels(id)', { ascending: false })
+    .order('id')
+  expect(res.error).toBeNull()
+  expect(res.data).toEqual([
+    { id: 3, channels: { id: 3 } },
+    { id: 4, channels: { id: 3 } },
+    { id: 2, channels: { id: 2 } },
+    { id: 1, channels: { id: 1 } },
+  ])
+  // the order does not change the result type
+  const rows: { id: number; channels: { id: number } }[] | null = res.data
+  expect(rows).toHaveLength(4)
+})
+
 test('order on multiple columns', async () => {
   const res = await postgrest
     .from('messages')
@@ -108,7 +125,11 @@ test('order on multiple columns', async () => {
 })
 
 test('limit', async () => {
-  const res = await postgrest.from('users').select().limit(1)
+  const res = await postgrest
+    .from('users')
+    .select()
+    .order('username', { ascending: false })
+    .limit(1)
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -130,24 +151,17 @@ test('limit', async () => {
 })
 
 test('range', async () => {
-  const res = await postgrest.from('users').select().range(1, 3)
+  const res = await postgrest.from('users').select().order('username').range(1, 3)
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
         {
-          "age_range": "[25,35)",
-          "catchphrase": "'bat' 'cat'",
-          "data": null,
-          "status": "OFFLINE",
-          "username": "kiwicopple",
-        },
-        {
-          "age_range": "[25,35)",
-          "catchphrase": "'bat' 'rat'",
+          "age_range": "[20,30)",
+          "catchphrase": "'fat' 'rat'",
           "data": null,
           "status": "ONLINE",
-          "username": "awailas",
+          "username": "dragarcia",
         },
         {
           "age_range": "[20,30)",
@@ -163,6 +177,13 @@ test('range', async () => {
           "status": "ONLINE",
           "username": "jsonuser",
         },
+        {
+          "age_range": "[25,35)",
+          "catchphrase": "'bat' 'cat'",
+          "data": null,
+          "status": "OFFLINE",
+          "username": "kiwicopple",
+        },
       ],
       "error": null,
       "status": 200,
@@ -173,7 +194,12 @@ test('range', async () => {
 })
 
 test('single', async () => {
-  const res = await postgrest.from('users').select().limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select()
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -295,16 +321,16 @@ test('select on rpc', async () => {
 })
 
 test('csv', async () => {
-  const res = await postgrest.from('users').select().csv()
+  const res = await postgrest.from('users').select().order('username').csv()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": "username,data,age_range,status,catchphrase
-    supabot,,"[1,2)",ONLINE,"'cat' 'fat'"
-    kiwicopple,,"[25,35)",OFFLINE,"'bat' 'cat'"
     awailas,,"[25,35)",ONLINE,"'bat' 'rat'"
+    dragarcia,,"[20,30)",ONLINE,"'fat' 'rat'"
     jsonuser,"{""foo"": {""bar"": {""nested"": ""value""}, ""baz"": ""string value""}}","[20,30)",ONLINE,"'json' 'test'"
-    dragarcia,,"[20,30)",ONLINE,"'fat' 'rat'"",
+    kiwicopple,,"[25,35)",OFFLINE,"'bat' 'cat'"
+    supabot,,"[1,2)",ONLINE,"'cat' 'fat'"",
       "error": null,
       "status": 200,
       "statusText": "OK",
@@ -335,6 +361,7 @@ test('stripNulls with single', async () => {
     .from('users')
     .select()
     .eq('username', 'supabot')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
     .stripNulls()
@@ -439,7 +466,7 @@ test('explain with json/text format', async () => {
   )
 
   const res2 = await postgrest.from('users').select().explain()
-  expect(res2.data).toMatch(/Aggregate  \(cost=.*/)
+  expect(res2.data).toMatch(/Aggregate {2}\(cost=.*/)
 })
 
 test('explain with options', async () => {
@@ -476,6 +503,43 @@ test('explain with options', async () => {
     }
   `
   )
+})
+
+test('single() after maybeSingle() leaves the plan an array', async () => {
+  const res = await postgrest
+    .from('users')
+    .select()
+    .order('username', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+    .single()
+    .explain({ format: 'json' })
+  expect(res.error).toBeNull()
+  expect(Array.isArray(res.data)).toBe(true)
+  expect(res.data?.[0]).toHaveProperty('Plan')
+})
+
+test('maybeSingle() after single() unwraps the plan and returns null for no rows', async () => {
+  const plan = await postgrest
+    .from('users')
+    .select()
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
+    .maybeSingle()
+    .explain({ format: 'json' })
+  expect(plan.error).toBeNull()
+  expect(Array.isArray(plan.data)).toBe(false)
+  expect(plan.data).toHaveProperty('Plan')
+
+  const none = await postgrest
+    .from('users')
+    .select()
+    .eq('username', 'does-not-exist')
+    .single()
+    .maybeSingle()
+  expect(none.error).toBeNull()
+  expect(none.data).toBeNull()
 })
 
 test('rollback insert/upsert', async () => {

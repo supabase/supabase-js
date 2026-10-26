@@ -1,18 +1,31 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
-import { RequiredDeep } from 'type-fest'
+import type { Json } from './postgrest.generated'
 
-const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')
+const postgrest = new PostgrestClient('http://localhost:54321/rest/v1')
+
+type MessageRow = SupabaseDatabase['public']['Tables']['messages']['Row']
 
 test('embedded select', async () => {
   // By default postgrest will omit computed field from "star" selector
-  const res = await postgrest.from('users').select('messages(*)')
+  const res = await postgrest.from('users').select('messages(*)').order('username')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
         {
           "messages": [
             {
@@ -45,18 +58,6 @@ test('embedded select', async () => {
             },
           ],
         },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
       ],
       "error": null,
       "status": 200,
@@ -64,7 +65,7 @@ test('embedded select', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
       messages: z.array(
@@ -78,20 +79,30 @@ test('embedded select', async () => {
       ),
     })
   )
-  // TODO: older versions of zod require this trick for non optional unknown data type
-  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = { messages: MessageRow[] }[]
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
 test('embedded select with computed field explicit selection', async () => {
   // If the computed field is explicitely requested on top of the star selector, it should be present in the result
-  const res = await postgrest.from('users').select('messages(*, blurb_message)')
+  const res = await postgrest.from('users').select('messages(*, blurb_message)').order('username')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
+        {
+          "messages": [],
+        },
         {
           "messages": [
             {
@@ -128,18 +139,6 @@ test('embedded select with computed field explicit selection', async () => {
             },
           ],
         },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
-        {
-          "messages": [],
-        },
       ],
       "error": null,
       "status": 200,
@@ -147,7 +146,7 @@ test('embedded select with computed field explicit selection', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.array(
     z.object({
       messages: z.array(
@@ -162,10 +161,17 @@ test('embedded select with computed field explicit selection', async () => {
       ),
     })
   )
-  // TODO: older versions of zod require this trick for non optional unknown data type
-  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = {
+    messages: {
+      id: number
+      data: Json
+      message: string | null
+      username: string
+      channel_id: number
+      blurb_message: string | null
+    }[]
+  }[]
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -175,12 +181,25 @@ describe('embedded filters', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
+      .order('username')
       .eq('messages.channel_id' as any, 1)
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
             "messages": [
               {
                 "channel_id": 1,
@@ -191,18 +210,6 @@ describe('embedded filters', () => {
               },
             ],
           },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
         ],
         "error": null,
         "status": 200,
@@ -210,7 +217,7 @@ describe('embedded filters', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -224,21 +231,32 @@ describe('embedded filters', () => {
         ),
       })
     )
-    // TODO: older versions of zod require this trick for non optional unknown data type
-    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
   test('embedded or', async () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .or('channel_id.eq.2,message.eq.Hello World 👋', { foreignTable: 'messages' })
+      .order('username')
+      .or('channel_id.eq.2,message.eq.Hello World 👋', { referencedTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -257,18 +275,6 @@ describe('embedded filters', () => {
               },
             ],
           },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
         ],
         "error": null,
         "status": 200,
@@ -276,7 +282,7 @@ describe('embedded filters', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -290,23 +296,34 @@ describe('embedded filters', () => {
         ),
       })
     )
-    // TODO: older versions of zod require this trick for non optional unknown data type
-    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
   test('embedded or with and', async () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
+      .order('username')
       .or('channel_id.eq.2,and(message.eq.Hello World 👋,username.eq.supabot)', {
-        foreignTable: 'messages',
+        referencedTable: 'messages',
       })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -325,18 +342,6 @@ describe('embedded filters', () => {
               },
             ],
           },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
         ],
         "error": null,
         "status": 200,
@@ -344,7 +349,7 @@ describe('embedded filters', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -358,10 +363,8 @@ describe('embedded filters', () => {
         ),
       })
     )
-    // TODO: older versions of zod require this trick for non optional unknown data type
-    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 })
@@ -371,11 +374,24 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .order('channel_id' as any, { foreignTable: 'messages', ascending: false })
+      .order('username')
+      .order('channel_id' as any, { referencedTable: 'messages', ascending: false })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -408,18 +424,6 @@ describe('embedded transforms', () => {
               },
             ],
           },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
         ],
         "error": null,
         "status": 200,
@@ -427,7 +431,7 @@ describe('embedded transforms', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -441,10 +445,8 @@ describe('embedded transforms', () => {
         ),
       })
     )
-    // TODO: older versions of zod require this trick for non optional unknown data type
-    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -452,12 +454,25 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .order('channel_id' as any, { foreignTable: 'messages', ascending: false })
-      .order('username', { foreignTable: 'messages', ascending: false })
+      .order('username')
+      .order('channel_id' as any, { referencedTable: 'messages', ascending: false })
+      .order('username', { referencedTable: 'messages', ascending: false })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -490,18 +505,6 @@ describe('embedded transforms', () => {
               },
             ],
           },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
         ],
         "error": null,
         "status": 200,
@@ -509,7 +512,7 @@ describe('embedded transforms', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -523,10 +526,8 @@ describe('embedded transforms', () => {
         ),
       })
     )
-    // TODO: older versions of zod require this trick for non optional unknown data type
-    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -534,11 +535,24 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .limit(1, { foreignTable: 'messages' })
+      .order('username')
+      .limit(1, { referencedTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -550,18 +564,6 @@ describe('embedded transforms', () => {
               },
             ],
           },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
         ],
         "error": null,
         "status": 200,
@@ -569,7 +571,7 @@ describe('embedded transforms', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -583,10 +585,8 @@ describe('embedded transforms', () => {
         ),
       })
     )
-    // TODO: older versions of zod require this trick for non optional unknown data type
-    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -594,11 +594,24 @@ describe('embedded transforms', () => {
     const res = await postgrest
       .from('users')
       .select('messages(*)')
-      .range(1, 1, { foreignTable: 'messages' })
+      .order('username')
+      .range(1, 1, { referencedTable: 'messages' })
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
+          {
+            "messages": [],
+          },
           {
             "messages": [
               {
@@ -610,18 +623,6 @@ describe('embedded transforms', () => {
               },
             ],
           },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
-          {
-            "messages": [],
-          },
         ],
         "error": null,
         "status": 200,
@@ -629,7 +630,7 @@ describe('embedded transforms', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         messages: z.array(
@@ -643,10 +644,8 @@ describe('embedded transforms', () => {
         ),
       })
     )
-    // TODO: older versions of zod require this trick for non optional unknown data type
-    // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = { messages: MessageRow[] }[]
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 })

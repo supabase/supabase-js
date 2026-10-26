@@ -1,21 +1,34 @@
 import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
-import { Fetch, GenericSchema, ClientServerOptions } from './types/common/common'
-import { GetRpcFunctionFilterBuilderByArgs } from './types/common/rpc'
+import type { Fetch } from './types/common/common'
+import type { DefaultDatabase } from './types/planner/globals'
+import type { MS } from './types/planner/lookup'
+import type { RpcOp, RpcOptions, SelCount } from './types/planner/options'
+import type {
+  AllKeys,
+  ArgsMismatch,
+  BaseOfCalls,
+  CallReject,
+  CallsOf,
+  FnDefs,
+  ReadRefusal,
+  RelDefs,
+  ReturnsOf,
+  RowCalls,
+  RpcB,
+  SchemaOf,
+  Unchecked,
+} from './types/planner/rpc'
+import type { RpcDesc } from './types/planner/lookup'
 import PostgrestError from './PostgrestError'
 import { fetchWithRetry } from './fetchWithRetry'
-import {
+import { rpcReadRefusal } from './rpcReadRefusal'
+import type {
   PostgrestOpenApiSpec,
   PostgrestResponseFailure,
   PostgrestSingleResponse,
 } from './types/types'
 
-/**
- * Build the error for a failed OpenAPI request. PostgREST answers with a JSON
- * error object when it produced the failure itself; proxies and disabled
- * OpenAPI output answer with plain text or an empty body, in which case the
- * body (or, failing that, the status text) becomes the message.
- */
 function toOpenApiError(body: string, statusText: string): PostgrestError {
   try {
     const parsed = JSON.parse(body)
@@ -59,33 +72,68 @@ function toTransportFailure(
   }
 }
 
+// the `args` parameter of an rpc: the argument object, or what is wrong with it
+type RpcArgs<
+  Database,
+  SchemaName extends string & keyof Database,
+  F extends string & keyof FnDefs<Database, SchemaName>,
+  A,
+  O,
+> = [AllKeys<A>] extends [never]
+  ? A
+  : [ReadRefusal<A, O>] extends [never]
+    ? [CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>] extends [never]
+      ? Unchecked<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>> extends true
+        ? A
+        : [ArgsMismatch<A, FnDefs<Database, SchemaName>[F]>] extends [never]
+          ? A
+          : ArgsMismatch<A, FnDefs<Database, SchemaName>[F]> // wrong value types: the error points at the offending property
+      : CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>
+    : ReadRefusal<A, O>
+
+/**
+ * The v2 options object, the second type argument of the client in place of a schema name. PostgREST features are
+ * resolved by the generator now, so it carries nothing the client reads.
+ *
+ * @deprecated Pass the schema name, or only the database.
+ */
+export type PostgrestClientOptions = {
+  PostgrestVersion?: string
+}
+
+/**
+ * The schema names of a database. `__InternalSupabase`, which the type generator emits next to the schemas, is not one.
+ */
+export type SchemaNameOf<Database> = Exclude<string & keyof Database, '__InternalSupabase'>
+
+/** The schema a client reads when none is given: `"public"` when the database has it, else any of its schemas. */
+export type DefaultSchemaNameOf<Database> =
+  'public' extends SchemaNameOf<Database> ? 'public' : SchemaNameOf<Database>
+
 /**
  * PostgREST client.
  *
  * @typeParam Database - Types for the schema from the [type
  * generator](https://supabase.com/docs/reference/javascript/next/typescript-support)
  *
- * @typeParam SchemaName - Postgres schema to switch to. Must be a string
+ * @typeParam SchemaNameOrClientOptions - Postgres schema to switch to, or the
+ * v2 options object (`{ PostgrestVersion: string }`, ignored). Must be a string
  * literal, the same one passed to the constructor. If the schema is not
  * `"public"`, this must be supplied manually.
+ *
+ * @typeParam SchemaName - The Postgres schema, when `SchemaNameOrClientOptions`
+ * is the options object. Defaults to `"public"`, else the first schema.
+ * `__InternalSupabase`, which the type generator emits next to the schemas, is
+ * never a schema.
  */
 export default class PostgrestClient<
-  Database = any,
-  ClientOptions extends ClientServerOptions = Database extends {
-    __InternalSupabase: infer I extends ClientServerOptions
-  }
-    ? I
-    : {},
-  SchemaName extends string & keyof Omit<Database, '__InternalSupabase'> =
-    'public' extends keyof Omit<Database, '__InternalSupabase'>
-      ? 'public'
-      : string & keyof Omit<Database, '__InternalSupabase'>,
-  Schema extends GenericSchema = Omit<
-    Database,
-    '__InternalSupabase'
-  >[SchemaName] extends GenericSchema
-    ? Omit<Database, '__InternalSupabase'>[SchemaName]
-    : any,
+  Database = DefaultDatabase,
+  SchemaNameOrClientOptions extends SchemaNameOf<Database> | PostgrestClientOptions =
+    DefaultSchemaNameOf<Database>,
+  SchemaName extends SchemaNameOf<Database> =
+    SchemaNameOrClientOptions extends SchemaNameOf<Database>
+      ? SchemaNameOrClientOptions
+      : DefaultSchemaNameOf<Database>,
 > {
   url: string
   headers: Headers
@@ -209,22 +257,16 @@ export default class PostgrestClient<
    *
    * @category Database
    */
-  from<
-    TableName extends string & keyof Schema['Tables'],
-    Table extends Schema['Tables'][TableName],
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
-  from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
-  ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
-  from(
-    relation: (string & keyof Schema['Tables']) | (string & keyof Schema['Views'])
-  ): PostgrestQueryBuilder<ClientOptions, Schema, any, any> {
+  from<const R extends string & keyof RelDefs<Database, SchemaName>>(
+    relation: R
+  ): PostgrestQueryBuilder<Database, SchemaName, R>
+  from(relation: string): PostgrestQueryBuilder<any, any, any> {
     if (!relation || typeof relation !== 'string' || relation.trim() === '') {
       throw new Error('Invalid relation name: relation must be a non-empty string.')
     }
 
     const url = new URL(`${this.url}/${relation}`)
-    return new PostgrestQueryBuilder(url, {
+    return new PostgrestQueryBuilder<any, any, any>(url, {
       headers: new Headers(this.headers),
       schema: this.schemaName,
       fetch: this.fetch,
@@ -242,14 +284,7 @@ export default class PostgrestClient<
    *
    * @category Database
    */
-  schema<DynamicSchema extends string & keyof Omit<Database, '__InternalSupabase'>>(
-    schema: DynamicSchema
-  ): PostgrestClient<
-    Database,
-    ClientOptions,
-    DynamicSchema,
-    Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
-  > {
+  schema<const S2 extends SchemaNameOf<Database>>(schema: S2): PostgrestClient<Database, S2, S2> {
     return new PostgrestClient(this.url, {
       headers: this.headers,
       schema,
@@ -343,13 +378,22 @@ export default class PostgrestClient<
   /**
    * Perform a function call.
    *
+   * The request is a `POST` by default, a `GET` with `get: true` and a `HEAD` with `head: true` (`head` wins over
+   * `get`). The method never changes on its own. `GET` and `HEAD` run the function in a read-only transaction and
+   * send the arguments in the query string, so a request the query string can't carry faithfully is refused
+   * client-side, before any network call: the result is `{ data: null, error }` with a `PostgrestError` whose `code`
+   * is `PGRSTJS01` (it throws instead after `.throwOnError()`). That covers a reserved key (`select`, `columns`,
+   * `on_conflict`, or a key ending in `.order`, `.limit`, `.offset`, `.and` or `.or`), an object value (or an array
+   * containing one), and a string value PostgREST would read as a filter (such as `'eq.x'` or `'in.(1,2)'`). Use
+   * `POST` for those.
+   *
    * @param fn - The function name to call
    * @param args - The arguments to pass to the function call
    * @param options - Named parameters
-   * @param options.head - When set to `true`, `data` will not be returned.
+   * @param options.head - When set to `true`, the function is called with `HEAD`: `data` will not be returned.
    * Useful if you only need the count.
-   * @param options.get - When set to `true`, the function will be called with
-   * read-only access mode.
+   * @param options.get - When set to `true`, the function is called with `GET`, which gives it read-only access
+   * mode.
    * @param options.count - Count algorithm to use to count rows returned by the
    * function. Only applicable for [set-returning
    * functions](https://www.postgresql.org/docs/current/functions-srf.html).
@@ -365,11 +409,11 @@ export default class PostgrestClient<
    *
    * @example
    * ```ts
-   * // For cross-schema functions where type inference fails, use overrideTypes:
+   * // When the planner can't type a call, state the result yourself with `.cast<T>()`:
    * const { data } = await supabase
    *   .schema('schema_b')
    *   .rpc('function_a', {})
-   *   .overrideTypes<{ id: string; user_id: string }[]>()
+   *   .cast<{ id: string; user_id: string }[]>()
    * ```
    *
    * @category Database
@@ -506,13 +550,51 @@ export default class PostgrestClient<
    * ```
    */
   rpc<
-    FnName extends string & keyof Schema['Functions'],
-    Args extends Schema['Functions'][FnName]['Args'] = never,
-    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args> =
-      GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
+    const F extends string & keyof FnDefs<Database, SchemaName>,
+    const A extends object = {},
+    const O extends RpcOptions | undefined = {},
   >(
-    fn: FnName,
-    args: Args = {} as Args,
+    // with no arguments there is no `args` to flag: the rejection lands on the name
+    fn: [AllKeys<A>] extends [never]
+      ? [CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>] extends [never]
+        ? F
+        : CallReject<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>>
+      : F,
+    // a rest tuple: an optional parameter next to a conditional type would infer A one union member at a time, and an
+    // optional `options` would drop `undefined` from the inferred O, while a bag that may be absent is one more
+    // possible request
+    ...rest:
+      | [args?: undefined]
+      | [args: undefined, options: O]
+      | [args: RpcArgs<Database, SchemaName, F, A, O>]
+      | [args: RpcArgs<Database, SchemaName, F, A, O>, options: O]
+  ): PostgrestFilterBuilder<
+    RpcB<Database, SchemaName, F, A, O>,
+    RpcDesc<
+      RowCalls<CallsOf<SchemaOf<Database, SchemaName>, F, A, O>, O>,
+      true,
+      ReturnsOf<Database, SchemaName, F>
+    >,
+    {},
+    MS<
+      RpcOp<O>,
+      true,
+      BaseOfCalls<
+        CallsOf<SchemaOf<Database, SchemaName>, F, A, O>,
+        ReturnsOf<Database, SchemaName, F>
+      >,
+      'default',
+      'json',
+      false,
+      SelCount<O>,
+      false,
+      true
+    >
+  >
+  rpc(
+    fn: string,
+    // `any`: the overload's `args` is, for the checker's erased signature, also the rejection message
+    args: any = {},
     {
       head = false,
       get = false,
@@ -520,51 +602,41 @@ export default class PostgrestClient<
     }: {
       head?: boolean
       get?: boolean
-      count?: 'exact' | 'planned' | 'estimated' | (string & {})
+      count?: 'exact' | 'planned' | 'estimated'
     } = {}
-  ): PostgrestFilterBuilder<
-    ClientOptions,
-    Schema,
-    FilterBuilder['Row'],
-    FilterBuilder['Result'],
-    FilterBuilder['RelationName'],
-    FilterBuilder['Relationships'],
-    'RPC'
-  > {
-    let method: 'HEAD' | 'GET' | 'POST'
+  ): any {
+    // never switches method on its own: `head` wins over `get`, and arguments the query string can't carry are refused
+    const method: 'HEAD' | 'GET' | 'POST' = head ? 'HEAD' : get ? 'GET' : 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
-    // objects/arrays-of-objects can't be serialized to URL params, use POST + return=minimal instead
-    const _isObject = (v: unknown): boolean =>
-      v !== null && typeof v === 'object' && (!Array.isArray(v) || v.some(_isObject))
-    const _hasObjectArg = head && Object.values(args as object).some(_isObject)
-    if (_hasObjectArg) {
-      method = 'POST'
+    let clientError: PostgrestError | undefined
+    if (method === 'POST') {
       body = args
-    } else if (head || get) {
-      method = head ? 'HEAD' : 'GET'
-      Object.entries(args)
-        // params with undefined value needs to be filtered out, otherwise it'll
-        // show up as `?param=undefined`
-        .filter(([_, value]) => value !== undefined)
-        // array values need special syntax
-        .map(([name, value]) => [name, Array.isArray(value) ? `{${value.join(',')}}` : `${value}`])
-        .forEach(([name, value]) => {
-          url.searchParams.append(name, value)
-        })
     } else {
-      method = 'POST'
-      body = args
+      clientError = rpcReadRefusal(args) ?? undefined
+      // a refused request is never sent, and its arguments may not even be coercible to a string
+      if (!clientError) {
+        Object.entries(args)
+          // params with undefined value needs to be filtered out, otherwise it'll
+          // show up as `?param=undefined`
+          .filter(([_, value]) => value !== undefined)
+          // array values need special syntax
+          .map(([name, value]) => [
+            name,
+            Array.isArray(value) ? `{${value.join(',')}}` : `${value}`,
+          ])
+          .forEach(([name, value]) => {
+            url.searchParams.append(name, value)
+          })
+      }
     }
 
     const headers = new Headers(this.headers)
-    if (_hasObjectArg) {
-      headers.set('Prefer', count ? `count=${count},return=minimal` : 'return=minimal')
-    } else if (count) {
+    if (count) {
       headers.set('Prefer', `count=${count}`)
     }
 
-    return new PostgrestFilterBuilder({
+    return new PostgrestFilterBuilder<any, any, any, any>({
       method,
       url,
       headers,
@@ -573,6 +645,7 @@ export default class PostgrestClient<
       fetch: this.fetch ?? fetch,
       urlLengthLimit: this.urlLengthLimit,
       retry: this.retry,
+      clientError,
     })
   }
 }

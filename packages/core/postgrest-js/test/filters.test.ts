@@ -1,10 +1,13 @@
 import { PostgrestClient } from '../src/index'
-import { Database } from './types.override'
 
-const postgrest = new PostgrestClient<Database>('http://localhost:54321/rest/v1')
+const postgrest = new PostgrestClient('http://localhost:54321/rest/v1')
 
 test('not', async () => {
-  const res = await postgrest.from('users').select('status').not('status', 'eq', 'OFFLINE')
+  const res = await postgrest
+    .from('users')
+    .select('status')
+    .order('username')
+    .not('status', 'eq', 'OFFLINE')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -34,18 +37,19 @@ test('or', async () => {
   const res = await postgrest
     .from('users')
     .select('status, username')
+    .order('username')
     .or('status.eq.OFFLINE,username.eq.supabot')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
         {
-          "status": "ONLINE",
-          "username": "supabot",
-        },
-        {
           "status": "OFFLINE",
           "username": "kiwicopple",
+        },
+        {
+          "status": "ONLINE",
+          "username": "supabot",
         },
       ],
       "error": null,
@@ -75,22 +79,26 @@ test('eq', async () => {
 })
 
 test('neq', async () => {
-  const res = await postgrest.from('users').select('username').neq('username', 'supabot')
+  const res = await postgrest
+    .from('users')
+    .select('username')
+    .order('username')
+    .neq('username', 'supabot')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
         {
-          "username": "kiwicopple",
+          "username": "awailas",
         },
         {
-          "username": "awailas",
+          "username": "dragarcia",
         },
         {
           "username": "jsonuser",
         },
         {
-          "username": "dragarcia",
+          "username": "kiwicopple",
         },
       ],
       "error": null,
@@ -102,7 +110,7 @@ test('neq', async () => {
 })
 
 test('gt', async () => {
-  const res = await postgrest.from('messages').select('id').gt('id', 1)
+  const res = await postgrest.from('messages').select('id').order('id').gt('id', 1)
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -111,10 +119,10 @@ test('gt', async () => {
           "id": 2,
         },
         {
-          "id": 4,
+          "id": 3,
         },
         {
-          "id": 3,
+          "id": 4,
         },
       ],
       "error": null,
@@ -126,7 +134,7 @@ test('gt', async () => {
 })
 
 test('gte', async () => {
-  const res = await postgrest.from('messages').select('id').gte('id', 1)
+  const res = await postgrest.from('messages').select('id').order('id').gte('id', 1)
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -138,10 +146,10 @@ test('gte', async () => {
           "id": 2,
         },
         {
-          "id": 4,
+          "id": 3,
         },
         {
-          "id": 3,
+          "id": 4,
         },
       ],
       "error": null,
@@ -171,7 +179,7 @@ test('lt', async () => {
 })
 
 test('lte', async () => {
-  const res = await postgrest.from('messages').select('id').lte('id', 2)
+  const res = await postgrest.from('messages').select('id').order('id').lte('id', 2)
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -234,16 +242,17 @@ test('likeAnyOf', async () => {
   const res = await postgrest
     .from('users')
     .select('username')
+    .order('username')
     .likeAnyOf('username', ['%supa%', '%kiwi%'])
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
         {
-          "username": "supabot",
+          "username": "kiwicopple",
         },
         {
-          "username": "kiwicopple",
+          "username": "supabot",
         },
       ],
       "error": null,
@@ -297,16 +306,17 @@ test('ilikeAnyOf', async () => {
   const res = await postgrest
     .from('users')
     .select('username')
+    .order('username')
     .ilikeAnyOf('username', ['%supa%', '%KIWI%'])
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
         {
-          "username": "supabot",
+          "username": "kiwicopple",
         },
         {
-          "username": "kiwicopple",
+          "username": "supabot",
         },
       ],
       "error": null,
@@ -318,7 +328,7 @@ test('ilikeAnyOf', async () => {
 })
 
 test('is', async () => {
-  const res = await postgrest.from('users').select('data').is('data', null)
+  const res = await postgrest.from('users').select('data').order('username').is('data', null)
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -346,7 +356,11 @@ test('is', async () => {
 
 test('in', async () => {
   const statuses = ['ONLINE', 'OFFLINE'] as const
-  const res = await postgrest.from('users').select('status').in('status', statuses)
+  const res = await postgrest
+    .from('users')
+    .select('status')
+    .order('username')
+    .in('status', statuses)
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -355,13 +369,13 @@ test('in', async () => {
           "status": "ONLINE",
         },
         {
+          "status": "ONLINE",
+        },
+        {
+          "status": "ONLINE",
+        },
+        {
           "status": "OFFLINE",
-        },
-        {
-          "status": "ONLINE",
-        },
-        {
-          "status": "ONLINE",
         },
         {
           "status": "ONLINE",
@@ -531,7 +545,11 @@ test('rangeLt', async () => {
 })
 
 test('rangeGt', async () => {
-  const res = await postgrest.from('users').select('age_range').rangeGt('age_range', '[2,25)')
+  const res = await postgrest
+    .from('users')
+    .select('age_range')
+    .order('username')
+    .rangeGt('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -552,7 +570,11 @@ test('rangeGt', async () => {
 })
 
 test('rangeGte', async () => {
-  const res = await postgrest.from('users').select('age_range').rangeGte('age_range', '[2,25)')
+  const res = await postgrest
+    .from('users')
+    .select('age_range')
+    .order('username')
+    .rangeGte('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -561,13 +583,13 @@ test('rangeGte', async () => {
           "age_range": "[25,35)",
         },
         {
+          "age_range": "[20,30)",
+        },
+        {
+          "age_range": "[20,30)",
+        },
+        {
           "age_range": "[25,35)",
-        },
-        {
-          "age_range": "[20,30)",
-        },
-        {
-          "age_range": "[20,30)",
         },
       ],
       "error": null,
@@ -597,19 +619,23 @@ test('rangeLte', async () => {
 })
 
 test('rangeAdjacent', async () => {
-  const res = await postgrest.from('users').select('age_range').rangeAdjacent('age_range', '[2,25)')
+  const res = await postgrest
+    .from('users')
+    .select('age_range')
+    .order('username')
+    .rangeAdjacent('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
         {
+          "age_range": "[25,35)",
+        },
+        {
+          "age_range": "[25,35)",
+        },
+        {
           "age_range": "[1,2)",
-        },
-        {
-          "age_range": "[25,35)",
-        },
-        {
-          "age_range": "[25,35)",
         },
       ],
       "error": null,
@@ -621,7 +647,11 @@ test('rangeAdjacent', async () => {
 })
 
 test('overlaps', async () => {
-  const res = await postgrest.from('users').select('age_range').overlaps('age_range', '[2,25)')
+  const res = await postgrest
+    .from('users')
+    .select('age_range')
+    .order('username')
+    .overlaps('age_range', '[2,25)')
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -711,16 +741,17 @@ test('textSearch with phraseto_tsquery', async () => {
   const res = await postgrest
     .from('users')
     .select('catchphrase')
+    .order('username')
     .textSearch('catchphrase', 'cat', { config: 'english', type: 'phrase' })
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
       "data": [
         {
-          "catchphrase": "'cat' 'fat'",
+          "catchphrase": "'bat' 'cat'",
         },
         {
-          "catchphrase": "'bat' 'cat'",
+          "catchphrase": "'cat' 'fat'",
         },
       ],
       "error": null,

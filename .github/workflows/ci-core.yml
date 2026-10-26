@@ -19,6 +19,7 @@ jobs:
       auth: ${{ steps.affected.outputs.auth }}
       storage: ${{ steps.affected.outputs.storage }}
       postgrest: ${{ steps.affected.outputs.postgrest }}
+      mapper: ${{ steps.affected.outputs.mapper }}
       functions: ${{ steps.affected.outputs.functions }}
       realtime: ${{ steps.affected.outputs.realtime }}
     steps:
@@ -62,7 +63,8 @@ jobs:
           echo "Affected projects: $AFFECTED"
           echo "auth=$(echo "$AFFECTED"   | grep -q 'auth-js'      && echo 1 || echo 0)" >> $GITHUB_OUTPUT
           echo "storage=$(echo "$AFFECTED" | grep -q 'storage-js'   && echo 1 || echo 0)" >> $GITHUB_OUTPUT
-          echo "postgrest=$(echo "$AFFECTED" | grep -q 'postgrest-js' && echo 1 || echo 0)" >> $GITHUB_OUTPUT
+          echo "postgrest=$(echo "$AFFECTED" | grep -qE 'postgrest-(js|mapper|planner)' && echo 1 || echo 0)" >> $GITHUB_OUTPUT
+          echo "mapper=$(echo "$AFFECTED" | grep -qE 'postgrest-(mapper|planner)' && echo 1 || echo 0)" >> $GITHUB_OUTPUT
           echo "functions=$(echo "$AFFECTED" | grep -q 'functions-js' && echo 1 || echo 0)" >> $GITHUB_OUTPUT
           echo "realtime=$(echo "$AFFECTED"  | grep -q 'realtime-js'  && echo 1 || echo 0)" >> $GITHUB_OUTPUT
 
@@ -105,8 +107,6 @@ jobs:
       - name: Audit production dependencies
         run: pnpm audit --audit-level=high --prod --registry https://registry.npmjs.org
       - uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
-      - name: Check common types are in sync
-        run: pnpm run codegen:check
       - name: Build affected packages
         run: pnpm nx affected --target=build
       - name: Generate docs json for affected packages
@@ -448,6 +448,20 @@ jobs:
       - name: Run postgrest-js type tests
         run: pnpm nx test:types:ci postgrest-js
         timeout-minutes: 15
+      - name: Run postgrest-planner tests (committed wasm, no toolchain needed)
+        run: pnpm nx test postgrest-planner
+        timeout-minutes: 10
+      # The mapper suite reads the live postgrest-js test stack (supabase_db_test, supabase_rest_test) and runs the
+      # pinned PostgREST image, but test:ci:postgrest stops the stack when it finishes. Start it again; the codegen
+      # check below reuses a running stack and leaves it running.
+      - name: Start the postgrest-js test stack for the mapper tests
+        if: needs.check-affected.outputs.mapper != '0'
+        run: pnpm exec supabase start --workdir packages/core/postgrest-js/test
+        timeout-minutes: 10
+      - name: Run postgrest-mapper tests
+        if: needs.check-affected.outputs.mapper != '0'
+        run: pnpm nx test postgrest-mapper
+        timeout-minutes: 20
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
         run: |
@@ -486,11 +500,11 @@ jobs:
             echo "::error::Could not diff against origin/${BASE_REF}, refusing to skip the codegen check."
             exit 1
           fi
-          # types.generated.ts depends on the test schema AND on the pinned Supabase CLI version,
-          # which selects the postgres-meta image that does the introspection. Watch both, or a
-          # CLI bump silently changes the generated output with nothing to catch it.
+          # The generated test declarations depend on the test schema, the queries in the tests,
+          # the mapper and planner that print them, and the pinned Supabase CLI version (which
+          # selects the stack the schema is snapshotted from). Watch all of them.
           if printf '%s\n' "$CHANGED_FILES" \
-            | grep -qE '^packages/core/postgrest-js/test/supabase/|^package\.json$'; then
+            | grep -qE '^packages/core/postgrest-js/(test/|tsconfig\.test\.json$)|^packages/tooling/postgrest-(mapper|planner)/|^scripts/generate-postgrest-types\.js$|^package\.json$'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"

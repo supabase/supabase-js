@@ -47,8 +47,8 @@
     "docs:json": "typedoc --options ../../../typedoc.base.mjs --json docs/v2/spec.json --excludeExternals src/index.ts",
     "test:run": "jest --runInBand --coverage -u",
     "test:smoke": "node test/smoke.cjs && node test/smoke.mjs",
-    "test:types": "tstyche",
-    "test:types:ci": "tstyche --target '4.7,5.5,6.0'",
+    "test:types": "tstyche && tstyche --config tstyche.strict.config.json",
+    "test:types:ci": "tstyche --target '5.1,5.5,6.0' && tstyche --config tstyche.strict.config.json --target '5.1,5.5,6.0'",
     "test:types:watch": "chokidar 'src/**/*.ts' 'test/**/*.ts' -c 'npm run test:types'",
     "type-check": "tsc --noEmit --project tsconfig.json",
     "type-check:test": "tsc --noEmit --project tsconfig.test.json"

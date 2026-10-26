@@ -1,0 +1,27 @@
+--- a/cbits/network-wasi.c	1970-01-01 01:00:00
++++ b/cbits/network-wasi.c	2026-10-12 19:24:19
+@@ -0,0 +1,11 @@
++#include <wchar.h>
++
++#include "network.h"
++
++/* WASI exposes no interface enumeration. */
++int c_get_network_interfaces(struct network_interface *ns, int max_ns)
++{
++    (void)ns;
++    (void)max_ns;
++    return 0;
++}
+--- a/network-info.cabal	2026-10-12 19:24:19
++++ b/network-info.cabal	2026-10-12 19:24:30
+@@ -56,6 +56,9 @@
+     c-sources: cbits/network-windows.c
+     extra-libraries: iphlpapi
+   else
+-    c-sources: cbits/network-unix.c
++    if os(wasi)
++      c-sources: cbits/network-wasi.c
++    else
++      c-sources: cbits/network-unix.c
+   if os(solaris)
+     extra-libraries: socket, nsl

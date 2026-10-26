@@ -1,0 +1,286 @@
+import type {
+  Dynamic,
+  Entry,
+  BS,
+  BState,
+  CallBase,
+  EntryReject,
+  IsAny,
+  Q0,
+  ReturnsBase,
+  Unplanned,
+  Untyped,
+} from './lookup'
+import type { UnplannedRpcMessage } from './globals'
+import type { RequestedOf } from './options'
+
+// ---------------------------------------------------------------- rpc key sets
+// The runtime drops undefined from both the query string and the JSON body, so a key is
+// - never sent (NeverKeys): its value type is exactly undefined;
+// - maybe sent (MaybeKeys): optional, or its value type includes undefined without being only undefined;
+// - always sent (SureKeys): the rest.
+export type NeverKeys<A> = {
+  [K in keyof A & string]-?: [A[K]] extends [undefined]
+    ? [undefined] extends [A[K]]
+      ? K
+      : never
+    : never
+}[keyof A & string]
+export type MaybeKeys<A> = {
+  [K in keyof A & string]-?: K extends NeverKeys<A>
+    ? never
+    : {} extends Pick<A, K>
+      ? K
+      : undefined extends A[K]
+        ? K
+        : never
+}[keyof A & string]
+export type SureKeys<A> = Exclude<keyof A & string, MaybeKeys<A> | NeverKeys<A>>
+// the argument object as sent: the never-keys are gone
+export type Sent<A> = A extends unknown
+  ? { [K in keyof A as K extends NeverKeys<A> ? never : K]: A[K] }
+  : never
+
+// GET and HEAD carry the arguments in the query string, where upstream reads some keys and values as something else.
+// The runtime refuses such a request client-side, so the argument check rejects what the types prove it would refuse:
+// - a value that is certainly an object (a non-null object, or an array whose elements are certainly objects);
+// - a string literal that starts with an operator expression (upstream's grammar as a finite template-literal union,
+//   not a parser; a plain `string` is accepted and checked at run time). `OpName` mirrors `RPC_READ_OPERATOR_PATTERN`
+//   in `src/rpcReadRefusal.ts`, which is the runtime's source of truth with the reserved keys; keep them in sync;
+// - a reserved key: `select`, `columns`, `on_conflict`, or one whose last `.`-separated segment is `order`, `limit`,
+//   `offset`, `and` or `or` (`x.limit` is, `color` isn't). Only literal keys.
+// Maybe-keys are checked too, on the value type without `undefined`: whenever one is sent the runtime refuses.
+export type All<T> = [T] extends [never] ? false : false extends T ? false : true
+export type IsObj<V> = V extends readonly (infer U)[]
+  ? All<IsObj<U>>
+  : V extends object
+    ? true
+    : false
+export type OpName =
+  | 'not'
+  | 'in'
+  | 'is'
+  | 'isdistinct'
+  | `${'fts' | 'plfts' | 'phfts' | 'wfts'}${'' | `(${string})`}`
+  | 'neq'
+  | 'cs'
+  | 'cd'
+  | 'ov'
+  | 'sl'
+  | 'sr'
+  | 'nxr'
+  | 'nxl'
+  | 'adj'
+  | `${'eq' | 'gte' | 'gt' | 'lte' | 'lt' | 'like' | 'ilike' | 'match' | 'imatch'}${'' | '(any)' | '(all)'}`
+export type IsOp<V> = V extends string ? (V extends `${OpName}.${string}` ? true : false) : false
+export type LastSegment<K extends string> = K extends `${string}.${infer R}` ? LastSegment<R> : K
+export type IsReserved<K extends string> = string extends K
+  ? false
+  : K extends 'select' | 'columns' | 'on_conflict'
+    ? true
+    : LastSegment<K> extends 'order' | 'limit' | 'offset' | 'and' | 'or'
+      ? true
+      : false
+// one message per offending key, so the rejection names it
+export type KeyRefusal<A, K> = K extends keyof A & string
+  ? string extends K
+    ? never
+    :
+        | (IsReserved<K> extends true ? `GET and HEAD refuse the reserved key '${K}'` : never)
+        | (All<IsObj<Exclude<A[K], undefined>>> extends true
+            ? `GET and HEAD refuse an object value for '${K}'`
+            : never)
+        | (All<IsOp<Exclude<A[K], undefined>>> extends true
+            ? `GET and HEAD refuse a value read as a filter for '${K}'`
+            : never)
+  : never
+// per member of the argument union, when the call can send GET or HEAD
+export type ReadRefusal<A, O> = [Extract<RequestedOf<O>, 'GET' | 'HEAD'>] extends [never]
+  ? never
+  : A extends unknown
+    ? KeyRefusal<A, SureKeys<A> | MaybeKeys<A>>
+    : never
+
+export type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (
+  x: infer I
+) => void
+  ? I
+  : never
+export type LastOf<U> =
+  UnionToIntersection<U extends unknown ? () => U : never> extends () => infer L ? L : never
+export type ToTuple<U, L = LastOf<U>> = [U] extends [never] ? [] : [...ToTuple<Exclude<U, L>>, L]
+// every subset of the members, each wrapped in a tuple so a union stays a union of sets
+export type PowerSet<T extends readonly string[]> = T extends readonly [
+  infer H extends string,
+  ...infer R extends string[],
+]
+  ? PowerSet<R> extends infer P
+    ? P | (P extends [infer X extends string] ? [X | H] : never)
+    : never
+  : [never]
+export type TooMany = [unknown, unknown, unknown, unknown, unknown, unknown, unknown, ...unknown[]]
+// the possible serialized key sets of one argument object; more than 6 maybe-keys (or an index signature) is dynamic
+export type KeySetsOf<A> = string extends keyof A
+  ? [string]
+  : undefined extends A[keyof A & string]
+    ? KeySetsSlow<A>
+    : [keyof A & string]
+type KeySetsSlow<A> =
+  ToTuple<MaybeKeys<A>> extends infer T extends string[]
+    ? T extends TooMany
+      ? [string]
+      : PowerSet<T> extends infer P
+        ? P extends [infer X extends string]
+          ? [SureKeys<A> | X]
+          : never
+        : never
+    : never
+// A distributes: each member of an argument union is dispatched on its own, with the methods the options ask for
+export type KeyMethods<A, O> = A extends unknown
+  ? KeySetsOf<A> extends infer KS
+    ? KS extends [string]
+      ? RequestedOf<O> extends infer M extends string
+        ? M extends unknown
+          ? [KS, M]
+          : never
+        : never
+      : never
+    : never
+  : never
+export type AllKeys<A> = A extends unknown ? keyof A & string : never
+export type BaseOfCalls<Calls, Ret = unknown> = Calls extends Dynamic
+  ? 'one'
+  : Calls extends Unplanned
+    ? ReturnsBase<Ret>
+    : CallBase<Calls>
+
+// ---------------------------------------------------------------- rpc (§4.3 RPC)
+// `any` as the Database is an untyped client: every relation and function name is accepted, rows and results are `any`
+type AnyRelation = { Row: any; Insert: any; Update: any; Relationships: any }
+type AnyFunction = { Args: any; Returns: any }
+export type FnDefs<DB, S extends string> =
+  IsAny<DB> extends true
+    ? { [F: string]: AnyFunction }
+    : S extends keyof DB
+      ? DB[S] extends { Functions: infer Fs }
+        ? Fs
+        : {}
+      : {}
+// the `Returns` of every overload of a function in the Database. A name that failed to infer widens to every function
+// of the schema (a rejected call): the returns of all of them are no one's, so they stay unknown.
+type Returns<D> = D extends { Returns: infer R } ? R : never
+export type ReturnsOf<DB, S extends string, F extends string> = [
+  keyof FnDefs<DB, S> & string,
+] extends [F]
+  ? [F] extends [UnionToIntersection<F>]
+    ? Returns<FnDefs<DB, S>[F & keyof FnDefs<DB, S>]>
+    : unknown
+  : Returns<FnDefs<DB, S>[F & keyof FnDefs<DB, S>]>
+export type RelDefs<DB, S extends string> =
+  IsAny<DB> extends true
+    ? { [R: string]: AnyRelation }
+    : S extends keyof DB
+      ? DB[S] extends { Tables: infer T; Views: infer V }
+        ? T & V
+        : {}
+      : {}
+// the schema a chain is keyed by: `any` for an untyped client, which marks the chain as untyped (`Untyped`)
+export type SchemaOf<DB, S extends string> = IsAny<DB> extends true ? any : S
+// The values are checked against the overloads PostgREST can pick for the argument names (`findProc`): the required
+// parameters are all sent and nothing else is, so required <= keys <= all parameters. Never against another overload
+// that structurally accepts the object with extra keys. A zero-argument function is `Record<string, never>`: no names.
+type ParamNames<X> = string extends keyof X ? never : keyof X & string
+type RequiredNames<X> = string extends keyof X
+  ? never
+  : { [K in keyof X & string]-?: {} extends Pick<X, K> ? never : K }[keyof X & string]
+// the Args of the overloads (`Defs` is the union of the function's definitions) that fit the sent key set `K`
+export type FitSet<K extends string, Defs> = Defs extends { Args: infer X }
+  ? [K] extends [ParamNames<X>]
+    ? [RequiredNames<X>] extends [K]
+      ? X
+      : never
+    : never
+  : never
+// no overload fits (a key set the planner placed some other way, such as the unnamed parameter): every overload
+export type ArgsForSet<K extends string, Defs> = [FitSet<K, Defs>] extends [never]
+  ? Defs extends { Args: infer X }
+    ? X
+    : never
+  : FitSet<K, Defs>
+// the values sent under the key set `K` of `A`: a maybe-sent key that is in the set was sent, so it isn't undefined
+export type SentUnder<A, K extends string> = {
+  [P in K & keyof A]-?: Exclude<A[P], undefined>
+}
+// the argument object checked against the overloads that fit each key set it can serialize to, as PostgREST picks
+// one per request: the expected Args of every set whose values fit none of them
+type SetMismatch<A, Defs, KS> = KS extends [infer K extends string]
+  ? [SentUnder<A, K>] extends [ArgsForSet<K, Defs>]
+    ? never
+    : ArgsForSet<K, Defs>
+  : never
+// no key sets to enumerate (an index signature or too many maybe-keys): the sure keys pick the candidate overloads
+type FitArgs<A, Defs> = Defs extends { Args: infer X }
+  ? [SureKeys<A>] extends [ParamNames<X>]
+    ? [RequiredNames<X>] extends [SureKeys<A> | MaybeKeys<A>]
+      ? X
+      : never
+    : never
+  : never
+type ArgsFor<A, Defs> = [FitArgs<A, Defs>] extends [never]
+  ? Defs extends { Args: infer X }
+    ? X
+    : never
+  : FitArgs<A, Defs>
+// per member of an argument union: its own expected Args when its sent values don't fit them
+export type ArgsMismatch<A, Defs> = A extends unknown
+  ? [string] extends KeySetsOf<A>
+    ? [Sent<A>] extends [ArgsFor<A, Defs>]
+      ? never
+      : ArgsFor<A, Defs>
+    : SetMismatch<A, Defs, KeySetsOf<A>>
+  : never
+// the keys of a chain before its calls are known: what `CallsOf` looks them up with
+type RpcKeys<S extends string, F extends string, A, O> = BS<
+  'f',
+  S,
+  F,
+  {},
+  never,
+  Q0,
+  KeyMethods<A, O>
+>
+// every call the runtime could dispatch to: one per possible (key set, method) of each member of A
+export type CallsOf<S extends string, F extends string, A, O> = Entry<RpcKeys<S, F, A, O>, Q0>
+// the chain of an rpc call, whose row is the matched calls' unprojected `source` row (derived, not carried, so the
+// builder prints only the call). Its `st` is the function's `Returns` in the Database: a re-select of a call with no
+// entry falls back to it as the call itself does.
+export type RpcB<DB, SN extends string, F extends string, A, O> = {
+  k: 'f'
+  s: SchemaOf<DB, SN>
+  r: F
+  row: CallRow<CallsOf<SchemaOf<DB, SN>, F, A, O>>
+  st: ReturnsOf<DB, SN, F>
+  q: Q0
+  km: KeyMethods<A, O>
+}
+// with `{ head: boolean }` the HEAD calls give no rows: their branch of the data is null, the rows are the other calls'
+export type RowCalls<Calls, O> =
+  'HEAD' extends RequestedOf<O>
+    ? [Exclude<RequestedOf<O>, 'HEAD'>] extends [never]
+      ? Calls
+      : Calls extends { method: 'HEAD' }
+        ? never
+        : Calls
+    : Calls
+export type CallReject<Call> = EntryReject<Call, UnplannedRpcMessage>
+// no routine information to check the argument values against. A call with no entry is checked against the
+// function's `Args` in the Database.
+export type Unchecked<Calls> = Untyped extends Calls ? true : Dynamic extends Calls ? true : false
+// the unprojected row of the matched calls' `source`: the columns a plain-column filter can name
+export type CallRow<Call> = Call extends { source: infer Src }
+  ? [Src] extends [never]
+    ? {}
+    : Src extends { row: infer R }
+      ? R
+      : {}
+  : {}

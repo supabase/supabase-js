@@ -61,7 +61,10 @@ describe('Supabase Integration Tests', () => {
       expect(createdTodo!.is_complete).toBe(false)
 
       // Delete the created todo
-      const { error: deleteError } = await supabase.from('todos').delete().eq('id', createdTodo!.id)
+      const { error: deleteError } = await supabase
+        .from('todos')
+        .delete()
+        .eq('id', createdTodo!.id as string)
 
       expect(deleteError).toBeNull()
 
@@ -69,7 +72,7 @@ describe('Supabase Integration Tests', () => {
       const { data: fetchedTodo, error: fetchError } = await supabase
         .from('todos')
         .select('*')
-        .eq('id', createdTodo!.id)
+        .eq('id', createdTodo!.id as string)
         .single()
 
       expect(fetchError).not.toBeNull()
@@ -110,7 +113,9 @@ describe('Supabase Integration Tests', () => {
         const { data, error } = await tracingClient.rpc('get_req_trace_headers')
 
         expect(error).toBeNull()
-        expect(data.traceparent).toBe(`00-${traceId}-${spanId}-01`)
+        expect((data as { traceparent: string | null }).traceparent).toBe(
+          `00-${traceId}-${spanId}-01`
+        )
 
         span.end()
       })
@@ -132,7 +137,7 @@ describe('Supabase Integration Tests', () => {
       const { data, error } = await tracingClient.rpc('get_req_trace_headers')
 
       expect(error).toBeNull()
-      expect(data.traceparent).toBeNull()
+      expect((data as { traceparent: string | null }).traceparent).toBeNull()
     })
   })
 
@@ -169,7 +174,7 @@ describe('Supabase Integration Tests', () => {
         .insert({ task: 'User 1 Todo', is_complete: false, user_id: user1Id })
         .select()
         .single()
-      user1TodoId = user1Todo!.id
+      user1TodoId = user1Todo!.id as string
 
       await supabase.auth.signInWithPassword({ email: user2Email, password })
       const { data: user2Todo } = await supabase
@@ -177,7 +182,7 @@ describe('Supabase Integration Tests', () => {
         .insert({ task: 'User 2 Todo', is_complete: false, user_id: user2Id })
         .select()
         .single()
-      user2TodoId = user2Todo!.id
+      user2TodoId = user2Todo!.id as string
     })
 
     afterAll(async () => {
@@ -417,7 +422,7 @@ describe('Supabase Integration Tests', () => {
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Timeout waiting for channelB')), 8000)
         channelB
-          .on('broadcast', { event: 'ping' }, () => {})
+          .on('broadcast', { event: 'ping' }, () => undefined)
           .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
               channelBSubscribed = true

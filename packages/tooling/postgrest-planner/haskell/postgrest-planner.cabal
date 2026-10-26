@@ -1,0 +1,38 @@
+cabal-version:      3.0
+name:               postgrest-planner
+version:            0.0.0
+synopsis:           Spike: WASI reactor exposing upstream PostgREST's pure request planner
+build-type:         Simple
+
+executable postgrest-planner
+  default-language:   GHC2021
+  default-extensions: OverloadedStrings
+  hs-source-dirs:     src
+  main-is:            Main.hs
+  other-modules:      Planner.BuildInfo
+                      Planner.Config
+                      Planner.PgType
+                      Planner.ResultShape
+                      Planner.SchemaCacheJSON
+                      Planner.Supplementary
+                      Planner.Request
+                      Planner.Summary
+                      Planner.FFI
+  build-depends:      base
+                    , aeson
+                    , bytestring
+                    , case-insensitive
+                    , containers
+                    , fuzzyset
+                    , hasql-transaction
+                    , http-types
+                    , insert-ordered-containers
+                    , postgrest
+                    , scientific
+                    , text
+                    , unordered-containers
+                    , vector
+                    , wai
+  ghc-options:        -O1 -Wall -Wno-orphans
+                      -no-hs-main -optl-mexec-model=reactor
+                      -optl-Wl,--export=hs_init,--export=planner_alloc,--export=planner_free,--export=planner_info,--export=planner_load,--export=planner_free_cache,--export=planner_plan

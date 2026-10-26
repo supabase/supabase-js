@@ -85,7 +85,3 @@ export type GenericSchema = {
   Views: Record<string, GenericView>
   Functions: Record<string, GenericFunction>
 }
-
-export type ClientServerOptions = {
-  PostgrestVersion?: string
-}

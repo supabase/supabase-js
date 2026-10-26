@@ -1,13 +1,12 @@
 import { PostgrestClient } from '../src/index'
-import { CustomUserDataTypeSchema, Database } from './types.override'
+import { CustomUserDataTypeSchema } from './column-types'
+import type { Json } from './postgrest.generated'
 import { expectType, TypeEqual } from './types'
 import { z } from 'zod'
-import { Json } from '../src/select-query-parser/types'
-import type { SelectQueryError } from '../src/select-query-parser/utils'
 import { RequiredDeep } from 'type-fest'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 const UsersRowSchema = z.object({
   age_range: z.unknown().nullable(),
@@ -26,6 +25,7 @@ test('nested query with selective fields', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(id, message)')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -58,7 +58,7 @@ test('nested query with selective fields', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -68,8 +68,8 @@ test('nested query with selective fields', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -77,6 +77,7 @@ test('nested query with multiple levels and selective fields', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(id, message, channels(id, slug))')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -125,7 +126,7 @@ test('nested query with multiple levels and selective fields', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(
@@ -139,8 +140,8 @@ test('nested query with multiple levels and selective fields', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -148,6 +149,7 @@ test('query with multiple one-to-many relationships', async () => {
   const res = await postgrest
     .from('users')
     .select('username, messages(id), user_profiles(id)')
+    .order('username', { ascending: false })
     .limit(1)
     .single()
   expect(res).toMatchInlineSnapshot(`
@@ -181,19 +183,19 @@ test('query with multiple one-to-many relationships', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     username: z.string(),
     messages: z.array(z.object({ id: z.number() })),
     user_profiles: z.array(z.object({ id: z.number() })),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
 test('many-to-one relationship', async () => {
-  const res = await postgrest.from('messages').select('user:users(*)').limit(1).single()
+  const res = await postgrest.from('messages').select('user:users(*)').order('id').limit(1).single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -212,17 +214,22 @@ test('many-to-one relationship', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     user: UsersRowSchema,
   })
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = RequiredDeep<z.infer<typeof ExpectedSchema>>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
 test('one-to-many relationship', async () => {
-  const res = await postgrest.from('users').select('messages(*)').limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select('messages(*)')
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -264,7 +271,7 @@ test('one-to-many relationship', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     messages: z.array(
       z.object({
@@ -276,15 +283,18 @@ test('one-to-many relationship', async () => {
       })
     ),
   })
-  // TODO: older versions of zod require this trick for non optional unknown data type
-  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = { messages: SupabaseDatabase['public']['Tables']['messages']['Row'][] }
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
 test('one-to-many relationship with selective columns', async () => {
-  const res = await postgrest.from('users').select('messages(data)').limit(1).single()
+  const res = await postgrest
+    .from('users')
+    .select('messages(data)')
+    .order('username', { ascending: false })
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -310,14 +320,12 @@ test('one-to-many relationship with selective columns', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     messages: z.array(z.object({ data: z.unknown().nullable() })),
   })
-  // TODO: older versions of zod require this trick for non optional unknown data type
-  // newer version of zod don't have this issue but require an upgrade of typescript minimal version
-  let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = { messages: { data: Json }[] }
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -338,12 +346,12 @@ test('one-to-one relationship', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     channel_details: ChannelDetailsRowSchema.nullable(),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -361,10 +369,10 @@ test('select with type casting query', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({ id: z.string() })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -382,15 +390,20 @@ test('multiple times the same column in selection', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({ id: z.number() })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
 test('embed resource with no fields', async () => {
-  const res = await postgrest.from('messages').select('message, users()').limit(1).single()
+  const res = await postgrest
+    .from('messages')
+    .select('message, users()')
+    .order('id')
+    .limit(1)
+    .single()
   expect(res).toMatchInlineSnapshot(`
     {
       "count": null,
@@ -403,10 +416,10 @@ test('embed resource with no fields', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({ message: z.string().nullable() })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -414,6 +427,7 @@ test('select JSON accessor', async () => {
   const res = await postgrest
     .from('users')
     .select('data->foo->bar, data->foo->>baz')
+    .order('username', { ascending: false })
     .limit(1)
     .filter('username', 'eq', 'jsonuser')
     .single()
@@ -432,18 +446,18 @@ test('select JSON accessor', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
-    bar: z.unknown(),
+    bar: z.object({ nested: z.string() }),
     baz: z.string(),
   })
-  // Cannot have a zod schema that match the Json type
-  // TODO: refactor the Json type to be unknown
-  let expected: {
-    bar: Json
-    baz: string
+  // `users.data` is typed by the column override (column-types.ts), so the paths follow its shape;
+  // a JSON path is nullable because the key may be missing from a row.
+  type Expected = {
+    bar: { nested: string } | null
+    baz: string | null
   }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -475,7 +489,7 @@ test('self reference relation', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     id: z.number(),
     description: z.string().nullable(),
@@ -488,8 +502,8 @@ test('self reference relation', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -518,7 +532,7 @@ test('self reference relation via column', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     description: z.string().nullable(),
     id: z.number(),
@@ -530,15 +544,8 @@ test('self reference relation via column', async () => {
       })
       .nullable(),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  // TODO: fix this type, property merging override give invalid intersection types
-  // See: result.ts#ProcessNodes comment for more details
-  let crippledExpected: {
-    description: (typeof expected)['description']
-    id: (typeof expected)['id']
-    parent_id: (number & (typeof expected)['parent_id']) | null
-  }
-  expectType<TypeEqual<typeof result, typeof crippledExpected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
@@ -588,13 +595,9 @@ test('self reference relation via aliased column with multiple foreign keys', as
   expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 
+  // @ts-expect-error PGRST201
   const ambiguousRes = await postgrest.from('lab').select('children:lab(*)')
   expect(ambiguousRes.error?.code).toBe('PGRST201')
-  type AmbiguousResult = Exclude<typeof ambiguousRes.data, null>
-  type ExpectedAmbiguousResult = {
-    children: SelectQueryError<"Could not embed because more than one relationship was found for 'lab' and 'lab' you need to hint the column with lab!<columnName> ?">
-  }[]
-  expectType<TypeEqual<AmbiguousResult, ExpectedAmbiguousResult>>(true)
 })
 
 test('self reference relation via hint matching column name', async () => {
@@ -630,7 +633,7 @@ test('self reference relation via hint matching column name', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     id: z.number(),
     description: z.string().nullable(),
@@ -643,19 +646,20 @@ test('self reference relation via hint matching column name', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })
 
 // Documents a known PostgREST limitation: a self-referencing embed cannot be
 // disambiguated by its foreign key constraint name, so this
 // query fails at runtime with PGRST200. Use the column name hint instead (see the
-// test above). The inferred type is still (correctly) an array. See
+// test above). The planner reports the same error, so the call is rejected at type level. See
 // https://github.com/supabase/supabase-js/issues/2517
 test('self reference relation via hint matching fk constraint name fails at runtime', async () => {
   const res = await postgrest
     .from('collections')
+    // @ts-expect-error PGRST200
     .select('*, collections!collections_parent_id_fkey(*)')
     .eq('id', 1)
     .limit(1)
@@ -675,21 +679,7 @@ test('self reference relation via hint matching fk constraint name fails at runt
       "success": false,
     }
   `)
-  let result: Exclude<typeof res.data, null>
-  const ExpectedSchema = z.object({
-    id: z.number(),
-    description: z.string().nullable(),
-    parent_id: z.number().nullable(),
-    collections: z.array(
-      z.object({
-        description: z.string().nullable(),
-        id: z.number(),
-        parent_id: z.number().nullable(),
-      })
-    ),
-  })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  expectType<TypeEqual<typeof res.data, null>>(true)
 })
 
 test('many-to-many with join table', async () => {
@@ -721,7 +711,7 @@ test('many-to-many with join table', async () => {
       "success": true,
     }
   `)
-  let result: Exclude<typeof res.data, null>
+  type Result = Exclude<typeof res.data, null>
   const ExpectedSchema = z.object({
     id: z.number(),
     name: z.string(),
@@ -735,7 +725,7 @@ test('many-to-many with join table', async () => {
       })
     ),
   })
-  let expected: z.infer<typeof ExpectedSchema>
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
+  type Expected = z.infer<typeof ExpectedSchema>
+  expectType<TypeEqual<Result, Expected>>(true)
   ExpectedSchema.parse(res.data)
 })

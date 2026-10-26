@@ -1,0 +1,184 @@
+import type { PlanResult, ShapeField } from '@supabase/postgrest-planner'
+import { isHostFailure } from '../host'
+import type { PlannerHost } from '../host'
+import { jsonSchemaToTs } from '../jsonschema'
+import { columnKey, relationKey } from '../keys'
+import type { PrintDiagnostic } from '../printer'
+import {
+  buildFunctionTraceInputs,
+  buildJsonSchemaInput,
+  buildTraceCatalog,
+  exposedSchemas,
+  extraSearchPath,
+} from '../schema'
+import type { AcquiredSchema, SchemaLogger } from '../schema'
+import type { TracedColumn, TracedFunction, Tracer } from '../tracer'
+
+export interface PlanDatabaseOptions {
+  acquired: AcquiredSchema
+  /** Already holds `acquired` (the caller loaded it) */
+  host: PlannerHost
+  tracer: Tracer
+  /** Defaults to silence */
+  logger?: Pick<SchemaLogger, 'debug' | 'warn'>
+}
+
+/**
+ * What `printDatabase` is fed and the selects printer reads: everything the planner and the tracer contribute. Plain
+ * data, so it can be cached on disk (see `cache.ts`) while the printed text is always recomputed.
+ */
+export interface DatabasePlanContext {
+  /** The output columns of `select=*` per `relationKey(schema, relation)` */
+  plans: Map<string, readonly ShapeField[]>
+  /** Tracer verdicts per `relationKey(schema, view)`, then per column */
+  traces: Map<string, Map<string, TracedColumn>>
+  /**
+   * The single-query `LANGUAGE sql` functions the tracer read, per `relationKey(schema, name)`, one per overload
+   * (design v5 §4.3). A function whose body could not be traced is not here: its rows keep the conservative reading
+   */
+  functions: Map<string, TracedFunction[]>
+  /** `schema.table.column` to the TypeScript type of its `pg_jsonschema` CHECK constraints */
+  jsonSchemas: Map<string, string>
+  /** What was noticed while computing it */
+  diagnostics: PrintDiagnostic[]
+}
+
+/** `DatabasePlanContext` plus the relations it could not plan. */
+export interface DatabaseInputs extends DatabasePlanContext {
+  /**
+   * The relations whose `select=*` the host could not plan (a timeout, a crashed worker). They are missing from
+   * `plans` for that reason only, so the context is incomplete and a caller must not keep it
+   */
+  failures: string[]
+}
+
+/** Upstream's code for a relation outside the schema cache (a partition, or one the role cannot see). */
+const NOT_IN_SCHEMA_CACHE = 'PGRST205'
+
+function grammarOf(pgVersionNum: number): 15 | 16 | 17 {
+  const major = Math.floor(pgVersionNum / 10000)
+  return major === 15 || major === 16 ? major : 17
+}
+
+/**
+ * Plans `select=*` of every exposed relation on a host that already holds `acquired` (design v5 §5.1), traces the
+ * views and converts the JSON Schema CHECKs: the part of the pipeline that needs the planner. Planner and tracer
+ * failures degrade to diagnostics, never exceptions.
+ */
+export async function planDatabase(options: PlanDatabaseOptions): Promise<DatabaseInputs> {
+  const { acquired, host, tracer, logger } = options
+  const { supplementary } = acquired
+  const diagnostics: PrintDiagnostic[] = []
+  const note = (severity: PrintDiagnostic['severity'], message: string): void => {
+    diagnostics.push({ severity, message })
+    if (severity !== 'info') logger?.warn(message)
+    else logger?.debug(message)
+  }
+
+  // ---- Row: the output of `select=*`
+  const relations = [...supplementary.relations].sort((a, b) =>
+    relationKey(a.schema, a.name) < relationKey(b.schema, b.name) ? -1 : 1
+  )
+  const results: PlanResult[] = await host.planMany(
+    relations.map((r) => ({
+      method: 'GET',
+      url: `/${encodeURIComponent(r.name)}?select=*`,
+      headers: { 'Accept-Profile': r.schema },
+    }))
+  )
+  const plans = new Map<string, readonly ShapeField[]>()
+  const failures: string[] = []
+  relations.forEach((r, i) => {
+    const key = relationKey(r.schema, r.name)
+    const name = `${r.schema}.${r.name}`
+    const result = results[i]!
+    if (!result.ok) {
+      if (result.error.code === NOT_IN_SCHEMA_CACHE) {
+        note('info', `${name} is not in the PostgREST schema cache: left out`)
+      } else {
+        if (isHostFailure(result)) failures.push(name)
+        note(
+          'warning',
+          `could not plan select=* of ${name}: ${result.error.code ?? ''} ${result.error.message ?? ''}`.trim()
+        )
+      }
+      return
+    }
+    if (!result.shape) {
+      note('warning', `the plan of select=* of ${name} has no result shape: left out`)
+      return
+    }
+    plans.set(key, result.shape.fields)
+  })
+
+  // ---- view nullability (design v5 §6.2)
+  const catalog = buildTraceCatalog(supplementary)
+  const traces = new Map<string, Map<string, TracedColumn>>()
+  for (const r of relations) {
+    // a materialized view is not traced: its stored rows can predate constraints of its base tables (its columns stay
+    // nullable and keep their own key, so no base-table JSON Schema applies)
+    const key = relationKey(r.schema, r.name)
+    if (r.kind !== 'v' || !r.viewDefinition || !plans.has(key)) continue
+    const columns = [...r.columns].sort((a, b) => a.attnum - b.attnum)
+    const traced = await tracer.trace({
+      sql: r.viewDefinition,
+      columns: columns.map((c) => c.name),
+      catalog,
+    })
+    if (traced.error)
+      note(
+        'info',
+        `${r.schema}.${r.name}: view not fully traced, columns stay nullable: ${traced.error}`
+      )
+    traces.set(
+      key,
+      new Map(columns.map((c, i) => [c.name, traced.columns[i] ?? { nullable: true }]))
+    )
+  }
+
+  // ---- function rows (design v5 §4.3): the body of a single-query SQL function, traced like a view
+  const functions = new Map<string, TracedFunction[]>()
+  for (const f of buildFunctionTraceInputs(supplementary, {
+    searchPath: extraSearchPath(acquired.config),
+    exposedSchemas: exposedSchemas(acquired.config),
+  })) {
+    const fn = f.function
+    // a scalar has no rows to read
+    if (fn.returns.kind === 'scalar' && !fn.outColumns) continue
+    const traced = await tracer.trace(f.input)
+    if (traced.error) {
+      // most functions are not a single query (plpgsql, DML): no diagnostic, their rows simply stay nullable
+      logger?.debug(
+        `${f.schema}.${f.name}(${f.argTypes.join(', ')}): body not traced, its rows stay nullable: ${traced.error}`
+      )
+      continue
+    }
+    const key = relationKey(f.schema, f.name)
+    const overloads = functions.get(key) ?? []
+    overloads.push({
+      argNames: fn.argNames ?? fn.argTypes.map(() => ''),
+      argTypes: fn.argTypes,
+      setof: fn.returns.setof,
+      snapshot: fn.volatility === 'i' || fn.volatility === 's',
+      columns: f.input.columns.map((c, i) => [c, traced.columns[i] ?? { nullable: true }]),
+    })
+    functions.set(key, overloads)
+  }
+
+  // ---- JSON columns (design v5 §6.1)
+  const jsonSchemas = new Map<string, string>()
+  const json = await buildJsonSchemaInput(supplementary, {
+    pgVersion: grammarOf(acquired.pgVersionNum),
+  })
+  for (const c of json.columns) {
+    jsonSchemas.set(
+      columnKey({ schema: c.schema, relation: c.table, column: c.column }),
+      jsonSchemaToTs(c.jsonSchema, { jsonType: 'Json' })
+    )
+  }
+  for (const i of json.ignored) {
+    note('info', `${i.schema}.${i.table}: constraint ${i.constraint} ignored: ${i.reason}`)
+  }
+
+  return { plans, traces, functions, jsonSchemas, diagnostics, failures }
+}

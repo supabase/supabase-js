@@ -3,12 +3,9 @@
 // TODO (@mandarini): Remove this file when v3 ships (early 2025)
 
 import { PostgrestClient } from '../../src/index'
-import { Database } from '../types.override'
-import { expectType, TypeEqual } from '../types'
-import { SelectQueryError } from '../../src/select-query-parser/utils'
 
 const REST_URL = 'http://localhost:3012'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
 
 // Test 1: Main v12 vs v14+ difference - spread on many relation
 test('select spread on many relation returns error in v12', async () => {
@@ -23,13 +20,6 @@ test('select spread on many relation returns error in v12', async () => {
   expect(res.error?.code).toBe('PGRST119')
   expect(res.error?.message).toContain('spread operation')
   expect(res.error?.details).toContain('do not form a many-to-one or one-to-one relationship')
-
-  let result: Exclude<typeof res.data, null>
-  let expected: {
-    channel_id: number
-    messages: SelectQueryError<'"channels" and "messages" do not form a many-to-one or one-to-one relationship spread not possible'>
-  }
-  expectType<TypeEqual<typeof result, typeof expected>>(true)
 })
 
 // Test 2: Sanity check - basic select works

@@ -1,11 +1,12 @@
-import type { RequiredDeep } from 'type-fest'
 import { z } from 'zod'
 import { PostgrestClient } from '../src/index'
 import { expectType, type TypeEqual } from './types'
-import type { Database } from './types.override'
 
 const REST_URL = 'http://localhost:54321/rest/v1'
-const postgrest = new PostgrestClient<Database>(REST_URL)
+const postgrest = new PostgrestClient(REST_URL)
+
+type MessagesRow = SupabaseDatabase['public']['Tables']['messages']['Row']
+type NullableFields<T> = { [K in keyof T]: T[K] | null }
 
 describe('embeded functions select', () => {
   test('embeded_setof_function - function returning a setof embeded table', async () => {
@@ -43,14 +44,14 @@ describe('embeded functions select', () => {
               {
                 "channel_id": 3,
                 "data": null,
-                "id": 4,
+                "id": 3,
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
               {
                 "channel_id": 3,
                 "data": null,
-                "id": 3,
+                "id": 4,
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
@@ -64,7 +65,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
@@ -79,11 +80,12 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    type Expected = { id: number; all_channels_messages: NullableFields<MessagesRow>[] }[]
     // Assert over the keys of the expected and result objects to ensure consistency between versions of types
     // should always fallback to a SelectQueryError if the relation cannot be found
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -116,11 +118,11 @@ describe('embeded functions select', () => {
           {
             "all_channels_messages": [
               {
-                "id": 4,
+                "id": 3,
                 "message": "Some message on channel without details",
               },
               {
-                "id": 3,
+                "id": 4,
                 "message": "Some message on channel without details",
               },
             ],
@@ -133,30 +135,50 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
         all_channels_messages: z.array(
           z.object({
-            id: z.number(),
+            id: z.number().nullable(),
             message: z.string().nullable(),
           })
         ),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
   test('embeded_setof_function_double_definition - function double definition returning a setof embeded table', async () => {
-    const res = await postgrest.from('users').select('username, all_user_messages:get_messages(*)')
+    const res = await postgrest
+      .from('users')
+      .select('username, all_user_messages:get_messages(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "all_user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "all_user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "all_user_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "all_user_messages": [
               {
@@ -176,35 +198,19 @@ describe('embeded functions select', () => {
               {
                 "channel_id": 3,
                 "data": null,
-                "id": 4,
+                "id": 3,
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
               {
                 "channel_id": 3,
                 "data": null,
-                "id": 3,
+                "id": 4,
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
             "username": "supabot",
-          },
-          {
-            "all_user_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "all_user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "all_user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "all_user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -213,7 +219,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -228,9 +234,10 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    type Expected = { username: string; all_user_messages: NullableFields<MessagesRow>[] }[]
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -238,10 +245,27 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, all_user_messages:get_messages(id,message)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "all_user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "all_user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "all_user_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "all_user_messages": [
               {
@@ -253,31 +277,15 @@ describe('embeded functions select', () => {
                 "message": "Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.",
               },
               {
-                "id": 4,
+                "id": 3,
                 "message": "Some message on channel without details",
               },
               {
-                "id": 3,
+                "id": 4,
                 "message": "Some message on channel without details",
               },
             ],
             "username": "supabot",
-          },
-          {
-            "all_user_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "all_user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "all_user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "all_user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -286,21 +294,22 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         all_user_messages: z.array(
           z.object({
-            id: z.number(),
+            id: z.number().nullable(),
             message: z.string().nullable(),
           })
         ),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -308,10 +317,27 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, all_user_messages:get_messages(id,message, blurb_message)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "all_user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "all_user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "all_user_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "all_user_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "all_user_messages": [
               {
@@ -326,32 +352,16 @@ describe('embeded functions select', () => {
               },
               {
                 "blurb_message": "Som",
-                "id": 4,
+                "id": 3,
                 "message": "Some message on channel without details",
               },
               {
                 "blurb_message": "Som",
-                "id": 3,
+                "id": 4,
                 "message": "Some message on channel without details",
               },
             ],
             "username": "supabot",
-          },
-          {
-            "all_user_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "all_user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "all_user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "all_user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -360,22 +370,23 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         all_user_messages: z.array(
           z.object({
-            id: z.number(),
+            id: z.number().nullable(),
             message: z.string().nullable(),
             blurb_message: z.string().nullable(),
           })
         ),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -383,10 +394,27 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, setof_rows_one:function_using_setof_rows_one(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "setof_rows_one": null,
+            "username": "awailas",
+          },
+          {
+            "setof_rows_one": null,
+            "username": "dragarcia",
+          },
+          {
+            "setof_rows_one": null,
+            "username": "jsonuser",
+          },
+          {
+            "setof_rows_one": null,
+            "username": "kiwicopple",
+          },
           {
             "setof_rows_one": {
               "id": 1,
@@ -394,22 +422,6 @@ describe('embeded functions select', () => {
             },
             "username": "supabot",
           },
-          {
-            "setof_rows_one": null,
-            "username": "kiwicopple",
-          },
-          {
-            "setof_rows_one": null,
-            "username": "awailas",
-          },
-          {
-            "setof_rows_one": null,
-            "username": "jsonuser",
-          },
-          {
-            "setof_rows_one": null,
-            "username": "dragarcia",
-          },
         ],
         "error": null,
         "status": 200,
@@ -417,21 +429,22 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         setof_rows_one: z
           .object({
-            id: z.number(),
+            id: z.number().nullable(),
             username: z.string().nullable(),
           })
           .nullable(),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -439,30 +452,24 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, returns_row:function_using_table_returns(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
             "returns_row": {
-              "id": 1,
-              "username": "supabot",
-            },
-            "username": "supabot",
-          },
-          {
-            "returns_row": {
-              "id": null,
-              "username": null,
-            },
-            "username": "kiwicopple",
-          },
-          {
-            "returns_row": {
               "id": null,
               "username": null,
             },
             "username": "awailas",
+          },
+          {
+            "returns_row": {
+              "id": null,
+              "username": null,
+            },
+            "username": "dragarcia",
           },
           {
             "returns_row": {
@@ -476,7 +483,14 @@ describe('embeded functions select', () => {
               "id": null,
               "username": null,
             },
-            "username": "dragarcia",
+            "username": "kiwicopple",
+          },
+          {
+            "returns_row": {
+              "id": 1,
+              "username": "supabot",
+            },
+            "username": "supabot",
           },
         ],
         "error": null,
@@ -485,7 +499,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -495,9 +509,9 @@ describe('embeded functions select', () => {
         }),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -525,22 +539,20 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
-    // The override marks this as not nullable, but the data can be null at runtime.
-    // So the correct runtime schema is nullable, but the type is not.
-    // We check that the type is as expected (not nullable), but parsing will fail.
+    type Result = Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         user_called_profile_not_null: z.object({
-          id: z.number(),
+          id: z.number().nullable(),
           username: z.string().nullable(),
         }),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     // Can parse the data because the !inner ensure the join result from function is not nullable
     ExpectedSchema.parse(res.data)
   })
@@ -549,27 +561,22 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, user_called_profile:get_user_profile(username)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
             "user_called_profile": {
-              "username": "supabot",
-            },
-            "username": "supabot",
-          },
-          {
-            "user_called_profile": {
-              "username": null,
-            },
-            "username": "kiwicopple",
-          },
-          {
-            "user_called_profile": {
               "username": null,
             },
             "username": "awailas",
+          },
+          {
+            "user_called_profile": {
+              "username": null,
+            },
+            "username": "dragarcia",
           },
           {
             "user_called_profile": {
@@ -581,7 +588,13 @@ describe('embeded functions select', () => {
             "user_called_profile": {
               "username": null,
             },
-            "username": "dragarcia",
+            "username": "kiwicopple",
+          },
+          {
+            "user_called_profile": {
+              "username": "supabot",
+            },
+            "username": "supabot",
           },
         ],
         "error": null,
@@ -590,18 +603,19 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
+        // A function returning one composite always yields a row (all fields NULL when nothing matches)
         user_called_profile: z.object({
           username: z.string().nullable(),
         }),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -646,7 +660,7 @@ describe('embeded functions select', () => {
                   "id": 3,
                   "slug": "other",
                 },
-                "id": 4,
+                "id": 3,
                 "message": "Some message on channel without details",
               },
               {
@@ -654,7 +668,7 @@ describe('embeded functions select', () => {
                   "id": 3,
                   "slug": "other",
                 },
-                "id": 3,
+                "id": 4,
                 "message": "Some message on channel without details",
               },
             ],
@@ -667,34 +681,56 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
         all_channels_messages: z.array(
           z.object({
-            id: z.number(),
+            id: z.number().nullable(),
             message: z.string().nullable(),
-            channels: z.object({
-              id: z.number(),
-              slug: z.string().nullable(),
-            }),
+            channels: z
+              .object({
+                id: z.number(),
+                slug: z.string().nullable(),
+              })
+              .nullable(),
           })
         ),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
   test('embeded_function_with_table_row_input - function with table row input', async () => {
-    const res = await postgrest.from('users').select('username, user_messages:get_user_messages(*)')
+    const res = await postgrest
+      .from('users')
+      .select('username, user_messages:get_user_messages(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "user_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "user_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "user_messages": [
               {
@@ -714,35 +750,19 @@ describe('embeded functions select', () => {
               {
                 "channel_id": 3,
                 "data": null,
-                "id": 4,
+                "id": 3,
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
               {
                 "channel_id": 3,
                 "data": null,
-                "id": 3,
+                "id": 4,
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
             "username": "supabot",
-          },
-          {
-            "user_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -751,7 +771,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -766,9 +786,10 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    type Expected = { username: string; user_messages: NullableFields<MessagesRow>[] }[]
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -776,10 +797,23 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('active_users')
       .select('username, active_user_messages:get_active_user_messages(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "active_user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "active_user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "active_user_messages": [],
+            "username": "jsonuser",
+          },
           {
             "active_user_messages": [
               {
@@ -799,31 +833,19 @@ describe('embeded functions select', () => {
               {
                 "channel_id": 3,
                 "data": null,
-                "id": 4,
+                "id": 3,
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
               {
                 "channel_id": 3,
                 "data": null,
-                "id": 3,
+                "id": 4,
                 "message": "Some message on channel without details",
                 "username": "supabot",
               },
             ],
             "username": "supabot",
-          },
-          {
-            "active_user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "active_user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "active_user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -832,10 +854,10 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
-        username: z.string().nullable(),
+        username: z.string(),
         active_user_messages: z.array(
           z.object({
             channel_id: z.number(),
@@ -847,9 +869,10 @@ describe('embeded functions select', () => {
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    type Expected = { username: string; active_user_messages: NullableFields<MessagesRow>[] }[]
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -857,10 +880,27 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, recent_messages:get_user_recent_messages(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "recent_messages": [],
+            "username": "awailas",
+          },
+          {
+            "recent_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "recent_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "recent_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "recent_messages": [
               {
@@ -894,22 +934,6 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          {
-            "recent_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "recent_messages": [],
-            "username": "awailas",
-          },
-          {
-            "recent_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "recent_messages": [],
-            "username": "dragarcia",
-          },
         ],
         "error": null,
         "status": 200,
@@ -917,24 +941,25 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         recent_messages: z.array(
           z.object({
-            channel_id: z.number().nullable(),
+            channel_id: z.number(),
             data: z.unknown().nullable(),
-            id: z.number().nullable(),
+            id: z.number(),
             message: z.string().nullable(),
-            username: z.string().nullable(),
+            username: z.string(),
           })
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    type Expected = { username: string; recent_messages: NullableFields<MessagesRow>[] }[]
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -942,10 +967,23 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('active_users')
       .select('username, recent_messages:get_user_recent_messages(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "recent_messages": [],
+            "username": "awailas",
+          },
+          {
+            "recent_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "recent_messages": [],
+            "username": "jsonuser",
+          },
           {
             "recent_messages": [
               {
@@ -979,18 +1017,6 @@ describe('embeded functions select', () => {
             ],
             "username": "supabot",
           },
-          {
-            "recent_messages": [],
-            "username": "awailas",
-          },
-          {
-            "recent_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "recent_messages": [],
-            "username": "dragarcia",
-          },
         ],
         "error": null,
         "status": 200,
@@ -998,24 +1024,25 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
-        username: z.string().nullable(),
+        username: z.string(),
         recent_messages: z.array(
           z.object({
-            channel_id: z.number().nullable(),
+            channel_id: z.number(),
             data: z.unknown().nullable(),
-            id: z.number().nullable(),
+            id: z.number(),
             message: z.string().nullable(),
-            username: z.string().nullable(),
+            username: z.string(),
           })
         ),
       })
     )
-    let expected: RequiredDeep<z.infer<typeof ExpectedSchema>>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
+    type Expected = { username: string; recent_messages: NullableFields<MessagesRow>[] }[]
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -1023,10 +1050,27 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, user_messages:get_user_messages(id,message,blurb_message)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
+          {
+            "user_messages": [],
+            "username": "awailas",
+          },
+          {
+            "user_messages": [],
+            "username": "dragarcia",
+          },
+          {
+            "user_messages": [],
+            "username": "jsonuser",
+          },
+          {
+            "user_messages": [],
+            "username": "kiwicopple",
+          },
           {
             "user_messages": [
               {
@@ -1041,32 +1085,16 @@ describe('embeded functions select', () => {
               },
               {
                 "blurb_message": "Som",
-                "id": 4,
+                "id": 3,
                 "message": "Some message on channel without details",
               },
               {
                 "blurb_message": "Som",
-                "id": 3,
+                "id": 4,
                 "message": "Some message on channel without details",
               },
             ],
             "username": "supabot",
-          },
-          {
-            "user_messages": [],
-            "username": "kiwicopple",
-          },
-          {
-            "user_messages": [],
-            "username": "awailas",
-          },
-          {
-            "user_messages": [],
-            "username": "jsonuser",
-          },
-          {
-            "user_messages": [],
-            "username": "dragarcia",
           },
         ],
         "error": null,
@@ -1075,26 +1103,28 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         user_messages: z.array(
           z.object({
-            id: z.number(),
+            id: z.number().nullable(),
             message: z.string().nullable(),
             blurb_message: z.string().nullable(),
           })
         ),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
   test('embeded_function_returning_row - Cannot embed an function that is not a setofOptions one', async () => {
+    // @ts-expect-error PGRST200
     const res = await postgrest.from('channels').select('id, user:function_returning_row(*)')
     expect(res).toMatchInlineSnapshot(`
       {
@@ -1111,15 +1141,16 @@ describe('embeded functions select', () => {
         "success": false,
       }
     `)
-    let result: Exclude<typeof res.data, null>
-    let expected: never[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = never
+    expectType<TypeEqual<Result, Expected>>(true)
   })
 
   test('embeded_function_returning_single_row - can embed single row returns function with row single param', async () => {
     const res = await postgrest
       .from('messages')
       .select('id, user:function_returning_single_row(status, username)')
+      .order('id')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
@@ -1139,14 +1170,14 @@ describe('embeded functions select', () => {
             },
           },
           {
-            "id": 4,
+            "id": 3,
             "user": {
               "status": "ONLINE",
               "username": "supabot",
             },
           },
           {
-            "id": 3,
+            "id": 4,
             "user": {
               "status": "ONLINE",
               "username": "supabot",
@@ -1159,25 +1190,27 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
+        // A function returning one composite always yields a row (all fields NULL when nothing matches)
         user: z.object({
           status: z.enum(['ONLINE', 'OFFLINE'] as const).nullable(),
           username: z.string().nullable(),
         }),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
   test('embeded_function_returning_set_of_rows - function returning set of rows', async () => {
     const res = await postgrest
       .from('messages')
+      // @ts-expect-error PGRST200
       .select('id, users:function_returning_set_of_rows(*)')
     expect(res).toMatchInlineSnapshot(`
       {
@@ -1194,39 +1227,33 @@ describe('embeded functions select', () => {
         "success": false,
       }
     `)
-    let result: Exclude<typeof res.data, null>
-    let expected: never[]
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result = Exclude<typeof res.data, null>
+    type Expected = never
+    expectType<TypeEqual<Result, Expected>>(true)
   })
 
   test('function_using_setof_rows_one', async () => {
     const res = await postgrest
       .from('users')
       .select('username, profile:function_using_table_returns(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
             "profile": {
-              "id": 1,
-              "username": "supabot",
-            },
-            "username": "supabot",
-          },
-          {
-            "profile": {
-              "id": null,
-              "username": null,
-            },
-            "username": "kiwicopple",
-          },
-          {
-            "profile": {
               "id": null,
               "username": null,
             },
             "username": "awailas",
+          },
+          {
+            "profile": {
+              "id": null,
+              "username": null,
+            },
+            "username": "dragarcia",
           },
           {
             "profile": {
@@ -1240,7 +1267,14 @@ describe('embeded functions select', () => {
               "id": null,
               "username": null,
             },
-            "username": "dragarcia",
+            "username": "kiwicopple",
+          },
+          {
+            "profile": {
+              "id": 1,
+              "username": "supabot",
+            },
+            "username": "supabot",
           },
         ],
         "error": null,
@@ -1249,7 +1283,7 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
@@ -1259,9 +1293,9 @@ describe('embeded functions select', () => {
         }),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -1269,24 +1303,18 @@ describe('embeded functions select', () => {
     const res = await postgrest
       .from('users')
       .select('username, profile:function_using_setof_rows_one(*)')
+      .order('username')
     expect(res).toMatchInlineSnapshot(`
       {
         "count": null,
         "data": [
           {
-            "profile": {
-              "id": 1,
-              "username": "supabot",
-            },
-            "username": "supabot",
-          },
-          {
-            "profile": null,
-            "username": "kiwicopple",
-          },
-          {
             "profile": null,
             "username": "awailas",
+          },
+          {
+            "profile": null,
+            "username": "dragarcia",
           },
           {
             "profile": null,
@@ -1294,7 +1322,14 @@ describe('embeded functions select', () => {
           },
           {
             "profile": null,
-            "username": "dragarcia",
+            "username": "kiwicopple",
+          },
+          {
+            "profile": {
+              "id": 1,
+              "username": "supabot",
+            },
+            "username": "supabot",
           },
         ],
         "error": null,
@@ -1303,21 +1338,22 @@ describe('embeded functions select', () => {
         "success": true,
       }
     `)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
+    // Computed-relationship rows are function rows: their fields (and first-level to-one embeds) are nullable
     const ExpectedSchema = z.array(
       z.object({
         username: z.string(),
         profile: z
           .object({
-            id: z.number(),
+            id: z.number().nullable(),
             username: z.string().nullable(),
           })
           .nullable(),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
   })
 
@@ -1337,19 +1373,19 @@ describe('embeded functions select', () => {
     })
     // Verify time-based value is reasonable
     expect(res.data?.[0].created_ago).toBeGreaterThanOrEqual(0)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
         created_ago: z.number().nullable(),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
+    // @ts-expect-error PGRST202
     const use_rpc_call = await postgrest.rpc('created_ago', {
-      // @ts-expect-error Object literal may only specify known properties
       id: 1,
     })
     expect(use_rpc_call).toMatchInlineSnapshot(`
@@ -1367,15 +1403,9 @@ describe('embeded functions select', () => {
         "success": false,
       }
     `)
-    let result_rpc: Exclude<typeof use_rpc_call.data, null>
-    expectType<
-      TypeEqual<
-        typeof result_rpc,
-        {
-          error: true
-        } & 'the function public.created_ago with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
-      >
-    >(true)
+    type Result_rpc = Exclude<typeof use_rpc_call.data, null>
+    // Computed-field functions are not RPC-callable: the call is rejected and its data is untyped
+    expectType<TypeEqual<Result_rpc, unknown>>(true)
   })
   // Test the days_since_event embeded function over partitioned table
   test('select the days_since_event embeded function over partitioned table', async () => {
@@ -1393,19 +1423,19 @@ describe('embeded functions select', () => {
     })
     // Verify time-based value is reasonable
     expect(res.data?.[0].days_since_event).toBeGreaterThanOrEqual(0)
-    let result: Exclude<typeof res.data, null>
+    type Result = Exclude<typeof res.data, null>
     const ExpectedSchema = z.array(
       z.object({
         id: z.number(),
         days_since_event: z.number().nullable(),
       })
     )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<keyof (typeof expected)[number], keyof (typeof result)[number]>>(true)
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Expected = z.infer<typeof ExpectedSchema>
+    expectType<TypeEqual<keyof Expected[number], keyof Result[number]>>(true)
+    expectType<TypeEqual<Result, Expected>>(true)
     ExpectedSchema.parse(res.data)
+    // @ts-expect-error PGRST202
     const use_rpc_call = await postgrest.rpc('days_since_event', {
-      // @ts-expect-error Object literal may only specify known properties
       id: 1,
     })
     expect(use_rpc_call).toMatchInlineSnapshot(`
@@ -1423,45 +1453,8 @@ describe('embeded functions select', () => {
         "success": false,
       }
     `)
-    let result_rpc: Exclude<typeof use_rpc_call.data, null>
-    expectType<
-      TypeEqual<
-        typeof result_rpc,
-        {
-          error: true
-        } & 'the function public.days_since_event with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache'
-      >
-    >(true)
-  })
-
-  // The two tests below are type-only. They cover the scalar computed field contract declared by
-  // hand in types.override.ts — PostgREST does not expose scalar computed fields in its schema
-  // cache, so pg-meta cannot emit these entries and there is no live function to call. The query
-  // builder is deliberately left un-awaited: it is lazy (PostgrestBuilder only fetches in then()),
-  // so no request is made, and the assertions read the resolved type via Awaited<>.
-  test('scalar_computed_count - non-SETOF non-nullable scalar returns number (not null)', () => {
-    const query = postgrest.from('users').select('username, scalar_computed_count()')
-    let result: Exclude<Awaited<typeof query>['data'], null>
-    const ExpectedSchema = z.array(
-      z.object({
-        username: z.string(),
-        scalar_computed_count: z.number(),
-      })
-    )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
-  })
-
-  test('scalar_computed_ids - SETOF scalar returns string[] (not null)', () => {
-    const query = postgrest.from('users').select('username, scalar_computed_ids()')
-    let result: Exclude<Awaited<typeof query>['data'], null>
-    const ExpectedSchema = z.array(
-      z.object({
-        username: z.string(),
-        scalar_computed_ids: z.array(z.string()),
-      })
-    )
-    let expected: z.infer<typeof ExpectedSchema>
-    expectType<TypeEqual<typeof result, typeof expected>>(true)
+    type Result_rpc = Exclude<typeof use_rpc_call.data, null>
+    // Computed-field functions are not RPC-callable: the call is rejected and its data is untyped
+    expectType<TypeEqual<Result_rpc, unknown>>(true)
   })
 })

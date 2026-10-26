@@ -1,9 +1,11 @@
 import PostgrestClient from './PostgrestClient'
+import type { DefaultSchemaNameOf, PostgrestClientOptions, SchemaNameOf } from './PostgrestClient'
 import PostgrestQueryBuilder from './PostgrestQueryBuilder'
 import PostgrestFilterBuilder from './PostgrestFilterBuilder'
 import PostgrestTransformBuilder from './PostgrestTransformBuilder'
 import PostgrestBuilder from './PostgrestBuilder'
 import PostgrestError from './PostgrestError'
+import { normalizeSelect } from './normalizeSelect'
 
 export {
   PostgrestClient,
@@ -12,6 +14,7 @@ export {
   PostgrestTransformBuilder,
   PostgrestBuilder,
   PostgrestError,
+  normalizeSelect,
 }
 export default {
   PostgrestClient,
@@ -21,6 +24,7 @@ export default {
   PostgrestBuilder,
   PostgrestError,
 }
+export type { DefaultSchemaNameOf, PostgrestClientOptions, SchemaNameOf }
 export type {
   PostgrestResponse,
   PostgrestResponseFailure,
@@ -29,7 +33,14 @@ export type {
   PostgrestMaybeSingleResponse,
   PostgrestOpenApiSpec,
 } from './types/types'
-export type { ClientServerOptions as PostgrestClientOptions } from './types/common/common'
-// https://github.com/supabase/postgrest-js/issues/551
-// To be replaced with a helper type that only uses public types
-export type { GetResult as UnstableGetResult } from './select-query-parser/result'
+export type { PgrstJson, PgrstJsonText } from './types/planner/json'
+export type {
+  DefaultDatabase,
+  GenericDatabase,
+  PgrstFeature,
+  SupabaseColumnType,
+} from './types/planner/globals'
+export type { RpcOptions, SelectOptions, MutOptions } from './types/planner/options'
+export type { InsertOptions, UpsertOptions } from './PostgrestQueryBuilder'
+export type { ExplainOptions, OrderOptions } from './PostgrestTransformBuilder'
+export type { InvalidMethodError, TextSearchOptions } from './PostgrestFilterBuilder'

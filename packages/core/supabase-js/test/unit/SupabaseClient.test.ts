@@ -31,7 +31,7 @@ describe('SupabaseClient', () => {
   })
 
   test('should check the API key format without ever throwing', () => {
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
     try {
       // Platform-issued temporary keys are accepted silently.
       expect(() => createClient(URL, 'sb_temp_nonce123_payload456')).not.toThrow()
@@ -74,15 +74,15 @@ describe('SupabaseClient', () => {
     test('should construct URLs correctly', () => {
       const client = createClient(URL, KEY)
 
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.authUrl.toString()).toEqual('http://localhost:3000/auth/v1')
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.realtimeUrl.toString()).toEqual('ws://localhost:3000/realtime/v1')
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.storageUrl.toString()).toEqual('http://localhost:3000/storage/v1')
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.functionsUrl.toString()).toEqual('http://localhost:3000/functions/v1')
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.rest.url).toEqual('http://localhost:3000/rest/v1')
     })
 
@@ -90,23 +90,23 @@ describe('SupabaseClient', () => {
       const baseUrlWithPath = 'http://localhost:3000/custom/base'
       const client = createClient(baseUrlWithPath, KEY)
 
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.authUrl.toString()).toEqual('http://localhost:3000/custom/base/auth/v1')
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.realtimeUrl.toString()).toEqual('ws://localhost:3000/custom/base/realtime/v1')
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.storageUrl.toString()).toEqual('http://localhost:3000/custom/base/storage/v1')
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.functionsUrl.toString()).toEqual(
         'http://localhost:3000/custom/base/functions/v1'
       )
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.rest.url).toEqual('http://localhost:3000/custom/base/rest/v1')
     })
 
     test('should handle HTTPS URLs correctly', () => {
       const client = createClient('https://localhost:3000', KEY)
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.realtimeUrl.toString()).toEqual('wss://localhost:3000/realtime/v1')
     })
   })
@@ -148,7 +148,7 @@ describe('SupabaseClient', () => {
   describe('Storage Key', () => {
     test('should use default storage key based on project ref', () => {
       const client = createClient('https://project-ref.supabase.co', KEY)
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.storageKey).toBe('sb-project-ref-auth-token')
     })
 
@@ -157,7 +157,7 @@ describe('SupabaseClient', () => {
       const client = createClient(URL, KEY, {
         auth: { storageKey: customStorageKey },
       })
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.storageKey).toBe(customStorageKey)
     })
 
@@ -167,9 +167,9 @@ describe('SupabaseClient', () => {
         global: { headers: undefined },
       })
       expect(client).toBeDefined()
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.storageKey).toBe('')
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(client.headers).toHaveProperty('X-Client-Info')
     })
   })
@@ -179,7 +179,7 @@ describe('SupabaseClient', () => {
       const client = createClient(URL, KEY)
       const functions = client.functions
       expect(functions).toBeDefined()
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(functions.url).toBe('http://localhost:3000/functions/v1')
     })
 
@@ -187,14 +187,13 @@ describe('SupabaseClient', () => {
       const client = createClient(URL, KEY)
       const storage = client.storage
       expect(storage).toBeDefined()
-      // @ts-ignore
+      // @ts-expect-error accessing a private member
       expect(storage.url).toBe('http://localhost:3000/storage/v1')
     })
 
     test('should initialize realtime client', () => {
       const client = createClient(URL, KEY)
       expect(client.realtime).toBeDefined()
-      // @ts-ignore
       expect(client.realtime.endPoint).toBe('ws://localhost:3000/realtime/v1/websocket')
     })
   })
@@ -289,7 +288,7 @@ describe('SupabaseClient', () => {
           data: { session: { access_token: expectedToken } },
         })
 
-        // @ts-ignore - accessing private method
+        // @ts-expect-error accessing private method
         const token = await client._getAccessToken()
         expect(token).toBe(expectedToken)
       })
@@ -299,7 +298,7 @@ describe('SupabaseClient', () => {
         const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
         const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
 
-        // @ts-ignore - accessing private method
+        // @ts-expect-error accessing private method
         const token = await client._getAccessToken()
         expect(token).toBe(customToken)
         expect(customAccessTokenFn).toHaveBeenCalled()
@@ -312,7 +311,7 @@ describe('SupabaseClient', () => {
           data: { session: null },
         })
 
-        // @ts-ignore - accessing private method
+        // @ts-expect-error accessing private method
         const token = await client._getAccessToken()
         expect(token).toBe(KEY)
       })
@@ -372,7 +371,7 @@ describe('SupabaseClient', () => {
       })
 
       test('should handle errors gracefully when accessToken callback fails', async () => {
-        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
         const error = new Error('Token fetch failed')
         const failingAccessTokenFn = jest.fn().mockRejectedValue(error)
 
@@ -420,19 +419,19 @@ describe('SupabaseClient', () => {
         const client = createClient(URL, KEY)
         const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
 
-        // @ts-ignore - accessing private method for testing
+        // @ts-expect-error accessing private method for testing
         client._handleTokenChanged('TOKEN_REFRESHED', 'CLIENT', 'new-token')
         expect(setAuthSpy).toHaveBeenCalledWith('new-token')
 
         setAuthSpy.mockClear()
 
-        // @ts-ignore - accessing private method for testing
+        // @ts-expect-error accessing private method for testing
         client._handleTokenChanged('SIGNED_IN', 'CLIENT', 'signin-token')
         expect(setAuthSpy).toHaveBeenCalledWith('signin-token')
 
         setAuthSpy.mockClear()
 
-        // @ts-ignore - accessing private method for testing
+        // @ts-expect-error accessing private method for testing
         client._handleTokenChanged('SIGNED_OUT', 'CLIENT')
         expect(setAuthSpy).toHaveBeenCalledWith()
       })
@@ -441,7 +440,7 @@ describe('SupabaseClient', () => {
         const client = createClient(URL, KEY)
         const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
 
-        // @ts-ignore - accessing private method for testing
+        // @ts-expect-error accessing private method for testing
         client._handleTokenChanged('INITIAL_SESSION', 'CLIENT', 'initial-token')
         expect(setAuthSpy).toHaveBeenCalledWith('initial-token')
       })
@@ -542,7 +541,6 @@ describe('SupabaseClient', () => {
         })
 
         // Call realtime's fetch directly to verify custom fetch was propagated
-        // @ts-ignore accessing private property to verify fetch propagation
         await client.realtime.fetch('http://example.com')
 
         expect(mockFetch).toHaveBeenCalled()

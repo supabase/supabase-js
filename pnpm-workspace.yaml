@@ -1,8 +1,10 @@
 packages:
   - 'packages/core/*'
   - 'packages/shared/*'
+  - 'packages/tooling/*'
   - 'packages/core/auth-js/example/react'
   - 'packages/core/realtime-js/example'
+  - 'packages/core/supabase-js/example/planner-types'
 
 # Shared tooling versions referenced as `catalog:` in per-package devDependencies.
 # Keep aligned with the root devDependencies entries.
@@ -55,6 +57,8 @@ minimumReleaseAgeExclude:
   - '@supabase/*'
   - supabase # first-party Supabase CLI
   - source-map-js@1.2.2
+  - typescript@7.1.0-beta # TS 7.1 content-mapper e2e in postgrest-mapper
+  - '@typescript/typescript-*' # its native binaries
 blockExoticSubdeps: true
 
 # Whitelist of packages allowed to run install scripts (preinstall/install/postinstall).
