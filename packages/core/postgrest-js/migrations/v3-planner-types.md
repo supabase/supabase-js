@@ -95,6 +95,21 @@ declare global {
 export {}
 ```
 
+### `.single<T>()` and `.maybeSingle<T>()`
+
+The type argument now means `.cast<T>()` before the call. Write that instead.
+
+```diff
+- .select('id, name').single<Foo>()
++ .select('id, name').cast<Foo>().single()
+```
+
+### Explicit row type on writes
+
+`.insert<Row>(values)`, `.upsert<Row>(values)` and `.update<Row>(values)` still compile, and the values are checked
+against `Row`. `Row` must fit the table's `Insert` or `Update` type. Without it, the values are checked against the
+table directly, so you can drop it.
+
 ### `foreignTable`
 
 The `foreignTable` option on `.order()`, `.limit()`, `.range()`, `.or()` and `.filter()` is an alias of `referencedTable`. When both are given, `referencedTable` wins.

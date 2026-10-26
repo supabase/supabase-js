@@ -350,15 +350,17 @@ project works this way.
   when polling is turned off, or in a one-shot run.
 
 **When the database changes.** With a live source, `--watch` and the content mapper check the database for schema
-changes every 2 seconds (`pollIntervalMs` on the source, `0` or `false` to turn it off). The check is one read-only query
-over a connection they keep open. It hashes the catalog rows PostgREST's schema cache is built from, so `CREATE`, `ALTER`,
-`DROP` and `GRANT` change the hash while `ANALYZE`, `VACUUM`, `TRUNCATE` and `REFRESH MATERIALIZED VIEW` don't. When the
-hash moves, the poller writes it to a stamp file in the cache directory. The watcher sees the stamp change and reads the
-schema again, and so does the content mapper, which asks `tsc` to watch the same stamp. A migration therefore
-regenerates the types within a couple of seconds, with no command to run. The hash covers the whole database, so DDL in a
-schema PostgREST doesn't expose also triggers a regeneration, which re-reads the schema but leaves the output unchanged.
-A failed check keeps the last state, warns once and is retried at the next interval. One-shot commands (`generate`,
-`--check`, `snapshot`, `refresh`) never poll.
+changes every 2 seconds (`pollIntervalMs` on the source, `0` or `false` to turn it off). The check is one read-only
+query over a connection they keep open. It hashes the catalog rows PostgREST's schema cache is built from, so `CREATE`,
+`ALTER`, `DROP` and `GRANT` change the hash while `ANALYZE`, `VACUUM`, `TRUNCATE` and `REFRESH MATERIALIZED VIEW` don't.
+The baseline hash is taken just before the schema is read, so a migration that lands during the read is still seen. If
+that baseline can't be taken, the first check that succeeds counts as a change. No check runs while a regeneration is in
+progress. When the hash moves, the poller writes it to a stamp file in the cache directory. The watcher sees the stamp
+change and reads the schema again, and so does the content mapper, which asks `tsc` to watch the same stamp. A migration
+therefore regenerates the types within a couple of seconds, with no command to run. The hash covers the whole database,
+so DDL in a schema PostgREST doesn't expose also triggers a regeneration, which re-reads the schema but leaves the
+output unchanged. A failed check keeps the last state, warns once and is retried at the next interval. One-shot commands
+(`generate`, `--check`, `snapshot`, `refresh`) never poll.
 
 With a snapshot, nothing polls: run `postgrest-mapper snapshot` again after a migration and commit the file. The watcher
 sees the new file and regenerates.
@@ -463,7 +465,9 @@ const { data } = await supabase
 ```
 
 `.single()`, `.maybeSingle()`, `{ count: 'exact', head: true }`, `.csv()` and `.throwOnError()` reshape the response
-around the planned row as before.
+around the planned row as before. v2's explicit type argument on `insert`, `upsert` and `update`
+(`.insert<Row>(values)`) is still accepted: the type must fit the table's `Insert` or `Update`, and the values are
+checked against it.
 
 ## When there is no plan
 
@@ -500,8 +504,9 @@ declare global {
 ```
 
 **`.cast<T>()`** replaces the row type of one call and keeps the response shape (array, single row, count). v2's
-`.returns<T>()` and `.overrideTypes<T>()` still work with their v2 meaning, applied on top of the planned result, and are
-deprecated in favour of `.cast<T>()` and `SupabaseColumnTypes`.
+`.returns<T>()` and `.overrideTypes<T>()` still work with their v2 meaning, applied on top of the planned result, and
+are deprecated in favour of `.cast<T>()` and `SupabaseColumnTypes`. So is v2's type argument on `.single<T>()` and
+`.maybeSingle<T>()`, which now means `.cast<T>().single()`.
 
 ```ts
 const { data } = await supabase
@@ -537,33 +542,35 @@ construction, and a new PostgREST release is a rebuild of the wasm, not new type
 
 ### Upgrading
 
-v2 code compiles on v3 in the common case. Until the declarations are generated, chains are typed from the v2
-`Database` passed to `createClient<Database>()` (see [When there is no plan](#when-there-is-no-plan)). `.returns<T>()`,
-`.overrideTypes<T>()`, the `foreignTable` option and v2's `createClient` type arguments are kept as deprecated forms. The
-[migration guide](../packages/core/postgrest-js/migrations/v3-planner-types.md) lists the steps (`postgrest-mapper
-init`, then `unplanned: 'error'`) and the few remaining breaking changes.
+v2 code compiles on v3 in the common case. Until the declarations are generated, chains are typed from the v2 `Database`
+passed to `createClient<Database>()` (see [When there is no plan](#when-there-is-no-plan)). `.returns<T>()`,
+`.overrideTypes<T>()`, `.single<T>()`, `.maybeSingle<T>()`, the `foreignTable` option, v2's `createClient` type
+arguments and the `DatabaseWithoutInternals` type are kept as deprecated forms, and the explicit row type on writes is
+still accepted. The [migration guide](../packages/core/postgrest-js/migrations/v3-planner-types.md) lists the steps
+(`postgrest-mapper init`, then `unplanned: 'error'`) and the few remaining breaking changes.
 
 ### Performance
 
-The same queries were type-checked with each version: 500 chains over the example project's schema (selects with
-embeds, aliases, casts, spreads and `!inner`, filters, writes, rpc calls, and some long nested selects). v2 is
+The same queries were type-checked with each version: 500 chains over the example project's schema (selects with embeds,
+aliases, casts, spreads and `!inner`, filters, writes, rpc calls, and some long nested selects). v2 is
 `@supabase/supabase-js` 2.118.0 with a `Database` type from postgres-meta, the generator behind `supabase gen types`. v3
 is this branch with the generated file. Both compile with zero errors. Results are the median of 7 runs of
-`tsc --noEmit --extendedDiagnostics` on an Apple M3.
+`tsc --noEmit --extendedDiagnostics` on an Apple M3, measured on 2026-10-26. Other work was running on the machine, so
+the ratios are more reliable than the absolute times.
 
 | TypeScript | v2 check time | v3 check time | v2 instantiations | v3 instantiations | v2 peak memory | v3 peak memory |
 | ---------- | ------------- | ------------- | ----------------- | ----------------- | -------------- | -------------- |
-| 5.8        | 6.12 s        | 0.56 s        | 14.6 M            | 473 k             | 906 MB         | 383 MB         |
-| 6.0        | 3.99 s        | 0.56 s        | 5.5 M             | 381 k             | 1222 MB        | 383 MB         |
-| 7.0        | 0.86 s        | 0.09 s        | 5.8 M             | 429 k             | 693 MB         | 183 MB         |
-| 7.1 beta   | 0.67 s        | 0.09 s        | 5.7 M             | 429 k             | not measured   | not measured   |
+| 5.8        | 6.44 s        | 0.58 s        | 14.6 M            | 480 k             | 900 MB         | 385 MB         |
+| 6.0        | 4.19 s        | 0.60 s        | 5.5 M             | 386 k             | 1229 MB        | 384 MB         |
+| 7.0        | 0.90 s        | 0.10 s        | 5.8 M             | 437 k             | 691 MB         | 184 MB         |
+| 7.1 beta   | 0.73 s        | 0.09 s        | 5.7 M             | 437 k             | 476 MB         | 141 MB         |
 
-- **7 to 11 times faster** to check, with 13 to 31 times fewer type instantiations, on every TypeScript version.
-- **Each extra query** costs about 12 ms in v2 and 1 ms in v3 (TypeScript 5.8). In v3 the cost does not depend on the
+- **7 to 11 times faster** to check, with 13 to 30 times fewer type instantiations, on every TypeScript version.
+- **Each extra query** costs about 13 ms in v2 and 1 ms in v3 (TypeScript 5.8). In v3 the cost does not depend on the
   length of the select string.
-- **Hover in the editor** (TypeScript 5.8 language service, a long select in a 200-query project): 136 ms in v2 and 4 ms in
-  v3 once warm, 185 ms and 21 ms right after an edit.
-- **Generating the types** with the mapper, from a snapshot: 0.68 s for 500 queries from an empty cache, 0.19 s after
+- **Hover in the editor** (TypeScript 5.8 language service, a long select in a 200-query project): 148 ms in v2 and 5 ms
+  in v3 once warm, 209 ms and 31 ms right after an edit.
+- **Generating the types** with the mapper, from a snapshot: 0.77 s for 500 queries from an empty cache, 0.20 s after
   editing one select. The generated file is 365 KB.
 
 The schema is small (three tables and a view). v2's cost also grows with the size of the `Database` type, which v3's
@@ -595,6 +602,12 @@ picks the content mapper when the project resolves 7.1 or later.
 - **Aggregates** assume Postgres' builtin `count`, `sum`, `avg`, `min` and `max`. A user function of the same name that
   Postgres would pick instead is only detected in the common cases.
 - **Dynamic select strings** are always unplanned (see above).
+- **An rpc called with a union of function names** gets no `Returns` fallback when it is unplanned.
+- **After `.explain()` or `.geojson()`**, `.cast<T>()`, `.returns<T>()` and `.overrideTypes<T>()` are not available;
+  assert the type on the awaited `data` instead.
+- **Deep chains of conditional `const`s** that each reuse the previous one in both branches
+  (`const qN = flag ? qM : qM`, dozens deep) make the mapper's scan slow down sharply, because each path is resolved
+  separately.
 - **Untraceable function bodies** (anything but a single-query `LANGUAGE sql` function, or a `search_path` with `$user`)
   keep their result columns nullable.
 
