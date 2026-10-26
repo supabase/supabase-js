@@ -74,6 +74,11 @@ type ResolveFilterRelationshipValue<
     : unknown
   : never
 
+export type ResolveContainsFilterValue<Resolved> =
+  NonNullable<Resolved> extends readonly (infer Element)[]
+    ? readonly Element[]
+    : string | readonly unknown[] | Record<string, unknown>
+
 export type InvalidMethodError<S extends string> = { Error: S }
 
 type NonNullableColumn<T extends Record<string, unknown>, Col extends string> = Col extends keyof T
@@ -1004,12 +1009,12 @@ export default class PostgrestFilterBuilder<
    * }
    * ```
    */
-  contains<ColumnName extends string & keyof Row>(
+  contains<ColumnName extends string>(
     column: ColumnName,
-    value: string | ReadonlyArray<Row[ColumnName]> | Record<string, unknown>
-  ): this
-  contains(column: string, value: string | readonly unknown[] | Record<string, unknown>): this
-  contains(column: string, value: string | readonly unknown[] | Record<string, unknown>): this {
+    value: ColumnName extends keyof Row
+      ? ResolveContainsFilterValue<Row[ColumnName]>
+      : string | readonly unknown[] | Record<string, unknown>
+  ): this {
     if (typeof value === 'string') {
       // range types can be inclusive '[', ']' or exclusive '(', ')' so just
       // keep it simple and accept a string
@@ -1154,12 +1159,12 @@ export default class PostgrestFilterBuilder<
    *
    * ```
    */
-  containedBy<ColumnName extends string & keyof Row>(
+  containedBy<ColumnName extends string>(
     column: ColumnName,
-    value: string | ReadonlyArray<Row[ColumnName]> | Record<string, unknown>
-  ): this
-  containedBy(column: string, value: string | readonly unknown[] | Record<string, unknown>): this
-  containedBy(column: string, value: string | readonly unknown[] | Record<string, unknown>): this {
+    value: ColumnName extends keyof Row
+      ? ResolveContainsFilterValue<Row[ColumnName]>
+      : string | readonly unknown[] | Record<string, unknown>
+  ): this {
     if (typeof value === 'string') {
       // range
       this.url.searchParams.append(column, `cd.${value}`)
