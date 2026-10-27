@@ -4088,6 +4088,9 @@ export default class GoTrueClient {
       }
       const { data, error: sessionError } = result
       if (sessionError && !isAuthSessionMissingError(sessionError)) {
+        if (scope !== 'others') {
+          await removeCurrentSession()
+        }
         return this._returnResult({ error: sessionError })
       }
       const accessToken = data.session?.access_token
