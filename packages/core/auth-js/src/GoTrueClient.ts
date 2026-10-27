@@ -4082,12 +4082,16 @@ export default class GoTrueClient {
   protected async _signOut(
     { scope }: SignOut = { scope: 'global' }
   ): Promise<{ error: AuthError | null }> {
+    const sessionRemovalEpoch = this._sessionRemovalEpoch
     return await this._useSession(async (result) => {
       const removeCurrentSession = async () => {
         await this._removeSession()
       }
       const { data, error: sessionError } = result
       if (sessionError && !isAuthSessionMissingError(sessionError)) {
+        if (scope !== 'others' && this._sessionRemovalEpoch === sessionRemovalEpoch) {
+          await removeCurrentSession()
+        }
         return this._returnResult({ error: sessionError })
       }
       const accessToken = data.session?.access_token
