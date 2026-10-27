@@ -211,6 +211,8 @@ export interface FileObjectV2 {
   cache_control?: string
   /** MIME content type */
   content_type?: string
+  /** Content encoding of the stored bytes, or null when no encoding is set */
+  content_encoding?: string | null
   /** Entity tag for caching */
   etag?: string
   /** Last modification timestamp (replaces updated_at) */
@@ -239,15 +241,21 @@ export interface FileOptions {
   /**
    * The number of seconds the asset is cached in the browser and in the Supabase CDN. This is set in the `Cache-Control: max-age=<seconds>` header. Defaults to 3600 seconds.
    */
-  cacheControl?: string
+  cacheControl?: string | undefined
   /**
    * the `Content-Type` header value. Should be specified if using a `fileBody` that is neither `Blob` nor `File` nor `FormData`, otherwise will default to `text/plain;charset=UTF-8`.
    */
-  contentType?: string
+  contentType?: string | undefined
+  /**
+   * The content encoding of the stored bytes (e.g., `gzip`). The caller must supply already-encoded bytes; the SDK does not compress or encode the file body.
+   * For raw bodies, sets the `Content-Encoding` request header. For multipart bodies (`Blob`, `File`, `FormData`), sent as the `contentEncoding` form field; a `contentEncoding` field already present in a caller-supplied `FormData` takes precedence.
+   * Requires Storage v1.80.0+; older servers ignore it and store the bytes with no encoding.
+   */
+  contentEncoding?: string
   /**
    * When upsert is set to true, the file is overwritten if it exists. When set to false, an error is thrown if the object already exists. Defaults to false.
    */
-  upsert?: boolean
+  upsert?: boolean | undefined
   /**
    * The duplex option is a string parameter that enables or disables duplex streaming, allowing for both reading and writing data in the same stream. It can be passed as an option to the fetch() method.
    */
@@ -276,6 +284,30 @@ export interface DestinationOptions {
    * The version id of the source object to move/restore.
    */
   sourceVersionId?: string
+}
+
+export interface CopyOptions extends DestinationOptions {
+  /**
+   * Whether to copy the source file's metadata. Defaults to true.
+   * Set to false to apply `metadata` overrides. Custom user metadata is not copied when false.
+   */
+  copyMetadata?: boolean
+  /**
+   * File metadata overrides, applied only when `copyMetadata` is false.
+   * Unspecified fields retain their source values. These are not custom user metadata.
+   */
+  metadata?: {
+    /** The full `Cache-Control` header value (e.g., `max-age=3600`). */
+    cacheControl?: string
+    /**
+     * The `Content-Encoding` header value (e.g., `gzip`). An empty string clears the encoding.
+     * This changes the metadata only; it does not encode or decode the file's bytes.
+     * Requires Storage v1.80.0+; older servers ignore it.
+     */
+    contentEncoding?: string
+    /** The `Content-Type` header value (e.g., `text/plain`). */
+    mimetype?: string
+  }
 }
 
 export interface SearchOptions {

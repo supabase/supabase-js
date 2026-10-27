@@ -1107,7 +1107,7 @@ export default class GoTrueClient {
    * Be aware that you may get back an error message that will not distinguish
    * between the cases where the account does not exist or that the
    * email/phone and password combination is wrong or that the account can only
-   * be accessed via social login.
+   * be accessed via social sign-in.
    *
    * @category Auth
    *
@@ -1300,7 +1300,7 @@ export default class GoTrueClient {
    * @category Auth
    *
    * @remarks
-   * - This method is used for signing in using [Social Login (OAuth) providers](/docs/guides/auth#configure-third-party-providers).
+   * - This method is used for signing in using [social sign-in (OAuth) providers](/docs/guides/auth/social-sign-in).
    * - It works by redirecting your application to the provider's authorization screen, before bringing back the user to your app.
    *
    * @example Sign in using a third-party provider
@@ -2219,7 +2219,7 @@ export default class GoTrueClient {
    *
    * Be aware that you may get back an error message that will not distinguish
    * between the cases where the account does not exist or, that the account
-   * can only be accessed via social login.
+   * can only be accessed via social sign-in.
    *
    * Do note that you will need to configure a Whatsapp sender on Twilio
    * if you are using phone sign in with the 'whatsapp' channel. The whatsapp
@@ -4231,9 +4231,9 @@ export default class GoTrueClient {
    * ```
    *
    * @exampleDescription Store OAuth provider tokens on sign in
-   * When using [OAuth (Social Login)](/docs/guides/auth/social-login) you sometimes wish to get access to the provider's access token and refresh token, in order to call provider APIs in the name of the user.
+   * When using [OAuth (social sign-in)](/docs/guides/auth/social-sign-in) you sometimes wish to get access to the provider's access token and refresh token, in order to call provider APIs in the name of the user.
    *
-   * For example, if you are using [Sign in with Google](/docs/guides/auth/social-login/auth-google) you may want to use the provider token to call Google APIs on behalf of the user. Supabase Auth does not keep track of the provider access and refresh token, but does return them for you once, immediately after sign in. You can use the `onAuthStateChange` method to listen for the presence of the provider tokens and store them in local storage. You can further send them to your server's APIs for use on the backend.
+   * For example, if you are using [Sign in with Google](/docs/guides/auth/social-sign-in/auth-google) you may want to use the provider token to call Google APIs on behalf of the user. Supabase Auth does not keep track of the provider access and refresh token, but does return them for you once, immediately after sign in. You can use the `onAuthStateChange` method to listen for the presence of the provider tokens and store them in local storage. You can further send them to your server's APIs for use on the backend.
    *
    * Finally, make sure you remove them from local storage on the `SIGNED_OUT` event. If the OAuth provider supports token revocation, make sure you call those APIs either from the frontend or schedule them to be called on the backend.
    *

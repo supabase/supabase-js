@@ -10,27 +10,28 @@ const REST_URL = 'http://localhost:54321/rest/v1'
 const postgrest = new PostgrestClient<Database>(REST_URL)
 const postgrestWithOptions = new PostgrestClient<DatabaseWithOptions>(REST_URL)
 
-type WithThrowOnError<T> = T extends PostgrestFilterBuilder<
-  infer ClientOptions,
-  infer Schema,
-  infer Row,
-  infer Result,
-  infer RelationName,
-  infer Relationships,
-  infer Method,
-  boolean
->
-  ? PostgrestFilterBuilder<
-      ClientOptions,
-      Schema,
-      Row,
-      Result,
-      RelationName,
-      Relationships,
-      Method,
-      true
-    >
-  : never
+type WithThrowOnError<T> =
+  T extends PostgrestFilterBuilder<
+    infer ClientOptions,
+    infer Schema,
+    infer Row,
+    infer Result,
+    infer RelationName,
+    infer Relationships,
+    infer Method,
+    boolean
+  >
+    ? PostgrestFilterBuilder<
+        ClientOptions,
+        Schema,
+        Row,
+        Result,
+        RelationName,
+        Relationships,
+        Method,
+        true
+      >
+    : never
 
 // table and view name type safety
 {
@@ -227,9 +228,10 @@ type WithThrowOnError<T> = T extends PostgrestFilterBuilder<
   if (result.error) {
     throw new Error(result.error.message)
   }
-  expectType<Prettify<{ message: string | null } & Database['public']['Tables']['users']['Row']>>(
-    result.data
-  )
+  type UsersTable = Database['public']['Tables']['users']
+  expectType<
+    Prettify<{ message: string | null } & Omit<UsersTable['Row'], UsersTable['ComputedFields']>>
+  >(result.data)
 }
 
 // `count` in embedded resource
