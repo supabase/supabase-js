@@ -224,6 +224,22 @@ describe('GoTrueClient signOut', () => {
     }
   )
 
+  test('local still revokes the refresh token when a SIGNED_OUT subscriber throws', async () => {
+    const mockFetch = respond(204)
+    const { client, storage } = await setup(mockFetch)
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+    client.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') throw new Error('subscriber failed')
+    })
+
+    await expect(client.signOut({ scope: 'local' })).rejects.toThrow('subscriber failed')
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockFetch.mock.calls[0][0]).toContain('/logout?scope=local')
+    expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+    consoleError.mockRestore()
+  })
+
   describe('with an expired access token', () => {
     // A retryable refresh failure is retried with a backoff, so the clock is faked to skip the wait.
     beforeEach(() => jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] }))

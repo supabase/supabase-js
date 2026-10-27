@@ -4122,10 +4122,23 @@ export default class GoTrueClient {
         return this._returnResult({ error: sessionError })
       }
       const accessToken = data.session?.access_token
+      let removeError: { thrown: unknown } | null = null
+      const finish = <T>(value: T): T => {
+        if (removeError) {
+          throw removeError.thrown
+        }
+        return value
+      }
       if (scope === 'local') {
         // The local session is removed before the request is sent, so signing out of this device
         // never depends on the network. The request only revokes the refresh token on the server.
-        await removeCurrentSession()
+        // A throwing `SIGNED_OUT` subscriber must not skip that request, so its error is rethrown
+        // once the request has been attempted.
+        try {
+          await removeCurrentSession()
+        } catch (thrown) {
+          removeError = { thrown }
+        }
       }
       if (accessToken) {
         const { error } = await this.admin.signOut(accessToken, scope)
@@ -4156,13 +4169,13 @@ export default class GoTrueClient {
             isAuthSessionMissingError(error)
           )
         ) {
-          return this._returnResult({ error })
+          return finish(this._returnResult({ error }))
         }
       }
       if (scope === 'global') {
         await removeCurrentSession()
       }
-      return this._returnResult({ error: null })
+      return finish(this._returnResult({ error: null }))
     })
   }
 
