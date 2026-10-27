@@ -20,11 +20,15 @@ const createStoredSession = () => ({
   },
 })
 
-const setup = async (mockFetch: jest.Mock, { withSession = true } = {}) => {
+const setup = async (mockFetch: jest.Mock, { withSession = true, expired = false } = {}) => {
   const storage = memoryLocalStorageAdapter(
     withSession
       ? {
-          [STORAGE_KEY]: JSON.stringify(createStoredSession()),
+          [STORAGE_KEY]: JSON.stringify(
+            expired
+              ? { ...createStoredSession(), expires_at: Math.floor(Date.now() / 1000) - 60 }
+              : createStoredSession()
+          ),
           [`${STORAGE_KEY}-code-verifier`]: 'test-code-verifier',
         }
       : {}
@@ -49,8 +53,8 @@ const setup = async (mockFetch: jest.Mock, { withSession = true } = {}) => {
 const respond = (status: number) =>
   jest
     .fn()
-    .mockResolvedValue(
-      new Response(status === 204 ? null : JSON.stringify({ message: 'x' }), { status })
+    .mockImplementation(
+      async () => new Response(status === 204 ? null : JSON.stringify({ message: 'x' }), { status })
     )
 
 const offline = () => jest.fn().mockRejectedValue(new Error('offline'))
@@ -219,4 +223,43 @@ describe('GoTrueClient signOut', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     }
   )
+
+  describe('with an expired access token', () => {
+    // A retryable refresh failure is retried with a backoff, so the clock is faked to skip the wait.
+    beforeEach(() => jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] }))
+    afterEach(() => jest.useRealTimers())
+
+    const settle = async <T>(promise: Promise<T>) => {
+      let result: T | undefined
+      const done = promise.then((value) => (result = value))
+      while (result === undefined) {
+        await jest.advanceTimersByTimeAsync(5000)
+        await Promise.race([done, Promise.resolve()])
+      }
+      return result
+    }
+
+    test.each([
+      ['a network error', offline],
+      ['a 500', () => respond(500)],
+    ])('local signs out this device when the refresh fails on %s', async (_name, makeFetch) => {
+      const { client, storage, onAuthStateChange } = await setup(makeFetch(), { expired: true })
+
+      const { error } = await settle(client.signOut({ scope: 'local' }))
+
+      expect(error).not.toBeNull()
+      expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
+    })
+
+    test('global keeps the session when the refresh fails offline', async () => {
+      const { client, storage, onAuthStateChange } = await setup(offline(), { expired: true })
+
+      const { error } = await settle(client.signOut({ scope: 'global' }))
+
+      expect(error).not.toBeNull()
+      expect(await storage.getItem(STORAGE_KEY)).not.toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(0)
+    })
+  })
 })

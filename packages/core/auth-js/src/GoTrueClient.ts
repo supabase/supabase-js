@@ -4113,6 +4113,12 @@ export default class GoTrueClient {
       }
       const { data, error: sessionError } = result
       if (sessionError && !isAuthSessionMissingError(sessionError)) {
+        // A retryable refresh failure (offline, 5xx) leaves the session in storage and no access
+        // token to revoke with, so `local` still has to sign out this device. A rejected refresh
+        // has already removed the session and fired `SIGNED_OUT`.
+        if (scope === 'local' && isAuthRetryableFetchError(sessionError)) {
+          await removeCurrentSession()
+        }
         return this._returnResult({ error: sessionError })
       }
       const accessToken = data.session?.access_token
