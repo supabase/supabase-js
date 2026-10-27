@@ -157,6 +157,19 @@ describe('GoTrueClient signOut', () => {
       expect(signedOutEvents(onAuthStateChange)).toHaveLength(0)
     })
 
+    test('treats an omitted scope as global', async () => {
+      const mockFetch = respond(204)
+      const { client, storage, onAuthStateChange } = await setup(mockFetch)
+
+      const { error } = await client.signOut({})
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockFetch.mock.calls[0][0]).toBe('http://localhost:9999/logout?scope=global')
+      expect(error).toBeNull()
+      expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
+    })
+
     test.each([204, 401, 403, 404])(
       'clears the session and fires SIGNED_OUT on %s',
       async (status) => {

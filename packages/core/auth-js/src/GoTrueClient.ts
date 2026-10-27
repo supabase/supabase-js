@@ -4104,9 +4104,9 @@ export default class GoTrueClient {
     return await this._signOut(options)
   }
 
-  protected async _signOut(
-    { scope }: SignOut = { scope: 'global' }
-  ): Promise<{ error: AuthError | null }> {
+  protected async _signOut({ scope = 'global' }: SignOut = {}): Promise<{
+    error: AuthError | null
+  }> {
     return await this._useSession(async (result) => {
       const removeCurrentSession = async () => {
         await this._removeSession()
