@@ -1,6 +1,8 @@
 import GoTrueClient from '../src/GoTrueClient'
 import { memoryLocalStorageAdapter } from '../src/lib/local-storage'
 
+const STORAGE_KEY = 'test-signout'
+
 const createStoredSession = () => ({
   access_token: 'test-access-token',
   refresh_token: 'test-refresh-token',
@@ -18,7 +20,49 @@ const createStoredSession = () => ({
   },
 })
 
-describe('GoTrueClient signOut offline cleanup', () => {
+const setup = async (mockFetch: jest.Mock, { withSession = true, expired = false } = {}) => {
+  const storage = memoryLocalStorageAdapter(
+    withSession
+      ? {
+          [STORAGE_KEY]: JSON.stringify(
+            expired
+              ? { ...createStoredSession(), expires_at: Math.floor(Date.now() / 1000) - 60 }
+              : createStoredSession()
+          ),
+          [`${STORAGE_KEY}-code-verifier`]: 'test-code-verifier',
+        }
+      : {}
+  )
+  const client = new GoTrueClient({
+    url: 'http://localhost:9999',
+    autoRefreshToken: false,
+    persistSession: true,
+    storage,
+    storageKey: STORAGE_KEY,
+    fetch: mockFetch,
+  })
+  await client.initialize()
+  const onAuthStateChange = jest.fn()
+  client.onAuthStateChange(onAuthStateChange)
+  // let the INITIAL_SESSION event flush before clearing the mock
+  await Promise.resolve()
+  onAuthStateChange.mockClear()
+  return { client, storage, onAuthStateChange }
+}
+
+const respond = (status: number) =>
+  jest
+    .fn()
+    .mockImplementation(
+      async () => new Response(status === 204 ? null : JSON.stringify({ message: 'x' }), { status })
+    )
+
+const offline = () => jest.fn().mockRejectedValue(new Error('offline'))
+
+const signedOutEvents = (onAuthStateChange: jest.Mock) =>
+  onAuthStateChange.mock.calls.filter(([event]) => event === 'SIGNED_OUT')
+
+describe('GoTrueClient signOut', () => {
   let consoleErrorSpy: jest.SpyInstance
 
   beforeEach(() => {
@@ -29,50 +73,209 @@ describe('GoTrueClient signOut offline cleanup', () => {
     consoleErrorSpy.mockRestore()
   })
 
+  describe("scope: 'local'", () => {
+    test.each([
+      ['a network error', offline],
+      ['a 500', () => respond(500)],
+    ])('clears the session and fires SIGNED_OUT on %s', async (_name, makeFetch) => {
+      const { client, storage, onAuthStateChange } = await setup(makeFetch())
+
+      const { error } = await client.signOut({ scope: 'local' })
+
+      expect(error).not.toBeNull()
+      expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+      expect(await storage.getItem(`${STORAGE_KEY}-code-verifier`)).toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
+    })
+
+    test('clears the session before the request resolves', async () => {
+      let release!: () => void
+      const mockFetch = jest.fn().mockReturnValue(
+        new Promise<Response>((resolve) => {
+          release = () => resolve(new Response(null, { status: 204 }))
+        })
+      )
+      const { client, storage, onAuthStateChange } = await setup(mockFetch)
+
+      const pending = client.signOut({ scope: 'local' })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer test-access-token')
+      expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
+
+      release()
+      expect((await pending).error).toBeNull()
+    })
+
+    test('returns a retryable error when the auth server cannot be reached', async () => {
+      const { client } = await setup(offline())
+
+      const { error } = await client.signOut({ scope: 'local' })
+
+      expect(error?.name).toBe('AuthRetryableFetchError')
+    })
+
+    test.each([204, 401, 403, 404])(
+      'clears the session and fires SIGNED_OUT on %s',
+      async (status) => {
+        const { client, storage, onAuthStateChange } = await setup(respond(status))
+
+        const { error } = await client.signOut({ scope: 'local' })
+
+        expect(error).toBeNull()
+        expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+        expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
+      }
+    )
+  })
+
+  describe("scope: 'global'", () => {
+    test('keeps the session, fires no SIGNED_OUT and allows a retry when the network fails', async () => {
+      const mockFetch = jest.fn().mockRejectedValueOnce(new Error('offline'))
+      const { client, storage, onAuthStateChange } = await setup(mockFetch)
+
+      const { error } = await client.signOut({ scope: 'global' })
+
+      expect(error?.name).toBe('AuthRetryableFetchError')
+      expect(await storage.getItem(STORAGE_KEY)).not.toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(0)
+
+      mockFetch.mockResolvedValueOnce(new Response(null, { status: 204 }))
+      const retry = await client.signOut({ scope: 'global' })
+
+      expect(retry.error).toBeNull()
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
+    })
+
+    test('keeps the session and fires no SIGNED_OUT on a 500 (default scope)', async () => {
+      const { client, storage, onAuthStateChange } = await setup(respond(500))
+
+      const { error } = await client.signOut()
+
+      expect(error).not.toBeNull()
+      expect(await storage.getItem(STORAGE_KEY)).not.toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(0)
+    })
+
+    test('treats an omitted scope as global', async () => {
+      const mockFetch = respond(204)
+      const { client, storage, onAuthStateChange } = await setup(mockFetch)
+
+      const { error } = await client.signOut({})
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockFetch.mock.calls[0][0]).toBe('http://localhost:9999/logout?scope=global')
+      expect(error).toBeNull()
+      expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
+    })
+
+    test.each([204, 401, 403, 404])(
+      'clears the session and fires SIGNED_OUT on %s',
+      async (status) => {
+        const { client, storage, onAuthStateChange } = await setup(respond(status))
+
+        const { error } = await client.signOut({ scope: 'global' })
+
+        expect(error).toBeNull()
+        expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+        expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
+      }
+    )
+  })
+
+  describe("scope: 'others'", () => {
+    test.each([
+      ['a 204', () => respond(204), false],
+      ['a 401', () => respond(401), false],
+      ['a 403', () => respond(403), false],
+      ['a 404', () => respond(404), false],
+      ['a 500', () => respond(500), true],
+      ['a network error', offline, true],
+    ])('keeps the session and fires no SIGNED_OUT on %s', async (_name, makeFetch, expectError) => {
+      const { client, storage, onAuthStateChange } = await setup(makeFetch())
+
+      const { error } = await client.signOut({ scope: 'others' })
+
+      if (expectError) {
+        expect(error).not.toBeNull()
+      } else {
+        expect(error).toBeNull()
+      }
+      expect(await storage.getItem(STORAGE_KEY)).not.toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(0)
+    })
+  })
+
   test.each(['global', 'local'] as const)(
-    'removes the local session when %s signOut cannot reach the auth server',
+    '%s without a session sends no request and returns no error',
     async (scope) => {
-      const storageKey = `test-signout-offline-${scope}`
-      const storage = memoryLocalStorageAdapter({
-        [storageKey]: JSON.stringify(createStoredSession()),
-        [`${storageKey}-code-verifier`]: 'test-code-verifier',
-      })
-      const mockFetch = jest.fn().mockRejectedValue(new Error('offline'))
-      const client = new GoTrueClient({
-        url: 'http://localhost:9999',
-        autoRefreshToken: false,
-        persistSession: true,
-        storage,
-        storageKey,
-        fetch: mockFetch,
-      })
+      const mockFetch = jest.fn()
+      const { client } = await setup(mockFetch, { withSession: false })
 
       const { error } = await client.signOut({ scope })
 
-      expect(error?.name).toBe('AuthRetryableFetchError')
-      expect(await storage.getItem(storageKey)).toBeNull()
-      expect(await storage.getItem(`${storageKey}-code-verifier`)).toBeNull()
+      expect(error).toBeNull()
+      expect(mockFetch).not.toHaveBeenCalled()
     }
   )
 
-  test('keeps the current session for others scope when remote signOut fails', async () => {
-    const storageKey = 'test-signout-offline-others'
-    const storage = memoryLocalStorageAdapter({
-      [storageKey]: JSON.stringify(createStoredSession()),
-    })
-    const mockFetch = jest.fn().mockRejectedValue(new Error('offline'))
-    const client = new GoTrueClient({
-      url: 'http://localhost:9999',
-      autoRefreshToken: false,
-      persistSession: true,
-      storage,
-      storageKey,
-      fetch: mockFetch,
+  test('local still revokes the refresh token when a SIGNED_OUT subscriber throws', async () => {
+    const mockFetch = respond(204)
+    const { client, storage } = await setup(mockFetch)
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+    client.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') throw new Error('subscriber failed')
     })
 
-    const { error } = await client.signOut({ scope: 'others' })
+    await expect(client.signOut({ scope: 'local' })).rejects.toThrow('subscriber failed')
 
-    expect(error?.name).toBe('AuthRetryableFetchError')
-    expect(await storage.getItem(storageKey)).not.toBeNull()
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockFetch.mock.calls[0][0]).toContain('/logout?scope=local')
+    expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+    consoleError.mockRestore()
+  })
+
+  describe('with an expired access token', () => {
+    // A retryable refresh failure is retried with a backoff, so the clock is faked to skip the wait.
+    beforeEach(() => jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] }))
+    afterEach(() => jest.useRealTimers())
+
+    const settle = async <T>(promise: Promise<T>) => {
+      let result: T | undefined
+      const done = promise.then((value) => (result = value))
+      while (result === undefined) {
+        await jest.advanceTimersByTimeAsync(5000)
+        await Promise.race([done, Promise.resolve()])
+      }
+      return result
+    }
+
+    test.each([
+      ['a network error', offline],
+      ['a 500', () => respond(500)],
+    ])('local signs out this device when the refresh fails on %s', async (_name, makeFetch) => {
+      const { client, storage, onAuthStateChange } = await setup(makeFetch(), { expired: true })
+
+      const { error } = await settle(client.signOut({ scope: 'local' }))
+
+      expect(error).not.toBeNull()
+      expect(await storage.getItem(STORAGE_KEY)).toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(1)
+    })
+
+    test('global keeps the session when the refresh fails offline', async () => {
+      const { client, storage, onAuthStateChange } = await setup(offline(), { expired: true })
+
+      const { error } = await settle(client.signOut({ scope: 'global' }))
+
+      expect(error).not.toBeNull()
+      expect(await storage.getItem(STORAGE_KEY)).not.toBeNull()
+      expect(signedOutEvents(onAuthStateChange)).toHaveLength(0)
+    })
   })
 })
