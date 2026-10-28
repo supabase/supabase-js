@@ -244,6 +244,7 @@ export interface FileOptions {
   cacheControl?: string | undefined
   /**
    * the `Content-Type` header value. Should be specified if using a `fileBody` that is neither `Blob` nor `File` nor `FormData`, otherwise will default to `text/plain;charset=UTF-8`.
+   * For multipart bodies (`Blob`, `File`, `FormData`), an explicit value is sent as the `contentType` form field and takes precedence over the file's own type; a `contentType` field already present in a caller-supplied `FormData` takes precedence. When omitted, the file's own type is used.
    */
   contentType?: string | undefined
   /**

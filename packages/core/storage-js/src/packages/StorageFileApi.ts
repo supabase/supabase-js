@@ -103,7 +103,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         (typeof Blob !== 'undefined' && fileBody instanceof Blob) ||
         (typeof FormData !== 'undefined' && fileBody instanceof FormData)
       ) {
-        body = this.prepareUploadFormData(fileBody, options)
+        body = this.prepareUploadFormData(fileBody, options, fileOptions?.contentType)
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
@@ -295,7 +295,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         (typeof Blob !== 'undefined' && fileBody instanceof Blob) ||
         (typeof FormData !== 'undefined' && fileBody instanceof FormData)
       ) {
-        body = this.prepareUploadFormData(fileBody, options)
+        body = this.prepareUploadFormData(fileBody, options, fileOptions?.contentType)
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
@@ -1526,7 +1526,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     })
   }
 
-  private prepareUploadFormData(fileBody: Blob | FormData, options: FileOptions): FormData {
+  private prepareUploadFormData(
+    fileBody: Blob | FormData,
+    options: FileOptions,
+    contentType?: string
+  ): FormData {
     const body = new FormData()
     const files: [string, Blob][] = []
 
@@ -1551,6 +1555,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     }
     if (options.contentEncoding && !body.has('contentEncoding')) {
       body.append('contentEncoding', options.contentEncoding)
+    }
+    // Only an explicit contentType is sent: the server otherwise falls back to the file
+    // part's own type, which the default `text/plain;charset=UTF-8` must not override.
+    if (contentType && !body.has('contentType')) {
+      body.append('contentType', contentType)
     }
     for (const [name, file] of files) {
       body.append(name, file)
