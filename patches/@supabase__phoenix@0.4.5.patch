@@ -1,0 +1,51 @@
+diff --git a/assets/js/phoenix/socket.js b/assets/js/phoenix/socket.js
+--- a/assets/js/phoenix/socket.js
++++ b/assets/js/phoenix/socket.js
+@@ -49,7 +49,9 @@
+     /** @type{number} */
+     this.timeout = opts.timeout || DEFAULT_TIMEOUT
+-    /** @type{SocketTransport} */
+-    this.transport = opts.transport || global.WebSocket || LongPoll
++    // `global` here is self || window || globalThis, snapshotted at load.
++    // A self shim without WebSocket must not hide globalThis.WebSocket.
++    /** @type{SocketTransport} */
++    this.transport = opts.transport || globalThis.WebSocket || LongPoll
+     /** @type{InstanceType<SocketTransport> | undefined | null} */
+     this.conn = undefined
+     /** @type{boolean} */
+diff --git a/priv/static/phoenix.cjs.js b/priv/static/phoenix.cjs.js
+--- a/priv/static/phoenix.cjs.js
++++ b/priv/static/phoenix.cjs.js
+@@ -1211,7 +1211,7 @@
+     this.ref = 0;
+     this.fallbackRef = null;
+     this.timeout = opts.timeout || DEFAULT_TIMEOUT;
+-    this.transport = opts.transport || global.WebSocket || LongPoll;
++    this.transport = opts.transport || globalThis.WebSocket || LongPoll;
+     this.conn = void 0;
+     this.primaryPassedHealthCheck = false;
+     this.longPollFallbackMs = opts.longPollFallbackMs;
+diff --git a/priv/static/phoenix.js b/priv/static/phoenix.js
+--- a/priv/static/phoenix.js
++++ b/priv/static/phoenix.js
+@@ -1232,7 +1232,7 @@
+       this.ref = 0;
+       this.fallbackRef = null;
+       this.timeout = opts.timeout || DEFAULT_TIMEOUT;
+-      this.transport = opts.transport || global.WebSocket || LongPoll;
++      this.transport = opts.transport || globalThis.WebSocket || LongPoll;
+       this.conn = void 0;
+       this.primaryPassedHealthCheck = false;
+       this.longPollFallbackMs = opts.longPollFallbackMs;
+diff --git a/priv/static/phoenix.mjs b/priv/static/phoenix.mjs
+--- a/priv/static/phoenix.mjs
++++ b/priv/static/phoenix.mjs
+@@ -1179,7 +1179,7 @@
+     this.ref = 0;
+     this.fallbackRef = null;
+     this.timeout = opts.timeout || DEFAULT_TIMEOUT;
+-    this.transport = opts.transport || global.WebSocket || LongPoll;
++    this.transport = opts.transport || globalThis.WebSocket || LongPoll;
+     this.conn = void 0;
+     this.primaryPassedHealthCheck = false;
+     this.longPollFallbackMs = opts.longPollFallbackMs;
