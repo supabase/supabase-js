@@ -21,19 +21,26 @@ describe('GoTrueClient signInWithWeb3 (solana)', () => {
       options: {
         url: 'https://example.com/login',
         signInWithSolana: {
+          issuedAt: '2026-10-24T16:35:08.407Z',
           resources: ['https://example.com/tos', 'https://example.com/privacy'],
         },
       },
     })
 
     const { message } = JSON.parse(mockFetch.mock.calls[0][1].body)
-    const lines = message.split('\n')
-    const resourcesIndex = lines.indexOf('Resources:')
 
-    expect(resourcesIndex).toBeGreaterThan(-1)
-    expect(lines.slice(resourcesIndex + 1)).toEqual([
-      '- https://example.com/tos',
-      '- https://example.com/privacy',
-    ])
+    expect(message).toBe(
+      [
+        'example.com wants you to sign in with your Solana account:',
+        '11111111111111111111111111111111',
+        '',
+        'Version: 1',
+        'URI: https://example.com/login',
+        'Issued At: 2026-10-24T16:35:08.407Z',
+        'Resources:',
+        '- https://example.com/tos',
+        '- https://example.com/privacy',
+      ].join('\n')
+    )
   })
 })
