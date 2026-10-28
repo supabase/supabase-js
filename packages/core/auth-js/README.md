@@ -43,6 +43,16 @@
 >
 > Node.js 20 reached end-of-life on April 30, 2026. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/45715), support for Node.js 20 was dropped in v2.110.0.
 
+## Supabase Service Compatibility
+
+`@supabase/auth-js` only guarantees compatibility with the
+[latest Supabase Auth release](https://github.com/supabase/auth/releases). Older
+Supabase Auth releases are supported on a best-effort basis, but compatibility
+is not guaranteed.
+
+If you self-host Supabase Auth, we recommend upgrading to the latest release
+when upgrading this SDK.
+
 ## Quick start
 
 Install

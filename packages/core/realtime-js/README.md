@@ -38,6 +38,16 @@ This SDK enables you to use the following Supabase Realtime's features:
 - **Presence**: track and synchronize shared state across clients with the help of CRDTs. Use cases include tracking which users are currently viewing a specific webpage.
 - **Postgres Change Data Capture (CDC)**: listen for changes in your PostgreSQL database and send them to clients.
 
+# Supabase Service Compatibility
+
+`@supabase/realtime-js` only guarantees compatibility with the
+[latest Supabase Realtime release](https://github.com/supabase/realtime/releases).
+Older Supabase Auth releases are supported on a best-effort basis, but
+compatibility is not guaranteed.
+
+If you self-host Supabase Realtime, we recommend upgrading to the latest
+release when upgrading this SDK.
+
 # Usage
 
 ## Installing the Package
