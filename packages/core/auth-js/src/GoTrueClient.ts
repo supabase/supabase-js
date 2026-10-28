@@ -4026,12 +4026,31 @@ export default class GoTrueClient {
   }
 
   /**
-   * Inside a browser context, `signOut()` will remove the logged in user from the browser session and log them out - removing all items from localstorage and then trigger a `"SIGNED_OUT"` event.
+   * Inside a browser context, `signOut()` will remove the logged in user from the browser session
+   * and log them out - removing all items from localstorage and then trigger a `"SIGNED_OUT"`
+   * event.
    *
-   * For server-side management, you can revoke all refresh tokens for a user by passing a user's JWT through to `auth.api.signOut(JWT: string)`.
-   * There is no way to revoke a user's access token jwt until it expires. It is recommended to set a shorter expiry on the jwt for this reason.
+   * For server-side management, you can revoke all refresh tokens for a user by passing a user's
+   * JWT through to `auth.api.signOut(JWT: string)`.
    *
-   * If using `others` scope, no `SIGNED_OUT` event is fired!
+   * There is no way to revoke a user's access token jwt until it expires. It is recommended to set
+   * a shorter expiry on the jwt for this reason.
+   *
+   * `signOut` behavior depends on the selected scope:
+   *
+   * - `local`: The local session is removed first and a `SIGNED_OUT` event is fired, then the client
+   *   makes a best-effort request to revoke the refresh token on the server. If the request fails,
+   *   the client is still signed out locally and the error is returned, but the server may retain
+   *   the refresh token until it expires.
+   *
+   * - `global`: All of the user's sessions are first invalidated on the server. Once the server
+   *   acknowledges the request, the local session is cleared. If server logout fails, the local
+   *   session is retained, no `SIGNED_OUT` event is triggered, and the server or network error is
+   *   returned. A 401, 403, or 404 response counts as a successful sign-out.
+   *
+   * - `others`: All other sessions are invalidated when the server accepts the request; the
+   *   current local session remains unchanged. In case of server or network failures, the error is
+   *   returned. A `SIGNED_OUT` event is never triggered, regardless of the outcome.
    *
    * **Warning:** the default `scope` is `'global'`. This signs the user out of
    * **every device they are currently signed in on**, not just the current
@@ -4049,7 +4068,13 @@ export default class GoTrueClient {
    *   usually what apps want on a "Sign out" button, especially when users
    *   sign in from multiple devices and do not expect signing out of one to
    *   terminate the others.
-   * - Since Supabase Auth uses JWTs for authentication, the access token JWT will be valid until it's expired. When the user signs out, Supabase revokes the refresh token and deletes the JWT from the client-side. This does not revoke the JWT and it will still be valid until it expires.
+   * - With the default `global` scope, `signOut()` while offline returns an error and keeps the user
+   *   signed in. To sign out regardless, fall back to `signOut({ scope: 'local' })` when the call
+   *   returns an error.
+   * - Since Supabase Auth uses JWTs for authentication, the access token JWT will be valid until
+   *   it's expired. When the user signs out, Supabase revokes the refresh token and deletes the
+   *   JWT from the client-side. This does not revoke the JWT and it will still be valid until it
+   *   expires.
    *
    * @example Sign out of every device (global – default)
    * ```js
@@ -4079,41 +4104,78 @@ export default class GoTrueClient {
     return await this._signOut(options)
   }
 
-  protected async _signOut(
-    { scope }: SignOut = { scope: 'global' }
-  ): Promise<{ error: AuthError | null }> {
+  protected async _signOut({ scope = 'global' }: SignOut = {}): Promise<{
+    error: AuthError | null
+  }> {
     return await this._useSession(async (result) => {
       const removeCurrentSession = async () => {
         await this._removeSession()
       }
       const { data, error: sessionError } = result
       if (sessionError && !isAuthSessionMissingError(sessionError)) {
+        // A retryable refresh failure (offline, 5xx) leaves the session in storage and no access
+        // token to revoke with, so `local` still has to sign out this device. A rejected refresh
+        // has already removed the session and fired `SIGNED_OUT`.
+        if (scope === 'local' && isAuthRetryableFetchError(sessionError)) {
+          await removeCurrentSession()
+        }
         return this._returnResult({ error: sessionError })
       }
       const accessToken = data.session?.access_token
-      if (accessToken) {
-        const { error } = await this.admin.signOut(accessToken, scope)
-        if (error) {
-          // ignore 404s since user might not exist anymore
-          // ignore 401s since an invalid or expired JWT should sign out the current session
-          if (
-            !(
-              (isAuthApiError(error) &&
-                (error.status === 404 || error.status === 401 || error.status === 403)) ||
-              isAuthSessionMissingError(error)
-            )
-          ) {
-            if (scope !== 'others') {
-              await removeCurrentSession()
-            }
-            return this._returnResult({ error })
-          }
+      let removeError: { thrown: unknown } | null = null
+      const finish = <T>(value: T): T => {
+        if (removeError) {
+          throw removeError.thrown
+        }
+        return value
+      }
+      if (scope === 'local') {
+        // The local session is removed before the request is sent, so signing out of this device
+        // never depends on the network. The request only revokes the refresh token on the server.
+        // A throwing `SIGNED_OUT` subscriber must not skip that request, so its error is rethrown
+        // once the request has been attempted.
+        try {
+          await removeCurrentSession()
+        } catch (thrown) {
+          removeError = { thrown }
         }
       }
-      if (scope !== 'others') {
+      if (accessToken) {
+        const { error } = await this.admin.signOut(accessToken, scope)
+        // The current behavior is wrong for the current version of auth (v2.197.0). However,
+        // changing it could be considered a breaking change and must wait for v3. Before modifying
+        // this code we also need to consider which range of Auth versions we aim to support. Right
+        // now this is not defined and thus undefined.
+        //
+        // Some constraints to be aware of:
+        // - Since supabase/auth v2.145.0 a missing user answers 403 `user_not_found`.
+        // - Since supabase/auth v2.150.0 a missing session answers 403 `session_not_found`.
+        // - Before v2.145.0 an invalid JWT answered 401.
+        // - Before v2.145.0 a missing user answers 404., so those statuses are treated the same way.
+        //
+        // TODO(v3): if we only support auth v2.150.0 or later, change this to:
+        //  - Match on `error.code` instead of `error.status`, and treat only 403 `session_not_found`
+        //    and `user_not_found` as already signed out. Drop the 401 and 404 handling.
+        //  - Return every other error, e.g. 403 `bad_jwt` or `user_banned`, or a 401 or 404 from a
+        //    gateway, instead of treating it as signed out. Today nothing was revoked, yet the
+        //    session is cleared and `error` is null. With `global` the session is then kept.
+        //  - For `others`, return `session_not_found` as well. It describes the current session, not
+        //    the sessions being revoked.
+        if (
+          error &&
+          !(
+            (isAuthApiError(error) &&
+              (error.status === 404 || error.status === 401 || error.status === 403)) ||
+            isAuthSessionMissingError(error)
+          )
+        ) {
+          return finish(this._returnResult({ error }))
+        }
+      }
+      if (scope === 'global') {
         await removeCurrentSession()
       }
-      return this._returnResult({ error: null })
+      return finish(this._returnResult({ error: null }))
     })
   }
 
