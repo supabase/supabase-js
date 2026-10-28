@@ -47,7 +47,7 @@
 
 `@supabase/functions-js` only guarantees compatibility with the
 [latest Supabase Edge Runtime release](https://github.com/supabase/edge-runtime/releases).
-Older Supabase Auth releases are supported on a best-effort basis, but
+Older Supabase Edge Runtime releases are supported on a best-effort basis, but
 compatibility is not guaranteed.
 
 If you self-host the Supabase Edge Runtime, we recommend upgrading to the latest
