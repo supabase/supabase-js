@@ -7,7 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 export default defineConfig([
   // CJS and ESM builds - keep @supabase/* external
   {
-    entry: ['src/index.ts', 'src/cors.ts', 'src/tracing.ts'],
+    entry: ['src/index.ts', 'src/cors.ts', 'src/tracing.ts', 'src/dev.ts'],
     format: ['cjs', 'esm'],
     dts: true,
     sourcemap: true,

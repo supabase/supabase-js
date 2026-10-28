@@ -1196,3 +1196,28 @@ supporting_symbols:
   - GoTrueMFAApi.recoveryCodes
   - AuthMFARecoveryCodesGenerateResponse
   - AuthMFARecoveryCodesGenerateResponseData
+  # Client namespaces and the /dev entry point. The capability matrix has no
+  # feature for these yet; move them under one once it does.
+  - StorageClientOptions.pathPrefix
+  - NAMESPACE_HEADER
+  - namespaceFrom
+  - devSession
+  - DevSession
+  - DevSession.client
+  - DevSession.slot
+  - DevSession.user
+  - DevSession.uniq
+  - DevSession.adminClient
+  - DevSessionOptions
+  - DevSessionOptions.slot
+  - DevSessionOptions.branchRef
+  - DevSessionOptions.url
+  - DevSessionOptions.key
+  - DevSessionOptions.signInAs
+  - DevSessionOptions.password
+  - DevSessionOptions.testDomain
+  - DevSessionOptions.adminKey
+  - DevSessionOptions.options
+  - AdminClientOptions
+  - AdminClientOptions.scope
+  - AdminScope
