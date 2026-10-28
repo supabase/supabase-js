@@ -42,7 +42,7 @@ This SDK enables you to use the following Supabase Realtime's features:
 
 `@supabase/realtime-js` only guarantees compatibility with the
 [latest Supabase Realtime release](https://github.com/supabase/realtime/releases).
-Older Supabase Auth releases are supported on a best-effort basis, but
+Older Supabase Realtime releases are supported on a best-effort basis, but
 compatibility is not guaranteed.
 
 If you self-host Supabase Realtime, we recommend upgrading to the latest
