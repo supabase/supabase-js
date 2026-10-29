@@ -1300,7 +1300,15 @@ export default class RealtimeChannel {
   /** @internal */
   private _updateFilterTransform() {
     this.channelAdapter.updatePayloadTransform((event, payload: any, ref) => {
-      if (typeof payload === 'object' && 'ids' in payload) {
+      if (
+        typeof payload === 'object' &&
+        payload !== null &&
+        'ids' in payload &&
+        payload.data &&
+        typeof payload.data === 'object' &&
+        'schema' in payload.data &&
+        'table' in payload.data
+      ) {
         const postgresChanges = payload.data
         const { schema, table, commit_timestamp, type, errors } = postgresChanges
         const enrichedPayload = {
