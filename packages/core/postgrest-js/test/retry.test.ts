@@ -319,6 +319,96 @@ describe('Automatic Retries', () => {
   })
 
   describe('503 / PGRST002 (schema cache not ready)', () => {
+    it.each([503, 520])('retries a %s response whose body fails while draining', async (status) => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('incomplete error response'))
+          controller.error(new TypeError('terminated'))
+        },
+      })
+      fetchMock
+        .mockResolvedValueOnce(new Response(body, { status, headers: { 'Retry-After': '0' } }))
+        .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 1 }])))
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).toBeNull()
+      expect(result.data).toEqual([{ id: 1 }])
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(fetchMock.mock.calls[1][1].headers['X-Retry-Count']).toBe('1')
+    })
+
+    it.each([
+      { name: 'AbortError', message: 'aborted' },
+      { code: 'ABORT_ERR', message: 'aborted' },
+      { name: 'TimeoutError', message: 'timed out' },
+      new Error('custom abort reason'),
+    ])('preserves cancellation while draining: %s', async (error) => {
+      const controller = new AbortController()
+      fetchMock.mockImplementation(() => {
+        const body = new ReadableStream({
+          pull(stream) {
+            if ('name' in error && error.name !== 'AbortError') {
+              controller.abort(error)
+            }
+            stream.error(error)
+          },
+        })
+        return Promise.resolve(new Response(body, { status: 503 }))
+      })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const query = client.from('users').select().abortSignal(controller.signal).throwOnError()
+
+      await expect(runWithTimers(query)).rejects.toBe(error)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the retry limit when every response body fails', async () => {
+      fetchMock.mockImplementation(() => {
+        const body = new ReadableStream({
+          start(controller) {
+            controller.error(new TypeError('terminated'))
+          },
+        })
+        return Promise.resolve(new Response(body, { status: 503 }))
+      })
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error?.message).toContain('terminated')
+      expect(fetchMock).toHaveBeenCalledTimes(4)
+    })
+
+    it.each(['POST', 'disabled', 'successful', 'non-retryable'])(
+      'does not retry a failed response body for %s requests',
+      async (mode) => {
+        const status = mode === 'successful' ? 200 : mode === 'non-retryable' ? 400 : 503
+        const body = new ReadableStream({
+          start(controller) {
+            controller.error(new TypeError('terminated'))
+          },
+        })
+        fetchMock.mockResolvedValueOnce(new Response(body, { status }))
+
+        const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+        const result =
+          mode === 'POST'
+            ? await runWithTimers(client.from('users').insert({ id: 1 }))
+            : await runWithTimers(
+                client
+                  .from('users')
+                  .select()
+                  .retry(mode !== 'disabled')
+              )
+
+        expect(result.error?.message).toContain('terminated')
+        expect(fetchMock).toHaveBeenCalledTimes(1)
+      }
+    )
+
     it('should retry on 503 with Retry-After header and succeed', async () => {
       const pgrst002Body = JSON.stringify({
         code: 'PGRST002',
