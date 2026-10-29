@@ -71,37 +71,62 @@ function withTimeout(fetch: Fetch, timeout?: number): Fetch {
 
   return (input, init) => {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeout)
+    let timeoutId: ReturnType<typeof setTimeout> | undefined = setTimeout(() => {
+      cleanup()
+      controller.abort()
+    }, timeout)
+    // Avoid holding the event loop open if unref is available (e.g. Node.js).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(timeoutId as any)?.unref?.()
 
-    // Merge abort signals if one already exists
     const existingSignal = init?.signal
-    if (existingSignal) {
-      // If the existing signal is already aborted, use it directly
-      if (existingSignal.aborted) {
+    let abortHandler: (() => void) | undefined
+
+    const cleanup = () => {
+      if (timeoutId !== undefined) {
         clearTimeout(timeoutId)
+        timeoutId = undefined
+      }
+      if (existingSignal && abortHandler) {
+        existingSignal.removeEventListener('abort', abortHandler)
+        abortHandler = undefined
+      }
+    }
+
+    if (existingSignal) {
+      if (existingSignal.aborted) {
+        cleanup()
         return fetch(input, init)
       }
 
-      // Listen to existing signal and abort our controller too
-      const abortHandler = () => {
-        clearTimeout(timeoutId)
+      abortHandler = () => {
+        cleanup()
         controller.abort()
       }
       existingSignal.addEventListener('abort', abortHandler, { once: true })
-
-      return fetch(input, {
-        ...init,
-        signal: controller.signal,
-      }).finally(() => {
-        clearTimeout(timeoutId)
-        existingSignal.removeEventListener('abort', abortHandler)
-      })
     }
 
     return fetch(input, {
       ...init,
       signal: controller.signal,
-    }).finally(() => clearTimeout(timeoutId))
+    }).then(
+      (res) => {
+        if (!res.body || typeof TransformStream === 'undefined') {
+          cleanup()
+          return res
+        }
+        const transform = new TransformStream({
+          flush() {
+            cleanup()
+          },
+        })
+        return new Response(res.body.pipeThrough(transform), res)
+      },
+      (err) => {
+        cleanup()
+        throw err
+      }
+    )
   }
 }
 
