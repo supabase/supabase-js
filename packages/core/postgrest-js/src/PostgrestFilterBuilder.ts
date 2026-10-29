@@ -548,7 +548,10 @@ export default class PostgrestFilterBuilder<
   ): this
   likeAllOf(column: string, patterns: readonly string[]): this
   likeAllOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `like(all).{${patterns.join(',')}}`)
+    this.url.searchParams.append(
+      column,
+      `like(all).{${patterns.map(toPostgrestArrayLiteral).join(',')}}`
+    )
     return this
   }
 
@@ -567,7 +570,10 @@ export default class PostgrestFilterBuilder<
   ): this
   likeAnyOf(column: string, patterns: readonly string[]): this
   likeAnyOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `like(any).{${patterns.join(',')}}`)
+    this.url.searchParams.append(
+      column,
+      `like(any).{${patterns.map(toPostgrestArrayLiteral).join(',')}}`
+    )
     return this
   }
 
@@ -637,7 +643,10 @@ export default class PostgrestFilterBuilder<
   ): this
   ilikeAllOf(column: string, patterns: readonly string[]): this
   ilikeAllOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `ilike(all).{${patterns.join(',')}}`)
+    this.url.searchParams.append(
+      column,
+      `ilike(all).{${patterns.map(toPostgrestArrayLiteral).join(',')}}`
+    )
     return this
   }
 
@@ -656,7 +665,10 @@ export default class PostgrestFilterBuilder<
   ): this
   ilikeAnyOf(column: string, patterns: readonly string[]): this
   ilikeAnyOf(column: string, patterns: readonly string[]): this {
-    this.url.searchParams.append(column, `ilike(any).{${patterns.join(',')}}`)
+    this.url.searchParams.append(
+      column,
+      `ilike(any).{${patterns.map(toPostgrestArrayLiteral).join(',')}}`
+    )
     return this
   }
 
@@ -1016,7 +1028,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `cs.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(column, `cs.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `cs.{${value.map(toPostgrestArrayLiteral).join(',')}}`)
     } else {
       // json
       this.url.searchParams.append(column, `cs.${JSON.stringify(value)}`)
@@ -1165,7 +1177,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `cd.${value}`)
     } else if (Array.isArray(value)) {
       // array
-      this.url.searchParams.append(column, `cd.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `cd.{${value.map(toPostgrestArrayLiteral).join(',')}}`)
     } else {
       // json
       this.url.searchParams.append(column, `cd.${JSON.stringify(value)}`)
@@ -1592,7 +1604,7 @@ export default class PostgrestFilterBuilder<
       this.url.searchParams.append(column, `ov.${value}`)
     } else {
       // array
-      this.url.searchParams.append(column, `ov.{${value.join(',')}}`)
+      this.url.searchParams.append(column, `ov.{${value.map(toPostgrestArrayLiteral).join(',')}}`)
     }
     return this
   }
@@ -2187,4 +2199,19 @@ export default class PostgrestFilterBuilder<
     this.url.searchParams.append(column, `${operator}.${value}`)
     return this
   }
+}
+
+/**
+ * Serializes one element of a Postgres array literal, mirroring PostgREST's own
+ * `pgBuildArrayLiteral`: every string element is double quoted (with `\` and `"`
+ * escaped) so the server reads it as a single text element. Quoting every string
+ * also preserves an empty string and the literal word `null`, which Postgres
+ * reads back as SQL NULL when they are emitted unquoted. Non-string values are
+ * emitted as is.
+ */
+function toPostgrestArrayLiteral(element: unknown): string {
+  if (typeof element === 'string') {
+    return `"${element.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  }
+  return `${element}`
 }
