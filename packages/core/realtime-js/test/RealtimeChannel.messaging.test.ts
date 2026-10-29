@@ -131,6 +131,27 @@ describe('on', () => {
 
       expect(ignoredSpy).not.toHaveBeenCalled()
     })
+
+    test('broadcast event with ids key in payload does not crash payload transform', () => {
+      let receivedMsg: any = null
+
+      channel.on('broadcast', { event: 'device-sync' }, (msg) => {
+        receivedMsg = msg
+      })
+
+      const broadcastPayload = {
+        type: 'broadcast',
+        event: 'device-sync',
+        payload: {
+          ids: [{ id: '18FECA00' }],
+          ts: 1730000000,
+        },
+      }
+
+      channel.channelAdapter.getChannel().trigger('broadcast', broadcastPayload)
+
+      expect(receivedMsg).toEqual(broadcastPayload)
+    })
   })
 
   describe('System event filtering', () => {
