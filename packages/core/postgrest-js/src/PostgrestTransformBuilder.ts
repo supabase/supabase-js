@@ -496,7 +496,7 @@ export default class PostgrestTransformBuilder<
       referencedTable = foreignTable,
     }: { foreignTable?: string; referencedTable?: string } = {}
   ): this {
-    const key = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
+    const key = referencedTable ? `${referencedTable}.limit` : 'limit'
     this.url.searchParams.set(key, `${rows}`)
     return this
   }
@@ -564,9 +564,8 @@ export default class PostgrestTransformBuilder<
       referencedTable = foreignTable,
     }: { foreignTable?: string; referencedTable?: string } = {}
   ): this {
-    const keyOffset =
-      typeof referencedTable === 'undefined' ? 'offset' : `${referencedTable}.offset`
-    const keyLimit = typeof referencedTable === 'undefined' ? 'limit' : `${referencedTable}.limit`
+    const keyOffset = referencedTable ? `${referencedTable}.offset` : 'offset'
+    const keyLimit = referencedTable ? `${referencedTable}.limit` : 'limit'
     this.url.searchParams.set(keyOffset, `${from}`)
     // Range is inclusive, so add 1
     this.url.searchParams.set(keyLimit, `${to - from + 1}`)
