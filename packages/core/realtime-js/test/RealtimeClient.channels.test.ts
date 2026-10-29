@@ -118,6 +118,54 @@ describe('channel', () => {
     expect(channel2).not.toBe(channel1)
   })
 
+  test.each(['unsubscribe', 'removeChannel'])('keeps a replacement after %s', async (method) => {
+    testSetup.cleanup()
+    testSetup = setupRealtimeTest({ useFakeTimers: true, disconnectOnEmptyChannelsAfterMs: 200 })
+
+    const oldChannel = testSetup.client.channel('topic').subscribe()
+    await waitForChannelSubscribed(oldChannel)
+    await oldChannel.unsubscribe()
+
+    const onBroadcast = vi.fn()
+    const replacement = testSetup.client
+      .channel('topic')
+      .on('broadcast', { event: 'test' }, onBroadcast)
+      .subscribe()
+    await waitForChannelSubscribed(replacement)
+    expect(replacement.joinPush.ref).not.toBe(oldChannel.joinPush.ref)
+    const disconnectSpy = vi.spyOn(testSetup.client, 'disconnect')
+
+    if (method === 'unsubscribe') {
+      await oldChannel.unsubscribe()
+    } else {
+      await testSetup.client.removeChannel(oldChannel)
+    }
+
+    expect(testSetup.client.getChannels()).toHaveLength(1)
+    expect(testSetup.client.getChannels()[0]).toBe(replacement)
+    expect(testSetup.client.socketAdapter.getSocket().channels).toEqual([
+      replacement.channelAdapter.getChannel(),
+    ])
+    vi.advanceTimersByTime(200)
+    expect(disconnectSpy).not.toHaveBeenCalled()
+    expect(testSetup.client.isConnected()).toBe(true)
+
+    const message = JSON.stringify({
+      topic: replacement.topic,
+      event: 'broadcast',
+      payload: { event: 'test', payload: { message: 'still subscribed' } },
+      join_ref: replacement.joinPush.ref,
+    })
+    testSetup.mockServer.emit('message', message)
+    expect(onBroadcast).toHaveBeenCalledOnce()
+    expect(onBroadcast.mock.calls[0][0].payload).toEqual({ message: 'still subscribed' })
+
+    await testSetup.client.removeChannel(replacement)
+    expect(testSetup.client.getChannels()).toHaveLength(0)
+    vi.advanceTimersByTime(200)
+    expect(disconnectSpy).toHaveBeenCalledOnce()
+  })
+
   test.each([
     ['ok', 'ok', 0],
     ['timeout', 'timed out', 0],

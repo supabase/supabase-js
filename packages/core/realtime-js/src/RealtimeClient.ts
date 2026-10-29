@@ -596,7 +596,7 @@ export default class RealtimeClient {
    * @internal
    */
   _remove(channel: RealtimeChannel) {
-    this.channels = this.channels.filter((c) => c.topic !== channel.topic)
+    this.channels = this.channels.filter((c) => c !== channel)
     if (this.channels.length === 0) {
       this.log('transport', 'no channels remaining, scheduling disconnect')
       this._schedulePendingDisconnect()
