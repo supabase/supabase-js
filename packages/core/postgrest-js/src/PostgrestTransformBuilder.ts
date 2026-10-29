@@ -783,6 +783,9 @@ export default class PostgrestTransformBuilder<
    * ```
    */
   csv(): PostgrestBuilder<ClientOptions, string, ThrowOnError> {
+    if (this.shouldStripNulls) {
+      throw new Error('stripNulls() cannot be used with csv()')
+    }
     this.headers.set('Accept', 'text/csv')
     return this as unknown as PostgrestBuilder<ClientOptions, string, ThrowOnError>
   }
