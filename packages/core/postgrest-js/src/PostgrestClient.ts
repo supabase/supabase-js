@@ -111,16 +111,32 @@ function withTimeout(fetch: Fetch, timeout?: number): Fetch {
       signal: controller.signal,
     }).then(
       (res) => {
-        if (!res.body || typeof TransformStream === 'undefined') {
+        if (!res.body || typeof ReadableStream === 'undefined') {
           cleanup()
           return res
         }
-        const transform = new TransformStream({
-          flush() {
+        const reader = res.body.getReader()
+        const stream = new ReadableStream({
+          async pull(c) {
+            try {
+              const { done, value } = await reader.read()
+              if (done) {
+                cleanup()
+                c.close()
+              } else {
+                c.enqueue(value)
+              }
+            } catch (err) {
+              cleanup()
+              c.error(err)
+            }
+          },
+          cancel(reason) {
             cleanup()
+            return reader.cancel(reason)
           },
         })
-        return new Response(res.body.pipeThrough(transform), res)
+        return new Response(stream, res)
       },
       (err) => {
         cleanup()
