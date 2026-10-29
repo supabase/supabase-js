@@ -1,22 +1,37 @@
 {
+  // ============================================================================
+  // ⚡ NZ SHADOWS OS v53.0.0-OMNI-APEX — ROOT SOLUTION CONFIGURATION
+  // Role: Monorepo Orchestrator & Project Reference Graph
+  // Command: Run `tsc -b` at the root to compile the entire ecosystem in parallel.
+  // ============================================================================
+  
+  // Extend base options to ensure the IDE inherits standard formatting rules
   "extends": "./tsconfig.base.json",
+  
+  // Disable legacy save-compilation to prevent editor lockups in large workspaces
   "compileOnSave": false,
+  
+  // CRITICAL: Empty files array. The root compiles nothing. It only delegates.
   "files": [],
+
+  // The Dependency Matrix: List EVERY package, app, and edge function here.
   "references": [
-    {
-      "path": "./packages/core/functions-js"
-    },
-    {
-      "path": "./packages/core/postgrest-js"
-    },
-    {
-      "path": "./packages/core/realtime-js"
-    },
-    {
-      "path": "./packages/core/storage-js"
-    },
-    {
-      "path": "./packages/core/auth-js"
-    }
+    // ── CORE SUPABASE / OS LIBRARIES ──
+    { "path": "./packages/core/functions-js" },
+    { "path": "./packages/core/postgrest-js" },
+    { "path": "./packages/core/realtime-js" },
+    { "path": "./packages/core/storage-js" },
+    { "path": "./packages/core/auth-js" },
+
+    // ── UI & COMPONENT LIBRARIES (Example additions for scalable OS) ──
+    // { "path": "./packages/ui" },
+    // { "path": "./packages/utils" },
+
+    // ── FRONTEND APPLICATIONS ──
+    // { "path": "./apps/shadow-web" },
+    // { "path": "./apps/council-dashboard" },
+
+    // ── DENO EDGE FUNCTIONS ──
+    // { "path": "./supabase/functions" }
   ]
 }
