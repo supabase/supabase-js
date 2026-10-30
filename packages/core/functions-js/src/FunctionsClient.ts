@@ -1,4 +1,4 @@
-import { resolveFetch } from './helper'
+import { isJsonMediaType, resolveFetch } from './helper'
 import {
   Fetch,
   FunctionInvokeOptions,
@@ -310,7 +310,7 @@ export class FunctionsClient {
         .trim()
         .toLowerCase()
       let data: any
-      if (responseType === 'application/json') {
+      if (isJsonMediaType(responseType)) {
         data = await response.json()
       } else if (
         responseType === 'application/octet-stream' ||
