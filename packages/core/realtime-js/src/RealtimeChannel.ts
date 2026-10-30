@@ -3,6 +3,7 @@ import {
   CHANNEL_STATES,
   DEFAULT_POSTGRES_CHANGES_WAIT_TIMEOUT,
   POSTGRES_CHANGES_WAIT_ERROR_GRACE,
+  VSN_1_0_0,
 } from './lib/constants'
 import type { ChannelState } from './lib/constants'
 import type RealtimeClient from './RealtimeClient'
@@ -227,24 +228,9 @@ export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES
 export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'error' | (string & {})
 
 /**
- * Whether the server stores a broadcast in `realtime.messages` so it can be replayed.
- *
- * Pass `true` to store it for the maximum retention. Pass an object to set options. `{}` means the
- * same as `true`.
- *
- * Leave it out, or pass `false`, and the message is not stored.
+ * Stores a broadcast for replay: `true` for the maximum retention, `{ ttl }` for `ttl` seconds.
  */
-export type RealtimeBroadcastPersist =
-  | boolean
-  | {
-      /**
-       * How long the message stays replayable, in seconds. The range is 1 to 259200, which is 72
-       * hours. Leave it out to get the maximum.
-       *
-       * The server rejects invalid and out of bounds values. It does not round them down.
-       */
-      ttl?: number
-    }
+export type RealtimeBroadcastPersist = boolean | { ttl?: number }
 
 /**
  * Payload of a `system` event emitted by the server.
@@ -956,7 +942,7 @@ export default class RealtimeChannel {
    *
    * @param event The name of the broadcast event
    * @param payload Payload to be sent (required)
-   * @param opts Options including timeout
+   * @param opts Options including timeout and persist
    * @returns Promise resolving to object with success status, and error details if failed
    *
    * @category Realtime
@@ -986,8 +972,13 @@ export default class RealtimeChannel {
     if (this.private) {
       url.searchParams.set('private', 'true')
     }
-    // The query string carries the same shape as the frame metadata. A ttl goes in as `persist[ttl]`.
     if (opts.persist) {
+      if (!this.private) {
+        return Promise.reject(
+          new Error('Realtime httpSend() cannot store a message on a public channel.')
+        )
+      }
+
       const ttl = typeof opts.persist === 'object' ? opts.persist.ttl : undefined
 
       if (ttl === undefined) {
@@ -1039,6 +1030,7 @@ export default class RealtimeChannel {
    * @param args.type The type of event to send
    * @param args.event The name of the event being sent
    * @param args.payload Payload to be sent
+   * @param args.persist Stores the broadcast for replay on a private channel
    * @param opts Options to be used during the send process
    *
    * @category Realtime
@@ -1085,25 +1077,29 @@ export default class RealtimeChannel {
       type: 'broadcast' | 'presence' | 'postgres_changes'
       event: string
       payload?: any
-      /**
-       * Store this message in `realtime.messages` so it can be replayed.
-       *
-       * `true` keeps it for the maximum retention. `{ ttl: 3600 }` keeps it for an hour.
-       *
-       * Needs a private channel and an RLS policy on the `persistence` extension. It travels as
-       * frame metadata, so subscribers never see it in the payload.
-       *
-       * @example
-       * ```js
-       * channel.send({ type: 'broadcast', event: 'message', payload, persist: true })
-       * channel.send({ type: 'broadcast', event: 'message', payload, persist: { ttl: 3600 } })
-       * ```
-       */
       persist?: RealtimeBroadcastPersist
       [key: string]: any
     },
     opts: { [key: string]: any } = {}
   ): Promise<RealtimeChannelSendResponse> {
+    if (
+      args.type === 'broadcast' &&
+      args.persist &&
+      (!this.private || this.socket.vsn === VSN_1_0_0)
+    ) {
+      const persistError = this.private
+        ? 'Realtime send() cannot store a message with protocol 1.0.0. Use httpSend() or connect with vsn 2.0.0.'
+        : 'Realtime send() cannot store a message on a public channel.'
+
+      if (this.socket.hasLogger()) {
+        this.socket.log('channel', persistError)
+      } else {
+        console.error(persistError)
+      }
+
+      return 'error'
+    }
+
     if (!this.channelAdapter.canPush() && args.type === 'broadcast') {
       const fallbackWarning =
         'Realtime send() is automatically falling back to REST API. ' +
@@ -1182,7 +1178,9 @@ export default class RealtimeChannel {
         }
 
         push.receive('ok', () => resolve('ok'))
-        push.receive('error', () => resolve('error'))
+        push.receive('error', (response) =>
+          resolve(args.persist && typeof response?.error === 'string' ? response.error : 'error')
+        )
         push.receive('timeout', () => resolve('timed out'))
       })
     }
