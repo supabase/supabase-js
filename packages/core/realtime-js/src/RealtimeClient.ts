@@ -163,6 +163,7 @@ export default class RealtimeClient {
   worker?: boolean
   workerUrl?: string
   workerRef?: Worker
+  private _workerBlobUrl?: string
 
   serializer: Serializer = new Serializer()
 
@@ -764,7 +765,12 @@ export default class RealtimeClient {
       this.log('worker', `starting default worker`)
     }
     const objectUrl = this._workerObjectUrl(this.workerUrl!)
-    this.workerRef = new Worker(objectUrl)
+    try {
+      this.workerRef = new Worker(objectUrl)
+    } catch (error) {
+      this._terminateWorker()
+      throw error
+    }
     this.workerRef.onerror = (error) => {
       this.log('worker', 'worker error', (error as ErrorEvent).message)
       this._terminateWorker()
@@ -791,6 +797,10 @@ export default class RealtimeClient {
       this.workerRef.terminate()
       this.workerRef = undefined
     }
+    if (this._workerBlobUrl) {
+      URL.revokeObjectURL(this._workerBlobUrl)
+      this._workerBlobUrl = undefined
+    }
   }
 
   /** @internal */
@@ -801,6 +811,7 @@ export default class RealtimeClient {
     } else {
       const blob = new Blob([WORKER_SCRIPT], { type: 'application/javascript' })
       result_url = URL.createObjectURL(blob)
+      this._workerBlobUrl = result_url
     }
     return result_url
   }
