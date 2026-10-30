@@ -1001,6 +1001,13 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.send
+  realtime.channel.broadcast_persist:
+    status: implemented
+    symbols:
+      - RealtimeChannel.send
+      - RealtimeChannel.httpSend
+    supporting_symbols:
+      - RealtimeBroadcastPersist
   realtime.channel.subscribe:
     status: implemented
     symbols:

@@ -7,7 +7,7 @@ import {
   waitForChannelSubscribed,
   type TestSetup,
 } from './helpers/setup'
-import { VSN_2_0_0 } from '../src/lib/constants'
+import { VSN_1_0_0, VSN_2_0_0 } from '../src/lib/constants'
 let testSetup: TestSetup
 
 describe('on', () => {
@@ -346,6 +346,127 @@ describe('send', () => {
       // Should not use _push for WebSocket when not connected/joined
       expect(pushStub).toHaveBeenCalledTimes(0)
     })
+
+    describe('persist', () => {
+      const joinedChannel = (config: { private: boolean }) => {
+        const channel = testSetup.client.channel('topic', { config })
+        const pushStub = vi.spyOn(channel.channelAdapter.getChannel(), 'push')
+        channel.subscribe()
+        channel.state = 'joined'
+        return { channel, pushStub }
+      }
+
+      test.each([true, { ttl: 1 }, { ttl: 259200 }])(
+        'pushes persist %o on a private channel',
+        async (persist) => {
+          const { channel, pushStub } = joinedChannel({ private: true })
+
+          const result = await channel.send({ type: 'broadcast', event: 'test', persist })
+
+          expect(result).toBe('ok')
+          expect(pushStub).toHaveBeenCalledTimes(1)
+        }
+      )
+
+      test('returns error without pushing on a public channel', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { channel, pushStub } = joinedChannel({ private: false })
+
+        const result = await channel.send({ type: 'broadcast', event: 'test', persist: true })
+
+        expect(result).toBe('error')
+        expect(pushStub).not.toHaveBeenCalled()
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('on a public channel'))
+        errorSpy.mockRestore()
+      })
+
+      test('pushes persist: false on a public channel', async () => {
+        const { channel, pushStub } = joinedChannel({ private: false })
+
+        const result = await channel.send({ type: 'broadcast', event: 'test', persist: false })
+
+        expect(result).toBe('ok')
+        expect(pushStub).toHaveBeenCalledTimes(1)
+      })
+
+      test.each([0, 259201, 1.5])('pushes ttl %s for the server to check', async (ttl) => {
+        const { channel, pushStub } = joinedChannel({ private: true })
+
+        await channel.send({ type: 'broadcast', event: 'test', persist: { ttl } })
+
+        expect(pushStub).toHaveBeenCalledTimes(1)
+      })
+
+      describe('with ack', () => {
+        // A push that answers `status` with `response`, like the server's phx_reply.
+        const ackedChannel = (status: string, response: Record<string, any> = {}) => {
+          const channel = testSetup.client.channel('topic', {
+            config: { private: true, broadcast: { ack: true } },
+          })
+          const push: any = {
+            receive: (s: string, callback: (response: any) => void) => {
+              if (s === status) callback(response)
+              return push
+            },
+          }
+          vi.spyOn(channel.channelAdapter.getChannel(), 'push').mockReturnValue(push)
+          channel.subscribe()
+          channel.state = 'joined'
+          return channel
+        }
+
+        test.each(['persistence_unauthorized', 'persistence_failed', 'invalid_persist_ttl'])(
+          'returns the server error code %s',
+          async (code) => {
+            const channel = ackedChannel('error', { error: code })
+
+            const result = await channel.send({ type: 'broadcast', event: 'test', persist: true })
+
+            expect(result).toBe(code)
+          }
+        )
+
+        test('returns error for an error reply without persist', async () => {
+          const channel = ackedChannel('error', { error: 'unauthorized' })
+
+          const result = await channel.send({ type: 'broadcast', event: 'test' })
+
+          expect(result).toBe('error')
+        })
+
+        test('returns error for an error reply without a code', async () => {
+          const channel = ackedChannel('error')
+
+          const result = await channel.send({ type: 'broadcast', event: 'test', persist: true })
+
+          expect(result).toBe('error')
+        })
+
+        test('returns ok when the message is stored', async () => {
+          const channel = ackedChannel('ok', { id: crypto.randomUUID() })
+
+          const result = await channel.send({ type: 'broadcast', event: 'test', persist: true })
+
+          expect(result).toBe('ok')
+        })
+      })
+
+      test('returns error without pushing on protocol 1.0.0', async () => {
+        testSetup.cleanup()
+        testSetup = setupRealtimeTest({ vsn: VSN_1_0_0 })
+        testSetup.connect()
+        await testSetup.socketConnected()
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { channel, pushStub } = joinedChannel({ private: true })
+
+        const result = await channel.send({ type: 'broadcast', event: 'test', persist: true })
+
+        expect(result).toBe('error')
+        expect(pushStub).not.toHaveBeenCalled()
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('protocol 1.0.0'))
+        errorSpy.mockRestore()
+      })
+    })
   })
 
   describe('HTTP fallback scenarios', () => {
@@ -575,6 +696,129 @@ describe('httpSend', () => {
       expectedAuth: 'Bearer token123' as string | undefined,
     },
   ]
+
+  describe('persist', () => {
+    test('sets persist=true on the URL when asked', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.httpSend('test', { data: 'test' }, { persist: true })
+
+      const [url] = fetchStub.mock.calls[0]
+      expect(new URL(url).searchParams.get('persist')).toBe('true')
+      expect(new URL(url).searchParams.get('private')).toBe('true')
+    })
+
+    test('omits persist when not asked', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.httpSend('test', { data: 'test' })
+
+      const [url] = fetchStub.mock.calls[0]
+      expect(new URL(url).searchParams.has('persist')).toBe(false)
+    })
+
+    test('omits persist when explicitly false', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.httpSend('test', { data: 'test' }, { persist: false })
+
+      const [url] = fetchStub.mock.calls[0]
+      expect(new URL(url).searchParams.has('persist')).toBe(false)
+    })
+
+    test('refuses to persist over the REST fallback', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      // Not subscribed, so send() takes the REST fallback, which posts to the batch endpoint.
+      const result = await channel.send({
+        type: 'broadcast',
+        event: 'test',
+        payload: { data: 'test' },
+        persist: true,
+      })
+
+      expect(result).toBe('error')
+      expect(fetchStub).not.toHaveBeenCalled()
+    })
+
+    test('sends a ttl as persist[ttl]', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.httpSend('test', { data: 'test' }, { persist: { ttl: 3600 } })
+
+      const params = new URL(fetchStub.mock.calls[0][0]).searchParams
+      expect(params.get('persist[ttl]')).toBe('3600')
+      expect(params.has('persist')).toBe(false)
+    })
+
+    test('an empty object means the defaults, same as true', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.httpSend('test', { data: 'test' }, { persist: {} })
+
+      const params = new URL(fetchStub.mock.calls[0][0]).searchParams
+      expect(params.get('persist')).toBe('true')
+      expect(params.has('persist[ttl]')).toBe(false)
+    })
+
+    test('an object without a ttl means the defaults', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.httpSend('test', { data: 'test' }, { persist: { ttl: undefined } })
+
+      const params = new URL(fetchStub.mock.calls[0][0]).searchParams
+      expect(params.get('persist')).toBe('true')
+    })
+
+    test('rejects persist on a public channel without calling fetch', async () => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' }, { persist: true })).rejects.toThrow(
+        'on a public channel'
+      )
+      expect(fetchStub).not.toHaveBeenCalled()
+    })
+
+    test('rejects with the server message for a ttl it refuses', async () => {
+      const message = 'persist ttl must be a positive integer of seconds from 1 to 259200'
+      const fetchStub = vi
+        .fn()
+        .mockResolvedValue(createMockResponse(422, 'Unprocessable Entity', { message }))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await expect(
+        channel.httpSend('test', { data: 'test' }, { persist: { ttl: 0 } })
+      ).rejects.toThrow(message)
+    })
+
+    test.each([1, 0, 1.5])('sends ttl %s to the server', async (ttl) => {
+      const fetchStub = vi.fn().mockResolvedValue(createMockResponse(202))
+      const testSetup = createSocket(false, fetchStub)
+      const channel = testSetup.client.channel('topic', { config: { private: true } })
+
+      await channel.httpSend('test', { data: 'test' }, { persist: { ttl } })
+
+      const params = new URL(fetchStub.mock.calls[0][0]).searchParams
+      expect(params.get('persist[ttl]')).toBe(String(ttl))
+    })
+  })
 
   testCases.forEach(({ name, hasToken, expectedAuth }) => {
     describe(name, () => {
