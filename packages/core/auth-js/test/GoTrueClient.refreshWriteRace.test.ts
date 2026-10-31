@@ -1,5 +1,5 @@
 import GoTrueClient from '../src/GoTrueClient'
-import type { AuthChangeEvent, SupportedStorage } from '../src/lib/types'
+import type { AuthChangeEvent, LockFunc, SupportedStorage } from '../src/lib/types'
 
 // A refresh reads the session from storage, then later saves the renewed
 // session or deletes the stored one. These tests cover a session saved by
@@ -101,9 +101,11 @@ const settle = async () => {
 async function setup({
   storedSession,
   withUserStorage = false,
+  lock,
 }: {
   storedSession: ReturnType<typeof makeSession>
   withUserStorage?: boolean
+  lock?: LockFunc
 }) {
   const storage = controllableStorage()
   const userStorage = withUserStorage ? controllableStorage() : null
@@ -125,6 +127,7 @@ async function setup({
     detectSessionInUrl: false,
     storage: storage.adapter,
     ...(userStorage ? { userStorage: userStorage.adapter } : {}),
+    ...(lock ? { lock } : {}),
     fetch,
   })
 
@@ -151,6 +154,7 @@ async function setup({
 
   return {
     client,
+    fetch,
     storage,
     userStorage,
     events,
@@ -338,5 +342,49 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
 
     expect(t.storedRefreshToken()).toBe('refresh-b')
     expect(t.events).not.toContain('TOKEN_REFRESHED')
+  })
+
+  test('with a custom lock, an auto-refresh tick does not overwrite a session saved while its read was open', async () => {
+    // A lock that does not exclude anything, so the sign-in can run while the
+    // tick holds it. This covers the tick's legacy-lock branch; a real lock
+    // would queue the sign-in behind the tick instead.
+    const passThroughLock: LockFunc = async (_name, _acquireTimeout, fn) => await fn()
+    const t = await setup({ storedSession: makeSession('user-a', 'a', 100), lock: passThroughLock })
+    t.setRefreshReply(Promise.resolve(json(200, makeSession('user-a', 'a-renewed'))))
+
+    const reads = t.storage.holdReads()
+    await t.client.startAutoRefresh()
+    await settle()
+    reads.stopHolding()
+    await signInAsB(t.client)
+    reads.release()
+    await settle()
+    await t.client.stopAutoRefresh()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.events).not.toContain('TOKEN_REFRESHED')
+  })
+
+  test('start-up recovery does not overwrite a session saved while its read was open', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
+    t.setRefreshReply(Promise.resolve(json(200, makeSession('user-a', 'a-renewed'))))
+    // Recovery only refreshes with auto refresh on, the default. `setup`
+    // turns it off so initialization doesn't refresh on its own.
+    // @ts-expect-error access protected for test
+    t.client.autoRefreshToken = true
+
+    const reads = t.storage.holdReads()
+    // @ts-expect-error access private for test
+    const recovering: Promise<void> = t.client._recoverAndRefresh()
+    await settle()
+    reads.stopHolding()
+    await signInAsB(t.client)
+    reads.release()
+    await recovering
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.events).not.toContain('TOKEN_REFRESHED')
+    expect(t.fetch).toHaveBeenCalledWith(expect.stringContaining(REFRESH_GRANT), expect.anything())
   })
 })
