@@ -275,6 +275,30 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(t.events).not.toContain('SIGNED_OUT')
   })
 
+  test('a refused refresh does not delete a session whose save was still in progress', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', -10) })
+
+    const respond = t.holdRefreshReply()
+    const loading = t.client.getSession()
+    await settle()
+
+    // B's save is still in progress when the refusal arrives, and the removal
+    // is queued behind it.
+    const writes = t.storage.holdWrites({ applyLate: true })
+    const signingIn = signInAsB(t.client)
+    await settle()
+    writes.stopHolding()
+    respond(refusedRefresh())
+    await settle()
+    writes.release()
+    await signingIn
+    await loading
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.events).not.toContain('SIGNED_OUT')
+  })
+
   test('a successful refresh does not overwrite a session saved during its last storage read', async () => {
     const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
 
@@ -336,15 +360,19 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     respond(json(200, makeSession('user-a', 'a-renewed')))
     await settle()
     writes.stopHolding()
-    await signInAsB(t.client)
+    // B's save is queued behind the held write, so it finishes after it.
+    const signingIn = signInAsB(t.client)
+    await settle()
     writes.release()
+    await signingIn
 
     await loading
     await settle()
 
     expect(t.storedRefreshToken()).toBe('refresh-b')
     expect(JSON.parse(t.userStorage!.store.get(`${STORAGE_KEY}-user`)!).user.id).toBe('user-b')
-    expect(t.events).not.toContain('TOKEN_REFRESHED')
+    // B's save is queued after the refresh's, so both are announced, in order.
+    expect(t.events).toEqual(['TOKEN_REFRESHED', 'SIGNED_IN'])
   })
 
   test('re-saving the same session during a refresh does not discard the refresh', async () => {
@@ -566,7 +594,7 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     }
   )
 
-  test('with userStorage, a user written late beside another session is not returned as its user', async () => {
+  test('with userStorage, a refresh user write applied late does not end up beside another session', async () => {
     const t = await setup({ storedSession: makeSession('user-a', 'a', 60), withUserStorage: true })
 
     const respond = t.holdRefreshReply()
@@ -579,15 +607,33 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     respond(json(200, makeSession('user-a', 'a-renewed')))
     await settle()
     writes.stopHolding()
-    await signInAsB(t.client)
+    // B's save is queued behind the held write, so it finishes after it.
+    const signingIn = signInAsB(t.client)
+    await settle()
     writes.release()
+    await signingIn
     await loading
     await settle()
 
     expect(t.storedRefreshToken()).toBe('refresh-b')
-    expect(JSON.parse(t.userStorage!.store.get(`${STORAGE_KEY}-user`)!).user.id).toBe('user-a')
+    expect(JSON.parse(t.userStorage!.store.get(`${STORAGE_KEY}-user`)!).user.id).toBe('user-b')
 
     const { data } = await t.client.getSession()
+    expect(data.session?.refresh_token).toBe('refresh-b')
+    expect(data.session?.user.id).toBe('user-b')
+  })
+
+  test("with userStorage, getSession() does not return another session's user", async () => {
+    // A pairing left by a write that bypassed the queue, e.g. one that took
+    // longer than the wait, or another client sharing the storage.
+    const t = await setup({ storedSession: makeSession('user-b', 'b'), withUserStorage: true })
+    t.userStorage!.store.set(
+      `${STORAGE_KEY}-user`,
+      JSON.stringify({ user: makeSession('user-a', 'a').user })
+    )
+
+    const { data } = await t.client.getSession()
+
     expect(data.session?.refresh_token).toBe('refresh-b')
     expect((data.session?.user as any).__isUserNotAvailableProxy).toBe(true)
   })
@@ -676,13 +722,17 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     const recovering = recover(t.client)
     await settle()
     writes.stopHolding()
-    await signInAsB(t.client)
+    // B's save is queued behind the held write, so it finishes after it.
+    const signingIn = signInAsB(t.client)
+    await settle()
     writes.release()
+    await signingIn
     await recovering
     await settle()
 
     expect(t.storedRefreshToken()).toBe('refresh-b')
-    expect(t.signedInAs).toEqual(['user-b'])
+    // Recovery's move was queued first, so it lands and is announced first.
+    expect(t.signedInAs).toEqual(['user-a', 'user-b'])
   })
 
   test('start-up recovery does not copy a user over the user of a session saved during its reads', async () => {
@@ -741,31 +791,108 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(t.signedInAs).toEqual(['user-b'])
   })
 
-  test('a refresh does not wait forever for a session write that never finishes', async () => {
+  // Adapters that do not apply writes in call order (e.g. one that encrypts
+  // before writing): a write made later must still be the one left in
+  // storage.
+  test('a sign-out during a refresh save applied late is not undone by it', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+
+    const respond = t.holdRefreshReply()
+    const refreshing = t.client.refreshSession()
+    await settle()
+    const writes = t.storage.holdWrites({ applyLate: true })
+    respond(json(200, makeSession('user-a', 'a-renewed')))
+    await settle()
+    writes.stopHolding()
+    const signingOut = t.client.signOut({ scope: 'local' })
+    await settle()
+    writes.release()
+    await signingOut
+    await refreshing
+    await settle()
+
+    expect(t.storedRefreshToken()).toBeNull()
+    const { data } = await t.client.getSession()
+    expect(data.session).toBeNull()
+  })
+
+  test('a sign-in during a refresh save applied late is not undone by it', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
+
+    const respond = t.holdRefreshReply()
+    const loading = t.client.getSession()
+    await settle()
+    const writes = t.storage.holdWrites({ applyLate: true })
+    respond(json(200, makeSession('user-a', 'a-renewed')))
+    await settle()
+    writes.stopHolding()
+    const signingIn = signInAsB(t.client)
+    await settle()
+    writes.release()
+    await signingIn
+    await loading
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    const { data } = await t.client.getSession()
+    expect(data.session?.user.id).toBe('user-b')
+    expect(t.events).toEqual(['TOKEN_REFRESHED', 'SIGNED_IN'])
+  })
+
+  test('a refresh keeps its renewed tokens when a slow sign-in save finally fails', async () => {
     const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
     // @ts-expect-error access private for test
     t.client._sessionWriteWaitMs = 20
     t.setRefreshReply(Promise.resolve(json(200, makeSession('user-a', 'a-renewed'))))
 
-    // B's save starts while the read that starts the refresh is open; it
-    // writes, but its storage call never resolves.
+    // B's save starts while the read that starts the refresh is open, takes
+    // longer than the wait, and then fails.
     const reads = t.storage.holdReads()
     const loading = t.client.getSession()
     await settle()
     reads.stopHolding()
-    const writes = t.storage.holdWrites()
+    const writes = t.storage.holdWrites({ applyLate: true })
+    t.storage.setFailWrites(true)
+    const signIn = t.client
+      .signInWithPassword({ email: 'user-b@example.com', password: 'password' })
+      .catch((error) => ({ error }))
+    await settle()
+    writes.stopHolding()
+    t.storage.setFailWrites(false)
+    reads.release()
+    await loading
+    await new Promise((resolve) => setTimeout(resolve, 60))
+    writes.release()
+    await signIn
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-a-renewed')
+  })
+
+  test('a session write that never finishes holds up later writes only for the wait', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
+    // @ts-expect-error access private for test
+    t.client._sessionWriteWaitMs = 20
+    t.setRefreshReply(Promise.resolve(json(200, makeSession('user-a', 'a-renewed'))))
+
+    // B's save starts while the read that starts the refresh is open, and its
+    // storage call never resolves.
+    const reads = t.storage.holdReads()
+    const loading = t.client.getSession()
+    await settle()
+    reads.stopHolding()
+    const writes = t.storage.holdWrites({ applyLate: true })
     t.client.signInWithPassword({ email: 'user-b@example.com', password: 'password' })
     await settle()
     writes.stopHolding()
     reads.release()
 
-    const { data } = await loading
+    const { data, error } = await loading
     await settle()
 
-    // The refresh gives up waiting and yields rather than overwrite B.
-    expect(t.storedRefreshToken()).toBe('refresh-b')
-    expect(data.session?.refresh_token).toBe('refresh-b')
-    expect(t.events).not.toContain('TOKEN_REFRESHED')
-    writes.release()
+    // The refresh's write runs after the wait and is stored.
+    expect(error).toBeNull()
+    expect(data.session?.refresh_token).toBe('refresh-a-renewed')
+    expect(t.storedRefreshToken()).toBe('refresh-a-renewed')
   }, 3000)
 })

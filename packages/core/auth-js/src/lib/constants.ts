@@ -13,8 +13,9 @@ export const AUTO_REFRESH_TICK_THRESHOLD = 3
 export const EXPIRY_MARGIN_MS = AUTO_REFRESH_TICK_THRESHOLD * AUTO_REFRESH_TICK_DURATION_MS
 
 /**
- * How long a refresh waits for another session write to finish before it
- * treats that write as having reached storage and yields to it.
+ * How long a session write waits for the ones queued before it to finish
+ * before it runs anyway, so a write that never finishes cannot stop every
+ * later one.
  */
 export const SESSION_WRITE_WAIT_MS = 5 * 1000
 
