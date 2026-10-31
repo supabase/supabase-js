@@ -839,7 +839,7 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(t.events).toEqual(['TOKEN_REFRESHED', 'SIGNED_IN'])
   })
 
-  test('a refresh keeps its renewed tokens when a slow sign-in save finally fails', async () => {
+  test('after the wait, a refresh yields to a sign-in save still in progress, even one that then fails', async () => {
     const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
     // @ts-expect-error access private for test
     t.client._sessionWriteWaitMs = 20
@@ -866,10 +866,76 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     await signIn
     await settle()
 
-    expect(t.storedRefreshToken()).toBe('refresh-a-renewed')
+    // The refresh cannot know whether B's save will land after its own, so it
+    // yields. At worst the next refresh fails; an old session never comes back.
+    expect(t.storedRefreshToken()).toBe('refresh-a')
   })
 
-  test('a session write that never finishes holds up later writes only for the wait', async () => {
+  test('getSession() does not remove a session saved while it read an invalid one', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+    t.storage.store.set(STORAGE_KEY, JSON.stringify({ access_token: 'broken' }))
+
+    const reads = t.storage.holdReads()
+    const loading = t.client.getSession()
+    await settle()
+    reads.stopHolding()
+    await signInAsB(t.client)
+    reads.release()
+    await loading
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.events).not.toContain('SIGNED_OUT')
+  })
+
+  test('getUser() does not remove a session saved while it checked one the server no longer knows', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+    let answerUser!: (response: Response) => void
+    t.fetch.mockImplementationOnce(
+      async () => new Promise<Response>((resolve) => (answerUser = resolve))
+    )
+
+    const checking = t.client.getUser()
+    await settle()
+    await signInAsB(t.client)
+    answerUser(json(403, { code: 403, error_code: 'session_not_found', msg: 'Session not found' }))
+    const { error } = await checking
+    await settle()
+
+    expect(error).toBeTruthy()
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.events).not.toContain('SIGNED_OUT')
+  })
+
+  test('a refresh does not overwrite a sign-in whose save takes longer than the wait', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
+    // @ts-expect-error access private for test
+    t.client._sessionWriteWaitMs = 20
+    t.setRefreshReply(Promise.resolve(json(200, makeSession('user-a', 'a-renewed'))))
+
+    // Storage that keeps call order; B's save starts while the read that
+    // starts the refresh is open, and takes longer than the wait.
+    const reads = t.storage.holdReads()
+    const loading = t.client.getSession()
+    await settle()
+    reads.stopHolding()
+    const writes = t.storage.holdWrites()
+    const signingIn = signInAsB(t.client)
+    await settle()
+    writes.stopHolding()
+    reads.release()
+    await loading
+    await new Promise((resolve) => setTimeout(resolve, 60))
+    writes.release()
+    await signingIn
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    const { data } = await t.client.getSession()
+    expect(data.session?.user.id).toBe('user-b')
+  })
+
+  test('a session write that never finishes does not hold up a refresh past the wait', async () => {
     const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
     // @ts-expect-error access private for test
     t.client._sessionWriteWaitMs = 20
@@ -890,9 +956,10 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     const { data, error } = await loading
     await settle()
 
-    // The refresh's write runs after the wait and is stored.
+    // The refresh is not held up past the wait, and yields to B's save.
     expect(error).toBeNull()
-    expect(data.session?.refresh_token).toBe('refresh-a-renewed')
-    expect(t.storedRefreshToken()).toBe('refresh-a-renewed')
+    expect(data.session?.refresh_token).toBe('refresh-a')
+    expect(t.storedRefreshToken()).toBe('refresh-a')
+    expect(t.events).not.toContain('TOKEN_REFRESHED')
   }, 3000)
 })

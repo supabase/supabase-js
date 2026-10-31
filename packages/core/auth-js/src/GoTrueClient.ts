@@ -246,7 +246,13 @@ let deprecatedLockWarned = false
  * in progress, then becomes `true` if it reached storage or `false` if it
  * failed or stopped before writing the session; `settled` resolves then.
  */
-type SessionWrite = { refreshToken: string | null; committed?: boolean; settled: Promise<void> }
+type SessionWrite = {
+  refreshToken: string | null
+  committed?: boolean
+  settled: Promise<void>
+  /** Its place in `_sessionWriteQueue`. */
+  order: number
+}
 
 /**
  * The session writes this client started while a refresh was in progress.
@@ -366,6 +372,8 @@ export default class GoTrueClient {
    * example one that encrypts before writing).
    */
   private _sessionWriteQueue: Promise<unknown> = Promise.resolve()
+  /** How many writes were queued so far: the place of the next one. */
+  private _sessionWritesQueued = 0
   /** See {@link SESSION_WRITE_WAIT_MS}. */
   private _sessionWriteWaitMs = SESSION_WRITE_WAIT_MS
   /**
@@ -3099,7 +3107,7 @@ export default class GoTrueClient {
           currentSession = maybeSession
         } else {
           this._debug('#getSession()', 'session from storage is not valid')
-          await this._removeSession()
+          await this._removeSession({ writeLog: readLog, refreshToken: null })
         }
       }
 
@@ -3319,6 +3327,9 @@ export default class GoTrueClient {
   }
 
   private async _getUser(jwt?: string): Promise<UserResponse> {
+    // Set once the session read below was removed (or kept, if a newer one
+    // was saved meanwhile) because the server no longer knows it.
+    let sessionMissingHandled = false
     try {
       if (jwt) {
         return await _request(this.fetch, 'GET', `${this.url}/user`, {
@@ -3328,7 +3339,7 @@ export default class GoTrueClient {
         })
       }
 
-      return await this._useSession(async (result) => {
+      return await this._useSession(async (result, readLog) => {
         const { data, error } = result
         if (error) {
           throw error
@@ -3339,15 +3350,28 @@ export default class GoTrueClient {
           return { data: { user: null }, error: new AuthSessionMissingError() }
         }
 
-        return await _request(this.fetch, 'GET', `${this.url}/user`, {
-          headers: this.headers,
-          jwt: data.session?.access_token ?? undefined,
-          xform: _userResponse,
-        })
+        try {
+          return await _request(this.fetch, 'GET', `${this.url}/user`, {
+            headers: this.headers,
+            jwt: data.session?.access_token ?? undefined,
+            xform: _userResponse,
+          })
+        } catch (error) {
+          if (isAuthSessionMissingError(error) && data.session) {
+            // Only the session that was checked is gone; one saved while the
+            // request was in flight is kept.
+            await this._removeSession({
+              writeLog: readLog,
+              refreshToken: data.session.refresh_token,
+            })
+            sessionMissingHandled = true
+          }
+          throw error
+        }
       })
     } catch (error) {
       if (isAuthError(error)) {
-        if (isAuthSessionMissingError(error)) {
+        if (isAuthSessionMissingError(error) && !sessionMissingHandled) {
           // JWT contains a `session_id` which does not correspond to an active
           // session in the database, indicating the user is signed out.
 
@@ -5380,9 +5404,10 @@ export default class GoTrueClient {
   /**
    * Records a session save (its refresh token) or removal (`null`) in every
    * open write log except `ownLog`, the log of the refresh making the write.
-   * Must run synchronously, before the write's first `await`. Call the
-   * returned function once the write is over, with whether it reached
-   * storage.
+   * Must run synchronously, before the write's first `await`, and the write
+   * must be queued in the same synchronous step, so `order` is its place in
+   * the queue. Call the returned function once the write is over, with
+   * whether it reached storage.
    */
   private _recordSessionWrite(
     refreshToken: string | null,
@@ -5392,6 +5417,7 @@ export default class GoTrueClient {
     const write: SessionWrite = {
       refreshToken,
       settled: new Promise<void>((resolve) => (settle = resolve)),
+      order: this._sessionWritesQueued,
     }
     this._sessionWriteLogs.forEach((log) => {
       if (log !== ownLog) {
@@ -5410,9 +5436,8 @@ export default class GoTrueClient {
    * Whether a session other than the one holding `refreshToken` was saved,
    * or the session removed, since `log` was opened. Only writes that reached
    * storage count, and re-saving the same session (same refresh token) does
-   * not. A write still in progress is not counted: it was queued after the
-   * caller's own writes, or it took longer than `_sessionWriteWaitMs`, and it
-   * announces its session itself if it lands.
+   * not. A write still in progress is not counted: it announces its session
+   * itself if it lands.
    */
   private _sessionReplacedSince(log: SessionWriteLog, refreshToken: string | null): boolean {
     return log.writes.some(
@@ -5447,16 +5472,31 @@ export default class GoTrueClient {
    *
    * @param ifCurrent Set when the write must not replace a newer session:
    * `write` is then skipped when, by the time it reaches the front of the
-   * queue, `_sessionReplacedSince(writeLog, refreshToken)` holds.
+   * queue, `_sessionReplacedSince(writeLog, refreshToken)` holds, or when a
+   * write for another session queued before this one is still in progress
+   * (it took longer than the wait). That write may still land after this
+   * one, so yielding to it is the safe side: at worst a refresh drops its
+   * renewed tokens and the next refresh fails, rather than an old session
+   * coming back over a newer one.
    * @returns Whether `write` ran.
    */
   private _queueSessionWrite(
     write: () => Promise<unknown>,
     ifCurrent?: SessionWriteGuard
   ): Promise<boolean> {
+    const order = this._sessionWritesQueued++
     const previous = this._sessionWriteQueue
     const run = this._settlesWithin(previous).then(async () => {
-      if (ifCurrent && this._sessionReplacedSince(ifCurrent.writeLog, ifCurrent.refreshToken)) {
+      if (
+        ifCurrent &&
+        (this._sessionReplacedSince(ifCurrent.writeLog, ifCurrent.refreshToken) ||
+          ifCurrent.writeLog.writes.some(
+            (other) =>
+              other.refreshToken !== ifCurrent.refreshToken &&
+              other.committed === undefined &&
+              other.order < order
+          ))
+      ) {
         return false
       }
       await write()
