@@ -3000,20 +3000,28 @@ export default class GoTrueClient {
               session: null
             }
             error: null
-          }
+          },
+      readLog: SessionWriteLog
     ) => Promise<R>
   ): Promise<R> {
     this._debug('#_useSession', 'begin')
+
+    // Opened before the read and kept open until `fn` is done, so a refresh
+    // that `fn` starts for the session it was given (`readLog` passed to
+    // `_callRefreshToken`) also yields to a session saved while the read was
+    // in flight.
+    const readLog = this._openSessionWriteLog()
 
     try {
       // Concurrent callers may both reach __loadSession; storage reads are
       // idempotent, and the only write path inside it (refresh) is
       // single-flighted downstream by `refreshingDeferred` in
       // `_callRefreshToken`. No serialization is needed at this layer.
-      const result = await this.__loadSession()
+      const result = await this.__loadSession(readLog)
 
-      return await fn(result)
+      return await fn(result, readLog)
     } finally {
+      this._closeSessionWriteLog(readLog)
       this._debug('#_useSession', 'end')
     }
   }
@@ -3022,8 +3030,11 @@ export default class GoTrueClient {
    * NEVER USE DIRECTLY!
    *
    * Always use `_useSession`.
+   *
+   * @param readLog The session-write log `_useSession` opened before this
+   * read. A refresh of the session read here is checked against it.
    */
-  private async __loadSession(): Promise<
+  private async __loadSession(readLog: SessionWriteLog): Promise<
     | {
         data: {
           session: Session
@@ -3049,10 +3060,6 @@ export default class GoTrueClient {
       // TODO(v3): remove. Only meaningful on the legacy lock path.
       this._debug('#__loadSession()', 'used outside of an acquired lock!', new Error().stack)
     }
-
-    // Opened before the read, so a refresh of the session read here also
-    // yields to a session saved while the read was in flight.
-    const writeLog = this._openSessionWriteLog()
 
     try {
       let currentSession: Session | null = null
@@ -3096,7 +3103,7 @@ export default class GoTrueClient {
 
       const { data: session, error } = await this._callRefreshToken(
         currentSession.refresh_token,
-        writeLog
+        readLog
       )
       if (error) {
         // A failed refresh does not mean there is no session. Storage is the
@@ -3130,7 +3137,6 @@ export default class GoTrueClient {
 
       return this._returnResult({ data: { session }, error: null })
     } finally {
-      this._closeSessionWriteLog(writeLog)
       this._debug('#__loadSession()', 'end')
     }
   }
@@ -3831,7 +3837,10 @@ export default class GoTrueClient {
     refresh_token: string
   }): Promise<AuthResponse> {
     try {
-      return await this._useSession(async (result) => {
+      return await this._useSession(async (result, readLog) => {
+        // Only a token that came from the read is tied to `readLog`; an
+        // explicit `currentSession` is tracked from the refresh's start.
+        const tokenFromRead = !currentSession
         if (!currentSession) {
           const { data, error } = result
           if (error) {
@@ -3845,7 +3854,10 @@ export default class GoTrueClient {
           throw new AuthSessionMissingError()
         }
 
-        const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
+        const { data: session, error } = await this._callRefreshToken(
+          currentSession.refresh_token,
+          tokenFromRead ? readLog : undefined
+        )
         if (error) {
           return this._returnResult({ data: { user: null, session: null }, error: error })
         }
@@ -5678,7 +5690,7 @@ export default class GoTrueClient {
           try {
             const now = Date.now()
             try {
-              return await this._useSession(async (result) => {
+              return await this._useSession(async (result, readLog) => {
                 const {
                   data: { session },
                 } = result
@@ -5698,7 +5710,7 @@ export default class GoTrueClient {
                 )
 
                 if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-                  await this._callRefreshToken(session.refresh_token)
+                  await this._callRefreshToken(session.refresh_token, readLog)
                 }
               })
             } catch (e) {
@@ -5733,7 +5745,7 @@ export default class GoTrueClient {
       const now = Date.now()
 
       try {
-        await this._useSession(async (result) => {
+        await this._useSession(async (result, readLog) => {
           const {
             data: { session },
           } = result
@@ -5754,7 +5766,7 @@ export default class GoTrueClient {
           )
 
           if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-            await this._callRefreshToken(session.refresh_token)
+            await this._callRefreshToken(session.refresh_token, readLog)
           }
         })
       } catch (e) {

@@ -303,4 +303,40 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(t.storedRefreshToken()).toBe('refresh-a-renewed')
     expect(t.events).toContain('TOKEN_REFRESHED')
   })
+
+  test('an auto-refresh tick does not overwrite a session saved while its read was open', async () => {
+    // Expires in 100 s: outside the margin in which reading the session
+    // refreshes it, inside the window in which the tick refreshes it.
+    const t = await setup({ storedSession: makeSession('user-a', 'a', 100) })
+    t.setRefreshReply(Promise.resolve(json(200, makeSession('user-a', 'a-renewed'))))
+
+    const reads = t.storage.holdReads()
+    await t.client.startAutoRefresh()
+    await settle()
+    reads.stopHolding()
+    await signInAsB(t.client)
+    reads.release()
+    await settle()
+    await t.client.stopAutoRefresh()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.events).not.toContain('TOKEN_REFRESHED')
+  })
+
+  test('refreshSession() does not overwrite a session saved while its read was open', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+    t.setRefreshReply(Promise.resolve(json(200, makeSession('user-a', 'a-renewed'))))
+
+    const reads = t.storage.holdReads()
+    const refreshing = t.client.refreshSession()
+    await settle()
+    reads.stopHolding()
+    await signInAsB(t.client)
+    reads.release()
+    await refreshing
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.events).not.toContain('TOKEN_REFRESHED')
+  })
 })
