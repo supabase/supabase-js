@@ -8,6 +8,7 @@ import {
   JWKS_TTL,
   PKCE_FLOW_ID_PARAM,
   REFRESH_FAILURE_COOLDOWN_MS,
+  SESSION_WRITE_WAIT_MS,
   STORAGE_KEY,
 } from './lib/constants'
 import {
@@ -352,6 +353,8 @@ export default class GoTrueClient {
    * `_unlessSessionReplaced`.
    */
   private _sessionWriteLogs = new Set<SessionWriteLog>()
+  /** See {@link SESSION_WRITE_WAIT_MS}. */
+  private _sessionWriteWaitMs = SESSION_WRITE_WAIT_MS
   /**
    * Keeps track of the async client initialization.
    * When null or not yet resolved the auth state is `unknown`
@@ -4992,6 +4995,13 @@ export default class GoTrueClient {
     try {
       const currentSession = (await getItemAsync(this.storage, this.storageKey)) as Session | null
 
+      // Runs `write` (a storage call, or an event about the session read
+      // above) unless a newer session was saved or removed since that read.
+      // When it does not run, that newer write is current and has notified
+      // on its own, so recovery stops.
+      const ifStillCurrent = (write: () => Promise<unknown>) =>
+        this._unlessSessionReplaced(writeLog, currentSession?.refresh_token ?? null, write)
+
       if (currentSession && this.userStorage) {
         let maybeUser: { user: User | null } | null = (await getItemAsync(
           this.userStorage,
@@ -5004,8 +5014,16 @@ export default class GoTrueClient {
           // storage stored, store it first thereby migrating the user object
           // from storage -> userStorage
 
-          maybeUser = { user: currentSession.user }
-          await setItemAsync(this.userStorage, this.storageKey + '-user', maybeUser)
+          const userStorage = this.userStorage
+          const migratedUser = { user: currentSession.user }
+          maybeUser = migratedUser
+          if (
+            !(await ifStillCurrent(() =>
+              setItemAsync(userStorage, this.storageKey + '-user', migratedUser)
+            ))
+          ) {
+            return
+          }
         }
 
         currentSession.user =
@@ -5024,8 +5042,16 @@ export default class GoTrueClient {
           if (separateUser && separateUser?.user) {
             currentSession.user = separateUser.user
 
-            await removeItemAsync(this.storage, this.storageKey + '-user')
-            await setItemAsync(this.storage, this.storageKey, currentSession)
+            if (
+              !(await ifStillCurrent(() =>
+                removeItemAsync(this.storage, this.storageKey + '-user')
+              )) ||
+              !(await ifStillCurrent(() =>
+                setItemAsync(this.storage, this.storageKey, currentSession)
+              ))
+            ) {
+              return
+            }
           } else {
             currentSession.user = userNotAvailableProxy()
           }
@@ -5037,7 +5063,7 @@ export default class GoTrueClient {
       if (!this._isValidSession(currentSession)) {
         this._debug(debugName, 'session is not valid')
         if (currentSession !== null) {
-          await this._removeSession()
+          await ifStillCurrent(() => this._removeSession())
         }
 
         return
@@ -5079,8 +5105,13 @@ export default class GoTrueClient {
 
           if (!userError && data?.user) {
             currentSession.user = data.user
-            await this._saveSession(currentSession)
-            await this._notifyAllSubscribers('SIGNED_IN', currentSession)
+            const saved = await this._saveSession(currentSession, {
+              writeLog,
+              refreshToken: currentSession.refresh_token,
+            })
+            if (saved) {
+              await ifStillCurrent(() => this._notifyAllSubscribers('SIGNED_IN', currentSession))
+            }
           } else {
             this._debug(debugName, 'could not get user data, skipping SIGNED_IN notification')
           }
@@ -5096,7 +5127,7 @@ export default class GoTrueClient {
         // no need to persist currentSession again, as we just loaded it from
         // local storage; persisting it again may overwrite a value saved by
         // another client with access to the same local storage
-        await this._notifyAllSubscribers('SIGNED_IN', currentSession)
+        await ifStillCurrent(() => this._notifyAllSubscribers('SIGNED_IN', currentSession))
       }
     } catch (err) {
       this._debug(debugName, 'error', err)
@@ -5377,15 +5408,17 @@ export default class GoTrueClient {
    * Runs `write` unless a session other than the one holding `refreshToken`
    * was saved, or the session removed, since `log` was opened. Writes still
    * in progress are waited for first, and only those that reached storage
-   * count; re-saving the same session (same refresh token) does not. `write`
-   * starts with no `await` after the last check, so a write that starts
-   * later lands after it.
+   * count; re-saving the same session (same refresh token) does not. A
+   * write still in progress after `_sessionWriteWaitMs` counts as having
+   * reached storage, so one that never finishes cannot hold this up forever.
+   * `write` starts with no `await` after the last check, so a write that
+   * starts later lands after it.
    *
    * @returns Whether `write` ran.
    */
   private async _unlessSessionReplaced(
     log: SessionWriteLog,
-    refreshToken: string,
+    refreshToken: string | null,
     write: () => Promise<unknown>
   ): Promise<boolean> {
     for (;;) {
@@ -5397,10 +5430,25 @@ export default class GoTrueClient {
       if (!inProgress) {
         break
       }
-      await inProgress.settled
+      if (!(await this._settlesInTime(inProgress))) {
+        return false
+      }
     }
     await write()
     return true
+  }
+
+  /** Waits up to `_sessionWriteWaitMs` for `write` to settle. */
+  private async _settlesInTime(write: SessionWrite): Promise<boolean> {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timedOut = new Promise<boolean>((resolve) => {
+      timer = setTimeout(() => resolve(false), this._sessionWriteWaitMs)
+    })
+    try {
+      return await Promise.race([write.settled.then(() => true), timedOut])
+    } finally {
+      clearTimeout(timer)
+    }
   }
 
   private async _notifyAllSubscribers(
@@ -5457,21 +5505,22 @@ export default class GoTrueClient {
    * set currentSession and currentUser
    * process to _startAutoRefreshToken if possible
    *
-   * @param refresh Set when the session comes from refreshing `refreshToken`.
-   * Each storage call then goes through `_unlessSessionReplaced`, and the
-   * save stops once another session was saved or removed after the refresh
-   * started, so it never overwrites it.
+   * @param ifCurrent Set when the session must not replace a newer one: it
+   * comes from refreshing, or was read from storage as, the session holding
+   * `refreshToken`, and `writeLog` was opened before that read. Each storage
+   * call then goes through `_unlessSessionReplaced`, and the save stops once
+   * another session was saved or removed since, so it never overwrites it.
    * @returns `false` when the save stopped for that reason, otherwise `true`.
    */
   private async _saveSession(
     session: Session,
-    refresh?: { writeLog: SessionWriteLog; refreshToken: string }
+    ifCurrent?: { writeLog: SessionWriteLog; refreshToken: string }
   ): Promise<boolean> {
     // Synchronously, before any `await`. See `_sessionWriteLogs`.
-    const settle = this._recordSessionWrite(session.refresh_token, refresh?.writeLog)
+    const settle = this._recordSessionWrite(session.refresh_token, ifCurrent?.writeLog)
     let committed = false
     try {
-      committed = await this._writeSession(session, refresh)
+      committed = await this._writeSession(session, ifCurrent)
       return committed
     } finally {
       settle(committed)
@@ -5481,12 +5530,12 @@ export default class GoTrueClient {
   /** The storage writes of `_saveSession`. */
   private async _writeSession(
     session: Session,
-    refresh?: { writeLog: SessionWriteLog; refreshToken: string }
+    ifCurrent?: { writeLog: SessionWriteLog; refreshToken: string }
   ): Promise<boolean> {
     // Runs one storage call, or skips it when the save must stop.
     const write = (call: () => Promise<void>) =>
-      refresh
-        ? this._unlessSessionReplaced(refresh.writeLog, refresh.refreshToken, call)
+      ifCurrent
+        ? this._unlessSessionReplaced(ifCurrent.writeLog, ifCurrent.refreshToken, call)
         : call().then(() => true)
 
     this._debug('#_saveSession()', session)

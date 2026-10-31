@@ -55,7 +55,8 @@ const refusedRefresh = () =>
  * Storage that applies every call in the order it was made, like an async
  * adapter (React Native's AsyncStorage, Capacitor Preferences) does, and can
  * hold calls open: a held `getItem` resolves with the value as of the call, a
- * held `setItem` has already written when it is made but resolves later.
+ * held `setItem` or `removeItem` has already written when it is made but
+ * resolves later.
  * It can also fail writes, and apply held writes only when they are released,
  * after writes made later, as an adapter that does not keep call order would.
  */
@@ -98,8 +99,9 @@ function controllableStorage(initial: Record<string, string> = {}) {
       store.set(key, value)
       return gate
     },
-    removeItem: async (key) => {
+    removeItem: (key) => {
       store.delete(key)
+      return writeGate ?? Promise.resolve()
     },
   }
 
@@ -130,10 +132,13 @@ const settle = async () => {
 async function setup({
   storedSession,
   withUserStorage = false,
+  userStorageIsStorage = false,
   lock,
 }: {
   storedSession: ReturnType<typeof makeSession>
   withUserStorage?: boolean
+  /** Use the session storage as `userStorage` too, as a localStorage setup does. */
+  userStorageIsStorage?: boolean
   lock?: LockFunc
 }) {
   const storage = controllableStorage()
@@ -142,10 +147,13 @@ async function setup({
   // The next answer to a refresh-token request. Tests replace it with a
   // promise they resolve themselves when they need to hold the request open.
   let refreshReply: Promise<Response> = Promise.resolve(refusedRefresh())
+  // Holds `/user` requests open while set.
+  let userReplyGate: Promise<void> | null = null
   const fetch = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
     if (String(url).includes(PASSWORD_GRANT)) return json(200, makeSession('user-b', 'b'))
     if (String(url).includes(REFRESH_GRANT)) return refreshReply
     if (String(url).endsWith('/user')) {
+      await userReplyGate
       // The user the bearer token belongs to.
       const bearer = new Headers(init?.headers).get('Authorization')!.replace('Bearer ', '')
       const { sub } = JSON.parse(Buffer.from(bearer.split('.')[1], 'base64url').toString())
@@ -162,17 +170,25 @@ async function setup({
     detectSessionInUrl: false,
     storage: storage.adapter,
     ...(userStorage ? { userStorage: userStorage.adapter } : {}),
+    ...(userStorageIsStorage ? { userStorage: storage.adapter } : {}),
     ...(lock ? { lock } : {}),
     fetch,
   })
 
   const events: AuthChangeEvent[] = []
-  client.onAuthStateChange((event) => {
+  // The user of each SIGNED_IN event (`null` for the not-available user).
+  const signedInAs: (string | null)[] = []
+  client.onAuthStateChange((event, session) => {
     events.push(event)
+    if (event === 'SIGNED_IN') {
+      const user = session?.user as any
+      signedInAs.push(user?.__isUserNotAvailableProxy ? null : user?.id)
+    }
   })
   await client.initialize()
   await settle()
   events.length = 0
+  signedInAs.length = 0
 
   if (userStorage) {
     const { user, ...session } = storedSession
@@ -193,7 +209,16 @@ async function setup({
     storage,
     userStorage,
     events,
+    signedInAs,
     storedRefreshToken,
+    holdUserReply: () => {
+      let release!: () => void
+      userReplyGate = new Promise<void>((resolve) => (release = resolve))
+      return () => {
+        userReplyGate = null
+        release()
+      }
+    },
     setRefreshReply: (reply: Promise<Response>) => (refreshReply = reply),
     holdRefreshReply: () => {
       let resolve!: (response: Response) => void
@@ -589,4 +614,158 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(signedInAs).toEqual(['user-b'])
     expect(JSON.parse(t.userStorage!.store.get(`${STORAGE_KEY}-user`)!).user.id).toBe('user-b')
   })
+  // Start-up recovery writes to storage after reads and requests of its own.
+  // A session saved meanwhile is newer, so recovery must neither overwrite it
+  // nor announce the session it read.
+  const recover = (client: GoTrueClient): Promise<void> =>
+    // @ts-expect-error access private for test
+    client._recoverAndRefresh()
+
+  test('start-up recovery does not overwrite a session saved while it fetched the user', async () => {
+    // The kept user belongs to another session, so recovery fetches the user.
+    const t = await setup({ storedSession: makeSession('user-a', 'a'), withUserStorage: true })
+    t.userStorage!.store.set(
+      `${STORAGE_KEY}-user`,
+      JSON.stringify({ user: makeSession('user-x', 'x').user })
+    )
+
+    const releaseUser = t.holdUserReply()
+    const recovering = recover(t.client)
+    await settle()
+    await signInAsB(t.client)
+    releaseUser()
+    await recovering
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(JSON.parse(t.userStorage!.store.get(`${STORAGE_KEY}-user`)!).user.id).toBe('user-b')
+    expect(t.signedInAs).toEqual(['user-b'])
+  })
+
+  test('start-up recovery does not move a user back over a session saved during its reads', async () => {
+    // userStorage was turned off: the user is still under its own key.
+    const sessionA = makeSession('user-a', 'a')
+    const t = await setup({ storedSession: sessionA })
+    const { user, ...withoutUser } = sessionA
+    t.storage.store.set(STORAGE_KEY, JSON.stringify(withoutUser))
+    t.storage.store.set(`${STORAGE_KEY}-user`, JSON.stringify({ user }))
+
+    const reads = t.storage.holdReads()
+    const recovering = recover(t.client)
+    await settle()
+    reads.stopHolding()
+    await signInAsB(t.client)
+    reads.release()
+    await recovering
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.signedInAs).toEqual(['user-b'])
+  })
+
+  test('start-up recovery does not move a user back over a session saved during that move', async () => {
+    const sessionA = makeSession('user-a', 'a')
+    const t = await setup({ storedSession: sessionA })
+    const { user, ...withoutUser } = sessionA
+    t.storage.store.set(STORAGE_KEY, JSON.stringify(withoutUser))
+    t.storage.store.set(`${STORAGE_KEY}-user`, JSON.stringify({ user }))
+
+    // B signs in while recovery's first write (removing the user key) is
+    // still in progress.
+    const writes = t.storage.holdWrites()
+    const recovering = recover(t.client)
+    await settle()
+    writes.stopHolding()
+    await signInAsB(t.client)
+    writes.release()
+    await recovering
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.signedInAs).toEqual(['user-b'])
+  })
+
+  test('start-up recovery does not copy a user over the user of a session saved during its reads', async () => {
+    // userStorage was turned on with the same storage: the user is still in
+    // the session, so recovery copies it to its own key.
+    const t = await setup({ storedSession: makeSession('user-a', 'a'), userStorageIsStorage: true })
+
+    // Hold the session read, then the user read that follows it.
+    const sessionRead = t.storage.holdReads()
+    const recovering = recover(t.client)
+    await settle()
+    const userRead = t.storage.holdReads()
+    sessionRead.release()
+    await settle()
+    userRead.stopHolding()
+    await signInAsB(t.client)
+    userRead.release()
+    await recovering
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(JSON.parse(t.storage.store.get(`${STORAGE_KEY}-user`)!).user.id).toBe('user-b')
+    expect(t.signedInAs).toEqual(['user-b'])
+  })
+
+  test('start-up recovery does not remove a session saved while it read an invalid one', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+    t.storage.store.set(STORAGE_KEY, JSON.stringify({ access_token: 'broken' }))
+
+    const reads = t.storage.holdReads()
+    const recovering = recover(t.client)
+    await settle()
+    reads.stopHolding()
+    await signInAsB(t.client)
+    reads.release()
+    await recovering
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.events).not.toContain('SIGNED_OUT')
+  })
+
+  test('start-up recovery does not announce a session replaced while it read it', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+
+    const reads = t.storage.holdReads()
+    const recovering = recover(t.client)
+    await settle()
+    reads.stopHolding()
+    await signInAsB(t.client)
+    reads.release()
+    await recovering
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.signedInAs).toEqual(['user-b'])
+  })
+
+  test('a refresh does not wait forever for a session write that never finishes', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
+    // @ts-expect-error access private for test
+    t.client._sessionWriteWaitMs = 20
+    t.setRefreshReply(Promise.resolve(json(200, makeSession('user-a', 'a-renewed'))))
+
+    // B's save starts while the read that starts the refresh is open; it
+    // writes, but its storage call never resolves.
+    const reads = t.storage.holdReads()
+    const loading = t.client.getSession()
+    await settle()
+    reads.stopHolding()
+    const writes = t.storage.holdWrites()
+    t.client.signInWithPassword({ email: 'user-b@example.com', password: 'password' })
+    await settle()
+    writes.stopHolding()
+    reads.release()
+
+    const { data } = await loading
+    await settle()
+
+    // The refresh gives up waiting and yields rather than overwrite B.
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(data.session?.refresh_token).toBe('refresh-b')
+    expect(t.events).not.toContain('TOKEN_REFRESHED')
+    writes.release()
+  }, 3000)
 })
