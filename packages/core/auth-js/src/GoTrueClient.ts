@@ -240,12 +240,19 @@ const GLOBAL_JWKS: { [storageKey: string]: { cachedAt: number; jwks: { keys: JWK
 let deprecatedLockWarned = false
 
 /**
- * The session writes this client started while a refresh was in progress:
- * the refresh token of each saved session, or `null` for each removal. The
- * refresh opens the log before the storage read that gives it the session to
- * renew, so a save that lands during that read is recorded too.
+ * A session save (the saved session's refresh token) or removal (`null`)
+ * that this client started. `committed` stays `undefined` while the write is
+ * in progress, then becomes `true` if it reached storage or `false` if it
+ * failed or stopped before writing the session; `settled` resolves then.
  */
-type SessionWriteLog = { writes: (string | null)[] }
+type SessionWrite = { refreshToken: string | null; committed?: boolean; settled: Promise<void> }
+
+/**
+ * The session writes this client started while a refresh was in progress.
+ * The refresh opens the log before the storage read that gives it the
+ * session to renew, so a save that lands during that read is recorded too.
+ */
+type SessionWriteLog = { writes: SessionWrite[] }
 
 export default class GoTrueClient {
   private static nextInstanceID: Record<string, number> = {}
@@ -334,12 +341,15 @@ export default class GoTrueClient {
    * Open session-write logs, one per refresh in progress. `_saveSession` and
    * `_removeSession` append to every open log synchronously, before their
    * first `await`, so a log sees a write as soon as it has started, even
-   * while its storage calls are still pending. `_callRefreshToken` checks its
-   * log, with no `await` in between, right before each storage call it makes
-   * on behalf of the refresh, so it never deletes or overwrites a session
-   * that was saved or removed after the read that started the refresh. A
-   * storage read alone cannot catch that: its result is already stale when
-   * the write that depends on it runs. See {@link SessionWriteLog}.
+   * while its storage calls are still pending. Before each storage call it
+   * makes on behalf of the refresh, `_callRefreshToken` waits for the writes
+   * in its log that are still in progress, then checks the log with no
+   * `await` before the call, so it never deletes or overwrites a session that
+   * was saved or removed after the read that started the refresh. Only a
+   * write that reached storage counts: after one that failed, the refreshed
+   * session is still the newest. A storage read alone cannot catch this: its
+   * result is already stale when the write that depends on it runs. See
+   * `_unlessSessionReplaced`.
    */
   private _sessionWriteLogs = new Set<SessionWriteLog>()
   /**
@@ -3154,7 +3164,7 @@ export default class GoTrueClient {
         this.storageKey + '-user'
       )) as any
 
-      session.user = maybeUser?.user ? maybeUser.user : userNotAvailableProxy()
+      session.user = this._storedUserFor(session, maybeUser) ?? userNotAvailableProxy()
     }
 
     // Warns when properties of the user are accessed, not when session.user itself is accessed.
@@ -3168,6 +3178,28 @@ export default class GoTrueClient {
     }
 
     return session
+  }
+
+  /**
+   * The user kept in `userStorage` for `session`, or `null` when none is kept
+   * or the kept one belongs to another session. Overlapping saves on an
+   * adapter that does not apply writes in call order can leave one
+   * session's user beside another session's tokens, so the user must match
+   * the access token's `sub` claim. An access token that is not a JWT is not
+   * checked.
+   */
+  private _storedUserFor(session: Session, stored: { user?: User | null } | null): User | null {
+    const user = stored?.user
+    if (!user) {
+      return null
+    }
+    let subject: unknown
+    try {
+      subject = decodeJWT(session.access_token).payload.sub
+    } catch {
+      return user
+    }
+    return subject === undefined || subject === user.id ? user : null
   }
 
   /**
@@ -4976,7 +5008,8 @@ export default class GoTrueClient {
           await setItemAsync(this.userStorage, this.storageKey + '-user', maybeUser)
         }
 
-        currentSession.user = maybeUser?.user ?? userNotAvailableProxy()
+        currentSession.user =
+          this._storedUserFor(currentSession, maybeUser) ?? userNotAvailableProxy()
       } else if (currentSession && !currentSession.user) {
         // user storage is not set, let's check if it was previously enabled so
         // we bring back the storage as it should be
@@ -5194,10 +5227,13 @@ export default class GoTrueClient {
       // leaves that newer write in storage. A write that starts after our
       // last storage call lands after it and wins in storage too, so nothing
       // needs undoing, but the refresh still reports itself discarded rather
-      // than emitting TOKEN_REFRESHED for a session that is no longer current.
+      // than emitting TOKEN_REFRESHED for a session that is no longer current
+      // (once that write is known to have reached storage).
       const saved = await this._saveSession(data.session, { writeLog, refreshToken })
+      const stillCurrent =
+        saved && (await this._unlessSessionReplaced(writeLog, refreshToken, async () => {}))
 
-      if (!saved || this._sessionReplacedSince(writeLog, refreshToken)) {
+      if (!stillCurrent) {
         this._debug(
           debugName,
           'commit guard: another session was saved or removed during the refresh, discarding rotated tokens'
@@ -5248,18 +5284,21 @@ export default class GoTrueClient {
           // removed since the refresh started (possibly while `storedNow` was
           // being read) is newer than the token that was just rejected, so it
           // must not be deleted.
-          if (this._sessionReplacedSince(writeLog, refreshToken)) {
+          const leftAsIs = !(await this._unlessSessionReplaced(writeLog, refreshToken, async () => {
+            if (accessTokenStillValid) {
+              this._debug(
+                debugName,
+                'proactive refresh failed, access token still valid — preserving session'
+              )
+            } else {
+              await this._removeSession()
+            }
+          }))
+          if (leftAsIs) {
             this._debug(
               debugName,
               'refresh failed, but another session was saved or removed meanwhile, leaving storage as is'
             )
-          } else if (accessTokenStillValid) {
-            this._debug(
-              debugName,
-              'proactive refresh failed, access token still valid — preserving session'
-            )
-          } else {
-            await this._removeSession()
           }
         }
 
@@ -5308,23 +5347,60 @@ export default class GoTrueClient {
   /**
    * Records a session save (its refresh token) or removal (`null`) in every
    * open write log except `ownLog`, the log of the refresh making the write.
-   * Must run synchronously, before the write's first `await`.
+   * Must run synchronously, before the write's first `await`. Call the
+   * returned function once the write is over, with whether it reached
+   * storage.
    */
-  private _recordSessionWrite(refreshToken: string | null, ownLog?: SessionWriteLog) {
+  private _recordSessionWrite(
+    refreshToken: string | null,
+    ownLog?: SessionWriteLog
+  ): (committed: boolean) => void {
+    let settle!: () => void
+    const write: SessionWrite = {
+      refreshToken,
+      settled: new Promise<void>((resolve) => (settle = resolve)),
+    }
     this._sessionWriteLogs.forEach((log) => {
       if (log !== ownLog) {
-        log.writes.push(refreshToken)
+        log.writes.push(write)
       }
     })
+    return (committed) => {
+      if (write.committed === undefined) {
+        write.committed = committed
+        settle()
+      }
+    }
   }
 
   /**
-   * Whether a session other than the one holding `refreshToken` was saved,
-   * or the session removed, since `log` was opened. Re-saving the same
-   * session (same refresh token) does not count.
+   * Runs `write` unless a session other than the one holding `refreshToken`
+   * was saved, or the session removed, since `log` was opened. Writes still
+   * in progress are waited for first, and only those that reached storage
+   * count; re-saving the same session (same refresh token) does not. `write`
+   * starts with no `await` after the last check, so a write that starts
+   * later lands after it.
+   *
+   * @returns Whether `write` ran.
    */
-  private _sessionReplacedSince(log: SessionWriteLog, refreshToken: string): boolean {
-    return log.writes.some((written) => written !== refreshToken)
+  private async _unlessSessionReplaced(
+    log: SessionWriteLog,
+    refreshToken: string,
+    write: () => Promise<unknown>
+  ): Promise<boolean> {
+    for (;;) {
+      const others = log.writes.filter((other) => other.refreshToken !== refreshToken)
+      if (others.some((other) => other.committed === true)) {
+        return false
+      }
+      const inProgress = others.find((other) => other.committed === undefined)
+      if (!inProgress) {
+        break
+      }
+      await inProgress.settled
+    }
+    await write()
+    return true
   }
 
   private async _notifyAllSubscribers(
@@ -5382,9 +5458,9 @@ export default class GoTrueClient {
    * process to _startAutoRefreshToken if possible
    *
    * @param refresh Set when the session comes from refreshing `refreshToken`.
-   * The save then stops before its next storage call once
-   * `_sessionReplacedSince(writeLog, refreshToken)` holds, so it never
-   * overwrites a session saved or removed after the refresh started.
+   * Each storage call then goes through `_unlessSessionReplaced`, and the
+   * save stops once another session was saved or removed after the refresh
+   * started, so it never overwrites it.
    * @returns `false` when the save stopped for that reason, otherwise `true`.
    */
   private async _saveSession(
@@ -5392,9 +5468,26 @@ export default class GoTrueClient {
     refresh?: { writeLog: SessionWriteLog; refreshToken: string }
   ): Promise<boolean> {
     // Synchronously, before any `await`. See `_sessionWriteLogs`.
-    this._recordSessionWrite(session.refresh_token, refresh?.writeLog)
-    const replaced = () =>
-      !!refresh && this._sessionReplacedSince(refresh.writeLog, refresh.refreshToken)
+    const settle = this._recordSessionWrite(session.refresh_token, refresh?.writeLog)
+    let committed = false
+    try {
+      committed = await this._writeSession(session, refresh)
+      return committed
+    } finally {
+      settle(committed)
+    }
+  }
+
+  /** The storage writes of `_saveSession`. */
+  private async _writeSession(
+    session: Session,
+    refresh?: { writeLog: SessionWriteLog; refreshToken: string }
+  ): Promise<boolean> {
+    // Runs one storage call, or skips it when the save must stop.
+    const write = (call: () => Promise<void>) =>
+      refresh
+        ? this._unlessSessionReplaced(refresh.writeLog, refresh.refreshToken, call)
+        : call().then(() => true)
 
     this._debug('#_saveSession()', session)
     // _saveSession is always called whenever a new session has been acquired
@@ -5405,16 +5498,15 @@ export default class GoTrueClient {
 
     const userIsProxy =
       sessionToProcess.user && (sessionToProcess.user as any).__isUserNotAvailableProxy === true
-    // `replaced()` is checked right before each storage call below, with no
-    // `await` in between.
-    if (replaced()) return false
 
-    if (this.userStorage) {
+    const userStorage = this.userStorage
+    if (userStorage) {
       if (!userIsProxy && sessionToProcess.user) {
         // If it's a real user object, save it to userStorage.
-        await setItemAsync(this.userStorage, this.storageKey + '-user', {
-          user: sessionToProcess.user,
-        })
+        const user = sessionToProcess.user
+        if (!(await write(() => setItemAsync(userStorage, this.storageKey + '-user', { user })))) {
+          return false
+        }
       } else if (userIsProxy) {
         // If it's the proxy, it means user was not found in userStorage.
         // We should ensure no stale user data for this key exists in userStorage if we were to save null,
@@ -5428,14 +5520,19 @@ export default class GoTrueClient {
       delete mainSessionData.user // Remove user (real or proxy) before cloning for main storage
 
       const clonedMainSessionData = deepClone(mainSessionData)
-      if (replaced()) return false
-      await setItemAsync(this.storage, this.storageKey, clonedMainSessionData)
+      if (
+        !(await write(() => setItemAsync(this.storage, this.storageKey, clonedMainSessionData)))
+      ) {
+        return false
+      }
     } else {
       // No userStorage is configured.
       // In this case, session.user should ideally not be a proxy.
       // If it were, structuredClone would fail. This implies an issue elsewhere if user is a proxy here
       const clonedSession = deepClone(sessionToProcess) // sessionToProcess still has its original user property
-      await setItemAsync(this.storage, this.storageKey, clonedSession)
+      if (!(await write(() => setItemAsync(this.storage, this.storageKey, clonedSession)))) {
+        return false
+      }
     }
 
     return true
@@ -5443,7 +5540,7 @@ export default class GoTrueClient {
 
   private async _removeSession() {
     // Synchronously, before any `await`. See `_sessionWriteLogs`.
-    this._recordSessionWrite(null)
+    const settle = this._recordSessionWrite(null)
     this._debug('#_removeSession()')
 
     // The session is gone — no point holding on to a cached refresh failure
@@ -5452,7 +5549,13 @@ export default class GoTrueClient {
 
     this.suppressGetSessionWarning = false
 
-    await removeItemAsync(this.storage, this.storageKey)
+    let removed = false
+    try {
+      await removeItemAsync(this.storage, this.storageKey)
+      removed = true
+    } finally {
+      settle(removed)
+    }
     await removeAllPKCEVerifiers(this.storage, this.storageKey)
     await removeItemAsync(this.storage, this.storageKey + '-user')
 

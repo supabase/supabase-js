@@ -11,8 +11,18 @@ const STORAGE_KEY = 'test-refresh-write-race'
 const PASSWORD_GRANT = 'grant_type=password'
 const REFRESH_GRANT = 'grant_type=refresh_token'
 
+const base64url = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url')
+
+/** An unsigned access token whose `sub` claim is `userId`, as the client only decodes it. */
+const accessToken = (userId: string, expiresAt: number, tag: string) =>
+  [
+    base64url({ alg: 'HS256', typ: 'JWT' }),
+    base64url({ sub: userId, exp: expiresAt, session_id: tag }),
+    base64url('signature'),
+  ].join('.')
+
 const makeSession = (userId: string, tag: string, secondsLeft = 3600) => ({
-  access_token: `access-${tag}`,
+  access_token: accessToken(userId, Math.floor(Date.now() / 1000) + secondsLeft, tag),
   refresh_token: `refresh-${tag}`,
   token_type: 'bearer',
   expires_in: secondsLeft,
@@ -46,11 +56,15 @@ const refusedRefresh = () =>
  * adapter (React Native's AsyncStorage, Capacitor Preferences) does, and can
  * hold calls open: a held `getItem` resolves with the value as of the call, a
  * held `setItem` has already written when it is made but resolves later.
+ * It can also fail writes, and apply held writes only when they are released,
+ * after writes made later, as an adapter that does not keep call order would.
  */
 function controllableStorage(initial: Record<string, string> = {}) {
   const store = new Map(Object.entries(initial))
   let readGate: Promise<void> | null = null
   let writeGate: Promise<void> | null = null
+  let failWrites = false
+  let applyHeldWritesLate = false
 
   const hold = (set: (gate: Promise<void> | null) => void) => {
     let open!: () => void
@@ -70,9 +84,19 @@ function controllableStorage(initial: Record<string, string> = {}) {
       return gate ? gate.then(() => value) : Promise.resolve(value)
     },
     setItem: (key, value) => {
+      const gate = writeGate ?? Promise.resolve()
+      if (failWrites) {
+        return gate.then(() => {
+          throw new Error('storage write failed')
+        })
+      }
+      if (writeGate && applyHeldWritesLate) {
+        return gate.then(() => {
+          store.set(key, value)
+        })
+      }
       store.set(key, value)
-      const gate = writeGate
-      return gate ?? Promise.resolve()
+      return gate
     },
     removeItem: async (key) => {
       store.delete(key)
@@ -83,7 +107,12 @@ function controllableStorage(initial: Record<string, string> = {}) {
     adapter,
     store,
     holdReads: () => hold((gate) => (readGate = gate)),
-    holdWrites: () => hold((gate) => (writeGate = gate)),
+    holdWrites: ({ applyLate = false } = {}) => {
+      applyHeldWritesLate = applyLate
+      return hold((gate) => (writeGate = gate))
+    },
+    /** Writes made while set fail (after their hold, if held). */
+    setFailWrites: (fail: boolean) => (failWrites = fail),
   }
 }
 
@@ -113,9 +142,15 @@ async function setup({
   // The next answer to a refresh-token request. Tests replace it with a
   // promise they resolve themselves when they need to hold the request open.
   let refreshReply: Promise<Response> = Promise.resolve(refusedRefresh())
-  const fetch = jest.fn(async (url: RequestInfo | URL) => {
+  const fetch = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
     if (String(url).includes(PASSWORD_GRANT)) return json(200, makeSession('user-b', 'b'))
     if (String(url).includes(REFRESH_GRANT)) return refreshReply
+    if (String(url).endsWith('/user')) {
+      // The user the bearer token belongs to.
+      const bearer = new Headers(init?.headers).get('Authorization')!.replace('Bearer ', '')
+      const { sub } = JSON.parse(Buffer.from(bearer.split('.')[1], 'base64url').toString())
+      return json(200, makeSession(sub, 'user').user)
+    }
     throw new Error(`unexpected request to ${url}`)
   })
 
@@ -437,4 +472,121 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
       expect(t.storedRefreshToken()).toBeNull()
     }
   )
+  test('a sign-in whose save failed does not make a refresh drop its renewed tokens', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
+
+    const respond = t.holdRefreshReply()
+    const loading = t.client.getSession()
+    await settle()
+
+    t.storage.setFailWrites(true)
+    const signIn = await t.client
+      .signInWithPassword({ email: 'user-b@example.com', password: 'password' })
+      .catch((error) => ({ error }))
+    t.storage.setFailWrites(false)
+    expect(signIn.error).toBeTruthy()
+
+    respond(json(200, makeSession('user-a', 'a-renewed')))
+    const { data, error } = await loading
+    await settle()
+
+    // The server has rotated `refresh-a`; keeping it would sign the user out
+    // on the next refresh.
+    expect(t.storedRefreshToken()).toBe('refresh-a-renewed')
+    expect(error).toBeNull()
+    expect(data.session?.refresh_token).toBe('refresh-a-renewed')
+    expect(t.events).toContain('TOKEN_REFRESHED')
+  })
+
+  test.each([
+    ['fails', false],
+    ['succeeds', true],
+  ])(
+    'a refresh waits for a save still in progress, and acts on it once it %s',
+    async (_outcome, saveSucceeds) => {
+      const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
+
+      const respond = t.holdRefreshReply()
+      const loading = t.client.getSession()
+      await settle()
+
+      // B's save is still in progress when the renewal arrives.
+      const writes = t.storage.holdWrites({ applyLate: true })
+      t.storage.setFailWrites(!saveSucceeds)
+      const signIn = t.client
+        .signInWithPassword({ email: 'user-b@example.com', password: 'password' })
+        .catch((error) => ({ error }))
+      await settle()
+      writes.stopHolding()
+      t.storage.setFailWrites(false)
+      respond(json(200, makeSession('user-a', 'a-renewed')))
+      await settle()
+      writes.release()
+
+      const { error: signInError } = await signIn
+      const { data } = await loading
+      await settle()
+
+      if (saveSucceeds) {
+        expect(signInError).toBeNull()
+        expect(t.storedRefreshToken()).toBe('refresh-b')
+        expect(data.session?.user.id).toBe('user-b')
+        expect(t.events).not.toContain('TOKEN_REFRESHED')
+      } else {
+        expect(signInError).toBeTruthy()
+        expect(t.storedRefreshToken()).toBe('refresh-a-renewed')
+        expect(data.session?.refresh_token).toBe('refresh-a-renewed')
+        expect(t.events).toContain('TOKEN_REFRESHED')
+      }
+    }
+  )
+
+  test('with userStorage, a user written late beside another session is not returned as its user', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', 60), withUserStorage: true })
+
+    const respond = t.holdRefreshReply()
+    const loading = t.client.getSession()
+    await settle()
+
+    // The refresh's user write is applied only after B's whole save, as an
+    // adapter that does not keep call order can do.
+    const writes = t.userStorage!.holdWrites({ applyLate: true })
+    respond(json(200, makeSession('user-a', 'a-renewed')))
+    await settle()
+    writes.stopHolding()
+    await signInAsB(t.client)
+    writes.release()
+    await loading
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(JSON.parse(t.userStorage!.store.get(`${STORAGE_KEY}-user`)!).user.id).toBe('user-a')
+
+    const { data } = await t.client.getSession()
+    expect(data.session?.refresh_token).toBe('refresh-b')
+    expect((data.session?.user as any).__isUserNotAvailableProxy).toBe(true)
+  })
+
+  test("with userStorage, start-up recovery does not pair a session with another session's user", async () => {
+    const t = await setup({ storedSession: makeSession('user-b', 'b'), withUserStorage: true })
+    t.userStorage!.store.set(
+      `${STORAGE_KEY}-user`,
+      JSON.stringify({ user: makeSession('user-a', 'a').user })
+    )
+    const signedInAs: string[] = []
+    t.client.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') signedInAs.push(session!.user.id)
+    })
+    await settle()
+    signedInAs.length = 0
+
+    // @ts-expect-error access private for test
+    await t.client._recoverAndRefresh()
+    await settle()
+
+    // The kept user does not match the tokens, so recovery fetches the user
+    // the tokens belong to and keeps that one instead.
+    expect(signedInAs).toEqual(['user-b'])
+    expect(JSON.parse(t.userStorage!.store.get(`${STORAGE_KEY}-user`)!).user.id).toBe('user-b')
+  })
 })
