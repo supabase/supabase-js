@@ -387,4 +387,54 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(t.events).not.toContain('TOKEN_REFRESHED')
     expect(t.fetch).toHaveBeenCalledWith(expect.stringContaining(REFRESH_GRANT), expect.anything())
   })
+
+  // Each way a refresh starts from a session read from storage, with
+  // `secondsLeft` chosen so that path refreshes it.
+  const refreshStarts: [string, (client: GoTrueClient) => Promise<unknown>, number][] = [
+    ['getSession()', (client) => client.getSession(), 60],
+    ['refreshSession()', (client) => client.refreshSession(), 3600],
+    [
+      'the auto-refresh tick',
+      async (client) => {
+        await client.startAutoRefresh()
+        await settle()
+      },
+      100,
+    ],
+    [
+      'start-up recovery',
+      (client) => {
+        // @ts-expect-error access protected for test
+        client.autoRefreshToken = true
+        // @ts-expect-error access private for test
+        return client._recoverAndRefresh()
+      },
+      60,
+    ],
+  ]
+
+  test.each(refreshStarts)(
+    'a refresh started by %s does not restore a session signed out while its read was open',
+    async (_name, startRefresh, secondsLeft) => {
+      const t = await setup({ storedSession: makeSession('user-a', 'a', secondsLeft) })
+      // A fresh response for each refresh: signOut() may refresh on its own
+      // before it signs out, which would use up a shared one.
+      const renewA = () =>
+        t.setRefreshReply(Promise.resolve(json(200, makeSession('user-a', 'a-renewed'))))
+      renewA()
+
+      const reads = t.storage.holdReads()
+      const refreshing = startRefresh(t.client)
+      await settle()
+      reads.stopHolding()
+      await t.client.signOut({ scope: 'local' })
+      renewA()
+      reads.release()
+      await refreshing
+      await settle()
+      await t.client.stopAutoRefresh()
+
+      expect(t.storedRefreshToken()).toBeNull()
+    }
+  )
 })
