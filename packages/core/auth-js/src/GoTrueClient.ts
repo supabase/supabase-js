@@ -8,7 +8,6 @@ import {
   JWKS_TTL,
   PKCE_FLOW_ID_PARAM,
   REFRESH_FAILURE_COOLDOWN_MS,
-  SESSION_WRITE_WAIT_MS,
   STORAGE_KEY,
 } from './lib/constants'
 import {
@@ -250,12 +249,6 @@ type SessionWrite = {
   refreshToken: string | null
   committed?: boolean
   settled: Promise<void>
-  /** Its place in `_sessionWriteQueue`. */
-  order: number
-  /** Set once it reached the front of the queue (or stopped waiting). */
-  started?: boolean
-  /** Writes its storage state again, without events. */
-  reapply: () => Promise<void>
 }
 
 /**
@@ -373,13 +366,12 @@ export default class GoTrueClient {
    * Every write to the session's storage keys runs after the ones queued
    * before it have finished, so storage ends up in the order the writes were
    * made even with an adapter that does not apply calls in order (for
-   * example one that encrypts before writing).
+   * example one that encrypts before writing) or is slow. A write that never
+   * finishes holds up the ones after it: the call that made it is stuck
+   * already, and letting later writes pass it would let an older session
+   * land over a newer one.
    */
   private _sessionWriteQueue: Promise<unknown> = Promise.resolve()
-  /** How many writes were queued so far: the place of the next one. */
-  private _sessionWritesQueued = 0
-  /** See {@link SESSION_WRITE_WAIT_MS}. */
-  private _sessionWriteWaitMs = SESSION_WRITE_WAIT_MS
   /**
    * Keeps track of the async client initialization.
    * When null or not yet resolved the auth state is `unknown`
@@ -5409,35 +5401,29 @@ export default class GoTrueClient {
    * Records a session save (its refresh token) or removal (`null`) in every
    * open write log except `ownLog`, the log of the refresh making the write.
    * Must run synchronously, before the write's first `await`, and the write
-   * must be queued in the same synchronous step, so `order` is its place in
-   * the queue. Call the returned function once the write is over, with
-   * whether it reached storage.
+   * must be queued in the same synchronous step, so the writes recorded
+   * before it are queued before it. Call the returned function once the
+   * write is over, with whether it reached storage.
    */
   private _recordSessionWrite(
     refreshToken: string | null,
-    reapply: () => Promise<void>,
     ownLog?: SessionWriteLog
-  ): { write: SessionWrite; settle: (committed: boolean) => void } {
+  ): (committed: boolean) => void {
     let settle!: () => void
     const write: SessionWrite = {
       refreshToken,
       settled: new Promise<void>((resolve) => (settle = resolve)),
-      order: this._sessionWritesQueued,
-      reapply,
     }
     this._sessionWriteLogs.forEach((log) => {
       if (log !== ownLog) {
         log.writes.push(write)
       }
     })
-    return {
-      write,
-      settle: (committed) => {
-        if (write.committed === undefined) {
-          write.committed = committed
-          settle()
-        }
-      },
+    return (committed) => {
+      if (write.committed === undefined) {
+        write.committed = committed
+        settle()
+      }
     }
   }
 
@@ -5445,8 +5431,9 @@ export default class GoTrueClient {
    * Whether a session other than the one holding `refreshToken` was saved,
    * or the session removed, since `log` was opened. Only writes that reached
    * storage count, and re-saving the same session (same refresh token) does
-   * not. A write still in progress is not counted: it announces its session
-   * itself if it lands.
+   * not. A write still in progress is not counted: it was queued after the
+   * caller's writes, so it lands after them and announces its session
+   * itself.
    */
   private _sessionReplacedSince(log: SessionWriteLog, refreshToken: string | null): boolean {
     return log.writes.some(
@@ -5454,99 +5441,30 @@ export default class GoTrueClient {
     )
   }
 
-  /** Waits up to `_sessionWriteWaitMs` for `promise` to settle, either way. */
-  private async _settlesWithin(promise: Promise<unknown>): Promise<boolean> {
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const timedOut = new Promise<boolean>((resolve) => {
-      timer = setTimeout(() => resolve(false), this._sessionWriteWaitMs)
-    })
-    try {
-      return await Promise.race([
-        promise.then(
-          () => true,
-          () => true
-        ),
-        timedOut,
-      ])
-    } finally {
-      clearTimeout(timer)
-    }
-  }
-
   /**
    * Queues `write`, a write to the session's storage keys, behind the ones
-   * queued before it. See `_sessionWriteQueue`. A write still running after
-   * `_sessionWriteWaitMs` no longer holds up the ones queued after it, so
-   * one that never finishes cannot stop every later write.
+   * queued before it. See `_sessionWriteQueue`.
    *
    * @param ifCurrent Set when the write must not replace a newer session:
    * `write` is then skipped when, by the time it reaches the front of the
-   * queue, `_sessionReplacedSince(writeLog, refreshToken)` holds, or when a
-   * write for another session queued before this one is still in progress
-   * (it took longer than the wait). That write may still land after this
-   * one, so yielding to it is the safe side: at worst a refresh drops its
-   * renewed tokens and the next refresh fails, rather than an old session
-   * coming back over a newer one. Once `write` ran, `_landedLast` makes
-   * sure it is not left on top of a newer write either.
-   * @param record The recorded write `write` performs, if any.
-   * @returns Whether `write` ran and is still the last write in storage.
+   * queue, `_sessionReplacedSince(writeLog, refreshToken)` holds. Every write
+   * queued before it has finished by then, and every one still in progress
+   * was queued after it and lands after it.
+   * @returns Whether `write` ran.
    */
   private _queueSessionWrite(
     write: () => Promise<unknown>,
-    ifCurrent?: SessionWriteGuard,
-    record?: SessionWrite
+    ifCurrent?: SessionWriteGuard
   ): Promise<boolean> {
-    const order = this._sessionWritesQueued++
-    const previous = this._sessionWriteQueue
-    const run = this._settlesWithin(previous).then(async () => {
-      if (record) {
-        record.started = true
-      }
-      if (
-        ifCurrent &&
-        (this._sessionReplacedSince(ifCurrent.writeLog, ifCurrent.refreshToken) ||
-          ifCurrent.writeLog.writes.some(
-            (other) =>
-              other.refreshToken !== ifCurrent.refreshToken &&
-              other.committed === undefined &&
-              other.order < order
-          ))
-      ) {
+    const run = this._sessionWriteQueue.then(async () => {
+      if (ifCurrent && this._sessionReplacedSince(ifCurrent.writeLog, ifCurrent.refreshToken)) {
         return false
       }
       await write()
-      return !ifCurrent || (await this._landedLast(ifCurrent, order))
+      return true
     })
     this._sessionWriteQueue = run.catch(() => {})
     return run
-  }
-
-  /**
-   * After the guarded write at `order` ran: whether it is still the last
-   * session write in storage. A write queued after it can only have run
-   * meanwhile by waiting past `_sessionWriteWaitMs`. If one did and reached
-   * storage, the guarded write may have landed on top of it, so the newest
-   * such write is applied again and the guarded write counts as not having
-   * happened.
-   */
-  private async _landedLast(guard: SessionWriteGuard, order: number): Promise<boolean> {
-    const overtaking = () =>
-      guard.writeLog.writes.filter(
-        (other) => other.order > order && other.started && other.refreshToken !== guard.refreshToken
-      )
-    await Promise.all(
-      overtaking()
-        .filter((other) => other.committed === undefined)
-        .map((other) => this._settlesWithin(other.settled))
-    )
-    const newest = overtaking()
-      .filter((other) => other.committed === true)
-      .sort((a, b) => b.order - a.order)[0]
-    if (!newest) {
-      return true
-    }
-    await newest.reapply()
-    return false
   }
 
   private async _notifyAllSubscribers(
@@ -5615,18 +5533,14 @@ export default class GoTrueClient {
     // Recorded and queued synchronously, before any `await`, so a write's
     // place in the queue matches when it was recorded. See
     // `_sessionWriteLogs` and `_sessionWriteQueue`.
-    const { write, settle } = this._recordSessionWrite(
-      session.refresh_token,
-      () => this._writeSession(session),
-      ifCurrent?.writeLog
-    )
+    const settle = this._recordSessionWrite(session.refresh_token, ifCurrent?.writeLog)
     this._debug('#_saveSession()', session)
     // _saveSession is always called whenever a new session has been acquired
     // so we can safely suppress the warning returned by future getSession calls
     this.suppressGetSessionWarning = true
     let committed = false
     try {
-      committed = await this._queueSessionWrite(() => this._writeSession(session), ifCurrent, write)
+      committed = await this._queueSessionWrite(() => this._writeSession(session), ifCurrent)
       return committed
     } finally {
       settle(committed)
@@ -5679,18 +5593,7 @@ export default class GoTrueClient {
    */
   private async _removeSession(ifCurrent?: SessionWriteGuard): Promise<boolean> {
     // Recorded and queued synchronously, before any `await`. See `_saveSession`.
-    const removeStoredSession = async () => {
-      await removeItemAsync(this.storage, this.storageKey)
-      await removeItemAsync(this.storage, this.storageKey + '-user')
-      if (this.userStorage) {
-        await removeItemAsync(this.userStorage, this.storageKey + '-user')
-      }
-    }
-    const { write, settle } = this._recordSessionWrite(
-      null,
-      removeStoredSession,
-      ifCurrent?.writeLog
-    )
+    const settle = this._recordSessionWrite(null, ifCurrent?.writeLog)
     this._debug('#_removeSession()')
 
     // The session is gone — no point holding on to a cached refresh failure
@@ -5706,21 +5609,17 @@ export default class GoTrueClient {
 
     let removed: boolean
     try {
-      removed = await this._queueSessionWrite(
-        async () => {
-          forgetSession()
-          await removeItemAsync(this.storage, this.storageKey)
-          settle(true)
-          await removeAllPKCEVerifiers(this.storage, this.storageKey)
-          await removeItemAsync(this.storage, this.storageKey + '-user')
+      removed = await this._queueSessionWrite(async () => {
+        forgetSession()
+        await removeItemAsync(this.storage, this.storageKey)
+        settle(true)
+        await removeAllPKCEVerifiers(this.storage, this.storageKey)
+        await removeItemAsync(this.storage, this.storageKey + '-user')
 
-          if (this.userStorage) {
-            await removeItemAsync(this.userStorage, this.storageKey + '-user')
-          }
-        },
-        ifCurrent,
-        write
-      )
+        if (this.userStorage) {
+          await removeItemAsync(this.userStorage, this.storageKey + '-user')
+        }
+      }, ifCurrent)
     } finally {
       settle(false)
     }
