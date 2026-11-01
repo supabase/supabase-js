@@ -586,7 +586,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param options - Query options (bucket and index names automatically set)
-   * @returns Promise with response containing matches array of similar vectors ordered by distance or error
+   * @returns Promise with response containing vectors ordered by distance, an optional pagination token, or an error
    *
    * @example Query similar vectors
    * ```typescript

@@ -2,7 +2,7 @@ import assert from 'assert'
 import { describe, beforeEach, afterEach, test, vi, expect } from 'vitest'
 import RealtimeChannel from '../src/RealtimeChannel'
 import { postgresChangesFilter } from '../src/RealtimePostgresFilterBuilder'
-import { CHANNEL_STATES } from '../src/lib/constants'
+import { CHANNEL_STATES, POSTGRES_CHANGES_WAIT_ERROR_GRACE } from '../src/lib/constants'
 import {
   phxJoinReply,
   setupRealtimeTest,
@@ -873,5 +873,295 @@ describe('PostgreSQL new filter features (select, AND, operators)', () => {
     channel.subscribe()
 
     expect(getJoinedPostgresChanges()[0].filter).toBe('id=eq.1')
+  })
+})
+
+describe('Duplicate postgres_changes bindings', () => {
+  const pgFilter = {
+    event: 'INSERT' as const,
+    schema: 'public',
+    table: 'comments',
+    filter: 'pechakucha_id=eq.1',
+  }
+
+  test('should ignore a re-registered identical filter and log an error', () => {
+    const logSpy = vi.spyOn(testSetup.client, 'log')
+    const callbackSpy1 = vi.fn()
+    const callbackSpy2 = vi.fn()
+
+    channel.on('postgres_changes', pgFilter, callbackSpy1)
+    channel.on('postgres_changes', pgFilter, callbackSpy2)
+
+    expect(channel.bindings.postgres_changes.length).toBe(1)
+    expect(channel.bindings.postgres_changes[0].callback).toBe(callbackSpy1)
+    expect(logSpy).toHaveBeenCalledWith(
+      'error',
+      expect.stringContaining('duplicate `postgres_changes` binding'),
+      pgFilter
+    )
+  })
+
+  test('should send the deduplicated filter list in the join payload', () => {
+    channel.on('postgres_changes', pgFilter, vi.fn())
+    channel.on('postgres_changes', pgFilter, vi.fn())
+
+    channel.subscribe()
+
+    expect(channel.joinPush.payload().config.postgres_changes).toEqual([pgFilter])
+  })
+
+  test('should subscribe without a binding mismatch when a duplicate was registered', async () => {
+    const subscribeSpy = vi.fn()
+
+    channel.on('postgres_changes', pgFilter, vi.fn())
+    channel.on('postgres_changes', pgFilter, vi.fn())
+
+    channel.subscribe(subscribeSpy)
+
+    testSetup.mockServer.emit(
+      'message',
+      phxJoinReply(channel, { postgres_changes: [{ ...pgFilter, id: 'server-id-1' }] })
+    )
+
+    await waitForChannelSubscribed(channel)
+    expect(subscribeSpy).not.toHaveBeenCalledWith('CHANNEL_ERROR', expect.any(Error))
+    expect(channel.bindings.postgres_changes[0].id).toBe('server-id-1')
+  })
+
+  test('should treat a builder filter as a duplicate of the equivalent string filter', () => {
+    channel.on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'orders', filter: 'amount=gt.100' },
+      vi.fn()
+    )
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: postgresChangesFilter().gt('amount', 100),
+      },
+      vi.fn()
+    )
+
+    expect(channel.bindings.postgres_changes.length).toBe(1)
+  })
+
+  test.each([
+    ['event', { ...pgFilter, event: 'UPDATE' as const }],
+    ['schema', { ...pgFilter, schema: 'private' }],
+    ['table', { ...pgFilter, table: 'posts' }],
+    ['filter', { ...pgFilter, filter: 'pechakucha_id=eq.2' }],
+    ['select', { ...pgFilter, select: ['id'] }],
+  ])('should keep both bindings when %s differs', (_field, otherFilter) => {
+    channel.on('postgres_changes', pgFilter, vi.fn())
+    channel.on('postgres_changes', otherFilter, vi.fn())
+
+    expect(channel.bindings.postgres_changes.length).toBe(2)
+  })
+
+  test('should treat an absent optional value and an explicit undefined as the same filter', () => {
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, vi.fn())
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'users', filter: undefined },
+      vi.fn()
+    )
+
+    expect(channel.bindings.postgres_changes.length).toBe(1)
+  })
+
+  test('should not deduplicate broadcast or presence bindings', () => {
+    const broadcastCallback1 = vi.fn()
+    const broadcastCallback2 = vi.fn()
+
+    channel.on('broadcast', { event: 'cursor' }, broadcastCallback1)
+    channel.on('broadcast', { event: 'cursor' }, broadcastCallback2)
+    channel.on('presence', { event: 'sync' }, vi.fn())
+    channel.on('presence', { event: 'sync' }, vi.fn())
+
+    expect(channel.bindings.broadcast.length).toBe(2)
+    expect(channel.bindings.presence.length).toBe(2)
+  })
+})
+
+describe('postgres_changes_options (wait for subscription confirmation)', () => {
+  test('is omitted from the join payload when not configured', () => {
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, vi.fn())
+
+    channel.subscribe()
+
+    expect(channel.joinPush.payload().config).not.toHaveProperty('postgres_changes_options')
+  })
+
+  test('is forwarded to the join payload when configured', () => {
+    const waitingChannel = testSetup.client.channel('test-postgres-wait', {
+      config: { postgres_changes_options: { wait: true, timeout: 20000 } },
+    })
+    waitingChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, vi.fn())
+
+    waitingChannel.subscribe()
+
+    expect(waitingChannel.joinPush.payload().config.postgres_changes_options).toEqual({
+      wait: true,
+      timeout: 20000,
+    })
+
+    waitingChannel.unsubscribe()
+  })
+
+  test('extends the join push timeout past the configured wait timeout', () => {
+    const waitingChannel = testSetup.client.channel('test-postgres-wait-timeout', {
+      config: { postgres_changes_options: { wait: true, timeout: 20000 } },
+    })
+    waitingChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, vi.fn())
+
+    waitingChannel.subscribe()
+
+    expect(waitingChannel.joinPush.timeout).toBe(20000 + POSTGRES_CHANGES_WAIT_ERROR_GRACE)
+
+    waitingChannel.unsubscribe()
+  })
+
+  test('defaults the wait timeout to 15000ms when wait is true but no timeout is given', () => {
+    const waitingChannel = testSetup.client.channel('test-postgres-wait-default-timeout', {
+      config: { postgres_changes_options: { wait: true } },
+    })
+    waitingChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, vi.fn())
+
+    waitingChannel.subscribe()
+
+    expect(waitingChannel.joinPush.timeout).toBe(15000 + POSTGRES_CHANGES_WAIT_ERROR_GRACE)
+
+    waitingChannel.unsubscribe()
+  })
+
+  test('does not extend the join push timeout when there are no postgres_changes bindings', () => {
+    const waitingChannel = testSetup.client.channel('test-postgres-wait-no-bindings', {
+      config: { postgres_changes_options: { wait: true, timeout: 20000 } },
+    })
+
+    waitingChannel.subscribe()
+
+    expect(waitingChannel.joinPush.timeout).toBe(defaultTimeout)
+
+    waitingChannel.unsubscribe()
+  })
+
+  test('does not extend the join push timeout when wait is false', () => {
+    const waitingChannel = testSetup.client.channel('test-postgres-wait-disabled', {
+      config: { postgres_changes_options: { wait: false, timeout: 20000 } },
+    })
+    waitingChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, vi.fn())
+
+    waitingChannel.subscribe()
+
+    expect(waitingChannel.joinPush.timeout).toBe(defaultTimeout)
+
+    waitingChannel.unsubscribe()
+  })
+
+  test('does not shrink an explicitly larger subscribe() timeout', () => {
+    const waitingChannel = testSetup.client.channel('test-postgres-wait-larger-timeout', {
+      config: { postgres_changes_options: { wait: true, timeout: 5000 } },
+    })
+    waitingChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, vi.fn())
+
+    waitingChannel.subscribe(undefined, 30000)
+
+    expect(waitingChannel.joinPush.timeout).toBe(30000)
+
+    waitingChannel.unsubscribe()
+  })
+
+  describe('subscribe() callback behavior', () => {
+    test('reports SUBSCRIBED only once the server replies ok', async () => {
+      const waitingChannel = testSetup.client.channel('test-wait-subscribed', {
+        config: { postgres_changes_options: { wait: true, timeout: 5000 } },
+      })
+      waitingChannel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'users' },
+        vi.fn()
+      )
+
+      const statuses: string[] = []
+      waitingChannel.subscribe((status) => statuses.push(status))
+
+      await vi.advanceTimersByTimeAsync(4000)
+      expect(statuses).toEqual([])
+
+      testSetup.mockServer.emit(
+        'message',
+        phxJoinReply(waitingChannel, {
+          postgres_changes: [{ event: '*', schema: 'public', table: 'users', id: 'srv-1' }],
+        })
+      )
+
+      await waitForChannelSubscribed(waitingChannel)
+      expect(statuses).toEqual(['SUBSCRIBED'])
+
+      waitingChannel.unsubscribe()
+    })
+
+    test("surfaces the server's timeout rejection as CHANNEL_ERROR before the client gives up", async () => {
+      const waitTimeout = 5000
+      const waitingChannel = testSetup.client.channel('test-wait-server-timeout', {
+        config: { postgres_changes_options: { wait: true, timeout: waitTimeout } },
+      })
+      waitingChannel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'users' },
+        vi.fn()
+      )
+
+      const seen: { status: string; message?: string }[] = []
+      waitingChannel.subscribe((status, err) => seen.push({ status, message: err?.message }))
+
+      await vi.advanceTimersByTimeAsync(waitTimeout + 5000)
+
+      expect(seen).toEqual([])
+
+      testSetup.mockServer.emit(
+        'message',
+        phxJoinReply(
+          waitingChannel,
+          {
+            reason: `PostgresChangesSubscribeTimeout: Timed out after ${waitTimeout}ms waiting for the postgres_changes subscription`,
+          },
+          'error'
+        )
+      )
+
+      await vi.waitFor(() => expect(seen.length).toBeGreaterThan(0))
+
+      expect(seen[0].status).toBe('CHANNEL_ERROR')
+      expect(seen[0].message).toContain('PostgresChangesSubscribeTimeout')
+
+      waitingChannel.unsubscribe()
+    })
+
+    test('reports TIMED_OUT only when the server never replies at all', async () => {
+      const waitingChannel = testSetup.client.channel('test-wait-no-reply', {
+        config: { postgres_changes_options: { wait: true, timeout: 5000 } },
+      })
+      waitingChannel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'users' },
+        vi.fn()
+      )
+
+      const statuses: string[] = []
+      waitingChannel.subscribe((status) => statuses.push(status))
+
+      await vi.advanceTimersByTimeAsync(5000 + POSTGRES_CHANGES_WAIT_ERROR_GRACE - 1)
+      expect(statuses).toEqual([])
+
+      await vi.advanceTimersByTimeAsync(10)
+      expect(statuses).toContain('TIMED_OUT')
+
+      waitingChannel.unsubscribe()
+    })
   })
 })

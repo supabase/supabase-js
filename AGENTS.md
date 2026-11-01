@@ -61,5 +61,5 @@ Migration notes live close to the code they describe, so they ship via npm along
 
 - [`docs/TESTING.md`](./docs/TESTING.md) — testing guide with Docker requirements per package
 - [`docs/RELEASE.md`](./docs/RELEASE.md) — release workflows and versioning strategy
-- [`docs/SECURITY.md`](./docs/SECURITY.md) — security policies and responsible disclosure
+- [Security Policy](https://github.com/supabase/supabase-js/security/policy) — security policies and responsible disclosure
 - [`docs/JSR_PUBLISHING.md`](./docs/JSR_PUBLISHING.md) — JSR registry publishing

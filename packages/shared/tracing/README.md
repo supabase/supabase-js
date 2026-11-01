@@ -6,12 +6,12 @@ This package provides utilities for extracting, parsing, validating, and propaga
 
 ## Features
 
-- Extract trace context from OpenTelemetry API
+- Build a trace context extractor from a caller-supplied OpenTelemetry API object
 - Parse and validate W3C `traceparent` headers
 - Validate target URLs for trace propagation
 - Default Supabase domain allowlist
 - TypeScript type definitions
-- Zero dependencies (optional peer dependency on `@opentelemetry/api`)
+- Zero dependencies — this package never imports `@opentelemetry/api`; callers pass the API object in
 
 ## Installation
 
@@ -19,13 +19,17 @@ This package is typically used internally by `@supabase/supabase-js` and does no
 
 ## Usage
 
-### Extract Trace Context
+### Create a Trace Context Extractor
 
 ```typescript
-import { extractTraceContext } from '@supabase/tracing'
+import { createTraceContextExtractor } from '@supabase/tracing'
+import { propagation, context } from '@opentelemetry/api'
 
-// Extract from OpenTelemetry API (if available)
-const context = extractTraceContext()
+// The caller owns the OpenTelemetry dependency and passes it in.
+const extract = createTraceContextExtractor({ propagation, context })
+
+const traceContext = extract()
+// { traceparent, tracestate, baggage } or null when there is no active trace
 ```
 
 ### Parse Traceparent Header

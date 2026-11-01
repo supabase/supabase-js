@@ -228,9 +228,10 @@ type WithThrowOnError<T> =
   if (result.error) {
     throw new Error(result.error.message)
   }
-  expectType<Prettify<{ message: string | null } & Database['public']['Tables']['users']['Row']>>(
-    result.data
-  )
+  type UsersTable = Database['public']['Tables']['users']
+  expectType<
+    Prettify<{ message: string | null } & Omit<UsersTable['Row'], UsersTable['ComputedFields']>>
+  >(result.data)
 }
 
 // `count` in embedded resource

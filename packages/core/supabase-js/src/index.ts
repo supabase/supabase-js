@@ -7,6 +7,8 @@ export type {
   PostgrestResponse,
   PostgrestSingleResponse,
   PostgrestMaybeSingleResponse,
+  PostgrestOpenApiSpec,
+  PostgrestQueryBuilderOptions,
   PostgrestBuilder,
   PostgrestFilterBuilder,
   PostgrestTransformBuilder,

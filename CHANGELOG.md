@@ -1,3 +1,200 @@
+## 2.118.0 (2026-10-15)
+
+### 🚀 Features
+
+- **postgrest:** leave computed fields out of select('*') and resolve no-argument rpc overloads for postgrest-typegen output ([#2730](https://github.com/supabase/supabase-js/pull/2730))
+- **storage:** add content-encoding support for uploads ([#1949](https://github.com/supabase/supabase-js/pull/1949))
+
+### 🩹 Fixes
+
+- **ci:** patch next and sharp advisories and pin node-browser playwright ([#2753](https://github.com/supabase/supabase-js/pull/2753))
+
+### ❤️ Thank You
+
+- Atharv Gaur @Athaxv
+- Ferhat Elmas
+- Lukas Klingsbo
+
+## 2.117.3 (2026-10-07)
+
+### 🩹 Fixes
+
+- **deps:** bump next to patch RCE in realtime-js example ([#2733](https://github.com/supabase/supabase-js/pull/2733))
+- **functions:** send a Blob or File with its own content type ([#2714](https://github.com/supabase/supabase-js/pull/2714))
+- **postgrest:** treat TimeoutError as an abort in retry guard ([#2732](https://github.com/supabase/supabase-js/pull/2732))
+- **storage:** send multipart fields before files ([#2736](https://github.com/supabase/supabase-js/pull/2736))
+
+### ❤️ Thank You
+
+- Bruno Gale @fresh55
+- Ferhat Elmas
+- Katerina Skroumpelou @mandarini
+
+## 2.117.2 (2026-09-25)
+
+### 🩹 Fixes
+
+- **postgrest:** avoid instantiation depth errors for large relationship unions ([#2701](https://github.com/supabase/supabase-js/pull/2701))
+
+### ❤️ Thank You
+
+- Han Qiao @sweatybridge
+
+## 2.117.1 (2026-09-23)
+
+### 🩹 Fixes
+
+- **auth:** return stored session when a refresh loses to another tab ([#2698](https://github.com/supabase/supabase-js/pull/2698))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.117.0 (2026-09-22)
+
+### 🚀 Features
+
+- **auth:** forward options.mediation to navigator.credentials.get in signInWithPasskey ([#2675](https://github.com/supabase/supabase-js/pull/2675))
+- **auth:** enable passkey API by default and deprecate experimental passkey opt-in ([#2695](https://github.com/supabase/supabase-js/pull/2695))
+
+### ❤️ Thank You
+
+- fadymak
+- James Argarin
+- Katerina Skroumpelou
+
+## 2.116.0 (2026-09-07)
+
+### 🚀 Features
+
+- **auth:** add MFA recovery codes API ([#2676](https://github.com/supabase/supabase-js/pull/2676))
+- **storage:** add bucket lifecycle configuration ([#2659](https://github.com/supabase/supabase-js/pull/2659))
+- **storage:** topk 10k support ([#2667](https://github.com/supabase/supabase-js/pull/2667))
+- **storage:** add versionId support to create URL methods ([#2678](https://github.com/supabase/supabase-js/pull/2678))
+
+### 🩹 Fixes
+
+- **auth:** silence commit-guard-discarded refresh in initial session ([#2668](https://github.com/supabase/supabase-js/pull/2668))
+- **storage:** drop legacy prefix from lifecycles ([#2674](https://github.com/supabase/supabase-js/pull/2674))
+- **supabase:** warn when schema is passed outside db options ([#2663](https://github.com/supabase/supabase-js/pull/2663))
+
+### ❤️ Thank You
+
+- fadymak
+- Ferhat Elmas
+- Katerina Skroumpelou @mandarini
+- Tyler Hillery
+
+## 2.115.0 (2026-09-03)
+
+### 🚀 Features
+
+- **postgrest:** add getOpenApiSpec() ([#2651](https://github.com/supabase/supabase-js/pull/2651))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.114.0 (2026-09-02)
+
+### 🚀 Features
+
+- **storage:** object versioning updates ([#2644](https://github.com/supabase/supabase-js/pull/2644))
+
+### 🩹 Fixes
+
+- **auth:** unenroll the unverified factor after a failed registration ([#2641](https://github.com/supabase/supabase-js/pull/2641))
+- **deps:** override browserslist to patch high-severity advisories ([#2652](https://github.com/supabase/supabase-js/pull/2652))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Miodrag Obradovic @Kjubikstronk
+- Tyler Hillery
+
+## 2.113.0 (2026-09-02)
+
+### 🚀 Features
+
+- **realtime:** allow wait for pg changes ([#2630](https://github.com/supabase/supabase-js/pull/2630))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+
+## 2.112.4 (2026-08-24)
+
+### 🩹 Fixes
+
+- **auth:** convert stolen-lock AbortError when acquireTimeout is 0 ([#2616](https://github.com/supabase/supabase-js/pull/2616))
+- **auth:** warn on deprecated lock option and prevent unhandled refresh rejection ([#2627](https://github.com/supabase/supabase-js/pull/2627))
+- **postgrest:** move override fixtures out of generated types, repair codegen ([#2605](https://github.com/supabase/supabase-js/pull/2605))
+- **realtime:** respect custom logger for send() REST fallback warning ([#2612](https://github.com/supabase/supabase-js/pull/2612))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- mmustafasenoglu @mmustafasenoglu
+
+## 2.112.3 (2026-08-11)
+
+### 🩹 Fixes
+
+- **supabase:** add trace context headers to canonical CORS allow-list ([#2603](https://github.com/supabase/supabase-js/pull/2603))
+- **supabase:** improve trace propagation sampling and diagnostics ([#2604](https://github.com/supabase/supabase-js/pull/2604))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.112.2 (2026-08-06)
+
+### 🩹 Fixes
+
+- **realtime:** prevent duplicate on bindings ([#2594](https://github.com/supabase/supabase-js/pull/2594))
+- **realtime:** clear stale join payload on sign-out ([#2597](https://github.com/supabase/supabase-js/pull/2597))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+- Vaibhav @7ttp
+
+## 2.112.1 (2026-08-05)
+
+### 🩹 Fixes
+
+- **auth:** preserve 5xx error message ([#2587](https://github.com/supabase/supabase-js/pull/2587))
+- **realtime:** ensure setAuth doesn't disable token refresh ([#2592](https://github.com/supabase/supabase-js/pull/2592))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+- Vaibhav @7ttp
+
+## 2.112.0 (2026-08-03)
+
+### 🚀 Features
+
+- **supabase:** move OpenTelemetry tracing to opt-in /tracing subpath ([#2583](https://github.com/supabase/supabase-js/pull/2583))
+
+### 🩹 Fixes
+
+- **auth:** accept uppercase UUIDs in validateUUID ([#2467](https://github.com/supabase/supabase-js/pull/2467))
+- **postgrest:** honour throwOnError when maybeSingle finds multiple rows ([#2580](https://github.com/supabase/supabase-js/pull/2580))
+- **storage:** resolve createSignedUrls return type mismatch ([#2474](https://github.com/supabase/supabase-js/pull/2474))
+- **storage:** expose service error code on StorageApiError ([#2537](https://github.com/supabase/supabase-js/pull/2537))
+- **supabase:** forward db retry option ([#2571](https://github.com/supabase/supabase-js/pull/2571))
+
+### ❤️ Thank You
+
+- Anubhav Anand @i-anubhav-anand
+- Gourab Singha @gourabsingha1
+- Juhef @juheff
+- Katerina Skroumpelou @mandarini
+- Thribhuvan
+- Vaibhav @7ttp
+- Zuhef Ahmed @Zuhef
+
 ## 2.111.0 (2026-07-28)
 
 ### 🚀 Features

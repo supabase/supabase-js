@@ -52,6 +52,12 @@ export type GenericTable = {
   Insert: Record<string, unknown>
   Update: Record<string, unknown>
   Relationships: GenericRelationship[]
+  /**
+   * Names of the `Row` keys that are computed fields (functions taking the row), which
+   * PostgREST leaves out of `select('*')`. Generated types declare it; when absent, the
+   * computed fields are inferred from `Functions`.
+   */
+  ComputedFields?: string
 }
 
 export type GenericUpdatableView = {
@@ -59,11 +65,13 @@ export type GenericUpdatableView = {
   Insert: Record<string, unknown>
   Update: Record<string, unknown>
   Relationships: GenericRelationship[]
+  ComputedFields?: string
 }
 
 export type GenericNonUpdatableView = {
   Row: Record<string, unknown>
   Relationships: GenericRelationship[]
+  ComputedFields?: string
 }
 
 export type GenericView = GenericUpdatableView | GenericNonUpdatableView

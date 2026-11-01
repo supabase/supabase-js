@@ -1,3 +1,125 @@
+## 2.118.0 (2026-10-15)
+
+### 🚀 Features
+
+- **postgrest:** leave computed fields out of select('*') and resolve no-argument rpc overloads for postgrest-typegen output ([#2730](https://github.com/supabase/supabase-js/pull/2730))
+
+### ❤️ Thank You
+
+- Lukas Klingsbo
+
+## 2.117.3 (2026-10-07)
+
+### 🩹 Fixes
+
+- **storage:** send multipart fields before files ([#2736](https://github.com/supabase/supabase-js/pull/2736))
+
+### ❤️ Thank You
+
+- Ferhat Elmas
+- Katerina Skroumpelou @mandarini
+
+## 2.117.2 (2026-09-25)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.117.1 (2026-09-23)
+
+### 🩹 Fixes
+
+- **auth:** return stored session when a refresh loses to another tab ([#2698](https://github.com/supabase/supabase-js/pull/2698))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.117.0 (2026-09-22)
+
+### 🚀 Features
+
+- **auth:** enable passkey API by default and deprecate experimental passkey opt-in ([#2695](https://github.com/supabase/supabase-js/pull/2695))
+
+### ❤️ Thank You
+
+- fadymak
+
+## 2.116.0 (2026-09-07)
+
+### 🚀 Features
+
+- **auth:** add MFA recovery codes API ([#2676](https://github.com/supabase/supabase-js/pull/2676))
+
+### 🩹 Fixes
+
+- **supabase:** warn when schema is passed outside db options ([#2663](https://github.com/supabase/supabase-js/pull/2663))
+
+### ❤️ Thank You
+
+- fadymak
+- Katerina Skroumpelou @mandarini
+
+## 2.115.0 (2026-09-03)
+
+### 🚀 Features
+
+- **postgrest:** add getOpenApiSpec() ([#2651](https://github.com/supabase/supabase-js/pull/2651))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.114.0 (2026-09-02)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.113.0 (2026-09-02)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.112.4 (2026-08-24)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.112.3 (2026-08-11)
+
+### 🩹 Fixes
+
+- **supabase:** improve trace propagation sampling and diagnostics ([#2604](https://github.com/supabase/supabase-js/pull/2604))
+- **supabase:** add trace context headers to canonical CORS allow-list ([#2603](https://github.com/supabase/supabase-js/pull/2603))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.112.2 (2026-08-06)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.112.1 (2026-08-05)
+
+### 🩹 Fixes
+
+- **realtime:** ensure setAuth doesn't disable token refresh ([#2592](https://github.com/supabase/supabase-js/pull/2592))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
+## 2.112.0 (2026-08-03)
+
+### 🚀 Features
+
+- **supabase:** move OpenTelemetry tracing to opt-in /tracing subpath ([#2583](https://github.com/supabase/supabase-js/pull/2583))
+
+### 🩹 Fixes
+
+- **supabase:** forward db retry option ([#2571](https://github.com/supabase/supabase-js/pull/2571))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+- Vaibhav @7ttp
+
 ## 2.111.0 (2026-07-28)
 
 This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.

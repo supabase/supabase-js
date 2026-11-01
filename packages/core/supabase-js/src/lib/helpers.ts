@@ -21,6 +21,45 @@ export function ensureTrailingSlash(url: string): string {
 
 export const isBrowser = () => typeof window !== 'undefined'
 
+let warnedTopLevelSchema = false
+
+/**
+ * Warn (once per process) when `schema` is passed at the top level of the client options
+ * instead of under `db`. A top-level `schema` is not part of the options shape and is
+ * ignored, so queries silently go to the default schema. Never throws.
+ *
+ * Only `undefined` counts as unset, matching `db.schema`, where any other value is sent
+ * as the profile header.
+ */
+export function checkTopLevelSchemaOption(options: unknown): void {
+  if (warnedTopLevelSchema) {
+    return
+  }
+  if (
+    typeof options !== 'object' ||
+    options === null ||
+    !('schema' in options) ||
+    (options as { schema?: unknown }).schema === undefined
+  ) {
+    return
+  }
+  warnedTopLevelSchema = true
+  console.warn(
+    '@supabase/supabase-js: The "schema" option must be nested under "db", ' +
+      "e.g. createClient(url, key, { db: { schema: 'myschema' } }). " +
+      'A top-level "schema" is ignored and queries go to the default schema.'
+  )
+}
+
+/**
+ * For tests only. Resets the one-time top-level `schema` warning.
+ *
+ * @internal
+ */
+export function _resetTopLevelSchemaWarning(): void {
+  warnedTopLevelSchema = false
+}
+
 export type ResolvedSupabaseClientOptions<SchemaName> = Omit<
   Required<SupabaseClientOptions<SchemaName>>,
   'tracePropagation'

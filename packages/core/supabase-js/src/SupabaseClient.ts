@@ -3,7 +3,10 @@ import { FunctionsClient } from '@supabase/functions-js'
 import {
   PostgrestClient,
   type PostgrestFilterBuilder,
+  type PostgrestOpenApiSpec,
   type PostgrestQueryBuilder,
+  type PostgrestQueryBuilderOptions,
+  type PostgrestSingleResponse,
 } from '@supabase/postgrest-js'
 import {
   type RealtimeChannel,
@@ -20,9 +23,10 @@ import {
   DEFAULT_REALTIME_OPTIONS,
   DEFAULT_TRACE_PROPAGATION_OPTIONS,
 } from './lib/constants'
-import { checkApiKeyFormat, fetchWithAuth } from './lib/fetch'
+import { checkApiKeyFormat, fetchWithAuth, resolveFetch } from './lib/fetch'
 import {
   applySettingDefaults,
+  checkTopLevelSchemaOption,
   validateSupabaseUrl,
   type ResolvedSupabaseClientOptions,
 } from './lib/helpers'
@@ -288,10 +292,12 @@ export default class SupabaseClient<
    * Opt in to W3C trace context propagation so the `trace_id` from your
    * client-side spans is attached to Supabase requests and appears in API
    * Gateway and Edge Function logs. Requires `@opentelemetry/api` to be
-   * installed in your application. See [Tracing with the JS SDK](https://supabase.com/docs/guides/telemetry/client-side-tracing).
+   * installed in your application and the tracing runtime to be loaded via
+   * `import '@supabase/supabase-js/tracing'`. See [Tracing with the JS SDK](https://supabase.com/docs/guides/telemetry/client-side-tracing).
    *
    * @example With OpenTelemetry tracing
    * ```ts
+   * import '@supabase/supabase-js/tracing'
    * import { createClient } from '@supabase/supabase-js'
    * import { trace } from '@opentelemetry/api'
    *
@@ -316,6 +322,7 @@ export default class SupabaseClient<
     const baseUrl = validateSupabaseUrl(supabaseUrl)
     if (!supabaseKey) throw new Error('supabaseKey is required.')
     checkApiKeyFormat(supabaseKey)
+    checkTopLevelSchemaOption(options)
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
@@ -392,12 +399,23 @@ export default class SupabaseClient<
         .catch((e) => console.warn('Failed to set initial Realtime auth token:', e))
     }
 
+    // The PostgREST client applies the auth wrapper itself, so a per-request fetch
+    // passed to `from()` carries the same headers as the client-level fetch.
     this.rest = new PostgrestClient(new URL('rest/v1', baseUrl).href, {
       headers: this.headers,
       schema: settings.db.schema,
-      fetch: this.fetch,
+      fetch: resolveFetch(settings.global.fetch),
+      wrapFetch: (fetch) =>
+        fetchWithAuth(
+          supabaseKey,
+          supabaseUrl,
+          this._getSessionToken.bind(this),
+          fetch,
+          settings.tracePropagation
+        ),
       timeout: settings.db.timeout,
       urlLengthLimit: settings.db.urlLengthLimit,
+      retry: settings.db.retry,
     })
 
     this.storage = new SupabaseStorageClient(
@@ -426,17 +444,38 @@ export default class SupabaseClient<
   from<
     TableName extends string & keyof Schema['Tables'],
     Table extends Schema['Tables'][TableName],
-  >(relation: TableName): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
+  >(
+    relation: TableName,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, Table, TableName>
   from<ViewName extends string & keyof Schema['Views'], View extends Schema['Views'][ViewName]>(
-    relation: ViewName
+    relation: ViewName,
+    options?: PostgrestQueryBuilderOptions
   ): PostgrestQueryBuilder<ClientOptions, Schema, View, ViewName>
   /**
    * Perform a query on a table or a view.
    *
+   * A per-request `fetch` is wrapped the same way as the client-level fetch: the
+   * `apikey`, `Authorization` and trace headers are added before it is called.
+   * The same applies to clients returned by `.schema()`.
+   *
    * @param relation - The table or view name to query
+   * @param options - Per-request options that override client-level defaults
+   *
+   * @example Per-request fetch options
+   * ```ts
+   * const { data } = await supabase
+   *   .from('countries', {
+   *     fetch: (input, init) => fetch(input, { ...init, cache: 'force-cache' }),
+   *   })
+   *   .select('*')
+   * ```
    */
-  from(relation: string): PostgrestQueryBuilder<ClientOptions, Schema, any> {
-    return this.rest.from(relation)
+  from(
+    relation: string,
+    options?: PostgrestQueryBuilderOptions
+  ): PostgrestQueryBuilder<ClientOptions, Schema, any> {
+    return this.rest.from(relation, options)
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.schema
@@ -456,6 +495,25 @@ export default class SupabaseClient<
     Database[DynamicSchema] extends GenericSchema ? Database[DynamicSchema] : any
   > {
     return this.rest.schema<DynamicSchema>(schema)
+  }
+
+  // NOTE: signatures must be kept in sync with PostgrestClient.getOpenApiSpec
+  /**
+   * Fetch the OpenAPI description PostgREST publishes for this client's schema.
+   *
+   * The document lists only the tables, views and functions the caller's role
+   * holds privileges on. The request carries the same `apikey` and
+   * `Authorization` headers as every other query, so the description is scoped
+   * to the signed-in user. Call `.schema()` first to describe a schema other
+   * than the client default.
+   *
+   * @example
+   * ```ts
+   * const { data, error } = await supabase.getOpenApiSpec()
+   * ```
+   */
+  getOpenApiSpec(): Promise<PostgrestSingleResponse<PostgrestOpenApiSpec>> {
+    return this.rest.getOpenApiSpec()
   }
 
   // NOTE: signatures must be kept in sync with PostgrestClient.rpc

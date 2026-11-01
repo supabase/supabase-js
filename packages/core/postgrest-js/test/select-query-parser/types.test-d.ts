@@ -59,7 +59,15 @@ import { Database } from '../types.generated'
 {
   type Schema = Database['public']
   type result = GetComputedFields<Schema, 'users'>
-  type expected = never
+  type expected =
+    | 'function_using_setof_rows_one'
+    | 'function_using_table_returns'
+    | 'get_messages'
+    | 'get_user_messages'
+    | 'get_user_profile'
+    | 'get_user_profile_non_nullable'
+    | 'get_user_recent_messages'
+    | 'postgrest_resolvable_with_override_function'
   expectType<TypeEqual<result, expected>>(true)
 }
 

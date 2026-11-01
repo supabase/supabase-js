@@ -1,3 +1,101 @@
+## 2.118.0 (2026-10-15)
+
+### 🚀 Features
+
+- **storage:** add content-encoding support for uploads ([#1949](https://github.com/supabase/supabase-js/pull/1949))
+
+### ❤️ Thank You
+
+- Atharv Gaur @Athaxv
+- Ferhat Elmas
+
+## 2.117.3 (2026-10-07)
+
+### 🩹 Fixes
+
+- **storage:** send multipart fields before files ([#2736](https://github.com/supabase/supabase-js/pull/2736))
+
+### ❤️ Thank You
+
+- Ferhat Elmas
+- Katerina Skroumpelou @mandarini
+
+## 2.117.2 (2026-09-25)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.117.1 (2026-09-23)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.117.0 (2026-09-22)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.116.0 (2026-09-07)
+
+### 🚀 Features
+
+- **storage:** add versionId support to create URL methods ([#2678](https://github.com/supabase/supabase-js/pull/2678))
+- **storage:** topk 10k support ([#2667](https://github.com/supabase/supabase-js/pull/2667))
+- **storage:** add bucket lifecycle configuration ([#2659](https://github.com/supabase/supabase-js/pull/2659))
+
+### 🩹 Fixes
+
+- **storage:** drop legacy prefix from lifecycles ([#2674](https://github.com/supabase/supabase-js/pull/2674))
+
+### ❤️ Thank You
+
+- Ferhat Elmas
+- Tyler Hillery
+
+## 2.115.0 (2026-09-03)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.114.0 (2026-09-02)
+
+### 🚀 Features
+
+- **storage:** object versioning updates ([#2644](https://github.com/supabase/supabase-js/pull/2644))
+
+### ❤️ Thank You
+
+- Tyler Hillery
+
+## 2.113.0 (2026-09-02)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.112.4 (2026-08-24)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.112.3 (2026-08-11)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.112.2 (2026-08-06)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.112.1 (2026-08-05)
+
+This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.
+
+## 2.112.0 (2026-08-03)
+
+### 🩹 Fixes
+
+- **storage:** expose service error code on StorageApiError ([#2537](https://github.com/supabase/supabase-js/pull/2537))
+- **storage:** resolve createSignedUrls return type mismatch ([#2474](https://github.com/supabase/supabase-js/pull/2474))
+
+### ❤️ Thank You
+
+- Gourab Singha @gourabsingha1
+- Katerina Skroumpelou
+- Thribhuvan
+
 ## 2.111.0 (2026-07-28)
 
 This was a version bump only for @supabase/storage-js to align it with other projects, there were no code changes.

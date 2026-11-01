@@ -118,7 +118,10 @@ Trace propagation is **opt-in** and disabled by default. When enabled, headers a
 
 #### Enable trace propagation
 
+Opting in takes two steps: install `@opentelemetry/api`, and load the tracing runtime by importing the `@supabase/supabase-js/tracing` subpath once at your application entry point. The main bundle contains no OpenTelemetry code — the subpath import is what wires it up.
+
 ```js
+import '@supabase/supabase-js/tracing'
 import { createClient } from '@supabase/supabase-js'
 import { trace } from '@opentelemetry/api'
 
@@ -134,7 +137,9 @@ await tracer.startActiveSpan('fetch-users', async (span) => {
 })
 ```
 
-If `@opentelemetry/api` is not installed or no active context exists, the SDK silently no-ops.
+The subpath imports `@opentelemetry/api` directly, so module resolution fails loudly if it is not installed. If `tracePropagation` is enabled without the subpath import, the SDK logs a one-time warning and sends requests without trace headers; if no active context exists at request time, it silently no-ops.
+
+Trace propagation is not available via the CDN/UMD build (`https://cdn.jsdelivr.net/.../supabase.js`) — there is no way to load the tracing runtime there.
 
 #### Advanced configuration
 
@@ -144,13 +149,15 @@ interface TracePropagationOptions {
   enabled?: boolean
 
   // Respect upstream sampling decisions (default: true).
-  // When true, headers are skipped if the upstream trace is not sampled.
+  // When true, non-sampled requests carry only `traceparent` (flag preserved,
+  // so nothing is recorded downstream) — Supabase logs still get a trace_id,
+  // while `tracestate` and `baggage` are withheld.
   respectSamplingDecision?: boolean
 }
 ```
 
 ```js
-// Always propagate, even for non-sampled traces.
+// Always propagate the full trace context, even for non-sampled traces.
 const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key', {
   tracePropagation: { enabled: true, respectSamplingDecision: false },
 })
@@ -203,6 +210,30 @@ We support Cloudflare Workers runtime environments. Cloudflare Workers provides 
 ### Important Notes
 
 - **Experimental features**: Features marked as experimental may be removed or changed without notice
+
+## Supabase Service Compatibility
+
+`@supabase/supabase-js` only guarantees compatibility with the latest release of
+each Supabase service, unless a minimum supported version is explicitly listed
+below.
+
+Older service releases are supported on a best-effort basis, but compatibility
+is not guaranteed.
+
+If you self-host Supabase, we recommend upgrading your services to their latest
+releases when upgrading the SDK.
+
+| Service   | SDK package                                                                                                | Server releases                                                            | Lowest supported version |
+| --------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------ |
+| Auth      | [`@supabase/auth-js`](https://github.com/supabase/supabase-js/tree/master/packages/core/auth-js)           | [supabase/auth](https://github.com/supabase/auth/releases)                 | Latest release           |
+| Storage   | [`@supabase/storage-js`](https://github.com/supabase/supabase-js/tree/master/packages/core/storage-js)     | [supabase/storage](https://github.com/supabase/storage/releases)           | Latest release           |
+| Functions | [`@supabase/functions-js`](https://github.com/supabase/supabase-js/tree/master/packages/core/functions-js) | [supabase/edge-runtime](https://github.com/supabase/edge-runtime/releases) | Latest release           |
+| PostgREST | [`@supabase/postgrest-js`](https://github.com/supabase/supabase-js/tree/master/packages/core/postgrest-js) | [PostgREST/postgrest](https://github.com/PostgREST/postgrest/releases)     | v12                      |
+| Realtime  | [`@supabase/realtime-js`](https://github.com/supabase/supabase-js/tree/master/packages/core/realtime-js)   | [supabase/realtime](https://github.com/supabase/realtime/releases)         | Latest release           |
+
+Where a lowest supported version is listed, some features still need a newer
+server version. Those requirements are noted in the API reference for the
+feature.
 
 ## Known Build Warnings
 

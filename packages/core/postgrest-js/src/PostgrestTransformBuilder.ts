@@ -96,7 +96,7 @@ export default class PostgrestTransformBuilder<
    *     }
    *   ],
    *   "status": 201,
-   *   "statusText": "Created"
+   *   "statusText": ""
    * }
    * ```
    */
@@ -678,8 +678,8 @@ export default class PostgrestTransformBuilder<
    *       "hint": "",
    *       "code": ""
    *     },
-   *     "status": 400,
-   *     "statusText": "Bad Request"
+   *     "status": 0,
+   *     "statusText": ""
    *   }
    *
    * ```

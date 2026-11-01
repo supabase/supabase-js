@@ -670,4 +670,130 @@ describe('Bucket API Error Handling', () => {
       )
     })
   })
+
+  describe('bucket lifecycle configuration', () => {
+    const LIFECYCLE_URL = 'http://localhost:8000/storage/v1'
+    const BUCKET = 'avatars'
+    const lifecycleConfiguration = {
+      rules: [
+        {
+          id: 'expire-history',
+          status: 'Enabled' as const,
+          filter: {},
+          noncurrentVersionExpiration: {
+            noncurrentDays: 30,
+            newerNoncurrentVersions: 2,
+          },
+        },
+      ],
+    }
+
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('gets lifecycle configuration from GET /bucket/{id}/lifecycle', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify(lifecycleConfiguration), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(LIFECYCLE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.getBucketLifecycle(BUCKET)
+
+      expect(error).toBeNull()
+      expect(data).toEqual(lifecycleConfiguration)
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${LIFECYCLE_URL}/bucket/${BUCKET}/lifecycle`,
+        expect.objectContaining({ method: 'GET' })
+      )
+    })
+
+    it('replaces lifecycle configuration via PUT /bucket/{id}/lifecycle', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify(lifecycleConfiguration), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(LIFECYCLE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.updateBucketLifecycle(BUCKET, lifecycleConfiguration)
+
+      expect(error).toBeNull()
+      expect(data).toEqual(lifecycleConfiguration)
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${LIFECYCLE_URL}/bucket/${BUCKET}/lifecycle`,
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify(lifecycleConfiguration),
+        })
+      )
+    })
+
+    it('deletes lifecycle configuration via DELETE /bucket/{id}/lifecycle', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: 'Successfully deleted' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(LIFECYCLE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.deleteBucketLifecycle(BUCKET)
+
+      expect(error).toBeNull()
+      expect(data).toEqual({ message: 'Successfully deleted' })
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${LIFECYCLE_URL}/bucket/${BUCKET}/lifecycle`,
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+
+    it('surfaces NoSuchLifecycleConfiguration as StorageApiError', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            statusCode: '400',
+            error: 'NoSuchLifecycleConfiguration',
+            message: 'The lifecycle configuration does not exist',
+            code: 'NoSuchLifecycleConfiguration',
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(LIFECYCLE_URL, { apikey: 'service-role-token' })
+      const { data, error } = await client.getBucketLifecycle(BUCKET)
+
+      expect(data).toBeNull()
+      expect(error).toBeInstanceOf(StorageApiError)
+      expect(error?.message).toBe('The lifecycle configuration does not exist')
+    })
+
+    it('percent-encodes URL delimiters in the bucket id', async () => {
+      const fetchMock = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify(lifecycleConfiguration), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      global.fetch = fetchMock
+
+      const client = new StorageClient(LIFECYCLE_URL, { apikey: 'service-role-token' })
+      const { error } = await client.getBucketLifecycle('my?bucket')
+
+      expect(error).toBeNull()
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${LIFECYCLE_URL}/bucket/my%3Fbucket/lifecycle`,
+        expect.objectContaining({ method: 'GET' })
+      )
+    })
+  })
 })

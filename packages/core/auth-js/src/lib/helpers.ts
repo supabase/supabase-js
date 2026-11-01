@@ -561,7 +561,7 @@ export function getAlgorithm(
   }
 }
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export function validateUUID(str: string) {
   if (!UUID_REGEX.test(str)) {
@@ -569,10 +569,12 @@ export function validateUUID(str: string) {
   }
 }
 
-export function assertPasskeyExperimentalEnabled(experimental: { passkey?: boolean }): void {
-  if (!experimental.passkey) {
+export function assertRecoveryCodesExperimentalEnabled(experimental: {
+  recoveryCodes?: boolean
+}): void {
+  if (!experimental.recoveryCodes) {
     throw new Error(
-      '@supabase/auth-js: the passkey API is experimental and disabled by default. Enable it by passing `auth: { experimental: { passkey: true } }` to createClient (or to the GoTrueClient constructor).'
+      '@supabase/auth-js: the MFA recovery codes API is experimental and disabled by default. Enable it by passing `auth: { experimental: { recoveryCodes: true } }` to createClient (or to the GoTrueClient constructor).'
     )
   }
 }

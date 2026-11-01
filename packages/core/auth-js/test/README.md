@@ -37,9 +37,8 @@ All emails will appear in the mock mail server.
 
 ## Passkey (WebAuthn) Tests
 
-Passkey coverage is split across three files:
+Passkey coverage is split across two files:
 
-- `passkey.test.ts` — experimental-flag gating (no infra needed)
 - `passkey.methods.test.ts` — unit tests for all `auth.passkey.*`, `signInWithPasskey()`,
   `registerPasskey()` and `admin.passkey.*` methods with mocked `fetch` and a simulated
   browser environment (no infra needed)

@@ -41,7 +41,6 @@ const createPasskeyClient = () =>
     autoRefreshToken: false,
     persistSession: true,
     storage: memoryStorage(),
-    experimental: { passkey: true },
   })
 
 const adminClient = new GoTrueAdminApi({
@@ -50,7 +49,6 @@ const adminClient = new GoTrueAdminApi({
     apikey: SUPABASE_SECRET_KEY,
     Authorization: `Bearer ${SUPABASE_SECRET_KEY}`,
   },
-  experimental: { passkey: true },
 })
 
 describe('Passkey end-to-end', () => {

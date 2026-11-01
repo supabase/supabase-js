@@ -192,7 +192,7 @@ export default class PostgrestQueryBuilder<
      *     "message": "permission denied for table characters"
      *   },
      *   "status": 401,
-     *   "statusText": "Unauthorized"
+     *   "statusText": ""
      * }
      * ```
      *
@@ -1008,7 +1008,7 @@ export default class PostgrestQueryBuilder<
    * ```json
    * {
    *   "status": 201,
-   *   "statusText": "Created"
+   *   "statusText": ""
    * }
    * ```
    *
@@ -1045,7 +1045,7 @@ export default class PostgrestQueryBuilder<
    *     }
    *   ],
    *   "status": 201,
-   *   "statusText": "Created"
+   *   "statusText": ""
    * }
    * ```
    *
@@ -1079,7 +1079,7 @@ export default class PostgrestQueryBuilder<
    *     "message": "duplicate key value violates unique constraint \"countries_pkey\""
    *   },
    *   "status": 409,
-   *   "statusText": "Conflict"
+   *   "statusText": ""
    * }
    * ```
    */
@@ -1258,7 +1258,7 @@ export default class PostgrestQueryBuilder<
    *     }
    *   ],
    *   "status": 201,
-   *   "statusText": "Created"
+   *   "statusText": ""
    * }
    * ```
    *
@@ -1307,7 +1307,7 @@ export default class PostgrestQueryBuilder<
    *     }
    *   ],
    *   "status": 201,
-   *   "statusText": "Created"
+   *   "statusText": ""
    * }
    * ```
    *
@@ -1352,7 +1352,7 @@ export default class PostgrestQueryBuilder<
    *     "message": "duplicate key value violates unique constraint \"users_handle_key\""
    *   },
    *   "status": 409,
-   *   "statusText": "Conflict"
+   *   "statusText": ""
    * }
    * ```
    */
@@ -1469,7 +1469,7 @@ export default class PostgrestQueryBuilder<
    * ```json
    * {
    *   "status": 204,
-   *   "statusText": "No Content"
+   *   "statusText": ""
    * }
    * ```
    *
@@ -1659,7 +1659,7 @@ export default class PostgrestQueryBuilder<
    * ```json
    * {
    *   "status": 204,
-   *   "statusText": "No Content"
+   *   "statusText": ""
    * }
    * ```
    *
@@ -1729,7 +1729,7 @@ export default class PostgrestQueryBuilder<
    * ```json
    * {
    *   "status": 204,
-   *   "statusText": "No Content"
+   *   "statusText": ""
    * }
    * ```
    */
