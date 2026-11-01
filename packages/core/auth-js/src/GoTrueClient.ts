@@ -3322,9 +3322,15 @@ export default class GoTrueClient {
     return result
   }
 
-  private async _getUser(jwt?: string): Promise<UserResponse> {
-    // Set once the session read below was removed (or kept, if a newer one
-    // was saved meanwhile) because the server no longer knows it.
+  /**
+   * @param ifCurrent Set when `jwt` belongs to a session read from storage
+   * (see `SessionWriteGuard`): if the server no longer knows it, it is then
+   * removed only when no newer session was saved or removed since.
+   */
+  private async _getUser(jwt?: string, ifCurrent?: SessionWriteGuard): Promise<UserResponse> {
+    // Set once the server's answer that the session is gone was handled:
+    // the session it was about was removed, unless a newer one was saved or
+    // removed meanwhile.
     let sessionMissingHandled = false
     try {
       if (jwt) {
@@ -3338,6 +3344,8 @@ export default class GoTrueClient {
       return await this._useSession(async (result, readLog) => {
         const { data, error } = result
         if (error) {
+          // A refresh that found the session gone has removed it already.
+          sessionMissingHandled = isAuthSessionMissingError(error)
           throw error
         }
 
@@ -3353,12 +3361,12 @@ export default class GoTrueClient {
             xform: _userResponse,
           })
         } catch (error) {
-          if (isAuthSessionMissingError(error) && data.session) {
+          if (isAuthSessionMissingError(error)) {
             // Only the session that was checked is gone; one saved while the
             // request was in flight is kept.
             await this._removeSession({
               writeLog: readLog,
-              refreshToken: data.session.refresh_token,
+              refreshToken: data.session?.refresh_token ?? null,
             })
             sessionMissingHandled = true
           }
@@ -3371,7 +3379,7 @@ export default class GoTrueClient {
           // JWT contains a `session_id` which does not correspond to an active
           // session in the database, indicating the user is signed out.
 
-          await this._removeSession()
+          await this._removeSession(ifCurrent)
         }
 
         return this._returnResult({ data: { user: null }, error })
@@ -5140,7 +5148,10 @@ export default class GoTrueClient {
       ) {
         // If we have a proxy user, try to get the real user data
         try {
-          const { data, error: userError } = await this._getUser(currentSession.access_token)
+          const { data, error: userError } = await this._getUser(
+            currentSession.access_token,
+            readSession
+          )
 
           if (!userError && data?.user) {
             currentSession.user = data.user

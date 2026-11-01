@@ -903,6 +903,50 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(t.events).not.toContain('SIGNED_OUT')
   })
 
+  test('start-up recovery does not remove a session saved while it checked the stored one', async () => {
+    // No user kept for A, so recovery asks /user, and the server no longer
+    // knows A.
+    const t = await setup({ storedSession: makeSession('user-a', 'a'), withUserStorage: true })
+    t.userStorage!.store.delete(`${STORAGE_KEY}-user`)
+    let answerUser!: (response: Response) => void
+    t.fetch.mockImplementationOnce(
+      async () => new Promise<Response>((resolve) => (answerUser = resolve))
+    )
+
+    const recovering = recover(t.client)
+    await settle()
+    await signInAsB(t.client)
+    answerUser(json(403, { code: 403, error_code: 'session_not_found', msg: 'Session not found' }))
+    await recovering
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.events).not.toContain('SIGNED_OUT')
+  })
+
+  test('getUser() does not remove again after its refresh found the session gone', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', -10) })
+    t.setRefreshReply(
+      Promise.resolve(
+        json(403, { code: 403, error_code: 'session_not_found', msg: 'Session not found' })
+      )
+    )
+    // B signs in as soon as A is signed out, while getUser() is still going.
+    let signingIn: Promise<void> | null = null
+    t.client.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT' && !signingIn) {
+        signingIn = signInAsB(t.client)
+      }
+    })
+
+    await t.client.getUser()
+    await signingIn
+    await settle()
+
+    expect(t.storedRefreshToken()).toBe('refresh-b')
+    expect(t.events.filter((event) => event === 'SIGNED_OUT')).toHaveLength(1)
+  })
+
   test('a refresh does not overwrite a sign-in whose save is slow', async () => {
     const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
     t.setRefreshReply(Promise.resolve(json(200, makeSession('user-a', 'a-renewed'))))
