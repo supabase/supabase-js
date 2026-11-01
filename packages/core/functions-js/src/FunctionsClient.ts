@@ -223,6 +223,9 @@ export class FunctionsClient {
         url.searchParams.set('forceFunctionRegion', region)
       }
       let body: any
+      // a web ReadableStream body requires the half-duplex flag for native (undici) fetch;
+      // set alongside body wherever a stream is detected, then forwarded to fetch below
+      let duplex: 'half' | undefined
       // HTTP header names are case-insensitive, so detect a caller-supplied Content-Type
       // regardless of casing — otherwise the SDK injects a second, conflicting Content-Type.
       const hasContentTypeHeader =
@@ -244,13 +247,24 @@ export class FunctionsClient {
           // don't set content-type headers
           // Request will automatically add the right boundary value
           body = functionArgs
+        } else if (
+          typeof ReadableStream !== 'undefined' &&
+          functionArgs instanceof ReadableStream
+        ) {
+          // a stream is a valid fetch body; forward it untouched and let the caller set the
+          // Content-Type (don't serialize it to JSON, which would drop the payload)
+          body = functionArgs
+          duplex = 'half'
         } else {
           // default, assume this is JSON
           _headers['Content-Type'] = 'application/json'
           body = JSON.stringify(functionArgs)
         }
       } else {
-        if (
+        if (typeof ReadableStream !== 'undefined' && functionArgs instanceof ReadableStream) {
+          body = functionArgs
+          duplex = 'half'
+        } else if (
           functionArgs &&
           typeof functionArgs !== 'string' &&
           !(typeof Blob !== 'undefined' && functionArgs instanceof Blob) &&
@@ -289,6 +303,7 @@ export class FunctionsClient {
         // 3. default Content-Type header
         headers: { ..._headers, ...this.headers, ...headers },
         body,
+        ...(duplex ? { duplex } : {}),
         signal: effectiveSignal,
       }).catch((fetchError) => {
         throw new FunctionsFetchError(fetchError)
