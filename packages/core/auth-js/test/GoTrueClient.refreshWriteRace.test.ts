@@ -935,6 +935,40 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(data.session?.user.id).toBe('user-b')
   })
 
+  test.each([
+    ['sign-out', null],
+    ['sign-in', 'refresh-b'],
+  ])(
+    'a %s made while a refresh save is slower than the wait is not undone by it',
+    async (action, expectedToken) => {
+      const t = await setup({ storedSession: makeSession('user-a', 'a') })
+      // @ts-expect-error access private for test
+      t.client._sessionWriteWaitMs = 20
+
+      const respond = t.holdRefreshReply()
+      const refreshing = t.client.refreshSession()
+      await settle()
+      // The refresh's save is held, and applied only after the later write,
+      // which stops waiting for it.
+      const writes = t.storage.holdWrites({ applyLate: true })
+      respond(json(200, makeSession('user-a', 'a-renewed')))
+      await settle()
+      writes.stopHolding()
+      if (action === 'sign-out') {
+        await t.client.signOut({ scope: 'local' })
+      } else {
+        await signInAsB(t.client)
+      }
+      writes.release()
+      await refreshing
+      await settle()
+
+      expect(t.storedRefreshToken()).toBe(expectedToken)
+      expect(t.events).not.toContain('TOKEN_REFRESHED')
+    },
+    4000
+  )
+
   test('a session write that never finishes does not hold up a refresh past the wait', async () => {
     const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
     // @ts-expect-error access private for test
