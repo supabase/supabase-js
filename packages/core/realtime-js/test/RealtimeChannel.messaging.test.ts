@@ -415,7 +415,7 @@ describe('send', () => {
           return channel
         }
 
-        test.each(['persistence_unauthorized', 'persistence_failed', 'invalid_persist_ttl'])(
+        test.each(['persistence_unauthorized', 'persistence_failed', 'persistence_invalid_ttl'])(
           'returns the server error code %s',
           async (code) => {
             const channel = ackedChannel('error', { error: code })
