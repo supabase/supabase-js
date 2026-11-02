@@ -816,6 +816,28 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(data.session).toBeNull()
   })
 
+  test('a refresh save skipped after a sign-out does not suppress the getSession() warning', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+
+    const respond = t.holdRefreshReply()
+    const refreshing = t.client.refreshSession()
+    await settle()
+
+    // The renewal arrives; the commit guard re-reads storage, and the user
+    // signs out while that read is open.
+    const reads = t.storage.holdReads()
+    respond(json(200, makeSession('user-a', 'a-renewed')))
+    await settle()
+    reads.stopHolding()
+    await t.client.signOut({ scope: 'local' })
+    reads.release()
+    await refreshing
+    await settle()
+
+    expect(t.storedRefreshToken()).toBeNull()
+    expect((t.client as any).suppressGetSessionWarning).toBe(false)
+  })
+
   test('a sign-in during a refresh save applied late is not undone by it', async () => {
     const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
 

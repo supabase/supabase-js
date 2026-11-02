@@ -5546,15 +5546,18 @@ export default class GoTrueClient {
     // `_sessionWriteLogs` and `_sessionWriteQueue`.
     const settle = this._recordSessionWrite(session.refresh_token, ifCurrent?.writeLog)
     this._debug('#_saveSession()', session)
-    // _saveSession is always called whenever a new session has been acquired
-    // so we can safely suppress the warning returned by future getSession calls
-    this.suppressGetSessionWarning = true
-    let committed = false
     try {
-      committed = await this._queueSessionWrite(() => this._writeSession(session), ifCurrent)
-      return committed
+      return await this._queueSessionWrite(async () => {
+        // _saveSession is always called whenever a new session has been acquired
+        // so we can safely suppress the warning returned by future getSession calls
+        this.suppressGetSessionWarning = true
+        await this._writeSession(session)
+        // Settled before the queue moves on, so the next write's check sees
+        // that this one reached storage.
+        settle(true)
+      }, ifCurrent)
     } finally {
-      settle(committed)
+      settle(false)
     }
   }
 
