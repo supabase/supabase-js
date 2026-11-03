@@ -34,6 +34,14 @@
  * - x-client-info: Library version information
  * - apikey: Project API key
  * - content-type: Standard HTTP content type
+ * - accept-profile: Schema selected by postgrest-js on GET/HEAD requests
+ * - content-profile: Schema selected by postgrest-js on writes
+ * - cache-control: Cache directive sent by storage-js on uploads. Only safelisted
+ *   as a response header, so as a request header it still triggers a preflight
+ * - x-supabase-api-version: API version pinned by auth-js on every request
+ * - x-region: Function region sent by functions-js when a region is configured
+ * - x-upsert: Upsert flag sent by storage-js on uploads and signed upload URLs
+ * - x-metadata: Base64-encoded object metadata sent by storage-js on uploads
  * - x-retry-count: Retry attempt number sent by postgrest-js on retried requests
  * - traceparent: W3C trace context sent when `tracePropagation` is enabled
  * - tracestate: Vendor-specific trace data sent alongside traceparent
@@ -44,6 +52,13 @@ const SUPABASE_HEADERS = [
   'x-client-info',
   'apikey',
   'content-type',
+  'accept-profile',
+  'content-profile',
+  'cache-control',
+  'x-supabase-api-version',
+  'x-region',
+  'x-upsert',
+  'x-metadata',
   'x-retry-count',
   'traceparent',
   'tracestate',
