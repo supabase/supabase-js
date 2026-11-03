@@ -21,6 +21,52 @@ export function ensureTrailingSlash(url: string): string {
 
 export const isBrowser = () => typeof window !== 'undefined'
 
+/**
+ * Short, stable, non-cryptographic hash (FNV-1a 32-bit) rendered as 8 lowercase
+ * hex characters. Used to namespace storage keys; not a security boundary.
+ */
+export function shortHash(input: string): string {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i)
+    // 32-bit FNV prime multiplication without losing precision.
+    hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0
+  }
+  return hash.toString(16).padStart(8, '0')
+}
+
+/**
+ * Default key under which `supabase.auth` persists its session for a project
+ * URL: `sb-<hash>-auth-token`, where `<hash>` is {@link shortHash} of the URL
+ * origin (scheme, host and port; the path is ignored). Two projects only share a
+ * key when they share an origin.
+ *
+ * Use this from server-side code or cookie adapters (e.g. `@supabase/ssr`) that
+ * need to read the session written by a browser client created for the same URL.
+ *
+ * @example
+ * ```ts
+ * import { getDefaultStorageKey } from '@supabase/supabase-js'
+ *
+ * const key = getDefaultStorageKey('https://xyzcompany.supabase.co')
+ * // 'sb-1a2b3c4d-auth-token'
+ * ```
+ */
+export function getDefaultStorageKey(supabaseUrl: string | URL): string {
+  const baseUrl = typeof supabaseUrl === 'string' ? validateSupabaseUrl(supabaseUrl) : supabaseUrl
+  return `sb-${shortHash(baseUrl.origin)}-auth-token`
+}
+
+/**
+ * Storage key format used before {@link getDefaultStorageKey}: the first label
+ * of the hostname (the project ref on hosted Supabase). Kept only so existing
+ * sessions can be migrated to the new key; do not use for new code.
+ */
+export function getLegacyDefaultStorageKey(supabaseUrl: string | URL): string {
+  const baseUrl = typeof supabaseUrl === 'string' ? validateSupabaseUrl(supabaseUrl) : supabaseUrl
+  return `sb-${baseUrl.hostname.split('.')[0]}-auth-token`
+}
+
 let warnedTopLevelSchema = false
 
 /**
