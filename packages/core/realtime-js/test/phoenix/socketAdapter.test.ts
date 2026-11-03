@@ -62,3 +62,14 @@ describe('connection state', () => {
     expect(socketAdapter.isDisconnecting()).toBe(true)
   })
 })
+
+describe('disconnect timer cleanup', () => {
+  test('does not leave the race timeout pending after a successful disconnect', async () => {
+    testSetup.connect()
+    await testSetup.socketConnected()
+
+    await socketAdapter.disconnect(() => {})
+
+    expect(vi.getTimerCount()).toBe(0)
+  })
+})
