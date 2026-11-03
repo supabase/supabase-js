@@ -79,6 +79,15 @@ export type RealtimeClientOptions = {
   fetch?: Fetch
   worker?: boolean
   workerUrl?: string
+  /**
+   * Callback returning a fresh token for channel subscription authorization and Realtime RLS.
+   *
+   * Called on connect and on every heartbeat (`heartbeatIntervalMs`, default 25000ms).
+   * The token must stay valid past the next call, or the server closes the channel at
+   * expiry with no automatic resubscribe. So, plan for some call time and overhead,
+   * i.e. if hearbeats happen every 25 seconds and your token is still valid for 27
+   * seconds it's probably safer to refresh right now rather than risk a race condition.
+   */
   accessToken?: () => Promise<string | null>
   disconnectOnEmptyChannelsAfterMs?: number
   /**
@@ -226,6 +235,7 @@ export default class RealtimeClient {
 
   private _manuallySetToken: boolean = false
   private _authPromise: Promise<void> | null = null
+  private _authGeneration: number = 0
   private _workerHeartbeatTimer: HeartbeatTimer = undefined
   private _pendingWorkerHeartbeatRef: string | null = null
   private _pendingDisconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -405,6 +415,15 @@ export default class RealtimeClient {
   }
 
   /**
+   * Returns true if a custom `logger` has been configured on this client.
+   *
+   * @category Realtime
+   */
+  hasLogger(): boolean {
+    return this.socketAdapter.hasLogger()
+  }
+
+  /**
    * Returns the current state of the socket.
    *
    * @category Realtime
@@ -482,14 +501,22 @@ export default class RealtimeClient {
    *
    * On callback used, it will set the value of the token internal to the client.
    *
-   * When a token is explicitly provided, it will be preserved across channel operations
-   * (including removeChannel and resubscribe). The `accessToken` callback will not be
-   * invoked until `setAuth()` is called without arguments.
+   * When a token is explicitly provided AND no `accessToken` callback is configured,
+   * it will be preserved across channel operations (including removeChannel and
+   * resubscribe) and the client stays in manual-token mode.
+   *
+   * When an `accessToken` callback IS configured, the callback is the source of truth:
+   * the client remains in callback mode and continues to refresh from it on heartbeat,
+   * even after a bootstrap/override `setAuth(token)` call.
+   *
+   * The callback is called on connect and on every heartbeat (`heartbeatIntervalMs`,
+   * default 25000ms). Its token must stay valid past the next call, or the server closes
+   * the channel at expiry with no automatic resubscribe.
    *
    * @param token A JWT string to override the token set on the client.
    *
    * @example Setting the authorization header
-   * // Use a manual token (preserved across resubscribes, ignores accessToken callback)
+   * // Use a manual token (preserved across resubscribes when no accessToken callback is set)
    * client.realtime.setAuth('my-custom-jwt')
    *
    * // Switch back to using the accessToken callback
@@ -498,11 +525,17 @@ export default class RealtimeClient {
    * @category Realtime
    */
   async setAuth(token: string | null = null): Promise<void> {
-    this._authPromise = this._performAuth(token)
+    const authGeneration = ++this._authGeneration
+    const authPromise = this._performAuth(token, authGeneration)
+    if (authGeneration === this._authGeneration) {
+      this._authPromise = authPromise
+    }
     try {
-      await this._authPromise
+      await authPromise
     } finally {
-      this._authPromise = null
+      if (this._authPromise === authPromise) {
+        this._authPromise = null
+      }
     }
   }
 
@@ -604,7 +637,7 @@ export default class RealtimeClient {
    * Perform the actual auth operation
    * @internal
    */
-  private async _performAuth(token: string | null = null): Promise<void> {
+  private async _performAuth(token: string | null, authGeneration: number): Promise<void> {
     let tokenToSend: string | null
     let isManualToken = false
 
@@ -625,12 +658,16 @@ export default class RealtimeClient {
       tokenToSend = this.accessTokenValue
     }
 
-    // Track whether this token was manually set or fetched via callback
-    if (isManualToken) {
-      this._manuallySetToken = true
-    } else if (this.accessToken) {
-      // If we used the callback, clear the manual flag
+    if (authGeneration !== this._authGeneration) {
+      return
+    }
+
+    // Track whether this token was manually set or fetched via callback.
+    // The callback is the source of truth for token refresh
+    if (this.accessToken) {
       this._manuallySetToken = false
+    } else if (isManualToken) {
+      this._manuallySetToken = true
     }
 
     if (this.accessTokenValue != tokenToSend) {
@@ -641,7 +678,7 @@ export default class RealtimeClient {
           version: DEFAULT_VERSION,
         }
 
-        tokenToSend && channel.updateJoinPayload(payload)
+        channel.updateJoinPayload(payload)
 
         if (channel.joinedOnce && channel.channelAdapter.isJoined()) {
           channel.channelAdapter.push(CHANNEL_EVENTS.access_token, {

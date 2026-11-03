@@ -1,10 +1,5 @@
-import {
-  StorageApiError,
-  StorageError,
-  StorageUnknownError,
-  isStorageError,
-} from '../lib/common/errors'
-import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
+import { StorageApiError, StorageError } from '../lib/common/errors'
+import { get, post, put, remove, Fetch } from '../lib/common/fetch'
 import { setHeader } from '../lib/common/headers'
 import { encodeStoragePath, recursiveToCamel } from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
@@ -15,11 +10,13 @@ import {
   FetchParameters,
   TransformOptions,
   DestinationOptions,
+  CopyOptions,
   FileObjectV2,
   Camelize,
   SearchV2Options,
   SearchV2Result,
   PurgeCacheOptions,
+  DeleteObjectEntry,
 } from '../lib/types'
 import BlobDownloadBuilder from './BlobDownloadBuilder'
 
@@ -36,6 +33,13 @@ const DEFAULT_FILE_OPTIONS: FileOptions = {
   cacheControl: '3600',
   contentType: 'text/plain;charset=UTF-8',
   upsert: false,
+}
+
+function mergeFileOptions(fileOptions?: FileOptions): FileOptions {
+  const definedOptions = Object.fromEntries(
+    Object.entries(fileOptions ?? {}).filter(([, value]) => value !== undefined)
+  )
+  return { ...DEFAULT_FILE_OPTIONS, ...definedOptions }
 }
 
 type FileBody =
@@ -87,7 +91,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   > {
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      const options = mergeFileOptions(fileOptions)
       let headers: Record<string, string> = {
         ...this.headers,
         ...(method === 'POST' && { 'x-upsert': String(options.upsert as boolean) }),
@@ -95,26 +99,19 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       const metadata = options.metadata
 
-      if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
-        body = new FormData()
-        body.append('cacheControl', options.cacheControl as string)
-        if (metadata) {
-          body.append('metadata', this.encodeMetadata(metadata))
-        }
-        body.append('', fileBody)
-      } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
-        body = fileBody
-        // Only append if not already present
-        if (!body.has('cacheControl')) {
-          body.append('cacheControl', options.cacheControl as string)
-        }
-        if (metadata && !body.has('metadata')) {
-          body.append('metadata', this.encodeMetadata(metadata))
-        }
+      if (
+        (typeof Blob !== 'undefined' && fileBody instanceof Blob) ||
+        (typeof FormData !== 'undefined' && fileBody instanceof FormData)
+      ) {
+        body = this.prepareUploadFormData(fileBody, options)
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+
+        if (options.contentEncoding) {
+          headers['content-encoding'] = options.contentEncoding
+        }
 
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
@@ -157,7 +154,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @subcategory File Buckets
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions Optional file upload options including cacheControl, contentType, upsert, and metadata.
+   * @param fileOptions Optional file upload options including cacheControl, contentType, contentEncoding, upsert, and metadata.
    * @returns Promise with response containing file path, id, and fullPath or error
    *
    * @example Upload file
@@ -242,7 +239,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param token The token generated from `createSignedUploadUrl`
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions HTTP headers (cacheControl, contentType, etc.).
+   * @param fileOptions HTTP headers (cacheControl, contentType, contentEncoding, etc.).
    * **Note:** The `upsert` option has no effect here. To enable upsert behavior,
    * pass `{ upsert: true }` when calling `createSignedUploadUrl()` instead.
    * @returns Promise with response containing file path and fullPath or error
@@ -286,7 +283,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      const options = mergeFileOptions(fileOptions)
       let headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
@@ -294,25 +291,19 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       const metadata = options.metadata
 
-      if (typeof Blob !== 'undefined' && fileBody instanceof Blob) {
-        body = new FormData()
-        body.append('cacheControl', options.cacheControl as string)
-        if (metadata) {
-          body.append('metadata', this.encodeMetadata(metadata))
-        }
-        body.append('', fileBody)
-      } else if (typeof FormData !== 'undefined' && fileBody instanceof FormData) {
-        body = fileBody
-        if (!body.has('cacheControl')) {
-          body.append('cacheControl', options.cacheControl as string)
-        }
-        if (metadata && !body.has('metadata')) {
-          body.append('metadata', this.encodeMetadata(metadata))
-        }
+      if (
+        (typeof Blob !== 'undefined' && fileBody instanceof Blob) ||
+        (typeof FormData !== 'undefined' && fileBody instanceof FormData)
+      ) {
+        body = this.prepareUploadFormData(fileBody, options)
       } else {
         body = fileBody
         headers['cache-control'] = `max-age=${options.cacheControl}`
         headers['content-type'] = options.contentType as string
+        if (options.contentEncoding) {
+          headers['content-encoding'] = options.contentEncoding
+        }
+
         if (metadata) {
           headers['x-metadata'] = this.toBase64(this.encodeMetadata(metadata))
         }
@@ -426,7 +417,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @subcategory File Buckets
    * @param path The relative file path. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to update.
    * @param fileBody The body of the file to be stored in the bucket.
-   * @param fileOptions Optional file upload options including cacheControl, contentType, and metadata.
+   * @param fileOptions Optional file upload options including cacheControl, contentType, contentEncoding, and metadata.
    * **Note:** The `upsert` option has no effect here. `update()` always replaces the
    * file at the given path, so the `x-upsert` header is not sent. To control upsert
    * behavior, use `upload()` instead.
@@ -509,6 +500,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
    * @param options The destination options.
+   * @param options.sourceVersionId The version id of the source object to move.
    * @returns Promise with response containing success message or error
    *
    * @example Move file
@@ -558,6 +550,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
           sourceKey: fromPath,
           destinationKey: toPath,
           destinationBucket: options?.destinationBucket,
+          sourceVersionId: options?.sourceVersionId,
         },
         { headers: this.headers }
       )
@@ -571,7 +564,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @subcategory File Buckets
    * @param fromPath The original file path, including the current file name. For example `folder/image.png`.
    * @param toPath The new file path, including the new file name. For example `folder/image-copy.png`.
-   * @param options The destination options.
+   * @param options The destination and metadata options.
+   * @param options.sourceVersionId The version id of the source object to copy.
+   * @param options.copyMetadata Whether to copy the source metadata. Defaults to true. Set to false to apply metadata overrides; custom user metadata is not copied when false.
+   * @param options.metadata File metadata overrides, applied only when copyMetadata is false. Unspecified fields retain their source values.
    * @returns Promise with response containing copied file path or error
    *
    * @example Copy file
@@ -592,6 +588,18 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * }
    * ```
    *
+   * @example Copy file with content encoding
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('documents')
+   *   .copy('source.txt.gz', 'copy.txt.gz', {
+   *     copyMetadata: false,
+   *     metadata: { contentEncoding: 'gzip' },
+   *   })
+   * ```
+   * The source must already contain gzip-encoded bytes. Copying changes metadata only.
+   *
    * @remarks
    * - RLS policy permissions required:
    *   - `buckets` table permissions: none
@@ -601,7 +609,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   async copy(
     fromPath: string,
     toPath: string,
-    options?: DestinationOptions
+    options?: CopyOptions | DestinationOptions
   ): Promise<
     | {
         data: { path: string }
@@ -613,6 +621,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
+      const copyOptions = options as CopyOptions | undefined
       const data = await post(
         this.fetch,
         `${this.url}/object/copy`,
@@ -621,6 +630,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
           sourceKey: fromPath,
           destinationKey: toPath,
           destinationBucket: options?.destinationBucket,
+          sourceVersionId: options?.sourceVersionId,
+          copyMetadata:
+            typeof copyOptions?.copyMetadata === 'boolean' ? copyOptions.copyMetadata : undefined,
+          metadata: copyOptions?.copyMetadata === false ? copyOptions.metadata : undefined,
         },
         { headers: this.headers }
       )
@@ -638,6 +651,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param options.download triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
    * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @param options.versionId Create a signed URL for a specific object version rather than the current one.
    * @returns Promise with response containing signed URL or error
    *
    * @example Create Signed URL
@@ -694,6 +708,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       download?: string | boolean
       transform?: TransformOptions
       cacheNonce?: string
+      versionId?: string
     }
   ): Promise<
     | {
@@ -716,7 +731,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       let data = await post(
         this.fetch,
         `${this.url}/object/sign/${_path}`,
-        { expiresIn, ...(hasTransform ? { transform: options!.transform } : {}) },
+        {
+          expiresIn,
+          ...(hasTransform ? { transform: options!.transform } : {}),
+          ...(options?.versionId != null ? { versionId: options.versionId } : {}),
+        },
         { headers: this.headers }
       )
 
@@ -788,7 +807,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: { download?: string | boolean; cacheNonce?: string }
   ): Promise<
     | {
-        data: { error: string | null; path: string | null; signedUrl: string | null }[]
+        data: {
+          error: string | null
+          path: string | null
+          signedURL: string | null
+          signedUrl: string | null
+        }[]
         error: null
       }
     | {
@@ -812,12 +836,14 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       const queryString = query.toString()
 
-      return data.map((datum: { signedURL: string }) => ({
-        ...datum,
-        signedUrl: datum.signedURL
-          ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
-          : null,
-      }))
+      return data.map(
+        (datum: { error: string | null; path: string | null; signedURL: string | null }) => ({
+          ...datum,
+          signedUrl: datum.signedURL
+            ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
+            : null,
+        })
+      )
     })
   }
 
@@ -827,7 +853,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @category Storage
    * @subcategory File Buckets
    * @param path The full path and file name of the file to be downloaded. For example `folder/image.png`.
-   * @param options Optional settings: `transform` to transform the asset before serving it to the client, and `cacheNonce` to append a cache nonce parameter to the URL to invalidate the cache.
+   * @param options Optional settings: `transform` to transform the asset before serving it to the client, `cacheNonce` to append a cache nonce parameter to the URL to invalidate the cache, and `versionId` to download a specific object version.
    * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns BlobDownloadBuilder instance for downloading the file
    *
@@ -886,11 +912,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   - `objects` table permissions: `select`
    * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
-  download<Options extends { transform?: TransformOptions; cacheNonce?: string }>(
-    path: string,
-    options?: Options,
-    parameters?: FetchParameters
-  ): BlobDownloadBuilder {
+  download<
+    Options extends { transform?: TransformOptions; cacheNonce?: string; versionId?: string },
+  >(path: string, options?: Options, parameters?: FetchParameters): BlobDownloadBuilder {
     const wantsTransformation =
       typeof options?.transform === 'object' &&
       options.transform !== null &&
@@ -900,6 +924,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     const query = new URLSearchParams()
     if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
     if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+    if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
 
     const _path = this._getFinalPath(path)
@@ -925,6 +950,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @category Storage
    * @subcategory File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
+   * @param options Optional settings, including `versionId` to retrieve a specific object version.
    * @returns Promise with response containing file metadata or error
    *
    * @example Get file info
@@ -940,7 +966,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * }
    * ```
    */
-  async info(path: string): Promise<
+  async info(
+    path: string,
+    options?: { versionId?: string }
+  ): Promise<
     | {
         data: Camelize<FileObjectV2>
         error: null
@@ -951,11 +980,18 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     const _path = this._getFinalPath(path)
+    const query = new URLSearchParams()
+    if (options?.versionId != null) query.set('versionId', String(options.versionId))
+    const queryString = query.toString()
 
     return this.handleOperation(async () => {
-      const data = await get(this.fetch, `${this.url}/object/info/${_path}`, {
-        headers: this.headers,
-      })
+      const data = await get(
+        this.fetch,
+        `${this.url}/object/info/${_path}${queryString ? `?${queryString}` : ''}`,
+        {
+          headers: this.headers,
+        }
+      )
 
       return recursiveToCamel(data) as Camelize<FileObjectV2>
     })
@@ -963,6 +999,14 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
   /**
    * Checks the existence of a file.
+   *
+   * This reads the object's metadata, so the result is `false` only when Storage reports that the
+   * key does not exist: an error with code `NoSuchKey`, or an HTTP 404 with no error code. In that
+   * case `data` is `false` and `error` holds the original error.
+   *
+   * Every other failure throws instead of returning `false`, including an invalid or expired JWT
+   * (`InvalidJWT`), a missing bucket (`NoSuchBucket`) and network errors. With `throwOnError()`,
+   * a missing key throws as well.
    *
    * @category Storage
    * @subcategory File Buckets
@@ -987,34 +1031,22 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    const _path = this._getFinalPath(path)
+    // Reads the object info rather than sending a HEAD request: a HEAD response has no body,
+    // so an invalid JWT or a missing bucket cannot be told apart from a missing object.
+    const { error } = await this.info(path)
 
-    try {
-      await head(this.fetch, `${this.url}/object/${_path}`, {
-        headers: this.headers,
-      })
-
+    if (!error) {
       return { data: true, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        // HEAD requests produce StorageApiError (via handleError) or StorageUnknownError (legacy)
-        const status =
-          error instanceof StorageApiError
-            ? error.status
-            : error instanceof StorageUnknownError
-              ? (error.originalError as { status: number })?.status
-              : undefined
-
-        if (status !== undefined && [400, 404].includes(status)) {
-          return { data: false, error }
-        }
-      }
-
-      throw error
     }
+
+    if (
+      error instanceof StorageApiError &&
+      (error.code === 'NoSuchKey' || (error.status === 404 && error.code === undefined))
+    ) {
+      return { data: false, error }
+    }
+
+    throw error
   }
 
   /**
@@ -1027,6 +1059,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param options.download Triggers the file as a download if set to true. Set this parameter as the name of the file if you want to trigger the download with a different filename.
    * @param options.transform Transform the asset before serving it to the client.
    * @param options.cacheNonce Append a cache nonce parameter to the URL to invalidate the cache.
+   * @param options.versionId Return the URL for a specific object version rather than the current one.
    * @returns Object with public URL
    *
    * @example Returns the URL for an asset in a public bucket
@@ -1082,6 +1115,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       download?: string | boolean
       transform?: TransformOptions
       cacheNonce?: string
+      versionId?: string
     }
   ): { data: { publicUrl: string } } {
     const _path = this._getFinalPath(path)
@@ -1090,6 +1124,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     if (options?.download) query.set('download', options.download === true ? '' : options.download)
     if (options?.transform) this.applyTransformOptsToQuery(query, options.transform)
     if (options?.cacheNonce != null) query.set('cacheNonce', String(options.cacheNonce))
+    if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
 
     const wantsTransformation =
@@ -1115,7 +1150,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *
    * @category Storage
    * @subcategory File Buckets
-   * @param paths An array of files to delete, including the path and file name. For example [`'folder/image.png'`].
+   * @param paths An array of files to delete. Each entry is either a path (deletes whichever
+   * version is currently at that path, e.g. `'folder/image.png'`), or `{ path, versionId }` to
+   * delete an exact version current or archived (e.g. `{ path: 'folder/image.png', versionId: '...' }`).
    * @returns Promise with response containing array of deleted file objects or error
    *
    * @example Delete file
@@ -1134,13 +1171,21 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * }
    * ```
    *
+   * @example Delete a specific object version
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .remove([{ path: 'folder/avatar1.png', versionId: 'noncurrent-version-id' }])
+   * ```
+   *
    * @remarks
    * - RLS policy permissions required:
    *   - `buckets` table permissions: none
    *   - `objects` table permissions: `delete` and `select`
    * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
    */
-  async remove(paths: string[]): Promise<
+  async remove(paths: DeleteObjectEntry[]): Promise<
     | {
         data: FileObject[]
         error: null
@@ -1479,6 +1524,38 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         parameters
       )
     })
+  }
+
+  private prepareUploadFormData(fileBody: Blob | FormData, options: FileOptions): FormData {
+    const body = new FormData()
+    const files: [string, Blob][] = []
+
+    // Storage reads metadata before consuming the file stream.
+    if (fileBody instanceof FormData) {
+      fileBody.forEach((value, name) => {
+        if (typeof value === 'string') {
+          body.append(name, value)
+        } else {
+          files.push([name, value])
+        }
+      })
+    } else {
+      files.push(['', fileBody])
+    }
+
+    if (!body.has('cacheControl')) {
+      body.append('cacheControl', options.cacheControl as string)
+    }
+    if (options.metadata && !body.has('metadata')) {
+      body.append('metadata', this.encodeMetadata(options.metadata))
+    }
+    if (options.contentEncoding && !body.has('contentEncoding')) {
+      body.append('contentEncoding', options.contentEncoding)
+    }
+    for (const [name, file] of files) {
+      body.append(name, file)
+    }
+    return body
   }
 
   protected encodeMetadata(metadata: Record<string, any>) {

@@ -86,10 +86,16 @@ export type GetRpcFunctionFilterBuilderByArgs<
   1: IsAny<Schema> extends true
     ? any
     : IsNever<Args> extends true
-      ? // This is for retro compatibility, if the funcition is defined with an single return and an union of Args
-        // we fallback to the last function definition matched by name
+      ? // Generated types spell a zero-argument definition either `Args: never` or
+        // `Args: Record<PropertyKey, never>`, so both are matched before falling back to the last
+        // function definition matched by name, which is for retro compatibility with a single
+        // return and an union of Args
         IsNever<ExtractExactFunction<Schema['Functions'][FnName], Args>> extends true
-        ? LastOf<Schema['Functions'][FnName]>
+        ? IsNever<
+            ExtractExactFunction<Schema['Functions'][FnName], Record<PropertyKey, never>>
+          > extends true
+          ? LastOf<Schema['Functions'][FnName]>
+          : ExtractExactFunction<Schema['Functions'][FnName], Record<PropertyKey, never>>
         : ExtractExactFunction<Schema['Functions'][FnName], Args>
       : Args extends Record<PropertyKey, never>
         ? LastOf<Schema['Functions'][FnName]>

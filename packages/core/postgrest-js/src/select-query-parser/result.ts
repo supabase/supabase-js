@@ -383,6 +383,7 @@ export type ProcessEmbeddedResource<
         }
       : Resolved extends {
             referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
+            relationName: string
             relation: GenericRelationship & { match: 'refrel' | 'col' | 'fkname' | 'func' }
             direction: string
           }
@@ -412,6 +413,7 @@ type ProcessEmbeddedResourceResult<
   Schema extends GenericSchema,
   Resolved extends {
     referencedTable: Pick<GenericTable, 'Row' | 'Relationships'>
+    relationName: string
     relation: GenericRelationship & {
       match: 'refrel' | 'col' | 'fkname' | 'func'
       isNotNullable?: boolean
@@ -427,11 +429,9 @@ type ProcessEmbeddedResourceResult<
     ClientOptions,
     Schema,
     Resolved['referencedTable']['Row'],
-    // For embeded function selection, the source of truth is the 'referencedRelation'
-    // coming from the SetofOptions.to parameter
-    Resolved['relation']['match'] extends 'func'
-      ? Resolved['relation']['referencedRelation']
-      : Field['name'],
+    // The embedded relation's own name, which differs from the field name when the embed
+    // goes through a column or foreign key name (`username(*)`) or an embedded function
+    Resolved['relationName'],
     Resolved['referencedTable']['Relationships'],
     Field['children'] extends undefined
       ? []

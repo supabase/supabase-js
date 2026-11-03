@@ -1,3 +1,65 @@
+## 2.118.0 (2026-10-15)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.117.3 (2026-10-07)
+
+### 🩹 Fixes
+
+- **functions:** send a Blob or File with its own content type ([#2714](https://github.com/supabase/supabase-js/pull/2714))
+
+### ❤️ Thank You
+
+- Bruno Gale @fresh55
+
+## 2.117.2 (2026-09-25)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.117.1 (2026-09-23)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.117.0 (2026-09-22)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.116.0 (2026-09-07)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.115.0 (2026-09-03)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.114.0 (2026-09-02)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.113.0 (2026-09-02)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.112.4 (2026-08-24)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.112.3 (2026-08-11)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.112.2 (2026-08-06)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.112.1 (2026-08-05)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
+## 2.112.0 (2026-08-03)
+
+This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.
+
 ## 2.111.0 (2026-07-28)
 
 This was a version bump only for @supabase/functions-js to align it with other projects, there were no code changes.

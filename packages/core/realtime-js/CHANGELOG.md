@@ -1,3 +1,85 @@
+## 2.118.0 (2026-10-15)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.117.3 (2026-10-07)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.117.2 (2026-09-25)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.117.1 (2026-09-23)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.117.0 (2026-09-22)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.116.0 (2026-09-07)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.115.0 (2026-09-03)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.114.0 (2026-09-02)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.113.0 (2026-09-02)
+
+### 🚀 Features
+
+- **realtime:** allow wait for pg changes ([#2630](https://github.com/supabase/supabase-js/pull/2630))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+
+## 2.112.4 (2026-08-24)
+
+### 🩹 Fixes
+
+- **realtime:** respect custom logger for send() REST fallback warning ([#2612](https://github.com/supabase/supabase-js/pull/2612))
+
+### ❤️ Thank You
+
+- Katerina Skroumpelou @mandarini
+
+## 2.112.3 (2026-08-11)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
+## 2.112.2 (2026-08-06)
+
+### 🩹 Fixes
+
+- **realtime:** clear stale join payload on sign-out ([#2597](https://github.com/supabase/supabase-js/pull/2597))
+- **realtime:** prevent duplicate on bindings ([#2594](https://github.com/supabase/supabase-js/pull/2594))
+
+### ❤️ Thank You
+
+- Filipe Cabaço @filipecabaco
+- Vaibhav @7ttp
+
+## 2.112.1 (2026-08-05)
+
+### 🩹 Fixes
+
+- **realtime:** ensure setAuth doesn't disable token refresh ([#2592](https://github.com/supabase/supabase-js/pull/2592))
+
+### ❤️ Thank You
+
+- Eduardo Gurgel
+
+## 2.112.0 (2026-08-03)
+
+This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.
+
 ## 2.111.0 (2026-07-28)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

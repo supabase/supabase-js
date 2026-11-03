@@ -583,4 +583,22 @@ describe('body stringify with custom headers', () => {
       })
     )
   })
+
+  test('uses the type of a Blob body as the Content-Type', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+
+    await client.invoke('test-fn', { body: new Blob(['x'], { type: 'image/png' }) })
+
+    expect(effectiveContentTypes(mockFetch)).toEqual(['image/png'])
+  })
+
+  test('falls back to application/octet-stream for an ArrayBuffer body', async () => {
+    const mockFetch = jest.fn().mockResolvedValue(new Response('ok'))
+    const client = new FunctionsClient('http://localhost', { customFetch: mockFetch })
+
+    await client.invoke('test-fn', { body: new ArrayBuffer(1) })
+
+    expect(effectiveContentTypes(mockFetch)).toEqual(['application/octet-stream'])
+  })
 })

@@ -79,6 +79,28 @@ describe('Common Errors', () => {
         statusCode: 'InternalError',
       })
     })
+
+    it('should expose the service error code when provided', () => {
+      const error = new StorageApiError('Object not found', 404, '404', 'storage', 'NoSuchKey')
+      expect(error.code).toBe('NoSuchKey')
+      expect(error.statusCode).toBe('404')
+    })
+
+    it('should leave code undefined when not provided', () => {
+      const error = new StorageApiError('API error', 404, 'NotFound')
+      expect(error.code).toBeUndefined()
+    })
+
+    it('should include code in JSON when present', () => {
+      const error = new StorageApiError('Access denied', 403, '403', 'storage', 'AccessDenied')
+      expect(error.toJSON()).toEqual({
+        name: 'StorageApiError',
+        message: 'Access denied',
+        status: 403,
+        statusCode: '403',
+        code: 'AccessDenied',
+      })
+    })
   })
 
   describe('StorageUnknownError', () => {

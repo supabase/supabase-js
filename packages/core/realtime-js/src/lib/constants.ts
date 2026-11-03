@@ -19,6 +19,15 @@ export const VERSION = version
 
 export const DEFAULT_TIMEOUT = 10000
 
+/** Mirrors the Realtime server's own default for `postgres_changes_options.timeout`. */
+export const DEFAULT_POSTGRES_CHANGES_WAIT_TIMEOUT = 15000
+
+/**
+ * Headroom added to the join timeout when waiting on postgres_changes, covering the
+ * CHANNEL_ERROR_BACKOFF_MS sleep (5s by default) the server takes before rejecting a join.
+ */
+export const POSTGRES_CHANGES_WAIT_ERROR_GRACE = 10000
+
 export const WS_CLOSE_NORMAL = 1000
 export const MAX_PUSH_BUFFER_SIZE = 100
 

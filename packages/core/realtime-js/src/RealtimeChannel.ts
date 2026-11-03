@@ -1,4 +1,9 @@
-import { CHANNEL_EVENTS, CHANNEL_STATES } from './lib/constants'
+import {
+  CHANNEL_EVENTS,
+  CHANNEL_STATES,
+  DEFAULT_POSTGRES_CHANGES_WAIT_TIMEOUT,
+  POSTGRES_CHANGES_WAIT_ERROR_GRACE,
+} from './lib/constants'
 import type { ChannelState } from './lib/constants'
 import type RealtimeClient from './RealtimeClient'
 import RealtimePresence, { REALTIME_PRESENCE_LISTEN_EVENTS } from './RealtimePresence'
@@ -65,6 +70,34 @@ export type RealtimeChannelOptions = {
      * defines if the channel is private or not and if RLS policies will be used to check data
      */
     private?: boolean
+    /**
+     * By default, `subscribe()` reports `SUBSCRIBED` as soon as the channel itself has joined,
+     * which can happen before the server has actually established the `postgres_changes`
+     * subscription (e.g. before the replication slot is streaming). Set `wait: true` to instead
+     * hold the `SUBSCRIBED` callback until the server confirms the postgres_changes subscription
+     * is active.
+     *
+     * If the subscription cannot be established, the server rejects the join and `subscribe()`
+     * reports `CHANNEL_ERROR` with the server's reason (e.g.
+     * `PostgresChangesSubscribeTimeout: ...` when the wait ran out, or
+     * `RealtimeDisabledForConfiguration: ...` when the table is not enabled for Realtime).
+     *
+     * Has no effect on a channel with no `postgres_changes` bindings.
+     *
+     * Setting `wait: true` automatically extends the channel's join timeout so it outlasts the
+     * server's held reply, so you don't need to pass a larger `timeout` to `subscribe()` yourself.
+     * As a side effect of how Phoenix tracks the join timeout, other pushes on the channel that
+     * do not pass an explicit timeout inherit the extended value too.
+     */
+    postgres_changes_options?: {
+      wait?: boolean
+      /**
+       * Milliseconds the server should wait for postgres_changes subscription confirmation when
+       * `wait` is `true`. Defaults to 15000, and the server clamps it to its own configured
+       * maximum (20s by default), so asking for more waits less.
+       */
+      timeout?: number
+    }
   }
 }
 
@@ -245,6 +278,18 @@ type PostgresChangesFilters = {
   }[]
 }
 
+/**
+ * The `postgres_changes` filter fields that determine whether the server collapses two
+ * subscriptions into one. `filter` is always the serialized string form by the time it is compared.
+ */
+type PostgresChangesFilterShape = {
+  event?: string
+  schema?: string
+  table?: string
+  filter?: string
+  select?: string[]
+}
+
 type Binding = {
   type: string
   filter: { [key: string]: any }
@@ -383,7 +428,7 @@ export default class RealtimeChannel {
     }
     if (this.channelAdapter.isClosed()) {
       const {
-        config: { broadcast, presence, private: isPrivate },
+        config: { broadcast, presence, private: isPrivate, postgres_changes_options },
       } = this.params
 
       const postgres_changes = this.bindings.postgres_changes?.map((r) => r.filter) ?? []
@@ -398,6 +443,7 @@ export default class RealtimeChannel {
         presence: { ...presence, enabled: presence_enabled },
         postgres_changes,
         private: isPrivate,
+        ...(postgres_changes_options ? { postgres_changes_options } : {}),
       }
 
       if (this.socket.accessTokenValue) {
@@ -414,8 +460,17 @@ export default class RealtimeChannel {
 
       this._updateFilterMessage()
 
+      const joinTimeout =
+        postgres_changes_options?.wait && postgres_changes.length > 0
+          ? Math.max(
+              timeout,
+              (postgres_changes_options.timeout ?? DEFAULT_POSTGRES_CHANGES_WAIT_TIMEOUT) +
+                POSTGRES_CHANGES_WAIT_ERROR_GRACE
+            )
+          : timeout
+
       this.channelAdapter
-        .subscribe(timeout)
+        .subscribe(joinTimeout)
         .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
           // Only refresh auth if using callback-based tokens
           if (!this.socket._isManualToken()) {
@@ -759,6 +814,10 @@ export default class RealtimeChannel {
    *   })
    * ```
    *
+   * Registering the same `postgres_changes` filter more than once on a channel is a no-op: the
+   * duplicate is ignored and an error is logged, since the server only ever creates one
+   * subscription per distinct filter.
+   *
    * @example Listen to all database changes
    * ```js
    * supabase
@@ -1001,11 +1060,16 @@ export default class RealtimeChannel {
     opts: { [key: string]: any } = {}
   ): Promise<RealtimeChannelSendResponse> {
     if (!this.channelAdapter.canPush() && args.type === 'broadcast') {
-      console.warn(
+      const fallbackWarning =
         'Realtime send() is automatically falling back to REST API. ' +
-          'This behavior will be deprecated in the future. ' +
-          'Please use httpSend() explicitly for REST delivery.'
-      )
+        'This behavior will be deprecated in the future. ' +
+        'Please use httpSend() explicitly for REST delivery.'
+
+      if (this.socket.hasLogger()) {
+        this.socket.log('channel', fallbackWarning)
+      } else {
+        console.warn(fallbackWarning)
+      }
 
       const { event, payload: endpoint_payload } = args
       const headers: Record<string, string> = {
@@ -1136,6 +1200,23 @@ export default class RealtimeChannel {
       filter = { ...filter, filter: (filterValue as RealtimePostgresFilterBuilder).build() }
     }
 
+    // The server collapses identical postgres_changes filters, so keeping a duplicate here would
+    // desync the client and server binding lists and make `subscribe()` fail with a mismatch.
+    if (typeLower === REALTIME_LISTEN_TYPES.POSTGRES_CHANGES) {
+      const duplicate = this.bindings[typeLower]?.find((bind) =>
+        RealtimeChannel.isSamePostgresFilter(bind.filter, filter)
+      )
+
+      if (duplicate) {
+        this.socket.log(
+          'error',
+          `duplicate \`postgres_changes\` binding for ${this.topic} ignored`,
+          filter
+        )
+        return this
+      }
+    }
+
     const ref = this.channelAdapter.on(type, callback)
 
     const binding: Binding = {
@@ -1264,6 +1345,27 @@ export default class RealtimeChannel {
     const normalizedServer = serverValue ?? undefined
     const normalizedClient = clientValue ?? undefined
     return normalizedServer === normalizedClient
+  }
+
+  /**
+   * Two `postgres_changes` filters are the same when the server would collapse them into a single
+   * subscription.
+   * @internal
+   */
+  private static isSamePostgresFilter(
+    a: PostgresChangesFilterShape,
+    b: PostgresChangesFilterShape
+  ): boolean {
+    const selectA = a?.select?.join() ?? undefined
+    const selectB = b?.select?.join() ?? undefined
+
+    return (
+      a?.event === b?.event &&
+      RealtimeChannel.isFilterValueEqual(a?.schema, b?.schema) &&
+      RealtimeChannel.isFilterValueEqual(a?.table, b?.table) &&
+      RealtimeChannel.isFilterValueEqual(a?.filter, b?.filter) &&
+      selectA === selectB
+    )
   }
 
   /** @internal */

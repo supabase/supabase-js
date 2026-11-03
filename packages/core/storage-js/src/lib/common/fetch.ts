@@ -76,7 +76,9 @@ const handleError = async (
       .then(
         (err: { statusCode?: string; code?: string; error?: string; message?: string } | null) => {
           const statusCode = err?.statusCode || err?.code || status + ''
-          reject(new StorageApiError(_getErrorMessage(err), status, statusCode, namespace))
+          reject(
+            new StorageApiError(_getErrorMessage(err), status, statusCode, namespace, err?.code)
+          )
         }
       )
       .catch(() => {

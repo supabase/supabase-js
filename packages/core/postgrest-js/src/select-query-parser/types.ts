@@ -103,12 +103,23 @@ export type LastOf<T> =
 
 export type Push<T extends any[], V> = [...T, V]
 
-// Converts a union type to a tuple type
-export type UnionToTuple<T, L = LastOf<T>, N = [T] extends [never] ? true : false> = N extends true
-  ? []
-  : Push<UnionToTuple<Exclude<T, L>>, L>
+// Accumulate in reverse extraction order so large relationship unions can use
+// tail recursion without changing the resulting tuple order.
+export type UnionToTuple<
+  T,
+  L = LastOf<T>,
+  N = [T] extends [never] ? true : false,
+  Acc extends unknown[] = [],
+> = N extends true
+  ? Acc
+  : UnionToTuple<
+      Exclude<T, L>,
+      LastOf<Exclude<T, L>>,
+      [Exclude<T, L>] extends [never] ? true : false,
+      [L, ...Acc]
+    >
 
-export type UnionToArray<T> = UnionToTuple<T>
+export type UnionToArray<T> = UnionToTuple<T> extends infer Tuple extends unknown[] ? Tuple : never
 
 // Extracts the type of the first property in an object type
 export type ExtractFirstProperty<T> = T extends { [K in keyof T]: infer U } ? U : never

@@ -37,6 +37,12 @@ features:
     status: implemented
     symbols:
       - TracePropagationOptions
+  client.observability.diagnostic_logging:
+    status: partially_implemented
+    note: Auth (`auth.debug`) and Realtime (`realtime.logger`) accept a caller-supplied logger; PostgREST, Storage and Functions have no logger option, and some warnings go to `console` without one.
+    symbols:
+      - GoTrueClientOptions
+      - RealtimeClientOptions
   client.request_configuration.custom_http_client:
     status: implemented
     symbols:
@@ -156,6 +162,33 @@ features:
     status: implemented
     symbols:
       - GoTrueMFAApi.verify
+  auth.mfa_recovery_codes.generate:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.generate
+    supporting_symbols:
+      - MFARecoveryCodesGenerateParams
+  auth.mfa_recovery_codes.get_status:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.getStatus
+    supporting_symbols:
+      - AuthMFARecoveryCodesStatusResponse
+      - AuthMFARecoveryCodesStatusResponseData
+  auth.mfa_recovery_codes.regenerate:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.regenerate
+  auth.mfa_recovery_codes.unenroll:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.unenroll
+  auth.mfa_recovery_codes.verify:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.verify
+    supporting_symbols:
+      - MFARecoveryCodesVerifyParams
   auth.oauth_admin.create_client:
     status: implemented
     symbols:
@@ -208,6 +241,18 @@ features:
     status: implemented
     symbols:
       - GoTrueClient.signInWithPasskey
+  auth.passkey.delete_passkey:
+    status: implemented
+    symbols:
+      - AuthPasskeyApi.delete
+  auth.passkey.list_passkeys:
+    status: implemented
+    symbols:
+      - AuthPasskeyApi.list
+  auth.passkey.update_passkey:
+    status: implemented
+    symbols:
+      - AuthPasskeyApi.update
   auth.passkey_admin.delete_passkey:
     status: implemented
     symbols:
@@ -267,7 +312,7 @@ features:
     status: implemented
     symbols:
       - GoTrueClient.resend
-  auth.sign_in.reset_password:
+  auth.sign_in.send_password_reset_email:
     status: implemented
     symbols:
       - GoTrueClient.resetPasswordForEmail
@@ -307,6 +352,10 @@ features:
     status: implemented
     symbols:
       - GoTrueClient.verifyOtp
+  auth.sign_in.concurrent_pkce_flows:
+    status: implemented
+    symbols:
+      - GoTrueClient.exchangeCodeForSession
 
   # database
   database.configuration.auto_retry:
@@ -318,6 +367,11 @@ features:
     status: implemented
     symbols:
       - PostgrestClientOptions
+  database.configuration.access_token:
+    status: partially_implemented
+    note: A per-request token is set with `setHeader('Authorization', 'Bearer <token>')`, which overrides the client's session token. No raw-token or callback parameter, no user-scoped derived client, and no renewal on 401.
+    symbols:
+      - PostgrestBuilder.setHeader
   database.mutate.delete:
     status: implemented
     symbols:
@@ -338,10 +392,43 @@ features:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.upsert
+  database.mutate.bulk_rows_with_differing_fields:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+      - PostgrestQueryBuilder.upsert
+  database.mutate.count:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+      - PostgrestQueryBuilder.update
+      - PostgrestQueryBuilder.upsert
+      - PostgrestQueryBuilder.delete
+  database.mutate.missing_defaults:
+    status: implemented
+    symbols:
+      - PostgrestQueryBuilder.insert
+      - PostgrestQueryBuilder.upsert
   database.query.from_table:
     status: implemented
     symbols:
       - PostgrestClient.from
+    supporting_symbols:
+      - PostgrestQueryBuilderOptions
+  database.query.openapi_spec:
+    status: implemented
+    symbols:
+      - PostgrestClient.getOpenApiSpec
+      - SupabaseClient.getOpenApiSpec
+    supporting_symbols:
+      - PostgrestOpenApiSpec
+      - PostgrestOpenApiSpec.swagger
+      - PostgrestOpenApiSpec.info
+      - PostgrestOpenApiSpec.host
+      - PostgrestOpenApiSpec.basePath
+      - PostgrestOpenApiSpec.paths
+      - PostgrestOpenApiSpec.definitions
+      - PostgrestOpenApiSpec.parameters
   database.query.rpc:
     status: implemented
     symbols:
@@ -542,11 +629,39 @@ features:
     status: implemented
     symbols:
       - default.deleteBucket
-  storage.analytics.iceberg_namespace:
+  storage.analytics.create_namespace:
     status: implemented
     symbols:
       - default.from
-  storage.analytics.iceberg_table:
+  storage.analytics.list_namespaces:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.delete_namespace:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.create_table:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.list_tables:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.load_table:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.update_table:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.rename_table:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.delete_table:
     status: implemented
     symbols:
       - default.from
@@ -554,6 +669,73 @@ features:
     status: implemented
     symbols:
       - default.listBuckets
+  storage.analytics.load_namespace_metadata:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.namespace_exists:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.register_table:
+    status: not_implemented
+  storage.analytics.table_exists:
+    status: implemented
+    symbols:
+      - default.from
+  storage.analytics.update_namespace_properties:
+    status: not_implemented
+  storage.analytics.access_catalog:
+    status: implemented
+    symbols:
+      - default.from
+  storage.configuration.auto_retry:
+    status: not_implemented
+  storage.errors.error_codes:
+    status: implemented
+    symbols:
+      - StorageApiError.code
+      - StorageVectorsApiError.code
+  storage.file_buckets.bucket_versioning_status:
+    status: implemented
+    symbols:
+      - default.createBucket
+      - default.updateBucket
+      - default.getBucket
+      - default.listBuckets
+    supporting_symbols:
+      - Bucket.versioning_status
+      - CreateSettableVersioningStatus
+      - UpdateSettableVersioningStatus
+      - VersioningStatus
+  storage.file_buckets.get_bucket_lifecycle:
+    status: implemented
+    symbols:
+      - StorageClient.getBucketLifecycle
+      - default.getBucketLifecycle
+    supporting_symbols:
+      - BucketLifecycleConfiguration
+      - BucketLifecycleConfiguration.rules
+      - LifecycleRule
+      - LifecycleRule.id
+      - LifecycleRule.status
+      - LifecycleRule.filter
+      - LifecycleRule.noncurrentVersionExpiration
+      - LifecycleRuleFilter
+      - LifecycleRuleStatus
+      - NoncurrentVersionExpiration
+      - NoncurrentVersionExpiration.noncurrentDays
+      - NoncurrentVersionExpiration.newerNoncurrentVersions
+  storage.file_buckets.update_bucket_lifecycle:
+    status: implemented
+    symbols:
+      - StorageClient.updateBucketLifecycle
+      - default.updateBucketLifecycle
+  storage.file_buckets.delete_bucket_lifecycle:
+    status: implemented
+    symbols:
+      - StorageClient.deleteBucketLifecycle
+      - default.deleteBucketLifecycle
   storage.file_buckets.access_bucket:
     status: implemented
     symbols:
@@ -563,11 +745,24 @@ features:
     status: implemented
     symbols:
       - default.copy
+    supporting_symbols:
+      - CopyOptions
+      - CopyOptions.copyMetadata
+      - CopyOptions.metadata
+  storage.file_buckets.copy_specific_version:
+    status: implemented
+    symbols:
+      - default.copy
+    supporting_symbols:
+      - DestinationOptions.sourceVersionId
+      - CopyOptions.sourceVersionId
   storage.file_buckets.copy_cross_bucket:
     status: implemented
     symbols:
       - default.copy
       - DestinationOptions
+    supporting_symbols:
+      - CopyOptions.destinationBucket
   storage.file_buckets.create_file_bucket:
     status: implemented
     symbols:
@@ -594,6 +789,10 @@ features:
     status: implemented
     symbols:
       - default.download
+  storage.file_buckets.download_specific_version:
+    status: implemented
+    symbols:
+      - default.download
   storage.file_buckets.download_as_stream:
     status: implemented
     symbols:
@@ -615,6 +814,16 @@ features:
     status: implemented
     symbols:
       - default.info
+    supporting_symbols:
+      - FileObjectV2.content_encoding
+  storage.file_buckets.file_info_specific_version:
+    status: implemented
+    symbols:
+      - default.info
+    supporting_symbols:
+      - FileObjectV2.archived_at
+      - FileObjectV2.is_delete_marker
+      - FileObjectV2.is_versioned
   storage.file_buckets.get_bucket:
     status: implemented
     symbols:
@@ -633,14 +842,37 @@ features:
     status: implemented
     symbols:
       - default.list
-  storage.file_buckets.list_files_paginated:
+      - default.listV2
+  storage.file_buckets.list_file_versions:
     status: implemented
     symbols:
+      - default.list
       - default.listV2
+    supporting_symbols:
+      - FileObject.version
+      - FileObject.archived_at
+      - FileObject.is_delete_marker
+      - FileObject.is_versioned
+      - SearchOptions.noncurrentVersions
+      - SearchOptions.deleteMarkers
+      - SearchOptions.exactMatch
+      - SearchV2Object.version
+      - SearchV2Object.archived_at
+      - SearchV2Object.is_delete_marker
+      - SearchV2Object.is_versioned
+      - SearchV2Options.noncurrentVersions
+      - SearchV2Options.deleteMarkers
+      - SearchV2Options.exactMatch
   storage.file_buckets.move:
     status: implemented
     symbols:
       - default.move
+  storage.file_buckets.move_specific_version:
+    status: implemented
+    symbols:
+      - default.move
+    supporting_symbols:
+      - DestinationOptions.sourceVersionId
   storage.file_buckets.move_cross_bucket:
     status: implemented
     symbols:
@@ -658,6 +890,12 @@ features:
     status: implemented
     symbols:
       - default.remove
+  storage.file_buckets.remove_specific_version:
+    status: implemented
+    symbols:
+      - default.remove
+    supporting_symbols:
+      - DeleteObjectEntry
   storage.file_buckets.update_bucket:
     status: implemented
     symbols:
@@ -670,6 +908,8 @@ features:
     status: implemented
     symbols:
       - default.upload
+    supporting_symbols:
+      - FileOptions.contentEncoding
   storage.file_buckets.upload_with_metadata:
     status: implemented
     symbols:
@@ -685,6 +925,11 @@ features:
       - default.createSignedUrl
       - default.createSignedUrls
       - default.getPublicUrl
+  storage.file_buckets.request_cancellation:
+    status: implemented
+    symbols:
+      - default.download
+      - FetchParameters.signal
   storage.vector_buckets.access_vector_index:
     status: implemented
     symbols:
@@ -743,13 +988,16 @@ features:
     status: implemented
     symbols:
       - VectorIndexScope.queryVectors
+    supporting_symbols:
+      - QueryVectorsOptions.nextToken
+      - QueryVectorsResponse.nextToken
 
   # realtime
   realtime.channel.broadcast_http:
     status: implemented
     symbols:
       - RealtimeChannel.httpSend
-  realtime.channel.send:
+  realtime.channel.broadcast:
     status: implemented
     symbols:
       - RealtimeChannel.send
@@ -810,6 +1058,8 @@ features:
     status: implemented
     symbols:
       - RealtimeClientOptions
+    supporting_symbols:
+      - RealtimeClient.hasLogger
   realtime.configuration.custom_websocket_transport:
     status: implemented
     symbols:
@@ -898,6 +1148,12 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.on
+  realtime.subscriptions.postgres_changes_multiple_filters:
+    status: implemented
+    symbols:
+      - RealtimeChannel.on
+      - RealtimePostgresFilterBuilder
+      - postgresChangesFilter
 
   # functions
   functions.invocation.invoke:
@@ -934,3 +1190,9 @@ features:
     symbols:
       - FunctionsClient.invoke
       - FunctionInvokeOptions
+# Shared across auth.mfa_recovery_codes.{generate,get_status,regenerate,unenroll,verify}.
+supporting_symbols:
+  - AuthMFARecoveryCodesApi
+  - GoTrueMFAApi.recoveryCodes
+  - AuthMFARecoveryCodesGenerateResponse
+  - AuthMFARecoveryCodesGenerateResponseData
