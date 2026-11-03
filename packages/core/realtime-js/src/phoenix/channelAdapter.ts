@@ -84,7 +84,7 @@ export default class ChannelAdapter {
 
     if (this.channel.pushBuffer.length > MAX_PUSH_BUFFER_SIZE) {
       const removedPush = this.channel.pushBuffer.shift()!
-      removedPush.cancelTimeout()
+      removedPush.trigger('timeout', {})
       this.socket.log(
         'channel',
         `discarded push due to buffer overflow: ${removedPush.event}`,
