@@ -5,6 +5,7 @@ import RealtimeClient, {
   WebSocketLikeConstructor,
 } from './RealtimeClient'
 import RealtimeChannel, {
+  RealtimeBroadcastPersist,
   RealtimeChannelOptions,
   RealtimeChannelSendResponse,
   RealtimePostgresChangesFilter,
@@ -31,6 +32,7 @@ import WebSocketFactory, { WebSocketLike } from './lib/websocket-factory'
 
 export {
   RealtimePresence,
+  RealtimeBroadcastPersist,
   RealtimeChannel,
   RealtimeChannelOptions,
   RealtimeChannelSendResponse,

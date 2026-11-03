@@ -10,7 +10,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: supabase/sdk/.github/workflows/sync-sdk-compliance.yml@2a4d008ba8e6815e4a94fab59a54a2f202d489a5 # capability-matrix/v1.14.0
+    uses: supabase/sdk/.github/workflows/sync-sdk-compliance.yml@b3bcc35b7247dfe882ea68abdae15d791a6d55ca # capability-matrix/v1.20.0
     with:
       base-branch: master
     secrets:
