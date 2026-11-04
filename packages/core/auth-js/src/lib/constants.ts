@@ -56,3 +56,10 @@ export const PKCE_FLOW_ID_PARAM = 'sb_flow_id'
 export const PKCE_MAX_CONCURRENT_FLOWS = 5
 
 export const JWKS_TTL = 10 * 60 * 1000 // 10 minutes
+
+/**
+ * JWT algorithms that `getClaims()` can verify locally. Sent to the JWKS
+ * endpoint as `supported_algs` so the server can leave out keys that older
+ * clients, which do not send it, cannot use.
+ */
+export const LOCALLY_VERIFIABLE_JWT_ALGS = ['RS256', 'ES256', 'EdDSA', 'Ed25519'] as const
