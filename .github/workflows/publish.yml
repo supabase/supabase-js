@@ -622,6 +622,18 @@ jobs:
       status: 'success'
       version: ${{ needs.release-stable.outputs.released_version }}
 
+  notify-dogfood-failure:
+    name: Notify Slack for Dogfood failure
+    needs: [release-stable, trigger-dogfood]
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.trigger-dogfood.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets:
+      SLACK_CLIENT_LIBS_WEBHOOK: ${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}
+    with:
+      title: 'Dogfood after Stable Release'
+      status: 'failure'
+      version: ${{ needs.release-stable.outputs.released_version }}
+
   notify-canary-failure:
     name: Notify Slack for Canary failure
     needs: release-canary

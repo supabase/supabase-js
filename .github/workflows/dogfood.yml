@@ -1,6 +1,7 @@
 name: Dogfood
-# Dispatches update-supabase-js workflows across all downstream repos
-# Can be triggered manually or called from publish.yml after a stable release
+# Dispatches update-supabase-js workflows across all downstream repos, then waits
+# for those runs and fails if any of them did not open its version-bump PR.
+# Can be triggered manually or called from publish.yml after a stable release.
 
 on:
   workflow_dispatch:
@@ -56,7 +57,7 @@ jobs:
           client-id: ${{ secrets.DOGFOOD_APP_CLIENT_ID }}
           private-key: ${{ secrets.DOGFOOD_APP_PRIVATE_KEY }}
           owner: supabase
-          repositories: supabase,multiplayer.dev,platform,tests,realtime,ssr,helper-scripts,dbdev
+          repositories: supabase,multiplayer.dev,platform,realtime,ssr,helper-scripts,dbdev
 
       - name: Check if actor is member of admin or sdk team
         id: team-check
@@ -91,7 +92,40 @@ jobs:
           echo "You must be a member of @supabase/admin or @supabase/sdk."
           exit 1
 
+      - name: Wait for the version to be resolvable on npm
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          # The downstream workflows run `npm install` / `pnpm install` against the public
+          # registry. Right after a publish the registry can take a minute or more to serve
+          # the new version, and every downstream run then fails with "No matching version
+          # found". Poll the same abbreviated packument the installers use until every
+          # package resolves at the requested version, or give up after 10 minutes.
+          set -o pipefail
+          packages="@supabase/supabase-js @supabase/auth-js @supabase/functions-js @supabase/postgrest-js @supabase/realtime-js @supabase/storage-js"
+          attempts=40
+          interval=15
+          missing=""
+          for ((i = 1; i <= attempts; i++)); do
+            missing=""
+            for pkg in $packages; do
+              if ! curl -fsSL -H 'Accept: application/vnd.npm.install-v1+json' "https://registry.npmjs.org/${pkg}" \
+                | jq -e --arg v "$VERSION" '.versions[$v] != null' > /dev/null; then
+                missing="${missing} ${pkg}"
+              fi
+            done
+            if [ -z "$missing" ]; then
+              echo "All packages resolve at ${VERSION} on npm."
+              exit 0
+            fi
+            echo "Attempt ${i}/${attempts}: not yet on npm at ${VERSION}:${missing}"
+            sleep "$interval"
+          done
+          echo "::error::Gave up waiting for${missing} at ${VERSION} on npm after $((attempts * interval))s. Does the version exist?"
+          exit 1
+
       - name: Dispatch update workflows
+        id: dispatch
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           VERSION: ${{ inputs.version }}
@@ -101,6 +135,9 @@ jobs:
           script: |
             const version = process.env.VERSION;
             const source = process.env.SOURCE;
+            // Downstream runs created from here on belong to this dispatch. The margin
+            // covers clock skew between GitHub's API servers and this runner.
+            const since = new Date(Date.now() - 60 * 1000).toISOString();
 
             const dispatches = [
               {
@@ -115,11 +152,6 @@ jobs:
               },
               {
                 repo: 'platform',
-                workflow: 'update-supabase-js.yml',
-                inputs: { version, source },
-              },
-              {
-                repo: 'tests',
                 workflow: 'update-supabase-js.yml',
                 inputs: { version, source },
               },
@@ -145,8 +177,10 @@ jobs:
               },
             ];
 
+            const dispatched = [];
             const results = [];
             for (const { repo, workflow, inputs } of dispatches) {
+              const repoLink = `<a href="https://github.com/supabase/${repo}/pulls">supabase/${repo}</a>`;
               try {
                 const { data: repoData } = await github.rest.repos.get({
                   owner: 'supabase',
@@ -159,15 +193,96 @@ jobs:
                   ref: repoData.default_branch,
                   inputs,
                 });
-                const repoLink = `<a href="https://github.com/supabase/${repo}/pulls">supabase/${repo}</a>`;
+                dispatched.push({ repo, workflow });
                 results.push(`✅ ${repoLink} — ${workflow}`);
               } catch (error) {
-                const repoLink = `<a href="https://github.com/supabase/${repo}/pulls">supabase/${repo}</a>`;
                 results.push(`❌ ${repoLink} — ${workflow}: ${error.message}`);
               }
             }
+
+            core.setOutput('since', since);
+            core.setOutput('dispatched', JSON.stringify(dispatched));
+            core.setOutput('dispatch_failures', String(dispatches.length - dispatched.length));
 
             core.summary.addHeading('Dogfood Dispatch Results', 2);
             core.summary.addList(results);
             await core.summary.write();
             console.log(results.join('\n'));
+
+      - name: Wait for downstream runs
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          SINCE: ${{ steps.dispatch.outputs.since }}
+          DISPATCHED: ${{ steps.dispatch.outputs.dispatched }}
+          DISPATCH_FAILURES: ${{ steps.dispatch.outputs.dispatch_failures }}
+        with:
+          github-token: ${{ steps.app-token-dogfood.outputs.token }}
+          script: |
+            // A dispatch only proves the request was accepted. The downstream run is what
+            // opens the bump PR, so wait for each one and fail if any did not succeed.
+            const since = new Date(process.env.SINCE);
+            const pending = new Map(JSON.parse(process.env.DISPATCHED).map((d) => [d.repo, d]));
+            const dispatchFailures = Number(process.env.DISPATCH_FAILURES);
+            const timeoutMinutes = 15;
+            const deadline = Date.now() + timeoutMinutes * 60 * 1000;
+            const pollInterval = 30 * 1000;
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            // Newest run of the workflow created after the dispatch, if it exists yet.
+            async function findRun({ repo, workflow }) {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner: 'supabase',
+                repo,
+                workflow_id: workflow,
+                event: 'workflow_dispatch',
+                per_page: 10,
+              });
+              return data.workflow_runs.find((run) => new Date(run.created_at) >= since);
+            }
+
+            const finished = [];
+            while (pending.size > 0 && Date.now() < deadline) {
+              for (const [repo, dispatch] of [...pending]) {
+                const run = await findRun(dispatch);
+                if (run && run.status === 'completed') {
+                  finished.push({ repo, conclusion: run.conclusion, url: run.html_url });
+                  pending.delete(repo);
+                }
+              }
+              if (pending.size > 0) {
+                console.log(`Waiting for: ${[...pending.keys()].join(', ')}`);
+                await sleep(pollInterval);
+              }
+            }
+            for (const [repo, { workflow }] of pending) {
+              finished.push({
+                repo,
+                conclusion: `not finished within ${timeoutMinutes} minutes`,
+                url: `https://github.com/supabase/${repo}/actions/workflows/${workflow}`,
+              });
+            }
+
+            const failed = finished.filter((r) => r.conclusion !== 'success');
+            const rows = finished.map(({ repo, conclusion, url }) => [
+              `supabase/${repo}`,
+              conclusion === 'success' ? '✅ success' : `❌ ${conclusion}`,
+              `<a href="${url}">run</a>`,
+            ]);
+            core.summary.addHeading('Downstream Run Results', 2);
+            core.summary.addTable([
+              [
+                { data: 'Repository', header: true },
+                { data: 'Result', header: true },
+                { data: 'Run', header: true },
+              ],
+              ...rows,
+            ]);
+            await core.summary.write();
+            console.log(rows.map((row) => row.join('  ')).join('\n'));
+
+            if (dispatchFailures > 0 || failed.length > 0) {
+              core.setFailed(
+                `${dispatchFailures} dispatch(es) failed and ${failed.length} downstream run(s) did not succeed. ` +
+                  'Those repos did not get a supabase-js bump PR; see the summary for the runs to check.'
+              );
+            }
