@@ -1,3 +1,32 @@
+## 2.119.0 (2026-11-04)
+
+### 🚀 Features
+
+- **postgrest:** expose query builder options to .from method - custom fetch per request ([#1570](https://github.com/supabase/supabase-js/pull/1570))
+- **realtime:** broadcast persistence ([#2690](https://github.com/supabase/supabase-js/pull/2690))
+
+### 🩹 Fixes
+
+- **auth:** `deleteUser` miscast empty object to `User` ([#2773](https://github.com/supabase/supabase-js/pull/2773))
+- **auth:** `global` sign out cleared the local session when the server failed to log out ([#2786](https://github.com/supabase/supabase-js/pull/2786))
+- **realtime:** include vsn in the unsupported serializer error ([#2812](https://github.com/supabase/supabase-js/pull/2812))
+- **storage:** `exists` reports invalid JWT or missing bucket as missing file ([#2783](https://github.com/supabase/supabase-js/pull/2783))
+- **storage:** ignore undefined FileOptions during upload ([#2789](https://github.com/supabase/supabase-js/pull/2789))
+
+### ❤️ Thank You
+
+- 7vignesh
+- 7vignesh <vigneshgopikrishnan7@gmail.com> and stenlan @stenlan
+- Christian Melchior
+- Claude Opus 5.5
+- Guilherme Souza
+- Katerina Skroumpelou
+- Leandro Pereira @leandrocp
+- Pintu Kumar @pintu544
+- Rami Hersonsky @ramiscaleai
+- stenlan @stenlan
+- Vignesh
+
 ## 2.118.0 (2026-10-15)
 
 ### 🚀 Features
