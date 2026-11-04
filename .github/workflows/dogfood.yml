@@ -102,6 +102,8 @@ jobs:
           # found". Poll the same abbreviated packument the installers use until every
           # package resolves at the requested version, or give up after 10 minutes.
           set -o pipefail
+          # The npm packument keys versions without a leading "v".
+          VERSION="${VERSION#v}"
           packages="@supabase/supabase-js @supabase/auth-js @supabase/functions-js @supabase/postgrest-js @supabase/realtime-js @supabase/storage-js"
           attempts=40
           interval=15
