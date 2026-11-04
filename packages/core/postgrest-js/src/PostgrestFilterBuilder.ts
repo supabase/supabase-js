@@ -35,6 +35,24 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
 
 const PostgrestReservedCharsRegexp = new RegExp('[,()]')
 
+/**
+ * Serialize a single value for an `in.(...)` / `not.in.(...)` filter list.
+ *
+ * PostgREST treats `,`, `(` and `)` as reserved characters inside the list, so
+ * any value containing one must be wrapped in double quotes. A quoted value may
+ * itself contain `"` or `\`, which PostgREST expects to be backslash-escaped
+ * (`"` -> `\"`, `\` -> `\\`). Without escaping, a value such as `a"b,c`
+ * serializes to `"a"b,c"`, whose stray quote corrupts the parsed list.
+ */
+function formatInFilterValue(value: unknown): string {
+  const str = `${value}`
+  if (typeof value === 'string' && (PostgrestReservedCharsRegexp.test(str) || /["\\]/.test(str))) {
+    // Escape backslashes first, then double quotes, then wrap in quotes.
+    return `"${str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  }
+  return str
+}
+
 // Match relationship filters with `table.column` syntax and resolve underlying
 // column value. If not matched, fallback to generic type.
 // TODO: Validate the relationship itself ala select-query-parser. Currently we
@@ -835,14 +853,7 @@ export default class PostgrestFilterBuilder<
             never
     >
   ): this {
-    const cleanedValues = Array.from(new Set(values))
-      .map((s) => {
-        // handle postgrest reserved characters
-        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
-        else return `${s}`
-      })
-      .join(',')
+    const cleanedValues = Array.from(new Set(values)).map(formatInFilterValue).join(',')
     this.url.searchParams.append(column, `in.(${cleanedValues})`)
     return this
   }
@@ -863,14 +874,7 @@ export default class PostgrestFilterBuilder<
           : never
     >
   ): this {
-    const cleanedValues = Array.from(new Set(values))
-      .map((s) => {
-        // handle postgrest reserved characters
-        // https://postgrest.org/en/v7.0.0/api.html#reserved-characters
-        if (typeof s === 'string' && PostgrestReservedCharsRegexp.test(s)) return `"${s}"`
-        else return `${s}`
-      })
-      .join(',')
+    const cleanedValues = Array.from(new Set(values)).map(formatInFilterValue).join(',')
     this.url.searchParams.append(column, `not.in.(${cleanedValues})`)
     return this
   }
