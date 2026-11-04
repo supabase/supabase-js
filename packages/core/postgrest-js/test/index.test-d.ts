@@ -563,3 +563,80 @@ type WithThrowOnError<T> =
     expectType<TypeEqual<typeof result.data, { id: number; message: string }[]>>(true)
   }
 }
+
+// `.order()` with `referencedTable` provides typed column names from the referenced table (#971)
+{
+  // Base case: order by parent table columns still works
+  postgrest.from('users').select('messages(*)').order('username')
+
+  // referencedTable provides autocomplete for the referenced table's columns
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    .order('channel_id', { referencedTable: 'messages', ascending: false })
+
+  // Also works with other valid columns on the referenced table
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    .order('message', { referencedTable: 'messages', ascending: false })
+
+  // Invalid column on a known referenced table should error
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    // @ts-expect-error No overload matches this call.
+    .order('nonexistent_column', { referencedTable: 'messages', ascending: false })
+
+  // Deprecated foreignTable also provides typed column names
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    .order('channel_id', { foreignTable: 'messages', ascending: false })
+
+  // Invalid column on a known referenced table should error (foreignTable)
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    // @ts-expect-error No overload matches this call.
+    .order('nonexistent_column', { foreignTable: 'messages', ascending: false })
+
+  // Ordering by a column on 'channels' table works
+  postgrest
+    .from('messages')
+    .select('channels(*)')
+    .order('slug', { referencedTable: 'channels', ascending: true })
+
+  // Invalid column on channels should error
+  postgrest
+    .from('messages')
+    .select('channels(*)')
+    // @ts-expect-error No overload matches this call.
+    .order('bad_col', { referencedTable: 'channels', ascending: true })
+
+  // Dynamic (non-literal) column with a known referencedTable should compile
+  const sortColumn: string = 'channel_id'
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    .order(sortColumn, { referencedTable: 'messages', ascending: false })
+
+  // Dynamic column with deprecated foreignTable should also compile
+  postgrest
+    .from('users')
+    .select('messages(*)')
+    .order(sortColumn, { foreignTable: 'messages', ascending: false })
+
+  // Aliased referencedTable that does NOT match a real table name
+  // falls through to the unchecked string overload (any column name accepted)
+  postgrest
+    .from('users')
+    .select('archived:messages(*)')
+    .order('anything_goes', { referencedTable: 'archived', ascending: false })
+
+  // Aliased referencedTable with deprecated foreignTable also falls through
+  postgrest
+    .from('users')
+    .select('archived:messages(*)')
+    .order('anything_goes', { foreignTable: 'archived', ascending: false })
+}
