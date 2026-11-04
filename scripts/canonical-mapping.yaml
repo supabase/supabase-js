@@ -90,7 +90,7 @@ mappings:
 
   # ─── functions ───────────────────────────────────────────────────────────
 
-  functions.invocation.set_auth: functions.invocation.set_auth_token
+  functions.invocation.set_auth: functions.invocation.auth_token
 
   # ─── realtime ────────────────────────────────────────────────────────────
 
