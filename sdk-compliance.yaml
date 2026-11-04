@@ -1183,7 +1183,7 @@ features:
     symbols:
       - FunctionsClient.invoke
       - FunctionInvokeOptions
-  functions.invocation.set_auth_token:
+  functions.invocation.auth_token:
     status: implemented
     symbols:
       - FunctionsClient.setAuth
