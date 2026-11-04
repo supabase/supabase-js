@@ -40,7 +40,8 @@ describe('Docker: Asymmetric JWT (RS256)', () => {
     expect(data?.claims.email).toEqual(user?.email)
 
     expect(fetchedUrls).toContain(
-      DOCKER_URLS.SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON + '/.well-known/jwks.json'
+      DOCKER_URLS.SIGNUP_ENABLED_ASYMMETRIC_AUTO_CONFIRM_ON +
+        '/.well-known/jwks.json?supported_algs=RS256%2CES256%2CEdDSA%2CEd25519'
     )
 
     // contains the response for getSession and fetchJwk
@@ -112,4 +113,3 @@ describe('Docker: Asymmetric JWT (RS256)', () => {
     expect(data).toBeNull()
   })
 })
-
