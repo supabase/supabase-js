@@ -373,6 +373,19 @@ describe('RPC call with get/head serializes Date args in the query string', () =
     )
   })
 
+  test('head: true converts Dates inside nested arrays', async () => {
+    const { client, mockFetch } = createClient()
+
+    await client.rpc('my_func' as any, { days: [[DATE], [OTHER_DATE]] } as any, { head: true })
+
+    const [url, options] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(options.method).toBe('HEAD')
+    // nested arrays are flattened into the literal, as before; only the Dates change.
+    expect(new URL(url).searchParams.get('days')).toBe(
+      '{2026-11-04T15:00:00.000Z,2026-11-05T15:00:00.000Z}'
+    )
+  })
+
   test('get: true leaves non-Date array elements serialized as before', async () => {
     const { client, mockFetch } = createClient()
 

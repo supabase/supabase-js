@@ -573,9 +573,14 @@ export default class PostgrestClient<
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
     // send Dates as ISO 8601 like the POST body does; `${date}` is toString(), which Postgres rejects.
-    // invalid Dates are passed through unchanged, since toISOString() throws on them
+    // invalid Dates are passed through unchanged, since toISOString() throws on them.
+    // nested arrays are flattened by join() below, so their Dates are converted too
     const _dateToIso = (v: unknown): unknown =>
-      v instanceof Date && !isNaN(v.getTime()) ? v.toISOString() : v
+      Array.isArray(v)
+        ? v.map(_dateToIso)
+        : v instanceof Date && !isNaN(v.getTime())
+          ? v.toISOString()
+          : v
     // objects/arrays-of-objects can't be serialized to URL params, use POST + return=minimal instead
     const _isObject = (v: unknown): boolean =>
       v !== null &&
