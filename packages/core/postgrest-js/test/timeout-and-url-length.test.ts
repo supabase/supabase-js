@@ -76,12 +76,19 @@ describe('URL length validation and timeout protection', () => {
 
     test('should respect existing AbortSignal', async () => {
       const controller = new AbortController()
-      const fastFetch: typeof fetch = () =>
-        Promise.resolve(
+      const fastFetch: typeof fetch = (_input, init) => {
+        if (init?.signal?.aborted) {
+          const err = new Error('The operation was aborted')
+          err.name = 'AbortError'
+          return Promise.reject(err)
+        }
+        return Promise.resolve(
           new Response(JSON.stringify([]), {
             status: 200,
+            headers: { 'Content-Type': 'application/json' },
           })
         )
+      }
 
       const postgrest = new PostgrestClient(REST_URL, {
         timeout: 5000,
@@ -91,10 +98,98 @@ describe('URL length validation and timeout protection', () => {
       // Abort immediately
       controller.abort()
 
-      const { error } = await postgrest.from('users').select()
+      const { error } = await postgrest.from('users').select().abortSignal(controller.signal)
 
       // Should handle abort gracefully
-      expect(error).toBeDefined()
+      expect(error).not.toBeNull()
+      expect(error?.message).toContain('AbortError')
+    })
+
+    test('should cancel query when caller aborts after response headers arrive with timeout configured', async () => {
+      const controller = new AbortController()
+
+      const streamingFetch: typeof fetch = (_input, init) => {
+        let streamController: ReadableStreamDefaultController<Uint8Array>
+        const stream = new ReadableStream<Uint8Array>({
+          start(c) {
+            streamController = c
+            c.enqueue(new TextEncoder().encode('[{"id": 1}'))
+          },
+        })
+
+        if (init?.signal) {
+          init.signal.addEventListener('abort', () => {
+            try {
+              streamController?.error(new DOMException('The operation was aborted', 'AbortError'))
+            } catch {
+              // Ignore if already closed
+            }
+          })
+        }
+
+        return Promise.resolve(
+          new Response(stream, {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        )
+      }
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        timeout: 60000,
+        fetch: streamingFetch,
+      })
+
+      const queryPromise = postgrest.from('users').select().abortSignal(controller.signal)
+
+      // Allow headers to resolve, then abort while body is streaming
+      setTimeout(() => controller.abort(), 50)
+
+      const { error } = await queryPromise
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toContain('AbortError')
+      expect(error?.hint).toContain('Request was aborted')
+    })
+
+    test('should abort when response body streaming exceeds timeout', async () => {
+      const stalledFetch: typeof fetch = (_input, init) => {
+        let streamController: ReadableStreamDefaultController<Uint8Array>
+        const stream = new ReadableStream<Uint8Array>({
+          start(c) {
+            streamController = c
+            c.enqueue(new TextEncoder().encode('[{"id": 1}'))
+          },
+        })
+
+        if (init?.signal) {
+          init.signal.addEventListener('abort', () => {
+            try {
+              streamController?.error(new DOMException('The operation was aborted', 'AbortError'))
+            } catch {
+              // Ignore if already closed
+            }
+          })
+        }
+
+        return Promise.resolve(
+          new Response(stream, {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        )
+      }
+
+      const postgrest = new PostgrestClient(REST_URL, {
+        timeout: 100,
+        fetch: stalledFetch,
+      })
+
+      const { error } = await postgrest.from('users').select()
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toContain('AbortError')
+      expect(error?.hint).toContain('Request was aborted')
     })
   })
 
