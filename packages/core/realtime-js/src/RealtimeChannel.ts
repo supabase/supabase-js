@@ -1017,8 +1017,14 @@ export default class RealtimeChannel {
     let errorMessage = response.statusText
     try {
       const errorBody = await response.json()
-      errorMessage = errorBody.error || errorBody.message || errorMessage
+      errorMessage =
+        errorBody.error ||
+        errorBody.message ||
+        this._formatValidationErrors(errorBody.errors) ||
+        errorMessage
     } catch {}
+
+    errorMessage = errorMessage || `httpSend() failed with status ${response.status}`
 
     return Promise.reject(new Error(errorMessage))
   }
@@ -1224,6 +1230,19 @@ export default class RealtimeChannel {
    */
   teardown() {
     this.channelAdapter.teardown()
+  }
+
+  /** @internal */
+  private _formatValidationErrors(errors: unknown) {
+    if (!errors || typeof errors !== 'object') {
+      return undefined
+    }
+
+    const message = Object.entries(errors)
+      .map(([field, reasons]) => `${field}: ${[reasons].flat().join(', ')}`)
+      .join('; ')
+
+    return message || undefined
   }
 
   /** @internal */
