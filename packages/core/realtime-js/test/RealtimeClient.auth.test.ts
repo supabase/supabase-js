@@ -559,6 +559,66 @@ describe('auth before reconnect', () => {
     testSetup.cleanup()
   })
 
+  test('waits for newer auth calls that supersede its own', async () => {
+    const testSetup = await setupJoinedClient()
+    const own = deferred<string>()
+    const newer = deferred<string>()
+    const newest = deferred<string>()
+    testSetup.accessToken
+      .mockReturnValueOnce(own.promise)
+      .mockReturnValueOnce(newer.promise)
+      .mockReturnValueOnce(newest.promise)
+    testSetup.accessToken.mockResolvedValue(refreshedToken)
+    // Everything a superseded call does before the socket reopens runs in microtasks.
+    const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+    testSetup.client.reconnectTimer!.callback()
+    await vi.waitFor(() => expect(testSetup.accessToken).toHaveBeenCalledTimes(1))
+    // Closing the socket scheduled phoenix's next retry, which would run the hook a second time.
+    testSetup.client.reconnectTimer!.reset()
+
+    const newerAuth = testSetup.client.setAuth()
+    own.resolve(initialToken)
+    await nextTask()
+    expect(testSetup.client.accessTokenValue).toBe(initialToken)
+    expect(testSetup.transportConnect).not.toHaveBeenCalled()
+
+    const newestAuth = testSetup.client.setAuth()
+    newer.resolve(initialToken)
+    await newerAuth
+    await nextTask()
+    expect(testSetup.transportConnect).not.toHaveBeenCalled()
+
+    newest.resolve(refreshedToken)
+    await newestAuth
+
+    await vi.waitFor(() => expect(testSetup.joinTokens()).toEqual([refreshedToken]))
+
+    testSetup.cleanup()
+  })
+
+  test('reconnects with the cached token when a newer call never settles', async () => {
+    const testSetup = await setupJoinedClient()
+    const own = deferred<string>()
+    testSetup.accessToken.mockReturnValueOnce(own.promise)
+    testSetup.accessToken.mockReturnValueOnce(new Promise(() => {}))
+    // Set after the join, so a slow machine cannot time the join itself out.
+    testSetup.socket.timeout = 50
+
+    testSetup.client.reconnectTimer!.callback()
+    await vi.waitFor(() => expect(testSetup.accessToken).toHaveBeenCalledTimes(1))
+    // Closing the socket scheduled phoenix's next retry, which would reconnect without the bound.
+    testSetup.client.reconnectTimer!.reset()
+
+    testSetup.client.setAuth()
+    own.resolve(refreshedToken)
+
+    await vi.waitFor(() => expect(testSetup.transportConnect).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(testSetup.joinTokens().at(-1)).toBe(initialToken))
+
+    testSetup.cleanup()
+  })
+
   test('leaves a manual token alone when there is no callback', async () => {
     const testSetup = setupRealtimeTest()
     await testSetup.client.setAuth(initialToken)

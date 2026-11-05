@@ -918,8 +918,16 @@ export default class RealtimeClient {
       }, this.timeout)
     })
 
+    const refreshed = this.setAuth().then(async () => {
+      // A newer setAuth() supersedes ours, which then returns without updating the token, so
+      // the token is fresh only once the newest call has settled.
+      while (this._authPromise) {
+        await this._authPromise
+      }
+    })
+
     try {
-      await Promise.race([this.setAuth(), timedOut])
+      await Promise.race([refreshed, timedOut])
     } catch (e) {
       this.log('error', 'Error refreshing auth before reconnect', e)
     } finally {
