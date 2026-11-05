@@ -6,6 +6,7 @@ import {
   EXPIRY_MARGIN_MS,
   GOTRUE_URL,
   JWKS_TTL,
+  LOCALLY_VERIFIABLE_JWT_ALGS,
   PKCE_FLOW_ID_PARAM,
   REFRESH_FAILURE_COOLDOWN_MS,
   STORAGE_KEY,
@@ -44,9 +45,9 @@ import {
   Deferred,
   expiresAt,
   generateCallbackId,
-  getAlgorithm,
   getCodeChallengeAndMethod,
   getItemAsync,
+  importJwtVerifyKey,
   insecureUserWarningProxy,
   isBrowser,
   parseParametersFromURL,
@@ -6663,9 +6664,13 @@ export default class GoTrueClient {
       return jwk
     }
     // jwk isn't cached in memory so we need to fetch it from the well-known endpoint
-    const { data, error } = await _request(this.fetch, 'GET', `${this.url}/.well-known/jwks.json`, {
-      headers: this.headers,
-    })
+    const supportedAlgs = encodeURIComponent(LOCALLY_VERIFIABLE_JWT_ALGS.join(','))
+    const { data, error } = await _request(
+      this.fetch,
+      'GET',
+      `${this.url}/.well-known/jwks.json?supported_algs=${supportedAlgs}`,
+      { headers: this.headers }
+    )
     if (error) {
       throw error
     }
@@ -6806,8 +6811,11 @@ export default class GoTrueClient {
           ? null
           : await this.fetchJwk(header.kid, options?.keys ? { keys: options.keys } : options?.jwks)
 
-      // If symmetric algorithm or WebCrypto API is unavailable, fallback to getUser()
-      if (!signingKey) {
+      const verifyKey = signingKey ? await importJwtVerifyKey(signingKey, header.alg) : null
+
+      // Fall back to getUser() when the algorithm is symmetric, the JWKS has no
+      // key for this kid, or this runtime cannot verify the algorithm locally.
+      if (!verifyKey) {
         const { error } = await this.getUser(token)
         if (error) {
           throw error
@@ -6823,17 +6831,9 @@ export default class GoTrueClient {
         }
       }
 
-      const algorithm = getAlgorithm(header.alg)
-
-      // Convert JWK to CryptoKey
-      const publicKey = await crypto.subtle.importKey('jwk', signingKey, algorithm, true, [
-        'verify',
-      ])
-
-      // Verify the signature
       const isValid = await crypto.subtle.verify(
-        algorithm,
-        publicKey,
+        verifyKey.algorithm,
+        verifyKey.key,
         signature,
         stringToUint8Array(`${rawHeader}.${rawPayload}`)
       )

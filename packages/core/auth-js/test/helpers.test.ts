@@ -264,6 +264,8 @@ describe('getAlgorithm', () => {
         hash: { name: 'SHA-256' },
       },
     },
+    { name: 'EdDSA', expected: { name: 'Ed25519' } },
+    { name: 'Ed25519', expected: { name: 'Ed25519' } },
   ]
   it('should return correct algorithm object', () => {
     cases.forEach((c) => {
@@ -271,7 +273,7 @@ describe('getAlgorithm', () => {
     })
   })
   it('should throw if invalid alg claim', () => {
-    expect(() => getAlgorithm('EdDSA' as any)).toThrow(new Error('Invalid alg claim'))
+    expect(() => getAlgorithm('ES384' as any)).toThrow(new Error('Invalid alg claim'))
   })
 })
 
