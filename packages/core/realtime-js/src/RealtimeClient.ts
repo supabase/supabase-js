@@ -236,6 +236,7 @@ export default class RealtimeClient {
   private _manuallySetToken: boolean = false
   private _authPromise: Promise<void> | null = null
   private _authGeneration: number = 0
+  private _authFreshForReconnect: boolean = false
   private _workerHeartbeatTimer: HeartbeatTimer = undefined
   private _pendingWorkerHeartbeatRef: string | null = null
   private _pendingDisconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -312,7 +313,7 @@ export default class RealtimeClient {
     // Trigger auth if needed and not already in progress
     // This ensures auth is called for standalone RealtimeClient usage
     // while avoiding race conditions with SupabaseClient's immediate setAuth call
-    if (this.accessToken && !this._authPromise) {
+    if (this.accessToken && !this._authPromise && !this._authFreshForReconnect) {
       this._setAuthSafely('connect')
     }
 
@@ -690,16 +691,6 @@ export default class RealtimeClient {
   }
 
   /**
-   * Wait for any in-flight auth operations to complete
-   * @internal
-   */
-  private async _waitForAuthIfNeeded(): Promise<void> {
-    if (this._authPromise) {
-      await this._authPromise
-    }
-  }
-
-  /**
    * Safely call setAuth with standardized error handling
    * @internal
    */
@@ -879,11 +870,60 @@ export default class RealtimeClient {
     return result
   }
 
-  /** @internal */
+  /**
+   * Runs before the socket reconnects, so channels rejoin with a fresh token rather than the
+   * one cached before the drop. A `setAuth()` still out from before the drop is superseded,
+   * so a call that hung then cannot hold up this reconnect or any later one.
+   *
+   * @internal
+   */
   private async _reconnectAuth() {
-    await this._waitForAuthIfNeeded()
+    const socket = this.socketAdapter.getSocket()
+    const connectClock = socket.connectClock
+
+    if (this.accessToken) {
+      await this._refreshAuthBeforeReconnect()
+    }
+
+    if (socket.connectClock !== connectClock) {
+      // disconnect() or another connect() ran during the wait, so the connection is no longer
+      // ours to open. Phoenix connects as soon as this hook settles, so it must not settle.
+      return new Promise<void>(() => {})
+    }
+
     if (!this.isConnected()) {
-      this.connect()
+      // connect() would otherwise ask the callback again for the token we just got.
+      this._authFreshForReconnect = true
+      try {
+        this.connect()
+      } finally {
+        this._authFreshForReconnect = false
+      }
+    }
+  }
+
+  /**
+   * Bounded by the socket's `timeout`: `accessToken()` has no timeout of its own, and
+   * reconnecting with a stale token recovers (the heartbeat refresh takes over), while not
+   * reconnecting at all does not.
+   *
+   * @internal
+   */
+  private async _refreshAuthBeforeReconnect(): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timedOut = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        this.log('error', 'Timed out refreshing auth before reconnect')
+        resolve()
+      }, this.timeout)
+    })
+
+    try {
+      await Promise.race([this.setAuth(), timedOut])
+    } catch (e) {
+      this.log('error', 'Error refreshing auth before reconnect', e)
+    } finally {
+      clearTimeout(timer)
     }
   }
 }

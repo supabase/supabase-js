@@ -2,7 +2,7 @@ import assert from 'assert'
 import { describe, expect, test, vi } from 'vitest'
 import { WebSocket as MockWebSocket } from 'mock-socket'
 import { DEFAULT_VERSION } from '../src/lib/constants'
-import { setupRealtimeTest } from './helpers/setup'
+import { setupRealtimeTest, waitForChannelSubscribed } from './helpers/setup'
 import { utils, authHelpers as testHelpers } from './helpers/auth'
 
 describe('token setting and updates', () => {
@@ -385,6 +385,195 @@ describe('auth during connection states', () => {
     })
 
     await testSetup.socketConnected()
+
+    testSetup.cleanup()
+  })
+})
+
+describe('auth before reconnect', () => {
+  const initialToken = utils.generateJWT('1h')
+  const refreshedToken = utils.generateJWT('2h')
+
+  function deferred<T>() {
+    let resolve!: (value: T) => void
+    let reject!: (reason: unknown) => void
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { promise, resolve, reject }
+  }
+
+  /**
+   * Connects with `initialToken` and a joined channel. Startup calls the callback more than
+   * once, so `accessToken` is reset only after it has settled: each test scripts the answers
+   * for the reconnect alone. `transportConnect` is the one call every reconnect goes through,
+   * so spying on it says whether the socket reopened without waiting for a frame to arrive.
+   */
+  async function setupJoinedClient() {
+    const accessToken = vi.fn<() => Promise<string | null>>(() => Promise.resolve(initialToken))
+    const testSetup = setupRealtimeTest({ accessToken })
+    const channel = testSetup.client.channel('auth-before-reconnect')
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+    await testSetup.client.setAuth()
+    expect(testSetup.client.accessTokenValue).toBe(initialToken)
+
+    accessToken.mockReset()
+    testSetup.emitters.message.mockClear()
+    const socket = testSetup.client.socketAdapter.getSocket()
+    const transportConnect = vi.spyOn(socket, 'transportConnect' as never)
+
+    const joinTokens = () =>
+      testSetup.emitters.message.mock.calls
+        .filter(([, event]) => event === 'phx_join')
+        .map(([, , payload]) => payload.access_token)
+
+    return { ...testSetup, accessToken, channel, socket, transportConnect, joinTokens }
+  }
+
+  test('rejoins with the refreshed token when no auth call was in flight', async () => {
+    const testSetup = await setupJoinedClient()
+    const refresh = deferred<string>()
+    testSetup.accessToken.mockReturnValueOnce(refresh.promise)
+    testSetup.accessToken.mockResolvedValue(refreshedToken)
+
+    testSetup.client.reconnectTimer!.callback()
+    await vi.waitFor(() => expect(testSetup.accessToken).toHaveBeenCalledTimes(1))
+
+    // Without the awaited refresh the socket reopens in the same tick as this call, so this
+    // holds on any machine speed, and the join below cannot race the callback's answer.
+    expect(testSetup.transportConnect).not.toHaveBeenCalled()
+
+    refresh.resolve(refreshedToken)
+
+    await vi.waitFor(() => expect(testSetup.joinTokens()).toEqual([refreshedToken]))
+    await waitForChannelSubscribed(testSetup.channel)
+    expect(testSetup.client.accessTokenValue).toBe(refreshedToken)
+
+    testSetup.cleanup()
+  })
+
+  test('asks the callback once before the rejoin', async () => {
+    const testSetup = await setupJoinedClient()
+    testSetup.accessToken.mockResolvedValue(refreshedToken)
+
+    // Read on arrival: the join reply makes its own setAuth() call right after.
+    let callsAtJoin = 0
+    testSetup.emitters.message.mockImplementation((_topic, event) => {
+      if (event === 'phx_join') {
+        callsAtJoin = testSetup.accessToken.mock.calls.length
+      }
+    })
+
+    testSetup.client.reconnectTimer!.callback()
+
+    await vi.waitFor(() => expect(testSetup.joinTokens()).toEqual([refreshedToken]))
+    expect(callsAtJoin).toBe(1)
+
+    testSetup.cleanup()
+  })
+
+  test('reconnects with the cached token when the callback never settles', async () => {
+    const testSetup = await setupJoinedClient()
+    testSetup.accessToken.mockReturnValueOnce(new Promise(() => {}))
+    // Set after the join, so a slow machine cannot time the join itself out.
+    testSetup.socket.timeout = 50
+
+    testSetup.client.reconnectTimer!.callback()
+
+    await vi.waitFor(() => expect(testSetup.transportConnect).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(testSetup.joinTokens().at(-1)).toBe(initialToken))
+    await waitForChannelSubscribed(testSetup.channel)
+
+    // The next reconnect asks again instead of waiting on the promise that hung.
+    testSetup.accessToken.mockReset()
+    testSetup.accessToken.mockResolvedValue(refreshedToken)
+    testSetup.emitters.message.mockClear()
+
+    testSetup.client.reconnectTimer!.callback()
+
+    await vi.waitFor(() => expect(testSetup.joinTokens().at(-1)).toBe(refreshedToken))
+
+    testSetup.cleanup()
+  })
+
+  test('reconnects with the cached token when the callback rejects', async () => {
+    const testSetup = await setupJoinedClient()
+    testSetup.accessToken.mockRejectedValueOnce(new Error('no network yet'))
+    testSetup.accessToken.mockResolvedValue(initialToken)
+
+    testSetup.client.reconnectTimer!.callback()
+
+    await vi.waitFor(() => expect(testSetup.joinTokens()).toEqual([initialToken]))
+
+    testSetup.cleanup()
+  })
+
+  test.each([
+    ['no auth call', false],
+    ['an auth call', true],
+  ])('stays closed when disconnect() lands in the wait, with %s in flight', async (_, inFlight) => {
+    const testSetup = await setupJoinedClient()
+    const refresh = deferred<string>()
+    testSetup.accessToken.mockReturnValue(refresh.promise)
+
+    const earlierAuth = inFlight ? testSetup.client.setAuth() : Promise.resolve()
+    testSetup.client.reconnectTimer!.callback()
+    await vi.waitFor(() => expect(testSetup.socket.conn).toBeNull())
+
+    await testSetup.client.disconnect()
+    refresh.resolve(refreshedToken)
+    await earlierAuth
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(testSetup.transportConnect).not.toHaveBeenCalled()
+    expect(testSetup.client.isConnected()).toBe(false)
+
+    // The client is not stuck: an explicit connect() still works.
+    testSetup.client.connect()
+    await vi.waitFor(() => expect(testSetup.client.isConnected()).toBe(true))
+
+    testSetup.cleanup()
+  })
+
+  test.each([
+    ['answers', (earlier: ReturnType<typeof deferred<string>>) => earlier.resolve(initialToken)],
+    ['fails', (earlier: ReturnType<typeof deferred<string>>) => earlier.reject(new Error('late'))],
+  ])('keeps the token it fetched when an earlier call %s later', async (_, settle) => {
+    const testSetup = await setupJoinedClient()
+    const earlier = deferred<string>()
+    testSetup.accessToken.mockReturnValueOnce(earlier.promise)
+    testSetup.accessToken.mockResolvedValue(refreshedToken)
+
+    // A heartbeat's refresh is still out when the socket drops.
+    const earlierAuth = testSetup.client.setAuth()
+    testSetup.client.reconnectTimer!.callback()
+
+    await vi.waitFor(() => expect(testSetup.joinTokens()).toEqual([refreshedToken]))
+
+    settle(earlier)
+    await earlierAuth
+    expect(testSetup.client.accessTokenValue).toBe(refreshedToken)
+
+    testSetup.cleanup()
+  })
+
+  test('leaves a manual token alone when there is no callback', async () => {
+    const testSetup = setupRealtimeTest()
+    await testSetup.client.setAuth(initialToken)
+    const channel = testSetup.client.channel('auth-before-reconnect')
+    channel.subscribe()
+    await waitForChannelSubscribed(channel)
+    testSetup.emitters.message.mockClear()
+
+    testSetup.client.reconnectTimer!.callback()
+
+    const { message } = testSetup.emitters
+    const join = expect.objectContaining({ access_token: initialToken })
+    await vi.waitFor(() => expect(message).toHaveBeenCalledWith(channel.topic, 'phx_join', join))
+    expect(testSetup.client.accessTokenValue).toBe(initialToken)
+    expect(testSetup.client._isManualToken()).toBe(true)
 
     testSetup.cleanup()
   })
