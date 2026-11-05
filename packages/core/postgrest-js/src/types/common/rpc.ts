@@ -66,6 +66,45 @@ type CrossSchemaError<TableRef extends string> = {
   error: true
 } & `Function returns SETOF from a different schema ('${TableRef}'). Use .overrideTypes<YourReturnType>() to specify the return type explicitly.`
 
+// Table in the current schema whose Row exactly matches a function's return
+// row. Used to resolve embedded resources when a function has no SetofOptions
+// (older generated types) — the return row alone cannot name its table, but an
+// exact Row match against the current schema is the only table it can be.
+type TableByExactRow<Schema extends GenericSchema, Row> = {
+  [K in keyof TablesAndViews<Schema>]: ExactMatch<
+    TablesAndViews<Schema>[K]['Row'],
+    Row
+  > extends true
+    ? K
+    : never
+}[keyof TablesAndViews<Schema>]
+
+// The table an RPC function returns rows of, resolved for embedded-resource
+// typing. SetofOptions.to is normally the bare table name; some generated
+// types spell it schema-qualified ('public.batches'), which is not a key of
+// the current schema's Tables, so strip the prefix — but only when the
+// stripped table's Row matches the function's return row, so a same-named
+// table from another schema is never picked by accident.
+export type RpcTargetTable<
+  Schema extends GenericSchema,
+  Fn extends GenericFunction,
+> = Fn['SetofOptions'] extends GenericSetofOption
+  ? Fn['SetofOptions']['to'] extends keyof TablesAndViews<Schema>
+    ? Fn['SetofOptions']['to']
+    : Fn['SetofOptions']['to'] extends `${string}.${infer Stripped}`
+      ? Stripped extends keyof TablesAndViews<Schema>
+        ? ExactMatch<
+            TablesAndViews<Schema>[Stripped]['Row'],
+            Fn['Returns'] extends any[] ? Fn['Returns'][number] : Fn['Returns']
+          > extends true
+          ? Stripped
+          : never
+        : never
+      : never
+  : Fn['Returns'] extends any[]
+    ? TableByExactRow<Schema, Fn['Returns'][number]>
+    : TableByExactRow<Schema, Fn['Returns']>
+
 export type GetRpcFunctionFilterBuilderByArgs<
   Schema extends GenericSchema,
   FnName extends string & keyof Schema['Functions'],
@@ -136,16 +175,21 @@ export type GetRpcFunctionFilterBuilderByArgs<
                 : Fn['Returns']
               : Fn['Returns']
             : Fn['Returns']
-          RelationName: Fn['SetofOptions'] extends GenericSetofOption
-            ? Fn['SetofOptions']['to']
-            : FnName
-          Relationships: Fn['SetofOptions'] extends GenericSetofOption
-            ? Fn['SetofOptions']['to'] extends keyof Schema['Tables']
-              ? Schema['Tables'][Fn['SetofOptions']['to']]['Relationships']
-              : Fn['SetofOptions']['to'] extends keyof Schema['Views']
-                ? Schema['Views'][Fn['SetofOptions']['to']]['Relationships']
+          // IsNever (bracketed) is required here: a bare `extends never`
+          // conditional distributes over never and yields never, not the
+          // fallback branch, which would break every RPC without a target.
+          RelationName: IsNever<RpcTargetTable<Schema, Fn>> extends true
+            ? Fn['SetofOptions'] extends GenericSetofOption
+              ? Fn['SetofOptions']['to']
+              : FnName
+            : RpcTargetTable<Schema, Fn>
+          Relationships: IsNever<RpcTargetTable<Schema, Fn>> extends true
+            ? null
+            : RpcTargetTable<Schema, Fn> extends keyof Schema['Tables']
+              ? Schema['Tables'][RpcTargetTable<Schema, Fn>]['Relationships']
+              : RpcTargetTable<Schema, Fn> extends keyof Schema['Views']
+                ? Schema['Views'][RpcTargetTable<Schema, Fn>]['Relationships']
                 : null
-            : null
         }
       : // If we failed to find the function by argument, we still pass with any but also add an overridable
         Fn extends false
