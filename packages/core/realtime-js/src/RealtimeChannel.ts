@@ -1171,7 +1171,7 @@ export default class RealtimeChannel {
       }
     } else {
       return new Promise((resolve) => {
-        const push = this.channelAdapter.push(args.type, args, opts.timeout || this.timeout)
+        const push = this.channelAdapter.push(args.type, args, opts.timeout ?? this.timeout)
 
         if (args.type === 'broadcast' && !this.params?.config?.broadcast?.ack) {
           resolve('ok')
