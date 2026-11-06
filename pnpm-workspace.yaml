@@ -47,6 +47,9 @@ overrides:
   # realtime example.
   browserslist: '>=4.28.7'
 
+patchedDependencies:
+  '@supabase/phoenix@0.4.5': patches/@supabase__phoenix@0.4.5.patch
+
 # Resolver / layout
 preferWorkspacePackages: true # prefer the in-tree version over the registry when both satisfy
 
