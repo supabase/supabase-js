@@ -1,4 +1,5 @@
 import GoTrueClient from '../src/GoTrueClient'
+import { SESSION_WRITE_WAIT_MS } from '../src/lib/constants'
 import type { AuthChangeEvent, LockFunc, SupportedStorage } from '../src/lib/types'
 
 // A refresh reads the session from storage, then later saves the renewed
@@ -660,6 +661,26 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(signedInAs).toEqual(['user-b'])
     expect(JSON.parse(t.userStorage!.store.get(`${STORAGE_KEY}-user`)!).user.id).toBe('user-b')
   })
+
+  test("without userStorage, start-up recovery does not move another session's user back", async () => {
+    // userStorage was turned off, and the user left under its own key belongs
+    // to another session.
+    const sessionB = makeSession('user-b', 'b')
+    const t = await setup({ storedSession: sessionB })
+    t.storage.store.set(STORAGE_KEY, JSON.stringify({ ...sessionB, user: undefined }))
+    t.storage.store.set(
+      `${STORAGE_KEY}-user`,
+      JSON.stringify({ user: makeSession('user-a', 'a').user })
+    )
+
+    // @ts-expect-error access private for test
+    await t.client._recoverAndRefresh()
+    await settle()
+
+    expect(t.signedInAs).toEqual(['user-b'])
+    expect(JSON.parse(t.storage.store.get(STORAGE_KEY)!).user.id).toBe('user-b')
+  })
+
   // Start-up recovery writes to storage after reads and requests of its own.
   // A session saved meanwhile is newer, so recovery must neither overwrite it
   // nor announce the session it read.
@@ -946,6 +967,35 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     expect(t.events).not.toContain('SIGNED_OUT')
   })
 
+  test('getUser() removes a session the server no longer knows', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+    t.fetch.mockImplementationOnce(async () =>
+      json(403, { code: 403, error_code: 'session_not_found', msg: 'Session not found' })
+    )
+
+    const { error } = await t.client.getUser()
+    await settle()
+
+    expect(error?.name).toBe('AuthSessionMissingError')
+    expect(t.storedRefreshToken()).toBeNull()
+    expect(t.events).toEqual(['SIGNED_OUT'])
+  })
+
+  test('getUser() signs out once when its refresh found the session gone', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', -10) })
+    t.setRefreshReply(
+      Promise.resolve(
+        json(403, { code: 403, error_code: 'session_not_found', msg: 'Session not found' })
+      )
+    )
+
+    await t.client.getUser()
+    await settle()
+
+    expect(t.storedRefreshToken()).toBeNull()
+    expect(t.events).toEqual(['SIGNED_OUT'])
+  })
+
   test('getUser() does not remove again after its refresh found the session gone', async () => {
     const t = await setup({ storedSession: makeSession('user-a', 'a', -10) })
     t.setRefreshReply(
@@ -1023,24 +1073,232 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
     }
   )
 
-  test('a session write that never finishes holds up the session writes after it', async () => {
-    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+  describe('a session another client wrote to the same storage', () => {
+    // Only storage can show these writes. They land while the refresh's own
+    // write waits for this client's write ahead of it.
+    const anotherClientSaves = (t: Awaited<ReturnType<typeof setup>>) =>
+      t.storage.store.set(STORAGE_KEY, JSON.stringify(makeSession('user-c', 'c')))
 
-    const respond = t.holdRefreshReply()
+    test('is kept when it lands while a refresh save waits in the queue', async () => {
+      const sessionA = makeSession('user-a', 'a')
+      const t = await setup({ storedSession: sessionA })
+      const respond = t.holdRefreshReply()
+      const refreshing = t.client.refreshSession()
+      await settle()
+
+      const writes = t.storage.holdWrites()
+      // @ts-expect-error access private for test
+      const resaving = t.client._saveSession(sessionA)
+      await settle()
+      writes.stopHolding()
+      respond(json(200, makeSession('user-a', 'a-renewed')))
+      await settle()
+      anotherClientSaves(t)
+      writes.release()
+      await resaving
+      const { error } = await refreshing
+
+      expect(error?.name).toBe('AuthRefreshDiscardedError')
+      expect(t.storedRefreshToken()).toBe('refresh-c')
+      expect(t.events).not.toContain('TOKEN_REFRESHED')
+    })
+
+    test('is kept when it lands while a refused refresh waits to remove the session', async () => {
+      const sessionA = makeSession('user-a', 'a', -60)
+      const t = await setup({ storedSession: sessionA })
+      const respond = t.holdRefreshReply()
+      const refreshing = t.client.refreshSession()
+      await settle()
+
+      const writes = t.storage.holdWrites()
+      // @ts-expect-error access private for test
+      const resaving = t.client._saveSession(sessionA)
+      await settle()
+      writes.stopHolding()
+      respond(refusedRefresh())
+      await settle()
+      anotherClientSaves(t)
+      writes.release()
+      await resaving
+      await refreshing
+
+      expect(t.storedRefreshToken()).toBe('refresh-c')
+      expect(t.events).not.toContain('SIGNED_OUT')
+    })
+  })
+
+  describe('a session write that never finishes', () => {
+    const neverFinishingSave = async () => {
+      const t = await setup({ storedSession: makeSession('user-a', 'a') })
+      const respond = t.holdRefreshReply()
+      void t.client.refreshSession()
+      await settle()
+      const writes = t.storage.holdWrites({ applyLate: true })
+      respond(json(200, makeSession('user-a', 'a-renewed')))
+      await settle()
+      writes.stopHolding()
+      jest.useFakeTimers()
+      return t
+    }
+
+    afterEach(() => {
+      jest.useRealTimers()
+    })
+
+    test('holds up a sign-in after it for a while, so it cannot land first', async () => {
+      const t = await neverFinishingSave()
+
+      let signedIn = false
+      void signInAsB(t.client).then(() => (signedIn = true))
+      await jest.advanceTimersByTimeAsync(SESSION_WRITE_WAIT_MS - 1)
+      expect(signedIn).toBe(false)
+
+      await jest.advanceTimersByTimeAsync(1)
+      expect(signedIn).toBe(true)
+      expect(t.storedRefreshToken()).toBe('refresh-b')
+    })
+
+    test('does not undo a sign-out that stopped waiting for it when it lands after all', async () => {
+      const t = await setup({ storedSession: makeSession('user-a', 'a') })
+      const respond = t.holdRefreshReply()
+      const refreshing = t.client.refreshSession()
+      await settle()
+      const writes = t.storage.holdWrites({ applyLate: true })
+      respond(json(200, makeSession('user-a', 'a-renewed')))
+      await settle()
+      writes.stopHolding()
+      jest.useFakeTimers()
+
+      const signingOut = t.client.signOut({ scope: 'local' })
+      await jest.advanceTimersByTimeAsync(SESSION_WRITE_WAIT_MS)
+      await signingOut
+      // A new PKCE flow starts after the sign-out.
+      t.storage.store.set(`${STORAGE_KEY}-code-verifier`, 'verifier')
+      writes.release()
+      const { error } = await refreshing
+
+      expect(error?.name).toBe('AuthRefreshDiscardedError')
+      expect(t.storedRefreshToken()).toBeNull()
+      expect(t.events).toEqual(['SIGNED_OUT'])
+      expect(t.storage.store.get(`${STORAGE_KEY}-code-verifier`)).toBe('verifier')
+    })
+
+    test('cannot block a sign-out for good', async () => {
+      const t = await neverFinishingSave()
+
+      const signingOut = t.client.signOut({ scope: 'local' })
+      await jest.advanceTimersByTimeAsync(SESSION_WRITE_WAIT_MS)
+      await signingOut
+
+      expect(t.storedRefreshToken()).toBeNull()
+      expect(t.events).toContain('SIGNED_OUT')
+    })
+  })
+
+  describe('a write already in progress when the read that starts a refresh begins', () => {
+    test('a slow sign-in is not overwritten by the refresh', async () => {
+      const t = await setup({ storedSession: makeSession('user-a', 'a', 60) })
+      const respond = t.holdRefreshReply()
+
+      const writes = t.storage.holdWrites({ applyLate: true })
+      const signingIn = signInAsB(t.client)
+      await settle()
+      writes.stopHolding()
+      // The read sees A, and B lands before the refresh takes its snapshot.
+      const reads = t.storage.holdReads()
+      const loading = t.client.getSession()
+      await settle()
+      reads.stopHolding()
+      writes.release()
+      await signingIn
+      reads.release()
+      await settle()
+      respond(json(200, makeSession('user-a', 'a-renewed')))
+      await loading
+      await settle()
+
+      expect(t.storedRefreshToken()).toBe('refresh-b')
+    })
+
+    test('a slow sign-out is not undone by the refresh', async () => {
+      const t = await setup({ storedSession: makeSession('user-a', 'a') })
+      const respond = t.holdRefreshReply()
+
+      const adapter = t.storage.adapter
+      const removeItem = adapter.removeItem
+      let finishRemoval!: () => void
+      const removal = new Promise<void>((resolve) => (finishRemoval = resolve))
+      adapter.removeItem = async (key) => {
+        await removal
+        await removeItem(key)
+      }
+      const signingOut = t.client.signOut({ scope: 'local' })
+      await settle()
+      // The read sees A, and the removal lands before the snapshot.
+      const reads = t.storage.holdReads()
+      const refreshing = t.client.refreshSession()
+      await settle()
+      reads.stopHolding()
+      adapter.removeItem = removeItem
+      finishRemoval()
+      await signingOut
+      reads.release()
+      await settle()
+      respond(json(200, makeSession('user-a', 'a-renewed')))
+      await refreshing
+      await settle()
+
+      expect(t.events).toContain('SIGNED_OUT')
+      expect(t.storedRefreshToken()).toBeNull()
+    })
+  })
+
+  test('a refresh of a session saved after a sign-out keeps its renewed tokens', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+    t.setRefreshReply(Promise.resolve(json(200, makeSession('user-b', 'b-renewed'))))
+
+    // The read that starts the refresh finds B, which replaced A while the
+    // read was open.
+    const adapter = t.storage.adapter
+    const getItem = adapter.getItem
+    let finishRead!: () => void
+    const read = new Promise<void>((resolve) => (finishRead = resolve))
+    adapter.getItem = async (key) => {
+      await read
+      return getItem(key)
+    }
     const refreshing = t.client.refreshSession()
     await settle()
-    // The refresh's save never finishes. A sign-in after it must not land
-    // first, or the refresh's save could still land over it.
-    const writes = t.storage.holdWrites({ applyLate: true })
-    respond(json(200, makeSession('user-a', 'a-renewed')))
+    adapter.getItem = getItem
+    await t.client.signOut({ scope: 'local' })
+    await signInAsB(t.client)
+    finishRead()
+    const { error } = await refreshing
     await settle()
-    writes.stopHolding()
-    let signedIn = false
-    signInAsB(t.client).then(() => (signedIn = true))
-    await new Promise((resolve) => setTimeout(resolve, 50))
 
-    expect(signedIn).toBe(false)
+    expect(error).toBeNull()
+    expect(t.storedRefreshToken()).toBe('refresh-b-renewed')
+  })
+
+  test('getUser() removes a session whose cached refresh failure says it is gone', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a', 5) })
+    t.setRefreshReply(
+      Promise.resolve(
+        json(403, { code: 403, error_code: 'session_not_found', msg: 'Session not found' })
+      )
+    )
+
+    // A proactive refresh fails, keeps the still valid session and caches the
+    // failure. The session then expires within the cooldown.
+    await t.client.getSession()
     expect(t.storedRefreshToken()).toBe('refresh-a')
-    void refreshing
+    const now = jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 10 * 1000)
+    const { error } = await t.client.getUser()
+    now.mockRestore()
+    await settle()
+
+    expect(error?.name).toBe('AuthSessionMissingError')
+    expect(t.storedRefreshToken()).toBeNull()
+    expect(t.events).toEqual(['SIGNED_OUT'])
   })
 })
