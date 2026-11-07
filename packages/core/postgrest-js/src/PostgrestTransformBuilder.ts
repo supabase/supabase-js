@@ -738,8 +738,8 @@ export default class PostgrestTransformBuilder<
     ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never,
   >(): PostgrestBuilder<ClientOptions, ResultOne | null, ThrowOnError> {
     // Enforce cardinality on the server for writes so that multiple rows roll back.
-    // Reads use a list response to allow zero rows without a server error.
-    if (this.method !== 'GET' && this.method !== 'HEAD') {
+    // Reads and RPCs use a list response: an RPC can write data while returning no rows.
+    if (this.method !== 'GET' && this.method !== 'HEAD' && !this.url.pathname.includes('/rpc/')) {
       this.headers.set('Accept', 'application/vnd.pgrst.object+json')
     }
     this.isMaybeSingle = true

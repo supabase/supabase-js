@@ -471,11 +471,13 @@ export default abstract class PostgrestBuilder<
       // Singular responses reject zero rows too, but maybeSingle allows them.
       if (
         this.isMaybeSingle &&
+        !this.url.pathname.includes('/rpc/') &&
         res.status === 406 &&
         error?.code === 'PGRST116' &&
         /\b0 rows\b/.test(error.details)
       ) {
         error = null
+        count = this.headers.get('Prefer')?.split(',').includes('count=exact') ? 0 : null
         status = 200
         statusText = 'OK'
       }

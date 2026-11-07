@@ -52,6 +52,28 @@ describe.each(['update', 'delete'] as const)('maybeSingle after %s', (method) =>
     expect(result).toMatchObject({ data: null, error: null, status: 200, success: true })
   })
 
+  test.each([false, true])(
+    'preserves an exact zero count (throwOnError: %s)',
+    async (throwOnError) => {
+      const query = (
+        method === 'update'
+          ? postgrest.from('users').update({ status: 'OFFLINE' }, { count: 'exact' })
+          : postgrest.from('users').delete({ count: 'exact' })
+      )
+        .eq('username', `maybe-single-${method}-missing`)
+        .select()
+        .maybeSingle()
+
+      expect(await (throwOnError ? query.throwOnError() : query)).toMatchObject({
+        data: null,
+        error: null,
+        count: 0,
+        status: 200,
+        success: true,
+      })
+    }
+  )
+
   test('commits a single row and returns an object', async () => {
     const { data } = await mutation()
       .eq('username', usernames[0])
@@ -78,5 +100,38 @@ describe.each(['update', 'delete'] as const)('maybeSingle after %s', (method) =>
           ]
         : [{ username: usernames[1], status: 'ONLINE' }]
     )
+  })
+})
+
+describe('maybeSingle after a write RPC with no returned rows', () => {
+  const username = 'maybe-single-rpc-write'
+
+  beforeEach(async () => {
+    await postgrest.from('users').insert({ username, status: 'ONLINE' }).throwOnError()
+  })
+
+  afterEach(async () => {
+    await postgrest.from('users').delete().eq('username', username).throwOnError()
+  })
+
+  test.each([false, true])('commits the write (throwOnError: %s)', async (throwOnError) => {
+    // The function updates the user to OFFLINE, so the response filter returns no rows.
+    const query = postgrest
+      .rpc('set_users_offline', { name_param: username })
+      .eq('status', 'ONLINE')
+      .maybeSingle()
+    expect(await (throwOnError ? query.throwOnError() : query)).toMatchObject({
+      data: null,
+      error: null,
+      status: 200,
+      success: true,
+    })
+    const { data } = await postgrest
+      .from('users')
+      .select('status')
+      .eq('username', username)
+      .single()
+      .throwOnError()
+    expect(data).toEqual({ status: 'OFFLINE' })
   })
 })
