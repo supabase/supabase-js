@@ -228,30 +228,28 @@ test('maybeSingle', async () => {
   `)
 })
 
-test('maybeSingle', async () => {
+test('maybeSingle rolls back a multi-row insert', async () => {
   const res = await postgrest
     .from('users')
     .insert([{ username: 'a' }, { username: 'b' }])
     .select()
     .maybeSingle()
-  expect(res).toMatchInlineSnapshot(`
-    {
-      "count": null,
-      "data": null,
-      "error": {
-        "code": "PGRST116",
-        "details": "Results contain 2 rows, application/vnd.pgrst.object+json requires 1 row",
-        "hint": null,
-        "message": "JSON object requested, multiple (or no) rows returned",
-      },
-      "status": 406,
-      "statusText": "Not Acceptable",
-      "success": false,
-    }
-  `)
-
-  // Clean up inserted users so they don't leak into other test files
-  await postgrest.from('users').delete().in('username', ['a', 'b'])
+  try {
+    expect(res).toMatchObject({
+      data: null,
+      error: { code: 'PGRST116' },
+      status: 406,
+      success: false,
+    })
+    const { data } = await postgrest
+      .from('users')
+      .select()
+      .in('username', ['a', 'b'])
+      .throwOnError()
+    expect(data).toEqual([])
+  } finally {
+    await postgrest.from('users').delete().in('username', ['a', 'b']).throwOnError()
+  }
 })
 
 test('select on insert', async () => {
