@@ -1264,3 +1264,167 @@ describe('MFA Complex Branches', () => {
     expect(mockFetch).toHaveBeenCalled()
   })
 })
+
+describe('online event handling', () => {
+  const GoTrueClient = require('../src/GoTrueClient').default
+  const { memoryLocalStorageAdapter } = require('../src/lib/local-storage')
+
+  const buildClient = () =>
+    new GoTrueClient({
+      url: 'http://localhost:9999',
+      storage: memoryLocalStorageAdapter(),
+      autoRefreshToken: false,
+      persistSession: true,
+    })
+
+  const seedCooldown = (client: any) => {
+    client.lastRefreshFailure = {
+      refreshToken: 'refresh-token-r1',
+      result: { data: null, error: { name: 'AuthRetryableFetchError' } },
+      expiresAt: Date.now() + 60_000,
+    }
+  }
+
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+  test('online event clears the refresh-failure cooldown', async () => {
+    const client = buildClient()
+    await client.initialize()
+    seedCooldown(client)
+
+    window.dispatchEvent(new Event('online'))
+    await flush()
+
+    expect(client.lastRefreshFailure).toBeNull()
+
+    await client.dispose()
+  })
+
+  test('online event ticks only while the auto-refresh ticker is active', async () => {
+    const client = buildClient()
+    await client.initialize()
+
+    const tickSpy = jest.spyOn(client, '_autoRefreshTokenTick').mockResolvedValue(undefined)
+
+    // Ticker not running (e.g. background tab): no proactive refresh.
+    window.dispatchEvent(new Event('online'))
+    await flush()
+    expect(tickSpy).not.toHaveBeenCalled()
+
+    await client.startAutoRefresh()
+    await flush() // let startAutoRefresh's own initial tick fire
+    tickSpy.mockClear()
+
+    window.dispatchEvent(new Event('online'))
+    await flush()
+    expect(tickSpy).toHaveBeenCalled()
+
+    await client.stopAutoRefresh()
+    await client.dispose()
+  })
+
+  test('dispose removes the online listener', async () => {
+    const client = buildClient()
+    await client.initialize()
+    await client.dispose()
+
+    seedCooldown(client)
+    window.dispatchEvent(new Event('online'))
+    await flush()
+
+    // listener removed, so the seeded cooldown is untouched
+    expect(client.lastRefreshFailure).not.toBeNull()
+  })
+
+  test('dispose during pending initialization registers no lifecycle listeners', async () => {
+    const addSpy = jest.spyOn(window, 'addEventListener')
+
+    // Storage whose first read blocks until released, keeping _initialize
+    // pending across the dispose() call (React Strict Mode / HMR shape).
+    let releaseStorage: () => void = () => {}
+    const gate = new Promise<void>((resolve) => {
+      releaseStorage = resolve
+    })
+    const backing = memoryLocalStorageAdapter()
+    const delayedStorage = {
+      getItem: async (key: string) => {
+        await gate
+        return backing.getItem(key)
+      },
+      setItem: (key: string, value: string) => backing.setItem(key, value),
+      removeItem: (key: string) => backing.removeItem(key),
+    }
+
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      storage: delayedStorage,
+      autoRefreshToken: false,
+      persistSession: true,
+    })
+    const initPromise = client.initialize()
+    await client.dispose()
+    releaseStorage()
+    await initPromise
+
+    const lifecycleListeners = addSpy.mock.calls.filter(
+      ([type]) => type === 'online' || type === 'visibilitychange'
+    )
+    expect(lifecycleListeners).toHaveLength(0)
+
+    addSpy.mockRestore()
+  })
+
+  test('dispose during visibility setup: no online listener, no restarted ticker', async () => {
+    const addSpy = jest.spyOn(window, 'addEventListener')
+
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      storage: memoryLocalStorageAdapter(),
+      autoRefreshToken: true,
+      persistSession: true,
+      skipAutoInitialize: true,
+    })
+
+    // Gate _onVisibilityChanged so dispose() interleaves inside
+    // _handleVisibilityChange's await, after initialization already passed
+    // its first _disposed check. The original then resumes on the disposed
+    // client and reaches _startAutoRefresh.
+    let release: () => void = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const original = (client as any)._onVisibilityChanged.bind(client)
+    jest
+      .spyOn(client as any, '_onVisibilityChanged')
+      .mockImplementation(async (...args: unknown[]) => {
+        await gate
+        return original(...args)
+      })
+
+    const initPromise = client.initialize()
+    await flush() // let initialize reach the gated await
+    await client.dispose()
+    release()
+    await initPromise
+    await flush() // let the fire-and-forget _startAutoRefresh settle
+
+    expect(addSpy.mock.calls.filter(([type]) => type === 'online')).toHaveLength(0)
+    expect((client as any).autoRefreshTicker).toBeNull()
+    expect((client as any).autoRefreshTickTimeout).toBeNull()
+
+    addSpy.mockRestore()
+  })
+
+  test('_startAutoRefresh resumed after dispose creates no timers', async () => {
+    const client = buildClient()
+    await client.initialize()
+
+    // Suspended at its internal await when dispose() runs.
+    const startPromise = (client as any)._startAutoRefresh()
+    await client.dispose()
+    await startPromise
+
+    expect((client as any).autoRefreshTicker).toBeNull()
+    expect((client as any).autoRefreshTickTimeout).toBeNull()
+  })
+})
