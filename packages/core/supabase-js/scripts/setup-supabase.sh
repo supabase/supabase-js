@@ -3,6 +3,15 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+# The psql calls below hide their output, so a missing tool would otherwise
+# make the script exit silently under `set -e`.
+for cmd in docker psql jq curl; do
+  if ! command -v "$cmd" > /dev/null 2>&1; then
+    echo "❌ '$cmd' is required but was not found. See packages/core/supabase-js/TESTING.md#prerequisites-for-local-testing"
+    exit 1
+  fi
+done
+
 echo "🚀 Stop supabase if it is running"
 npx supabase stop
 
