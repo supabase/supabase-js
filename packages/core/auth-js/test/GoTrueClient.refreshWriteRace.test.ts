@@ -153,6 +153,7 @@ async function setup({
   const fetch = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
     if (String(url).includes(PASSWORD_GRANT)) return json(200, makeSession('user-b', 'b'))
     if (String(url).includes(REFRESH_GRANT)) return refreshReply
+    if (String(url).includes('/logout')) return new Response(null, { status: 204 })
     if (String(url).endsWith('/user')) {
       await userReplyGate
       // The user the bearer token belongs to.
@@ -857,6 +858,31 @@ describe('refresh vs. a session saved while the refresh reads storage (#2731)', 
 
     expect(t.storedRefreshToken()).toBeNull()
     expect((t.client as any).suppressGetSessionWarning).toBe(false)
+  })
+
+  // https://github.com/supabase/supabase-js/issues/2806
+  test('a sign-out during the refresh commit guard read discards the refresh', async () => {
+    const t = await setup({ storedSession: makeSession('user-a', 'a') })
+
+    const respond = t.holdRefreshReply()
+    const refreshing = t.client.refreshSession()
+    await settle()
+
+    const reads = t.storage.holdReads()
+    respond(json(200, makeSession('user-a', 'a-renewed')))
+    await settle()
+    reads.stopHolding()
+    const { error: signOutError } = await t.client.signOut({ scope: 'local' })
+    reads.release()
+    const { error } = await refreshing
+    await settle()
+
+    expect(signOutError).toBeNull()
+    expect(error?.name).toBe('AuthRefreshDiscardedError')
+    expect(t.events).toEqual(['SIGNED_OUT'])
+    expect(t.storedRefreshToken()).toBeNull()
+    const { data } = await t.client.getSession()
+    expect(data.session).toBeNull()
   })
 
   test('a sign-in during a refresh save applied late is not undone by it', async () => {
