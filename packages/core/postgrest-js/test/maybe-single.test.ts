@@ -58,4 +58,54 @@ describe('maybeSingle cardinality handling', () => {
       postgrest.from('users').select('username').maybeSingle().throwOnError()
     ).rejects.toThrow(PostgrestError)
   })
+
+  test.each([
+    'The result contains 0 rows',
+    'Results contain 0 rows, application/vnd.pgrst.object+json requires 1 row',
+  ])('accepts a zero-row singular response: %s', async (details) => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ...okJson({
+        code: 'PGRST116',
+        details,
+        hint: null,
+        message: 'Cannot coerce the result to a single JSON object',
+      }),
+      ok: false,
+      status: 406,
+      statusText: 'Not Acceptable',
+    })
+    const postgrest = new PostgrestClient<Database>(REST_URL, { fetch: fetchMock })
+
+    const result = await postgrest.from('users').delete().select().maybeSingle().throwOnError()
+
+    expect(result).toEqual({
+      data: null,
+      error: null,
+      count: null,
+      status: 200,
+      statusText: 'OK',
+      success: true,
+    })
+  })
+
+  test.each([1, 10])('preserves a singular response error for %s rows', async (rows) => {
+    const error = {
+      code: 'PGRST116',
+      details: `The result contains ${rows} rows`,
+      hint: null,
+      message: 'Cannot coerce the result to a single JSON object',
+    }
+    const fetchMock = jest.fn().mockResolvedValue({
+      ...okJson(error),
+      ok: false,
+      status: 406,
+      statusText: 'Not Acceptable',
+    })
+    const postgrest = new PostgrestClient<Database>(REST_URL, { fetch: fetchMock })
+
+    expect(await postgrest.from('users').delete().select().maybeSingle()).toMatchObject({
+      error,
+      status: 406,
+    })
+  })
 })

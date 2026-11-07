@@ -737,8 +737,11 @@ export default class PostgrestTransformBuilder<
   maybeSingle<
     ResultOne = Result extends (infer ResultOne)[] ? ResultOne : never,
   >(): PostgrestBuilder<ClientOptions, ResultOne | null, ThrowOnError> {
-    // No Accept header override — we fetch as a list and enforce cardinality client-side.
-    // Fixes https://github.com/supabase/postgrest-js/issues/361 for all request methods.
+    // Enforce cardinality on the server for writes so that multiple rows roll back.
+    // Reads use a list response to allow zero rows without a server error.
+    if (this.method !== 'GET' && this.method !== 'HEAD') {
+      this.headers.set('Accept', 'application/vnd.pgrst.object+json')
+    }
     this.isMaybeSingle = true
     return this as unknown as PostgrestBuilder<ClientOptions, ResultOne | null, ThrowOnError>
   }
