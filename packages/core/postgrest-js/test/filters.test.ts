@@ -390,6 +390,36 @@ test('notIn', async () => {
   `)
 })
 
+test.each(['a"b,c', 'a\\b,c', 'say "hi"', 'a\\b'])(
+  'in and notIn round-trip escaped values: %s',
+  async (value) => {
+    const username = `in-filter-${value}`
+    const control = 'in-filter-control'
+    const inserted = await postgrest.from('users').insert([{ username }, { username: control }])
+    expect(inserted.error).toBeNull()
+
+    try {
+      const included = await postgrest.from('users').select('username').in('username', [username])
+      expect(included.error).toBeNull()
+      expect(included.data).toEqual([{ username }])
+
+      const excluded = await postgrest
+        .from('users')
+        .select('username')
+        .like('username', 'in-filter-%')
+        .notIn('username', [username])
+      expect(excluded.error).toBeNull()
+      expect(excluded.data).toEqual([{ username: control }])
+    } finally {
+      // Use equality filters so cleanup is independent of list escaping.
+      const deleted = await postgrest.from('users').delete().eq('username', username)
+      expect(deleted.error).toBeNull()
+      const deletedControl = await postgrest.from('users').delete().eq('username', control)
+      expect(deletedControl.error).toBeNull()
+    }
+  }
+)
+
 test('contains', async () => {
   const res = await postgrest.from('users').select('age_range').contains('age_range', '[1,2)')
   expect(res).toMatchInlineSnapshot(`
