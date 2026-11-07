@@ -29,6 +29,7 @@ describe('CORS Module', () => {
           'traceparent',
           'tracestate',
           'baggage',
+          'x-supabase-namespace',
         ].sort()
       )
     })
