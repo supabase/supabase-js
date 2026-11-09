@@ -304,6 +304,30 @@ type Binding = {
   id?: string
 }
 
+/**
+ * Realtime reports request validation failures as `{ errors: { <field>: [<message>] } }`.
+ * Flatten that shape into `field: message` pairs so callers get an actionable error.
+ */
+function formatValidationErrors(errors: unknown): string | undefined {
+  if (Array.isArray(errors)) {
+    const messages = errors.filter((message): message is string => typeof message === 'string')
+    return messages.length > 0 ? messages.join(', ') : undefined
+  }
+
+  if (!errors || typeof errors !== 'object') {
+    return undefined
+  }
+
+  const messages = Object.entries(errors as Record<string, unknown>).flatMap(([field, value]) => {
+    const fieldMessages = (Array.isArray(value) ? value : [value]).filter(
+      (message): message is string => typeof message === 'string' && message.length > 0
+    )
+    return fieldMessages.length > 0 ? [`${field}: ${fieldMessages.join(', ')}`] : []
+  })
+
+  return messages.length > 0 ? messages.join('; ') : undefined
+}
+
 /** A channel is the basic building block of Realtime
  * and narrows the scope of data flow to subscribed clients.
  * You can think of a channel as a chatroom where participants are able to see who's online
@@ -1014,13 +1038,18 @@ export default class RealtimeChannel {
       )
     }
 
-    let errorMessage = response.statusText
+    let errorMessage: string | undefined
     try {
       const errorBody = await response.json()
-      errorMessage = errorBody.error || errorBody.message || errorMessage
+      errorMessage =
+        errorBody.error || errorBody.message || formatValidationErrors(errorBody.errors)
     } catch {}
 
-    return Promise.reject(new Error(errorMessage))
+    return Promise.reject(
+      new Error(
+        errorMessage || response.statusText || `httpSend() failed with status ${response.status}`
+      )
+    )
   }
 
   /**
