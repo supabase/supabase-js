@@ -122,6 +122,7 @@ features:
     status: implemented
     symbols:
       - GoTrueAdminApi.updateUserById
+  auth.admin.update_mfa_factor: not_implemented
   auth.identities.link_identity:
     status: implemented
     symbols:
@@ -930,6 +931,9 @@ features:
     symbols:
       - default.download
       - FetchParameters.signal
+  storage.file_buckets.purge_project_cache: not_implemented
+  storage.file_buckets.resumable_upload: not_implemented
+  storage.file_buckets.transfer_progress: not_implemented
   storage.vector_buckets.access_vector_index:
     status: implemented
     symbols:
@@ -1197,6 +1201,14 @@ features:
     symbols:
       - FunctionsClient.invoke
       - FunctionInvokeOptions
+  # Newly synced from the canonical spec; no local group yet, place manually.
+  auth.sso_admin.create_provider: not_implemented
+  auth.sso_admin.delete_provider: not_implemented
+  auth.sso_admin.get_provider: not_implemented
+  auth.sso_admin.list_providers: not_implemented
+  auth.sso_admin.update_provider: not_implemented
+  database.generated_types.typed_queries: not_implemented
+  database.generated_types.typed_rpc: not_implemented
 # Shared across auth.mfa_recovery_codes.{generate,get_status,regenerate,unenroll,verify}.
 supporting_symbols:
   - AuthMFARecoveryCodesApi
