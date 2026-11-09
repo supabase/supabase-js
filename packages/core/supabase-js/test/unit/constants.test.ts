@@ -35,7 +35,7 @@ describe('constants', () => {
 
   test('DEFAULT_HEADERS should contain X-Client-Info', () => {
     expect(DEFAULT_HEADERS).toHaveProperty('X-Client-Info')
-    expect(DEFAULT_HEADERS['X-Client-Info']).toMatch(/^supabase-js\/.*; runtime=.*$/)
+    expect(DEFAULT_HEADERS['X-Client-Info']).toMatch(/^supabase-js\/[^;]+; runtime=node/)
   })
 
   test('DEFAULT_GLOBAL_OPTIONS should contain headers', () => {
@@ -86,26 +86,24 @@ describe('constants', () => {
       expect(newHeaders['X-Client-Info']).not.toContain('runtime-version=')
     })
 
-    test('should detect web environment', () => {
+    test('should report a browser as the platform without a runtime', () => {
       global.document = {} as any
 
       // Re-import to trigger the detection logic
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('runtime=web')
-      expect(newHeaders['X-Client-Info']).not.toContain('runtime-version=')
+      expect(newHeaders['X-Client-Info']).toBe(`supabase-js/${version}; platform=browser`)
     })
 
-    test('should detect React Native environment', () => {
+    test('should report React Native as the framework without a runtime', () => {
       global.navigator = { product: 'ReactNative' } as any
 
       // Re-import to trigger the detection logic
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('runtime=react-native')
-      expect(newHeaders['X-Client-Info']).not.toContain('runtime-version=')
+      expect(newHeaders['X-Client-Info']).toBe(`supabase-js/${version}; framework=react-native`)
     })
 
     test('should default to node environment with process version', () => {

@@ -3,30 +3,30 @@ import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { SupabaseAuthClientOptions, TracePropagationOptions } from './types'
 import { version } from './version'
 
-let JS_ENV = ''
-let JS_RUNTIME_VERSION: string | undefined
+const _clientInfoMeta: string[] = []
 // @ts-ignore
 if (typeof Deno !== 'undefined') {
-  JS_ENV = 'deno'
+  _clientInfoMeta.push('runtime=deno')
   // @ts-ignore
-  JS_RUNTIME_VERSION = Deno.version?.deno
+  const denoVersion: string | undefined = Deno.version?.deno
+  if (denoVersion) {
+    _clientInfoMeta.push(`runtime-version=${denoVersion}`)
+  }
 } else if (typeof document !== 'undefined') {
-  JS_ENV = 'web'
+  _clientInfoMeta.push('platform=browser')
 } else if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
-  JS_ENV = 'react-native'
+  _clientInfoMeta.push('framework=react-native')
 } else {
-  JS_ENV = 'node'
+  _clientInfoMeta.push('runtime=node')
   const _process = (globalThis as any)['process']
-  JS_RUNTIME_VERSION = _process?.['version']?.replace(/^v/, '')
-}
-
-const _runtimeMeta = [`runtime=${JS_ENV}`]
-if (JS_RUNTIME_VERSION) {
-  _runtimeMeta.push(`runtime-version=${JS_RUNTIME_VERSION}`)
+  const nodeVersion: string | undefined = _process?.['version']?.replace(/^v/, '')
+  if (nodeVersion) {
+    _clientInfoMeta.push(`runtime-version=${nodeVersion}`)
+  }
 }
 
 export const DEFAULT_HEADERS = {
-  'X-Client-Info': `supabase-js/${version}; ${_runtimeMeta.join('; ')}`,
+  'X-Client-Info': [`supabase-js/${version}`, ..._clientInfoMeta].join('; '),
 }
 
 export const DEFAULT_GLOBAL_OPTIONS = {
