@@ -123,4 +123,93 @@ describe('constants', () => {
       expect(source).not.toContain('process.version')
     })
   })
+
+  describe('detectClientEnvironment', () => {
+    const { detectClientEnvironment, formatClientEnvironment } = require('../../src/lib/constants')
+    const describeEnvironment = (globals: object) =>
+      formatClientEnvironment(detectClientEnvironment(globals)).join('; ')
+
+    test('reports Bun as the runtime instead of its Node compatibility version', () => {
+      expect(
+        describeEnvironment({
+          Bun: { version: '1.3.14' },
+          navigator: { userAgent: 'Bun/1.3.14' },
+          process: { version: 'v24.3.0', versions: { bun: '1.3.14' } },
+        })
+      ).toBe('runtime=bun; runtime-version=1.3.14')
+    })
+
+    test('reports Cloudflare Workers as the platform without a runtime', () => {
+      expect(
+        describeEnvironment({
+          navigator: { userAgent: 'Cloudflare-Workers' },
+          process: { version: 'v22.0.0' },
+        })
+      ).toBe('platform=cloudflare-workers')
+    })
+
+    test('reports the Vercel edge runtime as the platform without a runtime', () => {
+      expect(describeEnvironment({ EdgeRuntime: 'edge-runtime' })).toBe(
+        'platform=vercel-edge-runtime'
+      )
+    })
+
+    test('reports Supabase Edge Runtime as the platform together with Deno', () => {
+      expect(
+        describeEnvironment({
+          Deno: { version: { deno: '2.1.4' } },
+          EdgeRuntime: { waitUntil: jest.fn() },
+          SUPABASE_VERSION: '1.67.0',
+        })
+      ).toBe('platform=edge-runtime; platform-version=1.67.0; runtime=deno; runtime-version=2.1.4')
+    })
+
+    test('reports Supabase Edge Runtime without a platform version when it is unknown', () => {
+      expect(
+        describeEnvironment({
+          Deno: { version: { deno: '2.1.4' } },
+          EdgeRuntime: { waitUntil: jest.fn() },
+        })
+      ).toBe('platform=edge-runtime; runtime=deno; runtime-version=2.1.4')
+    })
+
+    test('reports Netlify Edge Functions as the platform together with Deno', () => {
+      expect(
+        describeEnvironment({
+          Deno: { version: { deno: '2.1.4' } },
+          Netlify: { env: {} },
+        })
+      ).toBe('platform=netlify-edge; runtime=deno; runtime-version=2.1.4')
+    })
+
+    test('reports a Web Worker as a browser', () => {
+      expect(
+        describeEnvironment({
+          WorkerGlobalScope: jest.fn(),
+          navigator: { userAgent: 'Mozilla/5.0 Chrome/130.0.0.0' },
+        })
+      ).toBe('platform=browser')
+    })
+
+    test('reports Electron as the framework in a renderer process', () => {
+      expect(
+        describeEnvironment({
+          document: {},
+          navigator: { userAgent: 'Mozilla/5.0 Chrome/130.0.0.0 Electron/33.2.1 Safari/537.36' },
+        })
+      ).toBe('platform=browser; framework=electron; framework-version=33.2.1')
+    })
+
+    test('reports Electron as the framework in the main process', () => {
+      expect(
+        describeEnvironment({
+          process: { version: 'v20.18.1', versions: { electron: '33.2.1' } },
+        })
+      ).toBe('runtime=node; runtime-version=20.18.1; framework=electron; framework-version=33.2.1')
+    })
+
+    test('reports Node without a version when process is unavailable', () => {
+      expect(describeEnvironment({})).toBe('runtime=node')
+    })
+  })
 })
