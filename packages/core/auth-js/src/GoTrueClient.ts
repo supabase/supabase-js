@@ -330,6 +330,19 @@ export default class GoTrueClient {
    */
   protected lastRecoveryAttemptAt = 0
   /**
+   * Timestamp of the most recent recovery retry permitted during a cached
+   * retryable failure window on affirmative connectivity restoration (`reconnect`).
+   * Enforces that repeated or fluttering network reconnect events while still offline
+   * cannot bypass the cooldown repeatedly and cause an uncontrolled retry storm.
+   */
+  protected lastReconnectAttemptAt = 0
+  /**
+   * Consecutive reconnect recovery attempts made within the current failure cooldown window.
+   * Allows up to 2 attempts (e.g. premature local connection followed by genuine reachability)
+   * while strictly bounding retry volume during persistent outages.
+   */
+  protected reconnectAttempts = 0
+  /**
    * True while `_initialize()` is actively running. Used to distinguish
    * client-internal startup from intentional post-init recovery calls.
    */
@@ -5190,6 +5203,8 @@ export default class GoTrueClient {
       // (including the auto-refresh ticker) attempts a real refresh again.
       this.lastRefreshFailure = null
       this.lastRecoveryAttemptAt = 0
+      this.lastReconnectAttemptAt = 0
+      this.reconnectAttempts = 0
 
       this.refreshingDeferred.resolve(result)
 
@@ -5355,6 +5370,8 @@ export default class GoTrueClient {
     // for a token that no longer exists. Synchronous, before any `await`.
     this.lastRefreshFailure = null
     this.lastRecoveryAttemptAt = 0
+    this.lastReconnectAttemptAt = 0
+    this.reconnectAttempts = 0
 
     this.suppressGetSessionWarning = false
 
@@ -5523,6 +5540,74 @@ export default class GoTrueClient {
         this.lastRefreshFailure = null
       }
     }
+  }
+
+  /**
+   * Explicitly notifies the auth client that network connectivity has been restored.
+   *
+   * In environments without native browser window 'online' events (such as React Native),
+   * call this method from your network connectivity listener (e.g. `@react-native-community/netinfo`)
+   * when connectivity returns.
+   *
+   * If a transient transport error (e.g. network failure) is currently cached under the
+   * failure cooldown, calling this method clears the cached failure and initiates an
+   * immediate session recovery and refresh attempt.
+   *
+   * Non-retryable authentication errors (such as invalid or revoked refresh tokens) are
+   * preserved and will not be cleared by reconnecting.
+   *
+   * Concurrent calls are deduplicated into a single in-flight network request.
+   *
+   * @category Auth
+   * @example React Native connectivity listener with NetInfo
+   * ```ts
+   * import NetInfo from '@react-native-community/netinfo'
+   *
+   * NetInfo.addEventListener((state) => {
+   *   if (state.isConnected && state.isInternetReachable) {
+   *     supabase.auth.reconnect()
+   *   }
+   * })
+   * ```
+   */
+  async reconnect(): Promise<AuthResponse> {
+    await this.initializePromise
+
+    const failure = this.lastRefreshFailure
+    const isRetryable = failure && isAuthRetryableFetchError(failure.result.error)
+
+    if (isRetryable) {
+      const now = Date.now()
+      if (now - this.lastReconnectAttemptAt >= REFRESH_FAILURE_COOLDOWN_MS) {
+        this.reconnectAttempts = 0
+      }
+
+      if (this.reconnectAttempts < 2) {
+        this._debug('#reconnect()', 'clearing cached retryable failure for recovery on reconnect')
+        this.reconnectAttempts++
+        this.lastReconnectAttemptAt = now
+        this.lastRecoveryAttemptAt = now
+        this.lastRefreshFailure = null
+      }
+    }
+
+    const { data, error } = await this.getSession()
+    if (error) {
+      return this._returnResult({
+        data: {
+          user: null,
+          session: null,
+        },
+        error,
+      })
+    }
+    return this._returnResult({
+      data: {
+        user: data.session?.user ?? null,
+        session: data.session,
+      },
+      error: null,
+    })
   }
 
   async startAutoRefresh() {
