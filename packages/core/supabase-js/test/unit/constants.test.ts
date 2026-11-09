@@ -200,6 +200,25 @@ describe('constants', () => {
       ).toBe('platform=browser; framework=electron; framework-version=33.2.1')
     })
 
+    test('extracts only the Electron version when the user agent has extra tokens', () => {
+      expect(
+        describeEnvironment({
+          document: {},
+          navigator: { userAgent: 'SomeAppName/2.0/Electron/1.0.0;build=5' },
+        })
+      ).toBe('platform=browser; framework=electron; framework-version=1.0.0')
+    })
+
+    test('reports React Native even when browser globals are polyfilled', () => {
+      expect(
+        describeEnvironment({
+          document: {},
+          WorkerGlobalScope: jest.fn(),
+          navigator: { product: 'ReactNative' },
+        })
+      ).toBe('framework=react-native')
+    })
+
     test('reports Electron as the framework in the main process', () => {
       expect(
         describeEnvironment({

@@ -27,7 +27,7 @@ function detectDenoPlatform(globals: any): Pick<ClientEnvironment, 'platform' | 
 }
 
 function detectElectronFromUserAgent(userAgent: string | undefined): ClientEnvironment {
-  const electronVersion = userAgent?.match(/\bElectron\/(\S+)/)?.[1]
+  const electronVersion = userAgent?.match(/\bElectron\/([\w.-]+)/)?.[1]
   return electronVersion ? { framework: 'electron', frameworkVersion: electronVersion } : {}
 }
 
@@ -50,11 +50,11 @@ export function detectClientEnvironment(globals: any = globalThis): ClientEnviro
   if (typeof globals.EdgeRuntime === 'string') {
     return { platform: 'vercel-edge-runtime' }
   }
-  if (typeof globals.document !== 'undefined' || typeof globals.WorkerGlobalScope !== 'undefined') {
-    return { platform: 'browser', ...detectElectronFromUserAgent(userAgent) }
-  }
   if (globals.navigator?.product === 'ReactNative') {
     return { framework: 'react-native' }
+  }
+  if (typeof globals.document !== 'undefined' || typeof globals.WorkerGlobalScope !== 'undefined') {
+    return { platform: 'browser', ...detectElectronFromUserAgent(userAgent) }
   }
 
   const processVersions = globals.process?.['versions']
