@@ -56,15 +56,18 @@ type FileBody =
 
 export default class StorageFileApi extends BaseApiClient<StorageError> {
   protected bucketId: string | undefined
+  protected pathPrefix: string | undefined
 
   constructor(
     url: string,
     headers: { [key: string]: string } = {},
     bucketId?: string,
-    fetch?: Fetch
+    fetch?: Fetch,
+    pathPrefix?: string
   ) {
     super(url, headers, fetch, 'storage')
     this.bucketId = bucketId
+    this.pathPrefix = pathPrefix?.replace(/^\/+|\/+$/g, '') || undefined
   }
 
   /**
@@ -547,8 +550,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         `${this.url}/object/move`,
         {
           bucketId: this.bucketId,
-          sourceKey: fromPath,
-          destinationKey: toPath,
+          sourceKey: this._prefixPath(fromPath),
+          destinationKey: this._prefixPath(toPath),
           destinationBucket: options?.destinationBucket,
           sourceVersionId: options?.sourceVersionId,
         },
@@ -627,8 +630,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         `${this.url}/object/copy`,
         {
           bucketId: this.bucketId,
-          sourceKey: fromPath,
-          destinationKey: toPath,
+          sourceKey: this._prefixPath(fromPath),
+          destinationKey: this._prefixPath(toPath),
           destinationBucket: options?.destinationBucket,
           sourceVersionId: options?.sourceVersionId,
           copyMetadata:
@@ -824,7 +827,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       const data = await post(
         this.fetch,
         `${this.url}/object/sign/${this.bucketId}`,
-        { expiresIn, paths },
+        { expiresIn, paths: paths.map((path) => this._prefixPath(path)) },
         { headers: this.headers }
       )
 
@@ -839,6 +842,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       return data.map(
         (datum: { error: string | null; path: string | null; signedURL: string | null }) => ({
           ...datum,
+          path: this._unprefixPath(datum.path),
           signedUrl: datum.signedURL
             ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
             : null,
@@ -993,7 +997,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         }
       )
 
-      return recursiveToCamel(data) as Camelize<FileObjectV2>
+      const info = recursiveToCamel(data) as Camelize<FileObjectV2>
+      return this.pathPrefix ? this._unprefixEntry(info) : info
     })
   }
 
@@ -1196,12 +1201,20 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      return await remove(
+      const prefixes = paths.map((entry) =>
+        typeof entry === 'string'
+          ? this._prefixPath(entry)
+          : { ...entry, path: this._prefixPath(entry.path) }
+      )
+      const data: FileObject[] = await remove(
         this.fetch,
         `${this.url}/object/${this.bucketId}`,
-        { prefixes: paths },
+        { prefixes },
         { headers: this.headers }
       )
+      return this.pathPrefix && Array.isArray(data)
+        ? data.map((object) => this._unprefixEntry(object))
+        : data
     })
   }
 
@@ -1443,7 +1456,12 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       const sortBy = options?.sortBy
         ? { ...DEFAULT_SEARCH_OPTIONS.sortBy, ...options.sortBy }
         : DEFAULT_SEARCH_OPTIONS.sortBy
-      const body = { ...DEFAULT_SEARCH_OPTIONS, ...options, sortBy, prefix: path || '' }
+      const body = {
+        ...DEFAULT_SEARCH_OPTIONS,
+        ...options,
+        sortBy,
+        prefix: this._prefixPath(path || ''),
+      }
       return await post(
         this.fetch,
         `${this.url}/object/list/${this.bucketId}`,
@@ -1516,13 +1534,24 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   > {
     return this.handleOperation(async () => {
       const body = { ...options }
-      return await post(
+      if (this.pathPrefix) {
+        body.prefix = this._prefixPath(options?.prefix ?? '')
+      }
+      const data: SearchV2Result = await post(
         this.fetch,
         `${this.url}/object/list-v2/${this.bucketId}`,
         body,
         { headers: this.headers },
         parameters
       )
+      if (!this.pathPrefix) {
+        return data
+      }
+      return {
+        ...data,
+        folders: data.folders?.map((folder) => this._unprefixEntry(folder)),
+        objects: data.objects?.map((object) => this._unprefixEntry(object)),
+      }
     })
   }
 
@@ -1570,7 +1599,29 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   }
 
   private _getFinalPath(path: string) {
-    return `${this.bucketId}/${path.replace(/^\/+/, '')}`
+    return `${this.bucketId}/${this._prefixPath(path).replace(/^\/+/, '')}`
+  }
+
+  /** Prepends `pathPrefix` to an object path. Returns the path unchanged when there is no prefix. */
+  private _prefixPath(path: string) {
+    return this.pathPrefix ? `${this.pathPrefix}/${path.replace(/^\/+/, '')}` : path
+  }
+
+  /** Strips `pathPrefix` from an object path returned by the server. */
+  private _unprefixPath<T extends string | null | undefined>(path: T): T {
+    const prefix = `${this.pathPrefix}/`
+    if (!this.pathPrefix || typeof path !== 'string' || !path.startsWith(prefix)) {
+      return path
+    }
+    return path.slice(prefix.length) as T
+  }
+
+  /** Strips `pathPrefix` from the `name` and `key` of an object or folder returned by the server. */
+  private _unprefixEntry<T extends { name?: string; key?: string }>(entry: T): T {
+    const result: { name?: string; key?: string } = { ...entry }
+    if (typeof entry.name === 'string') result.name = this._unprefixPath(entry.name)
+    if (typeof entry.key === 'string') result.key = this._unprefixPath(entry.key)
+    return result as T
   }
 
   private _removeEmptyFolders(path: string) {

@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./cors": "./src/cors.ts",
-    "./tracing": "./src/tracing.ts"
+    "./tracing": "./src/tracing.ts",
+    "./dev": "./src/dev.ts"
   },
   "imports": {
     "@supabase/tracing": "./src/_internal/tracing/index.ts",
