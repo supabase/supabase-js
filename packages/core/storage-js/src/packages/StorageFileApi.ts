@@ -81,7 +81,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { id: string; path: string; fullPath: string }
+        data: { id: string; path: string; fullPath: string; version?: string }
         error: null
       }
     | {
@@ -143,7 +143,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         { headers, ...(options?.duplex ? { duplex: options.duplex } : {}) }
       )
 
-      return { path: cleanPath, id: data.Id, fullPath: data.Key }
+      return { path: cleanPath, id: data.Id, fullPath: data.Key, version: data.version }
     })
   }
 
@@ -155,7 +155,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
    * @param fileOptions Optional file upload options including cacheControl, contentType, contentEncoding, upsert, and metadata.
-   * @returns Promise with response containing file path, id, and fullPath or error
+   * @returns Promise with response containing file path, id, fullPath, and version or error
    *
    * @example Upload file
    * ```js
@@ -174,7 +174,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * {
    *   "data": {
    *     "path": "public/avatar1.png",
-   *     "fullPath": "avatars/public/avatar1.png"
+   *     "fullPath": "avatars/public/avatar1.png",
+   *     "version": "eaa8bdb5-2e00-4767-b5a9-d2502efe2196"
    *   },
    *   "error": null
    * }
@@ -220,7 +221,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { id: string; path: string; fullPath: string }
+        data: { id: string; path: string; fullPath: string; version?: string }
         error: null
       }
     | {
@@ -242,7 +243,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param fileOptions HTTP headers (cacheControl, contentType, contentEncoding, etc.).
    * **Note:** The `upsert` option has no effect here. To enable upsert behavior,
    * pass `{ upsert: true }` when calling `createSignedUploadUrl()` instead.
-   * @returns Promise with response containing file path and fullPath or error
+   * @returns Promise with response containing file path, fullPath, and version or error
    *
    * @example Upload to a signed URL
    * ```js
@@ -257,7 +258,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * {
    *   "data": {
    *     "path": "folder/cat.jpg",
-   *     "fullPath": "avatars/folder/cat.jpg"
+   *     "fullPath": "avatars/folder/cat.jpg",
+   *     "version": "eaa8bdb5-2e00-4767-b5a9-d2502efe2196"
    *   },
    *   "error": null
    * }
@@ -328,7 +330,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         ...(options?.duplex ? { duplex: options.duplex } : {}),
       })
 
-      return { path: cleanPath, fullPath: data.Key }
+      return { path: cleanPath, fullPath: data.Key, version: data.version }
     })
   }
 
@@ -421,7 +423,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * **Note:** The `upsert` option has no effect here. `update()` always replaces the
    * file at the given path, so the `x-upsert` header is not sent. To control upsert
    * behavior, use `upload()` instead.
-   * @returns Promise with response containing file path, id, and fullPath or error
+   * @returns Promise with response containing file path, id, fullPath, and version or error
    *
    * @example Update file
    * ```js
@@ -439,7 +441,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * {
    *   "data": {
    *     "path": "public/avatar1.png",
-   *     "fullPath": "avatars/public/avatar1.png"
+   *     "fullPath": "avatars/public/avatar1.png",
+   *     "version": "eaa8bdb5-2e00-4767-b5a9-d2502efe2196"
    *   },
    *   "error": null
    * }
@@ -481,7 +484,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     fileOptions?: FileOptions
   ): Promise<
     | {
-        data: { id: string; path: string; fullPath: string }
+        data: { id: string; path: string; fullPath: string; version?: string }
         error: null
       }
     | {
@@ -501,7 +504,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param toPath The new file path, including the new file name. For example `folder/image-new.png`.
    * @param options The destination options.
    * @param options.sourceVersionId The version id of the source object to move.
-   * @returns Promise with response containing success message or error
+   * @returns Promise with response containing success message and the moved object's version, or error
    *
    * @example Move file
    * ```js
@@ -515,7 +518,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * ```json
    * {
    *   "data": {
-   *     "message": "Successfully moved"
+   *     "message": "Successfully moved",
+   *     "version": "eaa8bdb5-2e00-4767-b5a9-d2502efe2196"
    *   },
    *   "error": null
    * }
@@ -533,7 +537,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: DestinationOptions
   ): Promise<
     | {
-        data: { message: string }
+        data: { message: string; version?: string | null }
         error: null
       }
     | {
@@ -568,7 +572,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param options.sourceVersionId The version id of the source object to copy.
    * @param options.copyMetadata Whether to copy the source metadata. Defaults to true. Set to false to apply metadata overrides; custom user metadata is not copied when false.
    * @param options.metadata File metadata overrides, applied only when copyMetadata is false. Unspecified fields retain their source values.
-   * @returns Promise with response containing copied file path or error
+   * @returns Promise with response containing copied file path and version or error
    *
    * @example Copy file
    * ```js
@@ -582,7 +586,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * ```json
    * {
    *   "data": {
-   *     "path": "avatars/private/avatar2.png"
+   *     "path": "avatars/private/avatar2.png",
+   *     "version": "eaa8bdb5-2e00-4767-b5a9-d2502efe2196"
    *   },
    *   "error": null
    * }
@@ -612,7 +617,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     options?: CopyOptions | DestinationOptions
   ): Promise<
     | {
-        data: { path: string }
+        data: { path: string; version?: string }
         error: null
       }
     | {
@@ -637,7 +642,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         },
         { headers: this.headers }
       )
-      return { path: data.Key }
+      return { path: data.Key, version: data.version }
     })
   }
 
