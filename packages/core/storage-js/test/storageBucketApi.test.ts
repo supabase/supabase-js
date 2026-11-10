@@ -252,6 +252,43 @@ describe('Bucket API Error Handling', () => {
       mockGet.mockRestore()
     })
 
+    it('omits limit and offset when they are explicitly undefined', async () => {
+      const storage = new StorageClient(URL, { apikey: KEY })
+      const mockGet = jest.spyOn(require('../src/lib/common/fetch'), 'get').mockResolvedValue([])
+
+      // e.g. `listBuckets({ limit: pageSize, offset })` from JS, or from TS without
+      // `exactOptionalPropertyTypes`, when the caller has no page size set
+      const options = { limit: undefined, offset: undefined, search: 'my-bucket' }
+      await storage.listBuckets(options as unknown as Parameters<typeof storage.listBuckets>[0])
+
+      expect(mockGet).toHaveBeenCalledWith(
+        expect.any(Function),
+        `${URL}/bucket?search=my-bucket`,
+        expect.objectContaining({
+          headers: expect.any(Object),
+        })
+      )
+
+      mockGet.mockRestore()
+    })
+
+    it('sends limit and offset when they are 0', async () => {
+      const storage = new StorageClient(URL, { apikey: KEY })
+      const mockGet = jest.spyOn(require('../src/lib/common/fetch'), 'get').mockResolvedValue([])
+
+      await storage.listBuckets({ limit: 0, offset: 0 })
+
+      expect(mockGet).toHaveBeenCalledWith(
+        expect.any(Function),
+        `${URL}/bucket?limit=0&offset=0`,
+        expect.objectContaining({
+          headers: expect.any(Object),
+        })
+      )
+
+      mockGet.mockRestore()
+    })
+
     it('handles empty options object', async () => {
       const storage = new StorageClient(URL, { apikey: KEY })
       const mockGet = jest.spyOn(require('../src/lib/common/fetch'), 'get').mockResolvedValue([])
