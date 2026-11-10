@@ -92,7 +92,7 @@ export class FunctionsClient {
    *   for the signed-in user's JWT (or a custom auth token) — when there is no session, a
    *   new-format API key (`sb_publishable_…` / `sb_secret_…`) is not sent as a Bearer token.
    * - Invoke params generally match the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) spec.
-   * - When you pass in a body to your function, we automatically attach the Content-Type header for `Blob`, `ArrayBuffer`, `File`, `FormData` and `String`. If it doesn't match any of these types we assume the payload is `json`, serialize it and attach the `Content-Type` header as `application/json`. You can override this behavior by passing in a `Content-Type` header of your own.
+   * - When you pass in a body to your function, we automatically attach the Content-Type header for `Blob`, `ArrayBuffer` (and typed arrays such as `Uint8Array`), `File`, `FormData` and `String`. If it doesn't match any of these types we assume the payload is `json`, serialize it and attach the `Content-Type` header as `application/json`. You can override this behavior by passing in a `Content-Type` header of your own.
    * - Responses are automatically parsed as `json`, `blob` and `form-data` depending on the `Content-Type` header sent by your function. Responses are parsed as `text` by default.
    *
    * @example Basic invocation
@@ -230,10 +230,12 @@ export class FunctionsClient {
       if (functionArgs && !hasContentTypeHeader) {
         if (
           (typeof Blob !== 'undefined' && functionArgs instanceof Blob) ||
-          functionArgs instanceof ArrayBuffer
+          functionArgs instanceof ArrayBuffer ||
+          ArrayBuffer.isView(functionArgs)
         ) {
           // will work for File as File inherits Blob
-          // also works for ArrayBuffer as it is the same underlying structure as a Blob
+          // also works for ArrayBuffer and typed arrays (Uint8Array, Buffer, DataView),
+          // which have no `type` and fall back to application/octet-stream
           _headers['Content-Type'] = (functionArgs as Blob).type || 'application/octet-stream'
           body = functionArgs
         } else if (typeof functionArgs === 'string') {
@@ -255,6 +257,7 @@ export class FunctionsClient {
           typeof functionArgs !== 'string' &&
           !(typeof Blob !== 'undefined' && functionArgs instanceof Blob) &&
           !(functionArgs instanceof ArrayBuffer) &&
+          !ArrayBuffer.isView(functionArgs) &&
           !(typeof FormData !== 'undefined' && functionArgs instanceof FormData)
         ) {
           body = JSON.stringify(functionArgs)

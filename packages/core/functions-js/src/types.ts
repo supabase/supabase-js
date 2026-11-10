@@ -130,6 +130,7 @@ export type FunctionInvokeOptions = {
     | File
     | Blob
     | ArrayBuffer
+    | ArrayBufferView
     | FormData
     | ReadableStream<Uint8Array>
     | Record<string, any>
