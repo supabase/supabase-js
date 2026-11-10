@@ -1041,8 +1041,9 @@ export default class RealtimeChannel {
     let errorMessage: string | undefined
     try {
       const errorBody = await response.json()
-      errorMessage =
-        errorBody.error || errorBody.message || formatValidationErrors(errorBody.errors)
+      const bodyError = typeof errorBody?.error === 'string' ? errorBody.error : undefined
+      const bodyMessage = typeof errorBody?.message === 'string' ? errorBody.message : undefined
+      errorMessage = bodyError || bodyMessage || formatValidationErrors(errorBody?.errors)
     } catch {}
 
     return Promise.reject(

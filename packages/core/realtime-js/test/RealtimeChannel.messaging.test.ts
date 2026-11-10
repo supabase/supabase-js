@@ -1042,6 +1042,36 @@ describe('httpSend', () => {
         'httpSend() failed with status 422'
       )
     })
+
+    test('ignores non-string error fields and uses the validation errors', async () => {
+      const mockResponse = createMockResponse(422, '', {
+        error: { code: 'invalid_payload' },
+        errors: { payload: ['Payload size exceeds tenant limit'] },
+      })
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
+        'payload: Payload size exceeds tenant limit'
+      )
+    })
+
+    test('falls back to statusText when error fields are not strings', async () => {
+      const mockResponse = createMockResponse(500, 'Internal Server Error', {
+        error: { code: 'boom' },
+        message: { detail: 'boom' },
+      })
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
+        'Internal Server Error'
+      )
+    })
   })
 
   describe('server version errors', () => {
