@@ -233,6 +233,21 @@ export type Database = {
           },
         ]
       }
+      bigint_precision: {
+        Row: {
+          big_value: number
+          id: number
+        }
+        Insert: {
+          big_value: number
+          id: number
+        }
+        Update: {
+          big_value?: number
+          id?: number
+        }
+        Relationships: []
+      }
       booking: {
         Row: {
           hotel_id: number | null
