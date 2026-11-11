@@ -65,43 +65,112 @@ function toTransportFailure(
  * an `AbortController`. A signal already present on the request keeps working:
  * its abort also aborts the timed request. A missing or non-positive timeout
  * returns `fetch` unchanged.
+ *
+ * The timeout and the caller's abort signal cover the whole response, not
+ * just the fetch itself: previously the timer was cleared and the abort
+ * listener removed as soon as `fetch()` resolved (i.e. when headers
+ * arrived), so a stalled body could hang forever even with a timeout set,
+ * and a caller abort after headers was ignored (supabase-js#2755). The
+ * timer/listener are therefore only cleaned up once the body has been
+ * fully read, cancelled, or errored — or immediately for responses with
+ * no readable body (and for non-Response fetch mocks, which have no
+ * body stream to wrap).
  */
 function withTimeout(fetch: Fetch, timeout?: number): Fetch {
   if (timeout === undefined || timeout <= 0) return fetch
 
   return (input, init) => {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeout)
+    const existingSignal = init?.signal
+
+    // Declared before the timeout so the timeout callback can clean up
+    // the caller-abort listener once the timer itself has fired.
+    let abortHandler: (() => void) | undefined
+    const cleanup = () => {
+      clearTimeout(timeoutId)
+      if (existingSignal && abortHandler) {
+        existingSignal.removeEventListener('abort', abortHandler)
+      }
+    }
+    const timeoutId = setTimeout(() => {
+      controller.abort()
+      cleanup()
+    }, timeout)
 
     // Merge abort signals if one already exists
-    const existingSignal = init?.signal
     if (existingSignal) {
       // If the existing signal is already aborted, use it directly
       if (existingSignal.aborted) {
-        clearTimeout(timeoutId)
+        cleanup()
         return fetch(input, init)
       }
 
       // Listen to existing signal and abort our controller too
-      const abortHandler = () => {
+      abortHandler = () => {
         clearTimeout(timeoutId)
         controller.abort()
       }
       existingSignal.addEventListener('abort', abortHandler, { once: true })
-
-      return fetch(input, {
-        ...init,
-        signal: controller.signal,
-      }).finally(() => {
-        clearTimeout(timeoutId)
-        existingSignal.removeEventListener('abort', abortHandler)
-      })
     }
 
     return fetch(input, {
       ...init,
       signal: controller.signal,
-    }).finally(() => clearTimeout(timeoutId))
+    }).then(
+      (res) => {
+        const body = (res as Response)?.body
+        // Only real Responses have a readable body stream. Mocks and
+        // bodyless responses (HEAD, 204) keep the old immediate cleanup.
+        if (!body || typeof body.getReader !== 'function') {
+          cleanup()
+          return res
+        }
+        const reader = body.getReader()
+        let cleaned = false
+        const cleanupOnce = () => {
+          if (!cleaned) {
+            cleaned = true
+            cleanup()
+          }
+        }
+        const stream = new ReadableStream({
+          async pull(streamController) {
+            try {
+              const { done, value } = await reader.read()
+              if (done) {
+                cleanupOnce()
+                streamController.close()
+              } else {
+                streamController.enqueue(value)
+              }
+            } catch (err) {
+              cleanupOnce()
+              streamController.error(err)
+            }
+          },
+          async cancel(reason) {
+            cleanupOnce()
+            try {
+              await reader.cancel(reason)
+            } catch {
+              // Cancelling an already-closed/errored reader is fine.
+            }
+          },
+        })
+        // `ok` is derived from `status`, and PostgREST only reads
+        // status/statusText/headers/body from the response, so rebuilding
+        // it around the wrapped stream is safe here.
+        return new Response(stream, {
+          status: res.status,
+          statusText: res.statusText,
+          headers: res.headers,
+        })
+      },
+      (err) => {
+        cleanup()
+        throw err
+      }
+    )
   }
 }
 
