@@ -568,6 +568,22 @@ describe('PostgreSQL payload transformation', () => {
     expect(transformedPayload.errors).toStrictEqual([])
   })
 
+  test('should pass through broadcast payload with ids and no data unchanged', () => {
+    const payload = {
+      ts: 1730000000,
+      ids: [{ id: '18FECA00' }],
+    }
+
+    let result: unknown
+    expect(
+      () =>
+        (result = channel.channelAdapter
+          .getChannel()
+          .onMessage('broadcast', payload, '1'))
+    ).not.toThrow()
+    expect(result).toEqual(payload)
+  })
+
   test('should pass through non-postgres payloads unchanged', () => {
     const callbackSpy = vi.fn()
 
