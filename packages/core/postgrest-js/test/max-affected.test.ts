@@ -58,6 +58,28 @@ describe('maxAffected', () => {
     )
   })
 
+  test('a later maxAffected call replaces the earlier limit', () => {
+    const query = postgrest.from('messages').delete().maxAffected(10).maxAffected(1)
+    expect((query as any).headers.get('Prefer')).toBe('handling=strict, max-affected=1')
+  })
+
+  test('maxAffected replaces a client-level handling preference', () => {
+    const client = new PostgrestClient<DatabasePostgrest14>(REST_URL, {
+      headers: { Prefer: 'handling=lenient, timezone=UTC' },
+    })
+    const query = client.from('messages').update({ channel_id: 2 }).maxAffected(1)
+    expect((query as any).headers.get('Prefer')).toBe(
+      'timezone=UTC, handling=strict, max-affected=1'
+    )
+  })
+
+  test('maxAffected keeps other preferences', () => {
+    const query = postgrest.from('messages').delete({ count: 'exact' }).maxAffected(1)
+    expect((query as any).headers.get('Prefer')).toBe(
+      'count=exact, handling=strict, max-affected=1'
+    )
+  })
+
   test('update should fail when maxAffected is exceeded', async () => {
     // First create multiple rows
     await postgrest.from('messages').insert([

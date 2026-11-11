@@ -1033,6 +1033,8 @@ export default class PostgrestTransformBuilder<
   /**
    * Set the maximum number of rows that can be affected by the query.
    * Only available in PostgREST v13+ and only works with PATCH and DELETE methods.
+   * Sets `Prefer: handling=strict` together with the limit.
+   * A later call replaces the limit of an earlier call.
    *
    * @param rows - The maximum number of rows that can be affected
    *
@@ -1045,8 +1047,13 @@ export default class PostgrestTransformBuilder<
       ? this
       : InvalidMethodError<'maxAffected method only available on update or delete'>
     : InvalidMethodError<'maxAffected method only available on postgrest 13+'> {
-    this.headers.append('Prefer', 'handling=strict')
-    this.headers.append('Prefer', `max-affected=${rows}`)
+    // PostgREST uses the first value of a repeated preference, so replace earlier values.
+    const preferences = (this.headers.get('Prefer') ?? '')
+      .split(',')
+      .map((preference) => preference.trim())
+      .filter((preference) => preference && !/^(handling|max-affected)=/.test(preference))
+    preferences.push('handling=strict', `max-affected=${rows}`)
+    this.headers.set('Prefer', preferences.join(', '))
     return this as unknown as MaxAffectedEnabled<ClientOptions['PostgrestVersion']> extends true
       ? Method extends 'PATCH' | 'DELETE' | 'RPC'
         ? this
