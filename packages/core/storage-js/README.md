@@ -43,7 +43,7 @@
 >
 > Node.js 20 reached end-of-life on April 30, 2026. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/45715), support for Node.js 20 was dropped in v2.110.0.
 
-# Supabase Service Compatibility
+## Supabase Service Compatibility
 
 `@supabase/storage-js` only guarantees compatibility with the
 [latest Supabase Storage release](https://github.com/supabase/storage/releases).
