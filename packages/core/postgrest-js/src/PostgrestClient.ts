@@ -597,9 +597,9 @@ export default class PostgrestClient<
 
     const headers = new Headers(this.headers)
     if (_hasObjectArg) {
-      headers.set('Prefer', count ? `count=${count},return=minimal` : 'return=minimal')
+      headers.append('Prefer', count ? `count=${count},return=minimal` : 'return=minimal')
     } else if (count) {
-      headers.set('Prefer', `count=${count}`)
+      headers.append('Prefer', `count=${count}`)
     }
 
     return new PostgrestFilterBuilder({

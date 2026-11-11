@@ -41,6 +41,32 @@ test('RPC call serializes bigint values in the request body', async () => {
   )
 })
 
+test('RPC call with count keeps the client Prefer header', async () => {
+  const mockFetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: new Headers(),
+    text: async () => '',
+  })
+
+  const client = new PostgrestClient<Database>('https://example.com', {
+    fetch: mockFetch as any,
+    headers: { Prefer: 'timezone=Asia/Tashkent' },
+  })
+
+  await client.rpc('my_func' as any, {}, { count: 'exact' })
+  await client.rpc('my_func' as any, { payload: { a: 1 } }, { head: true, count: 'exact' })
+
+  const prefer = mockFetch.mock.calls.map(
+    ([, options]) => (options.headers as Record<string, string>)['prefer']
+  )
+  expect(prefer).toEqual([
+    'timezone=Asia/Tashkent, count=exact',
+    'timezone=Asia/Tashkent, count=exact,return=minimal',
+  ])
+})
+
 test('RPC call with no params', async () => {
   const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select()
   expect(res).toMatchInlineSnapshot(`
