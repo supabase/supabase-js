@@ -7,6 +7,23 @@ const URL = 'http://localhost:3000'
 const KEY = 'some.fake.key'
 
 describe('SupabaseClient', () => {
+  test.each([204, 205])('accepts a bodyless %i Edge Function response', async (status) => {
+    const response = new Response(null, {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const client = createClient(URL, KEY, {
+      accessToken: async () => 'user-token',
+      global: { fetch: jest.fn(async () => response) },
+    })
+
+    const result = await client.functions.invoke('delete-item', { method: 'DELETE' })
+
+    expect(result.data).toBeNull()
+    expect(result.error).toBeNull()
+    expect(result.response).toBe(response)
+  })
+
   test('it should create a client with third-party auth accessToken', async () => {
     const client = createClient(URL, KEY, {
       accessToken: async () => {

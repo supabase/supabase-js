@@ -94,6 +94,7 @@ export class FunctionsClient {
    * - Invoke params generally match the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) spec.
    * - When you pass in a body to your function, we automatically attach the Content-Type header for `Blob`, `ArrayBuffer`, `File`, `FormData` and `String`. If it doesn't match any of these types we assume the payload is `json`, serialize it and attach the `Content-Type` header as `application/json`. You can override this behavior by passing in a `Content-Type` header of your own.
    * - Responses are automatically parsed as `json`, `blob` and `form-data` depending on the `Content-Type` header sent by your function. Responses are parsed as `text` by default.
+   * - JSON and form-data responses with status 204 or 205 have no body and return `null` data.
    *
    * @example Basic invocation
    * ```js
@@ -310,7 +311,13 @@ export class FunctionsClient {
         .trim()
         .toLowerCase()
       let data: any
-      if (responseType === 'application/json') {
+      if (
+        (response.status === 204 || response.status === 205) &&
+        (responseType === 'application/json' || responseType === 'multipart/form-data')
+      ) {
+        // These statuses cannot have a body for JSON or form-data parsing.
+        data = null
+      } else if (responseType === 'application/json') {
         data = await response.json()
       } else if (
         responseType === 'application/octet-stream' ||
