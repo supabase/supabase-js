@@ -596,10 +596,16 @@ export default class PostgrestClient<
     }
 
     const headers = new Headers(this.headers)
+    if (count) {
+      // PostgREST uses the first value of a repeated preference, so drop a client-level count.
+      const preferences = (headers.get('Prefer') ?? '')
+        .split(',')
+        .map((preference) => preference.trim())
+        .filter((preference) => preference && !preference.startsWith('count='))
+      headers.set('Prefer', [...preferences, `count=${count}`].join(', '))
+    }
     if (_hasObjectArg) {
-      headers.append('Prefer', count ? `count=${count},return=minimal` : 'return=minimal')
-    } else if (count) {
-      headers.append('Prefer', `count=${count}`)
+      headers.append('Prefer', 'return=minimal')
     }
 
     return new PostgrestFilterBuilder({

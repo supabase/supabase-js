@@ -41,7 +41,27 @@ test('RPC call serializes bigint values in the request body', async () => {
   )
 })
 
-test('RPC call with count keeps the client Prefer header', async () => {
+test.each([
+  ['count', {}, { count: 'exact' }, 'timezone=Asia/Tashkent, count=exact'],
+  [
+    'get with count',
+    { a: 1 },
+    { get: true, count: 'exact' },
+    'timezone=Asia/Tashkent, count=exact',
+  ],
+  [
+    'head with object args',
+    { payload: { a: 1 } },
+    { head: true },
+    'timezone=Asia/Tashkent, return=minimal',
+  ],
+  [
+    'head with object args and count',
+    { payload: { a: 1 } },
+    { head: true, count: 'exact' },
+    'timezone=Asia/Tashkent, count=exact, return=minimal',
+  ],
+])('RPC call with %s keeps the client Prefer header', async (_, args, options, expected) => {
   const mockFetch = jest.fn().mockResolvedValue({
     ok: true,
     status: 200,
@@ -49,22 +69,23 @@ test('RPC call with count keeps the client Prefer header', async () => {
     headers: new Headers(),
     text: async () => '',
   })
-
   const client = new PostgrestClient<Database>('https://example.com', {
     fetch: mockFetch as any,
     headers: { Prefer: 'timezone=Asia/Tashkent' },
   })
 
-  await client.rpc('my_func' as any, {}, { count: 'exact' })
-  await client.rpc('my_func' as any, { payload: { a: 1 } }, { head: true, count: 'exact' })
+  await client.rpc('my_func' as any, args as any, options as any)
 
-  const prefer = mockFetch.mock.calls.map(
-    ([, options]) => (options.headers as Record<string, string>)['prefer']
-  )
-  expect(prefer).toEqual([
-    'timezone=Asia/Tashkent, count=exact',
-    'timezone=Asia/Tashkent, count=exact,return=minimal',
-  ])
+  const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+  expect((init.headers as Record<string, string>)['prefer']).toBe(expected)
+})
+
+test('RPC call count replaces a client-level count preference', async () => {
+  const client = new PostgrestClient<Database>('https://example.com', {
+    headers: { Prefer: 'count=planned, tx=rollback' },
+  })
+  const query = client.rpc('my_func' as any, {}, { count: 'exact' })
+  expect((query as any).headers.get('Prefer')).toBe('tx=rollback, count=exact')
 })
 
 test('RPC call with no params', async () => {
