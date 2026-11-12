@@ -35,7 +35,7 @@ describe('constants', () => {
 
   test('DEFAULT_HEADERS should contain X-Client-Info', () => {
     expect(DEFAULT_HEADERS).toHaveProperty('X-Client-Info')
-    expect(DEFAULT_HEADERS['X-Client-Info']).toMatch(/^supabase-js\/.*; runtime=.*$/)
+    expect(DEFAULT_HEADERS['X-Client-Info']).toMatch(/^supabase-js\/[^;]+; runtime=node/)
   })
 
   test('DEFAULT_GLOBAL_OPTIONS should contain headers', () => {
@@ -86,26 +86,24 @@ describe('constants', () => {
       expect(newHeaders['X-Client-Info']).not.toContain('runtime-version=')
     })
 
-    test('should detect web environment', () => {
+    test('should report a browser as the platform without a runtime', () => {
       global.document = {} as any
 
       // Re-import to trigger the detection logic
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('runtime=web')
-      expect(newHeaders['X-Client-Info']).not.toContain('runtime-version=')
+      expect(newHeaders['X-Client-Info']).toBe(`supabase-js/${version}; platform=browser`)
     })
 
-    test('should detect React Native environment', () => {
+    test('should report React Native as the framework without a runtime', () => {
       global.navigator = { product: 'ReactNative' } as any
 
       // Re-import to trigger the detection logic
       jest.resetModules()
       const { DEFAULT_HEADERS: newHeaders } = require('../../src/lib/constants')
 
-      expect(newHeaders['X-Client-Info']).toContain('runtime=react-native')
-      expect(newHeaders['X-Client-Info']).not.toContain('runtime-version=')
+      expect(newHeaders['X-Client-Info']).toBe(`supabase-js/${version}; framework=react-native`)
     })
 
     test('should default to node environment with process version', () => {
@@ -123,6 +121,114 @@ describe('constants', () => {
       const source = readFileSync(join(__dirname, '../../src/lib/constants.ts'), 'utf8')
 
       expect(source).not.toContain('process.version')
+    })
+  })
+
+  describe('detectClientEnvironment', () => {
+    const { detectClientEnvironment, formatClientEnvironment } = require('../../src/lib/constants')
+    const describeEnvironment = (globals: object) =>
+      formatClientEnvironment(detectClientEnvironment(globals)).join('; ')
+
+    test('reports Bun as the runtime instead of its Node compatibility version', () => {
+      expect(
+        describeEnvironment({
+          Bun: { version: '1.3.14' },
+          navigator: { userAgent: 'Bun/1.3.14' },
+          process: { version: 'v24.3.0', versions: { bun: '1.3.14' } },
+        })
+      ).toBe('runtime=bun; runtime-version=1.3.14')
+    })
+
+    test('reports Cloudflare Workers as the platform without a runtime', () => {
+      expect(
+        describeEnvironment({
+          navigator: { userAgent: 'Cloudflare-Workers' },
+          process: { version: 'v22.0.0' },
+        })
+      ).toBe('platform=cloudflare-workers')
+    })
+
+    test('reports the Vercel edge runtime as the platform without a runtime', () => {
+      expect(describeEnvironment({ EdgeRuntime: 'edge-runtime' })).toBe(
+        'platform=vercel-edge-runtime'
+      )
+    })
+
+    test('reports Supabase Edge Runtime as the platform together with Deno', () => {
+      expect(
+        describeEnvironment({
+          Deno: { version: { deno: '2.1.4' } },
+          EdgeRuntime: { waitUntil: jest.fn() },
+          SUPABASE_VERSION: '1.67.0',
+        })
+      ).toBe('platform=edge-runtime; platform-version=1.67.0; runtime=deno; runtime-version=2.1.4')
+    })
+
+    test('reports Supabase Edge Runtime without a platform version when it is unknown', () => {
+      expect(
+        describeEnvironment({
+          Deno: { version: { deno: '2.1.4' } },
+          EdgeRuntime: { waitUntil: jest.fn() },
+        })
+      ).toBe('platform=edge-runtime; runtime=deno; runtime-version=2.1.4')
+    })
+
+    test('reports Netlify Edge Functions as the platform together with Deno', () => {
+      expect(
+        describeEnvironment({
+          Deno: { version: { deno: '2.1.4' } },
+          Netlify: { env: {} },
+        })
+      ).toBe('platform=netlify-edge; runtime=deno; runtime-version=2.1.4')
+    })
+
+    test('reports a Web Worker as a browser', () => {
+      expect(
+        describeEnvironment({
+          WorkerGlobalScope: jest.fn(),
+          navigator: { userAgent: 'Mozilla/5.0 Chrome/130.0.0.0' },
+        })
+      ).toBe('platform=browser')
+    })
+
+    test('reports Electron as the framework in a renderer process', () => {
+      expect(
+        describeEnvironment({
+          document: {},
+          navigator: { userAgent: 'Mozilla/5.0 Chrome/130.0.0.0 Electron/33.2.1 Safari/537.36' },
+        })
+      ).toBe('platform=browser; framework=electron; framework-version=33.2.1')
+    })
+
+    test('extracts only the Electron version when the user agent has extra tokens', () => {
+      expect(
+        describeEnvironment({
+          document: {},
+          navigator: { userAgent: 'SomeAppName/2.0/Electron/1.0.0;build=5' },
+        })
+      ).toBe('platform=browser; framework=electron; framework-version=1.0.0')
+    })
+
+    test('reports React Native even when browser globals are polyfilled', () => {
+      expect(
+        describeEnvironment({
+          document: {},
+          WorkerGlobalScope: jest.fn(),
+          navigator: { product: 'ReactNative' },
+        })
+      ).toBe('framework=react-native')
+    })
+
+    test('reports Electron as the framework in the main process', () => {
+      expect(
+        describeEnvironment({
+          process: { version: 'v20.18.1', versions: { electron: '33.2.1' } },
+        })
+      ).toBe('runtime=node; runtime-version=20.18.1; framework=electron; framework-version=33.2.1')
+    })
+
+    test('reports Node without a version when process is unavailable', () => {
+      expect(describeEnvironment({})).toBe('runtime=node')
     })
   })
 })

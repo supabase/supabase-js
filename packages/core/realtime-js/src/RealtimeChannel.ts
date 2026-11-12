@@ -3,6 +3,7 @@ import {
   CHANNEL_STATES,
   DEFAULT_POSTGRES_CHANGES_WAIT_TIMEOUT,
   POSTGRES_CHANGES_WAIT_ERROR_GRACE,
+  VSN_1_0_0,
 } from './lib/constants'
 import type { ChannelState } from './lib/constants'
 import type RealtimeClient from './RealtimeClient'
@@ -225,6 +226,11 @@ export type RealtimePostgresChangesFilter<T extends `${REALTIME_POSTGRES_CHANGES
 }
 
 export type RealtimeChannelSendResponse = 'ok' | 'timed out' | 'error' | (string & {})
+
+/**
+ * Stores a broadcast for replay: `true` for the maximum retention, `{ ttl }` for `ttl` seconds.
+ */
+export type RealtimeBroadcastPersist = boolean | { ttl?: number }
 
 /**
  * Payload of a `system` event emitted by the server.
@@ -936,7 +942,7 @@ export default class RealtimeChannel {
    *
    * @param event The name of the broadcast event
    * @param payload Payload to be sent (required)
-   * @param opts Options including timeout
+   * @param opts Options including timeout and persist
    * @returns Promise resolving to object with success status, and error details if failed
    *
    * @category Realtime
@@ -944,7 +950,7 @@ export default class RealtimeChannel {
   async httpSend(
     event: string,
     payload: any,
-    opts: { timeout?: number } = {}
+    opts: { timeout?: number; persist?: RealtimeBroadcastPersist } = {}
   ): Promise<{ success: true } | { success: false; status: number; error: string }> {
     if (payload === undefined || payload === null) {
       return Promise.reject(new Error('Payload is required for httpSend()'))
@@ -965,6 +971,21 @@ export default class RealtimeChannel {
     url.pathname += `/${encodeURIComponent(this.subTopic)}/events/${encodeURIComponent(event)}`
     if (this.private) {
       url.searchParams.set('private', 'true')
+    }
+    if (opts.persist) {
+      if (!this.private) {
+        return Promise.reject(
+          new Error('Realtime httpSend() cannot store a message on a public channel.')
+        )
+      }
+
+      const ttl = typeof opts.persist === 'object' ? opts.persist.ttl : undefined
+
+      if (ttl === undefined) {
+        url.searchParams.set('persist', 'true')
+      } else {
+        url.searchParams.set('persist[ttl]', String(ttl))
+      }
     }
 
     const options = {
@@ -1009,6 +1030,7 @@ export default class RealtimeChannel {
    * @param args.type The type of event to send
    * @param args.event The name of the event being sent
    * @param args.payload Payload to be sent
+   * @param args.persist Stores the broadcast for replay on a private channel
    * @param opts Options to be used during the send process
    *
    * @category Realtime
@@ -1055,10 +1077,29 @@ export default class RealtimeChannel {
       type: 'broadcast' | 'presence' | 'postgres_changes'
       event: string
       payload?: any
+      persist?: RealtimeBroadcastPersist
       [key: string]: any
     },
     opts: { [key: string]: any } = {}
   ): Promise<RealtimeChannelSendResponse> {
+    if (
+      args.type === 'broadcast' &&
+      args.persist &&
+      (!this.private || this.socket.vsn === VSN_1_0_0)
+    ) {
+      const persistError = this.private
+        ? 'Realtime send() cannot store a message with protocol 1.0.0. Use httpSend() or connect with vsn 2.0.0.'
+        : 'Realtime send() cannot store a message on a public channel.'
+
+      if (this.socket.hasLogger()) {
+        this.socket.log('channel', persistError)
+      } else {
+        console.error(persistError)
+      }
+
+      return 'error'
+    }
+
     if (!this.channelAdapter.canPush() && args.type === 'broadcast') {
       const fallbackWarning =
         'Realtime send() is automatically falling back to REST API. ' +
@@ -1072,6 +1113,22 @@ export default class RealtimeChannel {
       }
 
       const { event, payload: endpoint_payload } = args
+
+      if (args.persist) {
+        const persistError =
+          'Realtime send() fell back to REST and cannot store this message. ' +
+          'The batch endpoint does not support persistence. ' +
+          'Use httpSend() or send after the channel is connected and subscribed.'
+
+        if (this.socket.hasLogger()) {
+          this.socket.log('channel', persistError)
+        } else {
+          console.error(persistError)
+        }
+
+        return 'error'
+      }
+
       const headers: Record<string, string> = {
         apikey: this.socket.apiKey ? this.socket.apiKey : '',
         'Content-Type': 'application/json',
@@ -1121,7 +1178,9 @@ export default class RealtimeChannel {
         }
 
         push.receive('ok', () => resolve('ok'))
-        push.receive('error', () => resolve('error'))
+        push.receive('error', (response) =>
+          resolve(args.persist && typeof response?.error === 'string' ? response.error : 'error')
+        )
         push.receive('timeout', () => resolve('timed out'))
       })
     }

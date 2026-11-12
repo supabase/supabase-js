@@ -414,6 +414,7 @@ Tests run against multiple environments:
 - JSDoc for all public APIs
 - README per package with examples
 - Update docs when changing APIs
+- Make sure to update the "Supabase Service Compatibility" section if the supported version changes. Any change that is not "Latest release", require integration tests for the minimum supported version.
 
 ## Important Context
 
