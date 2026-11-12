@@ -199,6 +199,7 @@ export type ExperimentalFeatureFlags = {
    * disabled throws a descriptive error at call time.
    *
    * @experimental
+   * @hidden TODO: Add explanation
    */
   recoveryCodes?: boolean
   /**
@@ -440,12 +441,11 @@ export interface UserIdentity {
 
 const FactorTypes = ['totp', 'phone', 'webauthn', 'recovery_code'] as const
 
+// `recovery_code` is a platform-only factor type for now: it is managed through
+// AuthMFARecoveryCodesApi, which is hidden from the public reference, so the
+// description below intentionally does not mention it.
 /**
- * Type of factor. `totp`, `phone`, `webauthn` and `recovery_code` are supported.
- *
- * `recovery_code` factors are managed through {@link AuthMFARecoveryCodesApi}
- * (`mfa.recoveryCodes.*`) and cannot be used with `enroll()`, `challenge()`,
- * `verify()` or `unenroll()`.
+ * Type of factor. `totp`, `phone` and `webauthn` are supported.
  */
 export type FactorType = (typeof FactorTypes)[number]
 
@@ -474,7 +474,7 @@ export type Factor<
   friendly_name?: string
 
   /**
-   * Type of factor. `totp`, `phone`, `webauthn` and `recovery_code` are supported.
+   * Type of factor. `totp`, `phone` and `webauthn` are supported.
    */
   factor_type: Type
 
@@ -1199,7 +1199,7 @@ export type AuthMFAUnenrollResponse = RequestResult<{
 /**
  * Parameters for generating a set of MFA recovery codes.
  *
- * @see {@link AuthMFARecoveryCodesApi#generate}
+ * @see `AuthMFARecoveryCodesApi#generate`
  *
  * @experimental
  */
@@ -1215,7 +1215,7 @@ export type MFARecoveryCodesGenerateParams = {
 /**
  * Parameters for verifying a single MFA recovery code.
  *
- * @see {@link AuthMFARecoveryCodesApi#verify}
+ * @see `AuthMFARecoveryCodesApi#verify`
  *
  * @experimental
  */
@@ -1251,7 +1251,7 @@ export type AuthMFARecoveryCodesStatusResponseData = {
 }
 
 /**
- * Response type for {@link AuthMFARecoveryCodesApi#getStatus}.
+ * Response type for `AuthMFARecoveryCodesApi#getStatus`.
  *
  * @experimental
  */
@@ -1287,8 +1287,8 @@ export type AuthMFARecoveryCodesGenerateResponseData = {
 }
 
 /**
- * Response type for {@link AuthMFARecoveryCodesApi#generate} and
- * {@link AuthMFARecoveryCodesApi#regenerate}.
+ * Response type for `AuthMFARecoveryCodesApi#generate` and
+ * `AuthMFARecoveryCodesApi#regenerate`.
  *
  * @experimental
  */
@@ -1425,6 +1425,7 @@ export type AuthMFAGetAuthenticatorAssuranceLevelResponse = RequestResult<{
  * throw. Recovery codes must also be enabled on the Supabase Auth server.
  *
  * @experimental
+ * @hidden TODO: Add explanation
  */
 export interface AuthMFARecoveryCodesApi {
   /**
@@ -2095,6 +2096,7 @@ export interface GoTrueMFAApi {
    * @see {@link AuthMFARecoveryCodesApi}
    *
    * @experimental
+   * @hidden TODO: Add explanation
    */
   recoveryCodes: AuthMFARecoveryCodesApi
 }
