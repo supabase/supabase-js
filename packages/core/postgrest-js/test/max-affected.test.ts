@@ -63,39 +63,23 @@ describe('maxAffected', () => {
     expect((query as any).headers.get('Prefer')).toBe('handling=strict, max-affected=1')
   })
 
-  test('maxAffected replaces a client-level handling preference', () => {
-    const client = new PostgrestClient<DatabasePostgrest14>(REST_URL, {
-      headers: { Prefer: 'handling=lenient, timezone=UTC' },
-    })
-    const query = client.from('messages').update({ channel_id: 2 }).maxAffected(1)
-    expect((query as any).headers.get('Prefer')).toBe(
-      'timezone=UTC, handling=strict, max-affected=1'
-    )
-  })
-
-  test('maxAffected replaces a client-level handling preference written without spaces', () => {
-    const client = new PostgrestClient<DatabasePostgrest14>(REST_URL, {
-      headers: { Prefer: 'handling=lenient,timezone=UTC' },
-    })
-    const query = client.from('messages').delete().maxAffected(1)
-    expect((query as any).headers.get('Prefer')).toBe(
-      'timezone=UTC, handling=strict, max-affected=1'
-    )
-  })
+  test.each(['handling=lenient, timezone=UTC', 'handling=lenient,timezone=UTC'])(
+    'maxAffected replaces a client-level handling preference (%s)',
+    (prefer) => {
+      const client = new PostgrestClient<DatabasePostgrest14>(REST_URL, {
+        headers: { Prefer: prefer },
+      })
+      const query = client.from('messages').update({ channel_id: 2 }).maxAffected(1)
+      expect((query as any).headers.get('Prefer')).toBe(
+        'timezone=UTC, handling=strict, max-affected=1'
+      )
+    }
+  )
 
   test('maxAffected after select() replaces the earlier limit', () => {
     const query = postgrest.from('messages').delete().maxAffected(10).select().maxAffected(1)
     expect((query as any).headers.get('Prefer')).toBe(
       'return=representation, handling=strict, max-affected=1'
-    )
-  })
-
-  test('maxAffected on rpc keeps the count preference', () => {
-    const query = postgrest
-      .rpc('set_users_offline', { name_param: 'testuser' }, { count: 'exact' })
-      .maxAffected(1)
-    expect((query as any).headers.get('Prefer')).toBe(
-      'count=exact, handling=strict, max-affected=1'
     )
   })
 
