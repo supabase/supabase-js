@@ -11,7 +11,7 @@ import { RejectExcessProperties } from './types/types'
 
 // PostgREST reads `\` as an escape character inside a quoted column name.
 function quoteColumn(column: string): string {
-  return `"${column.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  return `"${column.replace(/[\\"]/g, '\\$&')}"`
 }
 
 export default class PostgrestQueryBuilder<
