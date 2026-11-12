@@ -130,16 +130,17 @@ test('worker reconnect: in-flight heartbeat on socket A does not tear down socke
     socketHandlers: {
       heartbeat: (socket, message) => {
         heartbeatsSeen += 1
-        if (heartbeatsSeen === 1) return // leave socket A's heartbeat in flight
+        if (heartbeatsSeen === 1) {
+          return // leave socket A's heartbeat in flight
+        }
         const msg = JSON.parse(message as string)
-        socket.send(
-          JSON.stringify({
-            topic: msg.topic,
-            event: 'phx_reply',
-            ref: msg.ref,
-            payload: { status: 'ok', response: {} },
-          })
-        )
+        const response = JSON.stringify({
+          topic: msg.topic,
+          event: 'phx_reply',
+          ref: msg.ref,
+          payload: { status: 'ok', response: {} },
+        })
+        socket.send(response)
       },
     },
   })
