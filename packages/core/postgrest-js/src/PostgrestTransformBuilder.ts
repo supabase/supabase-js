@@ -1033,8 +1033,9 @@ export default class PostgrestTransformBuilder<
   /**
    * Set the maximum number of rows that can be affected by the query.
    * Only available in PostgREST v13+ and only works with PATCH and DELETE methods.
-   * Sets `Prefer: handling=strict` together with the limit.
-   * A later call replaces the limit of an earlier call.
+   * Sets `Prefer: handling=strict` together with the limit, and replaces any earlier
+   * `handling` or `max-affected` preference, including one from the client headers.
+   * With strict handling, PostgREST rejects unknown preferences (PGRST122).
    *
    * @param rows - The maximum number of rows that can be affected
    *
