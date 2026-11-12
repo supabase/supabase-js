@@ -1,10 +1,5 @@
-import {
-  StorageApiError,
-  StorageError,
-  StorageUnknownError,
-  isStorageError,
-} from '../lib/common/errors'
-import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
+import { StorageApiError, StorageError } from '../lib/common/errors'
+import { get, post, put, remove, Fetch } from '../lib/common/fetch'
 import { setHeader } from '../lib/common/headers'
 import { encodeStoragePath, recursiveToCamel } from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
@@ -38,6 +33,13 @@ const DEFAULT_FILE_OPTIONS: FileOptions = {
   cacheControl: '3600',
   contentType: 'text/plain;charset=UTF-8',
   upsert: false,
+}
+
+function mergeFileOptions(fileOptions?: FileOptions): FileOptions {
+  const definedOptions = Object.fromEntries(
+    Object.entries(fileOptions ?? {}).filter(([, value]) => value !== undefined)
+  )
+  return { ...DEFAULT_FILE_OPTIONS, ...definedOptions }
 }
 
 type FileBody =
@@ -89,7 +91,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   > {
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      const options = mergeFileOptions(fileOptions)
       let headers: Record<string, string> = {
         ...this.headers,
         ...(method === 'POST' && { 'x-upsert': String(options.upsert as boolean) }),
@@ -281,7 +283,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      const options = mergeFileOptions(fileOptions)
       let headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
@@ -998,6 +1000,14 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   /**
    * Checks the existence of a file.
    *
+   * This reads the object's metadata, so the result is `false` only when Storage reports that the
+   * key does not exist: an error with code `NoSuchKey`, or an HTTP 404 with no error code. In that
+   * case `data` is `false` and `error` holds the original error.
+   *
+   * Every other failure throws instead of returning `false`, including an invalid or expired JWT
+   * (`InvalidJWT`), a missing bucket (`NoSuchBucket`) and network errors. With `throwOnError()`,
+   * a missing key throws as well.
+   *
    * @category Storage
    * @subcategory File Buckets
    * @param path The file path, including the file name. For example `folder/image.png`.
@@ -1021,34 +1031,22 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    const _path = this._getFinalPath(path)
+    // Reads the object info rather than sending a HEAD request: a HEAD response has no body,
+    // so an invalid JWT or a missing bucket cannot be told apart from a missing object.
+    const { error } = await this.info(path)
 
-    try {
-      await head(this.fetch, `${this.url}/object/${_path}`, {
-        headers: this.headers,
-      })
-
+    if (!error) {
       return { data: true, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        // HEAD requests produce StorageApiError (via handleError) or StorageUnknownError (legacy)
-        const status =
-          error instanceof StorageApiError
-            ? error.status
-            : error instanceof StorageUnknownError
-              ? (error.originalError as { status: number })?.status
-              : undefined
-
-        if (status !== undefined && [400, 404].includes(status)) {
-          return { data: false, error }
-        }
-      }
-
-      throw error
     }
+
+    if (
+      error instanceof StorageApiError &&
+      (error.code === 'NoSuchKey' || (error.status === 404 && error.code === undefined))
+    ) {
+      return { data: false, error }
+    }
+
+    throw error
   }
 
   /**

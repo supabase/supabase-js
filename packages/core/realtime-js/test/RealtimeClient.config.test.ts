@@ -58,7 +58,7 @@ describe('endpointURL', () => {
           params: { apikey: DEFAULT_API_KEY },
           vsn: '4.0.0',
         })
-    ).toThrow(/Unsupported serializer/)
+    ).toThrow('Unsupported serializer version: 4.0.0')
   })
 })
 

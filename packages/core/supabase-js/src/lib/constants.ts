@@ -3,30 +3,86 @@ import { RealtimeClientOptions } from '@supabase/realtime-js'
 import { SupabaseAuthClientOptions, TracePropagationOptions } from './types'
 import { version } from './version'
 
-let JS_ENV = ''
-let JS_RUNTIME_VERSION: string | undefined
-// @ts-ignore
-if (typeof Deno !== 'undefined') {
-  JS_ENV = 'deno'
-  // @ts-ignore
-  JS_RUNTIME_VERSION = Deno.version?.deno
-} else if (typeof document !== 'undefined') {
-  JS_ENV = 'web'
-} else if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
-  JS_ENV = 'react-native'
-} else {
-  JS_ENV = 'node'
-  const _process = (globalThis as any)['process']
-  JS_RUNTIME_VERSION = _process?.['version']?.replace(/^v/, '')
+type ClientEnvironment = {
+  platform?: string
+  platformVersion?: string
+  runtime?: string
+  runtimeVersion?: string
+  framework?: string
+  frameworkVersion?: string
 }
 
-const _runtimeMeta = [`runtime=${JS_ENV}`]
-if (JS_RUNTIME_VERSION) {
-  _runtimeMeta.push(`runtime-version=${JS_RUNTIME_VERSION}`)
+function asString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function detectDenoPlatform(globals: any): Pick<ClientEnvironment, 'platform' | 'platformVersion'> {
+  if (typeof globals.EdgeRuntime === 'object' && globals.EdgeRuntime !== null) {
+    return { platform: 'edge-runtime', platformVersion: asString(globals.SUPABASE_VERSION) }
+  }
+  if (typeof globals.Netlify !== 'undefined') {
+    return { platform: 'netlify-edge' }
+  }
+  return {}
+}
+
+function detectElectronFromUserAgent(userAgent: string | undefined): ClientEnvironment {
+  const electronVersion = userAgent?.match(/\bElectron\/([\w.-]+)/)?.[1]
+  return electronVersion ? { framework: 'electron', frameworkVersion: electronVersion } : {}
+}
+
+export function detectClientEnvironment(globals: any = globalThis): ClientEnvironment {
+  const userAgent = asString(globals.navigator?.userAgent)
+
+  if (userAgent === 'Cloudflare-Workers') {
+    return { platform: 'cloudflare-workers' }
+  }
+  if (typeof globals.Deno !== 'undefined') {
+    return {
+      ...detectDenoPlatform(globals),
+      runtime: 'deno',
+      runtimeVersion: asString(globals.Deno.version?.deno),
+    }
+  }
+  if (typeof globals.Bun !== 'undefined') {
+    return { runtime: 'bun', runtimeVersion: asString(globals.Bun.version) }
+  }
+  if (typeof globals.EdgeRuntime === 'string') {
+    return { platform: 'vercel-edge-runtime' }
+  }
+  if (globals.navigator?.product === 'ReactNative') {
+    return { framework: 'react-native' }
+  }
+  if (typeof globals.document !== 'undefined' || typeof globals.WorkerGlobalScope !== 'undefined') {
+    return { platform: 'browser', ...detectElectronFromUserAgent(userAgent) }
+  }
+
+  const processVersions = globals.process?.['versions']
+  const electronVersion = asString(processVersions?.['electron'])
+  return {
+    runtime: 'node',
+    runtimeVersion: asString(globals.process?.['version'])?.replace(/^v/, ''),
+    ...(electronVersion ? { framework: 'electron', frameworkVersion: electronVersion } : {}),
+  }
+}
+
+export function formatClientEnvironment(environment: ClientEnvironment): string[] {
+  const parameters: [string, string | undefined][] = [
+    ['platform', environment.platform],
+    ['platform-version', environment.platformVersion],
+    ['runtime', environment.runtime],
+    ['runtime-version', environment.runtimeVersion],
+    ['framework', environment.framework],
+    ['framework-version', environment.frameworkVersion],
+  ]
+  return parameters.filter(([, value]) => value).map(([key, value]) => `${key}=${value}`)
 }
 
 export const DEFAULT_HEADERS = {
-  'X-Client-Info': `supabase-js/${version}; ${_runtimeMeta.join('; ')}`,
+  'X-Client-Info': [
+    `supabase-js/${version}`,
+    ...formatClientEnvironment(detectClientEnvironment()),
+  ].join('; '),
 }
 
 export const DEFAULT_GLOBAL_OPTIONS = {

@@ -60,7 +60,8 @@ The setup command performs these steps automatically:
 1. **Docker** must be installed and running
 2. **Supabase CLI** must be installed (`brew install supabase/tap/supabase` - [for other platforms read here](https://supabase.com/docs/guides/local-development/cli/getting-started?queryGroups=platform&platform=macos#installing-the-supabase-cli))
 3. **jq** must be installed for parsing JSON output (`brew install jq` on macOS)
-4. **Run the setup command** before any integration tests (see Quick Start above)
+4. **psql** must be installed for the setup script to seed the database (`brew install libpq` on macOS, then add `/opt/homebrew/opt/libpq/bin` to your `PATH` because libpq is keg-only; `apt-get install postgresql-client` on Linux)
+5. **Run the setup command** before any integration tests (see Quick Start above)
 
 ## Unit Testing
 
@@ -143,17 +144,19 @@ pnpm nx test:supabase:stop supabase-js
 - [x] Docker running
 - [x] Supabase CLI installed
 - [x] jq installed (for JSON parsing)
+- [x] psql installed (for seeding the database)
 - [x] Run `test:supabase:setup` first (handles keys automatically)
 
 **Common Issues and Solutions:**
 
-| Issue                                        | Solution                                                                       |
-| -------------------------------------------- | ------------------------------------------------------------------------------ |
-| "Port 54322 already allocated"               | Run `pnpm nx test:supabase:stop supabase-js` or `pnpm exec supabase stop`      |
-| "503 Service Unavailable" for Edge Functions | Run `pnpm nx test:supabase:setup supabase-js` (serves functions automatically) |
-| Integration tests fail with auth errors      | Run `pnpm nx test:supabase:setup supabase-js` (exports keys automatically)     |
-| "jq: command not found"                      | Install jq: `brew install jq` (macOS) or `apt-get install jq` (Linux)          |
-| Functions log filling up disk                | Logs are in `/tmp/supabase-functions.log`, cleanup removes them                |
+| Issue                                        | Solution                                                                                                         |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| "Port 54322 already allocated"               | Run `pnpm nx test:supabase:stop supabase-js` or `pnpm exec supabase stop`                                        |
+| "503 Service Unavailable" for Edge Functions | Run `pnpm nx test:supabase:setup supabase-js` (serves functions automatically)                                   |
+| Integration tests fail with auth errors      | Run `pnpm nx test:supabase:setup supabase-js` (exports keys automatically)                                       |
+| "jq: command not found"                      | Install jq: `brew install jq` (macOS) or `apt-get install jq` (Linux)                                            |
+| "'psql' is required but was not found"       | Install psql: `brew install libpq` (macOS, then add it to `PATH`) or `apt-get install postgresql-client` (Linux) |
+| Functions log filling up disk                | Logs are in `/tmp/supabase-functions.log`, cleanup removes them                                                  |
 
 ## Platform-Specific Testing (CI Only)
 

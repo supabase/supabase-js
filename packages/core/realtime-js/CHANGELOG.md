@@ -1,3 +1,20 @@
+## 2.119.0 (2026-11-04)
+
+### 🚀 Features
+
+- **realtime:** broadcast persistence ([#2690](https://github.com/supabase/supabase-js/pull/2690))
+
+### 🩹 Fixes
+
+- **realtime:** include vsn in the unsupported serializer error ([#2812](https://github.com/supabase/supabase-js/pull/2812))
+
+### ❤️ Thank You
+
+- Claude Opus 5.5
+- Guilherme Souza
+- Leandro Pereira @leandrocp
+- Rami Hersonsky @ramiscaleai
+
 ## 2.118.0 (2026-10-15)
 
 This was a version bump only for @supabase/realtime-js to align it with other projects, there were no code changes.

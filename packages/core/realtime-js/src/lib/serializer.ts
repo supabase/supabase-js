@@ -16,10 +16,16 @@ export default class Serializer {
   JSON_ENCODING = 1
   BROADCAST_EVENT = 'broadcast'
 
-  allowedMetadataKeys: string[] = []
+  /**
+   * Keys the server reads as frame metadata rather than user payload. Anything not listed here is
+   * dropped, so a caller cannot smuggle arbitrary control keys through.
+   */
+  static DEFAULT_METADATA_KEYS = ['persist']
+
+  allowedMetadataKeys: string[] = Serializer.DEFAULT_METADATA_KEYS
 
   constructor(allowedMetadataKeys?: string[] | null) {
-    this.allowedMetadataKeys = allowedMetadataKeys ?? []
+    this.allowedMetadataKeys = allowedMetadataKeys ?? Serializer.DEFAULT_METADATA_KEYS
   }
 
   encode(msg: Msg<{ [key: string]: any }>, callback: (result: ArrayBuffer | string) => any) {

@@ -1,3 +1,17 @@
+## 2.119.0 (2026-11-04)
+
+### 🚀 Features
+
+- **postgrest:** expose query builder options to .from method - custom fetch per request ([#1570](https://github.com/supabase/supabase-js/pull/1570))
+
+### ❤️ Thank You
+
+- 7vignesh
+- 7vignesh <vigneshgopikrishnan7@gmail.com> and stenlan @stenlan
+- Katerina Skroumpelou
+- stenlan @stenlan
+- Vignesh
+
 ## 2.118.0 (2026-10-15)
 
 ### 🚀 Features

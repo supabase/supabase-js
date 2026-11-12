@@ -2032,7 +2032,7 @@ export interface GoTrueMFAApi {
    * Returns the Authenticator Assurance Level (AAL) for the active session.
    *
    * - `aal1` (or `null`) means that the user's identity has been verified only
-   * with a conventional login (email+password, OTP, magic link, social login,
+   * with a conventional login (email+password, OTP, magic link, social sign-in,
    * etc.).
    * - `aal2` means that the user's identity has been verified both with a conventional login and at least one MFA factor.
    *

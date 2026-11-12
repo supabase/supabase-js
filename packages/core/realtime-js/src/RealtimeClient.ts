@@ -853,7 +853,7 @@ export default class RealtimeClient {
         defaultDecode = this.serializer.decode.bind(this.serializer)
         break
       default:
-        throw new Error(`Unsupported serializer version: ${result.vsn}`)
+        throw new Error(`Unsupported serializer version: ${vsn}`)
     }
 
     result.vsn = vsn
