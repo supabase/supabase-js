@@ -199,7 +199,7 @@ export type ExperimentalFeatureFlags = {
    * disabled throws a descriptive error at call time.
    *
    * @experimental
-   * @hidden TODO: Add explanation
+   * @hidden Recovery codes are not yet publicly available to projects.
    */
   recoveryCodes?: boolean
   /**
@@ -1425,7 +1425,7 @@ export type AuthMFAGetAuthenticatorAssuranceLevelResponse = RequestResult<{
  * throw. Recovery codes must also be enabled on the Supabase Auth server.
  *
  * @experimental
- * @hidden TODO: Add explanation
+ * @hidden Recovery codes are not yet publicly available to projects.
  */
 export interface AuthMFARecoveryCodesApi {
   /**
@@ -2096,7 +2096,7 @@ export interface GoTrueMFAApi {
    * @see {@link AuthMFARecoveryCodesApi}
    *
    * @experimental
-   * @hidden TODO: Add explanation
+   * @hidden Recovery codes are not yet publicly available to projects.
    */
   recoveryCodes: AuthMFARecoveryCodesApi
 }

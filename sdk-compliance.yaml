@@ -165,23 +165,23 @@ features:
   auth.mfa_recovery_codes.generate:
     status: implemented
     no_public_symbols: true
-    note: 'TODO: Add explanation'
+    note: 'Recovery codes are not yet publicly available to projects.'
   auth.mfa_recovery_codes.get_status:
     status: implemented
     no_public_symbols: true
-    note: 'TODO: Add explanation'
+    note: 'Recovery codes are not yet publicly available to projects.'
   auth.mfa_recovery_codes.regenerate:
     status: implemented
     no_public_symbols: true
-    note: 'TODO: Add explanation'
+    note: 'Recovery codes are not yet publicly available to projects.'
   auth.mfa_recovery_codes.unenroll:
     status: implemented
     no_public_symbols: true
-    note: 'TODO: Add explanation'
+    note: 'Recovery codes are not yet publicly available to projects.'
   auth.mfa_recovery_codes.verify:
     status: implemented
     no_public_symbols: true
-    note: 'TODO: Add explanation'
+    note: 'Recovery codes are not yet publicly available to projects.'
   auth.oauth_admin.create_client:
     status: implemented
     symbols:
