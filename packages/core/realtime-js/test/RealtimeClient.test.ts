@@ -344,15 +344,87 @@ describe('Additional Coverage Tests', () => {
     })
   })
 
-  describe('reconnectAfterMs fallback', () => {
-    test('should use default fallback when tries exceed available intervals', () => {
+  describe('reconnectAfterMs default full-jitter backoff', () => {
+    test('should follow the full-jitter curve: random delay in [0, min(30s, 1s * 2^(tries - 1)))', () => {
       const socket = new RealtimeClient(testSetup.realtimeUrl, {
         params: { apikey: '123456789' },
       })
 
-      // Test with tries that exceed RECONNECT_INTERVALS length
-      const result = socket.reconnectAfterMs(10) // Much higher than intervals array length
-      expect(result).toBe(10000) // DEFAULT_RECONNECT_FALLBACK
+      // Math.random() = 0.5, so the delay is exactly half the cap for each attempt.
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
+      try {
+        expect(socket.reconnectAfterMs(1)).toBe(500) // cap 1s
+        expect(socket.reconnectAfterMs(2)).toBe(1000) // cap 2s
+        expect(socket.reconnectAfterMs(3)).toBe(2000) // cap 4s
+        expect(socket.reconnectAfterMs(4)).toBe(4000) // cap 8s
+      } finally {
+        randomSpy.mockRestore()
+      }
+    })
+
+    test('should cap the delay at 30s for later attempts', () => {
+      const socket = new RealtimeClient(testSetup.realtimeUrl, {
+        params: { apikey: '123456789' },
+      })
+
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
+      try {
+        expect(socket.reconnectAfterMs(6)).toBe(15000) // cap would be 32s, capped to 30s
+        expect(socket.reconnectAfterMs(10)).toBe(15000)
+        expect(socket.reconnectAfterMs(100)).toBe(15000)
+      } finally {
+        randomSpy.mockRestore()
+      }
+    })
+
+    test('should return 0 when Math.random() returns 0 and stay within the cap', () => {
+      const socket = new RealtimeClient(testSetup.realtimeUrl, {
+        params: { apikey: '123456789' },
+      })
+
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
+      try {
+        expect(socket.reconnectAfterMs(1)).toBe(0)
+        expect(socket.reconnectAfterMs(5)).toBe(0)
+      } finally {
+        randomSpy.mockRestore()
+      }
+
+      // With real randomness, the delay is always in [0, cap].
+      for (let i = 0; i < 20; i++) {
+        const result = socket.reconnectAfterMs(1)
+        expect(result).toBeGreaterThanOrEqual(0)
+        expect(result).toBeLessThanOrEqual(1000)
+      }
+    })
+
+    test('should treat tries below 1 as the first attempt', () => {
+      const socket = new RealtimeClient(testSetup.realtimeUrl, {
+        params: { apikey: '123456789' },
+      })
+
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
+      try {
+        expect(socket.reconnectAfterMs(0)).toBe(500)
+        expect(socket.reconnectAfterMs(-1)).toBe(500)
+      } finally {
+        randomSpy.mockRestore()
+      }
+    })
+
+    test('should keep a caller-supplied reconnectAfterMs unchanged', () => {
+      const socket = new RealtimeClient(testSetup.realtimeUrl, {
+        params: { apikey: '123456789' },
+        reconnectAfterMs: () => 42,
+      })
+
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99)
+      try {
+        expect(socket.reconnectAfterMs(1)).toBe(42)
+        expect(socket.reconnectAfterMs(10)).toBe(42)
+      } finally {
+        randomSpy.mockRestore()
+      }
     })
   })
 
