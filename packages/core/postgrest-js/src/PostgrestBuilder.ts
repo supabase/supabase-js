@@ -417,7 +417,7 @@ export default abstract class PostgrestBuilder<
         count = parseInt(contentRange[1])
       }
 
-      // Fix for https://github.com/supabase/postgrest-js/issues/361 — applies to all methods.
+      // Fix for https://github.com/supabase/postgrest-js/issues/361.
       if (this.isMaybeSingle && Array.isArray(data)) {
         if (data.length > 1) {
           error = {
@@ -466,6 +466,20 @@ export default abstract class PostgrestBuilder<
             message: body,
           }
         }
+      }
+
+      // Singular responses reject zero rows too, but maybeSingle allows them.
+      if (
+        this.isMaybeSingle &&
+        !this.url.pathname.includes('/rpc/') &&
+        res.status === 406 &&
+        error?.code === 'PGRST116' &&
+        /\b0 rows\b/.test(error.details)
+      ) {
+        error = null
+        count = this.headers.get('Prefer')?.split(',').includes('count=exact') ? 0 : null
+        status = 200
+        statusText = 'OK'
       }
 
       if (error && this.shouldThrowOnError) {
