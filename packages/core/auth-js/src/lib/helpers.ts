@@ -6,7 +6,7 @@ import {
 } from './constants'
 import { AuthInvalidJwtError } from './errors'
 import { base64UrlToUint8Array, stringFromBase64URL } from './base64url'
-import { JwtHeader, JwtPayload, SupportedStorage, User } from './types'
+import { JWK, JwtHeader, JwtPayload, SupportedStorage, User } from './types'
 import { Uint8Array_ } from './webauthn.dom'
 
 export function expiresAt(expiresIn: number) {
@@ -542,8 +542,8 @@ export function validateExp(exp: number) {
 }
 
 export function getAlgorithm(
-  alg: 'HS256' | 'RS256' | 'ES256' | (string & {})
-): RsaHashedImportParams | EcKeyImportParams {
+  alg: 'HS256' | 'RS256' | 'ES256' | 'EdDSA' | 'Ed25519' | (string & {})
+): RsaHashedImportParams | EcKeyImportParams | Algorithm {
   switch (alg) {
     case 'RS256':
       return {
@@ -556,8 +556,43 @@ export function getAlgorithm(
         namedCurve: 'P-256',
         hash: { name: 'SHA-256' },
       }
+    case 'EdDSA':
+    case 'Ed25519':
+      return { name: 'Ed25519' }
     default:
       throw new Error('Invalid alg claim')
+  }
+}
+
+/**
+ * Imports `jwk` as a WebCrypto key that verifies JWTs signed with `alg`.
+ *
+ * Returns `null` when `alg` is unknown or the runtime cannot import the key,
+ * for example Ed25519 before Chrome 137 or Firefox 129. The caller then
+ * verifies the JWT with the Auth server, so a signing algorithm added later
+ * does not break this client.
+ */
+export async function importJwtVerifyKey(
+  jwk: JWK,
+  alg: string
+): Promise<{ algorithm: ReturnType<typeof getAlgorithm>; key: CryptoKey } | null> {
+  let algorithm: ReturnType<typeof getAlgorithm>
+  try {
+    algorithm = getAlgorithm(alg)
+  } catch {
+    return null
+  }
+
+  // Runtimes disagree on which JWK `alg` values are valid for Ed25519
+  // (`EdDSA`, `Ed25519`), and the token's `alg` was already checked above.
+  const { alg: _jwkAlg, ...jwkWithoutAlg } = jwk
+  const keyData = algorithm.name === 'Ed25519' ? jwkWithoutAlg : jwk
+
+  try {
+    const key = await crypto.subtle.importKey('jwk', keyData, algorithm, true, ['verify'])
+    return { algorithm, key }
+  } catch {
+    return null
   }
 }
 
