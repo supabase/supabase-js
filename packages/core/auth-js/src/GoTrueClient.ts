@@ -49,6 +49,7 @@ import {
   getItemAsync,
   insecureUserWarningProxy,
   isBrowser,
+  isValidAuthorizationId,
   parseParametersFromURL,
   pkceVerifierSlotKey,
   removeAllPKCEVerifiers,
@@ -6421,6 +6422,20 @@ export default class GoTrueClient {
   }
 
   /**
+   * Builds the error returned when an OAuth authorization ID is malformed.
+   * Authorization IDs are alphanumeric strings issued by Supabase Auth; any
+   * other value is rejected before a request is made so it can never alter
+   * the request path.
+   */
+  private _invalidAuthorizationIdError(): AuthError {
+    return new AuthError(
+      '@supabase/auth-js: Invalid authorization ID. Expected an alphanumeric string.',
+      400,
+      'validation_failed'
+    )
+  }
+
+  /**
    * Retrieves details about an OAuth authorization request.
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
@@ -6431,6 +6446,10 @@ export default class GoTrueClient {
   private async _getAuthorizationDetails(
     authorizationId: string
   ): Promise<AuthOAuthAuthorizationDetailsResponse> {
+    if (!isValidAuthorizationId(authorizationId)) {
+      return this._returnResult({ data: null, error: this._invalidAuthorizationIdError() })
+    }
+
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6474,6 +6493,10 @@ export default class GoTrueClient {
     authorizationId: string,
     options?: { skipBrowserRedirect?: boolean }
   ): Promise<AuthOAuthConsentResponse> {
+    if (!isValidAuthorizationId(authorizationId)) {
+      return this._returnResult({ data: null, error: this._invalidAuthorizationIdError() })
+    }
+
     try {
       return await this._useSession(async (result) => {
         const {
@@ -6527,6 +6550,10 @@ export default class GoTrueClient {
     authorizationId: string,
     options?: { skipBrowserRedirect?: boolean }
   ): Promise<AuthOAuthConsentResponse> {
+    if (!isValidAuthorizationId(authorizationId)) {
+      return this._returnResult({ data: null, error: this._invalidAuthorizationIdError() })
+    }
+
     try {
       return await this._useSession(async (result) => {
         const {
