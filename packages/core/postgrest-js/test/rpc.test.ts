@@ -41,6 +41,43 @@ test('RPC call serializes bigint values in the request body', async () => {
   )
 })
 
+/**
+ * @see https://github.com/supabase/supabase-js/issues/2823
+ */
+test('RPC get/head serializes Date args as ISO-8601 query params', async () => {
+  const mockFetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: new Headers(),
+    json: async () => null,
+    text: async () => '',
+  })
+
+  const client = new PostgrestClient<Database>('https://example.com', {
+    fetch: mockFetch as any,
+  })
+
+  const since = new Date('2026-11-04T15:00:00.000Z')
+
+  await client.rpc('events_since' as any, { since } as any, { get: true })
+
+  const [getUrl, getOptions] = mockFetch.mock.calls[0] as [string, RequestInit]
+  expect(getOptions.method).toBe('GET')
+  expect(new URL(getUrl).searchParams.get('since')).toBe(since.toISOString())
+  // Must not use Date.prototype.toString() (e.g. "Wed Nov 04 2026 ...")
+  expect(getUrl).not.toContain('GMT')
+
+  mockFetch.mockClear()
+
+  await client.rpc('events_since' as any, { since } as any, { head: true })
+
+  const [headUrl, headOptions] = mockFetch.mock.calls[0] as [string, RequestInit]
+  expect(headOptions.method).toBe('HEAD')
+  expect(new URL(headUrl).searchParams.get('since')).toBe(since.toISOString())
+  expect(headUrl).not.toContain('GMT')
+})
+
 test('RPC call with no params', async () => {
   const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select()
   expect(res).toMatchInlineSnapshot(`

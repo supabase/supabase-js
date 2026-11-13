@@ -572,9 +572,24 @@ export default class PostgrestClient<
     let method: 'HEAD' | 'GET' | 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
-    // objects/arrays-of-objects can't be serialized to URL params, use POST + return=minimal instead
+    // Serialize scalar/array values for URL query params. Dates must use ISO-8601
+    // (same as JSON.stringify on the POST path) — Date.toString() is rejected by Postgres.
+    const _serialize = (value: unknown): string => {
+      if (value instanceof Date) {
+        return value.toISOString()
+      }
+      if (Array.isArray(value)) {
+        return `{${value.map((item) => (item instanceof Date ? item.toISOString() : item)).join(',')}}`
+      }
+      return `${value}`
+    }
+    // objects/arrays-of-objects can't be serialized to URL params, use POST + return=minimal instead.
+    // Date is excluded — it serializes cleanly via toISOString() above.
     const _isObject = (v: unknown): boolean =>
-      v !== null && typeof v === 'object' && (!Array.isArray(v) || v.some(_isObject))
+      v !== null &&
+      typeof v === 'object' &&
+      !(v instanceof Date) &&
+      (!Array.isArray(v) || v.some(_isObject))
     const _hasObjectArg = head && Object.values(args as object).some(_isObject)
     if (_hasObjectArg) {
       method = 'POST'
@@ -585,8 +600,7 @@ export default class PostgrestClient<
         // params with undefined value needs to be filtered out, otherwise it'll
         // show up as `?param=undefined`
         .filter(([_, value]) => value !== undefined)
-        // array values need special syntax
-        .map(([name, value]) => [name, Array.isArray(value) ? `{${value.join(',')}}` : `${value}`])
+        .map(([name, value]) => [name, _serialize(value)])
         .forEach(([name, value]) => {
           url.searchParams.append(name, value)
         })
