@@ -2569,6 +2569,8 @@ export interface GoTrueAdminOAuthApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
+   * @param clientId - The OAuth client's ID (a UUID). The promise rejects without making a request if it is not a valid UUID.
+   *
    * @category Auth
    * @subcategory OAuth Admin
    */
@@ -2579,6 +2581,9 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @param clientId - The OAuth client's ID (a UUID). The promise rejects without making a request if it is not a valid UUID.
+   * @param params - The fields to update
    *
    * @category Auth
    * @subcategory OAuth Admin
@@ -2591,6 +2596,8 @@ export interface GoTrueAdminOAuthApi {
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    *
+   * @param clientId - The OAuth client's ID (a UUID). The promise rejects without making a request if it is not a valid UUID.
+   *
    * @category Auth
    * @subcategory OAuth Admin
    */
@@ -2601,6 +2608,8 @@ export interface GoTrueAdminOAuthApi {
    * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @param clientId - The OAuth client's ID (a UUID). The promise rejects without making a request if it is not a valid UUID.
    *
    * @category Auth
    * @subcategory OAuth Admin
@@ -3040,7 +3049,7 @@ export interface AuthOAuthServerApi {
    * }
    * ```
    *
-   * @param authorizationId - The authorization ID from the authorization request
+   * @param authorizationId - The authorization ID from the authorization request. Must be the alphanumeric ID issued by Supabase Auth; any other value returns a `validation_failed` error without making a request.
    * @returns Authorization details or redirect URL depending on consent status
    *
    * @category Auth
@@ -3055,7 +3064,7 @@ export interface AuthOAuthServerApi {
    * After approval, the user's consent is stored and an authorization code is generated.
    * The response contains a complete redirect URL with the authorization code and state.
    *
-   * @param authorizationId - The authorization ID to approve
+   * @param authorizationId - The authorization ID to approve. Must be the alphanumeric ID issued by Supabase Auth; any other value returns a `validation_failed` error without making a request.
    * @param options - Optional parameters
    * @param options.skipBrowserRedirect - If false (default), automatically redirects the browser to the OAuth client. If true, returns the redirect_url without automatic redirect (useful for custom handling).
    * @returns Redirect URL to send the user back to the OAuth client with authorization code
@@ -3075,7 +3084,7 @@ export interface AuthOAuthServerApi {
    * After denial, the response contains a redirect URL with an OAuth error
    * (access_denied) to inform the OAuth client that the user rejected the request.
    *
-   * @param authorizationId - The authorization ID to deny
+   * @param authorizationId - The authorization ID to deny. Must be the alphanumeric ID issued by Supabase Auth; any other value returns a `validation_failed` error without making a request.
    * @param options - Optional parameters
    * @param options.skipBrowserRedirect - If false (default), automatically redirects the browser to the OAuth client. If true, returns the redirect_url without automatic redirect (useful for custom handling).
    * @returns Redirect URL to send the user back to the OAuth client with error information

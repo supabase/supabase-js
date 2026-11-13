@@ -996,6 +996,8 @@ export default class GoTrueAdminApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
   private async _getOAuthClient(clientId: string): Promise<OAuthClientResponse> {
+    validateUUID(clientId)
+
     try {
       return await _request(this.fetch, 'GET', `${this.url}/admin/oauth/clients/${clientId}`, {
         headers: this.headers,
@@ -1022,6 +1024,8 @@ export default class GoTrueAdminApi {
     clientId: string,
     params: UpdateOAuthClientParams
   ): Promise<OAuthClientResponse> {
+    validateUUID(clientId)
+
     try {
       return await _request(this.fetch, 'PUT', `${this.url}/admin/oauth/clients/${clientId}`, {
         body: params,
@@ -1048,6 +1052,8 @@ export default class GoTrueAdminApi {
   private async _deleteOAuthClient(
     clientId: string
   ): Promise<{ data: null; error: AuthError | null }> {
+    validateUUID(clientId)
+
     try {
       await _request(this.fetch, 'DELETE', `${this.url}/admin/oauth/clients/${clientId}`, {
         headers: this.headers,
@@ -1070,6 +1076,8 @@ export default class GoTrueAdminApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
   private async _regenerateOAuthClientSecret(clientId: string): Promise<OAuthClientResponse> {
+    validateUUID(clientId)
+
     try {
       return await _request(
         this.fetch,
