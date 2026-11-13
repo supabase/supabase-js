@@ -667,7 +667,7 @@ describe('send', () => {
 describe('httpSend', () => {
   const createMockResponse = (status: number, statusText?: string, body?: any) => ({
     status,
-    statusText: statusText || 'OK',
+    statusText: statusText ?? 'OK',
     headers: new Headers(),
     body: null,
     json: vi.fn().mockResolvedValue(body || {}),
@@ -1000,6 +1000,76 @@ describe('httpSend', () => {
 
       await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
         'Service Unavailable'
+      )
+    })
+
+    test('formats field-level validation errors', async () => {
+      const mockResponse = createMockResponse(422, '', {
+        errors: { payload: ['Payload size exceeds tenant limit'] },
+      })
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
+        'payload: Payload size exceeds tenant limit'
+      )
+    })
+
+    test('joins multiple validation errors and prefers them over statusText', async () => {
+      const mockResponse = createMockResponse(422, 'Unprocessable Content', {
+        errors: { event: ['is reserved'], payload: ['too large', 'must be an object'] },
+      })
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
+        'event: is reserved; payload: too large, must be an object'
+      )
+    })
+
+    test('falls back to the status code when the response has no message', async () => {
+      const mockResponse = createMockResponse(422, '', {})
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
+        'httpSend() failed with status 422'
+      )
+    })
+
+    test('ignores non-string error fields and uses the validation errors', async () => {
+      const mockResponse = createMockResponse(422, '', {
+        error: { code: 'invalid_payload' },
+        errors: { payload: ['Payload size exceeds tenant limit'] },
+      })
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
+        'payload: Payload size exceeds tenant limit'
+      )
+    })
+
+    test('falls back to statusText when error fields are not strings', async () => {
+      const mockResponse = createMockResponse(500, 'Internal Server Error', {
+        error: { code: 'boom' },
+        message: { detail: 'boom' },
+      })
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
+        'Internal Server Error'
       )
     })
   })
