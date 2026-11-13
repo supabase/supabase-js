@@ -726,10 +726,9 @@ export default class SupabaseClient<
     source: 'CLIENT' | 'STORAGE',
     token?: string
   ) {
-    if (
-      (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') &&
-      this.changedAccessToken !== token
-    ) {
+    // Every event but SIGNED_OUT carries the current session. MFA_CHALLENGE_VERIFIED,
+    // PASSWORD_RECOVERY and USER_UPDATED can bring a new access token too (aal2, recovery).
+    if (event !== 'SIGNED_OUT' && this.changedAccessToken !== token) {
       this.changedAccessToken = token
       this.realtime.setAuth(token)
     } else if (event === 'SIGNED_OUT') {
