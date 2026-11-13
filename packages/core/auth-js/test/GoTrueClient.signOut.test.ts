@@ -278,4 +278,70 @@ describe('GoTrueClient signOut', () => {
       expect(signedOutEvents(onAuthStateChange)).toHaveLength(0)
     })
   })
+
+  describe('concurrent refresh and signOut race (#2806)', () => {
+    it('discards in-flight refresh when signOut starts during post-fetch storage read', async () => {
+      const storageKey = 'test-concurrent-refresh-signout'
+      const initialSession = createStoredSession()
+      const storage = memoryLocalStorageAdapter({
+        [storageKey]: JSON.stringify(initialSession),
+      })
+
+      const rotatedSession = {
+        ...initialSession,
+        access_token: 'rotated-access-token',
+        refresh_token: 'rotated-refresh-token',
+      }
+
+      let tokenFetched = false
+      const mockFetch = jest.fn().mockImplementation(async (url: string) => {
+        if (url.includes('/token')) {
+          tokenFetched = true
+          return new Response(JSON.stringify(rotatedSession), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          })
+        }
+        if (url.includes('/logout')) {
+          return new Response(null, { status: 204 })
+        }
+        return new Response(JSON.stringify({}), { status: 200 })
+      })
+
+      const client = new GoTrueClient({
+        url: 'http://localhost:9999',
+        autoRefreshToken: false,
+        persistSession: true,
+        storage,
+        storageKey,
+        fetch: mockFetch,
+      })
+
+      await client.initialize()
+
+      const events: string[] = []
+      client.onAuthStateChange((event) => {
+        events.push(event)
+      })
+
+      const originalGetItem = storage.getItem.bind(storage)
+      storage.getItem = async (key: string) => {
+        if (key === storageKey && tokenFetched) {
+          tokenFetched = false
+          // Trigger concurrent signOut while storedAfter is in flight
+          await client.signOut({ scope: 'local' })
+          // Return pre-removal session to simulate async read resolving before remove
+          return JSON.stringify(initialSession)
+        }
+        return originalGetItem(key)
+      }
+
+      const refreshResult = await client.refreshSession()
+
+      expect(refreshResult.error?.name).toBe('AuthRefreshDiscardedError')
+      expect(await storage.getItem(storageKey)).toBeNull()
+      expect(events).toContain('SIGNED_OUT')
+      expect(events).not.toContain('TOKEN_REFRESHED')
+    })
+  })
 })
