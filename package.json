@@ -7,6 +7,7 @@
     "preinstall": "node scripts/preinstall.js",
     "commit": "cz",
     "prepare": "husky",
+    "lint:docs": "eslint --quiet --config eslint.docs.config.mjs \"packages/core/*/src/**/*.{ts,tsx,mts,cts}\"",
     "codegen": "node scripts/sync-common-types.js",
     "codegen:check": "node scripts/sync-common-types.js && git diff --exit-code packages/core/supabase-js/src/lib/rest/types/common && echo '\n✅ Generated types are in sync!' || (echo '\n❌ Generated types are out of sync.\n   Run: pnpm codegen\n   Then commit the changes.\n' && exit 1)",
     "codegen:postgrest": "node scripts/generate-postgrest-types.js",

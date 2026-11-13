@@ -1,5 +1,6 @@
 import nx from '@nx/eslint-plugin'
 import globals from 'globals'
+import { docsRules } from './eslint.docs.config.mjs'
 
 export default [
   {
@@ -16,6 +17,10 @@ export default [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
   ...nx.configs['flat/javascript'],
+  {
+    languageOptions: { parserOptions: { tsconfigRootDir: import.meta.dirname } },
+  },
+  docsRules,
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     rules: {

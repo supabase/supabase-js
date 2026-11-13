@@ -29,9 +29,10 @@ export interface CreateIndexOptions {
 }
 
 /**
- * @hidden
  * Base implementation for vector index operations.
  * Use {@link VectorBucketScope} via `supabase.storage.vectors.from('bucket')` instead.
+ *
+ * @hidden Internal base class.
  */
 export default class VectorIndexApi extends BaseApiClient<StorageError> {
   /** Creates a new VectorIndexApi instance */

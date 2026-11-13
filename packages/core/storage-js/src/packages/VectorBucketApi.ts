@@ -10,9 +10,10 @@ import {
 } from '../lib/types'
 
 /**
- * @hidden
  * Base implementation for vector bucket operations.
  * Use {@link StorageVectorsClient} via `supabase.storage.vectors` instead.
+ *
+ * @hidden Internal base class.
  */
 export default class VectorBucketApi extends BaseApiClient<StorageError> {
   /** Creates a new VectorBucketApi instance */
