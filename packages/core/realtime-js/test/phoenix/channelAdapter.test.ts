@@ -123,3 +123,36 @@ describe('updateJoinPayload', () => {
     })
   })
 })
+
+describe('push buffer overflow', () => {
+  let overflowSetup: TestSetup
+
+  beforeEach(async () => {
+    overflowSetup = setupRealtimeTest({ timeout: defaultTimeout, useFakeTimers: true })
+    overflowSetup.connect()
+    await overflowSetup.socketConnected()
+  })
+
+  afterEach(() => {
+    overflowSetup.cleanup()
+  })
+
+  test('settles the promise of a push discarded by the buffer cap', async () => {
+    const overflowChannel = overflowSetup.client.channel('overflow-topic')
+    overflowChannel.subscribe()
+
+    let firstSettled = false
+    overflowChannel.track({ i: 0 }).then(() => {
+      firstSettled = true
+    })
+
+    for (let i = 1; i <= MAX_PUSH_BUFFER_SIZE; i++) {
+      overflowChannel.track({ i })
+    }
+
+    await vi.advanceTimersByTimeAsync(60000)
+    await Promise.resolve()
+
+    expect(firstSettled).toBe(true)
+  })
+})
