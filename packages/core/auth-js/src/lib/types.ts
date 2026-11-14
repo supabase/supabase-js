@@ -2897,6 +2897,278 @@ export interface GoTrueAdminCustomProvidersApi {
 }
 
 /**
+ * SAML NameID formats an SSO provider can request from the identity provider.
+ */
+export type SAMLNameIDFormat =
+  | 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified'
+  | 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent'
+  | 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'
+  | 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient'
+
+/**
+ * Describes how a single user attribute is read from a SAML assertion.
+ */
+export type SAMLAttributeMappingKey = {
+  /** Name of the SAML attribute to read the value from */
+  name?: string
+  /** Names of SAML attributes to try, in order, when `name` is not present */
+  names?: string[]
+  /** Value to use when none of the attributes are present in the assertion */
+  default?: any
+  /** Whether to keep every value of a multi-valued attribute as an array */
+  array?: boolean
+}
+
+/**
+ * Maps SAML assertion attributes to keys in the user's identity data.
+ */
+export type SAMLAttributeMapping = {
+  /** Attribute mapping keyed by the name of the identity data key to populate */
+  keys?: { [key: string]: SAMLAttributeMappingKey }
+}
+
+/**
+ * SAML 2.0 configuration of an SSO provider.
+ */
+export type SSOProviderSAMLConfig = {
+  /** Entity ID of the SAML identity provider, read from its metadata */
+  entity_id: string
+  /** SAML metadata XML of the identity provider. Omitted by `listProviders()`. */
+  metadata_xml?: string
+  /** URL the SAML metadata was fetched from, when registered with `metadata_url` */
+  metadata_url?: string
+  /** Mapping of SAML assertion attributes to user identity data */
+  attribute_mapping?: SAMLAttributeMapping
+  /** NameID format requested from the identity provider */
+  name_id_format?: SAMLNameIDFormat
+}
+
+/**
+ * Email domain assigned to an SSO provider.
+ */
+export type SSODomain = {
+  /** Email domain, e.g. `company.com` */
+  domain: string
+}
+
+/**
+ * SSO provider object returned from the admin API.
+ */
+export type SSOProvider = {
+  /** Unique identifier (UUID) */
+  id: string
+  /** Caller-defined identifier that can be used instead of `id` to address the provider */
+  resource_id?: string
+  /** Whether the provider is disabled. `null` or `false` means it is enabled. */
+  disabled: boolean | null
+  /** SAML 2.0 configuration */
+  saml: SSOProviderSAMLConfig
+  /** Email domains assigned to the provider */
+  domains: SSODomain[]
+  /** Timestamp when the provider was created */
+  created_at: string
+  /** Timestamp when the provider was last updated */
+  updated_at: string
+}
+
+/**
+ * Parameters for registering a new SSO provider.
+ * Exactly one of `metadata_url` or `metadata_xml` must be set.
+ */
+export type CreateSSOProviderParams = {
+  /** Provider type. Only `saml` is supported. */
+  type: 'saml'
+  /** HTTPS URL of the identity provider's SAML metadata, fetched by the server */
+  metadata_url?: string
+  /** SAML metadata XML of the identity provider */
+  metadata_xml?: string
+  /** Email domains to assign to the provider. A domain can belong to only one provider. */
+  domains?: string[]
+  /** Mapping of SAML assertion attributes to user identity data */
+  attribute_mapping?: SAMLAttributeMapping
+  /** NameID format to request from the identity provider */
+  name_id_format?: SAMLNameIDFormat
+  /** Caller-defined identifier that can be used instead of `id` to address the provider */
+  resource_id?: string
+  /** Whether the provider is created disabled */
+  disabled?: boolean
+}
+
+/**
+ * Parameters for updating an existing SSO provider.
+ *
+ * Omitted fields are left unchanged. `domains` replaces the full list of assigned domains
+ * when set. Set `resource_id` to an empty string to remove it.
+ */
+export type UpdateSSOProviderParams = {
+  /**
+   * HTTPS URL of the identity provider's SAML metadata, fetched by the server.
+   * The metadata must have the same entity ID as the current one.
+   */
+  metadata_url?: string
+  /** SAML metadata XML of the identity provider. Must have the same entity ID as the current one. */
+  metadata_xml?: string
+  /** Email domains to assign to the provider, replacing the current ones */
+  domains?: string[]
+  /** Mapping of SAML assertion attributes to user identity data */
+  attribute_mapping?: SAMLAttributeMapping
+  /** NameID format to request from the identity provider */
+  name_id_format?: SAMLNameIDFormat
+  /** Caller-defined identifier that can be used instead of `id` to address the provider */
+  resource_id?: string
+  /** Whether the provider is disabled */
+  disabled?: boolean
+}
+
+/**
+ * Parameters for listing SSO providers.
+ * When both filters are set, only `resourceId` is applied.
+ */
+export type ListSSOProvidersParams = {
+  /** Only return the provider with this exact resource ID */
+  resourceId?: string
+  /** Only return providers whose resource ID starts with this prefix */
+  resourceIdPrefix?: string
+}
+
+/**
+ * Response type for SSO provider operations.
+ */
+export type SSOProviderResponse = RequestResult<SSOProvider>
+
+/**
+ * Response type for listing SSO providers.
+ */
+export type SSOProviderListResponse =
+  | {
+      data: { providers: SSOProvider[] }
+      error: null
+    }
+  | {
+      data: { providers: [] }
+      error: AuthError
+    }
+
+/**
+ * Contains all SSO (SAML 2.0) provider administration methods.
+ *
+ * Methods that take an `id` accept either the provider's UUID or its resource ID
+ * prefixed with `resource_`, e.g. `resource_acme`.
+ */
+export interface GoTrueAdminSSOApi {
+  /**
+   * Lists all SSO providers, optionally filtered by resource ID.
+   *
+   * The SAML metadata XML is omitted from each provider. Use `getProvider()` to fetch it.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @example List all SSO providers
+   * ```js
+   * const { data, error } = await supabase.auth.admin.sso.listProviders()
+   * ```
+   *
+   * @example List SSO providers by resource ID prefix
+   * ```js
+   * const { data, error } = await supabase.auth.admin.sso.listProviders({
+   *   resourceIdPrefix: 'tenant-',
+   * })
+   * ```
+   */
+  listProviders(params?: ListSSOProvidersParams): Promise<SSOProviderListResponse>
+
+  /**
+   * Registers a new SAML 2.0 identity provider.
+   *
+   * When `metadata_url` is set, the server fetches and validates the metadata at creation time.
+   * This may return a validation error if the metadata is unreachable or invalid, if a provider
+   * with the same entity ID already exists, or if a domain is already assigned to another provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @example Register a provider from its metadata URL
+   * ```js
+   * const { data, error } = await supabase.auth.admin.sso.createProvider({
+   *   type: 'saml',
+   *   metadata_url: 'https://idp.example.com/saml/metadata',
+   *   domains: ['example.com'],
+   * })
+   * ```
+   */
+  createProvider(params: CreateSSOProviderParams): Promise<SSOProviderResponse>
+
+  /**
+   * Gets an SSO provider, including its SAML metadata XML.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @param id The provider's UUID, or its resource ID prefixed with `resource_`.
+   *
+   * @example Get a provider by ID
+   * ```js
+   * const { data, error } = await supabase.auth.admin.sso.getProvider(
+   *   '7d8e5a1c-2f3b-4c6d-9e0a-1b2c3d4e5f60'
+   * )
+   * ```
+   *
+   * @example Get a provider by resource ID
+   * ```js
+   * const { data, error } = await supabase.auth.admin.sso.getProvider('resource_acme')
+   * ```
+   */
+  getProvider(id: string): Promise<SSOProviderResponse>
+
+  /**
+   * Updates an SSO provider.
+   *
+   * New SAML metadata must have the same entity ID as the current metadata.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @param id The provider's UUID, or its resource ID prefixed with `resource_`.
+   * @param params The provider settings to update.
+   *
+   * @example Replace the domains of a provider
+   * ```js
+   * const { data, error } = await supabase.auth.admin.sso.updateProvider('resource_acme', {
+   *   domains: ['example.com', 'example.org'],
+   * })
+   * ```
+   */
+  updateProvider(id: string, params: UpdateSSOProviderParams): Promise<SSOProviderResponse>
+
+  /**
+   * Deletes an SSO provider together with its domain assignments.
+   * Returns the deleted provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   *
+   * @category Auth
+   * @subcategory Auth Admin
+   *
+   * @param id The provider's UUID, or its resource ID prefixed with `resource_`.
+   *
+   * @example Delete a provider
+   * ```js
+   * const { data, error } = await supabase.auth.admin.sso.deleteProvider('resource_acme')
+   * ```
+   */
+  deleteProvider(id: string): Promise<SSOProviderResponse>
+}
+
+/**
  * OAuth client details in an authorization request.
  * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
  */

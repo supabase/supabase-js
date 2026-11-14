@@ -356,6 +356,33 @@ features:
     status: implemented
     symbols:
       - GoTrueClient.exchangeCodeForSession
+  auth.sso_admin.create_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminSSOApi.createProvider
+    supporting_symbols:
+      - CreateSSOProviderParams
+  auth.sso_admin.delete_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminSSOApi.deleteProvider
+  auth.sso_admin.get_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminSSOApi.getProvider
+  auth.sso_admin.list_providers:
+    status: implemented
+    symbols:
+      - GoTrueAdminSSOApi.listProviders
+    supporting_symbols:
+      - ListSSOProvidersParams
+      - SSOProviderListResponse
+  auth.sso_admin.update_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminSSOApi.updateProvider
+    supporting_symbols:
+      - UpdateSSOProviderParams
 
   # database
   database.configuration.auto_retry:
@@ -1203,3 +1230,13 @@ supporting_symbols:
   - GoTrueMFAApi.recoveryCodes
   - AuthMFARecoveryCodesGenerateResponse
   - AuthMFARecoveryCodesGenerateResponseData
+  # Shared across auth.sso_admin.{create_provider,delete_provider,get_provider,list_providers,update_provider}.
+  - GoTrueAdminSSOApi
+  - GoTrueAdminApi.sso
+  - SSOProvider
+  - SSOProviderResponse
+  - SSOProviderSAMLConfig
+  - SSODomain
+  - SAMLAttributeMapping
+  - SAMLAttributeMappingKey
+  - SAMLNameIDFormat
