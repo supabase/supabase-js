@@ -2148,7 +2148,9 @@ export interface GoTrueAdminMFAApi {
    *
    * @example List all factors for a user
    * ```js
-   * const { data, error } = await supabase.auth.admin.mfa.listFactors()
+   * const { data, error } = await supabase.auth.admin.mfa.listFactors({
+   *   userId: 'a89baba7-b1b7-440f-b4bb-91026967f66b',
+   * })
    * ```
    *
    * @exampleResponse List all factors for a user

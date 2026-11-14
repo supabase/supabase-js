@@ -4279,15 +4279,11 @@ export default class GoTrueClient {
    *     console.log('SIGNED_OUT', session)
    *
    *     // clear local and session storage
-   *     [
-   *       window.localStorage,
-   *       window.sessionStorage,
-   *     ].forEach((storage) => {
-   *       Object.entries(storage)
-   *         .forEach(([key]) => {
-   *           storage.removeItem(key)
-   *         })
-   *     })
+   *     for (const storage of [window.localStorage, window.sessionStorage]) {
+   *       Object.entries(storage).forEach(([key]) => {
+   *         storage.removeItem(key)
+   *       })
+   *     }
    *   }
    * })
    * ```
@@ -4784,10 +4780,11 @@ export default class GoTrueClient {
    * @example Unlink an identity
    * ```js
    * // retrieve all identities linked to a user
-   * const identities = await supabase.auth.getUserIdentities()
+   * const { data: identitiesData, error: identitiesError } = await supabase.auth.getUserIdentities()
+   * if (identitiesError) throw identitiesError
    *
    * // find the google identity
-   * const googleIdentity = identities.find(
+   * const googleIdentity = identitiesData.identities.find(
    *   identity => identity.provider === 'google'
    * )
    *
