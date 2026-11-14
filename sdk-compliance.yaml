@@ -886,6 +886,11 @@ features:
     status: implemented
     symbols:
       - default.purgeCache
+  storage.file_buckets.purge_project_cache:
+    status: implemented
+    symbols:
+      - default.purgeProjectCache
+      - StorageClient.purgeProjectCache
   storage.file_buckets.remove:
     status: implemented
     symbols:
