@@ -1183,6 +1183,7 @@ export default class PostgrestQueryBuilder<
    * const { data, error } = await supabase
    *   .from('users')
    *   .upsert({ username: 'supabot' }, { onConflict: 'username' })
+   *   .select()
    *
    * // Example response:
    * // {
@@ -1209,14 +1210,15 @@ export default class PostgrestQueryBuilder<
    *       count: 'exact'
    *     }
    *   )
+   *   .select()
    *
    * // Example response:
    * // {
    * //   data: [
    * //     {
-   * //       id: 42,
-   * //       handle: "saoirse",
-   * //       display_name: "Saoirse"
+   * //       id: 3,
+   * //       message: 'foo',
+   * //       username: 'supabot'
    * //     }
    * //   ],
    * //   count: 1,
