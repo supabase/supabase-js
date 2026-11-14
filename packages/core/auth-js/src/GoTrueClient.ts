@@ -323,6 +323,32 @@ export default class GoTrueClient {
     expiresAt: number
   } | null = null
   /**
+   * Timestamp of the most recent recovery retry permitted during a cached
+   * retryable failure window. Enforces that repeated resume / foreground
+   * transitions (e.g. rapid AppState fluttering while still offline) cannot
+   * bypass the cooldown repeatedly and cause an uncontrolled retry storm.
+   */
+  protected lastRecoveryAttemptAt = 0
+  /**
+   * Timestamp of the most recent recovery retry permitted during a cached
+   * retryable failure window on affirmative connectivity restoration (`reconnect`).
+   * Enforces that repeated or fluttering network reconnect events while still offline
+   * cannot bypass the cooldown repeatedly and cause an uncontrolled retry storm.
+   */
+  protected lastReconnectAttemptAt = 0
+  /**
+   * Consecutive reconnect recovery attempts made within the current failure cooldown window.
+   * Allows up to 2 attempts (e.g. premature local connection followed by genuine reachability)
+   * while strictly bounding retry volume during persistent outages.
+   */
+  protected reconnectAttempts = 0
+  /**
+   * True while `_initialize()` is actively running. Used to distinguish
+   * client-internal startup from intentional post-init recovery calls.
+   */
+  protected _isInitializing = false
+
+  /**
    * Monotonic counter incremented at the top of `_removeSession`, before any
    * `await`. The commit guard inside `_callRefreshToken` captures this value
    * before `_saveSession` and re-checks it after, so a `signOut` that
@@ -669,6 +695,7 @@ export default class GoTrueClient {
    *    the whole lifetime of the client
    */
   private async _initialize(): Promise<InitializeResult> {
+    this._isInitializing = true
     try {
       let params: { [parameter: string]: string } = {}
       let callbackUrlType = 'none'
@@ -744,8 +771,12 @@ export default class GoTrueClient {
         error: new AuthUnknownError('Unexpected error during initialization', error),
       })
     } finally {
-      await this._handleVisibilityChange()
-      this._debug('#_initialize()', 'end')
+      try {
+        await this._handleVisibilityChange()
+      } finally {
+        this._isInitializing = false
+        this._debug('#_initialize()', 'end')
+      }
     }
   }
 
@@ -5171,6 +5202,9 @@ export default class GoTrueClient {
       // Refresh succeeded — clear any cached failure so the next caller
       // (including the auto-refresh ticker) attempts a real refresh again.
       this.lastRefreshFailure = null
+      this.lastRecoveryAttemptAt = 0
+      this.lastReconnectAttemptAt = 0
+      this.reconnectAttempts = 0
 
       this.refreshingDeferred.resolve(result)
 
@@ -5335,6 +5369,9 @@ export default class GoTrueClient {
     // The session is gone — no point holding on to a cached refresh failure
     // for a token that no longer exists. Synchronous, before any `await`.
     this.lastRefreshFailure = null
+    this.lastRecoveryAttemptAt = 0
+    this.lastReconnectAttemptAt = 0
+    this.reconnectAttempts = 0
 
     this.suppressGetSessionWarning = false
 
@@ -5482,8 +5519,100 @@ export default class GoTrueClient {
    * })
    * ```
    */
+  /**
+   * Resets the failure cooldown for a retryable error on an intentional
+   * lifecycle transition (`startAutoRefresh`), bounded so that repeated resume
+   * calls cannot cause a retry storm during a sustained outage.
+   */
+  private _maybeRecoverOnStartAutoRefresh() {
+    if (
+      !this._isInitializing &&
+      this.lastRefreshFailure &&
+      isAuthRetryableFetchError(this.lastRefreshFailure.result.error)
+    ) {
+      const now = Date.now()
+      if (now - this.lastRecoveryAttemptAt >= REFRESH_FAILURE_COOLDOWN_MS) {
+        this._debug(
+          '#startAutoRefresh()',
+          'clearing cached retryable failure for recovery attempt on resume'
+        )
+        this.lastRecoveryAttemptAt = now
+        this.lastRefreshFailure = null
+      }
+    }
+  }
+
+  /**
+   * Explicitly notifies the auth client that network connectivity has been restored.
+   *
+   * In environments without native browser window 'online' events (such as React Native),
+   * call this method from your network connectivity listener (e.g. `@react-native-community/netinfo`)
+   * when connectivity returns.
+   *
+   * If a transient transport error (e.g. network failure) is currently cached under the
+   * failure cooldown, calling this method clears the cached failure and initiates an
+   * immediate session recovery and refresh attempt.
+   *
+   * Non-retryable authentication errors (such as invalid or revoked refresh tokens) are
+   * preserved and will not be cleared by reconnecting.
+   *
+   * Concurrent calls are deduplicated into a single in-flight network request.
+   *
+   * @category Auth
+   * @example React Native connectivity listener with NetInfo
+   * ```ts
+   * import NetInfo from '@react-native-community/netinfo'
+   *
+   * NetInfo.addEventListener((state) => {
+   *   if (state.isConnected && state.isInternetReachable) {
+   *     supabase.auth.reconnect()
+   *   }
+   * })
+   * ```
+   */
+  async reconnect(): Promise<AuthResponse> {
+    await this.initializePromise
+
+    const failure = this.lastRefreshFailure
+    const isRetryable = failure && isAuthRetryableFetchError(failure.result.error)
+
+    if (isRetryable) {
+      const now = Date.now()
+      if (now - this.lastReconnectAttemptAt >= REFRESH_FAILURE_COOLDOWN_MS) {
+        this.reconnectAttempts = 0
+      }
+
+      if (this.reconnectAttempts < 2) {
+        this._debug('#reconnect()', 'clearing cached retryable failure for recovery on reconnect')
+        this.reconnectAttempts++
+        this.lastReconnectAttemptAt = now
+        this.lastRecoveryAttemptAt = now
+        this.lastRefreshFailure = null
+      }
+    }
+
+    const { data, error } = await this.getSession()
+    if (error) {
+      return this._returnResult({
+        data: {
+          user: null,
+          session: null,
+        },
+        error,
+      })
+    }
+    return this._returnResult({
+      data: {
+        user: data.session?.user ?? null,
+        session: data.session,
+      },
+      error: null,
+    })
+  }
+
   async startAutoRefresh() {
     this._removeVisibilityChangedCallback()
+    this._maybeRecoverOnStartAutoRefresh()
     await this._startAutoRefresh()
   }
 
