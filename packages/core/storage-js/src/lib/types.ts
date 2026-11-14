@@ -99,8 +99,8 @@ export interface ListBucketOptions {
 
 export interface PurgeCacheOptions {
   /**
-   * If true, purges only the transformations (resized/formatted variants) for the object or bucket,
-   * leaving the original cached file intact. If omitted, purges all cached versions.
+   * If true, purges only the transformations (resized/formatted variants) for the object, bucket
+   * or project, leaving the original cached files intact. If omitted, purges all cached versions.
    */
   transformations?: true
 }
