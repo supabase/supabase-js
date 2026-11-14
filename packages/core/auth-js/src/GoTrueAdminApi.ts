@@ -32,6 +32,12 @@ import {
   ListCustomProvidersParams,
   CustomProviderResponse,
   CustomProviderListResponse,
+  GoTrueAdminSSOApi,
+  CreateSSOProviderParams,
+  UpdateSSOProviderParams,
+  ListSSOProvidersParams,
+  SSOProviderResponse,
+  SSOProviderListResponse,
   GoTrueAdminPasskeyApi,
   AuthPasskeyAdminListParams,
   AuthPasskeyAdminDeleteParams,
@@ -53,6 +59,9 @@ export default class GoTrueAdminApi {
 
   /** Contains all custom OIDC/OAuth provider administration methods. */
   customProviders: GoTrueAdminCustomProvidersApi
+
+  /** Contains all SSO (SAML 2.0) provider administration methods. */
+  sso: GoTrueAdminSSOApi
 
   /**
    * Contains all passkey administration methods.
@@ -122,6 +131,13 @@ export default class GoTrueAdminApi {
       getProvider: this._getCustomProvider.bind(this),
       updateProvider: this._updateCustomProvider.bind(this),
       deleteProvider: this._deleteCustomProvider.bind(this),
+    }
+    this.sso = {
+      listProviders: this._listSSOProviders.bind(this),
+      createProvider: this._createSSOProvider.bind(this),
+      getProvider: this._getSSOProvider.bind(this),
+      updateProvider: this._updateSSOProvider.bind(this),
+      deleteProvider: this._deleteSSOProvider.bind(this),
     }
     this.passkey = {
       listPasskeys: this._adminListPasskeys.bind(this),
@@ -1214,6 +1230,126 @@ export default class GoTrueAdminApi {
         noResolveJson: true,
       })
       return { data: null, error: null }
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Lists all SSO providers, optionally filtered by resource ID.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _listSSOProviders(
+    params?: ListSSOProvidersParams
+  ): Promise<SSOProviderListResponse> {
+    try {
+      const query: Record<string, string> = {}
+      if (params?.resourceId) {
+        query.resource_id = params.resourceId
+      }
+      if (params?.resourceIdPrefix) {
+        query.resource_id_prefix = params.resourceIdPrefix
+      }
+      return await _request(this.fetch, 'GET', `${this.url}/admin/sso/providers`, {
+        headers: this.headers,
+        query,
+        xform: (data: any) => {
+          return { data: { providers: data?.items ?? [] }, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: { providers: [] }, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Registers a new SAML 2.0 identity provider.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _createSSOProvider(params: CreateSSOProviderParams): Promise<SSOProviderResponse> {
+    try {
+      return await _request(this.fetch, 'POST', `${this.url}/admin/sso/providers`, {
+        body: params,
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Gets an SSO provider by its UUID, or by its resource ID prefixed with `resource_`.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _getSSOProvider(id: string): Promise<SSOProviderResponse> {
+    try {
+      return await _request(this.fetch, 'GET', `${this.url}/admin/sso/providers/${id}`, {
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Updates an SSO provider identified by its UUID, or by its resource ID prefixed with `resource_`.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _updateSSOProvider(
+    id: string,
+    params: UpdateSSOProviderParams
+  ): Promise<SSOProviderResponse> {
+    try {
+      return await _request(this.fetch, 'PUT', `${this.url}/admin/sso/providers/${id}`, {
+        body: params,
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
+    } catch (error) {
+      if (isAuthError(error)) {
+        return { data: null, error }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Deletes an SSO provider identified by its UUID, or by its resource ID prefixed with `resource_`.
+   *
+   * This function should only be called on a server. Never expose your `service_role` key in the browser.
+   */
+  private async _deleteSSOProvider(id: string): Promise<SSOProviderResponse> {
+    try {
+      return await _request(this.fetch, 'DELETE', `${this.url}/admin/sso/providers/${id}`, {
+        headers: this.headers,
+        xform: (provider: any) => {
+          return { data: provider, error: null }
+        },
+      })
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
