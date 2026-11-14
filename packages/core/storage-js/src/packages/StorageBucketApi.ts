@@ -147,7 +147,9 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      return await get(this.fetch, `${this.url}/bucket/${id}`, { headers: this.headers })
+      return await get(this.fetch, `${this.url}/bucket/${encodeStoragePath(id)}`, {
+        headers: this.headers,
+      })
     })
   }
 
@@ -301,7 +303,7 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
     return this.handleOperation(async () => {
       return await put(
         this.fetch,
-        `${this.url}/bucket/${id}`,
+        `${this.url}/bucket/${encodeStoragePath(id)}`,
         {
           id,
           name: id,
@@ -357,7 +359,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      return await post(this.fetch, `${this.url}/bucket/${id}/empty`, {}, { headers: this.headers })
+      return await post(
+        this.fetch,
+        `${this.url}/bucket/${encodeStoragePath(id)}/empty`,
+        {},
+        { headers: this.headers }
+      )
     })
   }
 
@@ -404,7 +411,12 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      return await remove(this.fetch, `${this.url}/bucket/${id}`, {}, { headers: this.headers })
+      return await remove(
+        this.fetch,
+        `${this.url}/bucket/${encodeStoragePath(id)}`,
+        {},
+        { headers: this.headers }
+      )
     })
   }
 
