@@ -151,7 +151,9 @@ export default class PostgrestClient<
   /**
    * Creates a PostgREST client.
    *
-   * @param url - URL of the PostgREST endpoint
+   * @param url - URL of the PostgREST endpoint. Trailing slashes are removed, so
+   *   `'https://xyzcompany.supabase.co/rest/v1/'` and `'https://xyzcompany.supabase.co/rest/v1'`
+   *   build the same request URLs.
    * @param options - Named parameters
    * @param options.headers - Custom headers
    * @param options.schema - Postgres schema to switch to
@@ -211,7 +213,12 @@ export default class PostgrestClient<
       wrapFetch?: (fetch: Fetch) => Fetch
     } = {}
   ) {
-    this.url = url
+    // Request URLs are built as `${this.url}/${relation}`, so a trailing slash would
+    // produce `//relation`, which PostgREST answers with a 404. String() keeps a URL
+    // object passed by an untyped caller working, as the template literal used to.
+    let baseUrl = String(url)
+    while (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1)
+    this.url = baseUrl
     this.headers = new Headers(headers)
     this.schemaName = schema
     this.urlLengthLimit = urlLengthLimit
