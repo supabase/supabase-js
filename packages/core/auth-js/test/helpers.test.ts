@@ -427,6 +427,21 @@ describe('PKCE verifier slots', () => {
     expect(await getItemAsync(storage, indexKey)).toBeNull()
   })
 
+  it('removePKCEVerifier points the legacy key back at the newest remaining flow', async () => {
+    const storage = memoryLocalStorageAdapter()
+
+    await storePKCEVerifier(storage, storageKey, 'flow-id-aaaa', 'verifier-a')
+    await storePKCEVerifier(storage, storageKey, 'flow-id-bbbb', 'verifier-b')
+    await storePKCEVerifier(storage, storageKey, 'flow-id-cccc', 'verifier-c')
+
+    // the newest flow is discarded (e.g. its start request failed)
+    await removePKCEVerifier(storage, storageKey, 'flow-id-cccc')
+
+    expect(await getItemAsync(storage, slotKey('flow-id-cccc'))).toBeNull()
+    expect(await getItemAsync(storage, legacyKey)).toBe('verifier-b')
+    expect(await getItemAsync(storage, indexKey)).toEqual(['flow-id-aaaa', 'flow-id-bbbb'])
+  })
+
   it('removePKCEVerifier without a flow id only touches the legacy key', async () => {
     const storage = memoryLocalStorageAdapter()
 
