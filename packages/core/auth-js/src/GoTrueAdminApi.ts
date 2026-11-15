@@ -1298,12 +1298,17 @@ export default class GoTrueAdminApi {
    */
   private async _getSSOProvider(id: string): Promise<SSOProviderResponse> {
     try {
-      return await _request(this.fetch, 'GET', `${this.url}/admin/sso/providers/${id}`, {
-        headers: this.headers,
-        xform: (provider: any) => {
-          return { data: provider, error: null }
-        },
-      })
+      return await _request(
+        this.fetch,
+        'GET',
+        `${this.url}/admin/sso/providers/${encodeURIComponent(id)}`,
+        {
+          headers: this.headers,
+          xform: (provider: any) => {
+            return { data: provider, error: null }
+          },
+        }
+      )
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -1322,13 +1327,18 @@ export default class GoTrueAdminApi {
     params: UpdateSSOProviderParams
   ): Promise<SSOProviderResponse> {
     try {
-      return await _request(this.fetch, 'PUT', `${this.url}/admin/sso/providers/${id}`, {
-        body: params,
-        headers: this.headers,
-        xform: (provider: any) => {
-          return { data: provider, error: null }
-        },
-      })
+      return await _request(
+        this.fetch,
+        'PUT',
+        `${this.url}/admin/sso/providers/${encodeURIComponent(id)}`,
+        {
+          body: params,
+          headers: this.headers,
+          xform: (provider: any) => {
+            return { data: provider, error: null }
+          },
+        }
+      )
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }
@@ -1344,12 +1354,17 @@ export default class GoTrueAdminApi {
    */
   private async _deleteSSOProvider(id: string): Promise<SSOProviderResponse> {
     try {
-      return await _request(this.fetch, 'DELETE', `${this.url}/admin/sso/providers/${id}`, {
-        headers: this.headers,
-        xform: (provider: any) => {
-          return { data: provider, error: null }
-        },
-      })
+      return await _request(
+        this.fetch,
+        'DELETE',
+        `${this.url}/admin/sso/providers/${encodeURIComponent(id)}`,
+        {
+          headers: this.headers,
+          xform: (provider: any) => {
+            return { data: provider, error: null }
+          },
+        }
+      )
     } catch (error) {
       if (isAuthError(error)) {
         return { data: null, error }

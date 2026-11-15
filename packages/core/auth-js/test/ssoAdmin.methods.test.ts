@@ -177,6 +177,21 @@ describe('admin.sso', () => {
       expect(lastRequest(mockFetch).url).toEqual(`${TEST_URL}/admin/sso/providers/resource_acme`)
     })
 
+    it('encodes the ID so it stays within one path segment', async () => {
+      const { admin, mockFetch } = createAdminClient()
+      mockFetch.mockImplementation(async () => jsonResponse(TEST_PROVIDER))
+
+      await admin.sso.getProvider('resource_acme/../../users/abc')
+      await admin.sso.updateProvider('resource_acme/../../users/abc', {})
+      await admin.sso.deleteProvider('resource_acme/../../users/abc')
+
+      for (const call of mockFetch.mock.calls) {
+        expect(call[0]).toEqual(
+          `${TEST_URL}/admin/sso/providers/resource_acme%2F..%2F..%2Fusers%2Fabc`
+        )
+      }
+    })
+
     it('returns the API error when the provider does not exist', async () => {
       const { admin, mockFetch } = createAdminClient()
       mockFetch.mockResolvedValueOnce(
