@@ -409,8 +409,16 @@ export async function retrievePKCEVerifier(
 
 /**
  * Removes a single flow's verifier. Never clears other flows' slots: with a
- * `flowId` only that slot is deleted (plus the legacy fixed key when it holds
- * the same verifier); without one, only the legacy fixed key is deleted.
+ * `flowId` only that slot is deleted; without one, only the legacy fixed key
+ * is deleted.
+ *
+ * When the removed flow owned the legacy fixed key, the key is restored from
+ * the most recently started remaining flow (last index entry) so callbacks
+ * without a flow id can still exchange an earlier, still-valid link. The
+ * legacy key is only deleted when no other pending flow remains. This matters
+ * when a flow start fails after dual-writing (e.g. rate-limited magic link):
+ * the failed start must not wipe the previous live verifier from the legacy
+ * key that default (non-flow-id) callbacks read.
  */
 export async function removePKCEVerifier(
   storage: SupportedStorage,
@@ -440,9 +448,22 @@ export async function removePKCEVerifier(
     }
   }
 
-  if (slotValue != null && slotValue === (await getItemAsync(storage, legacyKey))) {
-    await removeItemAsync(storage, legacyKey)
+  if (slotValue == null || slotValue !== (await getItemAsync(storage, legacyKey))) {
+    return
   }
+
+  // Restore the most recent remaining flow's verifier into the legacy key so
+  // exchanges without a flow id keep working for that earlier live link.
+  if (remaining.length > 0) {
+    const priorFlowId = remaining[remaining.length - 1]
+    const priorVerifier = await getItemAsync(storage, pkceVerifierSlotKey(storageKey, priorFlowId))
+    if (typeof priorVerifier === 'string') {
+      await setItemAsync(storage, legacyKey, priorVerifier)
+      return
+    }
+  }
+
+  await removeItemAsync(storage, legacyKey)
 }
 
 /**
