@@ -1,3 +1,14 @@
+## 2.119.0 (2026-11-04)
+
+### 🩹 Fixes
+
+- **auth:** `global` sign out cleared the local session when the server failed to log out ([#2786](https://github.com/supabase/supabase-js/pull/2786))
+- **auth:** `deleteUser` miscast empty object to `User` ([#2773](https://github.com/supabase/supabase-js/pull/2773))
+
+### ❤️ Thank You
+
+- Christian Melchior
+
 ## 2.118.0 (2026-10-15)
 
 This was a version bump only for @supabase/auth-js to align it with other projects, there were no code changes.

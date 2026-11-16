@@ -1,3 +1,15 @@
+## 2.119.0 (2026-11-04)
+
+### 🩹 Fixes
+
+- **storage:** ignore undefined FileOptions during upload ([#2789](https://github.com/supabase/supabase-js/pull/2789))
+- **storage:** `exists` reports invalid JWT or missing bucket as missing file ([#2783](https://github.com/supabase/supabase-js/pull/2783))
+
+### ❤️ Thank You
+
+- Christian Melchior
+- Pintu Kumar @pintu544
+
 ## 2.118.0 (2026-10-15)
 
 ### 🚀 Features
