@@ -3456,10 +3456,18 @@ export default class GoTrueClient {
         if (userError) {
           throw userError
         }
-        session.user = data.user as User
-        await this._saveSession(session)
-        await this._notifyAllSubscribers('USER_UPDATED', session)
-        return this._returnResult({ data: { user: session.user }, error: null })
+        // The request can take a while, so the session read above may be stale by now. The new
+        // user is saved onto what storage holds at this point. That keeps the tokens of a refresh
+        // that finished in the meantime, and leaves storage alone after a sign out or after
+        // another user signed in.
+        const stored = await getItemAsync(this.storage, this.storageKey)
+        if (!this._isValidSession(stored) || this._isSessionOfAnotherUser(stored, session)) {
+          return this._returnResult({ data: { user: data.user as User }, error: null })
+        }
+        const updatedSession: Session = { ...stored, user: data.user as User }
+        await this._saveSession(updatedSession)
+        await this._notifyAllSubscribers('USER_UPDATED', updatedSession)
+        return this._returnResult({ data: { user: updatedSession.user }, error: null })
       })
     } catch (error) {
       await removePKCEVerifier(this.storage, this.storageKey, flowId)
@@ -4173,7 +4181,12 @@ export default class GoTrueClient {
         }
       }
       if (scope === 'global') {
-        await removeCurrentSession()
+        // The request can take a while. If another user signed in on this client in the meantime,
+        // storage holds their session now and this sign out must leave it alone.
+        const stored = await getItemAsync(this.storage, this.storageKey)
+        if (!this._isSessionOfAnotherUser(stored, data.session)) {
+          await removeCurrentSession()
+        }
       }
       return finish(this._returnResult({ error: null }))
     })
@@ -4875,6 +4888,28 @@ export default class GoTrueClient {
     } finally {
       this._debug(debugName, 'end')
     }
+  }
+
+  /**
+   * Whether `stored` is a session of a different user than `session`, judged by the `sub` claim
+   * of the access tokens, because the user object may be kept in `userStorage`. A token refresh
+   * keeps the user and a sign in for another account does not. When either token cannot be
+   * decoded the answer is `false`.
+   */
+  private _isSessionOfAnotherUser(stored: unknown, session: Session | null): boolean {
+    if (!session || !this._isValidSession(stored)) {
+      return false
+    }
+    const userIdOf = (accessToken: string) => {
+      try {
+        return decodeJWT(accessToken).payload.sub
+      } catch {
+        return undefined
+      }
+    }
+    const storedUserId = userIdOf(stored.access_token)
+    const userId = userIdOf(session.access_token)
+    return storedUserId !== undefined && userId !== undefined && storedUserId !== userId
   }
 
   private _isValidSession(maybeSession: unknown): maybeSession is Session {
