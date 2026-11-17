@@ -4447,13 +4447,14 @@ export default class GoTrueClient {
             (err.code === 'refresh_token_not_found' ||
               err.code === 'refresh_token_already_used' ||
               err.code === 'session_expired' ||
-              err.code === 'validation_failed'))
+              err.code === 'validation_failed' ||
+              err.code === 'user_banned'))
         ) {
           // A missing session, a transient/aborted network failure (e.g. a
           // superseded page navigation cancelling the in-flight request), or
           // a dead refresh token (e.g. stale SSR cookies / malformed visitor-
-          // controlled tokens) is not an application error — warn rather than
-          // surface it raw.
+          // controlled tokens / banned user leftover cookies) is not an
+          // application error — warn rather than surface it raw.
           console.warn(err)
         } else {
           console.error(err)
