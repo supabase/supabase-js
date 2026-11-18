@@ -115,6 +115,69 @@ describe.each(operations)('$name URL validation', ({ run }) => {
   })
 })
 
+const outOfRouteBuckets = [
+  '..',
+  '%2e%2e',
+  '.%2e',
+  '%2e.',
+  '../../../rest/v1/rpc',
+  '../object-other/uploads',
+]
+
+describe.each(operations)('$name bucket validation', ({ run }) => {
+  test.each(outOfRouteBuckets)('rejects bucket %s before fetch', async (bucket) => {
+    const api = new StorageFileApi(base, headers, bucket, fetchMock)
+    expect(await run(api, 'file')).toEqual({ data: null, error: expect.any(StorageError) })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  test('honors throwOnError for an invalid bucket', async () => {
+    const api = new StorageFileApi(base, headers, '..', fetchMock).throwOnError()
+    await expect(Promise.resolve(run(api, 'file'))).rejects.toBeInstanceOf(StorageError)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+test.each(outOfRouteBuckets)('exists rejects bucket %s before fetch', async (bucket) => {
+  const api = new StorageFileApi(base, headers, bucket, fetchMock)
+  await expect(api.exists('file')).rejects.toBeInstanceOf(StorageError)
+  expect(fetchMock).not.toHaveBeenCalled()
+})
+
+test.each(['..', '../../../rest/v1/rpc', '../cdn-other/uploads'])(
+  'CDN purge rejects bucket %s before fetch',
+  async (bucket) => {
+    const api = new StorageFileApi(base, headers, bucket, fetchMock)
+    expect(await api.purgeCache('file')).toEqual({ data: null, error: expect.any(StorageError) })
+    expect(fetchMock).not.toHaveBeenCalled()
+  }
+)
+
+describe.each(operations)(
+  '$name nested bucket boundary',
+  ({ run, route, queryString, uploadToken }) => {
+    test('rejects an object path that leaves the actual bucket', async () => {
+      const api = new StorageFileApi(base, headers, 'uploads/images', fetchMock)
+      expect(await run(api, '../../other/photo.jpg')).toEqual({
+        data: null,
+        error: expect.any(StorageError),
+      })
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    test('preserves a normalized destination inside the intended route', async () => {
+      const routeSegment = route.split('/').at(-1)
+      const api = new StorageFileApi(base, headers, '..', fetchMock)
+      expect(await run(api, `${routeSegment}/uploads/photo.jpg`)).toMatchObject({ error: null })
+      const expected = new URL(
+        `${base}/${route}/uploads/photo.jpg${queryString ? `?${queryString}` : ''}`
+      )
+      if (uploadToken) expected.searchParams.set('token', uploadToken)
+      expect(new Request(...fetchMock.mock.calls[0]).url).toBe(expected.href)
+    })
+  }
+)
+
 test('exists propagates URL validation errors without fetching', async () => {
   await expect(files.exists('../other/file')).rejects.toBeInstanceOf(StorageError)
   expect(fetchMock).not.toHaveBeenCalled()
@@ -150,8 +213,28 @@ test.each([
 })
 
 const safeInputs = [
+  ['uploads/images', 'photo.jpg'],
+  ['uploads/./images', '../photo.jpg'],
+  ['uploads/images/..', 'photo.jpg'],
+  ['uploads/images', '../photo.jpg'],
+  ['uploads/images/deep', '../../photo.jpg'],
+  ['uploads//images', '../photo.jpg'],
+  ['uploads/../avatars', 'photo.jpg'],
+  ['uploads/%2e%2e/avatars', 'photo.jpg'],
+  ['uploads\\images', 'photo.jpg'],
+  ['', 'uploads/photo.jpg'],
+  ['.', 'uploads/photo.jpg'],
+  ['%2e', 'uploads/photo.jpg'],
+  ['uploads/..', 'uploads/photo.jpg'],
+  ['uploads/?query=1', 'photo.jpg'],
+  ['uploads/#fragment', 'photo.jpg'],
   ['uploads', 'folder/photo.jpg'],
   ['my%20bucket', 'folder/photo.jpg'],
+  ['my%2Fbucket', 'folder/photo.jpg'],
+  ['my%2520bucket', 'folder/photo.jpg'],
+  ['日本語', 'folder/photo.jpg'],
+  ['.hidden', 'folder/photo.jpg'],
+  ['a..b', 'folder/photo.jpg'],
   ['my bucket', 'space name/日本語.jpg'],
   ['uploads', 'folder/../photo.jpg'],
   ['uploads', 'folder/%2e%2e/photo.jpg'],

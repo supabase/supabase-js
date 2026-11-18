@@ -1559,6 +1559,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return btoa(data)
   }
 
+  /** Builds a request URL and checks that it stays within the intended Storage route and bucket. */
   private _getRequestUrl(
     route: string,
     path: string,
@@ -1569,7 +1570,16 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     // names. The bucket is configured by the caller, independently of the key.
     const bucket = encodePath ? encodeStoragePath(String(this.bucketId)) : this.bucketId
     const url = `${this.url}/${route}/${encodePath ? encodeStoragePath(finalPath) : finalPath}${queryString ? `?${queryString}` : ''}`
-    return validateStorageUrl(url, new URL(`${this.url}/${route}/${bucket}/`))
+    const routeUrl = new URL(`${this.url}/${route}/`)
+    const requestUrl = validateStorageUrl(url, routeUrl)
+    const bucketUrl = new URL(`${this.url}/${route}/${bucket}/`)
+    // Nested bucket arguments are existing shorthand for object folders. Keep
+    // paths within the actual bucket, rather than requiring that folder prefix.
+    if (bucketUrl.pathname.startsWith(routeUrl.pathname)) {
+      const bucketSegment = bucketUrl.pathname.slice(routeUrl.pathname.length).split('/')[0]
+      if (bucketSegment) bucketUrl.pathname = `${routeUrl.pathname}${bucketSegment}/`
+    }
+    return validateStorageUrl(requestUrl, bucketUrl)
   }
 
   private _getFinalPath(path: string) {
