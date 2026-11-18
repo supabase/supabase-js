@@ -99,8 +99,10 @@ jobs:
           # The downstream workflows run `npm install` / `pnpm install` against the public
           # registry. Right after a publish the registry can take a minute or more to serve
           # the new version, and every downstream run then fails with "No matching version
-          # found". Poll the same abbreviated packument the installers use until every
-          # package resolves at the requested version, or give up after 10 minutes.
+          # found". The packument can list a version before its tarball is served, and the
+          # installers then fail with a 404 on the .tgz. Poll the same abbreviated packument
+          # the installers use, then request the tarball it points to, until every package
+          # resolves at the requested version, or give up after 10 minutes.
           set -o pipefail
           # The npm packument keys versions without a leading "v".
           VERSION="${VERSION#v}"
@@ -111,8 +113,9 @@ jobs:
           for ((i = 1; i <= attempts; i++)); do
             missing=""
             for pkg in $packages; do
-              if ! curl -fsSL -H 'Accept: application/vnd.npm.install-v1+json' "https://registry.npmjs.org/${pkg}" \
-                | jq -e --arg v "$VERSION" '.versions[$v] != null' > /dev/null; then
+              tarball=$(curl -fsSL -H 'Accept: application/vnd.npm.install-v1+json' "https://registry.npmjs.org/${pkg}" \
+                | jq -r --arg v "$VERSION" '.versions[$v].dist.tarball // empty') || tarball=""
+              if [ -z "$tarball" ] || ! curl -fsSI -o /dev/null "$tarball"; then
                 missing="${missing} ${pkg}"
               fi
             done
