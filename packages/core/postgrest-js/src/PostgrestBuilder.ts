@@ -605,7 +605,7 @@ export default abstract class PostgrestBuilder<
   >(): PostgrestBuilder<
     ClientOptions,
     IsValidResultOverride<Result, NewResult, false, false> extends true
-      ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
+      ? // Preserve the optionality of the result if the overridden type is an object (case of chaining with `maybeSingle`)
         ContainsNull<Result> extends true
         ? MergePartialResult<NewResult, NonNullable<Result>, Options> | null
         : MergePartialResult<NewResult, Result, Options>
@@ -615,7 +615,7 @@ export default abstract class PostgrestBuilder<
     return this as unknown as PostgrestBuilder<
       ClientOptions,
       IsValidResultOverride<Result, NewResult, false, false> extends true
-        ? // Preserve the optionality of the result if the overriden type is an object (case of chaining with `maybeSingle`)
+        ? // Preserve the optionality of the result if the overridden type is an object (case of chaining with `maybeSingle`)
           ContainsNull<Result> extends true
           ? MergePartialResult<NewResult, NonNullable<Result>, Options> | null
           : MergePartialResult<NewResult, Result, Options>
