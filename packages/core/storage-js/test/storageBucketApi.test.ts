@@ -34,6 +34,21 @@ describe('Bucket API Error Handling', () => {
   })
 
   describe('URL Construction', () => {
+    test.each(['my%20bucket', 'my bucket'])(
+      'preserves the existing bucket request URL for %s',
+      async (bucket) => {
+        const base = 'https://example.invalid/proxy/storage/v1'
+        const fetchMock = jest.fn().mockResolvedValue(new Response(JSON.stringify({ id: bucket })))
+        const client = new StorageClient(base, {}, fetchMock)
+
+        const result = await client.getBucket(bucket)
+
+        expect(result.error).toBeNull()
+        expect(fetchMock).toHaveBeenCalledTimes(1)
+        expect(fetchMock.mock.calls[0][0]).toBe(`${base}/bucket/${bucket}`)
+      }
+    )
+
     const urlTestCases = [
       [
         'https://blah.supabase.co/storage/v1',
