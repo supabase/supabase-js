@@ -260,6 +260,13 @@ jobs:
     needs: [check-affected, build]
     if: needs.check-affected.outputs.storage != '0'
     steps:
+      - name: Reserve Supabase ports
+        run: |
+          # Keep outbound connections from taking Supabase ports before Docker binds them.
+          # Reserve before checkout, dependency installation, and image downloads.
+          reserved_ports=$(sysctl -n net.ipv4.ip_local_reserved_ports)
+          sudo sysctl -w "net.ipv4.ip_local_reserved_ports=${reserved_ports:+${reserved_ports},}54320-54329"
+          sysctl net.ipv4.ip_local_port_range
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           filter: tree:0
@@ -302,8 +309,15 @@ jobs:
             [ -f "$f" ] && zstd -d --stdout "$f" | docker image load
           done
       - name: Run storage-js tests
+        id: storage-tests
         run: pnpm nx test:storage storage-js
         timeout-minutes: 15
+      - name: Diagnose Storage test failure
+        if: failure() && steps.storage-tests.outcome == 'failure'
+        run: |
+          sysctl net.ipv4.ip_local_port_range net.ipv4.ip_local_reserved_ports
+          sudo ss -tanp '( sport >= :54320 and sport <= :54329 )'
+          docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
       - name: Save Docker images to cache
         if: steps.docker-cache.outputs.cache-hit != 'true' && !cancelled()
         run: |
