@@ -64,8 +64,8 @@ Uses automated canary releases with batched stable releases:
 
 **Three Release Workflows:**
 
-1. **Canary** (`.github/workflows/main-ci-release.yml`) - Automated on every master commit
-2. **Stable** (`.github/workflows/release-stable.yml`) - Manual by repository owners
+1. **Canary** (`.github/workflows/publish.yml`) - Automated on every master commit
+2. **Stable** (`.github/workflows/publish.yml`) - Manual by repository owners
 3. **Preview** (`.github/workflows/preview-release.yml`) - PR-based testing via pkg.pr.new
 
 > **📖 See [RELEASE.md](../docs/RELEASE.md) for complete release documentation**
