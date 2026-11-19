@@ -543,8 +543,8 @@ export default class SupabaseClient<
   rpc<
     FnName extends string & keyof Schema['Functions'],
     Args extends Schema['Functions'][FnName]['Args'] = never,
-    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args> =
-      GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args>,
+    FilterBuilder extends GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args, SchemaName> =
+      GetRpcFunctionFilterBuilderByArgs<Schema, FnName, Args, SchemaName>,
   >(
     fn: FnName,
     args: Args = {} as Args,
