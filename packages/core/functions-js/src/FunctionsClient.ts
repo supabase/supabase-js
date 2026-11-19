@@ -10,6 +10,46 @@ import {
 } from './types'
 
 /**
+ * Binary response media types returned as a `Blob`. Reading them as text would
+ * corrupt their bytes. Types not listed here, including text formats such as
+ * `image/svg+xml` or `audio/mpegurl` playlists, keep the text default.
+ */
+const BLOB_RESPONSE_TYPES = new Set([
+  'application/octet-stream',
+  'application/pdf',
+  'image/avif',
+  'image/bmp',
+  'image/gif',
+  'image/heic',
+  'image/heif',
+  'image/jpeg',
+  'image/png',
+  'image/tiff',
+  'image/vnd.microsoft.icon',
+  'image/webp',
+  'image/x-icon',
+  'audio/aac',
+  'audio/flac',
+  'audio/mp4',
+  'audio/mpeg',
+  'audio/ogg',
+  'audio/opus',
+  'audio/wav',
+  'audio/webm',
+  'audio/x-wav',
+  'video/mp4',
+  'video/mpeg',
+  'video/ogg',
+  'video/quicktime',
+  'video/webm',
+  'font/collection',
+  'font/otf',
+  'font/ttf',
+  'font/woff',
+  'font/woff2',
+])
+
+/**
  * Client for invoking Supabase Edge Functions.
  */
 export class FunctionsClient {
@@ -93,7 +133,7 @@ export class FunctionsClient {
    *   new-format API key (`sb_publishable_…` / `sb_secret_…`) is not sent as a Bearer token.
    * - Invoke params generally match the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) spec.
    * - When you pass in a body to your function, we automatically attach the Content-Type header for `Blob`, `ArrayBuffer`, `File`, `FormData` and `String`. If it doesn't match any of these types we assume the payload is `json`, serialize it and attach the `Content-Type` header as `application/json`. You can override this behavior by passing in a `Content-Type` header of your own.
-   * - Responses are automatically parsed as `json`, `blob` and `form-data` depending on the `Content-Type` header sent by your function. Responses are parsed as `text` by default.
+   * - Responses are automatically parsed as `json`, `blob` and `form-data` depending on the `Content-Type` header sent by your function. `application/octet-stream`, `application/pdf` and common binary image, audio, video and font types (AVIF, BMP, GIF, HEIC/HEIF, ICO, JPEG, PNG, TIFF, WebP, AAC, FLAC, MP3, MP4, Ogg, Opus, WAV, WebM, MPEG, QuickTime, OTF, TTF, WOFF, WOFF2 and font collections) are returned as a `Blob`. Responses are parsed as `text` by default.
    *
    * @example Basic invocation
    * ```js
@@ -312,10 +352,7 @@ export class FunctionsClient {
       let data: any
       if (responseType === 'application/json') {
         data = await response.json()
-      } else if (
-        responseType === 'application/octet-stream' ||
-        responseType === 'application/pdf'
-      ) {
+      } else if (BLOB_RESPONSE_TYPES.has(responseType)) {
         data = await response.blob()
       } else if (responseType === 'text/event-stream') {
         data = response
