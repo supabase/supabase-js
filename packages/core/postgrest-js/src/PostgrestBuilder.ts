@@ -449,6 +449,11 @@ export default abstract class PostgrestBuilder<
       try {
         error = JSON.parse(body)
 
+        // A JSON scalar body (null, false, 0, "") is not a usable error object
+        if (typeof error !== 'object' || error === null) {
+          error = { message: body }
+        }
+
         // Workaround for https://github.com/supabase/postgrest-js/issues/295
         if (Array.isArray(error) && res.status === 404) {
           data = []
