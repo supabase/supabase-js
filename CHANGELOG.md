@@ -1,3 +1,13 @@
+## 2.119.2 (2026-11-19)
+
+### 🩹 Fixes
+
+- **storage:** validate object request URL boundaries ([#2878](https://github.com/supabase/supabase-js/pull/2878))
+
+### ❤️ Thank You
+
+- Yann Braga
+
 ## 2.119.1 (2026-11-18)
 
 ### 🩹 Fixes
