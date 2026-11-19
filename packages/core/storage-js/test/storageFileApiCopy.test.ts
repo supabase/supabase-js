@@ -51,6 +51,29 @@ describe('Copy and move requests', () => {
     }
   )
 
+  test.each(['moved-version', null])('move returns the moved version %j', async (version) => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ message: 'Successfully moved', version }), {
+        headers: { 'content-type': 'application/json' },
+      })
+    )
+    const result = await files.move('source.txt', 'destination.txt')
+    expect(result).toEqual({ data: { message: 'Successfully moved', version }, error: null })
+  })
+
+  test('copy returns the copied version', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ Key: 'bucket/destination.txt', version: 'copied-version' }), {
+        headers: { 'content-type': 'application/json' },
+      })
+    )
+    const result = await files.copy('source.txt', 'destination.txt')
+    expect(result).toEqual({
+      data: { path: 'bucket/destination.txt', version: 'copied-version' },
+      error: null,
+    })
+  })
+
   test.each([{ owner: 'team' }, 'shared upload label'])(
     'copy ignores legacy shared metadata %j without an explicit override',
     async (metadata) => {
