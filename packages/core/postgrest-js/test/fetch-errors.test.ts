@@ -261,4 +261,39 @@ describe('Fetch error handling', () => {
     )
     await expect(postgrest.from('users').select().throwOnError()).rejects.toThrow('not json')
   })
+
+  const mockErrorResponseWithBody = (body: string) =>
+    jest.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      headers: new Headers(),
+      text: async () => body,
+    })
+
+  test.each(['null', 'false', '0', '""'])(
+    'reports a failed reply with JSON scalar body %s as an error, not a success',
+    async (body) => {
+      const postgrest = new PostgrestClient<Database>('https://example.com', {
+        fetch: mockErrorResponseWithBody(body) as any,
+      })
+
+      const res = await postgrest.from('users').select()
+
+      expect(res.success).toBe(false)
+      expect(res.status).toBe(500)
+      expect(res.error).toEqual({ message: body })
+    }
+  )
+
+  test('throws on a failed reply with a null body when throwOnError is set', async () => {
+    const postgrest = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockErrorResponseWithBody('null') as any,
+    })
+
+    await expect(postgrest.from('users').select().throwOnError()).rejects.toBeInstanceOf(
+      PostgrestError
+    )
+    await expect(postgrest.from('users').select().throwOnError()).rejects.toThrow('null')
+  })
 })
