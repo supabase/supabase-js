@@ -582,6 +582,20 @@ describe('PostgreSQL payload transformation', () => {
     expect(callbackSpy).toHaveBeenCalledWith(originalPayload, '2', '1')
   })
 
+  test('should pass through payloads with ids property unchanged if not postgres changes', () => {
+    const callbackSpy = vi.fn()
+
+    // @ts-ignore type of event not supported
+    channel.on('test_event', {}, callbackSpy)
+
+    // Trigger with payload containing ids property but no postgres changes data
+    const payloadWithIds = { ids: [{ id: '18FECA00' }], ts: 1730000000 }
+    channel.channelAdapter.getChannel().trigger('test_event', payloadWithIds, '2', '1')
+
+    // Verify callback received original payload unchanged without throwing
+    expect(callbackSpy).toHaveBeenCalledWith(payloadWithIds, '2', '1')
+  })
+
   test('should transform UPDATE/DELETE postgres changes with old_record data', () => {
     const callbackSpy = vi.fn()
 
