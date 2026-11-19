@@ -38,6 +38,42 @@ describe('Supabase Integration Tests', () => {
   })
 
   describe('PostgREST', () => {
+    test.each(['update', 'delete'] as const)(
+      'should roll back a multi-row %s rejected by maybeSingle',
+      async (method) => {
+        const { data: todos } = await supabase
+          .from('todos')
+          .insert([
+            { task: `maybeSingle ${method} a`, is_complete: false },
+            { task: `maybeSingle ${method} b`, is_complete: false },
+          ])
+          .select('id,task,is_complete')
+          .order('id')
+          .throwOnError()
+        if (!todos) throw new Error('Expected inserted todos')
+        const ids = todos.map(({ id }) => id)
+
+        try {
+          const mutation =
+            method === 'update'
+              ? supabase.from('todos').update({ is_complete: true })
+              : supabase.from('todos').delete()
+          const result = await mutation.in('id', ids).select().maybeSingle()
+
+          expect(result).toMatchObject({ data: null, error: { code: 'PGRST116' }, status: 406 })
+          const { data: remaining } = await supabase
+            .from('todos')
+            .select('id,task,is_complete')
+            .in('id', ids)
+            .order('id')
+            .throwOnError()
+          expect(remaining).toEqual(todos)
+        } finally {
+          await supabase.from('todos').delete().in('id', ids).throwOnError()
+        }
+      }
+    )
+
     test('should connect to PostgREST API', async () => {
       const { data, error } = await supabase.from('todos').select('*').limit(5)
 
