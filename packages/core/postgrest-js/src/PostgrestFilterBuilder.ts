@@ -35,6 +35,20 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
 
 const PostgrestReservedCharsRegexp = new RegExp('[,()]')
 
+/**
+ * Format a filter value for PostgREST URL query params.
+ * Arrays become Postgres array literals (`{"a","b"}`); plain objects become JSON.
+ */
+function formatFilterValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return JSON.stringify(value).replace(/^\[/, '{').replace(/\]$/, '}')
+  }
+  if (value !== null && typeof value === 'object') {
+    return JSON.stringify(value)
+  }
+  return `${value}`
+}
+
 // Match relationship filters with `table.column` syntax and resolve underlying
 // column value. If not matched, fallback to generic type.
 // TODO: Validate the relationship itself ala select-query-parser. Currently we
@@ -193,7 +207,7 @@ export default class PostgrestFilterBuilder<
         ? NonNullable<ResolvedFilterValue>
         : never
   ): this {
-    this.url.searchParams.append(column as string, `eq.${value}`)
+    this.url.searchParams.append(column as string, `eq.${formatFilterValue(value)}`)
     return this
   }
 
@@ -262,7 +276,7 @@ export default class PostgrestFilterBuilder<
         ? Resolved
         : never
   ): this {
-    this.url.searchParams.append(column as string, `neq.${value}`)
+    this.url.searchParams.append(column as string, `neq.${formatFilterValue(value)}`)
     return this
   }
 
@@ -1781,7 +1795,7 @@ export default class PostgrestFilterBuilder<
       // show up as `?column=eq.undefined`
       .filter(([_, value]) => value !== undefined)
       .forEach(([column, value]) => {
-        this.url.searchParams.append(column, `eq.${value}`)
+        this.url.searchParams.append(column, `eq.${formatFilterValue(value)}`)
       })
     return this
   }
