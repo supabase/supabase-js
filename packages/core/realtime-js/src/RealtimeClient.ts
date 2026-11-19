@@ -48,8 +48,23 @@ const CONNECTION_TIMEOUTS = {
   HEARTBEAT_TIMEOUT_FALLBACK: 100,
 } as const
 
-const RECONNECT_INTERVALS = [1000, 2000, 5000, 10000] as const
-const DEFAULT_RECONNECT_FALLBACK = 10000
+const RECONNECT_BASE_MS = 1000
+const MAX_RECONNECT_DELAY_MS = 30000
+
+/**
+ * Default reconnect delay with full jitter, per the Realtime connect spec
+ * (supabase/sdk#304): for attempt `n` (1-based), wait a random delay
+ * between 0 and `min(30s, 1s * 2^(n - 1))`.
+ *
+ * Full jitter spreads out clients that lose the socket at the same moment
+ * (e.g. a Realtime server restart) instead of retrying in lockstep.
+ * A caller-supplied `reconnectAfterMs` still takes precedence over this.
+ */
+function defaultReconnectAfterMs(tries: number): number {
+  const attempt = Math.max(1, Math.floor(tries) || 1)
+  const cap = Math.min(MAX_RECONNECT_DELAY_MS, RECONNECT_BASE_MS * 2 ** (attempt - 1))
+  return Math.random() * cap
+}
 
 /**
  * Minimal WebSocket constructor interface that RealtimeClient can work with.
@@ -255,7 +270,7 @@ export default class RealtimeClient {
    * @param options.logLevel Sets the log level for Realtime
    * @param options.encode The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
    * @param options.decode The function to decode incoming messages. Defaults to Serializer's decode.
-   * @param options.reconnectAfterMs he optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
+   * @param options.reconnectAfterMs The optional function that returns the millisec reconnect interval. Defaults to full-jitter backoff: a random delay between 0 and `min(30s, 1s * 2^(tries - 1))`.
    * @param options.worker Use Web Worker to set a side flow. Defaults to false.
    * @param options.workerUrl The URL of the worker script. Defaults to https://realtime.supabase.com/worker.js that includes a heartbeat event call to keep the connection alive.
    * @param options.vsn The protocol version to use when connecting. Supported versions are "1.0.0" and "2.0.0". Defaults to "2.0.0".
@@ -828,11 +843,7 @@ export default class RealtimeClient {
     result.logger = options?.logger
     result.heartbeatCallback = this._wrapHeartbeatCallback(options?.heartbeatCallback)
     result.sessionStorage = options?.sessionStorage ?? resolveSessionStorage()
-    result.reconnectAfterMs =
-      options?.reconnectAfterMs ??
-      ((tries: number) => {
-        return RECONNECT_INTERVALS[tries - 1] || DEFAULT_RECONNECT_FALLBACK
-      })
+    result.reconnectAfterMs = options?.reconnectAfterMs ?? defaultReconnectAfterMs
 
     let defaultEncode: Encode<void>
     let defaultDecode: Decode<void>
