@@ -163,6 +163,57 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'public-anon-key
 })
 ```
 
+### Namespaces
+
+The `namespace` option keeps a client's Realtime channels, Storage objects and auth session apart from other clients of the same project, for example several development sessions sharing one branch, or tenants of a multi-tenant app:
+
+```js
+const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key', {
+  namespace: 's07',
+})
+
+supabase.channel('room') // joins `s07:room`
+await supabase.storage.from('photos').upload('a.png', file) // stores `s07/a.png`
+```
+
+Every request also sends an `x-supabase-namespace` header, readable in Postgres with `current_setting('request.headers', true)::json->>'x-supabase-namespace'`, and the default auth storage key includes the namespace. Server-side code adopts the caller's namespace with `namespaceFrom`, so its broadcasts and uploads land in the same namespace:
+
+```js
+import { createClient, namespaceFrom } from '@supabase/supabase-js'
+import { corsHeaders } from '@supabase/supabase-js/cors' // allows the x-supabase-namespace header
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  const supabase = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_ANON_KEY'), {
+    namespace: namespaceFrom(req),
+  })
+  // ...
+})
+```
+
+The namespace is a convention, not an access boundary: RLS policies still decide what each user can access, and anything outside a namespaced client (the SQL editor, cron jobs, triggers) ignores it.
+
+#### Development sessions on a shared branch
+
+`@supabase/supabase-js/dev` lets many development sessions (developers or coding agents) share one branch. Each session gets a slot that becomes its namespace and signs in as its own test identity, so existing RLS policies keep its rows apart. It is a separate entry point, so it never ends up in production bundles.
+
+```js
+import { devSession } from '@supabase/supabase-js/dev'
+
+const { client, uniq, adminClient } = await devSession({
+  slot: 's07',
+  branchRef: 'abcd1234', // throws if SUPABASE_URL belongs to another project
+  signInAs: 'admin', // signs in as s07+admin@example.com with SUPABASE_DEV_PASSWORD
+})
+
+await client.from('projects').insert({ slug: uniq('slug') }) // 's07-slug-k3j9x8f2'
+
+// Service role client restricted to the session's rows. Unmapped tables throw.
+const admin = adminClient({ scope: { orders: { org_id: orgId } } })
+```
+
+`devSession` reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`) unless `url` and `key` are passed, refuses secret and service role keys, and refuses to run when `NODE_ENV` is `production`. The test identities must already exist on the branch.
+
 ## Support Policy
 
 This section outlines the scope of support for various runtime environments in Supabase JavaScript client.
