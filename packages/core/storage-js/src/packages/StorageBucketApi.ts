@@ -654,6 +654,74 @@ export default class StorageBucketApi extends BaseApiClient<StorageError> {
     })
   }
 
+  /**
+   * Purges the CDN cache for every bucket in the project.
+   *
+   * Maps to `DELETE /cdn/` on the Storage API. The server issues a CDN
+   * invalidation for all objects in the project and returns `{ message: 'success' }`.
+   *
+   * **Requires the `service_role` key.** The underlying endpoint enforces
+   * `service_role` JWT — calls made with the anon key or a user JWT will be
+   * rejected by the server.
+   *
+   * **Hosted CDN feature.** On self-hosted Supabase, the Storage service must
+   * have `CDN_PURGE_ENDPOINT_URL` configured and the `purgeCache` tenant
+   * feature enabled, otherwise the server returns an error.
+   *
+   * To invalidate a single bucket or object instead, use
+   * {@link purgeBucketCache} or `from(bucket).purgeCache(path)`.
+   *
+   * @category Storage
+   * @subcategory File Buckets
+   * @param options Optional purge cache options.
+   * @param options.transformations If true, purges only transformations (resized/formatted variants), leaving original cached files intact.
+   * @param parameters Optional fetch parameters such as an `AbortController` signal.
+   * @returns Promise with `{ data: { message }, error: null }` on success or `{ data: null, error }` on failure.
+   *
+   * @example Purge cache for the entire project
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .purgeProjectCache()
+   * ```
+   *
+   * @example Purge only transformations for the entire project
+   * ```js
+   * const { data, error } = await supabase
+   *   .storage
+   *   .purgeProjectCache({ transformations: true })
+   * ```
+   */
+  async purgeProjectCache(
+    options?: PurgeCacheOptions,
+    parameters?: FetchParameters
+  ): Promise<
+    | {
+        data: { message: string }
+        error: null
+      }
+    | {
+        data: null
+        error: StorageError
+      }
+  > {
+    return this.handleOperation(async () => {
+      const query = new URLSearchParams()
+      if (options?.transformations) {
+        query.set('transformations', 'true')
+      }
+      const queryString = query.toString()
+
+      return await remove(
+        this.fetch,
+        `${this.url}/cdn/${queryString ? `?${queryString}` : ''}`,
+        {},
+        { headers: this.headers },
+        parameters
+      )
+    })
+  }
+
   private bucketLifecycleUrl(id: string): string {
     return `${this.url}/bucket/${encodeStoragePath(id)}/lifecycle`
   }
