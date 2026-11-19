@@ -4443,15 +4443,13 @@ export default class GoTrueClient {
         if (
           isAuthSessionMissingError(err) ||
           isAuthRetryableFetchError(err) ||
-          (isAuthApiError(err) &&
-            (err.code === 'refresh_token_not_found' ||
-              err.code === 'refresh_token_already_used' ||
-              err.code === 'session_expired'))
+          (isAuthApiError(err) && err.status >= 400 && err.status < 500)
         ) {
           // A missing session, a transient/aborted network failure (e.g. a
           // superseded page navigation cancelling the in-flight request), or
-          // a dead refresh token (e.g. stale SSR cookies) is not an
-          // application error — warn rather than surface it raw.
+          // a refresh the server refused (e.g. a dead refresh token from stale
+          // SSR cookies, or an auth hook's decision) is not an application
+          // error — warn rather than surface it raw.
           console.warn(err)
         } else {
           console.error(err)
