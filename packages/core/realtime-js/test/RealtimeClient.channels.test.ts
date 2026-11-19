@@ -1,5 +1,11 @@
 import { beforeEach, afterEach, expect, describe, test, vi } from 'vitest'
-import { type TestSetup, setupRealtimeTest, waitForChannelSubscribed } from './helpers/setup'
+import type { Client } from 'mock-socket'
+import {
+  type TestSetup,
+  phxReply,
+  setupRealtimeTest,
+  waitForChannelSubscribed,
+} from './helpers/setup'
 
 import RealtimeChannel from '../src/RealtimeChannel'
 let testSetup: TestSetup
@@ -218,6 +224,74 @@ describe('deferred disconnect', () => {
     await testSetup.client.removeAllChannels()
 
     expect(disconnectSpy).toHaveBeenCalledOnce()
+  })
+
+  describe('subscribing while the deferred disconnect is closing the socket', () => {
+    let joinedOver: Client
+    const joinedTopics = () =>
+      testSetup.emitters.message.mock.calls
+        .filter(([, event]) => event === 'phx_join')
+        .map(([topic]) => topic)
+
+    beforeEach(async () => {
+      testSetup.cleanup()
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        disconnectOnEmptyChannelsAfterMs: 200,
+        socketHandlers: {
+          phx_join: (socket, message) => {
+            joinedOver = socket
+            socket.send(phxReply(message, { status: 'ok', response: { postgres_changes: [] } }))
+          },
+          phx_leave: (socket, message) => socket.send(phxReply(message, { status: 'ok' })),
+        },
+      })
+      const first = testSetup.client.channel('first').subscribe()
+      await waitForChannelSubscribed(first)
+      await testSetup.client.removeChannel(first)
+      vi.advanceTimersByTime(200)
+      expect(testSetup.client.isDisconnecting()).toBe(true)
+    })
+
+    test('joins the channel on a new connection once the close completes', async () => {
+      const statuses: string[] = []
+      const channel = testSetup.client.channel('replacement').subscribe((status) => {
+        statuses.push(status)
+      })
+
+      await waitForChannelSubscribed(channel)
+      expect(statuses.at(-1)).toBe('SUBSCRIBED')
+      expect(testSetup.emitters.connected).toHaveBeenCalledTimes(2)
+      expect(joinedTopics()).toContain('realtime:replacement')
+
+      // The old connection's close leaves the new one intact: heartbeats keep it open, and a
+      // drop of it is still noticed and reconnected.
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(channel.state).toBe('joined')
+      expect(testSetup.emitters.connected).toHaveBeenCalledTimes(2)
+      joinedOver.close({ code: 3000, reason: 'dropped', wasClean: false })
+      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.waitFor(() => expect(testSetup.emitters.connected).toHaveBeenCalledTimes(3))
+      await waitForChannelSubscribed(channel)
+    })
+
+    test('joins every channel subscribed during the close on one new connection', async () => {
+      const channels = ['a', 'b'].map((topic) => testSetup.client.channel(topic).subscribe())
+
+      await Promise.all(channels.map(waitForChannelSubscribed))
+      expect(testSetup.emitters.connected).toHaveBeenCalledTimes(2)
+      expect(joinedTopics()).toEqual(expect.arrayContaining(['realtime:a', 'realtime:b']))
+    })
+
+    test('stays disconnected when disconnect() is called after the subscribe', async () => {
+      testSetup.client.channel('replacement').subscribe()
+      await testSetup.client.disconnect()
+
+      await testSetup.socketClosed()
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(testSetup.client.connectionState()).toBe('closed')
+      expect(testSetup.emitters.connected).toHaveBeenCalledOnce()
+    })
   })
 })
 
