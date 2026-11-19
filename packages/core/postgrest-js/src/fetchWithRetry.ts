@@ -139,7 +139,19 @@ export async function fetchWithRetry(
         retryAfterHeader !== null
           ? Math.max(0, parseInt(retryAfterHeader, 10) || 0) * 1000
           : getRetryDelay(attemptCount)
-      await res.text()
+      try {
+        await res.text()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (readError: any) {
+        if (
+          request.signal?.aborted ||
+          readError?.name === 'AbortError' ||
+          readError?.code === 'ABORT_ERR'
+        ) {
+          throw readError
+        }
+        // A failed drain must not prevent retrying an already-retryable response.
+      }
       attemptCount++
       await sleep(delay, request.signal)
       continue
