@@ -320,8 +320,12 @@ export default abstract class PostgrestBuilder<
         // Get URL length for potential hints
         const urlLength = this.url.toString().length
 
-        // Handle AbortError specially with helpful hints
-        if (fetchError?.name === 'AbortError' || fetchError?.code === 'ABORT_ERR') {
+        // Handle AbortError and TimeoutError specially with helpful hints
+        if (
+          fetchError?.name === 'AbortError' ||
+          fetchError?.code === 'ABORT_ERR' ||
+          fetchError?.name === 'TimeoutError'
+        ) {
           code = ''
           hint = 'Request was aborted (timeout or manual cancellation)'
 
