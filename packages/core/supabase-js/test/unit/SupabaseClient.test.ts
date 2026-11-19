@@ -556,6 +556,33 @@ describe('SupabaseClient', () => {
         expect(setAuthSpy).toHaveBeenCalledWith('initial-token')
       })
 
+      test.each(['MFA_CHALLENGE_VERIFIED', 'PASSWORD_RECOVERY', 'USER_UPDATED'] as const)(
+        'should call setAuth() with the new token on %s event',
+        async (event) => {
+          const client = createClient(URL, KEY)
+          const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
+
+          // @ts-expect-error - accessing private method for testing
+          client._handleTokenChanged('SIGNED_IN', 'CLIENT', 'aal1-token')
+          setAuthSpy.mockClear()
+
+          // @ts-expect-error - accessing private method for testing
+          client._handleTokenChanged(event, 'CLIENT', 'new-session-token')
+          expect(setAuthSpy).toHaveBeenCalledWith('new-session-token')
+        }
+      )
+
+      test('should not call setAuth() again when the token is unchanged', async () => {
+        const client = createClient(URL, KEY)
+        const setAuthSpy = jest.spyOn(client.realtime, 'setAuth')
+
+        // @ts-expect-error - accessing private method for testing
+        client._handleTokenChanged('SIGNED_IN', 'CLIENT', 'same-token')
+        // @ts-expect-error - accessing private method for testing
+        client._handleTokenChanged('USER_UPDATED', 'CLIENT', 'same-token')
+        expect(setAuthSpy).toHaveBeenCalledTimes(1)
+      })
+
       test('should update token in realtime client when setAuth is called', async () => {
         const client = createClient(URL, KEY)
         const testToken = 'test-realtime-token'
