@@ -9,6 +9,11 @@ import {
 } from './types/common/common'
 import { RejectExcessProperties } from './types/types'
 
+// PostgREST reads `\` as an escape character inside a quoted column name.
+function quoteColumn(column: string): string {
+  return `"${column.replace(/[\\"]/g, '\\$&')}"`
+}
+
 export default class PostgrestQueryBuilder<
   ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
@@ -1122,7 +1127,7 @@ export default class PostgrestQueryBuilder<
     if (Array.isArray(values)) {
       const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
       if (columns.length > 0) {
-        const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
+        const uniqueColumns = [...new Set(columns)].map(quoteColumn)
         url.searchParams.set('columns', uniqueColumns.join(','))
       }
     }
@@ -1403,7 +1408,7 @@ export default class PostgrestQueryBuilder<
     if (Array.isArray(values)) {
       const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
       if (columns.length > 0) {
-        const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
+        const uniqueColumns = [...new Set(columns)].map(quoteColumn)
         url.searchParams.set('columns', uniqueColumns.join(','))
       }
     }
