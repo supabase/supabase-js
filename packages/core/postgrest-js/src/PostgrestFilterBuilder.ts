@@ -35,6 +35,38 @@ export type IsStringOperator<Path extends string> = Path extends `${string}->>${
 
 const PostgrestReservedCharsRegexp = new RegExp('[,()]')
 
+// Only object literals. Class instances (Date, Decimal, ...) keep using their
+// own toString, as before.
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object') return false
+  const proto = Object.getPrototypeOf(value)
+  return proto === Object.prototype || proto === null
+}
+
+// Format an element of a Postgres array literal. Elements are quoted, so
+// commas, quotes and braces inside them don't break the literal.
+function toArrayLiteralElement(value: unknown): string {
+  if (value === null || value === undefined) return 'NULL'
+  if (Array.isArray(value)) return toArrayLiteral(value)
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return `${value}`
+  }
+  const text = isPlainObject(value) ? JSON.stringify(value) : `${value}`
+  return `"${text.replace(/[\\"]/g, '\\$&')}"`
+}
+
+function toArrayLiteral(values: readonly unknown[]): string {
+  return `{${values.map(toArrayLiteralElement).join(',')}}`
+}
+
+// Format the value of an `eq`/`neq` filter. Arrays become Postgres array
+// literals and plain objects become JSON; anything else is sent as before.
+function formatFilterValue(value: unknown): string {
+  if (Array.isArray(value)) return toArrayLiteral(value)
+  if (isPlainObject(value)) return JSON.stringify(value)
+  return `${value}`
+}
+
 // Match relationship filters with `table.column` syntax and resolve underlying
 // column value. If not matched, fallback to generic type.
 // TODO: Validate the relationship itself ala select-query-parser. Currently we
@@ -193,7 +225,7 @@ export default class PostgrestFilterBuilder<
         ? NonNullable<ResolvedFilterValue>
         : never
   ): this {
-    this.url.searchParams.append(column as string, `eq.${value}`)
+    this.url.searchParams.append(column as string, `eq.${formatFilterValue(value)}`)
     return this
   }
 
@@ -262,7 +294,7 @@ export default class PostgrestFilterBuilder<
         ? Resolved
         : never
   ): this {
-    this.url.searchParams.append(column as string, `neq.${value}`)
+    this.url.searchParams.append(column as string, `neq.${formatFilterValue(value)}`)
     return this
   }
 
@@ -1781,7 +1813,7 @@ export default class PostgrestFilterBuilder<
       // show up as `?column=eq.undefined`
       .filter(([_, value]) => value !== undefined)
       .forEach(([column, value]) => {
-        this.url.searchParams.append(column, `eq.${value}`)
+        this.url.searchParams.append(column, `eq.${formatFilterValue(value)}`)
       })
     return this
   }
