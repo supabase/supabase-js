@@ -94,9 +94,10 @@ export default class SocketAdapter {
     timeout: number = 10000
   ): Promise<'ok' | 'timeout'> {
     return new Promise((resolve) => {
-      setTimeout(() => resolve('timeout'), timeout)
+      const timer = setTimeout(() => resolve('timeout'), timeout)
       this.socket.disconnect(
         () => {
+          clearTimeout(timer)
           callback()
           resolve('ok')
         },
