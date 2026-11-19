@@ -766,6 +766,20 @@ describe('PostgreSQL new filter features (select, AND, operators)', () => {
     )
   })
 
+  test('preserves special in filter values in the subscription join payload', () => {
+    const filter = {
+      event: 'UPDATE' as const,
+      schema: 'public',
+      table: 'orders',
+      filter: postgresChangesFilter().in('status', ['', 'NULL', '{draft}']),
+    }
+    channel.on('postgres_changes', filter, vi.fn())
+
+    channel.subscribe()
+
+    expect(getJoinedPostgresChanges()[0].filter).toBe('status=in.("","NULL","{draft}")')
+  })
+
   test('a string filter and the equivalent builder produce identical wire output', () => {
     const stringChannel = testSetup.client.channel('string-filter')
     stringChannel.on(
