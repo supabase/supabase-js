@@ -572,9 +572,21 @@ export default class PostgrestClient<
     let method: 'HEAD' | 'GET' | 'POST'
     const url = new URL(`${this.url}/rpc/${fn}`)
     let body: unknown | undefined
+    // send Dates as ISO 8601 like the POST body does; `${date}` is toString(), which Postgres rejects.
+    // invalid Dates are passed through unchanged, since toISOString() throws on them.
+    // nested arrays are flattened by join() below, so their Dates are converted too
+    const _dateToIso = (v: unknown): unknown =>
+      Array.isArray(v)
+        ? v.map(_dateToIso)
+        : v instanceof Date && !isNaN(v.getTime())
+          ? v.toISOString()
+          : v
     // objects/arrays-of-objects can't be serialized to URL params, use POST + return=minimal instead
     const _isObject = (v: unknown): boolean =>
-      v !== null && typeof v === 'object' && (!Array.isArray(v) || v.some(_isObject))
+      v !== null &&
+      typeof v === 'object' &&
+      !(v instanceof Date) &&
+      (!Array.isArray(v) || v.some(_isObject))
     const _hasObjectArg = head && Object.values(args as object).some(_isObject)
     if (_hasObjectArg) {
       method = 'POST'
@@ -586,7 +598,10 @@ export default class PostgrestClient<
         // show up as `?param=undefined`
         .filter(([_, value]) => value !== undefined)
         // array values need special syntax
-        .map(([name, value]) => [name, Array.isArray(value) ? `{${value.join(',')}}` : `${value}`])
+        .map(([name, value]) => [
+          name,
+          Array.isArray(value) ? `{${value.map(_dateToIso).join(',')}}` : `${_dateToIso(value)}`,
+        ])
         .forEach(([name, value]) => {
           url.searchParams.append(name, value)
         })

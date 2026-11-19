@@ -280,3 +280,119 @@ test('RPC call with bigint nested in jsonb param is serialized as a JSON string'
     }
   `)
 })
+
+describe('RPC call with get/head serializes Date args in the query string', () => {
+  // `Date.prototype.toString()` (e.g. `Wed Nov 04 2026 10:00:00 GMT-0500 (Eastern Standard
+  // Time)`) is rejected by every Postgres date/time input function, while the POST body path
+  // sends `toISOString()` via `JSON.stringify`. The query string must use the same ISO form.
+  const DATE = new Date('2026-11-04T15:00:00.000Z')
+  const OTHER_DATE = new Date('2026-11-05T15:00:00.000Z')
+
+  const createClient = () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+      text: async () => '[]',
+    })
+    const client = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockFetch as any,
+    })
+    return { client, mockFetch }
+  }
+
+  test('get: true sends a Date arg as an ISO 8601 string', async () => {
+    const { client, mockFetch } = createClient()
+
+    await client.rpc('my_func' as any, { since: DATE, limit_rows: 5 } as any, { get: true })
+
+    const [url, options] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(options.method).toBe('GET')
+    expect(new URL(url).searchParams.get('since')).toBe('2026-11-04T15:00:00.000Z')
+    expect(new URL(url).searchParams.get('limit_rows')).toBe('5')
+  })
+
+  test('get: true sends a Date[] arg as an array literal of ISO 8601 strings', async () => {
+    const { client, mockFetch } = createClient()
+
+    await client.rpc('my_func' as any, { days: [DATE, OTHER_DATE] } as any, { get: true })
+
+    const [url, options] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(options.method).toBe('GET')
+    expect(new URL(url).searchParams.get('days')).toBe(
+      '{2026-11-04T15:00:00.000Z,2026-11-05T15:00:00.000Z}'
+    )
+  })
+
+  test('head: true keeps HEAD for a Date arg instead of falling back to POST', async () => {
+    const { client, mockFetch } = createClient()
+
+    await client.rpc('my_func' as any, { since: DATE } as any, { head: true, count: 'exact' })
+
+    const [url, options] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(options.method).toBe('HEAD')
+    expect(options.body).toBeUndefined()
+    expect(new URL(url).searchParams.get('since')).toBe('2026-11-04T15:00:00.000Z')
+    expect((options.headers as Record<string, string>)['prefer']).toBe('count=exact')
+  })
+
+  test('head: true still falls back to POST for a plain object arg', async () => {
+    const { client, mockFetch } = createClient()
+
+    await client.rpc('my_func' as any, { since: DATE, filter: { a: 1 } } as any, { head: true })
+
+    const [, options] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(options.body as string)).toEqual({
+      since: '2026-11-04T15:00:00.000Z',
+      filter: { a: 1 },
+    })
+  })
+
+  test('get: true passes an invalid Date through for the server to reject', async () => {
+    const { client, mockFetch } = createClient()
+
+    // `toISOString()` throws a RangeError on an invalid Date; building the request must not.
+    await client.rpc('my_func' as any, { since: new Date('nope') } as any, { get: true })
+
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(new URL(url).searchParams.get('since')).toBe('Invalid Date')
+  })
+
+  test('the POST body and the GET query string serialize a Date arg the same way', async () => {
+    const { client, mockFetch } = createClient()
+
+    await client.rpc('my_func' as any, { since: DATE } as any)
+    await client.rpc('my_func' as any, { since: DATE } as any, { get: true })
+
+    const [, postOptions] = mockFetch.mock.calls[0] as [string, RequestInit]
+    const [getUrl] = mockFetch.mock.calls[1] as [string, RequestInit]
+    expect(JSON.parse(postOptions.body as string).since).toBe(
+      new URL(getUrl).searchParams.get('since')
+    )
+  })
+
+  test('head: true converts Dates inside nested arrays', async () => {
+    const { client, mockFetch } = createClient()
+
+    await client.rpc('my_func' as any, { days: [[DATE], [OTHER_DATE]] } as any, { head: true })
+
+    const [url, options] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(options.method).toBe('HEAD')
+    // nested arrays are flattened into the literal, as before; only the Dates change.
+    expect(new URL(url).searchParams.get('days')).toBe(
+      '{2026-11-04T15:00:00.000Z,2026-11-05T15:00:00.000Z}'
+    )
+  })
+
+  test('get: true leaves non-Date array elements serialized as before', async () => {
+    const { client, mockFetch } = createClient()
+
+    await client.rpc('my_func' as any, { days: [DATE, null, 'x', 7] } as any, { get: true })
+
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit]
+    // `Array.prototype.join` renders null as an empty element; only the Date changes.
+    expect(new URL(url).searchParams.get('days')).toBe('{2026-11-04T15:00:00.000Z,,x,7}')
+  })
+})
