@@ -6,6 +6,7 @@ import {
   generatePKCEFlowId,
   getAlgorithm,
   getItemAsync,
+  isValidAuthorizationId,
   parseParametersFromURL,
   parseResponseAPIVersion,
   getCodeChallengeAndMethod,
@@ -562,6 +563,35 @@ describe('validateUUID', () => {
     } else {
       expect(() => validateUUID(input)).not.toThrow()
     }
+  })
+})
+
+describe('isValidAuthorizationId', () => {
+  test.each([
+    ['a real Supabase Auth authorization ID', 'abcdefghijklmnopqrstuvwxyz234567'],
+    ['mixed-case alphanumerics', 'AbC123xYz'],
+  ])('accepts %s', (_name, input) => {
+    expect(isValidAuthorizationId(input)).toBe(true)
+  })
+
+  test.each([
+    ['an empty string', ''],
+    ['path traversal', '../admin'],
+    ['nested path traversal', '../../admin/users'],
+    ['a slash', 'a/b'],
+    ['a query string', 'a?b=c'],
+    ['a fragment', 'a#b'],
+    ['a percent-encoded slash', 'a%2Fb'],
+    ['whitespace', 'a b'],
+    ['a trailing newline', 'abc\n'],
+    ['a dot', 'a.b'],
+    ['a hyphen', 'a-b'],
+    ['non-ASCII letters', 'abcé'],
+    ['undefined', undefined],
+    ['null', null],
+    ['a number', 123],
+  ])('rejects %s', (_name, input) => {
+    expect(isValidAuthorizationId(input)).toBe(false)
   })
 })
 
