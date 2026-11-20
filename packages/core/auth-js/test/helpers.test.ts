@@ -6,6 +6,9 @@ import {
   generatePKCEFlowId,
   getAlgorithm,
   getItemAsync,
+  getOnlineEventTarget,
+  isLoopbackHost,
+  isProvablyOffline,
   parseParametersFromURL,
   parseResponseAPIVersion,
   getCodeChallengeAndMethod,
@@ -608,5 +611,127 @@ describe('getItemAsync', () => {
     // valid behavior. We are only guarding against parse failures here.
     const storage = makeStorage({ session: '"hello"' })
     expect(await getItemAsync(storage, 'session')).toEqual('hello')
+  })
+})
+
+describe('isProvablyOffline', () => {
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+
+  const setNavigator = (value: unknown) => {
+    Object.defineProperty(globalThis, 'navigator', {
+      value,
+      configurable: true,
+      writable: true,
+    })
+  }
+
+  afterEach(() => {
+    if (originalNavigator) {
+      Object.defineProperty(globalThis, 'navigator', originalNavigator)
+    } else {
+      delete (globalThis as any).navigator
+    }
+  })
+
+  it('returns true only when navigator.onLine is exactly false', () => {
+    setNavigator({ onLine: false })
+    expect(isProvablyOffline()).toBe(true)
+  })
+
+  it('returns false when navigator.onLine is true', () => {
+    setNavigator({ onLine: true })
+    expect(isProvablyOffline()).toBe(false)
+  })
+
+  it('returns false when navigator has no boolean onLine (React Native, Node.js)', () => {
+    setNavigator({ product: 'ReactNative' })
+    expect(isProvablyOffline()).toBe(false)
+
+    setNavigator({ onLine: undefined })
+    expect(isProvablyOffline()).toBe(false)
+  })
+
+  it('returns false when navigator is not defined', () => {
+    if (originalNavigator) {
+      delete (globalThis as any).navigator
+    }
+    expect(isProvablyOffline()).toBe(false)
+  })
+})
+
+describe('getOnlineEventTarget', () => {
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+  const originalAdd = Object.getOwnPropertyDescriptor(globalThis, 'addEventListener')
+  const originalRemove = Object.getOwnPropertyDescriptor(globalThis, 'removeEventListener')
+
+  const defineGlobal = (name: string, value: unknown) => {
+    Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
+  }
+
+  const restore = (name: string, descriptor: PropertyDescriptor | undefined) => {
+    if (descriptor) {
+      Object.defineProperty(globalThis, name, descriptor)
+    } else {
+      delete (globalThis as any)[name]
+    }
+  }
+
+  afterEach(() => {
+    restore('navigator', originalNavigator)
+    restore('addEventListener', originalAdd)
+    restore('removeEventListener', originalRemove)
+  })
+
+  it('returns the global scope when navigator.onLine and global listeners exist (window, workers)', () => {
+    defineGlobal('navigator', { onLine: true })
+    defineGlobal('addEventListener', () => {})
+    defineGlobal('removeEventListener', () => {})
+    expect(getOnlineEventTarget()).toBe(globalThis)
+  })
+
+  it('returns null without a boolean navigator.onLine (React Native, Node.js, Deno)', () => {
+    defineGlobal('navigator', { product: 'ReactNative' })
+    defineGlobal('addEventListener', () => {})
+    defineGlobal('removeEventListener', () => {})
+    expect(getOnlineEventTarget()).toBeNull()
+  })
+
+  it('returns null without global listener support', () => {
+    defineGlobal('navigator', { onLine: true })
+    if (originalAdd) delete (globalThis as any).addEventListener
+    if (originalRemove) delete (globalThis as any).removeEventListener
+    expect(getOnlineEventTarget()).toBeNull()
+  })
+})
+
+describe('isLoopbackHost', () => {
+  it('recognizes loopback hosts', () => {
+    expect(isLoopbackHost('http://localhost:54321/auth/v1')).toBe(true)
+    expect(isLoopbackHost('http://project.localhost/auth/v1')).toBe(true)
+    expect(isLoopbackHost('http://127.0.0.1:54321/auth/v1')).toBe(true)
+    expect(isLoopbackHost('http://127.255.0.42/auth/v1')).toBe(true)
+    expect(isLoopbackHost('http://[::1]:54321/auth/v1')).toBe(true)
+  })
+
+  it('recognizes fully qualified (trailing-dot) loopback names', () => {
+    expect(isLoopbackHost('http://localhost.:54321/auth/v1')).toBe(true)
+    expect(isLoopbackHost('http://project.localhost./auth/v1')).toBe(true)
+    // the URL parser normalizes trailing-dot IPv4 itself
+    expect(isLoopbackHost('http://127.0.0.1./auth/v1')).toBe(true)
+  })
+
+  it('rejects remote hosts', () => {
+    expect(isLoopbackHost('https://project.supabase.co/auth/v1')).toBe(false)
+    expect(isLoopbackHost('https://example.com/auth/v1')).toBe(false)
+    // fully qualified remote names stay remote after normalization
+    expect(isLoopbackHost('https://example.com./auth/v1')).toBe(false)
+    // resembles but is not loopback
+    expect(isLoopbackHost('https://localhost.example.com/auth/v1')).toBe(false)
+    expect(isLoopbackHost('http://128.0.0.1/auth/v1')).toBe(false)
+  })
+
+  it('returns false for unparseable URLs', () => {
+    expect(isLoopbackHost('not a url')).toBe(false)
+    expect(isLoopbackHost('')).toBe(false)
   })
 })
