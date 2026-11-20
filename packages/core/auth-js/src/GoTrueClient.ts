@@ -3241,7 +3241,10 @@ export default class GoTrueClient {
       this.suppressGetSessionWarning = true
     }
 
-    return result
+    // `_getUser` returns the missing-session error without throwing, so apply
+    // `throwOnError` here. Throwing inside `_getUser` would reach its catch,
+    // which removes the session and emits SIGNED_OUT.
+    return this._returnResult(result)
   }
 
   private async _getUser(jwt?: string): Promise<UserResponse> {
