@@ -4465,14 +4465,18 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       persistSession: true,
     })
 
-  const stubInvalidGrant = (client: GoTrueClient, beforeReply?: () => Promise<void>) => {
+  const stubInvalidGrant = (
+    client: GoTrueClient,
+    beforeReply?: () => Promise<void>,
+    code: string = 'refresh_token_already_used'
+  ) => {
     const spy = jest.fn(async () => {
       await beforeReply?.()
       return {
         data: { session: null, user: null },
         error: Object.assign(new AuthError('Invalid Refresh Token: Already Used', 400), {
           name: 'AuthApiError',
-          code: 'refresh_token_already_used',
+          code,
           __isAuthError: true,
         }),
       }
@@ -5094,6 +5098,68 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       // race the fire-and-forget emission scheduled by onAuthStateChange.
       // @ts-expect-error access private for test
       await client._emitInitialSession(Symbol('test-invalid-grant-init'))
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+
+      errorSpy.mockRestore()
+      warnSpy.mockRestore()
+    })
+
+    test('_emitInitialSession downgrades a validation_failed refresh token to console.warn', async () => {
+      // Auth returns validation_failed for refresh tokens in a format it never
+      // issues (e.g. visitor-controlled SSR cookies). That must warn, not
+      // error, so made-up cookies cannot inflate production error rates.
+      const storage = memoryLocalStorageAdapter()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+        skipAutoInitialize: true,
+      })
+      stubInvalidGrant(client, undefined, 'validation_failed')
+
+      await client.initialize()
+
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // @ts-expect-error access private for test
+      await client._emitInitialSession(Symbol('test-validation-failed-init'))
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+
+      errorSpy.mockRestore()
+      warnSpy.mockRestore()
+    })
+
+    test('_emitInitialSession downgrades a user_banned refresh token to console.warn', async () => {
+      // Auth returns user_banned for refresh when the account is banned but a
+      // leftover cookie remains. That must warn, not error, so banned users
+      // cannot inflate production error rates on every request.
+      const storage = memoryLocalStorageAdapter()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+        skipAutoInitialize: true,
+      })
+      stubInvalidGrant(client, undefined, 'user_banned')
+
+      await client.initialize()
+
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // @ts-expect-error access private for test
+      await client._emitInitialSession(Symbol('test-user-banned-init'))
 
       expect(errorSpy).not.toHaveBeenCalled()
       expect(warnSpy).toHaveBeenCalled()
