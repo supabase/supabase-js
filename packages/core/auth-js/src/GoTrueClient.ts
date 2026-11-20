@@ -325,9 +325,9 @@ export default class GoTrueClient {
   /**
    * Monotonic counter incremented at the top of `_removeSession`, before any
    * `await`. The commit guard inside `_callRefreshToken` captures this value
-   * before `_saveSession` and re-checks it after, so a `signOut` that
-   * interleaves inside `_saveSession`'s storage-write awaits is still caught
-   * (the post-fetch storage snapshot alone misses that window).
+   * at start and before `_saveSession`, and re-checks it so that a `signOut`
+   * interleaving at any point during network fetch or storage I/O causes the
+   * rotated tokens to be discarded rather than overwriting storage.
    */
   protected _sessionRemovalEpoch = 0
   /**
@@ -5105,6 +5105,7 @@ export default class GoTrueClient {
       // refresh_token differs from the one they're hydrating; in both
       // cases the guard fires only when storage was *modified between
       // snapshots*, not when the input token disagrees with what's stored.
+      const epochAtStart = this._sessionRemovalEpoch
       const storedAtStart = (await getItemAsync(this.storage, this.storageKey)) as Session | null
 
       const { data, error } = await this._refreshAccessToken(refreshToken)
@@ -5113,8 +5114,9 @@ export default class GoTrueClient {
 
       const storedAfter = (await getItemAsync(this.storage, this.storageKey)) as Session | null
       const storageChangedUnderUs =
-        storedAtStart !== null &&
-        (storedAfter === null || storedAfter.refresh_token !== storedAtStart.refresh_token)
+        this._sessionRemovalEpoch !== epochAtStart ||
+        (storedAtStart !== null &&
+          (storedAfter === null || storedAfter.refresh_token !== storedAtStart.refresh_token))
 
       if (storageChangedUnderUs) {
         this._debug(
