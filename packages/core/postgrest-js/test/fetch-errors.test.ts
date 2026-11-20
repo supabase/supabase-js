@@ -189,6 +189,99 @@ describe('Fetch error handling', () => {
     expect(options.headers['prefer']).toContain('return=minimal')
   })
 
+  test('rpc with get: true and object args uses POST and still returns the result', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+      json: async () => [{ id: 1 }],
+      text: async () => '[{"id":1}]',
+    })
+
+    const postgrest = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockFetch as any,
+    })
+
+    await postgrest.rpc('my_func' as any, { obj_arg: { nested: 'value' } }, { get: true })
+
+    const [url, options] = mockFetch.mock.calls[0]
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(options.body)).toEqual({ obj_arg: { nested: 'value' } })
+    // The argument must not be stringified into the query string.
+    expect(url).not.toContain('obj_arg')
+    expect(url).not.toContain('object+Object')
+    // Unlike head, get must still receive the function's result.
+    expect(options.headers['prefer']).toBeUndefined()
+  })
+
+  test('rpc with get: true and an array of objects uses POST', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+      json: async () => [],
+      text: async () => '[]',
+    })
+
+    const postgrest = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockFetch as any,
+    })
+
+    await postgrest.rpc('my_func' as any, { rows: [{ a: 1 }, { a: 2 }] }, { get: true })
+
+    const [url, options] = mockFetch.mock.calls[0]
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(options.body)).toEqual({ rows: [{ a: 1 }, { a: 2 }] })
+    expect(url).not.toContain('object+Object')
+  })
+
+  test('rpc with get: true and scalar args still uses GET with query params', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+      json: async () => [],
+      text: async () => '[]',
+    })
+
+    const postgrest = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockFetch as any,
+    })
+
+    await postgrest.rpc('my_func' as any, { name: 'bob', n: 2 }, { get: true })
+
+    const [url, options] = mockFetch.mock.calls[0]
+    expect(options.method).toBe('GET')
+    expect(url).toContain('name=bob')
+    expect(url).toContain('n=2')
+    expect(options.body).toBeUndefined()
+  })
+
+  test('rpc with get: true, object args and count keeps the count preference', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+      json: async () => [],
+      text: async () => '[]',
+    })
+
+    const postgrest = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockFetch as any,
+    })
+
+    await postgrest.rpc('my_func' as any, { obj_arg: { a: 1 } }, { get: true, count: 'exact' })
+
+    const [_url, options] = mockFetch.mock.calls[0]
+    expect(options.method).toBe('POST')
+    expect(options.headers['prefer']).toBe('count=exact')
+    expect(options.headers['prefer']).not.toContain('return=minimal')
+  })
+
   test('PostgrestError serializes message with JSON.stringify', () => {
     const err = new PostgrestError({
       message: 'RLS denied',
