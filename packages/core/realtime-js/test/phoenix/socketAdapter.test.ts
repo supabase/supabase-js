@@ -62,3 +62,16 @@ describe('connection state', () => {
     expect(socketAdapter.isDisconnecting()).toBe(true)
   })
 })
+
+describe('pendingHeartbeatRef', () => {
+  test('gets and sets pendingHeartbeatRef on underlying socket', () => {
+    expect(socketAdapter.pendingHeartbeatRef).toBeNull()
+    socketAdapter.pendingHeartbeatRef = 'test-ref-123'
+    expect(socketAdapter.pendingHeartbeatRef).toBe('test-ref-123')
+    expect(socketAdapter.getSocket().pendingHeartbeatRef).toBe('test-ref-123')
+
+    socketAdapter.pendingHeartbeatRef = null
+    expect(socketAdapter.pendingHeartbeatRef).toBeNull()
+    expect(socketAdapter.getSocket().pendingHeartbeatRef).toBeNull()
+  })
+})

@@ -316,4 +316,31 @@ describe('Race condition prevention', () => {
     assert.equal(client.isDisconnecting(), true)
     cleanup()
   })
+
+  test('clears pendingHeartbeatRef on socket open and close', async () => {
+    const { client, connect, socketConnected, cleanup } = setupRealtimeTest()
+
+    connect()
+    await socketConnected()
+
+    // Simulate a pending heartbeat ref left in flight
+    client.pendingHeartbeatRef = 'stale-ref-from-previous-conn'
+    expect(client.pendingHeartbeatRef).toBe('stale-ref-from-previous-conn')
+
+    // Simulate onOpen event (e.g. reconnect)
+    // @ts-expect-error - triggering private phoenix socket callback in tests
+    client.socketAdapter.getSocket().triggerStateCallbacks('open')
+    expect(client.pendingHeartbeatRef).toBeNull()
+
+    // Simulate pending heartbeat ref again
+    client.pendingHeartbeatRef = 'another-pending-ref'
+    expect(client.pendingHeartbeatRef).toBe('another-pending-ref')
+
+    // Simulate onClose event (e.g. disconnect)
+    // @ts-expect-error - triggering private phoenix socket callback in tests
+    client.socketAdapter.getSocket().triggerStateCallbacks('close')
+    expect(client.pendingHeartbeatRef).toBeNull()
+
+    cleanup()
+  })
 })
