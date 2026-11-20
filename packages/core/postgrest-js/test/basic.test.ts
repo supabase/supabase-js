@@ -325,6 +325,30 @@ describe('custom prefer headers with ', () => {
     expect(postgrestFilterBuilder.headers.get('Prefer')).toContain('tx=rollback')
     expect(postgrestFilterBuilder.headers.get('Prefer')).toContain('return=')
   })
+  test('rpc', async () => {
+    const postgrest = new PostgrestClient<Database>(REST_URL, {
+      headers: { Prefer: 'tx=rollback' },
+    })
+    const postgrestFilterBuilder = postgrest.rpc(
+      'get_username_and_status',
+      { name_param: 'supabot' },
+      { count: 'exact' }
+    ) as any
+    expect(postgrestFilterBuilder.headers.get('Prefer')).toContain('tx=rollback')
+    expect(postgrestFilterBuilder.headers.get('Prefer')).toContain('count=exact')
+  })
+  test('rpc with head and object args', async () => {
+    const postgrest = new PostgrestClient<Database>(REST_URL, {
+      headers: { Prefer: 'tx=rollback' },
+    })
+    const postgrestFilterBuilder = postgrest.rpc(
+      'get_username_and_status',
+      { name_param: { nested: 'supabot' } } as any,
+      { head: true, count: 'exact' }
+    ) as any
+    expect(postgrestFilterBuilder.headers.get('Prefer')).toContain('tx=rollback')
+    expect(postgrestFilterBuilder.headers.get('Prefer')).toContain('count=exact,return=minimal')
+  })
 })
 
 test('switch schema', async () => {
