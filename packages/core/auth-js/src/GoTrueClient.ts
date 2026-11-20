@@ -255,7 +255,7 @@ export default class GoTrueClient {
   mfa: GoTrueMFAApi
   /**
    * Namespace for the OAuth 2.1 authorization server methods.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    * Used to implement the authorization code flow on the consent page.
    */
   oauth: AuthOAuthServerApi
@@ -613,7 +613,7 @@ export default class GoTrueClient {
    *
    * **Most callers do not need to invoke this directly.** The client calls it
    * automatically during construction, and to react to sign-in events (including
-   * post-redirect events) you should subscribe to `onAuthStateChange` rather
+   * post-redirect events) you should subscribe to [`onAuthStateChange`](/docs/reference/javascript/auth-onauthstatechange) rather
    * than awaiting `initialize()`.
    *
    * You only need to call it manually when you have opted out of the automatic
@@ -860,7 +860,7 @@ export default class GoTrueClient {
    *
    * Be aware that if a user account exists in the system you may get back an
    * error message that attempts to hide this information from the user.
-   * This method has support for PKCE via email signups. The PKCE flow cannot be used when autoconfirm is enabled.
+   * This method has support for [PKCE](/docs/guides/auth/sessions/pkce-flow) via email signups. The PKCE flow cannot be used when autoconfirm is enabled.
    *
    * @returns A logged-in session if the server has "autoconfirm" ON
    * @returns A user if the server has "autoconfirm" OFF
@@ -1295,7 +1295,7 @@ export default class GoTrueClient {
 
   /**
    * Log in an existing user via a third-party provider.
-   * This method supports the PKCE flow.
+   * This method supports the [PKCE flow](/docs/guides/auth/sessions/pkce-flow).
    *
    * @category Auth
    *
@@ -1339,7 +1339,7 @@ export default class GoTrueClient {
    * @exampleDescription Sign in with scopes and access provider tokens
    * If you need additional access from an OAuth provider, in order to access provider specific APIs in the name of the user, you can do this by passing in the scopes the user should authorize for your application. Note that the `scopes` option takes in **a space-separated list** of scopes.
    *
-   * Because OAuth sign-in often includes redirects, you should register an `onAuthStateChange` callback immediately after you create the Supabase client. This callback will listen for the presence of `provider_token` and `provider_refresh_token` properties on the `session` object and store them in local storage. The client library will emit these values **only once** immediately after the user signs in. You can then access them by looking them up in local storage, or send them to your backend servers for further processing.
+   * Because OAuth sign-in often includes redirects, you should register an [`onAuthStateChange`](/docs/reference/javascript/auth-onauthstatechange) callback immediately after you create the Supabase client. This callback will listen for the presence of `provider_token` and `provider_refresh_token` properties on the `session` object and store them in local storage. The client library will emit these values **only once** immediately after the user signs in. You can then access them by looking them up in local storage, or send them to your backend servers for further processing.
    *
    * Finally, make sure you remove them from local storage on the `SIGNED_OUT` event. If the OAuth provider supports token revocation, make sure you call those APIs either from the frontend or schedule them to be called on the backend.
    *
@@ -1383,7 +1383,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Log in an existing user by exchanging an Auth Code issued during the PKCE flow.
+   * Log in an existing user by exchanging an Auth Code issued during the [PKCE flow](/docs/guides/auth/sessions/pkce-flow).
    *
    * @category Auth
    *
@@ -4461,7 +4461,7 @@ export default class GoTrueClient {
   }
 
   /**
-   * Sends a password reset request to an email address. This method supports the PKCE flow.
+   * Sends a password reset request to an email address. This method supports the [PKCE flow](/docs/guides/auth/sessions/pkce-flow).
    *
    * @param email The email address of the user.
    * @param options.redirectTo The URL to send the user to after they click the password reset link.
@@ -4633,7 +4633,7 @@ export default class GoTrueClient {
 
   /**
    * Links an oauth identity to an existing user.
-   * This method supports the PKCE flow.
+   * This method supports the [PKCE flow](/docs/guides/auth/sessions/pkce-flow).
    */
   async linkIdentity(credentials: SignInWithOAuthCredentials): Promise<OAuthResponse>
 
@@ -6422,7 +6422,7 @@ export default class GoTrueClient {
 
   /**
    * Retrieves details about an OAuth authorization request.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    *
    * Returns authorization details including client info, scopes, and user information.
    * If the response includes only a redirect_url field, it means consent was already given - the caller
@@ -6468,7 +6468,7 @@ export default class GoTrueClient {
 
   /**
    * Approves an OAuth authorization request.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    */
   private async _approveAuthorization(
     authorizationId: string,
@@ -6521,7 +6521,7 @@ export default class GoTrueClient {
 
   /**
    * Denies an OAuth authorization request.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    */
   private async _denyAuthorization(
     authorizationId: string,
@@ -6574,7 +6574,7 @@ export default class GoTrueClient {
 
   /**
    * Lists all OAuth grants that the authenticated user has authorized.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    */
   private async _listOAuthGrants(): Promise<AuthOAuthGrantsResponse> {
     try {
@@ -6609,7 +6609,7 @@ export default class GoTrueClient {
 
   /**
    * Revokes a user's OAuth grant for a specific client.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    */
   private async _revokeOAuthGrant(options: {
     clientId: string

@@ -945,8 +945,8 @@ export default class PostgrestTransformBuilder<
    *
    * This affects only the single request it is chained to. The JS caller has no
    * handle on the transaction: supabase-js does not group multiple queries into
-   * one transaction. For multi-statement transactional logic, use a database
-   * function (`supabase.rpc(...)`).
+   * one transaction. For multi-statement transactional logic, use a
+   * [database function](/docs/guides/database/functions) (`supabase.rpc(...)`).
    *
    * Sets the `Prefer: tx=rollback` header. See PostgREST's docs on transaction
    * preferences for the underlying mechanism.
