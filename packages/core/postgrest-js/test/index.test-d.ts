@@ -563,3 +563,37 @@ type WithThrowOnError<T> =
     expectType<TypeEqual<typeof result.data, { id: number; message: string }[]>>(true)
   }
 }
+
+// .contains() and .containedBy() value typing (Issue #435)
+{
+  // Array columns require an array of the element type
+  postgrest.from('cornercase').select().contains('array_column', ['test'])
+  postgrest
+    .from('cornercase')
+    .select()
+    .contains('array_column', ['test'] as const)
+  postgrest.from('cornercase').select().containedBy('array_column', ['test'])
+  postgrest
+    .from('cornercase')
+    .select()
+    .containedBy('array_column', ['test'] as const)
+
+  // @ts-expect-error Argument of type 'string' is not assignable to parameter of type 'readonly string[]'
+  postgrest.from('cornercase').select().contains('array_column', 'test')
+  // @ts-expect-error Argument of type 'string' is not assignable to parameter of type 'readonly string[]'
+  postgrest.from('cornercase').select().containedBy('array_column', 'test')
+  // @ts-expect-error Type 'number' is not assignable to type 'string'
+  postgrest.from('cornercase').select().contains('array_column', [123])
+  // @ts-expect-error Type 'number' is not assignable to type 'string'
+  postgrest.from('cornercase').select().containedBy('array_column', [123])
+  // @ts-expect-error Object literal may only specify known properties, and 'foo' does not exist in type 'readonly string[]'
+  postgrest.from('cornercase').select().contains('array_column', { foo: 'bar' })
+  // @ts-expect-error Object literal may only specify known properties, and 'foo' does not exist in type 'readonly string[]'
+  postgrest.from('cornercase').select().containedBy('array_column', { foo: 'bar' })
+
+  // Range and JSON columns accept string and objects
+  postgrest.from('users').select().contains('age_range', '[1,2)')
+  postgrest.from('users').select().containedBy('age_range', '[1,2)')
+  postgrest.from('users').select().contains('data', { foo: 'bar' })
+  postgrest.from('users').select().containedBy('data', { foo: 'bar' })
+}
