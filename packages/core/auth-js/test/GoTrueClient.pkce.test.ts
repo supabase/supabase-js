@@ -29,18 +29,23 @@ function makePkceClient(options?: {
   appendPkceFlowIdToRedirects?: boolean
   storage?: SupportedStorage
   exchangeSucceeds?: boolean
+  /** 0-based /otp request indexes that should fail with over_email_send_rate_limit */
+  rateLimitedRequests?: number[]
 }) {
   const store = options?.store ?? {}
   const storage = options?.storage ?? memoryLocalStorageAdapter(store)
   const requestUrls: string[] = []
   const tokenBodies: Array<{ [key: string]: string }> = []
+  const rateLimited = new Set(options?.rateLimitedRequests ?? [])
+  let otpRequestCount = 0
 
   // network-free synthetic fetch: records requests, succeeds on flow starts
   // (so verifiers stay stored) and, unless exchangeSucceeds is set, fails
   // token exchanges with invalid_grant so no session construction is needed
   const syntheticFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    requestUrls.push(String(input))
-    if (String(input).includes('/token?grant_type=pkce')) {
+    const url = String(input)
+    requestUrls.push(url)
+    if (url.includes('/token?grant_type=pkce')) {
       tokenBodies.push(JSON.parse(String(init?.body)))
       if (!options?.exchangeSucceeds) {
         return {
@@ -59,6 +64,19 @@ function makePkceClient(options?: {
         status: 200,
         headers: new Headers(),
         json: () => Promise.resolve({ ...SYNTHETIC_SESSION }),
+      } as unknown as Response
+    }
+    if (url.includes('/otp') && rateLimited.has(otpRequestCount++)) {
+      return {
+        ok: false,
+        status: 429,
+        headers: new Headers(),
+        json: () =>
+          Promise.resolve({
+            error: 'over_email_send_rate_limit',
+            error_description: 'Email rate limit exceeded',
+            message: 'Email rate limit exceeded',
+          }),
       } as unknown as Response
     }
     return {
@@ -280,6 +298,28 @@ describe('overlapping PKCE flows', () => {
     expect(tokenBodies).toHaveLength(1)
     expect(tokenBodies[0].code_verifier).toEqual('legacy-verifier')
     expect(await getItemAsync(storage, `${storageKey}-code-verifier`)).toBeNull()
+  })
+
+  it('a failed PKCE start restores the prior live verifier on the legacy key', async () => {
+    // default callbacks have no flow id, so they only read the legacy key.
+    // a rate-limited second magic-link start must not wipe the first link.
+    const { client, storage, storageKey, tokenBodies } = makePkceClient({
+      rateLimitedRequests: [1],
+    })
+
+    await client.signInWithOtp({ email: 'user@example.test' })
+    const firstVerifier = await getItemAsync(storage, `${storageKey}-code-verifier`)
+    expect(firstVerifier).toBeTruthy()
+
+    const second = await client.signInWithOtp({ email: 'user@example.test' })
+    expect(second.error?.status).toBe(429)
+
+    expect(await getItemAsync(storage, `${storageKey}-code-verifier`)).toEqual(firstVerifier)
+
+    await client.exchangeCodeForSession('code-from-first-link')
+
+    expect(tokenBodies).toHaveLength(1)
+    expect(tokenBodies[0].code_verifier).toEqual(firstVerifier)
   })
 
   it('a successful exchange saves the session and consumes the slot', async () => {
