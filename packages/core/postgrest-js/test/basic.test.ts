@@ -1835,6 +1835,22 @@ test('insert includes columns param', async () => {
   expect((client as any).url.searchParams.get('columns')).toMatchInlineSnapshot(`""foo","bar""`)
 })
 
+test('insert escapes quotes and backslashes in columns param', async () => {
+  const client = postgrest.from('users').insert([{ 'a"b': 1, 'c\\d': 2 }] as any)
+  // PostgREST quoted-identifier escaping: \ → \\, " → \"
+  expect((client as any).url.searchParams.get('columns')).toBe('"a\\"b","c\\\\d"')
+})
+
+test('upsert escapes quotes and backslashes in columns param', async () => {
+  const client = postgrest.from('users').upsert([{ 'a"b': 1, 'c\\d': 2 }] as any)
+  expect((client as any).url.searchParams.get('columns')).toBe('"a\\"b","c\\\\d"')
+})
+
+test('insert escapes backslash-quote sequences in columns param', async () => {
+  const client = postgrest.from('users').insert([{ 'a\\"b': 1 }] as any)
+  expect((client as any).url.searchParams.get('columns')).toBe('"a\\\\\\"b"')
+})
+
 test('insert w/ empty body has no columns param', async () => {
   const client = postgrest.from('users').insert([{}, {}] as any)
   expect((client as any).url.searchParams.has('columns')).toBeFalsy()
