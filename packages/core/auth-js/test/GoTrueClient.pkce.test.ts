@@ -29,6 +29,7 @@ function makePkceClient(options?: {
   appendPkceFlowIdToRedirects?: boolean
   storage?: SupportedStorage
   exchangeSucceeds?: boolean
+  rateLimitedRequests?: number[]
 }) {
   const store = options?.store ?? {}
   const storage = options?.storage ?? memoryLocalStorageAdapter(store)
@@ -40,6 +41,18 @@ function makePkceClient(options?: {
   // token exchanges with invalid_grant so no session construction is needed
   const syntheticFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     requestUrls.push(String(input))
+    if (options?.rateLimitedRequests?.includes(requestUrls.length - 1)) {
+      return {
+        ok: false,
+        status: 429,
+        headers: new Headers(),
+        json: () =>
+          Promise.resolve({
+            code: 'over_email_send_rate_limit',
+            msg: 'For security purposes, you can only request this after 60 seconds.',
+          }),
+      } as unknown as Response
+    }
     if (String(input).includes('/token?grant_type=pkce')) {
       tokenBodies.push(JSON.parse(String(init?.body)))
       if (!options?.exchangeSucceeds) {
@@ -427,5 +440,27 @@ describe('overlapping PKCE flows', () => {
 
     expect(tokenBodies).toHaveLength(1)
     expect(tokenBodies[0].code_verifier).toEqual(JSON.parse(jar[slotKey(storageKey, flowId)]))
+  })
+
+  it('a rejected flow start keeps the verifier of the previous pending flow usable', async () => {
+    // The second magic link request is rate limited (429), so no second link is
+    // sent. The first link is still the only valid one and must still exchange.
+    const { client, storage, storageKey, tokenBodies } = makePkceClient({
+      rateLimitedRequests: [1],
+    })
+
+    const first = await client.signInWithOtp({ email: 'user@example.test' })
+    expect(first.error).toBeNull()
+    const firstVerifier = await getItemAsync(storage, `${storageKey}-code-verifier`)
+    expect(firstVerifier).toEqual(expect.any(String))
+
+    const second = await client.signInWithOtp({ email: 'user@example.test' })
+    expect(second.error?.status).toBe(429)
+
+    // default mode: the callback carries no flow id, so the legacy key is used
+    await client.exchangeCodeForSession('code-from-first-link')
+
+    expect(tokenBodies).toHaveLength(1)
+    expect(tokenBodies[0].code_verifier).toEqual(firstVerifier)
   })
 })

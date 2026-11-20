@@ -409,8 +409,13 @@ export async function retrievePKCEVerifier(
 
 /**
  * Removes a single flow's verifier. Never clears other flows' slots: with a
- * `flowId` only that slot is deleted (plus the legacy fixed key when it holds
- * the same verifier); without one, only the legacy fixed key is deleted.
+ * `flowId` only that slot is deleted; without one, only the legacy fixed key
+ * is deleted.
+ *
+ * When the legacy fixed key mirrors the removed flow, it is pointed back at
+ * the newest flow still in the index instead of being deleted, so that a
+ * failed flow start (e.g. a rate-limited magic link request) does not break
+ * the callback of an earlier flow that is still pending.
  */
 export async function removePKCEVerifier(
   storage: SupportedStorage,
@@ -441,6 +446,13 @@ export async function removePKCEVerifier(
   }
 
   if (slotValue != null && slotValue === (await getItemAsync(storage, legacyKey))) {
+    for (let i = remaining.length - 1; i >= 0; i--) {
+      const previous = await getItemAsync(storage, pkceVerifierSlotKey(storageKey, remaining[i]))
+      if (typeof previous === 'string') {
+        await setItemAsync(storage, legacyKey, previous)
+        return
+      }
+    }
     await removeItemAsync(storage, legacyKey)
   }
 }
