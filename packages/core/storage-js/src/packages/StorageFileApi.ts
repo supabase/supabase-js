@@ -740,9 +740,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       // `data.signedURL` contains a `token` query parameter, so append extra params with `&`
       // only when we actually have something to add.
-      const signedUrl = encodeURI(
-        `${this.url}${data.signedURL}${queryString ? `&${queryString}` : ''}`
-      )
+      const signedUrl =
+        encodeURI(`${this.url}${data.signedURL}`) + (queryString ? `&${queryString}` : '')
 
       return { signedUrl }
     })
@@ -833,7 +832,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         (datum: { error: string | null; path: string | null; signedURL: string | null }) => ({
           ...datum,
           signedUrl: datum.signedURL
-            ? encodeURI(`${this.url}${datum.signedURL}${queryString ? `&${queryString}` : ''}`)
+            ? encodeURI(`${this.url}${datum.signedURL}`) + (queryString ? `&${queryString}` : '')
             : null,
         })
       )
