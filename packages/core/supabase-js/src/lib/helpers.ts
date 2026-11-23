@@ -1,4 +1,5 @@
 // helpers.ts
+import { CLIENT_INFO_HEADER } from './constants'
 import { SupabaseClientOptions, TracePropagationOptions } from './types'
 
 function normalizeTracePropagation(
@@ -60,6 +61,107 @@ export function _resetTopLevelSchemaWarning(): void {
   warnedTopLevelSchema = false
 }
 
+const isClientInfoHeader = (name: string) => name.toLowerCase() === CLIENT_INFO_HEADER.toLowerCase()
+
+// SDK-owned metadata is reserved even when this environment does not emit it.
+const RESERVED_CLIENT_INFO_KEYS = new Set([
+  'platform',
+  'platform-version',
+  'platform-architecture',
+  'runtime',
+  'runtime-version',
+  'framework',
+  'framework-version',
+  'features',
+])
+
+/**
+ * Percent-encodes every `;`, `%` and character outside printable ASCII (0x20 to 0x7E) as its
+ * UTF-8 bytes. Spaces stay as they are.
+ */
+function encodeClientInfoValue(value: string): string {
+  // `u` iterates by code point, so characters outside the BMP are not split into surrogates.
+  return value.replace(/[^\x20-\x7e]|[;%]/gu, (char) => {
+    return Array.from(new TextEncoder().encode(char), (byte) => {
+      return '%' + byte.toString(16).toUpperCase().padStart(2, '0')
+    }).join('')
+  })
+}
+
+/**
+ * Parses an `X-Client-Info` value into the lowercase keys of its parameters.
+ * e.g. `X-Client-Info: sdk=js; platform=web; runtime=node`
+ * becomes a set of `'sdk', 'platform', 'runtime'`.
+ */
+function clientInfoKeys(header: string): Set<string> {
+  const keys = new Set<string>()
+  for (const segment of header.split(';').slice(1)) {
+    const key = segment.split('=')[0].trim().toLowerCase()
+    if (key) keys.add(key)
+  }
+  return keys
+}
+
+/**
+ * Appends the `global.clientInfo` entries to the resolved `X-Client-Info` header, as
+ * `; key=value` in the entries' order. Uses caller's `X-Client-Info` header
+ * (matched case-insensitively) when there is one, otherwise uses the SDK's default.
+ * Throws on an invalid key or value.
+ *
+ * @internal
+ */
+function appendClientInfo(
+  headers: Record<string, string>,
+  callerHeaders: Record<string, string> | undefined,
+  clientInfo: Record<string, string>
+): Record<string, string> {
+  const entries = Object.entries(clientInfo)
+  if (entries.length === 0) {
+    return headers
+  }
+
+  const callerName = Object.keys(callerHeaders ?? {})
+    .reverse()
+    .find(isClientInfoHeader)
+  const defaultName = Object.keys(headers).reverse().find(isClientInfoHeader)
+  let value = String(
+    (callerName !== undefined ? callerHeaders?.[callerName] : undefined) ??
+      (defaultName !== undefined ? headers[defaultName] : undefined) ??
+      ''
+  )
+
+  const seen = clientInfoKeys(value)
+  for (const [key, raw] of entries) {
+    if (!/^[A-Za-z0-9_-]+$/.test(key)) {
+      throw new Error(
+        `Invalid global.clientInfo key "${key}": expected only letters, numbers, underscores or hyphens.`
+      )
+    }
+    if (RESERVED_CLIENT_INFO_KEYS.has(key.toLowerCase())) {
+      throw new Error(
+        `Invalid global.clientInfo key "${key}": this parameter is reserved by the SDK.`
+      )
+    }
+    if (seen.has(key.toLowerCase())) {
+      throw new Error(
+        `Invalid global.clientInfo key "${key}": the X-Client-Info header already has this parameter.`
+      )
+    }
+    if (typeof raw !== 'string' || raw.trim() === '') {
+      throw new Error(`Invalid global.clientInfo value for "${key}": must be a non-empty string.`)
+    }
+    seen.add(key.toLowerCase())
+    value += `; ${key}=${encodeClientInfoValue(raw.trim())}`
+  }
+
+  const result: Record<string, string> = {}
+  for (const [name, headerValue] of Object.entries(headers)) {
+    if (!isClientInfoHeader(name)) result[name] = headerValue
+  }
+  result[CLIENT_INFO_HEADER] = value
+  return result
+}
+
 export type ResolvedSupabaseClientOptions<SchemaName> = Omit<
   Required<SupabaseClientOptions<SchemaName>>,
   'tracePropagation'
@@ -110,10 +212,14 @@ export function applySettingDefaults<
     global: {
       ...DEFAULT_GLOBAL_OPTIONS,
       ...globalOptions,
-      headers: {
-        ...(DEFAULT_GLOBAL_OPTIONS?.headers ?? {}),
-        ...(globalOptions?.headers ?? {}),
-      },
+      headers: appendClientInfo(
+        {
+          ...(DEFAULT_GLOBAL_OPTIONS?.headers ?? {}),
+          ...(globalOptions?.headers ?? {}),
+        },
+        globalOptions?.headers,
+        globalOptions?.clientInfo ?? {}
+      ),
     },
     tracePropagation: {
       enabled:

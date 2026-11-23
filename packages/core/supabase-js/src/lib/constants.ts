@@ -78,8 +78,10 @@ export function formatClientEnvironment(environment: ClientEnvironment): string[
   return parameters.filter(([, value]) => value).map(([key, value]) => `${key}=${value}`)
 }
 
+export const CLIENT_INFO_HEADER = 'X-Client-Info'
+
 export const DEFAULT_HEADERS = {
-  'X-Client-Info': [
+  [CLIENT_INFO_HEADER]: [
     `supabase-js/${version}`,
     ...formatClientEnvironment(detectClientEnvironment()),
   ].join('; '),

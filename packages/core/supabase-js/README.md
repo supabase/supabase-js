@@ -110,6 +110,19 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishabl
 })
 ```
 
+### Identifying a library built on supabase-js
+
+A library that creates clients for its users can append parameters to the `X-Client-Info` header with `global.clientInfo`, without replacing the SDK's own value:
+
+```js
+const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key', {
+  global: { clientInfo: { via: 'my-library/1.2.0' } },
+})
+// X-Client-Info: supabase-js/<version>; runtime=node; ...; via=my-library/1.2.0
+```
+
+Keys contain only ASCII letters, digits, underscores or hyphens. For example, use `via` for a library's `name/version` and `middleware` for a comma-separated list. Values are trimmed, must not be empty, and are percent-encoded where needed. `createClient` throws on a reserved or invalid key, a value that is not a non-empty string after trimming, or a parameter already in the header (matched case-insensitively). Existing header values are preserved; only the new entries are encoded. SDK-owned keys (`platform`, `platform-version`, `platform-architecture`, `runtime`, `runtime-version`, `framework`, `framework-version`, `features`) are reserved case-insensitively, even when absent from the header. Realtime socket connections are not covered.
+
 ### Distributed Tracing with OpenTelemetry
 
 The Supabase JS SDK can attach W3C/OpenTelemetry trace context headers (`traceparent`, `tracestate`, `baggage`) to outgoing requests, enabling end-to-end request tracing from your client application through Supabase services.
