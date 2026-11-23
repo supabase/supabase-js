@@ -88,6 +88,30 @@ We support Cloudflare Workers runtime environments. Cloudflare Workers provides 
 - **Experimental features**: Features marked as experimental may be removed or changed without notice
 - **Build warnings**: If you see `UNUSED_EXTERNAL_IMPORT` warnings from Vite/Nuxt, see the [supabase-js README](./packages/core/supabase-js/README.md#known-build-warnings) — these are false positives
 
+## Supabase Service Compatibility
+
+The Supabase JavaScript SDK only guarantees compatibility with the latest
+release of each Supabase service, unless a minimum supported version is
+explicitly listed below.
+
+Older service releases are supported on a best-effort basis, but compatibility
+is not guaranteed.
+
+If you self-host Supabase, we recommend upgrading your services to their latest
+releases when upgrading the SDK.
+
+| Service   | SDK package                                              | Server releases                                                            | Lowest supported version |
+| --------- | -------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------ |
+| Auth      | [`@supabase/auth-js`](./packages/core/auth-js)           | [supabase/auth](https://github.com/supabase/auth/releases)                 | Latest release           |
+| Storage   | [`@supabase/storage-js`](./packages/core/storage-js)     | [supabase/storage](https://github.com/supabase/storage/releases)           | Latest release           |
+| Functions | [`@supabase/functions-js`](./packages/core/functions-js) | [supabase/edge-runtime](https://github.com/supabase/edge-runtime/releases) | Latest release           |
+| PostgREST | [`@supabase/postgrest-js`](./packages/core/postgrest-js) | [PostgREST/postgrest](https://github.com/PostgREST/postgrest/releases)     | v12                      |
+| Realtime  | [`@supabase/realtime-js`](./packages/core/realtime-js)   | [supabase/realtime](https://github.com/supabase/realtime/releases)         | Latest release           |
+
+Where a lowest supported version is listed, some features still need a newer
+server version. Those requirements are noted in the API reference for the
+feature.
+
 ## 🚀 Quick Start
 
 ### Installation

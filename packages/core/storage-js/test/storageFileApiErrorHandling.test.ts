@@ -1,5 +1,5 @@
 import { StorageClient } from '../src/index'
-import { StorageError, StorageUnknownError } from '../src/lib/common/errors'
+import { StorageApiError, StorageError, StorageUnknownError } from '../src/lib/common/errors'
 
 // Mock URL and credentials for testing
 const URL = 'http://localhost:8000/storage/v1'
@@ -277,6 +277,101 @@ describe('File API Error Handling', () => {
       )
 
       mockFn.mockRestore()
+    })
+  })
+
+  describe('exists', () => {
+    const mockResponse = (status: number, body: object) =>
+      (global.fetch = jest
+        .fn()
+        .mockImplementation(() => Promise.resolve(new Response(JSON.stringify(body), { status }))))
+
+    it('returns true when the object info is found', async () => {
+      const fetchMock = mockResponse(200, { id: '1', name: 'test.jpg' })
+      const storage = new StorageClient(URL, { apikey: KEY })
+
+      const { data, error } = await storage.from(BUCKET_ID).exists('test.jpg')
+      expect(data).toBe(true)
+      expect(error).toBeNull()
+      expect(fetchMock.mock.calls[0][0]).toBe(`${URL}/object/info/${BUCKET_ID}/test.jpg`)
+    })
+
+    it('returns false for NoSuchKey', async () => {
+      mockResponse(404, {
+        statusCode: '404',
+        error: 'not_found',
+        message: 'Object not found',
+        code: 'NoSuchKey',
+      })
+      const storage = new StorageClient(URL, { apikey: KEY })
+
+      const { data, error } = await storage.from(BUCKET_ID).exists('missing.jpg')
+      expect(data).toBe(false)
+      expect(error).toBeInstanceOf(StorageApiError)
+    })
+
+    it('returns false for a 404 without an error code', async () => {
+      mockResponse(404, { statusCode: '404', error: 'not_found', message: 'Object not found' })
+      const storage = new StorageClient(URL, { apikey: KEY })
+
+      const { data, error } = await storage.from(BUCKET_ID).exists('missing.jpg')
+      expect(data).toBe(false)
+      expect(error).toBeInstanceOf(StorageApiError)
+    })
+
+    it('rethrows InvalidJWT instead of reporting a missing file', async () => {
+      mockResponse(400, {
+        statusCode: '400',
+        error: 'InvalidJWT',
+        message: 'exp claim timestamp check failed',
+        code: 'InvalidJWT',
+      })
+      const storage = new StorageClient(URL, { apikey: KEY })
+
+      await expect(storage.from(BUCKET_ID).exists('test.jpg')).rejects.toMatchObject({
+        status: 400,
+        code: 'InvalidJWT',
+      })
+    })
+
+    it('rethrows NoSuchBucket instead of reporting a missing file', async () => {
+      mockResponse(404, {
+        statusCode: '404',
+        error: 'Bucket not found',
+        message: 'Bucket not found',
+        code: 'NoSuchBucket',
+      })
+      const storage = new StorageClient(URL, { apikey: KEY })
+
+      await expect(storage.from(BUCKET_ID).exists('test.jpg')).rejects.toMatchObject({
+        status: 404,
+        code: 'NoSuchBucket',
+      })
+    })
+
+    it('rethrows network errors', async () => {
+      global.fetch = jest
+        .fn()
+        .mockImplementation(() => Promise.reject(new Error('Network failure')))
+      const storage = new StorageClient(URL, { apikey: KEY })
+
+      await expect(storage.from(BUCKET_ID).exists('test.jpg')).rejects.toBeInstanceOf(
+        StorageUnknownError
+      )
+    })
+
+    it('throws on a missing object when throwOnError is enabled', async () => {
+      mockResponse(404, {
+        statusCode: '404',
+        error: 'not_found',
+        message: 'Object not found',
+        code: 'NoSuchKey',
+      })
+      const storage = new StorageClient(URL, { apikey: KEY })
+
+      await expect(storage.from(BUCKET_ID).throwOnError().exists('missing.jpg')).rejects.toThrow(
+        'Object not found'
+      )
     })
   })
 })

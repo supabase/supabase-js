@@ -65,6 +65,18 @@ const postgrest = new PostgrestClient(REST_URL, {
 })
 ```
 
+## Supabase Service Compatibility
+
+`@supabase/postgrest-js` is compatible with the
+[latest PostgREST release](https://github.com/PostgREST/postgrest/releases) and
+with older releases back to **PostgREST v12**, the lowest supported version.
+
+Releases older than v12 are not supported.
+
+Some features need a newer PostgREST version than v12, for example
+`maxAffected()` needs PostgREST v13. Those requirements are noted in the API
+reference for the feature.
+
 ## Development
 
 This package is part of the [Supabase JavaScript monorepo](https://github.com/supabase/supabase-js). To work on this package:

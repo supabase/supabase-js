@@ -1,10 +1,5 @@
-import {
-  StorageApiError,
-  StorageError,
-  StorageUnknownError,
-  isStorageError,
-} from '../lib/common/errors'
-import { get, head, post, put, remove, Fetch } from '../lib/common/fetch'
+import { StorageApiError, StorageError } from '../lib/common/errors'
+import { get, post, put, remove, Fetch } from '../lib/common/fetch'
 import { setHeader } from '../lib/common/headers'
 import { encodeStoragePath, recursiveToCamel } from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
@@ -24,6 +19,7 @@ import {
   DeleteObjectEntry,
 } from '../lib/types'
 import BlobDownloadBuilder from './BlobDownloadBuilder'
+import { validateStorageUrl } from '../lib/common/url'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 100,
@@ -38,6 +34,13 @@ const DEFAULT_FILE_OPTIONS: FileOptions = {
   cacheControl: '3600',
   contentType: 'text/plain;charset=UTF-8',
   upsert: false,
+}
+
+function mergeFileOptions(fileOptions?: FileOptions): FileOptions {
+  const definedOptions = Object.fromEntries(
+    Object.entries(fileOptions ?? {}).filter(([, value]) => value !== undefined)
+  )
+  return { ...DEFAULT_FILE_OPTIONS, ...definedOptions }
 }
 
 type FileBody =
@@ -89,7 +92,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   > {
     return this.handleOperation(async () => {
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      const options = mergeFileOptions(fileOptions)
       let headers: Record<string, string> = {
         ...this.headers,
         ...(method === 'POST' && { 'x-upsert': String(options.upsert as boolean) }),
@@ -133,10 +136,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
 
       const cleanPath = this._removeEmptyFolders(path)
-      const _path = this._getFinalPath(cleanPath)
       const data = await (method == 'PUT' ? put : post)(
         this.fetch,
-        `${this.url}/object/${_path}`,
+        this._getRequestUrl('object', cleanPath),
         body as object,
         { headers, ...(options?.duplex ? { duplex: options.duplex } : {}) }
       )
@@ -274,14 +276,11 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     fileOptions?: FileOptions
   ) {
     const cleanPath = this._removeEmptyFolders(path)
-    const _path = this._getFinalPath(cleanPath)
-
-    const url = new URL(this.url + `/object/upload/sign/${_path}`)
-    url.searchParams.set('token', token)
-
     return this.handleOperation(async () => {
+      const url = new URL(this._getRequestUrl('object/upload/sign', cleanPath))
+      url.searchParams.set('token', token)
       let body
-      const options = { ...DEFAULT_FILE_OPTIONS, ...fileOptions }
+      const options = mergeFileOptions(fileOptions)
       let headers: Record<string, string> = {
         ...this.headers,
         ...{ 'x-upsert': String(options.upsert as boolean) },
@@ -381,8 +380,6 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      let _path = this._getFinalPath(path)
-
       const headers = { ...this.headers }
 
       if (options?.upsert) {
@@ -391,7 +388,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       const data = await post(
         this.fetch,
-        `${this.url}/object/upload/sign/${_path}`,
+        this._getRequestUrl('object/upload/sign', path),
         {},
         { headers }
       )
@@ -719,8 +716,6 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      let _path = this._getFinalPath(path)
-
       const hasTransform =
         typeof options?.transform === 'object' &&
         options.transform !== null &&
@@ -728,7 +723,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       let data = await post(
         this.fetch,
-        `${this.url}/object/sign/${_path}`,
+        this._getRequestUrl('object/sign', path),
         {
           expiresIn,
           ...(hasTransform ? { transform: options!.transform } : {}),
@@ -925,11 +920,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
 
-    const _path = this._getFinalPath(path)
     const downloadFn = () =>
       get(
         this.fetch,
-        `${this.url}/${renderPath}/${_path}${queryString ? `?${queryString}` : ''}`,
+        this._getRequestUrl(renderPath, path, { queryString }),
         {
           headers: this.headers,
           noResolveJson: true,
@@ -977,7 +971,6 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    const _path = this._getFinalPath(path)
     const query = new URLSearchParams()
     if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
@@ -985,7 +978,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return this.handleOperation(async () => {
       const data = await get(
         this.fetch,
-        `${this.url}/object/info/${_path}${queryString ? `?${queryString}` : ''}`,
+        this._getRequestUrl('object/info', path, { queryString }),
         {
           headers: this.headers,
         }
@@ -997,6 +990,14 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
   /**
    * Checks the existence of a file.
+   *
+   * This reads the object's metadata, so the result is `false` only when Storage reports that the
+   * key does not exist: an error with code `NoSuchKey`, or an HTTP 404 with no error code. In that
+   * case `data` is `false` and `error` holds the original error.
+   *
+   * Every other failure throws instead of returning `false`, including an invalid or expired JWT
+   * (`InvalidJWT`), a missing bucket (`NoSuchBucket`) and network errors. With `throwOnError()`,
+   * a missing key throws as well.
    *
    * @category Storage
    * @subcategory File Buckets
@@ -1021,34 +1022,22 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    const _path = this._getFinalPath(path)
+    // Reads the object info rather than sending a HEAD request: a HEAD response has no body,
+    // so an invalid JWT or a missing bucket cannot be told apart from a missing object.
+    const { error } = await this.info(path)
 
-    try {
-      await head(this.fetch, `${this.url}/object/${_path}`, {
-        headers: this.headers,
-      })
-
+    if (!error) {
       return { data: true, error: null }
-    } catch (error) {
-      if (this.shouldThrowOnError) {
-        throw error
-      }
-      if (isStorageError(error)) {
-        // HEAD requests produce StorageApiError (via handleError) or StorageUnknownError (legacy)
-        const status =
-          error instanceof StorageApiError
-            ? error.status
-            : error instanceof StorageUnknownError
-              ? (error.originalError as { status: number })?.status
-              : undefined
-
-        if (status !== undefined && [400, 404].includes(status)) {
-          return { data: false, error }
-        }
-      }
-
-      throw error
     }
+
+    if (
+      error instanceof StorageApiError &&
+      (error.code === 'NoSuchKey' || (error.status === 404 && error.code === undefined))
+    ) {
+      return { data: false, error }
+    }
+
+    throw error
   }
 
   /**
@@ -1263,7 +1252,6 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      const _path = encodeStoragePath(this._getFinalPath(path))
       const query = new URLSearchParams()
       if (options?.transformations) {
         query.set('transformations', 'true')
@@ -1272,7 +1260,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       return await remove(
         this.fetch,
-        `${this.url}/cdn/${_path}${queryString ? `?${queryString}` : ''}`,
+        this._getRequestUrl('cdn', path, { encodePath: true, queryString }),
         {},
         { headers: this.headers },
         parameters
@@ -1569,6 +1557,29 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       return Buffer.from(data).toString('base64')
     }
     return btoa(data)
+  }
+
+  /** Builds a request URL and checks that it stays within the intended Storage route and bucket. */
+  private _getRequestUrl(
+    route: string,
+    path: string,
+    { encodePath = false, queryString = '' }: { encodePath?: boolean; queryString?: string } = {}
+  ) {
+    const finalPath = this._getFinalPath(path)
+    // Preserve each endpoint's existing encoding, including pre-encoded bucket
+    // names. The bucket is configured by the caller, independently of the key.
+    const bucket = encodePath ? encodeStoragePath(String(this.bucketId)) : this.bucketId
+    const url = `${this.url}/${route}/${encodePath ? encodeStoragePath(finalPath) : finalPath}${queryString ? `?${queryString}` : ''}`
+    const routeUrl = new URL(`${this.url}/${route}/`)
+    const requestUrl = validateStorageUrl(url, routeUrl)
+    const bucketUrl = new URL(`${this.url}/${route}/${bucket}/`)
+    // Nested bucket arguments are existing shorthand for object folders. Keep
+    // paths within the actual bucket, rather than requiring that folder prefix.
+    if (bucketUrl.pathname.startsWith(routeUrl.pathname)) {
+      const bucketSegment = bucketUrl.pathname.slice(routeUrl.pathname.length).split('/')[0]
+      if (bucketSegment) bucketUrl.pathname = `${routeUrl.pathname}${bucketSegment}/`
+    }
+    return validateStorageUrl(requestUrl, bucketUrl)
   }
 
   private _getFinalPath(path: string) {

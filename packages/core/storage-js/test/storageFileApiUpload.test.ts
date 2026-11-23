@@ -70,6 +70,18 @@ describe.each(['upload', 'update', 'signed'] as const)(
         ],
       ]
 
+      test('uses defaults when file options are explicitly undefined', async () => {
+        const request = await upload(bytes, {
+          cacheControl: undefined,
+          contentType: undefined,
+          upsert: undefined,
+        })
+
+        expect(request.headers.get('cache-control')).toBe('max-age=3600')
+        expect(request.headers.get('content-type')).toBe('text/plain;charset=UTF-8')
+        expect(request.headers.get('x-upsert')).toBe(operation === 'update' ? null : 'false')
+      })
+
       test.each(bodies)('preserves gzip bytes from %s', async (_, body) => {
         const compressedBytes = gzipSync(bytes)
         const request = await upload(body(compressedBytes), {
@@ -132,6 +144,11 @@ describe.each(['upload', 'update', 'signed'] as const)(
       expect(file.type).toBe('application/octet-stream')
       expect(Buffer.from(await file.arrayBuffer())).toEqual(bytes)
       expect(body.has('contentEncoding')).toBe(false)
+    })
+
+    test('uses default cacheControl for multipart bodies when undefined', async () => {
+      const request = await upload(new Blob([bytes]), { cacheControl: undefined })
+      await expectMultipart(request, { cacheControl: '3600' })
     })
 
     test.each(['Blob', 'File', 'FormData'] as const)(

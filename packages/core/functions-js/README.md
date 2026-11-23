@@ -43,6 +43,16 @@
 >
 > Node.js 20 reached end-of-life on April 30, 2026. As announced in [our deprecation notice](https://github.com/orgs/supabase/discussions/45715), support for Node.js 20 was dropped in v2.110.0.
 
+## Supabase Service Compatibility
+
+`@supabase/functions-js` only guarantees compatibility with the
+[latest Supabase Edge Runtime release](https://github.com/supabase/edge-runtime/releases).
+Older Supabase Edge Runtime releases are supported on a best-effort basis, but
+compatibility is not guaranteed.
+
+If you self-host the Supabase Edge Runtime, we recommend upgrading to the latest
+release when upgrading this SDK.
+
 ## Quick Start
 
 ### Installation
