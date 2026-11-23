@@ -1,4 +1,4 @@
-import { isStorageError } from '../lib/common/errors'
+import { isStorageError, StorageUnknownError } from '../lib/common/errors'
 import { DownloadResult } from '../lib/types'
 import StreamDownloadBuilder from './StreamDownloadBuilder'
 
@@ -43,8 +43,29 @@ export default class BlobDownloadBuilder implements Promise<DownloadResult<Blob>
     try {
       const result = await this.downloadFn()
 
+      let data: Blob
+      try {
+        data = await result.blob()
+      } catch (error) {
+        // The headers arrived, but the body failed while being read (connection
+        // reset, caller abort). Surface it like any other transport failure, which
+        // the fetch layer already reports as a StorageUnknownError, instead of
+        // letting the raw TypeError/AbortError reject the promise.
+        if (this.shouldThrowOnError) {
+          throw error
+        }
+
+        return {
+          data: null,
+          error: new StorageUnknownError(
+            error instanceof Error ? error.message : String(error),
+            error
+          ),
+        }
+      }
+
       return {
-        data: await result.blob(),
+        data,
         error: null,
       }
     } catch (error) {
