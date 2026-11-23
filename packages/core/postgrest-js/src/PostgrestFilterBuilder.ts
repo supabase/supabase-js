@@ -2201,14 +2201,6 @@ export default class PostgrestFilterBuilder<
   }
 }
 
-/**
- * Serializes one element of a Postgres array literal, mirroring PostgREST's own
- * `pgBuildArrayLiteral`: every string element is double quoted (with `\` and `"`
- * escaped) so the server reads it as a single text element. Quoting every string
- * also preserves an empty string and the literal word `null`, which Postgres
- * reads back as SQL NULL when they are emitted unquoted. Non-string values are
- * emitted as is.
- */
 function toPostgrestArrayLiteral(element: unknown): string {
   if (typeof element === 'string') {
     return `"${element.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
