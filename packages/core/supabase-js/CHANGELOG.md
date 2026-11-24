@@ -1,3 +1,17 @@
+## 2.119.2 (2026-11-19)
+
+This was a version bump only for @supabase/supabase-js to align it with other projects, there were no code changes.
+
+## 2.119.1 (2026-11-18)
+
+### 🩹 Fixes
+
+- **supabase:** report runtime, platform and framework in X-Client-Info per the header spec ([#2837](https://github.com/supabase/supabase-js/pull/2837))
+
+### ❤️ Thank You
+
+- Lukas Klingsbo
+
 ## 2.119.0 (2026-11-04)
 
 ### 🚀 Features
