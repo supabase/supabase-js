@@ -79,7 +79,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     method: 'POST' | 'PUT',
     path: string,
     fileBody: FileBody,
-    fileOptions?: FileOptions
+    fileOptions?: FileOptions,
+    parameters?: FetchParameters
   ): Promise<
     | {
         data: { id: string; path: string; fullPath: string }
@@ -140,7 +141,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         this.fetch,
         this._getRequestUrl('object', cleanPath),
         body as object,
-        { headers, ...(options?.duplex ? { duplex: options.duplex } : {}) }
+        { headers, ...(options?.duplex ? { duplex: options.duplex } : {}) },
+        parameters
       )
 
       return { path: cleanPath, id: data.Id, fullPath: data.Key }
@@ -155,6 +157,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param path The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
    * @param fileBody The body of the file to be stored in the bucket.
    * @param fileOptions Optional file upload options including cacheControl, contentType, contentEncoding, upsert, and metadata.
+   * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns Promise with response containing file path, id, and fullPath or error
    *
    * @example Upload file
@@ -192,6 +195,17 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    *   })
    * ```
    *
+   * @example Upload with abort signal
+   * ```js
+   * const controller = new AbortController()
+   * cancelButton.onclick = () => controller.abort()
+   *
+   * const { data, error } = await supabase
+   *   .storage
+   *   .from('avatars')
+   *   .upload('public/avatar1.png', avatarFile, {}, { signal: controller.signal })
+   * ```
+   *
    * @example Handling errors
    * ```js
    * const { data, error } = await supabase
@@ -217,7 +231,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
   async upload(
     path: string,
     fileBody: FileBody,
-    fileOptions?: FileOptions
+    fileOptions?: FileOptions,
+    parameters?: FetchParameters
   ): Promise<
     | {
         data: { id: string; path: string; fullPath: string }
@@ -228,7 +243,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    return this.uploadOrUpdate('POST', path, fileBody, fileOptions)
+    return this.uploadOrUpdate('POST', path, fileBody, fileOptions, parameters)
   }
 
   /**
@@ -242,6 +257,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * @param fileOptions HTTP headers (cacheControl, contentType, contentEncoding, etc.).
    * **Note:** The `upsert` option has no effect here. To enable upsert behavior,
    * pass `{ upsert: true }` when calling `createSignedUploadUrl()` instead.
+   * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns Promise with response containing file path and fullPath or error
    *
    * @example Upload to a signed URL
@@ -273,7 +289,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     path: string,
     token: string,
     fileBody: FileBody,
-    fileOptions?: FileOptions
+    fileOptions?: FileOptions,
+    parameters?: FetchParameters
   ) {
     const cleanPath = this._removeEmptyFolders(path)
     return this.handleOperation(async () => {
@@ -320,10 +337,13 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         }
       }
 
-      const data = await put(this.fetch, url.toString(), body as object, {
-        headers,
-        ...(options?.duplex ? { duplex: options.duplex } : {}),
-      })
+      const data = await put(
+        this.fetch,
+        url.toString(),
+        body as object,
+        { headers, ...(options?.duplex ? { duplex: options.duplex } : {}) },
+        parameters
+      )
 
       return { path: cleanPath, fullPath: data.Key }
     })
@@ -416,6 +436,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
    * **Note:** The `upsert` option has no effect here. `update()` always replaces the
    * file at the given path, so the `x-upsert` header is not sent. To control upsert
    * behavior, use `upload()` instead.
+   * @param parameters Additional fetch parameters like signal for cancellation. Supports standard fetch options including cache control.
    * @returns Promise with response containing file path, id, and fullPath or error
    *
    * @example Update file
@@ -473,7 +494,8 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       | ReadableStream<Uint8Array>
       | URLSearchParams
       | string,
-    fileOptions?: FileOptions
+    fileOptions?: FileOptions,
+    parameters?: FetchParameters
   ): Promise<
     | {
         data: { id: string; path: string; fullPath: string }
@@ -484,7 +506,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    return this.uploadOrUpdate('PUT', path, fileBody, fileOptions)
+    return this.uploadOrUpdate('PUT', path, fileBody, fileOptions, parameters)
   }
 
   /**
