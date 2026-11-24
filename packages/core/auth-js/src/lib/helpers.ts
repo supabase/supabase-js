@@ -668,3 +668,16 @@ export function insecureUserWarningProxy(user: User, suppressWarningRef: { value
 export function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
+
+// Custom provider identifiers must start with `custom:` (Supabase Auth rejects
+// any other value). `/`, `\`, `?` and `#` are rejected so the identifier
+// stays a single path segment and cannot change the request target.
+const CUSTOM_PROVIDER_IDENTIFIER_REGEX = /^custom:[^/\\?#]*$/
+
+export function validateCustomProviderIdentifier(str: string) {
+  if (typeof str !== 'string' || !CUSTOM_PROVIDER_IDENTIFIER_REGEX.test(str)) {
+    throw new Error(
+      "@supabase/auth-js: Expected parameter to be a custom provider identifier ('custom:<name>') without '/', '\\', '?' or '#'"
+    )
+  }
+}
