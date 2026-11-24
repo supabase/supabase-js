@@ -15,9 +15,10 @@ import {
 } from '../lib/types'
 
 /**
- * @hidden
  * Base implementation for vector data operations.
  * Use {@link VectorIndexScope} via `supabase.storage.vectors.from('bucket').index('idx')` instead.
+ *
+ * @hidden Internal base class.
  */
 export default class VectorDataApi extends BaseApiClient<StorageError> {
   /** Creates a new VectorDataApi instance */

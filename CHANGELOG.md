@@ -1,3 +1,23 @@
+## 2.119.2 (2026-11-19)
+
+### 🩹 Fixes
+
+- **storage:** validate object request URL boundaries ([#2878](https://github.com/supabase/supabase-js/pull/2878))
+
+### ❤️ Thank You
+
+- Yann Braga
+
+## 2.119.1 (2026-11-18)
+
+### 🩹 Fixes
+
+- **supabase:** report runtime, platform and framework in X-Client-Info per the header spec ([#2837](https://github.com/supabase/supabase-js/pull/2837))
+
+### ❤️ Thank You
+
+- Lukas Klingsbo
+
 ## 2.119.0 (2026-11-04)
 
 ### 🚀 Features
