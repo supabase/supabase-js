@@ -19,6 +19,7 @@ import {
   DeleteObjectEntry,
 } from '../lib/types'
 import BlobDownloadBuilder from './BlobDownloadBuilder'
+import { validateStorageUrl } from '../lib/common/url'
 
 const DEFAULT_SEARCH_OPTIONS = {
   limit: 100,
@@ -135,10 +136,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
 
       const cleanPath = this._removeEmptyFolders(path)
-      const _path = this._getFinalPath(cleanPath)
       const data = await (method == 'PUT' ? put : post)(
         this.fetch,
-        `${this.url}/object/${_path}`,
+        this._getRequestUrl('object', cleanPath),
         body as object,
         { headers, ...(options?.duplex ? { duplex: options.duplex } : {}) }
       )
@@ -276,12 +276,9 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     fileOptions?: FileOptions
   ) {
     const cleanPath = this._removeEmptyFolders(path)
-    const _path = this._getFinalPath(cleanPath)
-
-    const url = new URL(this.url + `/object/upload/sign/${_path}`)
-    url.searchParams.set('token', token)
-
     return this.handleOperation(async () => {
+      const url = new URL(this._getRequestUrl('object/upload/sign', cleanPath))
+      url.searchParams.set('token', token)
       let body
       const options = mergeFileOptions(fileOptions)
       let headers: Record<string, string> = {
@@ -383,8 +380,6 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      let _path = this._getFinalPath(path)
-
       const headers = { ...this.headers }
 
       if (options?.upsert) {
@@ -393,7 +388,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       const data = await post(
         this.fetch,
-        `${this.url}/object/upload/sign/${_path}`,
+        this._getRequestUrl('object/upload/sign', path),
         {},
         { headers }
       )
@@ -721,8 +716,6 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      let _path = this._getFinalPath(path)
-
       const hasTransform =
         typeof options?.transform === 'object' &&
         options.transform !== null &&
@@ -730,7 +723,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       let data = await post(
         this.fetch,
-        `${this.url}/object/sign/${_path}`,
+        this._getRequestUrl('object/sign', path),
         {
           expiresIn,
           ...(hasTransform ? { transform: options!.transform } : {}),
@@ -927,11 +920,10 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
 
-    const _path = this._getFinalPath(path)
     const downloadFn = () =>
       get(
         this.fetch,
-        `${this.url}/${renderPath}/${_path}${queryString ? `?${queryString}` : ''}`,
+        this._getRequestUrl(renderPath, path, { queryString }),
         {
           headers: this.headers,
           noResolveJson: true,
@@ -979,7 +971,6 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
         error: StorageError
       }
   > {
-    const _path = this._getFinalPath(path)
     const query = new URLSearchParams()
     if (options?.versionId != null) query.set('versionId', String(options.versionId))
     const queryString = query.toString()
@@ -987,7 +978,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
     return this.handleOperation(async () => {
       const data = await get(
         this.fetch,
-        `${this.url}/object/info/${_path}${queryString ? `?${queryString}` : ''}`,
+        this._getRequestUrl('object/info', path, { queryString }),
         {
           headers: this.headers,
         }
@@ -1261,7 +1252,6 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       }
   > {
     return this.handleOperation(async () => {
-      const _path = encodeStoragePath(this._getFinalPath(path))
       const query = new URLSearchParams()
       if (options?.transformations) {
         query.set('transformations', 'true')
@@ -1270,7 +1260,7 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
 
       return await remove(
         this.fetch,
-        `${this.url}/cdn/${_path}${queryString ? `?${queryString}` : ''}`,
+        this._getRequestUrl('cdn', path, { encodePath: true, queryString }),
         {},
         { headers: this.headers },
         parameters
@@ -1567,6 +1557,29 @@ export default class StorageFileApi extends BaseApiClient<StorageError> {
       return Buffer.from(data).toString('base64')
     }
     return btoa(data)
+  }
+
+  /** Builds a request URL and checks that it stays within the intended Storage route and bucket. */
+  private _getRequestUrl(
+    route: string,
+    path: string,
+    { encodePath = false, queryString = '' }: { encodePath?: boolean; queryString?: string } = {}
+  ) {
+    const finalPath = this._getFinalPath(path)
+    // Preserve each endpoint's existing encoding, including pre-encoded bucket
+    // names. The bucket is configured by the caller, independently of the key.
+    const bucket = encodePath ? encodeStoragePath(String(this.bucketId)) : this.bucketId
+    const url = `${this.url}/${route}/${encodePath ? encodeStoragePath(finalPath) : finalPath}${queryString ? `?${queryString}` : ''}`
+    const routeUrl = new URL(`${this.url}/${route}/`)
+    const requestUrl = validateStorageUrl(url, routeUrl)
+    const bucketUrl = new URL(`${this.url}/${route}/${bucket}/`)
+    // Nested bucket arguments are existing shorthand for object folders. Keep
+    // paths within the actual bucket, rather than requiring that folder prefix.
+    if (bucketUrl.pathname.startsWith(routeUrl.pathname)) {
+      const bucketSegment = bucketUrl.pathname.slice(routeUrl.pathname.length).split('/')[0]
+      if (bucketSegment) bucketUrl.pathname = `${routeUrl.pathname}${bucketSegment}/`
+    }
+    return validateStorageUrl(requestUrl, bucketUrl)
   }
 
   private _getFinalPath(path: string) {
