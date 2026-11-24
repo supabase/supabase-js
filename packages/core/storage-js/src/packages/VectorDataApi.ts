@@ -4,6 +4,7 @@ import { Fetch, vectorsApi } from '../lib/common/fetch'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   ApiResponse,
+  VectorFetchParameters,
   PutVectorsOptions,
   GetVectorsOptions,
   GetVectorsResponse,
@@ -29,31 +30,48 @@ export default class VectorDataApi extends BaseApiClient<StorageError> {
   }
 
   /** Inserts or updates vectors in batch (1-500 per request) */
-  async putVectors(options: PutVectorsOptions): Promise<ApiResponse<undefined>> {
+  async putVectors(
+    options: PutVectorsOptions,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<undefined>> {
     // Validate batch size
     if (options.vectors.length < 1 || options.vectors.length > 500) {
       throw new Error('Vector batch size must be between 1 and 500 items')
     }
 
     return this.handleOperation(async () => {
-      const data = await vectorsApi.post(this.fetch, `${this.url}/PutVectors`, options, {
-        headers: this.headers,
-      })
+      const data = await vectorsApi.post(
+        this.fetch,
+        `${this.url}/PutVectors`,
+        options,
+        { headers: this.headers },
+        parameters
+      )
       return data || {}
     })
   }
 
   /** Retrieves vectors by their keys in batch */
-  async getVectors(options: GetVectorsOptions): Promise<ApiResponse<GetVectorsResponse>> {
+  async getVectors(
+    options: GetVectorsOptions,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<GetVectorsResponse>> {
     return this.handleOperation(async () => {
-      return await vectorsApi.post(this.fetch, `${this.url}/GetVectors`, options, {
-        headers: this.headers,
-      })
+      return await vectorsApi.post(
+        this.fetch,
+        `${this.url}/GetVectors`,
+        options,
+        { headers: this.headers },
+        parameters
+      )
     })
   }
 
   /** Lists vectors in an index with pagination */
-  async listVectors(options: ListVectorsOptions): Promise<ApiResponse<ListVectorsResponse>> {
+  async listVectors(
+    options: ListVectorsOptions,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<ListVectorsResponse>> {
     // Validate segment configuration
     if (options.segmentCount !== undefined) {
       if (options.segmentCount < 1 || options.segmentCount > 16) {
@@ -67,32 +85,50 @@ export default class VectorDataApi extends BaseApiClient<StorageError> {
     }
 
     return this.handleOperation(async () => {
-      return await vectorsApi.post(this.fetch, `${this.url}/ListVectors`, options, {
-        headers: this.headers,
-      })
+      return await vectorsApi.post(
+        this.fetch,
+        `${this.url}/ListVectors`,
+        options,
+        { headers: this.headers },
+        parameters
+      )
     })
   }
 
   /** Queries for similar vectors using approximate nearest neighbor search */
-  async queryVectors(options: QueryVectorsOptions): Promise<ApiResponse<QueryVectorsResponse>> {
+  async queryVectors(
+    options: QueryVectorsOptions,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<QueryVectorsResponse>> {
     return this.handleOperation(async () => {
-      return await vectorsApi.post(this.fetch, `${this.url}/QueryVectors`, options, {
-        headers: this.headers,
-      })
+      return await vectorsApi.post(
+        this.fetch,
+        `${this.url}/QueryVectors`,
+        options,
+        { headers: this.headers },
+        parameters
+      )
     })
   }
 
   /** Deletes vectors by their keys in batch (1-500 per request) */
-  async deleteVectors(options: DeleteVectorsOptions): Promise<ApiResponse<undefined>> {
+  async deleteVectors(
+    options: DeleteVectorsOptions,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<undefined>> {
     // Validate batch size
     if (options.keys.length < 1 || options.keys.length > 500) {
       throw new Error('Keys batch size must be between 1 and 500 items')
     }
 
     return this.handleOperation(async () => {
-      const data = await vectorsApi.post(this.fetch, `${this.url}/DeleteVectors`, options, {
-        headers: this.headers,
-      })
+      const data = await vectorsApi.post(
+        this.fetch,
+        `${this.url}/DeleteVectors`,
+        options,
+        { headers: this.headers },
+        parameters
+      )
       return data || {}
     })
   }

@@ -4,6 +4,7 @@ import { Fetch, vectorsApi } from '../lib/common/fetch'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   ApiResponse,
+  VectorFetchParameters,
   VectorBucket,
   ListVectorBucketsOptions,
   ListVectorBucketsResponse,
@@ -24,49 +25,66 @@ export default class VectorBucketApi extends BaseApiClient<StorageError> {
   }
 
   /** Creates a new vector bucket */
-  async createBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
+  async createBucket(
+    vectorBucketName: string,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<undefined>> {
     return this.handleOperation(async () => {
       const data = await vectorsApi.post(
         this.fetch,
         `${this.url}/CreateVectorBucket`,
         { vectorBucketName },
-        { headers: this.headers }
+        { headers: this.headers },
+        parameters
       )
       return data || {}
     })
   }
 
   /** Retrieves metadata for a specific vector bucket */
-  async getBucket(vectorBucketName: string): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
+  async getBucket(
+    vectorBucketName: string,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
     return this.handleOperation(async () => {
       return await vectorsApi.post(
         this.fetch,
         `${this.url}/GetVectorBucket`,
         { vectorBucketName },
-        { headers: this.headers }
+        { headers: this.headers },
+        parameters
       )
     })
   }
 
   /** Lists vector buckets with optional filtering and pagination */
   async listBuckets(
-    options: ListVectorBucketsOptions = {}
+    options: ListVectorBucketsOptions = {},
+    parameters?: VectorFetchParameters
   ): Promise<ApiResponse<ListVectorBucketsResponse>> {
     return this.handleOperation(async () => {
-      return await vectorsApi.post(this.fetch, `${this.url}/ListVectorBuckets`, options, {
-        headers: this.headers,
-      })
+      return await vectorsApi.post(
+        this.fetch,
+        `${this.url}/ListVectorBuckets`,
+        options,
+        { headers: this.headers },
+        parameters
+      )
     })
   }
 
   /** Deletes a vector bucket (must be empty first) */
-  async deleteBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
+  async deleteBucket(
+    vectorBucketName: string,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<undefined>> {
     return this.handleOperation(async () => {
       const data = await vectorsApi.post(
         this.fetch,
         `${this.url}/DeleteVectorBucket`,
         { vectorBucketName },
-        { headers: this.headers }
+        { headers: this.headers },
+        parameters
       )
       return data || {}
     })

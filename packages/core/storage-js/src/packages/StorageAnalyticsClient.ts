@@ -4,7 +4,7 @@ import { StorageError } from '../lib/common/errors'
 import { Fetch, get, post, remove } from '../lib/common/fetch'
 import { isValidBucketName } from '../lib/common/helpers'
 import BaseApiClient from '../lib/common/BaseApiClient'
-import { AnalyticBucket } from '../lib/types'
+import { AnalyticBucket, FetchParameters } from '../lib/types'
 
 type WrapAsyncMethod<T> = T extends (...args: infer A) => Promise<infer R>
   ? (...args: A) => Promise<{ data: R; error: null } | { data: null; error: IcebergError }>
@@ -64,6 +64,7 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    * @category Storage
    * @subcategory Analytics Buckets
    * @param name A unique name for the bucket you are creating
+   * @param parameters Additional fetch parameters like signal for cancellation
    * @returns Promise with response containing newly created analytics bucket or error
    *
    * @example Create analytics bucket
@@ -92,7 +93,10 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    * - Creates a new analytics bucket using Iceberg tables
    * - Analytics buckets are optimized for analytical queries and data processing
    */
-  async createBucket(name: string): Promise<
+  async createBucket(
+    name: string,
+    parameters?: FetchParameters
+  ): Promise<
     | {
         data: AnalyticBucket
         error: null
@@ -103,7 +107,13 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
       }
   > {
     return this.handleOperation(async () => {
-      return await post(this.fetch, `${this.url}/bucket`, { name }, { headers: this.headers })
+      return await post(
+        this.fetch,
+        `${this.url}/bucket`,
+        { name },
+        { headers: this.headers },
+        parameters
+      )
     })
   }
 
@@ -123,6 +133,7 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    * @param options.sortColumn Column to sort by ('name', 'created_at', 'updated_at')
    * @param options.sortOrder Sort order ('asc' or 'desc')
    * @param options.search Search term to filter bucket names
+   * @param parameters Additional fetch parameters like signal for cancellation
    * @returns Promise with response containing array of analytics buckets or error
    *
    * @example List analytics buckets
@@ -158,13 +169,16 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    * - Retrieves the details of all Analytics Storage buckets within an existing project
    * - Only returns buckets of type 'ANALYTICS'
    */
-  async listBuckets(options?: {
-    limit?: number
-    offset?: number
-    sortColumn?: 'name' | 'created_at' | 'updated_at'
-    sortOrder?: 'asc' | 'desc'
-    search?: string
-  }): Promise<
+  async listBuckets(
+    options?: {
+      limit?: number
+      offset?: number
+      sortColumn?: 'name' | 'created_at' | 'updated_at'
+      sortOrder?: 'asc' | 'desc'
+      search?: string
+    },
+    parameters?: FetchParameters
+  ): Promise<
     | {
         data: AnalyticBucket[]
         error: null
@@ -186,7 +200,7 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
       const queryString = queryParams.toString()
       const url = queryString ? `${this.url}/bucket?${queryString}` : `${this.url}/bucket`
 
-      return await get(this.fetch, url, { headers: this.headers })
+      return await get(this.fetch, url, { headers: this.headers }, parameters)
     })
   }
 
@@ -202,6 +216,7 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    * @category Storage
    * @subcategory Analytics Buckets
    * @param bucketName The unique identifier of the bucket you would like to delete
+   * @param parameters Additional fetch parameters like signal for cancellation
    * @returns Promise with response containing success message or error
    *
    * @example Delete analytics bucket
@@ -225,7 +240,10 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
    * @remarks
    * - Deletes an analytics bucket
    */
-  async deleteBucket(bucketName: string): Promise<
+  async deleteBucket(
+    bucketName: string,
+    parameters?: FetchParameters
+  ): Promise<
     | {
         data: { message: string }
         error: null
@@ -240,7 +258,8 @@ export default class StorageAnalyticsClient extends BaseApiClient<StorageError> 
         this.fetch,
         `${this.url}/bucket/${bucketName}`,
         {},
-        { headers: this.headers }
+        { headers: this.headers },
+        parameters
       )
     })
   }
