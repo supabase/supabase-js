@@ -63,7 +63,8 @@ export function _resetTopLevelSchemaWarning(): void {
 
 const isClientInfoHeader = (name: string) => name.toLowerCase() === CLIENT_INFO_HEADER.toLowerCase()
 
-// SDK-owned metadata is reserved even when this environment does not emit it.
+// The parameters the SDK sets itself, listed in the spec (https://github.com/supabase/sdk/blob/main/packages/capability-matrix/specs/client/observability/client_info.md).
+// They are reserved even when this environment does not emit them.
 const RESERVED_CLIENT_INFO_KEYS = new Set([
   'platform',
   'platform-version',

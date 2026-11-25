@@ -260,13 +260,8 @@ export type SupabaseClientOptions<SchemaName> = {
      * Appends metadata to `X-Client-Info` without replacing its existing value.
      * For example: `{ via: 'my-lib/1.2.0', middleware: 'oauth-protected-resource' }`.
      *
-     * Keys must match `^[A-Za-z0-9_-]+$`. SDK-owned keys are reserved:
-     * `platform`, `platform-version`, `platform-architecture`, `runtime`,
-     * `runtime-version`, `framework`, `framework-version`, and `features`.
-     * Reserved keys and duplicates are checked case-insensitively.
-     *
-     * Values are trimmed and must be non-empty strings. Semicolons, percent signs
-     * and characters outside printable ASCII are UTF-8 percent-encoded.
+     * The key and value rules, including which keys are reserved, are defined in the
+     * [spec](https://github.com/supabase/sdk/blob/main/packages/capability-matrix/specs/client/observability/client_info.md).
      * Invalid entries throw when the client is created.
      */
     clientInfo?: Record<string, string>

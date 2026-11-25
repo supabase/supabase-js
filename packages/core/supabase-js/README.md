@@ -121,7 +121,7 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishabl
 // X-Client-Info: supabase-js/<version>; runtime=node; ...; via=my-library/1.2.0
 ```
 
-Keys contain only ASCII letters, digits, underscores or hyphens. For example, use `via` for a library's `name/version` and `middleware` for a comma-separated list. Values are trimmed, must not be empty, and are percent-encoded where needed. `createClient` throws on a reserved or invalid key, a value that is not a non-empty string after trimming, or a parameter already in the header (matched case-insensitively). Existing header values are preserved; only the new entries are encoded. SDK-owned keys (`platform`, `platform-version`, `platform-architecture`, `runtime`, `runtime-version`, `framework`, `framework-version`, `features`) are reserved case-insensitively, even when absent from the header. Realtime socket connections are not covered.
+The key and value rules are defined in the [spec](https://github.com/supabase/sdk/blob/main/packages/capability-matrix/specs/client/observability/client_info.md). `createClient` throws on an invalid entry. Realtime socket connections are not covered.
 
 ### Distributed Tracing with OpenTelemetry
 
