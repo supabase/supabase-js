@@ -118,6 +118,57 @@ describe('channel', () => {
     expect(channel2).not.toBe(channel1)
   })
 
+  test('creates a fresh channel while the previous one is still leaving', async () => {
+    const channel1 = testSetup.client.channel('topic').subscribe()
+    await waitForChannelSubscribed(channel1)
+
+    const removal = testSetup.client.removeChannel(channel1)
+    const channel2 = testSetup.client.channel('topic')
+
+    expect(channel2).not.toBe(channel1)
+    expect(testSetup.client.getChannels()).toEqual([channel2])
+
+    await removal
+
+    // channel1 closing must not remove channel2, which shares its topic
+    expect(testSetup.client.getChannels()).toEqual([channel2])
+  })
+
+  test('warns when an existing channel is requested with different params', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const channel = testSetup.client.channel('topic', { config: { private: true } })
+    const again = testSetup.client.channel('topic', { config: { private: false } })
+
+    expect(again).toBe(channel)
+    expect(again.params.config.private).toBe(true)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain("channel('topic')")
+
+    warn.mockRestore()
+  })
+
+  test('does not warn when an existing channel is requested with the same or no params', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    testSetup.client.channel('topic', { config: { private: true, broadcast: { self: true } } })
+    testSetup.client.channel('topic', { config: { private: true, broadcast: { self: true } } })
+    testSetup.client.channel('topic', {
+      config: { private: true, broadcast: { self: true, ack: false } },
+    })
+    testSetup.client.channel('topic')
+    // supabase-js passes `{ config: {} }` when the caller gives no params
+    testSetup.client.channel('topic', { config: {} })
+
+    testSetup.client.channel('other')
+    testSetup.client.channel('other', { config: { broadcast: { self: false } } })
+    testSetup.client.channel('other', { config: { presence: { key: '' } } })
+
+    expect(warn).not.toHaveBeenCalled()
+
+    warn.mockRestore()
+  })
+
   test.each([
     ['ok', 'ok', 0],
     ['timeout', 'timed out', 0],

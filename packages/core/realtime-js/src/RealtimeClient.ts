@@ -12,7 +12,7 @@ import {
 
 import Serializer from './lib/serializer'
 import { httpEndpointURL } from './lib/transformers'
-import RealtimeChannel from './RealtimeChannel'
+import RealtimeChannel, { normalizeChannelConfig } from './RealtimeChannel'
 import type { RealtimeChannelOptions } from './RealtimeChannel'
 import SocketAdapter from './phoenix/socketAdapter'
 import type {
@@ -377,7 +377,23 @@ export default class RealtimeClient {
    * @category Realtime
    */
   async removeChannel(channel: RealtimeChannel): Promise<RealtimeRemoveChannelResponse> {
-    const status = await channel.unsubscribe()
+    const leave = channel.unsubscribe()
+    // Drop the channel now rather than when the server acknowledges the leave, so a
+    // `channel(topic)` call made in the meantime builds a fresh channel instead of
+    // returning this one.
+    this.channels = this.channels.filter((c) => c !== channel)
+    const status = await leave
+
+    if (status === 'error') {
+      // The server refused the leave, so the channel is still joined. Keep tracking it,
+      // unless a new channel for the same topic was created in the meantime: then tear
+      // this one down so both don't receive the topic's messages.
+      if (this.channels.some((c) => c.topic === channel.topic)) {
+        channel.teardown()
+      } else {
+        this.channels.push(channel)
+      }
+    }
 
     if (status === 'ok') {
       channel.teardown()
@@ -464,23 +480,37 @@ export default class RealtimeClient {
    *
    * Topics are automatically prefixed with `realtime:` to match the Realtime service.
    * If a channel with the same topic already exists it will be returned instead of creating
-   * a duplicate connection.
+   * a duplicate connection. The existing channel keeps the params it was created with; a
+   * warning is logged when the params passed here differ from them.
    *
    * @category Realtime
    */
-  channel(topic: string, params: RealtimeChannelOptions = { config: {} }): RealtimeChannel {
+  channel(topic: string, params?: RealtimeChannelOptions): RealtimeChannel {
     const realtimeTopic = `realtime:${topic}`
     const exists = this.getChannels().find((c: RealtimeChannel) => c.topic === realtimeTopic)
 
     if (!exists) {
-      const chan = new RealtimeChannel(`realtime:${topic}`, params, this)
+      const chan = new RealtimeChannel(realtimeTopic, params ?? { config: {} }, this)
       this._cancelPendingDisconnect()
       this.channels.push(chan)
 
       return chan
-    } else {
-      return exists
     }
+
+    const requested = params?.config
+    if (
+      requested &&
+      Object.keys(requested).length > 0 &&
+      !isDeepEqual(comparableConfig(requested), comparableConfig(exists.params.config))
+    ) {
+      console.warn(
+        `channel('${topic}') returned the existing channel for this topic, which was created ` +
+          'with different params. The new params are ignored. Remove the existing channel first ' +
+          'to create one with these params.'
+      )
+    }
+
+    return exists
   }
 
   /**
@@ -596,7 +626,7 @@ export default class RealtimeClient {
    * @internal
    */
   _remove(channel: RealtimeChannel) {
-    this.channels = this.channels.filter((c) => c.topic !== channel.topic)
+    this.channels = this.channels.filter((c) => c !== channel)
     if (this.channels.length === 0) {
       this.log('transport', 'no channels remaining, scheduling disconnect')
       this._schedulePendingDisconnect()
@@ -885,5 +915,37 @@ export default class RealtimeClient {
     if (!this.isConnected()) {
       this.connect()
     }
+  }
+}
+
+function isDeepEqual(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) {
+    return true
+  }
+  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) {
+    return false
+  }
+  if (Array.isArray(a) !== Array.isArray(b)) {
+    return false
+  }
+
+  const left = a as Record<string, unknown>
+  const right = b as Record<string, unknown>
+  const leftKeys = Object.keys(left).filter((key) => left[key] !== undefined)
+  const rightKeys = Object.keys(right).filter((key) => right[key] !== undefined)
+  if (leftKeys.length !== rightKeys.length) {
+    return false
+  }
+
+  return leftKeys.every((key) => isDeepEqual(left[key], right[key]))
+}
+
+/** Channel config with every default filled in, including inside `broadcast` and `presence`. */
+function comparableConfig(config: RealtimeChannelOptions['config']) {
+  const normalized = normalizeChannelConfig(config)
+  return {
+    ...normalized,
+    broadcast: { ack: false, self: false, ...normalized.broadcast },
+    presence: { key: '', enabled: false, ...normalized.presence },
   }
 }
