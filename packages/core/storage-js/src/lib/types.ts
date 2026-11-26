@@ -241,11 +241,11 @@ export interface FileOptions {
   /**
    * The number of seconds the asset is cached in the browser and in the Supabase CDN. This is set in the `Cache-Control: max-age=<seconds>` header. Defaults to 3600 seconds.
    */
-  cacheControl?: string
+  cacheControl?: string | undefined
   /**
    * the `Content-Type` header value. Should be specified if using a `fileBody` that is neither `Blob` nor `File` nor `FormData`, otherwise will default to `text/plain;charset=UTF-8`.
    */
-  contentType?: string
+  contentType?: string | undefined
   /**
    * The content encoding of the stored bytes (e.g., `gzip`). The caller must supply already-encoded bytes; the SDK does not compress or encode the file body.
    * For raw bodies, sets the `Content-Encoding` request header. For multipart bodies (`Blob`, `File`, `FormData`), sent as the `contentEncoding` form field; a `contentEncoding` field already present in a caller-supplied `FormData` takes precedence.
@@ -255,7 +255,7 @@ export interface FileOptions {
   /**
    * When upsert is set to true, the file is overwritten if it exists. When set to false, an error is thrown if the object already exists. Defaults to false.
    */
-  upsert?: boolean
+  upsert?: boolean | undefined
   /**
    * The duplex option is a string parameter that enables or disables duplex streaming, allowing for both reading and writing data in the same stream. It can be passed as an option to the fetch() method.
    */

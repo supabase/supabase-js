@@ -55,7 +55,7 @@ function main() {
   // Generate types from database using Supabase CLI
   console.log('🔧 Generating types from database...')
   exec(
-    `pnpm exec supabase --workdir ${TEST_DIR} gen types typescript --local --schema public,personal > ${OUTPUT_FILE}`,
+    `pnpm exec supabase --workdir ${TEST_DIR} gen types typescript --schema public,personal > ${OUTPUT_FILE}`,
     {
       cwd: TEST_DIR,
       shell: true,

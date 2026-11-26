@@ -9,6 +9,10 @@ Entry point for AI/LLM agents working in or with this repository. Pointers below
 - [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) — development conventions, Nx commands, testing matrix, library-specific notes (read by Claude Code; the canonical development-conventions doc)
 - [`.cursor/.cursorrules`](./.cursor/.cursorrules) — same conventions for Cursor (read by Cursor IDE)
 
+## SDK engineering principles
+
+This SDK follows the [Supabase SDK engineering principles](https://github.com/supabase/sdk/blob/main/docs/principles.md): thin clients, logic and validation in the service, service-owned defaults, and decoding that accepts new values. Read them before you write or review code. Cite a principle by a link to its heading. The conventions in this repository win for local matters such as commands, layout, and style.
+
 ## Agent skills
 
 Reusable agent skills for working in this Nx workspace (Nx-related: `nx-workspace`, `nx-generate`, `nx-import`, `nx-plugins`, `nx-run-tasks`, `link-workspace-packages`) live at:
