@@ -302,6 +302,12 @@ export default class GoTrueClient {
   protected autoRefreshTicker: ReturnType<typeof setInterval> | null = null
   protected autoRefreshTickTimeout: ReturnType<typeof setTimeout> | null = null
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
+  /**
+   * Set by {@link GoTrueClient.dispose}. Stops `initialize()`, which can still be
+   * in flight at that point, from re-arming the `visibilitychange` listener and the
+   * auto-refresh ticker afterwards.
+   */
+  protected disposed = false
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
    * Cache of the most recent refresh failure, keyed by the refresh token
@@ -5553,6 +5559,7 @@ export default class GoTrueClient {
    * ```
    */
   async dispose(): Promise<void> {
+    this.disposed = true
     this._removeVisibilityChangedCallback()
     await this._stopAutoRefresh()
     this.broadcastChannel?.close()
@@ -5670,6 +5677,11 @@ export default class GoTrueClient {
    */
   private async _handleVisibilityChange() {
     this._debug('#_handleVisibilityChange()')
+
+    if (this.disposed) {
+      // dispose() ran while initialize() was still in flight; don't re-arm what it tore down.
+      return false
+    }
 
     if (!isBrowser() || !window?.addEventListener) {
       if (this.autoRefreshToken) {
