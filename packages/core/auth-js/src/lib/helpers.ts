@@ -557,7 +557,7 @@ export function getAlgorithm(
         hash: { name: 'SHA-256' },
       }
     default:
-      throw new Error('Invalid alg claim')
+      throw new AuthInvalidJwtError('Invalid alg claim')
   }
 }
 
