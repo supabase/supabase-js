@@ -5,7 +5,7 @@ import {
   _request,
   _userResponse,
 } from './lib/fetch'
-import { resolveFetch, validateUUID } from './lib/helpers'
+import { resolveFetch, validateCustomProviderIdentifier, validateUUID } from './lib/helpers'
 import {
   AdminUserAttributes,
   GenerateLinkParams,
@@ -1155,6 +1155,8 @@ export default class GoTrueAdminApi {
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
   private async _getCustomProvider(identifier: string): Promise<CustomProviderResponse> {
+    validateCustomProviderIdentifier(identifier)
+
     try {
       return await _request(this.fetch, 'GET', `${this.url}/admin/custom-providers/${identifier}`, {
         headers: this.headers,
@@ -1184,6 +1186,8 @@ export default class GoTrueAdminApi {
     identifier: string,
     params: UpdateCustomProviderParams
   ): Promise<CustomProviderResponse> {
+    validateCustomProviderIdentifier(identifier)
+
     try {
       return await _request(this.fetch, 'PUT', `${this.url}/admin/custom-providers/${identifier}`, {
         body: params,
@@ -1208,6 +1212,8 @@ export default class GoTrueAdminApi {
   private async _deleteCustomProvider(
     identifier: string
   ): Promise<{ data: null; error: AuthError | null }> {
+    validateCustomProviderIdentifier(identifier)
+
     try {
       await _request(this.fetch, 'DELETE', `${this.url}/admin/custom-providers/${identifier}`, {
         headers: this.headers,
