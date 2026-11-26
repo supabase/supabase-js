@@ -413,7 +413,8 @@ export default abstract class PostgrestBuilder<
 
       const countHeader = this.headers.get('Prefer')?.match(/count=(exact|planned|estimated)/)
       const contentRange = res.headers.get('content-range')?.split('/')
-      if (countHeader && contentRange && contentRange.length > 1) {
+      // PostgREST sends `*` as the total when it did not count the rows
+      if (countHeader && contentRange && contentRange.length > 1 && contentRange[1] !== '*') {
         count = parseInt(contentRange[1])
       }
 
