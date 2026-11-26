@@ -236,6 +236,7 @@ export default class RealtimeClient {
   private _manuallySetToken: boolean = false
   private _authPromise: Promise<void> | null = null
   private _authGeneration: number = 0
+  private _authWaiters: Array<() => void> = []
   private _workerHeartbeatTimer: HeartbeatTimer = undefined
   private _pendingWorkerHeartbeatRef: string | null = null
   private _pendingDisconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -535,7 +536,19 @@ export default class RealtimeClient {
     } finally {
       if (this._authPromise === authPromise) {
         this._authPromise = null
+        this._notifyAuthWaiters()
       }
+    }
+  }
+
+  private _notifyAuthWaiters(): void {
+    if (this._authPromise !== null || this._authWaiters.length === 0) {
+      return
+    }
+    const waiters = this._authWaiters
+    this._authWaiters = []
+    for (const resolve of waiters) {
+      resolve()
     }
   }
 
@@ -690,12 +703,22 @@ export default class RealtimeClient {
   }
 
   /**
+   * Returns true if an auth operation is currently in flight.
+   * @internal
+   */
+  _hasPendingAuth(): boolean {
+    return this._authPromise !== null
+  }
+
+  /**
    * Wait for any in-flight auth operations to complete
    * @internal
    */
-  private async _waitForAuthIfNeeded(): Promise<void> {
-    if (this._authPromise) {
-      await this._authPromise
+  async _waitForAuthIfNeeded(): Promise<void> {
+    while (this._authPromise !== null) {
+      await new Promise<void>((resolve) => {
+        this._authWaiters.push(resolve)
+      })
     }
   }
 

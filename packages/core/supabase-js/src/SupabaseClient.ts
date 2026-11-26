@@ -15,7 +15,10 @@ import {
   type RealtimeClientOptions,
   type RealtimeRemoveChannelResponse,
 } from '@supabase/realtime-js'
-import { StorageClient as SupabaseStorageClient } from '@supabase/storage-js'
+import {
+  StorageClient as SupabaseStorageClient,
+  type StorageClientOptions,
+} from '@supabase/storage-js'
 import {
   DEFAULT_AUTH_OPTIONS,
   DEFAULT_DB_OPTIONS,
@@ -80,11 +83,12 @@ export default class SupabaseClient<
    * Supabase Auth allows you to create and manage user sessions for access to data that is secured by access policies.
    */
   auth: SupabaseAuthClient
-  realtime: RealtimeClient
-  /**
-   * Supabase Storage allows you to manage user-generated content, such as photos or videos.
-   */
-  storage: SupabaseStorageClient
+
+  private _realtime?: RealtimeClient
+  private _storage?: SupabaseStorageClient
+  private _initialRealtimeTokenPromise?: Promise<string | null>
+  private realtimeOptions: RealtimeClientOptions
+  private storageOptions?: StorageClientOptions
 
   protected realtimeUrl: URL
   protected authUrl: URL
@@ -385,19 +389,8 @@ export default class SupabaseClient<
       settings.tracePropagation,
       { omitApiKeyAsBearer: true }
     )
-    this.realtime = this._initRealtimeClient({
-      headers: this.headers,
-      accessToken: this._getAccessToken.bind(this),
-      fetch: this.fetch,
-      ...settings.realtime,
-    })
-    if (this.accessToken) {
-      // Start auth immediately to avoid race condition with channel subscriptions
-      // Wrap Promise to avoid Firefox extension cross-context Promise access errors
-      Promise.resolve(this.accessToken())
-        .then((token) => this.realtime.setAuth(token))
-        .catch((e) => console.warn('Failed to set initial Realtime auth token:', e))
-    }
+    this.realtimeOptions = settings.realtime
+    this.storageOptions = options?.storage
 
     // The PostgREST client applies the auth wrapper itself, so a per-request fetch
     // passed to `from()` carries the same headers as the client-level fetch.
@@ -418,16 +411,61 @@ export default class SupabaseClient<
       retry: settings.db.retry,
     })
 
-    this.storage = new SupabaseStorageClient(
-      this.storageUrl.href,
-      this.headers,
-      this.fetch,
-      options?.storage
-    )
-
     if (!settings.accessToken) {
       this._listenForAuthEvents()
     }
+  }
+
+  /**
+   * Supabase Realtime allows you to listen to database changes, Broadcast, and Presence.
+   */
+  get realtime(): RealtimeClient {
+    if (!this._realtime) {
+      const accessToken = this.accessToken
+      const realtime = this._initRealtimeClient({
+        headers: this.headers,
+        accessToken: this._getAccessToken.bind(this),
+        fetch: this.fetch,
+        ...this.realtimeOptions,
+      })
+      this._realtime = realtime
+      if (accessToken) {
+        let initialTokenPromise: Promise<string | null>
+        try {
+          // Wrap Promise to avoid Firefox extension cross-context Promise access errors
+          initialTokenPromise = Promise.resolve(accessToken())
+        } catch (e) {
+          initialTokenPromise = Promise.reject(e)
+        }
+        this._initialRealtimeTokenPromise = initialTokenPromise
+        initialTokenPromise
+          .then((token) => realtime.setAuth(token))
+          .catch((e) => console.warn('Failed to set initial Realtime auth token:', e))
+          .finally(() => {
+            if (this._initialRealtimeTokenPromise === initialTokenPromise) {
+              this._initialRealtimeTokenPromise = undefined
+            }
+          })
+      } else if (this.changedAccessToken !== undefined) {
+        realtime.setAuth(this.changedAccessToken)
+      }
+    }
+    return this._realtime
+  }
+
+  /**
+   * Supabase Storage allows you to manage user-generated content, such as photos or videos.
+   */
+  get storage(): SupabaseStorageClient {
+    if (!this._storage) {
+      this._storage = new SupabaseStorageClient(
+        this.storageUrl.href,
+        this.headers,
+        this.fetch,
+        this.storageOptions
+      )
+    }
+    return this._storage
   }
 
   /**
@@ -600,7 +638,7 @@ export default class SupabaseClient<
    * ```
    */
   getChannels(): RealtimeChannel[] {
-    return this.realtime.getChannels()
+    return this._realtime ? this._realtime.getChannels() : []
   }
 
   /**
@@ -637,7 +675,7 @@ export default class SupabaseClient<
    * ```
    */
   removeAllChannels(): Promise<RealtimeRemoveChannelResponse[]> {
-    return this.realtime.removeAllChannels()
+    return this._realtime ? this._realtime.removeAllChannels() : Promise.resolve([])
   }
 
   /**
@@ -647,6 +685,9 @@ export default class SupabaseClient<
    */
   private async _getSessionToken(): Promise<string | null> {
     if (this.accessToken) {
+      if (this._initialRealtimeTokenPromise) {
+        return await this._initialRealtimeTokenPromise
+      }
       return await this.accessToken()
     }
 
@@ -731,9 +772,9 @@ export default class SupabaseClient<
       this.changedAccessToken !== token
     ) {
       this.changedAccessToken = token
-      this.realtime.setAuth(token)
+      this._realtime?.setAuth(token)
     } else if (event === 'SIGNED_OUT') {
-      this.realtime.setAuth()
+      this._realtime?.setAuth()
       if (source == 'STORAGE') this.auth.signOut()
       this.changedAccessToken = undefined
     }
