@@ -152,7 +152,7 @@ describe('fetch', () => {
       // A network / CORS / aborted fetch is a transient condition surfaced to
       // the caller as AuthRetryableFetchError. It must not be logged raw here,
       // as that pollutes production consoles.
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
 
       const route = server
         .get('/')
@@ -391,5 +391,35 @@ describe('_sessionResponse', () => {
     expect(result.error).toBeNull()
     expect(result.data.session).toBeNull()
     expect(result.data.user).toEqual(user)
+  })
+})
+
+
+describe('429 and 408 retryable errors', () => {
+  it('throws AuthRetryableFetchError on 429 rate limit', async () => {
+    const response = new Response('Too Many Requests', {
+      status: 429,
+      statusText: 'Too Many Requests',
+    })
+
+    await expect(handleError(response)).rejects.toThrow(AuthRetryableFetchError)
+  })
+
+  it('throws AuthRetryableFetchError on 408 request timeout', async () => {
+    const response = new Response('Request Timeout', {
+      status: 408,
+      statusText: 'Request Timeout',
+    })
+
+    await expect(handleError(response)).rejects.toThrow(AuthRetryableFetchError)
+  })
+
+  it('throws AuthRetryableFetchError on HTML 429 response', async () => {
+    const htmlResponse = new Response('<html><body>429 Too Many Requests</body></html>', {
+      status: 429,
+      headers: { 'Content-Type': 'text/html' },
+    })
+
+    await expect(handleError(htmlResponse)).rejects.toThrow(AuthRetryableFetchError)
   })
 })
