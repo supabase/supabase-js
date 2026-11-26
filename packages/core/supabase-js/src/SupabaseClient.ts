@@ -30,6 +30,7 @@ import {
   validateSupabaseUrl,
   type ResolvedSupabaseClientOptions,
 } from './lib/helpers'
+import { NAMESPACE_HEADER, validateNamespace } from './lib/namespace'
 import { SupabaseAuthClient } from './lib/SupabaseAuthClient'
 import type {
   Fetch,
@@ -96,6 +97,7 @@ export default class SupabaseClient<
   protected functionsFetch?: Fetch
   protected changedAccessToken?: string
   protected accessToken?: () => Promise<string | null>
+  protected namespace?: string
 
   protected headers: Record<string, string>
   protected settings?: ResolvedSupabaseClientOptions<SchemaName>
@@ -323,6 +325,9 @@ export default class SupabaseClient<
     if (!supabaseKey) throw new Error('supabaseKey is required.')
     checkApiKeyFormat(supabaseKey)
     checkTopLevelSchemaOption(options)
+    if (options?.namespace != null) {
+      this.namespace = validateNamespace(options.namespace)
+    }
 
     this.realtimeUrl = new URL('realtime/v1', baseUrl)
     this.realtimeUrl.protocol = this.realtimeUrl.protocol.replace('http', 'ws')
@@ -330,8 +335,12 @@ export default class SupabaseClient<
     this.storageUrl = new URL('storage/v1', baseUrl)
     this.functionsUrl = new URL('functions/v1', baseUrl)
 
-    // default storage key uses the supabase project ref as a namespace
-    const defaultStorageKey = `sb-${baseUrl.hostname.split('.')[0]}-auth-token`
+    // default storage key uses the supabase project ref (and the client namespace, if any)
+    // as a namespace
+    const projectRef = baseUrl.hostname.split('.')[0]
+    const defaultStorageKey = this.namespace
+      ? `sb-${projectRef}-${this.namespace}-auth-token`
+      : `sb-${projectRef}-auth-token`
     const DEFAULTS = {
       db: DEFAULT_DB_OPTIONS,
       realtime: DEFAULT_REALTIME_OPTIONS,
@@ -345,6 +354,15 @@ export default class SupabaseClient<
 
     this.storageKey = settings.auth.storageKey ?? ''
     this.headers = settings.global.headers ?? {}
+    if (this.namespace) {
+      // The option wins over a header of the same name passed in `global.headers`.
+      const headers: Record<string, string> = {}
+      for (const key of Object.keys(this.headers)) {
+        if (key.toLowerCase() !== NAMESPACE_HEADER) headers[key] = this.headers[key]
+      }
+      headers[NAMESPACE_HEADER] = this.namespace
+      this.headers = headers
+    }
 
     if (!settings.accessToken) {
       this.auth = this._initSupabaseAuthClient(
@@ -422,7 +440,7 @@ export default class SupabaseClient<
       this.storageUrl.href,
       this.headers,
       this.fetch,
-      options?.storage
+      this.namespace ? { ...options?.storage, pathPrefix: this.namespace } : options?.storage
     )
 
     if (!settings.accessToken) {
@@ -580,13 +598,17 @@ export default class SupabaseClient<
   /**
    * Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
    *
+   * When the client has a `namespace`, the topic is prefixed with it: `channel('room')`
+   * joins `<namespace>:room`. Channels created with `supabase.realtime.channel()` are not
+   * prefixed.
+   *
    * @param {string} name - The name of the Realtime channel.
    * @param {Object} opts - The options to pass to the Realtime channel.
    *
    * @category Realtime
    */
   channel(name: string, opts: RealtimeChannelOptions = { config: {} }): RealtimeChannel {
-    return this.realtime.channel(name, opts)
+    return this.realtime.channel(this.namespace ? `${this.namespace}:${name}` : name, opts)
   }
 
   /**

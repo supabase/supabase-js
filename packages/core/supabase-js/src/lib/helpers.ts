@@ -62,7 +62,7 @@ export function _resetTopLevelSchemaWarning(): void {
 
 export type ResolvedSupabaseClientOptions<SchemaName> = Omit<
   Required<SupabaseClientOptions<SchemaName>>,
-  'tracePropagation'
+  'tracePropagation' | 'namespace'
 > & {
   tracePropagation: TracePropagationOptions
 }
