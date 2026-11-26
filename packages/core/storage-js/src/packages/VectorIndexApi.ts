@@ -4,6 +4,7 @@ import { Fetch, vectorsApi } from '../lib/common/fetch'
 import BaseApiClient from '../lib/common/BaseApiClient'
 import {
   ApiResponse,
+  VectorFetchParameters,
   VectorIndex,
   ListIndexesOptions,
   ListIndexesResponse,
@@ -43,11 +44,18 @@ export default class VectorIndexApi extends BaseApiClient<StorageError> {
   }
 
   /** Creates a new vector index within a bucket */
-  async createIndex(options: CreateIndexOptions): Promise<ApiResponse<undefined>> {
+  async createIndex(
+    options: CreateIndexOptions,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<undefined>> {
     return this.handleOperation(async () => {
-      const data = await vectorsApi.post(this.fetch, `${this.url}/CreateIndex`, options, {
-        headers: this.headers,
-      })
+      const data = await vectorsApi.post(
+        this.fetch,
+        `${this.url}/CreateIndex`,
+        options,
+        { headers: this.headers },
+        parameters
+      )
       return data || {}
     })
   }
@@ -55,35 +63,49 @@ export default class VectorIndexApi extends BaseApiClient<StorageError> {
   /** Retrieves metadata for a specific vector index */
   async getIndex(
     vectorBucketName: string,
-    indexName: string
+    indexName: string,
+    parameters?: VectorFetchParameters
   ): Promise<ApiResponse<{ index: VectorIndex }>> {
     return this.handleOperation(async () => {
       return await vectorsApi.post(
         this.fetch,
         `${this.url}/GetIndex`,
         { vectorBucketName, indexName },
-        { headers: this.headers }
+        { headers: this.headers },
+        parameters
       )
     })
   }
 
   /** Lists vector indexes within a bucket with optional filtering and pagination */
-  async listIndexes(options: ListIndexesOptions): Promise<ApiResponse<ListIndexesResponse>> {
+  async listIndexes(
+    options: ListIndexesOptions,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<ListIndexesResponse>> {
     return this.handleOperation(async () => {
-      return await vectorsApi.post(this.fetch, `${this.url}/ListIndexes`, options, {
-        headers: this.headers,
-      })
+      return await vectorsApi.post(
+        this.fetch,
+        `${this.url}/ListIndexes`,
+        options,
+        { headers: this.headers },
+        parameters
+      )
     })
   }
 
   /** Deletes a vector index and all its data */
-  async deleteIndex(vectorBucketName: string, indexName: string): Promise<ApiResponse<undefined>> {
+  async deleteIndex(
+    vectorBucketName: string,
+    indexName: string,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<undefined>> {
     return this.handleOperation(async () => {
       const data = await vectorsApi.post(
         this.fetch,
         `${this.url}/DeleteIndex`,
         { vectorBucketName, indexName },
-        { headers: this.headers }
+        { headers: this.headers },
+        parameters
       )
       return data || {}
     })

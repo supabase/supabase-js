@@ -13,6 +13,7 @@ import {
   PutVectorsOptions,
   QueryVectorsOptions,
   VectorBucket,
+  VectorFetchParameters,
 } from '../lib/types'
 
 /**
@@ -145,6 +146,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param vectorBucketName - Unique name for the vector bucket
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with empty response on success or error
    *
    * @example Creating a vector bucket
@@ -155,8 +157,11 @@ export class StorageVectorsClient extends VectorBucketApi {
    *   .createBucket('embeddings-prod')
    * ```
    */
-  async createBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
-    return super.createBucket(vectorBucketName)
+  async createBucket(
+    vectorBucketName: string,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<undefined>> {
+    return super.createBucket(vectorBucketName, parameters)
   }
 
   /**
@@ -170,6 +175,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param vectorBucketName - Name of the vector bucket
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with bucket metadata or error
    *
    * @example Get bucket metadata
@@ -182,8 +188,11 @@ export class StorageVectorsClient extends VectorBucketApi {
    * console.log('Bucket created:', data?.vectorBucket.creationTime)
    * ```
    */
-  async getBucket(vectorBucketName: string): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
-    return super.getBucket(vectorBucketName)
+  async getBucket(
+    vectorBucketName: string,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<{ vectorBucket: VectorBucket }>> {
+    return super.getBucket(vectorBucketName, parameters)
   }
 
   /**
@@ -197,6 +206,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param options - Optional filters (prefix, maxResults, nextToken)
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with list of buckets or error
    *
    * @example List vector buckets
@@ -212,9 +222,10 @@ export class StorageVectorsClient extends VectorBucketApi {
    * ```
    */
   async listBuckets(
-    options: ListVectorBucketsOptions = {}
+    options: ListVectorBucketsOptions = {},
+    parameters?: VectorFetchParameters
   ): Promise<ApiResponse<ListVectorBucketsResponse>> {
-    return super.listBuckets(options)
+    return super.listBuckets(options, parameters)
   }
 
   /**
@@ -229,6 +240,7 @@ export class StorageVectorsClient extends VectorBucketApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param vectorBucketName - Name of the vector bucket to delete
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with empty response on success or error
    *
    * @example Delete a vector bucket
@@ -239,8 +251,11 @@ export class StorageVectorsClient extends VectorBucketApi {
    *   .deleteBucket('embeddings-old')
    * ```
    */
-  async deleteBucket(vectorBucketName: string): Promise<ApiResponse<undefined>> {
-    return super.deleteBucket(vectorBucketName)
+  async deleteBucket(
+    vectorBucketName: string,
+    parameters?: VectorFetchParameters
+  ): Promise<ApiResponse<undefined>> {
+    return super.deleteBucket(vectorBucketName, parameters)
   }
 }
 
@@ -292,6 +307,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param options - Index configuration (vectorBucketName is automatically set)
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with empty response on success or error
    *
    * @example Creating a vector index
@@ -308,11 +324,17 @@ export class VectorBucketScope extends VectorIndexApi {
    * })
    * ```
    */
-  override async createIndex(options: Omit<CreateIndexOptions, 'vectorBucketName'>) {
-    return super.createIndex({
-      ...options,
-      vectorBucketName: this.vectorBucketName,
-    })
+  override async createIndex(
+    options: Omit<CreateIndexOptions, 'vectorBucketName'>,
+    parameters?: VectorFetchParameters
+  ) {
+    return super.createIndex(
+      {
+        ...options,
+        vectorBucketName: this.vectorBucketName,
+      },
+      parameters
+    )
   }
 
   /**
@@ -327,6 +349,7 @@ export class VectorBucketScope extends VectorIndexApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param options - Listing options (vectorBucketName is automatically set)
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with response containing indexes array and pagination token or error
    *
    * @example List indexes
@@ -335,11 +358,17 @@ export class VectorBucketScope extends VectorIndexApi {
    * const { data } = await bucket.listIndexes({ prefix: 'documents-' })
    * ```
    */
-  override async listIndexes(options: Omit<ListIndexesOptions, 'vectorBucketName'> = {}) {
-    return super.listIndexes({
-      ...options,
-      vectorBucketName: this.vectorBucketName,
-    })
+  override async listIndexes(
+    options: Omit<ListIndexesOptions, 'vectorBucketName'> = {},
+    parameters?: VectorFetchParameters
+  ) {
+    return super.listIndexes(
+      {
+        ...options,
+        vectorBucketName: this.vectorBucketName,
+      },
+      parameters
+    )
   }
 
   /**
@@ -486,6 +515,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param options - Vector insertion options (bucket and index names automatically set)
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with empty response on success or error
    *
    * @example Insert vectors into an index
@@ -502,12 +532,18 @@ export class VectorIndexScope extends VectorDataApi {
    * })
    * ```
    */
-  override async putVectors(options: Omit<PutVectorsOptions, 'vectorBucketName' | 'indexName'>) {
-    return super.putVectors({
-      ...options,
-      vectorBucketName: this.vectorBucketName,
-      indexName: this.indexName,
-    })
+  override async putVectors(
+    options: Omit<PutVectorsOptions, 'vectorBucketName' | 'indexName'>,
+    parameters?: VectorFetchParameters
+  ) {
+    return super.putVectors(
+      {
+        ...options,
+        vectorBucketName: this.vectorBucketName,
+        indexName: this.indexName,
+      },
+      parameters
+    )
   }
 
   /**
@@ -522,6 +558,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param options - Vector retrieval options (bucket and index names automatically set)
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with response containing vectors array or error
    *
    * @example Get vectors by keys
@@ -533,12 +570,18 @@ export class VectorIndexScope extends VectorDataApi {
    * })
    * ```
    */
-  override async getVectors(options: Omit<GetVectorsOptions, 'vectorBucketName' | 'indexName'>) {
-    return super.getVectors({
-      ...options,
-      vectorBucketName: this.vectorBucketName,
-      indexName: this.indexName,
-    })
+  override async getVectors(
+    options: Omit<GetVectorsOptions, 'vectorBucketName' | 'indexName'>,
+    parameters?: VectorFetchParameters
+  ) {
+    return super.getVectors(
+      {
+        ...options,
+        vectorBucketName: this.vectorBucketName,
+        indexName: this.indexName,
+      },
+      parameters
+    )
   }
 
   /**
@@ -553,6 +596,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param options - Listing options (bucket and index names automatically set)
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with response containing vectors array and pagination token or error
    *
    * @example List vectors with pagination
@@ -565,13 +609,17 @@ export class VectorIndexScope extends VectorDataApi {
    * ```
    */
   override async listVectors(
-    options: Omit<ListVectorsOptions, 'vectorBucketName' | 'indexName'> = {}
+    options: Omit<ListVectorsOptions, 'vectorBucketName' | 'indexName'> = {},
+    parameters?: VectorFetchParameters
   ) {
-    return super.listVectors({
-      ...options,
-      vectorBucketName: this.vectorBucketName,
-      indexName: this.indexName,
-    })
+    return super.listVectors(
+      {
+        ...options,
+        vectorBucketName: this.vectorBucketName,
+        indexName: this.indexName,
+      },
+      parameters
+    )
   }
 
   /**
@@ -586,6 +634,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param options - Query options (bucket and index names automatically set)
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with response containing vectors ordered by distance, an optional pagination token, or an error
    *
    * @example Query similar vectors
@@ -601,13 +650,17 @@ export class VectorIndexScope extends VectorDataApi {
    * ```
    */
   override async queryVectors(
-    options: Omit<QueryVectorsOptions, 'vectorBucketName' | 'indexName'>
+    options: Omit<QueryVectorsOptions, 'vectorBucketName' | 'indexName'>,
+    parameters?: VectorFetchParameters
   ) {
-    return super.queryVectors({
-      ...options,
-      vectorBucketName: this.vectorBucketName,
-      indexName: this.indexName,
-    })
+    return super.queryVectors(
+      {
+        ...options,
+        vectorBucketName: this.vectorBucketName,
+        indexName: this.indexName,
+      },
+      parameters
+    )
   }
 
   /**
@@ -622,6 +675,7 @@ export class VectorIndexScope extends VectorDataApi {
    * @category Storage
    * @subcategory Vector Buckets
    * @param options - Deletion options (bucket and index names automatically set)
+   * @param parameters - Additional fetch parameters like signal for cancellation
    * @returns Promise with empty response on success or error
    *
    * @example Delete vectors by keys
@@ -633,12 +687,16 @@ export class VectorIndexScope extends VectorDataApi {
    * ```
    */
   override async deleteVectors(
-    options: Omit<DeleteVectorsOptions, 'vectorBucketName' | 'indexName'>
+    options: Omit<DeleteVectorsOptions, 'vectorBucketName' | 'indexName'>,
+    parameters?: VectorFetchParameters
   ) {
-    return super.deleteVectors({
-      ...options,
-      vectorBucketName: this.vectorBucketName,
-      indexName: this.indexName,
-    })
+    return super.deleteVectors(
+      {
+        ...options,
+        vectorBucketName: this.vectorBucketName,
+        indexName: this.indexName,
+      },
+      parameters
+    )
   }
 }
