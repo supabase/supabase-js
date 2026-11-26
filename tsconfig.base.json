@@ -1,16 +1,104 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
+    // ============================================================================
+    // ⚡ 1. ENGINE TARGET & MODULE GENERATION
+    // Target modern V8 engines (Chrome/Safari/Firefox 2022+).
+    // Using ESNext + Bundler ensures Vite and Rollup can perfectly tree-shake.
+    // ============================================================================
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2023", "DOM", "DOM.Iterable", "WebWorker"],
+    "moduleResolution": "Bundler",
+    "useDefineForClassFields": true,
+
+    // ============================================================================
+    // ⚡ 2. MONOREPO COMPOSITE COMPILATION (The Secret to Instant Builds)
+    // Allows `tsc -b` to cache ASTs globally. Cross-package imports jump directly 
+    // to source code instead of hitting dead `.d.ts` declaration files.
+    // ============================================================================
     "composite": true,
+    "incremental": true,
     "declaration": true,
     "declarationMap": true,
+    "sourceMap": true,
     "importHelpers": true,
+
+    // ============================================================================
+    // ⚡ 3. VITE / SWC BUNDLER SYNERGY
+    // Forces modules to be perfectly isolated so SWC or esbuild can compile them
+    // on a single-file basis without cross-file type dependencies.
+    // ============================================================================
     "isolatedModules": true,
-    "lib": ["es2022", "dom"],
-    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // NEW (TS 5.x): Enforces `import type` syntax. Strips types at compile time 
+    // preventing bloated chunks and garbage collection (Zero-GC) overhead.
+    "verbatimModuleSyntax": true,
+
+    // ============================================================================
+    // ⚡ 4. MILITARY-GRADE STRICTNESS (Zero Trust Architecture)
+    // The compiler will now halt if any variable, array index, or object property 
+    // could potentially result in an unchecked `undefined` exception.
+    // ============================================================================
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+
+    // APEX UPGRADES:
+    // Forces you to check if array[0] exists before accessing array[0].id
+    "noUncheckedIndexedAccess": true, 
+    // Forces strict `catch (error: unknown)` instead of default `any`
+    "useUnknownInCatchVariables": true, 
+    // Prevents overriding a class method without the `override` keyword
+    "noImplicitOverride": true, 
+    // Prevents setting optional properties explicitly to undefined (obj.val = undefined)
+    "exactOptionalPropertyTypes": true, 
+    // Prevents `obj['prop']` unless an index signature is defined
+    "noPropertyAccessFromIndexSignature": true, 
+
+    // ============================================================================
+    // ⚡ 5. LINTING & FALLTHROUGH PREVENTION
+    // ============================================================================
     "noEmitOnError": true,
     "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "target": "es2022"
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true
   }
+}{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  
+  // CRITICAL: The root config must compile absolutely nothing directly.
+  // It only delegates compilation to the isolated workspace references below.
+  "files": [],
+
+  "references": [
+    // ── CORE SUPABASE & EDGE LIBRARIES ──
+    {
+      "path": "./packages/core/functions-js"
+    },
+    {
+      "path": "./packages/core/postgrest-js"
+    },
+    {
+      "path": "./packages/core/realtime-js"
+    },
+    {
+      "path": "./packages/core/storage-js"
+    },
+    {
+      "path": "./packages/core/auth-js"
+    }
+    
+    // As you transition the React frontend monoliths into packages, 
+    // you will register them here (e.g., { "path": "./apps/shadows-os" }).
+  ]
 }
