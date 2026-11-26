@@ -592,22 +592,22 @@ export default class PostgrestTransformBuilder<
    * ```ts
    * const ac = new AbortController()
    *
+   * // Abort the request after 100 ms
+   * setTimeout(() => ac.abort(), 100)
+   *
    * const { data, error } = await supabase
    *   .from('very_big_table')
    *   .select()
    *   .abortSignal(ac.signal)
-   *
-   * // Abort the request after 100 ms
-   * setTimeout(() => ac.abort(), 100)
    * ```
    *
    * @exampleResponse Aborting requests in-flight
    * ```json
    *   {
    *     "error": {
-   *       "message": "AbortError: The user aborted a request.",
-   *       "details": "",
-   *       "hint": "The request was aborted locally via the provided AbortSignal.",
+   *       "message": "AbortError: This operation was aborted",
+   *       "details": "AbortError: This operation was aborted\n    at ...",
+   *       "hint": "Request was aborted (timeout or manual cancellation)",
    *       "code": ""
    *     },
    *     "status": 0,
@@ -628,8 +628,8 @@ export default class PostgrestTransformBuilder<
    * ```json
    *   {
    *     "error": {
-   *       "message": "FetchError: The user aborted a request.",
-   *       "details": "",
+   *       "message": "TimeoutError: The operation was aborted due to timeout",
+   *       "details": "TimeoutError: The operation was aborted due to timeout\n    at ...",
    *       "hint": "",
    *       "code": ""
    *     },
