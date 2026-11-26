@@ -152,6 +152,42 @@ describe.each(['upload', 'update', 'signed'] as const)(
     })
 
     test.each(['Blob', 'File', 'FormData'] as const)(
+      'sends an explicit contentType for %s bodies before the file',
+      async (kind) => {
+        // fs.openAsBlob(), new Blob([buffer]) and many polyfills produce an untyped Blob.
+        const blob = new Blob([bytes])
+        let payload: FileBody = blob
+        if (kind === 'File') {
+          payload = new File([bytes], 'sample.png')
+        } else if (kind === 'FormData') {
+          payload = new FormData()
+          payload.append('file', blob, 'sample.png')
+        }
+
+        const request = await upload(payload, { contentType: 'image/png' })
+        await expectMultipart(request, { contentType: 'image/png' })
+      }
+    )
+
+    test('omits contentType for multipart bodies when it is not set', async () => {
+      const request = await upload(new Blob([bytes], { type: 'image/png' }), {
+        contentType: undefined,
+      })
+      const body = await expectMultipart(request, {})
+      expect(body.has('contentType')).toBe(false)
+      expect((body.get('') as File).type).toBe('image/png')
+    })
+
+    test('preserves caller contentType over options even when it follows the file', async () => {
+      const form = new FormData()
+      form.append('file', new Blob([bytes]), 'original.bin')
+      form.append('contentType', 'image/jpeg')
+
+      const request = await upload(form, { contentType: 'image/png' })
+      await expectMultipart(request, { contentType: 'image/jpeg' })
+    })
+
+    test.each(['Blob', 'File', 'FormData'] as const)(
       'sends %s content encoding before the file and preserves compressed bytes',
       async (kind) => {
         const compressedBytes = gzipSync(bytes)
