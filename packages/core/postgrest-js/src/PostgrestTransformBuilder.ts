@@ -948,8 +948,9 @@ export default class PostgrestTransformBuilder<
    * one transaction. For multi-statement transactional logic, use a database
    * function (`supabase.rpc(...)`).
    *
-   * Sets the `Prefer: tx=rollback` header. See PostgREST's docs on transaction
-   * preferences for the underlying mechanism.
+   * Sets the `Prefer: tx=rollback` header, replacing any transaction preference
+   * from the client headers. See PostgREST's docs on transaction preferences for
+   * the underlying mechanism.
    *
    * @category Database
    * @subcategory Using modifiers
@@ -965,7 +966,13 @@ export default class PostgrestTransformBuilder<
    * ```
    */
   rollback(): this {
-    this.headers.append('Prefer', 'tx=rollback')
+    // PostgREST uses the first value of a repeated preference, so replace earlier values.
+    const preferences = (this.headers.get('Prefer') ?? '')
+      .split(',')
+      .map((preference) => preference.trim())
+      .filter((preference) => preference && !preference.startsWith('tx='))
+    preferences.push('tx=rollback')
+    this.headers.set('Prefer', preferences.join(', '))
     return this
   }
 
