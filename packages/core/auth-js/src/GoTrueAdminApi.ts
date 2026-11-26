@@ -47,7 +47,7 @@ export default class GoTrueAdminApi {
 
   /**
    * Contains all OAuth client administration methods.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    */
   oauth: GoTrueAdminOAuthApi
 
@@ -647,7 +647,7 @@ export default class GoTrueAdminApi {
    *
    * @remarks
    * **Important:** This is a server-side operation and does **not** trigger client-side
-   * `onAuthStateChange` listeners. The admin API has no connection to client state.
+   * [`onAuthStateChange`](/docs/reference/javascript/auth-onauthstatechange) listeners. The admin API has no connection to client state.
    *
    * To sync changes to the client after calling this method:
    * 1. On the client, call `supabase.auth.refreshSession()` to fetch the updated user data
@@ -926,7 +926,7 @@ export default class GoTrueAdminApi {
 
   /**
    * Lists all OAuth clients with optional pagination.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
@@ -967,7 +967,7 @@ export default class GoTrueAdminApi {
 
   /**
    * Creates a new OAuth client.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
@@ -991,7 +991,7 @@ export default class GoTrueAdminApi {
 
   /**
    * Gets details of a specific OAuth client.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
@@ -1014,7 +1014,7 @@ export default class GoTrueAdminApi {
 
   /**
    * Updates an existing OAuth client.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
@@ -1041,7 +1041,7 @@ export default class GoTrueAdminApi {
 
   /**
    * Deletes an OAuth client.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
@@ -1065,7 +1065,7 @@ export default class GoTrueAdminApi {
 
   /**
    * Regenerates the secret for an OAuth client.
-   * Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+   * Only relevant when the [OAuth 2.1 server](/docs/guides/auth/oauth-server) is enabled in Supabase Auth.
    *
    * This function should only be called on a server. Never expose your `service_role` key in the browser.
    */
