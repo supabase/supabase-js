@@ -2,6 +2,7 @@ import {
   DEFAULT_MAX_RETRIES,
   Fetch,
   getRetryDelay,
+  MAX_RETRY_DELAY,
   RETRYABLE_METHODS,
   RETRYABLE_STATUS_CODES,
 } from './types/common/common'
@@ -29,6 +30,28 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 /**
+ * Parse a `Retry-After` header value into a delay in milliseconds.
+ * Accepts delta-seconds (a non-negative integer) or an HTTP-date, which is
+ * read relative to now. Returns `null` when the value can't be parsed, is 0,
+ * or is a date that has already passed: the caller then uses the jittered
+ * backoff instead, so clients that got the same answer don't retry together.
+ */
+function parseRetryAfter(value: string): number | null {
+  const trimmed = value.trim()
+  let delay: number
+  if (/^\d+$/.test(trimmed)) {
+    delay = Number(trimmed) * 1000
+  } else {
+    const date = Date.parse(trimmed)
+    if (Number.isNaN(date)) {
+      return null
+    }
+    delay = date - Date.now()
+  }
+  return delay > 0 ? delay : null
+}
+
+/**
  * Check if a request should be retried based on method and status code.
  */
 function shouldRetry(
@@ -42,7 +65,7 @@ function shouldRetry(
     return false
   }
 
-  // Only retry idempotent methods (GET, HEAD, OPTIONS)
+  // Only retry idempotent methods (GET, HEAD)
   if (!RETRYABLE_METHODS.includes(method as (typeof RETRYABLE_METHODS)[number])) {
     return false
   }
@@ -66,10 +89,11 @@ export interface RetryableRequest {
 /**
  * Perform a request with the retry policy shared by every PostgREST call.
  *
- * Idempotent methods (GET, HEAD, OPTIONS) are retried up to
- * `DEFAULT_MAX_RETRIES` times when the fetch rejects or the server answers
- * with a retryable status (503, 520). The wait honours the `Retry-After`
- * header when present and backs off exponentially otherwise. Retried
+ * Idempotent methods (GET, HEAD) are retried up to `DEFAULT_MAX_RETRIES`
+ * times when the fetch rejects or the server answers with a retryable status
+ * (503, 520). The wait honours a usable `Retry-After` header and otherwise
+ * backs off exponentially with full jitter. A `Retry-After` over 30 seconds
+ * ends the retries and that response is returned as the outcome. Retried
  * attempts carry an `X-Retry-Count` header. Aborted requests (including
  * `AbortSignal.timeout()`, which rejects with `TimeoutError`) and
  * non-idempotent methods are never retried: their rejection propagates
@@ -135,10 +159,11 @@ export async function fetchWithRetry(
     // Check if we should retry this HTTP response
     if (shouldRetry(request.method, res.status, attemptCount, retryEnabled)) {
       const retryAfterHeader = res.headers?.get('Retry-After') ?? null
-      const delay =
-        retryAfterHeader !== null
-          ? Math.max(0, parseInt(retryAfterHeader, 10) || 0) * 1000
-          : getRetryDelay(attemptCount)
+      const retryAfter = retryAfterHeader !== null ? parseRetryAfter(retryAfterHeader) : null
+      if (retryAfter !== null && retryAfter > MAX_RETRY_DELAY) {
+        return res
+      }
+      const delay = retryAfter ?? getRetryDelay(attemptCount)
       await res.text()
       attemptCount++
       await sleep(delay, request.signal)
