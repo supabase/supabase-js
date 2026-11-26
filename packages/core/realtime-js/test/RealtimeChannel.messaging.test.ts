@@ -1002,6 +1002,43 @@ describe('httpSend', () => {
         'Service Unavailable'
       )
     })
+
+    test('uses the validation errors the server returns', async () => {
+      const errors = { payload: ['Payload size exceeds tenant limit'] }
+      const mockResponse = {
+        status: 422,
+        statusText: '',
+        headers: new Headers(),
+        body: null,
+        json: vi.fn().mockResolvedValue({ errors }),
+      }
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
+        'payload: Payload size exceeds tenant limit'
+      )
+    })
+
+    test('falls back to the status when there is no message or statusText', async () => {
+      const mockResponse = {
+        status: 502,
+        statusText: '',
+        headers: new Headers(),
+        body: null,
+        json: vi.fn().mockRejectedValue(new Error('Invalid JSON')),
+      }
+      const fetchStub = vi.fn().mockResolvedValue(mockResponse)
+      const testSetup = createSocket(true, fetchStub)
+      await testSetup.client.setAuth()
+      const channel = testSetup.client.channel('topic')
+
+      await expect(channel.httpSend('test', { data: 'test' })).rejects.toThrow(
+        'httpSend() failed with status 502'
+      )
+    })
   })
 
   describe('server version errors', () => {
