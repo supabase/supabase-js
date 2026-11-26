@@ -402,6 +402,87 @@ describe('SupabaseClient', () => {
         (signedOutRt as unknown as { accessTokenValue: string | null }).accessTokenValue
       ).toBeNull()
     })
+
+    test('waits for lazy accessToken bootstrap before sending first channel phx_join', async () => {
+      type RealtimeTransport = NonNullable<
+        NonNullable<NonNullable<Parameters<typeof createClient>[2]>['realtime']>['transport']
+      >
+
+      class FakeWebSocket {
+        static readonly CONNECTING = 0
+        static readonly OPEN = 1
+        static readonly CLOSING = 2
+        static readonly CLOSED = 3
+        static latest: FakeWebSocket | null = null
+
+        readyState = FakeWebSocket.CONNECTING
+        bufferedAmount = 0
+        binaryType = 'blob'
+        timeout = 0
+        skipHeartbeat = true
+        onopen: (() => void) | null = null
+        onclose: (() => void) | null = null
+        onerror: (() => void) | null = null
+        onmessage: (() => void) | null = null
+        sent: string[] = []
+
+        constructor() {
+          FakeWebSocket.latest = this
+        }
+
+        send(data: string) {
+          this.sent.push(data)
+        }
+
+        close() {
+          this.readyState = FakeWebSocket.CLOSED
+        }
+
+        open() {
+          this.readyState = FakeWebSocket.OPEN
+          this.onopen?.()
+        }
+      }
+
+      const accessToken = jest.fn().mockResolvedValue('custom-jwt')
+      const client = createClient(URL, KEY, {
+        accessToken,
+        realtime: {
+          transport: FakeWebSocket as unknown as RealtimeTransport,
+          encode: (msg, cb) => cb(JSON.stringify(msg)),
+        },
+      })
+
+      const ch = client.channel('private-room', { config: { private: true } }).subscribe()
+
+      expect(accessToken).toHaveBeenCalledTimes(1)
+      expect(FakeWebSocket.latest).not.toBeNull()
+      // Open the WebSocket immediately before microtasks settle to exercise the race.
+      FakeWebSocket.latest?.open()
+
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      const frames = (FakeWebSocket.latest?.sent ?? []).map(
+        (raw) =>
+          JSON.parse(raw) as { event: string; topic: string; payload: { access_token?: string } }
+      )
+      const joinFrame = frames.find(
+        (frame) => frame.topic === 'realtime:private-room' && frame.event === 'phx_join'
+      )
+
+      expect(joinFrame).toBeDefined()
+      expect(joinFrame?.payload.access_token).toBe('custom-jwt')
+      expect(accessToken).toHaveBeenCalledTimes(1)
+
+      ch.teardown()
+      ;(
+        client.realtime as unknown as {
+          socketAdapter: {
+            socket: { disconnect: (cb: () => void) => void }
+          }
+        }
+      ).socketAdapter.socket.disconnect(() => undefined)
+    })
   })
 
   describe('Realtime Channel Management', () => {

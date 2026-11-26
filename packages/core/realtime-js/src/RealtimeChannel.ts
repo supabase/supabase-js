@@ -317,6 +317,7 @@ export default class RealtimeChannel {
   presence: RealtimePresence
   /** @internal */
   channelAdapter: ChannelAdapter
+  private _pendingSubscribe = false
 
   get state() {
     return this.channelAdapter.state
@@ -432,73 +433,91 @@ export default class RealtimeChannel {
     if (!this.socket.isConnected()) {
       this.socket.connect()
     }
-    if (this.channelAdapter.isClosed()) {
-      const {
-        config: { broadcast, presence, private: isPrivate, postgres_changes_options },
-      } = this.params
-
-      const postgres_changes = this.bindings.postgres_changes?.map((r) => r.filter) ?? []
-
-      const presence_enabled =
-        (!!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] &&
-          this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0) ||
-        this.params.config.presence?.enabled === true
-      const accessTokenPayload: { access_token?: string } = {}
-      const config = {
-        broadcast,
-        presence: { ...presence, enabled: presence_enabled },
-        postgres_changes,
-        private: isPrivate,
-        ...(postgres_changes_options ? { postgres_changes_options } : {}),
-      }
-
-      if (this.socket.accessTokenValue) {
-        accessTokenPayload.access_token = this.socket.accessTokenValue
-      }
-
-      this._onError((reason: unknown) => {
-        callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, normalizeChannelError(reason))
-      })
-
-      this._onClose(() => callback?.(REALTIME_SUBSCRIBE_STATES.CLOSED))
-
-      this.updateJoinPayload({ ...{ config }, ...accessTokenPayload })
-
-      this._updateFilterMessage()
-
-      const joinTimeout =
-        postgres_changes_options?.wait && postgres_changes.length > 0
-          ? Math.max(
-              timeout,
-              (postgres_changes_options.timeout ?? DEFAULT_POSTGRES_CHANGES_WAIT_TIMEOUT) +
-                POSTGRES_CHANGES_WAIT_ERROR_GRACE
-            )
-          : timeout
-
-      this.channelAdapter
-        .subscribe(joinTimeout)
-        .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
-          // Only refresh auth if using callback-based tokens
-          if (!this.socket._isManualToken()) {
-            this.socket.setAuth()
-          }
-          if (postgres_changes === undefined) {
-            callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+    if (this.channelAdapter.isClosed() && !this._pendingSubscribe) {
+      if (!this.joinedOnce && !this.socket.accessTokenValue && this.socket._hasPendingAuth()) {
+        this._pendingSubscribe = true
+        this.socket._waitForAuthIfNeeded().then(() => {
+          if (!this._pendingSubscribe || !this.channelAdapter.isClosed()) {
             return
           }
-
-          this._updatePostgresBindings(postgres_changes, callback)
+          this._pendingSubscribe = false
+          this._performSubscribe(callback, timeout)
         })
-        .receive('error', (error: { [key: string]: any }) => {
-          this.state = CHANNEL_STATES.errored
-          const message = Object.values(error).join(', ') || 'error'
-          callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, new Error(message, { cause: error }))
-        })
-        .receive('timeout', () => {
-          callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
-        })
+        return this
+      }
+      this._performSubscribe(callback, timeout)
     }
     return this
+  }
+
+  private _performSubscribe(
+    callback?: (status: REALTIME_SUBSCRIBE_STATES, err?: Error) => void,
+    timeout = this.timeout
+  ): void {
+    const {
+      config: { broadcast, presence, private: isPrivate, postgres_changes_options },
+    } = this.params
+
+    const postgres_changes = this.bindings.postgres_changes?.map((r) => r.filter) ?? []
+
+    const presence_enabled =
+      (!!this.bindings[REALTIME_LISTEN_TYPES.PRESENCE] &&
+        this.bindings[REALTIME_LISTEN_TYPES.PRESENCE].length > 0) ||
+      this.params.config.presence?.enabled === true
+    const accessTokenPayload: { access_token?: string } = {}
+    const config = {
+      broadcast,
+      presence: { ...presence, enabled: presence_enabled },
+      postgres_changes,
+      private: isPrivate,
+      ...(postgres_changes_options ? { postgres_changes_options } : {}),
+    }
+
+    if (this.socket.accessTokenValue) {
+      accessTokenPayload.access_token = this.socket.accessTokenValue
+    }
+
+    this._onError((reason: unknown) => {
+      callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, normalizeChannelError(reason))
+    })
+
+    this._onClose(() => callback?.(REALTIME_SUBSCRIBE_STATES.CLOSED))
+
+    this.updateJoinPayload({ ...{ config }, ...accessTokenPayload })
+
+    this._updateFilterMessage()
+
+    const joinTimeout =
+      postgres_changes_options?.wait && postgres_changes.length > 0
+        ? Math.max(
+            timeout,
+            (postgres_changes_options.timeout ?? DEFAULT_POSTGRES_CHANGES_WAIT_TIMEOUT) +
+              POSTGRES_CHANGES_WAIT_ERROR_GRACE
+          )
+        : timeout
+
+    this.channelAdapter
+      .subscribe(joinTimeout)
+      .receive('ok', async ({ postgres_changes }: PostgresChangesFilters) => {
+        // Only refresh auth if using callback-based tokens
+        if (!this.socket._isManualToken()) {
+          this.socket.setAuth()
+        }
+        if (postgres_changes === undefined) {
+          callback?.(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED)
+          return
+        }
+
+        this._updatePostgresBindings(postgres_changes, callback)
+      })
+      .receive('error', (error: { [key: string]: any }) => {
+        this.state = CHANNEL_STATES.errored
+        const message = Object.values(error).join(', ') || 'error'
+        callback?.(REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR, new Error(message, { cause: error }))
+      })
+      .receive('timeout', () => {
+        callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
+      })
   }
 
   private _updatePostgresBindings(
@@ -918,7 +937,8 @@ export default class RealtimeChannel {
     filter: { event: string; [key: string]: any },
     callback: (payload: any) => void
   ): RealtimeChannel {
-    const stateCheck = this.channelAdapter.isJoined() || this.channelAdapter.isJoining()
+    const stateCheck =
+      this.channelAdapter.isJoined() || this.channelAdapter.isJoining() || this._pendingSubscribe
     const typeCheck =
       type === REALTIME_LISTEN_TYPES.PRESENCE || type === REALTIME_LISTEN_TYPES.POSTGRES_CHANGES
 
@@ -1208,6 +1228,7 @@ export default class RealtimeChannel {
    * @category Realtime
    */
   async unsubscribe(timeout = this.timeout) {
+    this._pendingSubscribe = false
     return new Promise<RealtimeChannelSendResponse>((resolve) => {
       this.channelAdapter
         .unsubscribe(timeout)
@@ -1223,6 +1244,7 @@ export default class RealtimeChannel {
    * @category Realtime
    */
   teardown() {
+    this._pendingSubscribe = false
     this.channelAdapter.teardown()
   }
 

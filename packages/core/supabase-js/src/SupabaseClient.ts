@@ -86,6 +86,7 @@ export default class SupabaseClient<
 
   private _realtime?: RealtimeClient
   private _storage?: SupabaseStorageClient
+  private _initialRealtimeTokenPromise?: Promise<string | null>
   private realtimeOptions: RealtimeClientOptions
   private storageOptions?: StorageClientOptions
 
@@ -420,6 +421,7 @@ export default class SupabaseClient<
    */
   get realtime(): RealtimeClient {
     if (!this._realtime) {
+      const accessToken = this.accessToken
       const realtime = this._initRealtimeClient({
         headers: this.headers,
         accessToken: this._getAccessToken.bind(this),
@@ -427,11 +429,23 @@ export default class SupabaseClient<
         ...this.realtimeOptions,
       })
       this._realtime = realtime
-      if (this.accessToken) {
-        // Wrap Promise to avoid Firefox extension cross-context Promise access errors
-        Promise.resolve(this.accessToken())
+      if (accessToken) {
+        let initialTokenPromise: Promise<string | null>
+        try {
+          // Wrap Promise to avoid Firefox extension cross-context Promise access errors
+          initialTokenPromise = Promise.resolve(accessToken())
+        } catch (e) {
+          initialTokenPromise = Promise.reject(e)
+        }
+        this._initialRealtimeTokenPromise = initialTokenPromise
+        initialTokenPromise
           .then((token) => realtime.setAuth(token))
           .catch((e) => console.warn('Failed to set initial Realtime auth token:', e))
+          .finally(() => {
+            if (this._initialRealtimeTokenPromise === initialTokenPromise) {
+              this._initialRealtimeTokenPromise = undefined
+            }
+          })
       } else if (this.changedAccessToken !== undefined) {
         realtime.setAuth(this.changedAccessToken)
       }
@@ -671,6 +685,9 @@ export default class SupabaseClient<
    */
   private async _getSessionToken(): Promise<string | null> {
     if (this.accessToken) {
+      if (this._initialRealtimeTokenPromise) {
+        return await this._initialRealtimeTokenPromise
+      }
       return await this.accessToken()
     }
 

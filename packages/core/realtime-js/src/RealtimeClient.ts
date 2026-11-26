@@ -690,12 +690,24 @@ export default class RealtimeClient {
   }
 
   /**
+   * Returns true if an auth operation is currently in flight.
+   * @internal
+   */
+  _hasPendingAuth(): boolean {
+    return this._authPromise !== null
+  }
+
+  /**
    * Wait for any in-flight auth operations to complete
    * @internal
    */
-  private async _waitForAuthIfNeeded(): Promise<void> {
-    if (this._authPromise) {
-      await this._authPromise
+  async _waitForAuthIfNeeded(): Promise<void> {
+    while (this._authPromise) {
+      try {
+        await this._authPromise
+      } catch {
+        // Errors are handled by setAuth callers; continue waiting if another auth superseded.
+      }
     }
   }
 

@@ -571,6 +571,104 @@ describe('Channel Lifecycle Management', () => {
 
       expect(testSetup.emitters.message).toBeCalledTimes(0)
     })
+
+    test('awaits pending async accessToken before sending initial phx_join', async () => {
+      testSetup.cleanup()
+      const accessToken = vi.fn(() => Promise.resolve('callback-jwt'))
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        accessToken,
+      })
+
+      const joinChannel = testSetup.client.channel('private-topic', {
+        config: { private: true },
+      })
+      joinChannel.subscribe()
+
+      await waitForChannelSubscribed(joinChannel)
+
+      expect(testSetup.emitters.message).toHaveBeenCalledWith(
+        'realtime:private-topic',
+        'phx_join',
+        expect.objectContaining({
+          access_token: 'callback-jwt',
+        })
+      )
+    })
+
+    test('defers initial phx_join until slow accessToken resolves after socket connects', async () => {
+      testSetup.cleanup()
+      let resolveToken!: (token: string | null) => void
+      const accessToken = vi.fn(
+        () =>
+          new Promise<string | null>((resolve) => {
+            resolveToken = resolve
+          })
+      )
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        accessToken,
+      })
+
+      const joinChannel = testSetup.client.channel('delayed-topic', {
+        config: { private: true },
+      })
+      joinChannel.subscribe()
+
+      await testSetup.socketConnected()
+      expect(accessToken).toHaveBeenCalledTimes(1)
+      expect(testSetup.emitters.message).not.toHaveBeenCalledWith(
+        'realtime:delayed-topic',
+        'phx_join',
+        expect.anything()
+      )
+
+      resolveToken('delayed-jwt')
+      await waitForChannelSubscribed(joinChannel)
+
+      expect(testSetup.emitters.message).toHaveBeenCalledWith(
+        'realtime:delayed-topic',
+        'phx_join',
+        expect.objectContaining({
+          access_token: 'delayed-jwt',
+        })
+      )
+    })
+
+    test('does not send phx_join if unsubscribed before pending accessToken resolves', async () => {
+      testSetup.cleanup()
+      let resolveToken!: (token: string | null) => void
+      const accessToken = vi.fn(
+        () =>
+          new Promise<string | null>((resolve) => {
+            resolveToken = resolve
+          })
+      )
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        accessToken,
+      })
+
+      const joinChannel = testSetup.client.channel('cancelled-topic', {
+        config: { private: true },
+      })
+      joinChannel.subscribe()
+
+      await testSetup.socketConnected()
+      await joinChannel.unsubscribe()
+
+      resolveToken('late-jwt')
+      await vi.advanceTimersByTimeAsync(20)
+
+      expect(testSetup.emitters.message).not.toHaveBeenCalledWith(
+        'realtime:cancelled-topic',
+        'phx_join',
+        expect.anything()
+      )
+    })
   })
 
   describe('unsubscribe', () => {
@@ -628,5 +726,23 @@ describe('Channel Lifecycle Management', () => {
       // @ts-ignore: simplify typing
       expect(() => ch.on(type, {}, () => {})).not.toThrow()
     })
+
+    test.each(failingTypes)(
+      'fails to add %s listener while subscribe awaits pending accessToken',
+      (type) => {
+        testSetup.cleanup()
+        const accessToken = vi.fn(() => new Promise<string | null>(() => {}))
+        testSetup = setupRealtimeTest({
+          useFakeTimers: true,
+          timeout: defaultTimeout,
+          accessToken,
+        })
+        const ch = testSetup.client.channel('channel').subscribe()
+        // @ts-ignore: simplify typing
+        expect(() => ch.on(type, {}, () => {})).toThrow(
+          `cannot add \`${type}\` callbacks for realtime:channel after \`subscribe()\`.`
+        )
+      }
+    )
   })
 })
