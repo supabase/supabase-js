@@ -116,6 +116,7 @@ export default class SupabaseClient<
    * - `storage` — Options passed along to the storage-js constructor.
    * - `global.fetch` — A custom fetch implementation.
    * - `global.headers` — Any additional headers to send with each network request.
+   * - `global.clientInfo` — Extra `key=value` parameters appended to the `X-Client-Info` header, for libraries built on supabase-js.
    *
    * @example Creating a client
    * ```js

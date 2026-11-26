@@ -110,6 +110,19 @@ const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishabl
 })
 ```
 
+### Identifying a library built on supabase-js
+
+A library that creates clients for its users can append parameters to the `X-Client-Info` header with `global.clientInfo`, without replacing the SDK's own value:
+
+```js
+const supabase = createClient('https://xyzcompany.supabase.co', 'your-publishable-key', {
+  global: { clientInfo: { via: 'my-library/1.2.0' } },
+})
+// X-Client-Info: supabase-js/<version>; runtime=node; ...; via=my-library/1.2.0
+```
+
+The key and value rules are defined in the [spec](https://github.com/supabase/sdk/blob/main/packages/capability-matrix/specs/client/observability/client_info.md). `createClient` throws on an invalid entry. Realtime socket connections are not covered.
+
 ### Distributed Tracing with OpenTelemetry
 
 The Supabase JS SDK can attach W3C/OpenTelemetry trace context headers (`traceparent`, `tracestate`, `baggage`) to outgoing requests, enabling end-to-end request tracing from your client application through Supabase services.
