@@ -14,9 +14,12 @@ describe.each(['upload', 'update', 'signed'] as const)(
 
     beforeEach(() => {
       fetchMock = jest.fn().mockResolvedValue(
-        new Response(JSON.stringify({ Id: 'object-id', Key: 'bucket/sample.bin' }), {
-          headers: { 'content-type': 'application/json' },
-        })
+        new Response(
+          JSON.stringify({ Id: 'object-id', Key: 'bucket/sample.bin', version: 'object-version' }),
+          {
+            headers: { 'content-type': 'application/json' },
+          }
+        )
       )
       files = new StorageClient('http://localhost/storage/v1', {}, fetchMock).from('bucket')
     })
@@ -50,6 +53,15 @@ describe.each(['upload', 'update', 'signed'] as const)(
       }
       return parsed
     }
+
+    test('returns the written version', async () => {
+      const result =
+        operation === 'signed'
+          ? await files.uploadToSignedUrl('sample.bin', 'upload-token', bytes)
+          : await files[operation]('sample.bin', bytes)
+      expect(result.error).toBeNull()
+      expect(result.data?.version).toBe('object-version')
+    })
 
     describe('raw bodies', () => {
       const bodies: [string, (bytes: Buffer) => FileBody][] = [
