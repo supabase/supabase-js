@@ -417,7 +417,7 @@ describe('PKCE verifier slots', () => {
     expect(await getItemAsync(storage, indexKey)).toEqual(['flow-id-bbbb'])
   })
 
-  it('removePKCEVerifier drops the legacy key when it belongs to the removed flow', async () => {
+  it('removePKCEVerifier drops the legacy key when it belongs to the only remaining flow', async () => {
     const storage = memoryLocalStorageAdapter()
 
     await storePKCEVerifier(storage, storageKey, 'flow-id-aaaa', 'verifier-a')
@@ -425,6 +425,23 @@ describe('PKCE verifier slots', () => {
 
     expect(await getItemAsync(storage, legacyKey)).toBeNull()
     expect(await getItemAsync(storage, indexKey)).toBeNull()
+  })
+
+  it('removePKCEVerifier restores the legacy key from the prior live flow', async () => {
+    const storage = memoryLocalStorageAdapter()
+
+    await storePKCEVerifier(storage, storageKey, 'flow-id-aaaa', 'verifier-a')
+    await storePKCEVerifier(storage, storageKey, 'flow-id-bbbb', 'verifier-b')
+    expect(await getItemAsync(storage, legacyKey)).toBe('verifier-b')
+
+    // failed second start: clear only its slot and put the earlier verifier
+    // back on the legacy key that non-flow-id callbacks read
+    await removePKCEVerifier(storage, storageKey, 'flow-id-bbbb')
+
+    expect(await getItemAsync(storage, slotKey('flow-id-bbbb'))).toBeNull()
+    expect(await getItemAsync(storage, slotKey('flow-id-aaaa'))).toBe('verifier-a')
+    expect(await getItemAsync(storage, legacyKey)).toBe('verifier-a')
+    expect(await getItemAsync(storage, indexKey)).toEqual(['flow-id-aaaa'])
   })
 
   it('removePKCEVerifier without a flow id only touches the legacy key', async () => {
