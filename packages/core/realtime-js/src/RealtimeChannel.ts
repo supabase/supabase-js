@@ -1215,10 +1215,11 @@ export default class RealtimeChannel {
     } else {
       const pushSend = (
         resolve: (value: RealtimeChannelSendResponse) => void,
-        reject: (reason?: unknown) => void
+        reject: (reason?: unknown) => void,
+        timeoutMs: number
       ) => {
         try {
-          const push = this.channelAdapter.push(args.type, args, opts.timeout || this.timeout)
+          const push = this.channelAdapter.push(args.type, args, timeoutMs)
 
           if (args.type === 'broadcast' && !this.params?.config?.broadcast?.ack) {
             resolve('ok')
@@ -1234,17 +1235,48 @@ export default class RealtimeChannel {
         }
       }
 
+      const sendTimeout = opts.timeout || this.timeout
+
       if (this._pendingSubscribe) {
         return new Promise<RealtimeChannelSendResponse>((resolve, reject) => {
-          this._pendingSends.push({
-            run: () => pushSend(resolve, reject),
-            cancel: () => resolve('error'),
-          })
+          const deadline = Date.now() + sendTimeout
+          let settled = false
+          let timer: ReturnType<typeof setTimeout> | undefined
+
+          const entry = {
+            run: () => {
+              if (settled) return
+              settled = true
+              if (timer !== undefined) clearTimeout(timer)
+              const remaining = deadline - Date.now()
+              if (remaining <= 0) {
+                resolve('timed out')
+                return
+              }
+              pushSend(resolve, reject, remaining)
+            },
+            cancel: () => {
+              if (settled) return
+              settled = true
+              if (timer !== undefined) clearTimeout(timer)
+              resolve('error')
+            },
+          }
+
+          timer = setTimeout(() => {
+            if (settled) return
+            settled = true
+            const idx = this._pendingSends.indexOf(entry)
+            if (idx !== -1) this._pendingSends.splice(idx, 1)
+            resolve('timed out')
+          }, sendTimeout)
+
+          this._pendingSends.push(entry)
         })
       }
 
       return new Promise<RealtimeChannelSendResponse>((resolve, reject) => {
-        pushSend(resolve, reject)
+        pushSend(resolve, reject, sendTimeout)
       })
     }
   }

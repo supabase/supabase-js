@@ -779,6 +779,41 @@ describe('Channel Lifecycle Management', () => {
       )
     })
 
+    test('times out queued track() while pending auth stalls and does not send it after auth later completes', async () => {
+      testSetup.cleanup()
+      const accessToken = vi.fn(() => new Promise<string | null>(() => {}))
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        accessToken,
+      })
+
+      const joinChannel = testSetup.client.channel('timeout-presence', {
+        config: { private: true },
+      })
+      joinChannel.subscribe()
+
+      const trackPromise = joinChannel.track({ user: 'alice' }, { timeout: 50 })
+      await testSetup.socketConnected()
+
+      await vi.advanceTimersByTimeAsync(50)
+      await expect(trackPromise).resolves.toBe('timed out')
+
+      await testSetup.client.setAuth('late-jwt')
+      await waitForChannelSubscribed(joinChannel)
+
+      expect(testSetup.emitters.message).toHaveBeenCalledWith(
+        'realtime:timeout-presence',
+        'phx_join',
+        expect.objectContaining({ access_token: 'late-jwt' })
+      )
+      expect(testSetup.emitters.message).not.toHaveBeenCalledWith(
+        'realtime:timeout-presence',
+        'presence',
+        expect.anything()
+      )
+    })
+
     test('resumes deferred subscribe when a superseding setAuth(token) completes while initial accessToken hangs', async () => {
       testSetup.cleanup()
       const accessToken = vi.fn(() => new Promise<string | null>(() => {}))
