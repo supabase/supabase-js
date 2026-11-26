@@ -8,6 +8,7 @@ import {
   JWKS_TTL,
   PKCE_FLOW_ID_PARAM,
   REFRESH_FAILURE_COOLDOWN_MS,
+  SESSION_WRITE_WAIT_MS,
   STORAGE_KEY,
 } from './lib/constants'
 import {
@@ -239,6 +240,22 @@ const GLOBAL_JWKS: { [storageKey: string]: { cachedAt: number; jwks: { keys: JWK
 // construct many clients per process and must not be spammed.
 let deprecatedLockWarned = false
 
+/**
+ * Makes a session write yield to newer ones: it is skipped once this client
+ * wrote a session other than the one holding `refreshToken`, or removed the
+ * session, after the read that gave `writesAtRead` (see `_queueSessionWrite`).
+ *
+ * That only sees this client's writes. `storedRefreshToken` is for those of
+ * another client sharing the storage (typically another tab): the refresh
+ * token last read from storage, for writes that are also skipped when storage
+ * no longer holds it (see `_queueSessionWrite`).
+ */
+type SessionWriteGuard = {
+  writesAtRead: number
+  refreshToken: string | null
+  storedRefreshToken?: string
+}
+
 export default class GoTrueClient {
   private static nextInstanceID: Record<string, number> = {}
 
@@ -323,13 +340,34 @@ export default class GoTrueClient {
     expiresAt: number
   } | null = null
   /**
-   * Monotonic counter incremented at the top of `_removeSession`, before any
-   * `await`. The commit guard inside `_callRefreshToken` captures this value
-   * before `_saveSession` and re-checks it after, so a `signOut` that
-   * interleaves inside `_saveSession`'s storage-write awaits is still caught
-   * (the post-fetch storage snapshot alone misses that window).
+   * The session saves and removals of this client that reached storage: how
+   * many, and the refresh token of the last one (`null` for a removal). A
+   * refresh never deletes or overwrites a session that reached storage after
+   * the read that started it: `count` is noted before that read, and the
+   * refresh's writes compare against it when their turn in
+   * `_sessionWriteQueue` comes (see `SessionWriteGuard`). A storage read alone
+   * cannot catch this: its result is already stale when the write that depends
+   * on it runs.
    */
-  protected _sessionRemovalEpoch = 0
+  private _sessionWrites: { count: number; lastRefreshToken: string | null } = {
+    count: 0,
+    lastRefreshToken: null,
+  }
+  /**
+   * Every write to the session's storage keys runs after the ones queued
+   * before it have finished, so storage ends up in the order the writes were
+   * made even with an adapter that does not apply calls in order (for
+   * example one that encrypts before writing) or is slow. A guarded write's
+   * check of `_sessionWrites` runs in its turn, so none of this client's
+   * writes lands between the check and the write.
+   *
+   * Waiting for the writes ahead is limited to `SESSION_WRITE_WAIT_MS`, so a
+   * storage call that never finishes cannot block sign-outs and refreshes
+   * forever. Writes held up that long can land out of order, as any
+   * overlapping writes could without the queue, except that a guarded save
+   * does not bring back a signed-out session (see `_saveSession`).
+   */
+  private _sessionWriteQueue: Promise<unknown> = Promise.resolve()
   /**
    * Keeps track of the async client initialization.
    * When null or not yet resolved the auth state is `unknown`
@@ -2988,19 +3026,25 @@ export default class GoTrueClient {
               session: null
             }
             error: null
-          }
+          },
+      writesAtRead: number
     ) => Promise<R>
   ): Promise<R> {
     this._debug('#_useSession', 'begin')
+
+    // Noted before the read, so a refresh that `fn` starts for the session it
+    // was given (`writesAtRead` passed to `_callRefreshToken`) also yields to a
+    // session that reached storage while the read was in flight.
+    const writesAtRead = this._sessionWrites.count
 
     try {
       // Concurrent callers may both reach __loadSession; storage reads are
       // idempotent, and the only write path inside it (refresh) is
       // single-flighted downstream by `refreshingDeferred` in
       // `_callRefreshToken`. No serialization is needed at this layer.
-      const result = await this.__loadSession()
+      const result = await this.__loadSession(writesAtRead)
 
-      return await fn(result)
+      return await fn(result, writesAtRead)
     } finally {
       this._debug('#_useSession', 'end')
     }
@@ -3010,8 +3054,11 @@ export default class GoTrueClient {
    * NEVER USE DIRECTLY!
    *
    * Always use `_useSession`.
+   *
+   * @param writesAtRead `_sessionWrites.count` from before this read. A
+   * refresh of the session read here is checked against it.
    */
-  private async __loadSession(): Promise<
+  private async __loadSession(writesAtRead: number): Promise<
     | {
         data: {
           session: Session
@@ -3050,7 +3097,7 @@ export default class GoTrueClient {
           currentSession = maybeSession
         } else {
           this._debug('#getSession()', 'session from storage is not valid')
-          await this._removeSession()
+          await this._removeSession({ writesAtRead, refreshToken: null })
         }
       }
 
@@ -3078,7 +3125,10 @@ export default class GoTrueClient {
         return { data: { session: await this._hydrateSessionUser(currentSession) }, error: null }
       }
 
-      const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
+      const { data: session, error } = await this._callRefreshToken(
+        currentSession.refresh_token,
+        writesAtRead
+      )
       if (error) {
         // A failed refresh does not mean there is no session. Storage is the
         // source of truth at this point, because either:
@@ -3128,7 +3178,7 @@ export default class GoTrueClient {
         this.storageKey + '-user'
       )) as any
 
-      session.user = maybeUser?.user ? maybeUser.user : userNotAvailableProxy()
+      session.user = this._storedUserFor(session, maybeUser) ?? userNotAvailableProxy()
     }
 
     // Warns when properties of the user are accessed, not when session.user itself is accessed.
@@ -3142,6 +3192,28 @@ export default class GoTrueClient {
     }
 
     return session
+  }
+
+  /**
+   * The user kept in `userStorage` for `session`, or `null` when none is kept
+   * or the kept one belongs to another session. Overlapping saves on an
+   * adapter that does not apply writes in call order can leave one
+   * session's user beside another session's tokens, so the user must match
+   * the access token's `sub` claim. An access token that is not a JWT is not
+   * checked.
+   */
+  private _storedUserFor(session: Session, stored: { user?: User | null } | null): User | null {
+    const user = stored?.user
+    if (!user) {
+      return null
+    }
+    let subject: unknown
+    try {
+      subject = decodeJWT(session.access_token).payload.sub
+    } catch {
+      return user
+    }
+    return subject === undefined || subject === user.id ? user : null
   }
 
   /**
@@ -3244,7 +3316,16 @@ export default class GoTrueClient {
     return result
   }
 
-  private async _getUser(jwt?: string): Promise<UserResponse> {
+  /**
+   * @param ifCurrent Set when `jwt` belongs to a session read from storage
+   * (see `SessionWriteGuard`): if the server no longer knows it, it is then
+   * removed only when no newer session was saved or removed since.
+   */
+  private async _getUser(jwt?: string, ifCurrent?: SessionWriteGuard): Promise<UserResponse> {
+    // Set once the answer that the session is gone was handled: the session
+    // it was about was removed, unless a newer one was saved or removed
+    // meanwhile.
+    let sessionMissingHandled = false
     try {
       if (jwt) {
         return await _request(this.fetch, 'GET', `${this.url}/user`, {
@@ -3254,9 +3335,18 @@ export default class GoTrueClient {
         })
       }
 
-      return await this._useSession(async (result) => {
+      return await this._useSession(async (result, writesAtRead) => {
         const { data, error } = result
         if (error) {
+          if (isAuthSessionMissingError(error)) {
+            // The refresh has usually removed it already, which this then
+            // skips. It has not when the error is its cached failure.
+            await this._removeSession({
+              writesAtRead,
+              refreshToken: this.lastRefreshFailure?.refreshToken ?? null,
+            })
+            sessionMissingHandled = true
+          }
           throw error
         }
 
@@ -3265,19 +3355,32 @@ export default class GoTrueClient {
           return { data: { user: null }, error: new AuthSessionMissingError() }
         }
 
-        return await _request(this.fetch, 'GET', `${this.url}/user`, {
-          headers: this.headers,
-          jwt: data.session?.access_token ?? undefined,
-          xform: _userResponse,
-        })
+        try {
+          return await _request(this.fetch, 'GET', `${this.url}/user`, {
+            headers: this.headers,
+            jwt: data.session?.access_token ?? undefined,
+            xform: _userResponse,
+          })
+        } catch (error) {
+          if (isAuthSessionMissingError(error)) {
+            // Only the session that was checked is gone; one saved while the
+            // request was in flight is kept.
+            await this._removeSession({
+              writesAtRead,
+              refreshToken: data.session?.refresh_token ?? null,
+            })
+            sessionMissingHandled = true
+          }
+          throw error
+        }
       })
     } catch (error) {
       if (isAuthError(error)) {
-        if (isAuthSessionMissingError(error)) {
+        if (isAuthSessionMissingError(error) && !sessionMissingHandled) {
           // JWT contains a `session_id` which does not correspond to an active
           // session in the database, indicating the user is signed out.
 
-          await this._removeSession()
+          await this._removeSession(ifCurrent)
         }
 
         return this._returnResult({ data: { user: null }, error })
@@ -3811,7 +3914,10 @@ export default class GoTrueClient {
     refresh_token: string
   }): Promise<AuthResponse> {
     try {
-      return await this._useSession(async (result) => {
+      return await this._useSession(async (result, writesAtRead) => {
+        // Only a token that came from the read is tied to `writesAtRead`; an
+        // explicit `currentSession` is tracked from the refresh's start.
+        const tokenFromRead = !currentSession
         if (!currentSession) {
           const { data, error } = result
           if (error) {
@@ -3825,7 +3931,10 @@ export default class GoTrueClient {
           throw new AuthSessionMissingError()
         }
 
-        const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
+        const { data: session, error } = await this._callRefreshToken(
+          currentSession.refresh_token,
+          tokenFromRead ? writesAtRead : undefined
+        )
         if (error) {
           return this._returnResult({ data: { user: null, session: null }, error: error })
         }
@@ -4921,8 +5030,26 @@ export default class GoTrueClient {
     const debugName = '#_recoverAndRefresh()'
     this._debug(debugName, 'begin')
 
+    // Noted before the read, so a refresh of the session read here also
+    // yields to a session that reached storage while the read was in flight.
+    const writesAtRead = this._sessionWrites.count
+
     try {
       const currentSession = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+
+      // Recovery's writes and events about the session read above are
+      // skipped once a newer session was saved or removed since that read.
+      // That newer write is current and has notified on its own, so recovery
+      // then stops.
+      const readSession: SessionWriteGuard = {
+        writesAtRead,
+        refreshToken: currentSession?.refresh_token ?? null,
+      }
+      const announceIfStillCurrent = async () => {
+        if (!this._sessionReplacedSince(readSession)) {
+          await this._notifyAllSubscribers('SIGNED_IN', currentSession)
+        }
+      }
 
       if (currentSession && this.userStorage) {
         let maybeUser: { user: User | null } | null = (await getItemAsync(
@@ -4936,11 +5063,21 @@ export default class GoTrueClient {
           // storage stored, store it first thereby migrating the user object
           // from storage -> userStorage
 
-          maybeUser = { user: currentSession.user }
-          await setItemAsync(this.userStorage, this.storageKey + '-user', maybeUser)
+          const userStorage = this.userStorage
+          const migratedUser = { user: currentSession.user }
+          maybeUser = migratedUser
+          if (
+            !(await this._queueSessionWrite(
+              () => setItemAsync(userStorage, this.storageKey + '-user', migratedUser),
+              readSession
+            ))
+          ) {
+            return
+          }
         }
 
-        currentSession.user = maybeUser?.user ?? userNotAvailableProxy()
+        currentSession.user =
+          this._storedUserFor(currentSession, maybeUser) ?? userNotAvailableProxy()
       } else if (currentSession && !currentSession.user) {
         // user storage is not set, let's check if it was previously enabled so
         // we bring back the storage as it should be
@@ -4952,11 +5089,18 @@ export default class GoTrueClient {
             this.storageKey + '-user'
           )) as any
 
-          if (separateUser && separateUser?.user) {
-            currentSession.user = separateUser.user
+          const storedUser = this._storedUserFor(currentSession, separateUser)
+          if (storedUser) {
+            currentSession.user = storedUser
 
-            await removeItemAsync(this.storage, this.storageKey + '-user')
-            await setItemAsync(this.storage, this.storageKey, currentSession)
+            if (
+              !(await this._queueSessionWrite(async () => {
+                await removeItemAsync(this.storage, this.storageKey + '-user')
+                await setItemAsync(this.storage, this.storageKey, currentSession)
+              }, readSession))
+            ) {
+              return
+            }
           } else {
             currentSession.user = userNotAvailableProxy()
           }
@@ -4968,7 +5112,7 @@ export default class GoTrueClient {
       if (!this._isValidSession(currentSession)) {
         this._debug(debugName, 'session is not valid')
         if (currentSession !== null) {
-          await this._removeSession()
+          await this._removeSession(readSession)
         }
 
         return
@@ -4984,7 +5128,7 @@ export default class GoTrueClient {
 
       if (expiresWithMargin) {
         if (this.autoRefreshToken && currentSession.refresh_token) {
-          const { error } = await this._callRefreshToken(currentSession.refresh_token)
+          const { error } = await this._callRefreshToken(currentSession.refresh_token, writesAtRead)
 
           if (error) {
             // `_callRefreshToken` is the single source of truth for refresh
@@ -5006,12 +5150,16 @@ export default class GoTrueClient {
       ) {
         // If we have a proxy user, try to get the real user data
         try {
-          const { data, error: userError } = await this._getUser(currentSession.access_token)
+          const { data, error: userError } = await this._getUser(
+            currentSession.access_token,
+            readSession
+          )
 
           if (!userError && data?.user) {
             currentSession.user = data.user
-            await this._saveSession(currentSession)
-            await this._notifyAllSubscribers('SIGNED_IN', currentSession)
+            if (await this._saveSession(currentSession, readSession)) {
+              await announceIfStillCurrent()
+            }
           } else {
             this._debug(debugName, 'could not get user data, skipping SIGNED_IN notification')
           }
@@ -5027,7 +5175,7 @@ export default class GoTrueClient {
         // no need to persist currentSession again, as we just loaded it from
         // local storage; persisting it again may overwrite a value saved by
         // another client with access to the same local storage
-        await this._notifyAllSubscribers('SIGNED_IN', currentSession)
+        await announceIfStillCurrent()
       }
     } catch (err) {
       this._debug(debugName, 'error', err)
@@ -5047,7 +5195,18 @@ export default class GoTrueClient {
     }
   }
 
-  private async _callRefreshToken(refreshToken: string): Promise<CallRefreshTokenResult> {
+  /**
+   * Refreshes the session for `refreshToken` and stores the result.
+   *
+   * @param writesAtRead `_sessionWrites.count` from before the caller read
+   * `refreshToken` from storage. Callers with a token that did not come from
+   * storage (`setSession`, `refreshSession({ refresh_token })`) omit it, and
+   * the refresh tracks writes from the moment it starts instead.
+   */
+  private async _callRefreshToken(
+    refreshToken: string,
+    writesAtRead: number = this._sessionWrites.count
+  ): Promise<CallRefreshTokenResult> {
     if (!refreshToken) {
       throw new AuthSessionMissingError()
     }
@@ -5096,66 +5255,38 @@ export default class GoTrueClient {
       this.refreshingDeferred.promise.then(undefined, () => {})
 
       // Snapshot storage before the fetch. The commit guard discards the
-      // rotated tokens only when a non-null pre-fetch snapshot changed under
-      // us — typical case: a concurrent `signOut` ran `_removeSession`, or
-      // another tab's refresh rewrote the slot. Callers passing
-      // externally-sourced tokens (SSR cookie handoff, multi-account
-      // switching, `setSession`/`refreshSession({ refresh_token })`) may
-      // start from a null snapshot OR from a non-null snapshot whose
-      // refresh_token differs from the one they're hydrating; in both
-      // cases the guard fires only when storage was *modified between
-      // snapshots*, not when the input token disagrees with what's stored.
+      // rotated tokens when a non-null pre-fetch snapshot changed under us —
+      // typical case: another tab's sign-out or refresh rewrote the slot.
+      // Callers passing externally-sourced tokens (SSR cookie handoff,
+      // multi-account switching, `setSession`/`refreshSession({ refresh_token })`)
+      // may start from a null snapshot OR from a non-null snapshot whose
+      // refresh_token differs from the one they're hydrating; in both cases
+      // the guard fires only when storage was *modified since the snapshot*,
+      // not when the input token disagrees with what's stored.
       const storedAtStart = (await getItemAsync(this.storage, this.storageKey)) as Session | null
 
       const { data, error } = await this._refreshAccessToken(refreshToken)
       if (error) throw error
       if (!data.session) throw new AuthSessionMissingError()
 
-      const storedAfter = (await getItemAsync(this.storage, this.storageKey)) as Session | null
-      const storageChangedUnderUs =
-        storedAtStart !== null &&
-        (storedAfter === null || storedAfter.refresh_token !== storedAtStart.refresh_token)
+      // The commit guard runs in the save, after the writes ahead of it in
+      // `_sessionWriteQueue`, so it also covers the time spent waiting for
+      // them. Comparing the snapshot catches other
+      // clients' writes, and `writesAtRead` this client's, including one saved
+      // or removed while the snapshot was being read (e.g. a
+      // `signInWithPassword` or `signOut` racing the refresh). A write made
+      // once this save is queued lands after it.
+      const saved = await this._saveSession(data.session, {
+        writesAtRead,
+        refreshToken,
+        storedRefreshToken: storedAtStart?.refresh_token,
+      })
 
-      if (storageChangedUnderUs) {
+      if (!saved) {
         this._debug(
           debugName,
-          'commit guard: storage changed since refresh started, discarding rotated tokens',
-          {
-            // Presence indicators only — never log refresh token fragments,
-            // even partial. Logs may be forwarded to third-party services.
-            startedWith: 'present',
-            nowHolds: storedAfter ? 'replaced' : 'cleared',
-          }
+          'commit guard: another session was saved or removed during the refresh, discarding rotated tokens'
         )
-        const discarded: CallRefreshTokenResult = {
-          data: null,
-          error: new AuthRefreshDiscardedError(),
-        }
-        this.refreshingDeferred.resolve(discarded)
-        return discarded
-      }
-
-      // Second leg of the commit guard: close the TOCTOU window between the
-      // synchronous `storageChangedUnderUs` check and the actual storage
-      // writes inside `_saveSession`. A concurrent `signOut → _removeSession`
-      // can land inside `_saveSession`'s `await setItemAsync(...)` yields and
-      // clear storage just before we overwrite it. Capture the epoch BEFORE
-      // the save and re-check after; if it advanced, undo the write directly
-      // (do NOT call `_removeSession` — that would emit a duplicate
-      // SIGNED_OUT for the concurrent signOut that already fired one).
-      const epochBeforeSave = this._sessionRemovalEpoch
-
-      await this._saveSession(data.session)
-
-      if (this._sessionRemovalEpoch !== epochBeforeSave) {
-        this._debug(
-          debugName,
-          'commit guard (post-save): _removeSession ran during _saveSession, undoing write'
-        )
-        await removeItemAsync(this.storage, this.storageKey)
-        if (this.userStorage) {
-          await removeItemAsync(this.userStorage, this.storageKey + '-user')
-        }
         const discarded: CallRefreshTokenResult = {
           data: null,
           error: new AuthRefreshDiscardedError(),
@@ -5202,8 +5333,20 @@ export default class GoTrueClient {
               debugName,
               'proactive refresh failed, access token still valid — preserving session'
             )
-          } else {
-            await this._removeSession()
+          } else if (
+            !(await this._removeSession({
+              writesAtRead,
+              refreshToken,
+              storedRefreshToken: storedNow?.refresh_token,
+            }))
+          ) {
+            // A session saved or removed since the refresh started (possibly
+            // while `storedNow` was being read) is newer than the token that
+            // was just rejected, so it was not deleted.
+            this._debug(
+              debugName,
+              'refresh failed, but another session was saved or removed meanwhile, leaving storage as is'
+            )
           }
         }
 
@@ -5229,6 +5372,87 @@ export default class GoTrueClient {
       this.refreshingDeferred = null
       this._debug(debugName, 'end')
     }
+  }
+
+  /**
+   * Notes a session save (its refresh token) or removal (`null`) that reached
+   * storage. Runs from `_sessionWriteQueue`, before the queue moves on, so the
+   * next write's check sees it.
+   */
+  private _recordSessionWrite(refreshToken: string | null) {
+    this._sessionWrites = {
+      count: this._sessionWrites.count + 1,
+      lastRefreshToken: refreshToken,
+    }
+  }
+
+  /**
+   * Whether the session this client last wrote since `writesAtRead` is another
+   * one than `refreshToken`'s, or was a removal. Only writes that reached
+   * storage count, so after a failed one the guarded write goes ahead, and
+   * ending on the same session (same refresh token) does not count. A write
+   * still in progress is not counted: it was queued after the caller's writes,
+   * so it lands after them and announces its session itself.
+   */
+  private _sessionReplacedSince({ writesAtRead, refreshToken }: SessionWriteGuard): boolean {
+    const { count, lastRefreshToken } = this._sessionWrites
+    return count > writesAtRead && lastRefreshToken !== refreshToken
+  }
+
+  /**
+   * Resolves when `ahead` has finished, or after `SESSION_WRITE_WAIT_MS`. See
+   * `_sessionWriteQueue`.
+   */
+  private async _waitForSessionWrites(ahead: Promise<unknown>): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const waited = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, SESSION_WRITE_WAIT_MS)
+    })
+    try {
+      await Promise.race([ahead, waited])
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  /**
+   * Queues `write`, a write to the session's storage keys, behind the ones
+   * queued before it. See `_sessionWriteQueue`.
+   *
+   * @param ifCurrent Set when the write must not replace a newer session:
+   * `write` is then skipped when, by the time it reaches the front of the
+   * queue, `_sessionReplacedSince` holds. Every write queued before it has
+   * finished by then, or ran out of time.
+   *
+   * With `storedRefreshToken`, storage is read first, once the writes ahead
+   * have finished. The read is not part of the queue, so a slow read does not
+   * hold up other writes: one made during it is queued ahead of `write`, which
+   * then yields to it. Storage has no compare-and-swap, so another client's
+   * write right after the read can still be overwritten. Reading as late as
+   * possible only keeps that gap small.
+   * @returns Whether `write` ran.
+   */
+  private async _queueSessionWrite(
+    write: () => Promise<unknown>,
+    ifCurrent?: SessionWriteGuard
+  ): Promise<boolean> {
+    if (ifCurrent?.storedRefreshToken !== undefined) {
+      await this._waitForSessionWrites(this._sessionWriteQueue)
+      const stored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+      if (stored?.refresh_token !== ifCurrent.storedRefreshToken) {
+        return false
+      }
+    }
+
+    const run = this._waitForSessionWrites(this._sessionWriteQueue).then(async () => {
+      if (ifCurrent && this._sessionReplacedSince(ifCurrent)) {
+        return false
+      }
+      await write()
+      return true
+    })
+    this._sessionWriteQueue = run.catch(() => {})
+    return run
   }
 
   private async _notifyAllSubscribers(
@@ -5284,21 +5508,50 @@ export default class GoTrueClient {
   /**
    * set currentSession and currentUser
    * process to _startAutoRefreshToken if possible
+   *
+   * @param ifCurrent Set when the session must not replace a newer one: it
+   * comes from refreshing, or was read from storage as, the session holding
+   * `refreshToken`, and `writesAtRead` was noted before that read. The save
+   * is then skipped once another session was saved or removed since (see
+   * `_queueSessionWrite`), so it never overwrites it.
+   * @returns `false` when the save was skipped for that reason, otherwise
+   * `true`.
    */
-  private async _saveSession(session: Session) {
+  private async _saveSession(session: Session, ifCurrent?: SessionWriteGuard): Promise<boolean> {
     this._debug('#_saveSession()', session)
-    // _saveSession is always called whenever a new session has been acquired
-    // so we can safely suppress the warning returned by future getSession calls
-    this.suppressGetSessionWarning = true
+    let undone = false
+    const ran = await this._queueSessionWrite(async () => {
+      // _saveSession is always called whenever a new session has been acquired
+      // so we can safely suppress the warning returned by future getSession calls
+      this.suppressGetSessionWarning = true
+      const writesBefore = this._sessionWrites.count
+      await this._writeSession(session)
+      const { count, lastRefreshToken } = this._sessionWrites
+      if (ifCurrent && count > writesBefore && lastRefreshToken === null) {
+        // This write took so long that a sign-out stopped waiting for it, and
+        // then landed over it. A refreshed session must not bring it back.
+        undone = true
+        await this._clearSession()
+        return
+      }
+      this._recordSessionWrite(session.refresh_token)
+    }, ifCurrent)
+    return ran && !undone
+  }
+
+  /** The storage writes of `_saveSession`. Runs from `_sessionWriteQueue`. */
+  private async _writeSession(session: Session): Promise<void> {
     // Create a shallow copy to work with, to avoid mutating the original session object if it's used elsewhere
     const sessionToProcess = { ...session }
 
     const userIsProxy =
       sessionToProcess.user && (sessionToProcess.user as any).__isUserNotAvailableProxy === true
-    if (this.userStorage) {
+
+    const userStorage = this.userStorage
+    if (userStorage) {
       if (!userIsProxy && sessionToProcess.user) {
         // If it's a real user object, save it to userStorage.
-        await setItemAsync(this.userStorage, this.storageKey + '-user', {
+        await setItemAsync(userStorage, this.storageKey + '-user', {
           user: sessionToProcess.user,
         })
       } else if (userIsProxy) {
@@ -5324,29 +5577,41 @@ export default class GoTrueClient {
     }
   }
 
-  private async _removeSession() {
-    // Bump synchronously, BEFORE any `await`, so that `_callRefreshToken`'s
-    // post-save check sees the increment whenever this method has started —
-    // even if it hasn't finished. Pairs with the epoch check in
-    // `_callRefreshToken`. See `_sessionRemovalEpoch` field doc.
-    this._sessionRemovalEpoch += 1
+  /**
+   * @param ifCurrent Set when the session to remove was read from storage
+   * (see `SessionWriteGuard`): the removal, and its SIGNED_OUT, are then
+   * skipped once a newer session was saved or removed since.
+   * @returns Whether the session was removed.
+   */
+  private async _removeSession(ifCurrent?: SessionWriteGuard): Promise<boolean> {
     this._debug('#_removeSession()')
 
+    const removed = await this._queueSessionWrite(async () => {
+      await this._clearSession()
+      await removeAllPKCEVerifiers(this.storage, this.storageKey)
+    }, ifCurrent)
+
+    if (removed) {
+      await this._notifyAllSubscribers('SIGNED_OUT', null)
+    }
+    return removed
+  }
+
+  /** Clears the session's storage keys. Runs from `_sessionWriteQueue`. */
+  private async _clearSession(): Promise<void> {
     // The session is gone — no point holding on to a cached refresh failure
-    // for a token that no longer exists. Synchronous, before any `await`.
+    // for a token that no longer exists.
     this.lastRefreshFailure = null
 
     this.suppressGetSessionWarning = false
 
     await removeItemAsync(this.storage, this.storageKey)
-    await removeAllPKCEVerifiers(this.storage, this.storageKey)
+    this._recordSessionWrite(null)
     await removeItemAsync(this.storage, this.storageKey + '-user')
 
     if (this.userStorage) {
       await removeItemAsync(this.userStorage, this.storageKey + '-user')
     }
-
-    await this._notifyAllSubscribers('SIGNED_OUT', null)
   }
 
   /**
@@ -5576,7 +5841,7 @@ export default class GoTrueClient {
           try {
             const now = Date.now()
             try {
-              return await this._useSession(async (result) => {
+              return await this._useSession(async (result, writesAtRead) => {
                 const {
                   data: { session },
                 } = result
@@ -5596,7 +5861,7 @@ export default class GoTrueClient {
                 )
 
                 if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-                  await this._callRefreshToken(session.refresh_token)
+                  await this._callRefreshToken(session.refresh_token, writesAtRead)
                 }
               })
             } catch (e) {
@@ -5631,7 +5896,7 @@ export default class GoTrueClient {
       const now = Date.now()
 
       try {
-        await this._useSession(async (result) => {
+        await this._useSession(async (result, writesAtRead) => {
           const {
             data: { session },
           } = result
@@ -5652,7 +5917,7 @@ export default class GoTrueClient {
           )
 
           if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-            await this._callRefreshToken(session.refresh_token)
+            await this._callRefreshToken(session.refresh_token, writesAtRead)
           }
         })
       } catch (e) {
