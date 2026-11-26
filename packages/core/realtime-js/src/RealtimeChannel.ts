@@ -318,6 +318,10 @@ export default class RealtimeChannel {
   /** @internal */
   channelAdapter: ChannelAdapter
   private _pendingSubscribe = false
+  private _pendingSends: Array<{
+    run: () => void
+    cancel: () => void
+  }> = []
 
   get state() {
     return this.channelAdapter.state
@@ -438,10 +442,13 @@ export default class RealtimeChannel {
         this._pendingSubscribe = true
         this.socket._waitForAuthIfNeeded().then(() => {
           if (!this._pendingSubscribe || !this.channelAdapter.isClosed()) {
+            this._pendingSubscribe = false
+            this._cancelPendingSends()
             return
           }
           this._pendingSubscribe = false
           this._performSubscribe(callback, timeout)
+          this._flushPendingSends()
         })
         return this
       }
@@ -518,6 +525,22 @@ export default class RealtimeChannel {
       .receive('timeout', () => {
         callback?.(REALTIME_SUBSCRIBE_STATES.TIMED_OUT)
       })
+  }
+
+  private _flushPendingSends(): void {
+    const pendingSends = this._pendingSends
+    this._pendingSends = []
+    for (const pending of pendingSends) {
+      pending.run()
+    }
+  }
+
+  private _cancelPendingSends(): void {
+    const pendingSends = this._pendingSends
+    this._pendingSends = []
+    for (const pending of pendingSends) {
+      pending.cancel()
+    }
   }
 
   private _updatePostgresBindings(
@@ -1190,18 +1213,38 @@ export default class RealtimeChannel {
         }
       }
     } else {
-      return new Promise((resolve) => {
-        const push = this.channelAdapter.push(args.type, args, opts.timeout || this.timeout)
+      const pushSend = (
+        resolve: (value: RealtimeChannelSendResponse) => void,
+        reject: (reason?: unknown) => void
+      ) => {
+        try {
+          const push = this.channelAdapter.push(args.type, args, opts.timeout || this.timeout)
 
-        if (args.type === 'broadcast' && !this.params?.config?.broadcast?.ack) {
-          resolve('ok')
+          if (args.type === 'broadcast' && !this.params?.config?.broadcast?.ack) {
+            resolve('ok')
+          }
+
+          push.receive('ok', () => resolve('ok'))
+          push.receive('error', (response) =>
+            resolve(args.persist && typeof response?.error === 'string' ? response.error : 'error')
+          )
+          push.receive('timeout', () => resolve('timed out'))
+        } catch (error) {
+          reject(error)
         }
+      }
 
-        push.receive('ok', () => resolve('ok'))
-        push.receive('error', (response) =>
-          resolve(args.persist && typeof response?.error === 'string' ? response.error : 'error')
-        )
-        push.receive('timeout', () => resolve('timed out'))
+      if (this._pendingSubscribe) {
+        return new Promise<RealtimeChannelSendResponse>((resolve, reject) => {
+          this._pendingSends.push({
+            run: () => pushSend(resolve, reject),
+            cancel: () => resolve('error'),
+          })
+        })
+      }
+
+      return new Promise<RealtimeChannelSendResponse>((resolve, reject) => {
+        pushSend(resolve, reject)
       })
     }
   }
@@ -1229,6 +1272,7 @@ export default class RealtimeChannel {
    */
   async unsubscribe(timeout = this.timeout) {
     this._pendingSubscribe = false
+    this._cancelPendingSends()
     return new Promise<RealtimeChannelSendResponse>((resolve) => {
       this.channelAdapter
         .unsubscribe(timeout)
@@ -1245,6 +1289,7 @@ export default class RealtimeChannel {
    */
   teardown() {
     this._pendingSubscribe = false
+    this._cancelPendingSends()
     this.channelAdapter.teardown()
   }
 
@@ -1404,7 +1449,7 @@ export default class RealtimeChannel {
   }
 
   copyBindings(other: RealtimeChannel) {
-    if (this.joinedOnce) {
+    if (this.joinedOnce || this._pendingSubscribe) {
       throw new Error('cannot copy bindings into joined channel')
     }
     for (const kind in other.bindings) {

@@ -669,6 +669,163 @@ describe('Channel Lifecycle Management', () => {
         expect.anything()
       )
     })
+
+    test('queues track() and untrack() called after subscribe() while pending auth resolves', async () => {
+      testSetup.cleanup()
+      let resolveToken!: (token: string | null) => void
+      const accessToken = vi.fn(
+        () =>
+          new Promise<string | null>((resolve) => {
+            resolveToken = resolve
+          })
+      )
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        accessToken,
+        socketHandlers: {
+          presence: (socket, message) => {
+            socket.send(phxReply(message as string, { status: 'ok', response: {} }))
+          },
+        },
+      })
+
+      const joinChannel = testSetup.client.channel('presence-topic', {
+        config: { private: true },
+      })
+      joinChannel.subscribe()
+
+      const trackPromise = joinChannel.track({ user: 'alice' })
+      const untrackPromise = joinChannel.untrack()
+
+      await testSetup.socketConnected()
+      expect(testSetup.emitters.message).not.toHaveBeenCalled()
+
+      resolveToken('presence-jwt')
+
+      await expect(trackPromise).resolves.toBe('ok')
+      await expect(untrackPromise).resolves.toBe('ok')
+
+      expect(testSetup.emitters.message.mock.calls.map((call) => call[1])).toEqual([
+        'phx_join',
+        'presence',
+        'presence',
+      ])
+      expect(testSetup.emitters.message).toHaveBeenNthCalledWith(
+        1,
+        'realtime:presence-topic',
+        'phx_join',
+        expect.objectContaining({ access_token: 'presence-jwt' })
+      )
+      expect(testSetup.emitters.message).toHaveBeenNthCalledWith(
+        2,
+        'realtime:presence-topic',
+        'presence',
+        expect.objectContaining({
+          type: 'presence',
+          event: 'track',
+          payload: { user: 'alice' },
+        })
+      )
+      expect(testSetup.emitters.message).toHaveBeenNthCalledWith(
+        3,
+        'realtime:presence-topic',
+        'presence',
+        expect.objectContaining({
+          type: 'presence',
+          event: 'untrack',
+        })
+      )
+    })
+
+    test('resolves queued track() with error if unsubscribed before pending auth resolves', async () => {
+      testSetup.cleanup()
+      let resolveToken!: (token: string | null) => void
+      const accessToken = vi.fn(
+        () =>
+          new Promise<string | null>((resolve) => {
+            resolveToken = resolve
+          })
+      )
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        accessToken,
+      })
+
+      const joinChannel = testSetup.client.channel('cancelled-presence', {
+        config: { private: true },
+      })
+      joinChannel.subscribe()
+
+      const trackPromise = joinChannel.track({ user: 'alice' })
+      await testSetup.socketConnected()
+      await joinChannel.unsubscribe()
+
+      await expect(trackPromise).resolves.toBe('error')
+
+      resolveToken('late-jwt')
+      await vi.advanceTimersByTimeAsync(20)
+
+      expect(testSetup.emitters.message).not.toHaveBeenCalledWith(
+        'realtime:cancelled-presence',
+        'phx_join',
+        expect.anything()
+      )
+      expect(testSetup.emitters.message).not.toHaveBeenCalledWith(
+        'realtime:cancelled-presence',
+        'presence',
+        expect.anything()
+      )
+    })
+
+    test('resumes deferred subscribe when a superseding setAuth(token) completes while initial accessToken hangs', async () => {
+      testSetup.cleanup()
+      const accessToken = vi.fn(() => new Promise<string | null>(() => {}))
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        accessToken,
+      })
+
+      const joinChannel = testSetup.client.channel('superseded-topic', {
+        config: { private: true },
+      })
+      joinChannel.subscribe()
+
+      await testSetup.socketConnected()
+      expect(testSetup.emitters.message).not.toHaveBeenCalledWith(
+        'realtime:superseded-topic',
+        'phx_join',
+        expect.anything()
+      )
+
+      await testSetup.client.setAuth('replacement-jwt')
+      await waitForChannelSubscribed(joinChannel)
+
+      expect(testSetup.emitters.message).toHaveBeenCalledWith(
+        'realtime:superseded-topic',
+        'phx_join',
+        expect.objectContaining({
+          access_token: 'replacement-jwt',
+        })
+      )
+    })
+
+    test('rejects copyBindings while subscribe awaits pending accessToken', () => {
+      testSetup.cleanup()
+      const accessToken = vi.fn(() => new Promise<string | null>(() => {}))
+      testSetup = setupRealtimeTest({
+        useFakeTimers: true,
+        timeout: defaultTimeout,
+        accessToken,
+      })
+
+      const target = testSetup.client.channel('copy-target').subscribe()
+      const source = testSetup.client.channel('copy-source')
+
+      expect(() => target.copyBindings(source)).toThrow('cannot copy bindings into joined channel')
+    })
   })
 
   describe('unsubscribe', () => {
