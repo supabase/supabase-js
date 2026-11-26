@@ -58,6 +58,58 @@ describe('maxAffected', () => {
     )
   })
 
+  test('a later maxAffected call replaces the earlier limit', () => {
+    const query = postgrest.from('messages').delete().maxAffected(10).maxAffected(1)
+    expect((query as any).headers.get('Prefer')).toBe('handling=strict, max-affected=1')
+  })
+
+  test.each(['handling=lenient, timezone=UTC', 'handling=lenient,timezone=UTC'])(
+    'maxAffected replaces a client-level handling preference (%s)',
+    (prefer) => {
+      const client = new PostgrestClient<DatabasePostgrest14>(REST_URL, {
+        headers: { Prefer: prefer },
+      })
+      const query = client.from('messages').update({ channel_id: 2 }).maxAffected(1)
+      expect((query as any).headers.get('Prefer')).toBe(
+        'timezone=UTC, handling=strict, max-affected=1'
+      )
+    }
+  )
+
+  test('maxAffected after select() replaces the earlier limit', () => {
+    const query = postgrest.from('messages').delete().maxAffected(10).select().maxAffected(1)
+    expect((query as any).headers.get('Prefer')).toBe(
+      'return=representation, handling=strict, max-affected=1'
+    )
+  })
+
+  test('maxAffected keeps other preferences', () => {
+    const query = postgrest.from('messages').delete({ count: 'exact' }).maxAffected(1)
+    expect((query as any).headers.get('Prefer')).toBe(
+      'count=exact, handling=strict, max-affected=1'
+    )
+  })
+
+  test('delete should fail when a later maxAffected call lowers the limit', async () => {
+    await postgrest.from('messages').insert([
+      { message: 'test7', username: 'supabot', channel_id: 1 },
+      { message: 'test7', username: 'supabot', channel_id: 1 },
+      { message: 'test7', username: 'supabot', channel_id: 1 },
+    ])
+
+    const { error } = await postgrest
+      .from('messages')
+      .delete()
+      .eq('message', 'test7')
+      .maxAffected(10)
+      .maxAffected(1)
+
+    expect(error?.code).toBe('PGRST124')
+
+    // cleanup
+    await postgrest.from('messages').delete().eq('message', 'test7')
+  })
+
   test('update should fail when maxAffected is exceeded', async () => {
     // First create multiple rows
     await postgrest.from('messages').insert([
