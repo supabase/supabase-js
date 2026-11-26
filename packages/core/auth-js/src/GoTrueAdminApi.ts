@@ -572,17 +572,19 @@ export default class GoTrueAdminApi {
    * - Fetches the user object from the database based on the user's id.
    * - The `getUserById()` method requires the user's id which maps to the `auth.users.id` column.
    *
-   * @example Fetch the user object using the access_token jwt
+   * @example Fetch the user object by ID
    * ```js
-   * const { data, error } = await supabase.auth.admin.getUserById(1)
+   * const { data, error } = await supabase.auth.admin.getUserById(
+   *   '11111111-1111-1111-1111-111111111111'
+   * )
    * ```
    *
-   * @exampleResponse Fetch the user object using the access_token jwt
+   * @exampleResponse Fetch the user object by ID
    * ```json
    * {
    *   data: {
    *     user: {
-   *       id: '1',
+   *       id: '11111111-1111-1111-1111-111111111111',
    *       aud: 'authenticated',
    *       role: 'authenticated',
    *       email: 'example@email.com',
@@ -596,13 +598,13 @@ export default class GoTrueAdminApi {
    *       identities: [
    *         {
    *           "identity_id": "22222222-2222-2222-2222-222222222222",
-   *           "id": "1",
-   *           "user_id": "1",
+   *           "id": "11111111-1111-1111-1111-111111111111",
+   *           "user_id": "11111111-1111-1111-1111-111111111111",
    *           "identity_data": {
    *             "email": "example@email.com",
    *             "email_verified": true,
    *             "phone_verified": false,
-   *             "sub": "1"
+   *             "sub": "11111111-1111-1111-1111-111111111111"
    *           },
    *           "provider": "email",
    *           "last_sign_in_at": "2024-01-01T00:00:00Z",
