@@ -676,8 +676,6 @@ features:
     status: implemented
     symbols:
       - default.from
-  storage.analytics.update_namespace_properties:
-    status: not_implemented
   storage.analytics.access_catalog:
     status: implemented
     symbols:
