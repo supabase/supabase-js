@@ -240,6 +240,7 @@ export default class RealtimeClient {
   private _pendingWorkerHeartbeatRef: string | null = null
   private _pendingDisconnectTimer: ReturnType<typeof setTimeout> | null = null
   private _disconnectOnEmptyChannelsAfterMs: number = 0
+  private _connectAfterDisconnect: boolean = false
 
   /**
    * Initializes the Socket.
@@ -301,9 +302,16 @@ export default class RealtimeClient {
   /**
    * Connects the socket, unless already connected.
    *
+   * If the socket is still closing from a `disconnect()`, it connects again once that close
+   * completes. Calling `disconnect()` before then cancels the reconnect.
+   *
    * @category Realtime
    */
   connect(): void {
+    // A connection opened while the old one is closing would receive the old one's late close
+    // event, so a connect requested now is carried out by `disconnect()` once the close completes.
+    this._connectAfterDisconnect = this.isDisconnecting()
+
     // Skip if already connecting, disconnecting, or connected
     if (this.isConnecting() || this.isDisconnecting() || this.isConnected()) {
       return
@@ -348,10 +356,12 @@ export default class RealtimeClient {
    */
   async disconnect(code?: number, reason?: string) {
     this._cancelPendingDisconnect()
+    // An explicit disconnect wins over a connect requested while the socket was closing.
+    this._connectAfterDisconnect = false
     if (this.isDisconnecting()) {
       return 'ok'
     }
-    return await this.socketAdapter.disconnect(
+    const status = await this.socketAdapter.disconnect(
       () => {
         clearInterval(this._workerHeartbeatTimer)
         this._terminateWorker()
@@ -359,6 +369,10 @@ export default class RealtimeClient {
       code,
       reason
     )
+    if (this._connectAfterDisconnect) {
+      this.connect()
+    }
+    return status
   }
 
   /**
