@@ -650,10 +650,6 @@ features:
     status: implemented
     symbols:
       - default.from
-  storage.analytics.rename_table:
-    status: implemented
-    symbols:
-      - default.from
   storage.analytics.delete_table:
     status: implemented
     symbols:
@@ -670,8 +666,6 @@ features:
     status: implemented
     symbols:
       - default.from
-  storage.analytics.register_table:
-    status: not_implemented
   storage.analytics.table_exists:
     status: implemented
     symbols:
