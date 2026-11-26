@@ -4347,6 +4347,60 @@ describe('GoTrueClient with throwOnError option', () => {
   test('signInWithSSO() should throw on error when throwOnError is true', async () => {
     await expect(client.signInWithSSO({ domain: 'nonexistent.example.com' })).rejects.toThrow()
   })
+
+  describe('without a session', () => {
+    // Fresh clients with empty storage: the shared client above signs up in an
+    // earlier test, so it may hold a session.
+    const buildClientWithoutSession = (throwOnError: boolean) =>
+      new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        autoRefreshToken: false,
+        persistSession: true,
+        storage: memoryLocalStorageAdapter(),
+        throwOnError,
+      })
+
+    test('getUser() should throw AuthSessionMissingError when throwOnError is true', async () => {
+      const client = buildClientWithoutSession(true)
+      await client.initialize()
+
+      await expect(client.getUser()).rejects.toMatchObject({ name: 'AuthSessionMissingError' })
+    })
+
+    test('getUser() should not remove the session or emit SIGNED_OUT when it throws', async () => {
+      const client = buildClientWithoutSession(true)
+      await client.initialize()
+
+      // @ts-expect-error access protected for test
+      const removeSessionSpy = jest.spyOn(client, '_removeSession')
+      // @ts-expect-error access protected for test
+      const notifySpy = jest.spyOn(client, '_notifyAllSubscribers')
+
+      await expect(client.getUser()).rejects.toMatchObject({ name: 'AuthSessionMissingError' })
+
+      expect(removeSessionSpy).not.toHaveBeenCalled()
+      expect(notifySpy).not.toHaveBeenCalledWith('SIGNED_OUT', null)
+    })
+
+    test('mfa.listFactors() should throw AuthSessionMissingError when throwOnError is true', async () => {
+      const client = buildClientWithoutSession(true)
+      await client.initialize()
+
+      await expect(client.mfa.listFactors()).rejects.toMatchObject({
+        name: 'AuthSessionMissingError',
+      })
+    })
+
+    test('getUser() should still return the error when throwOnError is false', async () => {
+      const client = buildClientWithoutSession(false)
+      await client.initialize()
+
+      const { data, error } = await client.getUser()
+
+      expect(data.user).toBeNull()
+      expect(error).toMatchObject({ name: 'AuthSessionMissingError' })
+    })
+  })
 })
 
 describe('GoTrueClient with skipAutoInitialize option', () => {
