@@ -304,6 +304,23 @@ type Binding = {
   id?: string
 }
 
+/**
+ * Fills in the default channel config. Nested objects such as `broadcast` are
+ * replaced, not merged.
+ *
+ * @internal
+ */
+export function normalizeChannelConfig(
+  config: RealtimeChannelOptions['config'] = {}
+): RealtimeChannelOptions['config'] {
+  return {
+    broadcast: { ack: false, self: false },
+    presence: { key: '', enabled: false },
+    private: false,
+    ...config,
+  }
+}
+
 /** A channel is the basic building block of Realtime
  * and narrows the scope of data flow to subscribed clients.
  * You can think of a channel as a chatroom where participants are able to see who's online
@@ -378,14 +395,7 @@ export default class RealtimeChannel {
     public socket: RealtimeClient
   ) {
     this.subTopic = topic.replace(/^realtime:/i, '')
-    this.params.config = {
-      ...{
-        broadcast: { ack: false, self: false },
-        presence: { key: '', enabled: false },
-        private: false,
-      },
-      ...params.config,
-    }
+    this.params.config = normalizeChannelConfig(params.config)
 
     this.channelAdapter = new ChannelAdapter(this.socket.socketAdapter, topic, this.params)
     this.presence = new RealtimePresence(this)
