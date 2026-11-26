@@ -1,4 +1,4 @@
-import { AuthError, AuthPKCECodeVerifierMissingError } from '../src/lib/errors'
+import { AuthApiError, AuthError, AuthPKCECodeVerifierMissingError } from '../src/lib/errors'
 import { JWK, Session } from '../src'
 import GoTrueClient from '../src/GoTrueClient'
 import { base64UrlToUint8Array } from '../src/lib/base64url'
@@ -5094,6 +5094,39 @@ describe('Refresh-token lifecycle (proactive/reactive, cooldown)', () => {
       // race the fire-and-forget emission scheduled by onAuthStateChange.
       // @ts-expect-error access private for test
       await client._emitInitialSession(Symbol('test-invalid-grant-init'))
+
+      expect(errorSpy).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+
+      errorSpy.mockRestore()
+      warnSpy.mockRestore()
+    })
+
+    test('_emitInitialSession downgrades a refresh refused by an auth hook to console.warn', async () => {
+      const storage = memoryLocalStorageAdapter()
+      await plantSession(storage, { secondsUntilExpiry: -60 })
+
+      const client = new GoTrueClient({
+        url: GOTRUE_URL_SIGNUP_ENABLED_AUTO_CONFIRM_ON,
+        storage,
+        autoRefreshToken: false,
+        persistSession: true,
+        skipAutoInitialize: true,
+      })
+      // A hook's `http_code` and `message` reach the client with no error code.
+      // @ts-expect-error access protected for test
+      client._refreshAccessToken = jest.fn(async () => ({
+        data: { session: null, user: null },
+        error: new AuthApiError('This session is locked.', 423, 'unknown'),
+      }))
+
+      await client.initialize()
+
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // @ts-expect-error access private for test
+      await client._emitInitialSession(Symbol('test-hook-refusal-init'))
 
       expect(errorSpy).not.toHaveBeenCalled()
       expect(warnSpy).toHaveBeenCalled()
