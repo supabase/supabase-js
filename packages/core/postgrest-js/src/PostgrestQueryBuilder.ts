@@ -9,6 +9,15 @@ import {
 } from './types/common/common'
 import { RejectExcessProperties } from './types/types'
 
+/**
+ * Quote a column name for PostgREST's `columns` query parameter.
+ * PostgREST treats `\` as the escape character inside quoted identifiers
+ * (`pQuotedValue` in ApiRequest/QueryParams.hs), so `\` and `"` must be escaped.
+ */
+function quoteColumnName(column: string): string {
+  return `"${column.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
 export default class PostgrestQueryBuilder<
   ClientOptions extends ClientServerOptions,
   Schema extends GenericSchema,
@@ -1122,7 +1131,7 @@ export default class PostgrestQueryBuilder<
     if (Array.isArray(values)) {
       const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
       if (columns.length > 0) {
-        const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
+        const uniqueColumns = [...new Set(columns)].map(quoteColumnName)
         url.searchParams.set('columns', uniqueColumns.join(','))
       }
     }
@@ -1403,7 +1412,7 @@ export default class PostgrestQueryBuilder<
     if (Array.isArray(values)) {
       const columns = values.reduce((acc, x) => acc.concat(Object.keys(x)), [] as string[])
       if (columns.length > 0) {
-        const uniqueColumns = [...new Set(columns)].map((column) => `"${column}"`)
+        const uniqueColumns = [...new Set(columns)].map(quoteColumnName)
         url.searchParams.set('columns', uniqueColumns.join(','))
       }
     }
