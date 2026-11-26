@@ -309,6 +309,101 @@ describe('SupabaseClient', () => {
     })
   })
 
+  describe('Lazy sub-client initialization', () => {
+    test('does not instantiate realtime or storage on construction or channel inspection', async () => {
+      const accessToken = jest.fn().mockResolvedValue('tok')
+      const mockFetch = jest.fn().mockResolvedValue(
+        new Response('[]', {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+      const client = createClient(URL, KEY, {
+        accessToken,
+        global: { fetch: mockFetch },
+      })
+
+      await Promise.resolve()
+
+      expect(accessToken).not.toHaveBeenCalled()
+      // @ts-expect-error - inspecting private backing fields
+      expect(client._realtime).toBeUndefined()
+      // @ts-expect-error - inspecting private backing fields
+      expect(client._storage).toBeUndefined()
+      expect(client.getChannels()).toEqual([])
+      expect(await client.removeAllChannels()).toEqual([])
+      // @ts-expect-error - getChannels/removeAllChannels should not force instantiation
+      expect(client._realtime).toBeUndefined()
+
+      await client.from('countries').select('*')
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(accessToken).toHaveBeenCalledTimes(1)
+      // @ts-expect-error - PostgREST usage should leave realtime/storage uninitialized
+      expect(client._realtime).toBeUndefined()
+      // @ts-expect-error - inspecting private backing field
+      expect(client._storage).toBeUndefined()
+    })
+
+    test('lazily creates and caches storage client on first access', () => {
+      const client = createClient(URL, KEY)
+      // @ts-expect-error - inspecting private backing field
+      expect(client._storage).toBeUndefined()
+
+      const first = client.storage
+      const second = client.storage
+
+      expect(first).toBeDefined()
+      expect(first).toBe(second)
+    })
+
+    test('lazily creates and caches realtime client and runs accessToken bootstrap on first access', async () => {
+      const accessToken = jest.fn().mockResolvedValue('lazy-token')
+      const client = createClient(URL, KEY, { accessToken })
+
+      await Promise.resolve()
+      expect(accessToken).not.toHaveBeenCalled()
+      // @ts-expect-error - inspecting private backing field
+      expect(client._realtime).toBeUndefined()
+
+      const first = client.realtime
+      const second = client.realtime
+      expect(first).toBe(second)
+
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(accessToken).toHaveBeenCalledTimes(1)
+      expect((first as unknown as { accessTokenValue: string | null }).accessTokenValue).toBe(
+        'lazy-token'
+      )
+    })
+
+    test('defers auth token events until realtime is accessed and drops cleared tokens', () => {
+      const client = createClient(URL, KEY)
+      // @ts-expect-error - accessing private method for testing
+      client._handleTokenChanged('SIGNED_IN', 'CLIENT', 'pending-token')
+      // @ts-expect-error - auth event alone should not instantiate realtime
+      expect(client._realtime).toBeUndefined()
+
+      const rt = client.realtime
+      expect((rt as unknown as { accessTokenValue: string | null }).accessTokenValue).toBe(
+        'pending-token'
+      )
+
+      const signedOutClient = createClient(URL, KEY)
+      // @ts-expect-error - accessing private method for testing
+      signedOutClient._handleTokenChanged('SIGNED_IN', 'CLIENT', 'stale-token')
+      // @ts-expect-error - accessing private method for testing
+      signedOutClient._handleTokenChanged('SIGNED_OUT', 'CLIENT')
+      // @ts-expect-error - inspecting private backing field
+      expect(signedOutClient._realtime).toBeUndefined()
+
+      const signedOutRt = signedOutClient.realtime
+      expect(
+        (signedOutRt as unknown as { accessTokenValue: string | null }).accessTokenValue
+      ).toBeNull()
+    })
+  })
+
   describe('Realtime Channel Management', () => {
     test('should create and manage channels', () => {
       const client = createClient(URL, KEY)
@@ -456,15 +551,17 @@ describe('SupabaseClient', () => {
         const customAccessTokenFn = jest.fn().mockResolvedValue(customToken)
 
         const client = createClient(URL, KEY, { accessToken: customAccessTokenFn })
+        // Trigger lazy initialization of the realtime client so bootstrap starts.
+        const realtime = client.realtime
 
-        // Wait for the constructor's async setAuth bootstrap to complete.
+        // Wait for the async setAuth bootstrap to complete.
         await new Promise((resolve) => setTimeout(resolve, 0))
 
         // Still in callback mode -> the accessToken callback will keep being
         // invoked on heartbeat to refresh the token.
-        expect((client.realtime as any)._isManualToken()).toBe(false)
+        expect((realtime as any)._isManualToken()).toBe(false)
 
-        client.realtime.disconnect()
+        realtime.disconnect()
       })
 
       test('should automatically populate token in channels when using custom JWT', async () => {
@@ -487,6 +584,9 @@ describe('SupabaseClient', () => {
         const failingAccessTokenFn = jest.fn().mockRejectedValue(error)
 
         const client = createClient(URL, KEY, { accessToken: failingAccessTokenFn })
+        expect(failingAccessTokenFn).not.toHaveBeenCalled()
+
+        const realtime = client.realtime
 
         // Wait for the promise to reject and warning to be logged
         await Promise.resolve()
@@ -497,10 +597,10 @@ describe('SupabaseClient', () => {
           error
         )
         expect(client).toBeDefined()
-        expect(client.realtime).toBeDefined()
+        expect(realtime).toBeDefined()
 
         consoleWarnSpy.mockRestore()
-        client.realtime.disconnect()
+        realtime.disconnect()
       })
 
       test('should not call setAuth() automatically in normal mode', () => {
