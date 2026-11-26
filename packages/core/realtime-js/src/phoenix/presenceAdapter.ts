@@ -59,12 +59,21 @@ export default class PresenceAdapter {
   static transformState(state: PresenceStates): RealtimePresenceState {
     state = cloneState(state)
 
-    return Object.getOwnPropertyNames(state).reduce((newState, key) => {
-      const presences = state[key]
-      newState[key] = transformState(presences)
+    // Define own properties so a presence key named "__proto__" is kept as a key. Assigning
+    // `newState[key] = ...` on a plain object would invoke the `__proto__` setter instead and
+    // drop that entry.
+    const newState = {} as RealtimePresenceState
 
-      return newState
-    }, {} as RealtimePresenceState)
+    for (const key of Object.getOwnPropertyNames(state)) {
+      Object.defineProperty(newState, key, {
+        value: transformState(state[key]),
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      })
+    }
+
+    return newState
   }
 
   static onJoinPayload(key: string, currentPresence: PresenceState, newPresence: PresenceState) {
