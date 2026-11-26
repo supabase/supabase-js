@@ -46,6 +46,60 @@ describe('URL length validation and timeout protection', () => {
       expect(error?.message).toContain('AbortError')
     })
 
+    // Regression tests for supabase-js#2755: the timeout and the caller's
+    // abort signal must cover body consumption, not just fetch() resolving
+    // (i.e. headers arriving). A server that stalls mid-body used to hang
+    // forever with a timeout set, and ignored a caller abort after headers.
+    test('should abort a stalled body when the timeout fires', async () => {
+      const http = await import('node:http')
+      const server = http.createServer((_req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json', 'content-length': '1000' })
+        res.write('[{"id":1}')
+        // Never finish the body.
+      })
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+      const url = `http://127.0.0.1:${(server.address() as { port: number }).port}`
+      try {
+        const postgrest = new PostgrestClient(url, { timeout: 200, retry: false })
+        const { error } = await postgrest.from('items').select()
+        expect(error).toBeDefined()
+        expect(error?.message).toContain('AbortError')
+      } finally {
+        server.closeAllConnections()
+        server.close()
+      }
+    })
+
+    test('should abort a stalled body on caller abort after headers', async () => {
+      const http = await import('node:http')
+      const controller = new AbortController()
+      const server = http.createServer((_req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json', 'content-length': '1000' })
+        res.write('[{"id":1}')
+        // Never finish the body.
+      })
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+      const url = `http://127.0.0.1:${(server.address() as { port: number }).port}`
+      try {
+        const trackedFetch: typeof fetch = (input, init) =>
+          globalThis.fetch(input, init).then((res) => {
+            setTimeout(() => controller.abort(), 50)
+            return res
+          })
+        const postgrest = new PostgrestClient(url, {
+          timeout: 60000,
+          retry: false,
+          fetch: trackedFetch,
+        })
+        const { error } = await postgrest.from('items').select().abortSignal(controller.signal)
+        expect(error).toBeDefined()
+        expect(error?.message).toContain('AbortError')
+      } finally {
+        server.closeAllConnections()
+        server.close()
+      }
+    })
+
     test('should complete fast requests within timeout', async () => {
       const fastFetch: typeof fetch = () =>
         Promise.resolve(
