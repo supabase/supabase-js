@@ -60,6 +60,32 @@ function toTransportFailure(
   }
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object') return false
+  const proto = Object.getPrototypeOf(value)
+  return proto === Object.prototype || proto === null
+}
+
+function toArrayLiteralElement(value: unknown): string {
+  if (value === null || value === undefined) return 'NULL'
+  if (Array.isArray(value)) return toArrayLiteral(value)
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return `${value}`
+  }
+  const text = isPlainObject(value) ? JSON.stringify(value) : `${value}`
+  return `"${text.replace(/[\\"]/g, '\\$&')}"`
+}
+
+function toArrayLiteral(values: readonly unknown[]): string {
+  return `{${values.map(toArrayLiteralElement).join(',')}}`
+}
+
+function formatRpcParamValue(value: unknown): string {
+  if (Array.isArray(value)) return toArrayLiteral(value)
+  if (isPlainObject(value)) return JSON.stringify(value)
+  return `${value}`
+}
+
 /**
  * Bounds every call of `fetch` to `timeout` milliseconds by aborting it through
  * an `AbortController`. A signal already present on the request keeps working:
@@ -585,8 +611,8 @@ export default class PostgrestClient<
         // params with undefined value needs to be filtered out, otherwise it'll
         // show up as `?param=undefined`
         .filter(([_, value]) => value !== undefined)
-        // array values need special syntax
-        .map(([name, value]) => [name, Array.isArray(value) ? `{${value.join(',')}}` : `${value}`])
+        // serialize array literals and plain JSON objects for query params
+        .map(([name, value]) => [name, formatRpcParamValue(value)])
         .forEach(([name, value]) => {
           url.searchParams.append(name, value)
         })
