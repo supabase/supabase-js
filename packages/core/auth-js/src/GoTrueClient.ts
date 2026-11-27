@@ -304,6 +304,11 @@ export default class GoTrueClient {
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
+   * The refresh token `refreshingDeferred` is refreshing. Only callers passing
+   * the same token share the in-flight refresh.
+   */
+  protected refreshingToken: string | null = null
+  /**
    * Cache of the most recent refresh failure, keyed by the refresh token
    * that failed. Serial callers passing the *same* token within
    * `REFRESH_FAILURE_COOLDOWN_MS` (including subsequent auto-refresh ticks)
@@ -3078,7 +3083,9 @@ export default class GoTrueClient {
         return { data: { session: await this._hydrateSessionUser(currentSession) }, error: null }
       }
 
-      const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
+      const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token, {
+        fromStorage: true,
+      })
       if (error) {
         // A failed refresh does not mean there is no session. Storage is the
         // source of truth at this point, because either:
@@ -4984,7 +4991,9 @@ export default class GoTrueClient {
 
       if (expiresWithMargin) {
         if (this.autoRefreshToken && currentSession.refresh_token) {
-          const { error } = await this._callRefreshToken(currentSession.refresh_token)
+          const { error } = await this._callRefreshToken(currentSession.refresh_token, {
+            fromStorage: true,
+          })
 
           if (error) {
             // `_callRefreshToken` is the single source of truth for refresh
@@ -5047,14 +5056,44 @@ export default class GoTrueClient {
     }
   }
 
-  private async _callRefreshToken(refreshToken: string): Promise<CallRefreshTokenResult> {
+  private async _callRefreshToken(
+    refreshToken: string,
+    options?: { fromStorage?: boolean }
+  ): Promise<CallRefreshTokenResult> {
     if (!refreshToken) {
       throw new AuthSessionMissingError()
     }
 
     // refreshing is already in progress
     if (this.refreshingDeferred) {
-      return this.refreshingDeferred.promise
+      if (this.refreshingToken === refreshToken) {
+        return this.refreshingDeferred.promise
+      }
+      // The in-flight refresh is for a different refresh token (e.g.
+      // `setSession` for another user while the stored session refreshes).
+      // Its result belongs to that token, so wait for it to settle and then
+      // refresh this token instead of returning another session.
+      await this.refreshingDeferred.promise.then(undefined, () => {})
+      // Storage-derived callers (`getSession` / `__loadSession`, initialize,
+      // auto-refresh) must not refresh a token that storage no longer holds.
+      // Typical case: this call waited for `setSession(B)` to finish, and
+      // storage now has B. Refreshing the original token would overwrite B.
+      // Explicit-token callers (`setSession`, `refreshSession({ refresh_token })`)
+      // skip this and still refresh the token they supplied.
+      if (options?.fromStorage) {
+        const stored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+        if (!stored || stored.refresh_token !== refreshToken) {
+          this._debug(
+            '#_callRefreshToken()',
+            'storage no longer holds the refresh token this request started with, skipping stale refresh'
+          )
+          return {
+            data: null,
+            error: new AuthRefreshDiscardedError(),
+          }
+        }
+      }
+      return this._callRefreshToken(refreshToken, options)
     }
 
     // Serial failure cooldown: callers passing the *same* refresh token
@@ -5086,6 +5125,7 @@ export default class GoTrueClient {
 
     try {
       this.refreshingDeferred = new Deferred<CallRefreshTokenResult>()
+      this.refreshingToken = refreshToken
 
       // Only callers that arrive while this refresh is in flight await the
       // deferred; the original caller is served by the `throw` in the catch
@@ -5227,6 +5267,7 @@ export default class GoTrueClient {
       throw error
     } finally {
       this.refreshingDeferred = null
+      this.refreshingToken = null
       this._debug(debugName, 'end')
     }
   }
@@ -5596,7 +5637,7 @@ export default class GoTrueClient {
                 )
 
                 if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-                  await this._callRefreshToken(session.refresh_token)
+                  await this._callRefreshToken(session.refresh_token, { fromStorage: true })
                 }
               })
             } catch (e) {
@@ -5652,7 +5693,7 @@ export default class GoTrueClient {
           )
 
           if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-            await this._callRefreshToken(session.refresh_token)
+            await this._callRefreshToken(session.refresh_token, { fromStorage: true })
           }
         })
       } catch (e) {
