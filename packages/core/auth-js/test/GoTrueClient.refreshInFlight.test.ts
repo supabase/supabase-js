@@ -128,4 +128,72 @@ describe('_callRefreshToken with a refresh for another refresh token in flight',
       await client.dispose()
     }
   })
+
+  it('getSession does not refresh a stale stored token after setSession commits another session', async () => {
+    const storageKey = 'test-refresh-in-flight-stale-getsession'
+    const storage = memoryLocalStorageAdapter({})
+    const owners = new Map([
+      ['rt-A-0', 'user-A'],
+      ['rt-B-0', 'user-B'],
+    ])
+    const refreshTokensSent: string[] = []
+    let counter = 0
+    const mockFetch = jest.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      const { refresh_token } = JSON.parse(String(init.body))
+      refreshTokensSent.push(refresh_token)
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      const owner = owners.get(refresh_token)
+      if (!owner) {
+        return new Response(
+          JSON.stringify({ code: 'refresh_token_not_found', msg: 'Refresh Token Not Found' }),
+          { status: 400, headers: { 'content-type': 'application/json' } }
+        )
+      }
+      owners.delete(refresh_token)
+      const next = `rt-${owner.slice(-1)}-${++counter}`
+      owners.set(next, owner)
+      return new Response(JSON.stringify(session(owner, next, 3600)), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    })
+
+    const client = new GoTrueClient({
+      url: 'http://localhost:9999',
+      autoRefreshToken: false,
+      persistSession: true,
+      detectSessionInUrl: false,
+      storage,
+      storageKey,
+      fetch: mockFetch,
+    })
+
+    try {
+      await storage.setItem(storageKey, JSON.stringify(session('user-A', 'rt-A-0', 3600)))
+      await client.initialize()
+      // User A's access token is about to expire, so getSession will try to refresh it.
+      await storage.setItem(storageKey, JSON.stringify(session('user-A', 'rt-A-0', 60)))
+
+      // setSession(B) starts refreshing first. Storage still holds A until B commits.
+      const setSessionPromise = client.setSession({
+        access_token: jwt('user-B', nowSeconds() - 3600),
+        refresh_token: 'rt-B-0',
+      })
+      await new Promise((resolve) => setTimeout(resolve, 20))
+
+      const { data, error } = await client.getSession()
+      const setResult = await setSessionPromise
+
+      expect(setResult.error).toBeNull()
+      expect(setResult.data.user?.id).toBe('user-B')
+      expect(error).toBeNull()
+      expect(data.session?.user.id).toBe('user-B')
+      expect(refreshTokensSent).toEqual(['rt-B-0'])
+      const stored = JSON.parse((await storage.getItem(storageKey)) as string)
+      expect(stored.user.id).toBe('user-B')
+      expect(stored.refresh_token).toMatch(/^rt-B-/)
+    } finally {
+      await client.dispose()
+    }
+  })
 })

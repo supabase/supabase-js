@@ -3083,7 +3083,9 @@ export default class GoTrueClient {
         return { data: { session: await this._hydrateSessionUser(currentSession) }, error: null }
       }
 
-      const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token)
+      const { data: session, error } = await this._callRefreshToken(currentSession.refresh_token, {
+        fromStorage: true,
+      })
       if (error) {
         // A failed refresh does not mean there is no session. Storage is the
         // source of truth at this point, because either:
@@ -4989,7 +4991,9 @@ export default class GoTrueClient {
 
       if (expiresWithMargin) {
         if (this.autoRefreshToken && currentSession.refresh_token) {
-          const { error } = await this._callRefreshToken(currentSession.refresh_token)
+          const { error } = await this._callRefreshToken(currentSession.refresh_token, {
+            fromStorage: true,
+          })
 
           if (error) {
             // `_callRefreshToken` is the single source of truth for refresh
@@ -5052,7 +5056,10 @@ export default class GoTrueClient {
     }
   }
 
-  private async _callRefreshToken(refreshToken: string): Promise<CallRefreshTokenResult> {
+  private async _callRefreshToken(
+    refreshToken: string,
+    options?: { fromStorage?: boolean }
+  ): Promise<CallRefreshTokenResult> {
     if (!refreshToken) {
       throw new AuthSessionMissingError()
     }
@@ -5067,7 +5074,26 @@ export default class GoTrueClient {
       // Its result belongs to that token, so wait for it to settle and then
       // refresh this token instead of returning another session.
       await this.refreshingDeferred.promise.then(undefined, () => {})
-      return this._callRefreshToken(refreshToken)
+      // Storage-derived callers (`getSession` / `__loadSession`, initialize,
+      // auto-refresh) must not refresh a token that storage no longer holds.
+      // Typical case: this call waited for `setSession(B)` to finish, and
+      // storage now has B. Refreshing the original token would overwrite B.
+      // Explicit-token callers (`setSession`, `refreshSession({ refresh_token })`)
+      // skip this and still refresh the token they supplied.
+      if (options?.fromStorage) {
+        const stored = (await getItemAsync(this.storage, this.storageKey)) as Session | null
+        if (!stored || stored.refresh_token !== refreshToken) {
+          this._debug(
+            '#_callRefreshToken()',
+            'storage no longer holds the refresh token this request started with, skipping stale refresh'
+          )
+          return {
+            data: null,
+            error: new AuthRefreshDiscardedError(),
+          }
+        }
+      }
+      return this._callRefreshToken(refreshToken, options)
     }
 
     // Serial failure cooldown: callers passing the *same* refresh token
@@ -5611,7 +5637,7 @@ export default class GoTrueClient {
                 )
 
                 if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-                  await this._callRefreshToken(session.refresh_token)
+                  await this._callRefreshToken(session.refresh_token, { fromStorage: true })
                 }
               })
             } catch (e) {
@@ -5667,7 +5693,7 @@ export default class GoTrueClient {
           )
 
           if (expiresInTicks <= AUTO_REFRESH_TICK_THRESHOLD) {
-            await this._callRefreshToken(session.refresh_token)
+            await this._callRefreshToken(session.refresh_token, { fromStorage: true })
           }
         })
       } catch (e) {
