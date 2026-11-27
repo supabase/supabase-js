@@ -304,6 +304,11 @@ export default class GoTrueClient {
   protected visibilityChangedCallback: (() => Promise<any>) | null = null
   protected refreshingDeferred: Deferred<CallRefreshTokenResult> | null = null
   /**
+   * The refresh token `refreshingDeferred` is refreshing. Only callers passing
+   * the same token share the in-flight refresh.
+   */
+  protected refreshingToken: string | null = null
+  /**
    * Cache of the most recent refresh failure, keyed by the refresh token
    * that failed. Serial callers passing the *same* token within
    * `REFRESH_FAILURE_COOLDOWN_MS` (including subsequent auto-refresh ticks)
@@ -5054,7 +5059,15 @@ export default class GoTrueClient {
 
     // refreshing is already in progress
     if (this.refreshingDeferred) {
-      return this.refreshingDeferred.promise
+      if (this.refreshingToken === refreshToken) {
+        return this.refreshingDeferred.promise
+      }
+      // The in-flight refresh is for a different refresh token (e.g.
+      // `setSession` for another user while the stored session refreshes).
+      // Its result belongs to that token, so wait for it to settle and then
+      // refresh this token instead of returning another session.
+      await this.refreshingDeferred.promise.then(undefined, () => {})
+      return this._callRefreshToken(refreshToken)
     }
 
     // Serial failure cooldown: callers passing the *same* refresh token
@@ -5086,6 +5099,7 @@ export default class GoTrueClient {
 
     try {
       this.refreshingDeferred = new Deferred<CallRefreshTokenResult>()
+      this.refreshingToken = refreshToken
 
       // Only callers that arrive while this refresh is in flight await the
       // deferred; the original caller is served by the `throw` in the catch
@@ -5227,6 +5241,7 @@ export default class GoTrueClient {
       throw error
     } finally {
       this.refreshingDeferred = null
+      this.refreshingToken = null
       this._debug(debugName, 'end')
     }
   }
