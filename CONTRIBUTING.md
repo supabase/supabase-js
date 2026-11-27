@@ -83,7 +83,7 @@ CI does this explicitly after `pnpm install`, so it's only a manual step for loc
    - Use TypeScript for all new code
    - Follow existing code style and patterns
    - Add JSDoc comments for public APIs
-   - Use meaningful commit messages (see [Commit Guidelines](#-commit-guidelines))
+   - Use meaningful commit messages (see [Commit Guidelines](#commit-guidelines))
 
 4. **Test your changes**:
 
