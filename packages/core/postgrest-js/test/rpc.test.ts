@@ -41,6 +41,67 @@ test('RPC call serializes bigint values in the request body', async () => {
   )
 })
 
+describe('RPC call with get: true parameter serialization', () => {
+  function setupMockClient() {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+      json: async () => null,
+      text: async () => 'null',
+    })
+    const client = new PostgrestClient<Database>('https://example.com', {
+      fetch: mockFetch as any,
+    })
+    const lastSearchParams = () => {
+      const [url, options] = mockFetch.mock.calls[mockFetch.mock.calls.length - 1] as [
+        string,
+        RequestInit,
+      ]
+      expect(options.method).toBe('GET')
+      return new URL(url).searchParams
+    }
+    return { client, lastSearchParams }
+  }
+
+  test('serializes plain object arguments as JSON instead of [object Object]', async () => {
+    const { client, lastSearchParams } = setupMockClient()
+    await client.rpc('echo_json' as any, { payload: { a: 1, nested: { ok: true } } } as any, {
+      get: true,
+    })
+    expect(lastSearchParams().get('payload')).toBe('{"a":1,"nested":{"ok":true}}')
+  })
+
+  test('quotes and escapes array elements in Postgres array literals', async () => {
+    const { client, lastSearchParams } = setupMockClient()
+    await client.rpc(
+      'echo_text_array' as any,
+      {
+        items: ['a,b', 'c', 'say "hi"', 'back\\slash', '{brace}', ' white space ', '', 'null'],
+      } as any,
+      { get: true }
+    )
+    expect(lastSearchParams().get('items')).toBe(
+      '{"a,b","c","say \\"hi\\"","back\\\\slash","{brace}"," white space ","","null"}'
+    )
+  })
+
+  test('serializes null, scalar, nested array, and object elements inside arrays', async () => {
+    const { client, lastSearchParams } = setupMockClient()
+    await client.rpc(
+      'echo_mixed_array' as any,
+      {
+        items: [null, 42, true, ['x', 'y,z'], { a: 1 }],
+        empty: [],
+      } as any,
+      { get: true }
+    )
+    expect(lastSearchParams().get('items')).toBe('{NULL,42,true,{"x","y,z"},"{\\"a\\":1}"}')
+    expect(lastSearchParams().get('empty')).toBe('{}')
+  })
+})
+
 test('RPC call with no params', async () => {
   const res = await postgrest.rpc(RPC_NAME, { name_param: 'supabot' }).select()
   expect(res).toMatchInlineSnapshot(`
