@@ -307,12 +307,14 @@ describe('Automatic Retries', () => {
       expect(delaysSeen).toEqual([2000])
     })
 
-    it('should wait until an HTTP-date Retry-After', async () => {
+    it.each([
+      ['IMF-fixdate', 'Wed, 21 Oct 2026 07:28:05 GMT'],
+      ['obsolete RFC 850', 'Wednesday, 21-Oct-26 07:28:05 GMT'],
+      ['obsolete asctime', 'Wed Oct 21 07:28:05 2026'],
+    ])('should wait until an HTTP-date Retry-After (%s)', async (_label, retryAfter) => {
       const delaysSeen = captureDelays()
       fetchMock
-        .mockResolvedValueOnce(
-          retryableResponse(503, { 'Retry-After': 'Wed, 21 Oct 2026 07:28:05 GMT' })
-        )
+        .mockResolvedValueOnce(retryableResponse(503, { 'Retry-After': retryAfter }))
         .mockResolvedValueOnce(okResponse)
 
       const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
@@ -327,6 +329,7 @@ describe('Automatic Retries', () => {
       ['a date that has passed', 'Wed, 21 Oct 2026 07:27:00 GMT'],
       ['an unparseable value', 'soon'],
       ['a negative number', '-5'],
+      ['an ISO date that is not an HTTP-date', '2099-01-01'],
     ])('should fall back to the jittered wait for %s', async (_label, retryAfter) => {
       const delaysSeen = captureDelays()
       fetchMock

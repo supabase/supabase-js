@@ -30,9 +30,28 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 /**
+ * The HTTP-date forms from RFC 9110 §5.6.7. Anything else that `Date.parse`
+ * happens to accept (such as an ISO date) is not a valid `Retry-After`.
+ */
+const IMF_FIXDATE = /^[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT$/
+const RFC850_DATE = /^[A-Z][a-z]+, \d{2}-[A-Z][a-z]{2}-\d{2} \d{2}:\d{2}:\d{2} GMT$/
+const ASCTIME_DATE = /^[A-Z][a-z]{2} [A-Z][a-z]{2} [ \d]\d \d{2}:\d{2}:\d{2} \d{4}$/
+
+function parseHttpDate(value: string): number {
+  if (IMF_FIXDATE.test(value) || RFC850_DATE.test(value)) {
+    return Date.parse(value)
+  }
+  if (ASCTIME_DATE.test(value)) {
+    // asctime carries no zone but is always UTC
+    return Date.parse(`${value} GMT`)
+  }
+  return NaN
+}
+
+/**
  * Parse a `Retry-After` header value into a delay in milliseconds.
  * Accepts delta-seconds (a non-negative integer) or an HTTP-date, which is
- * read relative to now. Returns `null` when the value can't be parsed, is 0,
+ * read relative to now. Returns `null` when the value isn't valid, is 0,
  * or is a date that has already passed: the caller then uses the jittered
  * backoff instead, so clients that got the same answer don't retry together.
  */
@@ -42,7 +61,7 @@ function parseRetryAfter(value: string): number | null {
   if (/^\d+$/.test(trimmed)) {
     delay = Number(trimmed) * 1000
   } else {
-    const date = Date.parse(trimmed)
+    const date = parseHttpDate(trimmed)
     if (Number.isNaN(date)) {
       return null
     }
