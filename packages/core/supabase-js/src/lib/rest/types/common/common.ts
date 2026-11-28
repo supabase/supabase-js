@@ -18,14 +18,20 @@ export type Fetch = typeof fetch
 export const DEFAULT_MAX_RETRIES = 3
 
 /**
- * Default exponential backoff delay function.
- * Delays: 1s, 2s, 4s, 8s, ... (max 30s)
+ * Maximum delay between retries, in milliseconds.
+ */
+export const MAX_RETRY_DELAY = 30000
+
+/**
+ * Default exponential backoff delay function with full jitter.
+ * Each call returns a new random delay in [0, min(30s, 1s * 2^attemptIndex)],
+ * so the upper bounds are 1s, 2s, 4s, 8s, ... (max 30s)
  *
  * @param attemptIndex - Zero-based index of the retry attempt
  * @returns Delay in milliseconds before the next retry
  */
 export const getRetryDelay = (attemptIndex: number): number =>
-  Math.min(1000 * 2 ** attemptIndex, 30000)
+  Math.random() * Math.min(1000 * 2 ** attemptIndex, MAX_RETRY_DELAY)
 
 /**
  * Status codes that are safe to retry.
@@ -37,7 +43,7 @@ export const RETRYABLE_STATUS_CODES = [520, 503] as const
 /**
  * HTTP methods that are safe to retry (idempotent operations).
  */
-export const RETRYABLE_METHODS = ['GET', 'HEAD', 'OPTIONS'] as const
+export const RETRYABLE_METHODS = ['GET', 'HEAD'] as const
 
 export type GenericRelationship = {
   foreignKeyName: string

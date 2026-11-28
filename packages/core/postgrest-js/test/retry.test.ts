@@ -1,4 +1,6 @@
 import PostgrestClient from '../src/PostgrestClient'
+import { fetchWithRetry } from '../src/fetchWithRetry'
+import { getRetryDelay } from '../src/types/common/common'
 
 describe('Automatic Retries', () => {
   let fetchMock: jest.Mock
@@ -207,14 +209,41 @@ describe('Automatic Retries', () => {
     })
   })
 
+  /**
+   * Record the delay of every setTimeout call while running timers immediately.
+   */
+  function captureDelays(): number[] {
+    const delaysSeen: number[] = []
+    const originalSetTimeout = globalThis.setTimeout
+    jest.spyOn(globalThis, 'setTimeout').mockImplementation(((fn: () => void, delay?: number) => {
+      delaysSeen.push(delay as number)
+      return originalSetTimeout(fn, 0)
+    }) as typeof setTimeout)
+    return delaysSeen
+  }
+
+  function retryableResponse(status: number, headers: Record<string, string> = {}) {
+    return {
+      ok: false,
+      status,
+      statusText: 'Service Unavailable',
+      headers: new Headers(headers),
+      text: () => Promise.resolve('unavailable'),
+    }
+  }
+
+  const okResponse = {
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: new Headers(),
+    text: () => Promise.resolve('[]'),
+  }
+
   describe('exponential backoff', () => {
-    it('should use exponential backoff delays', async () => {
-      let delaysSeen: number[] = []
-      const originalSleep = globalThis.setTimeout
-      jest.spyOn(globalThis, 'setTimeout').mockImplementation((fn, delay) => {
-        delaysSeen.push(delay as number)
-        return originalSleep(fn, 0) // Run immediately for testing
-      })
+    it('should use exponential backoff delays with full jitter', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.5)
+      const delaysSeen = captureDelays()
 
       // All calls return 520 to trigger retries
       fetchMock.mockResolvedValue({
@@ -227,10 +256,158 @@ describe('Automatic Retries', () => {
       const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
       await runWithTimers(client.from('users').select())
 
-      // Verify exponential backoff: 1000ms, 2000ms, 4000ms
-      expect(delaysSeen).toContain(1000) // First retry
-      expect(delaysSeen).toContain(2000) // Second retry
-      expect(delaysSeen).toContain(4000) // Third retry
+      // Half of the 1000ms, 2000ms, 4000ms upper bounds
+      expect(delaysSeen).toEqual([500, 1000, 2000])
+      expect(Math.random).toHaveBeenCalledTimes(3)
+    })
+
+    it('should keep jittered delays within [0, min(30s, 1s * 2^attempt))', () => {
+      const random = jest.spyOn(Math, 'random')
+
+      random.mockReturnValue(0)
+      expect(getRetryDelay(0)).toBe(0)
+      expect(getRetryDelay(10)).toBe(0)
+
+      random.mockReturnValue(0.999)
+      expect(getRetryDelay(0)).toBeCloseTo(999)
+      expect(getRetryDelay(2)).toBeCloseTo(3996)
+      expect(getRetryDelay(10)).toBeCloseTo(29970)
+    })
+
+    it('should jitter network error retries', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.25)
+      const delaysSeen = captureDelays()
+
+      fetchMock.mockRejectedValueOnce(new Error('Network error')).mockResolvedValueOnce(okResponse)
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).toBeNull()
+      expect(delaysSeen).toEqual([250])
+    })
+  })
+
+  describe('Retry-After header', () => {
+    beforeEach(() => {
+      jest.setSystemTime(new Date('2026-10-21T07:28:00Z'))
+      jest.spyOn(Math, 'random').mockReturnValue(0.25)
+    })
+
+    it('should wait for a delta-seconds Retry-After', async () => {
+      const delaysSeen = captureDelays()
+      fetchMock
+        .mockResolvedValueOnce(retryableResponse(503, { 'Retry-After': '2' }))
+        .mockResolvedValueOnce(okResponse)
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).toBeNull()
+      expect(delaysSeen).toEqual([2000])
+    })
+
+    it.each([
+      ['IMF-fixdate', 'Wed, 21 Oct 2026 07:28:05 GMT'],
+      ['obsolete RFC 850', 'Wednesday, 21-Oct-26 07:28:05 GMT'],
+      ['obsolete asctime', 'Wed Oct 21 07:28:05 2026'],
+    ])('should wait until an HTTP-date Retry-After (%s)', async (_label, retryAfter) => {
+      const delaysSeen = captureDelays()
+      fetchMock
+        .mockResolvedValueOnce(retryableResponse(503, { 'Retry-After': retryAfter }))
+        .mockResolvedValueOnce(okResponse)
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).toBeNull()
+      expect(delaysSeen).toEqual([5000])
+    })
+
+    it.each([
+      ['0', '0'],
+      ['a date that has passed', 'Wed, 21 Oct 2026 07:27:00 GMT'],
+      ['an unparseable value', 'soon'],
+      ['a negative number', '-5'],
+      ['an ISO date that is not an HTTP-date', '2099-01-01'],
+    ])('should fall back to the jittered wait for %s', async (_label, retryAfter) => {
+      const delaysSeen = captureDelays()
+      fetchMock
+        .mockResolvedValueOnce(retryableResponse(503, { 'Retry-After': retryAfter }))
+        .mockResolvedValueOnce(okResponse)
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).toBeNull()
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(delaysSeen).toEqual([250])
+    })
+
+    it.each([
+      ['delta-seconds', '3600'],
+      ['an HTTP-date', 'Wed, 21 Oct 2026 07:29:00 GMT'],
+    ])(
+      'should stop retrying and return the response when %s Retry-After exceeds 30s',
+      async (_label, retryAfter) => {
+        const delaysSeen = captureDelays()
+        fetchMock.mockResolvedValue(retryableResponse(503, { 'Retry-After': retryAfter }))
+
+        const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+        const result = await runWithTimers(client.from('users').select())
+
+        expect(result.error).not.toBeNull()
+        expect(result.status).toBe(503)
+        expect(fetchMock).toHaveBeenCalledTimes(1)
+        expect(delaysSeen).toEqual([])
+      }
+    )
+
+    it('should still wait for a Retry-After of exactly 30s', async () => {
+      const delaysSeen = captureDelays()
+      fetchMock
+        .mockResolvedValueOnce(retryableResponse(503, { 'Retry-After': '30' }))
+        .mockResolvedValueOnce(okResponse)
+
+      const client = new PostgrestClient('http://localhost:3000', { fetch: fetchMock })
+      const result = await runWithTimers(client.from('users').select())
+
+      expect(result.error).toBeNull()
+      expect(delaysSeen).toEqual([30000])
+    })
+  })
+
+  describe('retryable methods', () => {
+    it('should NOT retry OPTIONS requests', async () => {
+      fetchMock.mockResolvedValue(retryableResponse(520))
+
+      const res = await runWithTimers(
+        fetchWithRetry(
+          fetchMock,
+          'http://localhost:3000/users',
+          { method: 'OPTIONS', headers: {} },
+          true
+        )
+      )
+
+      expect(res.status).toBe(520)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('should retry HEAD requests', async () => {
+      fetchMock.mockResolvedValueOnce(retryableResponse(520)).mockResolvedValueOnce(okResponse)
+
+      const res = await runWithTimers(
+        fetchWithRetry(
+          fetchMock,
+          'http://localhost:3000/users',
+          { method: 'HEAD', headers: {} },
+          true
+        )
+      )
+
+      expect(res.status).toBe(200)
+      expect(fetchMock).toHaveBeenCalledTimes(2)
     })
   })
 
