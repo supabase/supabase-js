@@ -132,8 +132,8 @@ export class CustomAuthError extends AuthError {
  * ```
  */
 export class AuthSessionMissingError extends CustomAuthError {
-  constructor() {
-    super('Auth session missing!', 'AuthSessionMissingError', 400, undefined)
+  constructor(message = 'Auth session missing!', status = 400, code?: string) {
+    super(message, 'AuthSessionMissingError', status, code)
   }
 }
 

@@ -139,7 +139,7 @@ export async function handleError(error: unknown) {
     // The `session_id` inside the JWT does not correspond to a row in the
     // `sessions` table. This usually means the user has signed out, has been
     // deleted, or their session has somehow been terminated.
-    throw new AuthSessionMissingError()
+    throw new AuthSessionMissingError('Auth session missing!', error.status || 400, errorCode)
   }
 
   throw new AuthApiError(_getErrorMessage(data), error.status || 500, errorCode)

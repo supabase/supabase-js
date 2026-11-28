@@ -48,6 +48,21 @@ describe('AuthError serialization', () => {
     expect(serialized.message).toBe('Auth session missing!')
     expect(serialized.name).toBe('AuthSessionMissingError')
     expect(serialized.status).toBe(400)
+    expect(serialized.code).toBeUndefined()
+  })
+
+  test('AuthSessionMissingError preserves status and code when provided', () => {
+    const err = new AuthSessionMissingError('Auth session missing!', 403, 'session_not_found')
+    expect(err.message).toBe('Auth session missing!')
+    expect(err.name).toBe('AuthSessionMissingError')
+    expect(err.status).toBe(403)
+    expect(err.code).toBe('session_not_found')
+
+    const serialized = JSON.parse(JSON.stringify(err))
+    expect(serialized.message).toBe('Auth session missing!')
+    expect(serialized.name).toBe('AuthSessionMissingError')
+    expect(serialized.status).toBe(403)
+    expect(serialized.code).toBe('session_not_found')
   })
 
   test('AuthInvalidTokenResponseError serializes message with JSON.stringify', () => {
