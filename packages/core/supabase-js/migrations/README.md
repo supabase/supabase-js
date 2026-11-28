@@ -22,4 +22,4 @@ One file per migration theme, named by topic rather than version (e.g. `<theme>.
 
 ## Cross-cutting migration notes
 
-Migrations that span multiple Supabase packages (e.g. Node.js version drops, monorepo restructures) live in [`docs/MIGRATION.md`](../../../../docs/MIGRATION.md) at the repository root, not here. This directory is scoped to `@supabase/supabase-js` only.
+Migrations that span multiple Supabase packages (e.g. Node.js version drops, monorepo restructures) live in [`docs/MIGRATION.md`](https://github.com/supabase/supabase-js/blob/master/docs/MIGRATION.md) at the repository root, not here. This directory is scoped to `@supabase/supabase-js` only.
