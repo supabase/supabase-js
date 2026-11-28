@@ -464,6 +464,55 @@ export async function removeAllPKCEVerifiers(
 }
 
 /**
+ * Moves every pending verifier stored under `fromKey` to `toKey`: the fixed
+ * legacy `-code-verifier` entry, each indexed flow slot and the flow index
+ * itself. Existing entries under `toKey` are never overwritten. Afterwards the
+ * `fromKey` entries are removed. Used when a client's storage key changes so a
+ * PKCE flow started under the previous key still completes after the redirect.
+ */
+export async function migratePKCEVerifiers(
+  storage: SupportedStorage,
+  fromKey: string,
+  toKey: string
+): Promise<void> {
+  if (fromKey === toKey) {
+    return
+  }
+
+  const fromIndex = await getPKCEFlowIndex(storage, fromKey)
+  if (fromIndex.length > 0) {
+    const toIndex = await getPKCEFlowIndex(storage, toKey)
+    let indexChanged = false
+    for (const flowId of fromIndex) {
+      const verifier = await getItemAsync(storage, pkceVerifierSlotKey(fromKey, flowId))
+      if (
+        typeof verifier === 'string' &&
+        (await getItemAsync(storage, pkceVerifierSlotKey(toKey, flowId))) === null
+      ) {
+        await setItemAsync(storage, pkceVerifierSlotKey(toKey, flowId), verifier)
+        if (!toIndex.includes(flowId)) {
+          toIndex.push(flowId)
+          indexChanged = true
+        }
+      }
+    }
+    if (indexChanged) {
+      await setItemAsync(storage, pkceFlowIndexKey(toKey), toIndex)
+    }
+  }
+
+  const legacyVerifier = await getItemAsync(storage, `${fromKey}-code-verifier`)
+  if (
+    typeof legacyVerifier === 'string' &&
+    (await getItemAsync(storage, `${toKey}-code-verifier`)) === null
+  ) {
+    await setItemAsync(storage, `${toKey}-code-verifier`, legacyVerifier)
+  }
+
+  await removeAllPKCEVerifiers(storage, fromKey)
+}
+
+/**
  * Appends the reserved flow id parameter to a `redirectTo` URL, replacing any
  * existing occurrence. String-based (no URL round-trip) so custom schemes
  * (native deep links) and the exact encoding of the app's own parameters
