@@ -1,6 +1,11 @@
 import { MockServer } from 'jest-mock-server'
 import { API_VERSION_HEADER_NAME } from '../src/lib/constants'
-import { AuthUnknownError, AuthApiError, AuthRetryableFetchError } from '../src/lib/errors'
+import {
+  AuthUnknownError,
+  AuthApiError,
+  AuthRetryableFetchError,
+  AuthSessionMissingError,
+} from '../src/lib/errors'
 import { _request, _sessionResponse, handleError } from '../src/lib/fetch'
 
 describe('fetch', () => {
@@ -346,6 +351,61 @@ describe('handleError', () => {
     expect(error).toBeInstanceOf(AuthRetryableFetchError)
     expect(error.status).toEqual(502)
     expect(error.message).toEqual('HTTP 502')
+  })
+
+  it('preserves status and code on AuthSessionMissingError for session_not_found with API version 2024-01-01', async () => {
+    const response = new Response(
+      JSON.stringify({
+        code: 'session_not_found',
+        message: 'Session not found',
+      }),
+      {
+        status: 403,
+        statusText: 'Forbidden',
+        headers: {
+          [API_VERSION_HEADER_NAME]: '2024-01-01',
+        },
+      }
+    )
+
+    let error: any = null
+    try {
+      await handleError(response)
+    } catch (e: any) {
+      error = e
+    }
+
+    expect(error).toBeInstanceOf(AuthSessionMissingError)
+    expect(error.name).toEqual('AuthSessionMissingError')
+    expect(error.status).toEqual(403)
+    expect(error.code).toEqual('session_not_found')
+    expect(error.message).toEqual('Auth session missing!')
+  })
+
+  it('preserves status and code on AuthSessionMissingError for legacy session_not_found without API version', async () => {
+    const response = new Response(
+      JSON.stringify({
+        error_code: 'session_not_found',
+        msg: 'Session from session_id claim in JWT does not exist',
+      }),
+      {
+        status: 403,
+        statusText: 'Forbidden',
+      }
+    )
+
+    let error: any = null
+    try {
+      await handleError(response)
+    } catch (e: any) {
+      error = e
+    }
+
+    expect(error).toBeInstanceOf(AuthSessionMissingError)
+    expect(error.name).toEqual('AuthSessionMissingError')
+    expect(error.status).toEqual(403)
+    expect(error.code).toEqual('session_not_found')
+    expect(error.message).toEqual('Auth session missing!')
   })
 })
 
